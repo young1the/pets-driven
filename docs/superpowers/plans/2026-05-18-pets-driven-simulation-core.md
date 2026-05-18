@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the simulation core independent from Tauri, Claude, Windows, and pet asset loading. Compose behavior from reusable personality components, translate all outside activity into neutral stimuli, emit renderer-independent snapshots, and let a browser canvas renderer visualize the same world with either fallback debug shapes or optional sprite assets.
 
-**Tech Stack:** TypeScript, React, Vite, Vitest, Matter.js, Playwright, pnpm
+**Tech Stack:** TypeScript, React, Vite, Vitest, Matter.js, Playwright, npm
 
 ---
 
@@ -227,11 +227,11 @@ export default defineConfig({
 
 - [ ] **Step 3: Run the test to verify it fails before the app exists**
 
-Run: `pnpm install`
+Run: `npm install`
 
 Expected: dependencies install successfully.
 
-Run: `pnpm test -- tests/smoke/playground-app.test.tsx`
+Run: `npm test -- tests/smoke/playground-app.test.tsx`
 
 Expected: FAIL because `src/playground/browser/playground-app.tsx` does not exist yet.
 
@@ -304,11 +304,11 @@ body {
 
 - [ ] **Step 5: Run the smoke test and build**
 
-Run: `pnpm test -- tests/smoke/playground-app.test.tsx`
+Run: `npm test -- tests/smoke/playground-app.test.tsx`
 
 Expected: PASS.
 
-Run: `pnpm build`
+Run: `npm run build`
 
 Expected: PASS.
 
@@ -358,7 +358,7 @@ describe("deterministic helpers", () => {
 
 - [ ] **Step 2: Run the tests and verify failure**
 
-Run: `pnpm test -- tests/shared/deterministic-tools.test.ts`
+Run: `npm test -- tests/shared/deterministic-tools.test.ts`
 
 Expected: FAIL because the helper modules do not exist.
 
@@ -406,7 +406,7 @@ export function createSeededRandom(seed: number): RandomSource {
 
 - [ ] **Step 4: Run the tests**
 
-Run: `pnpm test -- tests/shared/deterministic-tools.test.ts`
+Run: `npm test -- tests/shared/deterministic-tools.test.ts`
 
 Expected: PASS.
 
@@ -466,7 +466,7 @@ describe("component registry", () => {
 
 - [ ] **Step 2: Run the test and verify failure**
 
-Run: `pnpm test -- tests/core/component-registry.test.ts`
+Run: `npm test -- tests/core/component-registry.test.ts`
 
 Expected: FAIL because the ECS files do not exist.
 
@@ -533,7 +533,7 @@ export function createComponentRegistry(
 
 - [ ] **Step 4: Run the registry tests**
 
-Run: `pnpm test -- tests/core/component-registry.test.ts`
+Run: `npm test -- tests/core/component-registry.test.ts`
 
 Expected: PASS.
 
@@ -599,7 +599,7 @@ describe("pet contracts", () => {
 
 - [ ] **Step 2: Run the tests and verify failure**
 
-Run: `pnpm test -- tests/pets/pet-contracts.test.ts`
+Run: `npm test -- tests/pets/pet-contracts.test.ts`
 
 Expected: FAIL because the pet contract modules do not exist.
 
@@ -766,7 +766,7 @@ export const seeksUserDefinition = {
 
 - [ ] **Step 6: Run the tests**
 
-Run: `pnpm test -- tests/pets/pet-contracts.test.ts`
+Run: `npm test -- tests/pets/pet-contracts.test.ts`
 
 Expected: PASS.
 
@@ -808,7 +808,7 @@ describe("stimulus queue", () => {
 
 - [ ] **Step 2: Run the test and verify failure**
 
-Run: `pnpm test -- tests/core/stimulus-queue.test.ts`
+Run: `npm test -- tests/core/stimulus-queue.test.ts`
 
 Expected: FAIL because the stimulus files do not exist.
 
@@ -849,7 +849,7 @@ export function createStimulusQueue(): StimulusQueue {
 
 - [ ] **Step 4: Run the test**
 
-Run: `pnpm test -- tests/core/stimulus-queue.test.ts`
+Run: `npm test -- tests/core/stimulus-queue.test.ts`
 
 Expected: PASS.
 
@@ -890,7 +890,7 @@ describe("matter physics world", () => {
 
 - [ ] **Step 2: Run the test and verify failure**
 
-Run: `pnpm test -- tests/core/physics-world.test.ts`
+Run: `npm test -- tests/core/physics-world.test.ts`
 
 Expected: FAIL because the physics module does not exist.
 
@@ -975,7 +975,7 @@ export function createMatterPhysicsWorld(bounds: {
 
 - [ ] **Step 5: Run the physics test**
 
-Run: `pnpm test -- tests/core/physics-world.test.ts`
+Run: `npm test -- tests/core/physics-world.test.ts`
 
 Expected: PASS.
 
@@ -1039,7 +1039,7 @@ describe("behavior systems", () => {
 
 - [ ] **Step 2: Run the tests and verify failure**
 
-Run: `pnpm test -- tests/core/systems.test.ts`
+Run: `npm test -- tests/core/systems.test.ts`
 
 Expected: FAIL because the systems do not exist.
 
@@ -1161,7 +1161,7 @@ it("pushes nearby pets away from each other", () => {
 
 - [ ] **Step 6: Run the behavior tests**
 
-Run: `pnpm test -- tests/core/systems.test.ts`
+Run: `npm test -- tests/core/systems.test.ts`
 
 Expected: PASS.
 
@@ -1211,7 +1211,7 @@ describe("demo scenario", () => {
 
 - [ ] **Step 2: Run the tests and verify failure**
 
-Run: `pnpm test -- tests/core/world-fixtures.test.ts`
+Run: `npm test -- tests/core/world-fixtures.test.ts`
 
 Expected: FAIL because the world factory does not exist.
 
@@ -1312,7 +1312,7 @@ export function createDemoScenario() {
 
 - [ ] **Step 5: Run the world tests**
 
-Run: `pnpm test -- tests/core/world-fixtures.test.ts`
+Run: `npm test -- tests/core/world-fixtures.test.ts`
 
 Expected: PASS.
 
@@ -1365,7 +1365,7 @@ describe("canvas renderer", () => {
 
 - [ ] **Step 2: Run the test and verify failure**
 
-Run: `pnpm test -- tests/playground/canvas-renderer.test.ts`
+Run: `npm test -- tests/playground/canvas-renderer.test.ts`
 
 Expected: FAIL because the renderer does not exist.
 
@@ -1408,7 +1408,7 @@ export function drawWorld(
 
 - [ ] **Step 5: Run the renderer tests**
 
-Run: `pnpm test -- tests/playground/canvas-renderer.test.ts`
+Run: `npm test -- tests/playground/canvas-renderer.test.ts`
 
 Expected: PASS.
 
@@ -1453,7 +1453,7 @@ it("draws a sprite when an asset exists for a body", () => {
 
 - [ ] **Step 2: Run the focused test and verify it fails**
 
-Run: `pnpm test -- tests/playground/canvas-renderer.test.ts`
+Run: `npm test -- tests/playground/canvas-renderer.test.ts`
 
 Expected: FAIL because `drawWorld` does not render sprites yet.
 
@@ -1501,7 +1501,7 @@ export function drawWorld(
 
 - [ ] **Step 5: Run the tests**
 
-Run: `pnpm test -- tests/playground/canvas-renderer.test.ts`
+Run: `npm test -- tests/playground/canvas-renderer.test.ts`
 
 Expected: PASS.
 
@@ -1547,7 +1547,7 @@ describe("PlaygroundApp", () => {
 
 - [ ] **Step 2: Run the test and verify failure**
 
-Run: `pnpm test -- tests/smoke/playground-app.test.tsx`
+Run: `npm test -- tests/smoke/playground-app.test.tsx`
 
 Expected: FAIL because the controls do not exist.
 
@@ -1626,7 +1626,7 @@ export function PlaygroundApp() {
 
 - [ ] **Step 5: Run the smoke tests**
 
-Run: `pnpm test -- tests/smoke/playground-app.test.tsx`
+Run: `npm test -- tests/smoke/playground-app.test.tsx`
 
 Expected: PASS.
 
@@ -1673,7 +1673,7 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4173",
   },
   webServer: {
-    command: "pnpm dev --host 127.0.0.1 --port 4173",
+    command: "npm run dev -- --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
   },
@@ -1682,27 +1682,27 @@ export default defineConfig({
 
 - [ ] **Step 3: Run the e2e test and verify it fails before Playwright browsers are installed**
 
-Run: `pnpm test:e2e`
+Run: `npm run test:e2e`
 
 Expected: FAIL with Playwright asking for browser installation.
 
 - [ ] **Step 4: Install the Chromium browser used by Playwright**
 
-Run: `pnpm exec playwright install chromium`
+Run: `npm exec playwright -- install chromium`
 
 Expected: Chromium installs successfully.
 
 - [ ] **Step 5: Run the full verification suite**
 
-Run: `pnpm test`
+Run: `npm test`
 
 Expected: PASS.
 
-Run: `pnpm test:e2e`
+Run: `npm run test:e2e`
 
 Expected: PASS.
 
-Run: `pnpm build`
+Run: `npm run build`
 
 Expected: PASS.
 
@@ -1715,10 +1715,10 @@ git commit -m "test: add browser playground verification"
 
 ## Final Verification Checklist
 
-- [ ] Run `pnpm test`
-- [ ] Run `pnpm test:e2e`
-- [ ] Run `pnpm build`
-- [ ] Start `pnpm dev`
+- [ ] Run `npm test`
+- [ ] Run `npm run test:e2e`
+- [ ] Run `npm run build`
+- [ ] Start `npm run dev`
 - [ ] Open the playground in a browser
 - [ ] Confirm fallback debug rendering works with no pet assets
 - [ ] Confirm optional sprite rendering can draw a supplied pet atlas image on canvas
