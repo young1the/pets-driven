@@ -1,4 +1,5 @@
 import type { ManualClock } from "@/shared/time/manual-clock";
+import type { WorldEntity } from "../entities/world-entity";
 import { createMatterPhysicsWorld } from "../physics/matter-physics-world";
 import type { Stimulus } from "../stimuli/stimulus";
 import { createStimulusQueue } from "../stimuli/stimulus-queue";
@@ -9,6 +10,11 @@ export type RuntimePet = {
   id: string;
   sourceId: string;
   name: string;
+  movement: {
+    idleSpeed: number;
+    activeSpeed: number;
+    seekUserSpeed: number;
+  };
   components: {
     Talkative?: { type: "Talkative"; idleAfterMs: number };
   };
@@ -16,6 +22,10 @@ export type RuntimePet = {
     lastActiveAt: number;
     speech: string | null;
     intent: string;
+    motion: {
+      targetEntityId: string | null;
+      targetPosition: { x: number; y: number } | null;
+    };
   };
 };
 
@@ -24,6 +34,7 @@ export function createWorld(input: {
   height: number;
   clock: ManualClock;
   pets: RuntimePet[];
+  entities: WorldEntity[];
 }) {
   const physics = createMatterPhysicsWorld({ width: input.width, height: input.height });
   const stimuli = createStimulusQueue();
@@ -33,6 +44,9 @@ export function createWorld(input: {
   }
 
   return {
+    getEntity(id: string) {
+      return input.entities.find((entity) => entity.id === id);
+    },
     getPet(id: string) {
       return input.pets.find((pet) => pet.id === id);
     },
