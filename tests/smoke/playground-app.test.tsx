@@ -34,4 +34,29 @@ describe("PlaygroundApp", () => {
       screen.getByText(`${PLAYGROUND_TEXT.lastStimulusPrefix} task.completed`),
     ).toBeInTheDocument();
   });
+
+  it("renders pet status from the world snapshot", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText("Bob")).toBeInTheDocument();
+    expect(screen.getByText("Charlie")).toBeInTheDocument();
+  });
+
+  it("updates visible pet status after a waiting event", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }));
+
+    expect(screen.getByText("seek-user")).toBeInTheDocument();
+    expect(screen.getByText("Needs approval")).toBeInTheDocument();
+  });
 });
