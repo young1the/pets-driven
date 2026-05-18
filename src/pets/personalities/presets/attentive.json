@@ -1,0 +1,8 @@
+{
+  "id": "attentive",
+  "name": "Attentive",
+  "components": [
+    { "type": "SeeksUser", "distance": 120 },
+    { "type": "Talkative", "idleAfterMs": 12000 }
+  ]
+}

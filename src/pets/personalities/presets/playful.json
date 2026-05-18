@@ -1,0 +1,8 @@
+{
+  "id": "playful",
+  "name": "Playful",
+  "components": [
+    { "type": "Curious", "weight": 0.9 },
+    { "type": "Talkative", "idleAfterMs": 9000 }
+  ]
+}
