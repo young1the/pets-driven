@@ -1,13 +1,17 @@
+import { createAgentEvent, type AgentEvent } from "@/adapters/agent-events/agent-event";
+import { toStimulus } from "@/adapters/agent-events/agent-event-adapter";
 import { useEffect, useRef, useState } from "react";
 import { createDemoScenario } from "@/core/world/scenario-fixtures";
+import { AgentEventPanel } from "./agent-event-panel";
 import { drawWorld } from "./canvas-renderer";
-import { PLAYGROUND_TEXT } from "./playground-text";
+import { PLAYGROUND_SAMPLE_EVENT_SUMMARIES, PLAYGROUND_TEXT } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
 
 export function PlaygroundApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scenarioRef = useRef(createDemoScenario());
   const [lastStimulus, setLastStimulus] = useState("none");
+  const [lastEvent, setLastEvent] = useState<AgentEvent | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -30,14 +34,17 @@ export function PlaygroundApp() {
     return () => window.clearInterval(intervalId);
   }, []);
 
-  function sendWaitingStimulus() {
-    scenarioRef.current.world.pushStimulus({
-      type: "task.waiting",
+  function sendEvent(type: AgentEvent["type"], summary: string) {
+    const event = createAgentEvent({
+      type,
       sourceId: "agent-a",
       at: scenarioRef.current.clock.now(),
-      summary: "Approve command",
+      summary,
     });
-    setLastStimulus("task.waiting");
+
+    scenarioRef.current.world.pushStimulus(toStimulus(event));
+    setLastStimulus(type);
+    setLastEvent(event);
   }
 
   return (
@@ -45,7 +52,15 @@ export function PlaygroundApp() {
       <header>
         <h1>{PLAYGROUND_TEXT.title}</h1>
       </header>
-      <ScenarioControls lastStimulus={lastStimulus} onSendWaiting={sendWaitingStimulus} />
+      <ScenarioControls
+        lastStimulus={lastStimulus}
+        onSendStarted={() => sendEvent("task.started", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.started)}
+        onSendWaiting={() => sendEvent("task.waiting", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.waiting)}
+        onSendCompleted={() =>
+          sendEvent("task.completed", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.completed)
+        }
+      />
+      <AgentEventPanel event={lastEvent} />
       <canvas ref={canvasRef} data-testid="world-canvas" width={960} height={540} />
     </main>
   );

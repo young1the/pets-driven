@@ -14,7 +14,7 @@ body {
 .playground-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   gap: 16px;
   padding: 24px;
   box-sizing: border-box;
@@ -28,6 +28,7 @@ body {
 .scenario-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -43,6 +44,23 @@ body {
 
 .scenario-controls p {
   margin: 0;
+}
+
+.agent-event-panel h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.agent-event-panel pre {
+  margin: 0;
+  max-width: 480px;
+  min-height: 96px;
+  padding: 12px;
+  border: 1px solid #ccd5e0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-sizing: border-box;
+  overflow: auto;
 }
 
 .playground-shell canvas {
