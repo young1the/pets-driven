@@ -47,6 +47,7 @@ export function createMatterPhysicsWorld(bounds: {
           vy: body.velocity.y,
           radius: body.circleRadius ?? 0,
         })),
+        pets: [],
       };
     },
   };

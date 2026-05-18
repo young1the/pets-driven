@@ -11,18 +11,21 @@ export function createDemoScenario() {
       {
         id: "pet-a",
         sourceId: "agent-a",
+        name: "Alice",
         components: { Talkative: { type: "Talkative", idleAfterMs: 5_000 } },
         runtime: { lastActiveAt: 0, speech: null, intent: "idle" },
       },
       {
         id: "pet-b",
         sourceId: "agent-b",
+        name: "Bob",
         components: {},
         runtime: { lastActiveAt: 0, speech: null, intent: "idle" },
       },
       {
         id: "pet-c",
         sourceId: "agent-c",
+        name: "Charlie",
         components: {},
         runtime: { lastActiveAt: 0, speech: null, intent: "idle" },
       },
