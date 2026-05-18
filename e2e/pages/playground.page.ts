@@ -38,4 +38,10 @@ export class PlaygroundPage {
       this.page.getByText(new RegExp(`"type": "${type}"`)),
     ).toBeVisible();
   }
+
+  async expectPetStatus(name: string, intent: string, speech: string) {
+    await expect(this.page.getByText(name, { exact: true })).toBeVisible();
+    await expect(this.page.getByText(intent, { exact: true })).toBeVisible();
+    await expect(this.page.getByText(speech, { exact: true })).toBeVisible();
+  }
 }

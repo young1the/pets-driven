@@ -16,3 +16,12 @@ test("playground injects task lifecycle events", async ({ page }) => {
   await playground.sendCompletedEvent();
   await playground.expectLastEventType("task.completed");
 });
+
+test("waiting events update visible pet status", async ({ page }) => {
+  const playground = new PlaygroundPage(page);
+
+  await playground.goto();
+  await playground.expectReady();
+  await playground.sendWaitingEvent();
+  await playground.expectPetStatus("Alice", "seek-user", "Needs approval");
+});
