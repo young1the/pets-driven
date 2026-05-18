@@ -25,6 +25,26 @@ body {
   font-size: 1.5rem;
 }
 
+.scenario-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scenario-controls button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #bcc7d8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+}
+
+.scenario-controls p {
+  margin: 0;
+}
+
 .playground-shell canvas {
   width: min(100%, 960px);
   aspect-ratio: 16 / 9;
