@@ -1,0 +1,15 @@
+import { describe, expect, it } from "vitest";
+import { createMatterPhysicsWorld } from "../../src/core/physics/matter-physics-world";
+
+describe("matter physics world", () => {
+  it("moves a body after an applied force and returns a snapshot", () => {
+    const world = createMatterPhysicsWorld({ width: 800, height: 600 });
+    world.addCircle("pet-a", { x: 100, y: 100 }, 16);
+
+    world.applyForce("pet-a", { x: 0.02, y: 0 });
+    world.step(16);
+
+    const pet = world.snapshot().bodies.find((body) => body.id === "pet-a");
+    expect(pet?.x).toBeGreaterThan(100);
+  });
+});
