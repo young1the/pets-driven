@@ -9,6 +9,30 @@ describe("demo scenario", () => {
     expect(snapshot.bodies).toHaveLength(3);
   });
 
+  it("includes fixture pet render state in the snapshot", () => {
+    const scenario = createDemoScenario();
+    const snapshot = scenario.world.snapshot();
+
+    expect(snapshot.pets.map((pet) => pet.name)).toEqual(["Alice", "Bob", "Charlie"]);
+    expect(snapshot.pets[0]).toMatchObject({
+      id: "pet-a",
+      sourceId: "agent-a",
+      name: "Alice",
+      intent: "idle",
+      speech: null,
+    });
+  });
+
+  it("aligns pet snapshot positions with their body positions", () => {
+    const scenario = createDemoScenario();
+    const snapshot = scenario.world.snapshot();
+
+    expect(snapshot.pets[0].position).toEqual({
+      x: snapshot.bodies[0].x,
+      y: snapshot.bodies[0].y,
+    });
+  });
+
   it("reacts to stimuli without needing pet assets", () => {
     const scenario = createDemoScenario();
     scenario.world.pushStimulus({

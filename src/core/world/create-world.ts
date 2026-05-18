@@ -8,6 +8,7 @@ import { runStimulusReactionSystem } from "../systems/stimulus-reaction-system";
 export type RuntimePet = {
   id: string;
   sourceId: string;
+  name: string;
   components: {
     Talkative?: { type: "Talkative"; idleAfterMs: number };
   };
@@ -44,7 +45,27 @@ export function createWorld(input: {
       physics.step(deltaMs);
     },
     snapshot() {
-      return physics.snapshot();
+      const physicsSnapshot = physics.snapshot();
+      const bodiesById = new Map(physicsSnapshot.bodies.map((body) => [body.id, body]));
+
+      return {
+        ...physicsSnapshot,
+        pets: input.pets.map((pet) => {
+          const body = bodiesById.get(pet.id);
+
+          return {
+            id: pet.id,
+            sourceId: pet.sourceId,
+            name: pet.name,
+            intent: pet.runtime.intent,
+            speech: pet.runtime.speech,
+            position: {
+              x: body?.x ?? 0,
+              y: body?.y ?? 0,
+            },
+          };
+        }),
+      };
     },
   };
 }
