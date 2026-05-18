@@ -9,6 +9,33 @@ describe("demo scenario", () => {
     expect(snapshot.bodies).toHaveLength(3);
   });
 
+  it("creates a configurable user anchor entity", () => {
+    const scenario = createDemoScenario({
+      userAnchor: { x: 480, y: 500 },
+    });
+
+    expect(scenario.world.getEntity("user-anchor")).toEqual({
+      id: "user-anchor",
+      kind: "user-anchor",
+      position: { x: 480, y: 500 },
+    });
+  });
+
+  it("gives fixture pets movement profiles and motion state", () => {
+    const scenario = createDemoScenario();
+    const pet = scenario.world.getPet("pet-a");
+
+    expect(pet?.movement).toEqual({
+      idleSpeed: 0.0006,
+      activeSpeed: 0.0012,
+      seekUserSpeed: 0.0018,
+    });
+    expect(pet?.runtime.motion).toEqual({
+      targetEntityId: null,
+      targetPosition: null,
+    });
+  });
+
   it("includes fixture pet render state in the snapshot", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();
