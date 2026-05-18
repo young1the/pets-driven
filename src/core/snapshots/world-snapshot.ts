@@ -5,6 +5,7 @@ export type BodySnapshot = {
   vx: number;
   vy: number;
   radius: number;
+  animationState?: import("../../pets/assets/pet-atlas").PetAnimationState;
 };
 
 export type WorldSnapshot = {

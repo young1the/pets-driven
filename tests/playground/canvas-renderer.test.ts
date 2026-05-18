@@ -37,11 +37,22 @@ describe("canvas renderer", () => {
       {
         width: 320,
         height: 180,
-        bodies: [{ id: "pet-a", x: 100, y: 80, vx: 1, vy: 0, radius: 16 }],
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 80,
+            vx: 1,
+            vy: 0,
+            radius: 16,
+            animationState: "waiting",
+          },
+        ],
       },
       { "pet-a": image },
+      320,
     );
 
-    expect(context.drawImage).toHaveBeenCalledWith(image, 52, 28, 96, 104);
+    expect(context.drawImage).toHaveBeenCalledWith(image, 384, 1248, 192, 208, 52, 28, 96, 104);
   });
 });
