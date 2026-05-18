@@ -1,5 +1,5 @@
-import type { WorldSnapshot } from "../../core/snapshots/world-snapshot";
-import { getAtlasFrame, PET_CELL_SIZE } from "../../pets/assets/pet-atlas";
+import type { WorldSnapshot } from "@/core/snapshots/world-snapshot";
+import { getAtlasFrame, PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
 import { drawDebugBody } from "./debug-overlay";
 
 export type AssetCatalog = Record<string, HTMLImageElement>;

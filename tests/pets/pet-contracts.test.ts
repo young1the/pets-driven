@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { isPetAsset } from "../../src/pets/assets/pet-asset";
-import { isPetProfile } from "../../src/pets/profiles/pet-profile";
-import playfulPreset from "../../src/pets/personalities/presets/playful.json";
+import { isPetAsset } from "@/pets/assets/pet-asset";
+import playfulPreset from "@/pets/personalities/presets/playful.json";
+import { isPetProfile } from "@/pets/profiles/pet-profile";
 
 describe("pet contracts", () => {
   it("accepts the external hatch-pet manifest shape", () => {

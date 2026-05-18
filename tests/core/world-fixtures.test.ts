@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDemoScenario } from "../../src/core/world/scenario-fixtures";
+import { createDemoScenario } from "@/core/world/scenario-fixtures";
 
 describe("demo scenario", () => {
   it("creates multiple pets in one shared world", () => {

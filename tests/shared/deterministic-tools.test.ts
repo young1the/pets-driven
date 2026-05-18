@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createSeededRandom } from "../../src/shared/random/seeded-random";
-import { createManualClock } from "../../src/shared/time/manual-clock";
+import { createSeededRandom } from "@/shared/random/seeded-random";
+import { createManualClock } from "@/shared/time/manual-clock";
 
 describe("deterministic helpers", () => {
   it("advances a manual clock explicitly", () => {

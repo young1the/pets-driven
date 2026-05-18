@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMatterPhysicsWorld } from "../../src/core/physics/matter-physics-world";
+import { createMatterPhysicsWorld } from "@/core/physics/matter-physics-world";
 
 describe("matter physics world", () => {
   it("moves a body after an applied force and returns a snapshot", () => {

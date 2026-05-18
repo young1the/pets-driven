@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { PlaygroundApp } from "../../src/playground/browser/playground-app";
+import { PlaygroundApp } from "@/playground/browser/playground-app";
+import { PLAYGROUND_TEXT } from "@/playground/browser/playground-text";
 
 describe("PlaygroundApp", () => {
   it("renders the simulation canvas shell", () => {
@@ -10,7 +11,7 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    expect(screen.getByRole("heading", { name: "pets-driven playground" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: PLAYGROUND_TEXT.title })).toBeInTheDocument();
     expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
   });
 
@@ -21,8 +22,8 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Send waiting stimulus" }));
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingStimulus }));
 
-    expect(screen.getByText("Last stimulus: task.waiting")).toBeInTheDocument();
+    expect(screen.getByText(`${PLAYGROUND_TEXT.lastStimulusPrefix} task.waiting`)).toBeInTheDocument();
   });
 });

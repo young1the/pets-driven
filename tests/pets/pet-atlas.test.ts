@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAtlasFrame } from "../../src/pets/assets/pet-atlas";
+import { getAtlasFrame } from "@/pets/assets/pet-atlas";
 
 describe("pet atlas", () => {
   it("selects frames using the fixed hatch-pet row layout", () => {

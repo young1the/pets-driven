@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStimulusQueue } from "../../src/core/stimuli/stimulus-queue";
+import { createStimulusQueue } from "@/core/stimuli/stimulus-queue";
 
 describe("stimulus queue", () => {
   it("drains stimuli in insertion order", () => {

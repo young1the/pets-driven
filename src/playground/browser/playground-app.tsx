@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { createDemoScenario } from "../../core/world/scenario-fixtures";
+import { createDemoScenario } from "@/core/world/scenario-fixtures";
 import { drawWorld } from "./canvas-renderer";
+import { PLAYGROUND_TEXT } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
 
 export function PlaygroundApp() {
@@ -42,7 +43,7 @@ export function PlaygroundApp() {
   return (
     <main className="playground-shell">
       <header>
-        <h1>pets-driven playground</h1>
+        <h1>{PLAYGROUND_TEXT.title}</h1>
       </header>
       <ScenarioControls lastStimulus={lastStimulus} onSendWaiting={sendWaitingStimulus} />
       <canvas ref={canvasRef} data-testid="world-canvas" width={960} height={540} />
