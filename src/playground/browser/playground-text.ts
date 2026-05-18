@@ -5,6 +5,8 @@ export const PLAYGROUND_TEXT = {
   sendCompletedEvent: "Send completed event",
   lastStimulusPrefix: "Last stimulus:",
   lastEventTitle: "Last event",
+  petStatusTitle: "Pet status",
+  noSpeech: "No speech",
 } as const;
 
 export const PLAYGROUND_SAMPLE_EVENT_SUMMARIES = {

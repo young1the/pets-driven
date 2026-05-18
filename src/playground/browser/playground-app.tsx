@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createDemoScenario } from "@/core/world/scenario-fixtures";
 import { AgentEventPanel } from "./agent-event-panel";
 import { drawWorld } from "./canvas-renderer";
+import { PetStatusList } from "./pet-status-list";
 import { PLAYGROUND_SAMPLE_EVENT_SUMMARIES, PLAYGROUND_TEXT } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
 
@@ -12,6 +13,7 @@ export function PlaygroundApp() {
   const scenarioRef = useRef(createDemoScenario());
   const [lastStimulus, setLastStimulus] = useState("none");
   const [lastEvent, setLastEvent] = useState<AgentEvent | null>(null);
+  const [snapshot, setSnapshot] = useState(() => scenarioRef.current.world.snapshot());
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -23,9 +25,11 @@ export function PlaygroundApp() {
     const intervalId = window.setInterval(() => {
       scenarioRef.current.clock.advanceBy(16);
       scenarioRef.current.world.step(16);
+      const nextSnapshot = scenarioRef.current.world.snapshot();
+      setSnapshot(nextSnapshot);
       drawWorld(
         context,
-        scenarioRef.current.world.snapshot(),
+        nextSnapshot,
         {},
         scenarioRef.current.clock.now(),
       );
@@ -43,6 +47,8 @@ export function PlaygroundApp() {
     });
 
     scenarioRef.current.world.pushStimulus(toStimulus(event));
+    scenarioRef.current.world.step(0);
+    setSnapshot(scenarioRef.current.world.snapshot());
     setLastStimulus(type);
     setLastEvent(event);
   }
@@ -61,6 +67,7 @@ export function PlaygroundApp() {
         }
       />
       <AgentEventPanel event={lastEvent} />
+      <PetStatusList pets={snapshot.pets} />
       <canvas ref={canvasRef} data-testid="world-canvas" width={960} height={540} />
     </main>
   );
