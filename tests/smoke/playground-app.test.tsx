@@ -15,15 +15,23 @@ describe("PlaygroundApp", () => {
     expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
   });
 
-  it("accepts a waiting stimulus from the controls", () => {
+  it("injects neutral task lifecycle events and shows the last payload", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,
     );
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingStimulus }));
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent }));
+    expect(screen.getByText(/"type": "task.started"/)).toBeInTheDocument();
 
-    expect(screen.getByText(`${PLAYGROUND_TEXT.lastStimulusPrefix} task.waiting`)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }));
+    expect(screen.getByText(/"type": "task.waiting"/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendCompletedEvent }));
+    expect(screen.getByText(/"type": "task.completed"/)).toBeInTheDocument();
+    expect(
+      screen.getByText(`${PLAYGROUND_TEXT.lastStimulusPrefix} task.completed`),
+    ).toBeInTheDocument();
   });
 });
