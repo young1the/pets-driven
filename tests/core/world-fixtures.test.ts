@@ -21,4 +21,29 @@ describe("demo scenario", () => {
 
     expect(scenario.world.getPet("pet-a")?.runtime.intent).toBe("seek-user");
   });
+
+  it("reacts to a started then completed task lifecycle", () => {
+    const scenario = createDemoScenario();
+
+    scenario.world.pushStimulus({
+      type: "task.started",
+      sourceId: "agent-a",
+      at: 10,
+      summary: "Working",
+    });
+    scenario.world.step(16);
+
+    expect(scenario.world.getPet("pet-a")?.runtime.intent).toBe("active");
+
+    scenario.world.pushStimulus({
+      type: "task.completed",
+      sourceId: "agent-a",
+      at: 20,
+      summary: "Done",
+    });
+    scenario.world.step(16);
+
+    expect(scenario.world.getPet("pet-a")?.runtime.intent).toBe("idle");
+    expect(scenario.world.getPet("pet-a")?.runtime.speech).toBe("Done");
+  });
 });

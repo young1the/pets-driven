@@ -37,6 +37,46 @@ describe("behavior systems", () => {
     expect(pet.runtime.speech).toBe("Needs approval");
   });
 
+  it("turns started stimuli into active pets", () => {
+    const pet = {
+      id: "pet-a",
+      sourceId: "agent-a",
+      runtime: {
+        lastActiveAt: 0,
+        intent: "idle",
+        speech: "Old message" as string | null,
+      },
+    };
+
+    runStimulusReactionSystem([pet], [
+      { type: "task.started", sourceId: "agent-a", at: 10, summary: "Working" },
+    ]);
+
+    expect(pet.runtime.intent).toBe("active");
+    expect(pet.runtime.speech).toBeNull();
+    expect(pet.runtime.lastActiveAt).toBe(10);
+  });
+
+  it("turns completed stimuli into idle pets with a summary", () => {
+    const pet = {
+      id: "pet-a",
+      sourceId: "agent-a",
+      runtime: {
+        lastActiveAt: 0,
+        intent: "seek-user",
+        speech: null as string | null,
+      },
+    };
+
+    runStimulusReactionSystem([pet], [
+      { type: "task.completed", sourceId: "agent-a", at: 20, summary: "Done" },
+    ]);
+
+    expect(pet.runtime.intent).toBe("idle");
+    expect(pet.runtime.speech).toBe("Done");
+    expect(pet.runtime.lastActiveAt).toBe(20);
+  });
+
   it("pushes nearby pets away from each other", () => {
     const [first, second] = computeSeparationForces(
       [
