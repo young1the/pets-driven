@@ -97,4 +97,24 @@ describe("demo scenario", () => {
     expect(scenario.world.getPet("pet-a")?.runtime.intent).toBe("idle");
     expect(scenario.world.getPet("pet-a")?.runtime.speech).toBe("Done");
   });
+
+  it("moves seek-user pets toward the user anchor", () => {
+    const scenario = createDemoScenario({
+      userAnchor: { x: 480, y: 500 },
+    });
+    const before = scenario.world.snapshot().pets[0].position;
+
+    scenario.world.pushStimulus({
+      type: "task.waiting",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Needs approval",
+    });
+    for (let index = 0; index < 20; index += 1) {
+      scenario.world.step(16);
+    }
+
+    const after = scenario.world.snapshot().pets[0].position;
+    expect(after.y).toBeGreaterThan(before.y);
+  });
 });
