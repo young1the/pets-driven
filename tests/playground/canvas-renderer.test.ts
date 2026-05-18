@@ -91,6 +91,7 @@ describe("canvas renderer", () => {
 
     expect(context.fillText).toHaveBeenCalledWith("Alice", 100, 88);
     expect(context.fillText).toHaveBeenCalledWith("seek-user", 100, 104);
+    expect(context.fillText).not.toHaveBeenCalledWith("pet-a", 84, 96);
   });
 
   it("draws speech when a pet has speech", () => {
