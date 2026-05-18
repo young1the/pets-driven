@@ -117,4 +117,19 @@ describe("demo scenario", () => {
     const after = scenario.world.snapshot().pets[0].position;
     expect(after.y).toBeGreaterThan(before.y);
   });
+
+  it("pushes nearby pets apart while stepping the world", () => {
+    const scenario = createDemoScenario();
+    const before = scenario.world.snapshot().bodies;
+
+    for (let index = 0; index < 20; index += 1) {
+      scenario.world.step(16);
+    }
+
+    const after = scenario.world.snapshot().bodies;
+    const initialDistance = Math.abs(before[1].x - before[0].x);
+    const nextDistance = Math.abs(after[1].x - after[0].x);
+
+    expect(nextDistance).toBeGreaterThan(initialDistance);
+  });
 });

@@ -79,7 +79,7 @@ export function createWorld(input: {
           runtime: pet.runtime,
         })),
       );
-      const separationForces = computeSeparationForces(snapshot.bodies, 48);
+      const separationForces = computeSeparationForces(snapshot.bodies, 96);
       const forcesById = new Map<string, { x: number; y: number }>();
 
       for (const force of [...intentForces, ...separationForces]) {
