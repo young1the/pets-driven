@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { drawWorld } from "../../src/playground/browser/canvas-renderer";
+import { drawWorld } from "@/playground/browser/canvas-renderer";
 
 describe("canvas renderer", () => {
   it("draws fallback bodies when no asset catalog is supplied", () => {

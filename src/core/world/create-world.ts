@@ -1,4 +1,4 @@
-import type { ManualClock } from "../../shared/time/manual-clock";
+import type { ManualClock } from "@/shared/time/manual-clock";
 import { createMatterPhysicsWorld } from "../physics/matter-physics-world";
 import type { Stimulus } from "../stimuli/stimulus";
 import { createStimulusQueue } from "../stimuli/stimulus-queue";

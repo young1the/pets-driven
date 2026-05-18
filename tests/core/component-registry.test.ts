@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createComponentRegistry,
   type ComponentDefinition,
-} from "../../src/core/ecs/component-registry";
+} from "@/core/ecs/component-registry";
 
 type Curious = { type: "Curious"; weight: number };
 

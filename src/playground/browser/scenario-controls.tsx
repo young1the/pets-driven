@@ -1,3 +1,5 @@
+import { PLAYGROUND_TEXT } from "@/playground/browser/playground-text";
+
 type ScenarioControlsProps = {
   lastStimulus: string;
   onSendWaiting(): void;
@@ -7,9 +9,11 @@ export function ScenarioControls({ lastStimulus, onSendWaiting }: ScenarioContro
   return (
     <section className="scenario-controls">
       <button type="button" onClick={onSendWaiting}>
-        Send waiting stimulus
+        {PLAYGROUND_TEXT.sendWaitingStimulus}
       </button>
-      <p>Last stimulus: {lastStimulus}</p>
+      <p>
+        {PLAYGROUND_TEXT.lastStimulusPrefix} {lastStimulus}
+      </p>
     </section>
   );
 }

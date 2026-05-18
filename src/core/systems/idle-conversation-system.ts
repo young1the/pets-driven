@@ -1,4 +1,5 @@
-import type { Clock } from "../../shared/time/manual-clock";
+import { PET_SPEECH } from "@/core/constants/pet-speech";
+import type { Clock } from "@/shared/time/manual-clock";
 
 type TalkativePet = {
   components: {
@@ -19,7 +20,7 @@ export function runIdleConversationSystem(pets: TalkativePet[], clock: Clock) {
     }
 
     if (clock.now() - pet.runtime.lastActiveAt >= talkative.idleAfterMs) {
-      pet.runtime.speech = "Still here with you.";
+      pet.runtime.speech = PET_SPEECH.idleCompanion;
     }
   }
 }

@@ -1,4 +1,4 @@
-import { createManualClock } from "../../shared/time/manual-clock";
+import { createManualClock } from "@/shared/time/manual-clock";
 import { createWorld } from "./create-world";
 
 export function createDemoScenario() {

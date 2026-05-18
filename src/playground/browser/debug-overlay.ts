@@ -1,4 +1,4 @@
-import type { BodySnapshot } from "../../core/snapshots/world-snapshot";
+import type { BodySnapshot } from "@/core/snapshots/world-snapshot";
 
 export function drawDebugBody(context: CanvasRenderingContext2D, body: BodySnapshot) {
   context.beginPath();
