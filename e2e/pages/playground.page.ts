@@ -15,15 +15,27 @@ export class PlaygroundPage {
     await expect(this.page.getByTestId("world-canvas")).toBeVisible();
   }
 
-  async sendWaitingStimulus() {
+  async sendStartedEvent() {
     await this.page
-      .getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingStimulus })
+      .getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent })
       .click();
   }
 
-  async expectLastStimulus(stimulus: string) {
+  async sendWaitingEvent() {
+    await this.page
+      .getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent })
+      .click();
+  }
+
+  async sendCompletedEvent() {
+    await this.page
+      .getByRole("button", { name: PLAYGROUND_TEXT.sendCompletedEvent })
+      .click();
+  }
+
+  async expectLastEventType(type: string) {
     await expect(
-      this.page.getByText(`${PLAYGROUND_TEXT.lastStimulusPrefix} ${stimulus}`),
+      this.page.getByText(new RegExp(`"type": "${type}"`)),
     ).toBeVisible();
   }
 }
