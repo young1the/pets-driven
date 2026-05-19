@@ -1,3 +1,6 @@
+/**
+ * Personality component that prefers staying near the user anchor.
+ */
 export type SeeksUser = { type: "SeeksUser"; distance: number };
 
 export const seeksUserDefinition = {

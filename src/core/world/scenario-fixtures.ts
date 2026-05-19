@@ -61,7 +61,7 @@ export function createDemoScenario(options?: {
         name: "Alice",
         x: 120,
         y: 200,
-        components: [{ type: "Talkative", idleAfterMs: 5_000 }],
+        components: [{ type: "IdleConversation", idleAfterMs: 5_000 }],
       }),
       createFixturePet({
         id: "pet-b",

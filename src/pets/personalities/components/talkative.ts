@@ -1,3 +1,6 @@
+/**
+ * Personality component that allows a pet to speak after an idle duration.
+ */
 export type Talkative = { type: "Talkative"; idleAfterMs: number };
 
 export const talkativeDefinition = {

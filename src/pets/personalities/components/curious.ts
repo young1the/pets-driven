@@ -1,3 +1,6 @@
+/**
+ * Personality component that increases exploratory or investigative behavior.
+ */
 export type Curious = { type: "Curious"; weight: number };
 
 export const curiousDefinition = {

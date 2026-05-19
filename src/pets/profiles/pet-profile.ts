@@ -1,8 +1,9 @@
-export type PersonalityComponent =
-  | { type: "Curious"; weight: number }
-  | { type: "Talkative"; idleAfterMs: number }
-  | { type: "AvoidsCrowds"; radius: number }
-  | { type: "SeeksUser"; distance: number };
+import type { AvoidsCrowds } from "@/pets/personalities/components/avoids-crowds";
+import type { Curious } from "@/pets/personalities/components/curious";
+import type { SeeksUser } from "@/pets/personalities/components/seeks-user";
+import type { Talkative } from "@/pets/personalities/components/talkative";
+
+export type PersonalityComponent = AvoidsCrowds | Curious | SeeksUser | Talkative;
 
 export type PetProfile = {
   id: string;

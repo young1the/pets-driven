@@ -1,5 +1,9 @@
 export type EntityId = string;
 
+/**
+ * Runtime ECS storage. Entity declarations enter as component arrays, but the
+ * simulation keeps components in a Map for direct lookup by component type.
+ */
 export type RuntimeEntity = {
   id: EntityId;
   components: Map<string, unknown>;
