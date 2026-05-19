@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MOTION_ARRIVAL_RADIUS } from "@/core/constants/motion";
 import { createDemoScenario } from "@/core/world/scenario-fixtures";
 
 describe("demo scenario", () => {
@@ -14,25 +15,42 @@ describe("demo scenario", () => {
       userAnchor: { x: 480, y: 500 },
     });
 
-    expect(scenario.world.getEntity("user-anchor")).toEqual({
-      id: "user-anchor",
-      kind: "user-anchor",
+    expect(scenario.world.getEntity("user-anchor")).toEqual({ id: "user-anchor" });
+    expect(scenario.world.getComponent("user-anchor", "UserAnchor")).toEqual({
+      type: "UserAnchor",
+    });
+    expect(scenario.world.getComponent("user-anchor", "Transform")).toEqual({
+      type: "Transform",
       position: { x: 480, y: 500 },
     });
   });
 
-  it("gives fixture pets movement profiles and motion state", () => {
+  it("gives fixture pets ECS components for movement profiles and motion state", () => {
     const scenario = createDemoScenario();
-    const pet = scenario.world.getPet("pet-a");
 
-    expect(pet?.movement).toEqual({
+    expect(scenario.world.getComponent("pet-a", "MovementProfile")).toEqual({
+      type: "MovementProfile",
       idleSpeed: 0.0006,
       activeSpeed: 0.0012,
-      seekUserSpeed: 0.0018,
+      seekSpeed: 0.0018,
     });
-    expect(pet?.runtime.motion).toEqual({
+    expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
+      type: "MotionTarget",
       targetEntityId: null,
       targetPosition: null,
+    });
+    expect(scenario.world.getComponent("pet-a", "NavigationState")).toEqual({
+      type: "NavigationState",
+      avoidanceWaypoint: null,
+    });
+    expect(scenario.world.getComponent("pet-a", "SpeechProfile")).toEqual({
+      type: "SpeechProfile",
+      idleCompanion: "Still here with you.",
+      attentionNeeded: "I need you.",
+    });
+    expect(scenario.world.getComponent("pet-a", "Talkative")).toEqual({
+      type: "Talkative",
+      idleAfterMs: 5_000,
     });
   });
 
@@ -70,7 +88,10 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getPet("pet-a")?.runtime.intent).toBe("seek-user");
+    expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
+      type: "IntentState",
+      intent: "seek",
+    });
   });
 
   it("reacts to a started then completed task lifecycle", () => {
@@ -84,7 +105,10 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getPet("pet-a")?.runtime.intent).toBe("active");
+    expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
+      type: "IntentState",
+      intent: "active",
+    });
 
     scenario.world.pushStimulus({
       type: "task.completed",
@@ -94,8 +118,14 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getPet("pet-a")?.runtime.intent).toBe("idle");
-    expect(scenario.world.getPet("pet-a")?.runtime.speech).toBe("Done");
+    expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
+      type: "IntentState",
+      intent: "idle",
+    });
+    expect(scenario.world.getComponent("pet-a", "SpeechState")).toEqual({
+      type: "SpeechState",
+      speech: "Done",
+    });
   });
 
   it("moves seek-user pets toward the user anchor", () => {
@@ -118,18 +148,46 @@ describe("demo scenario", () => {
     expect(after.y).toBeGreaterThan(before.y);
   });
 
-  it("pushes nearby pets apart while stepping the world", () => {
-    const scenario = createDemoScenario();
-    const before = scenario.world.snapshot().bodies;
+  it("lets seek-user pets settle near the user anchor", () => {
+    const userAnchor = { x: 160, y: 230 };
+    const scenario = createDemoScenario({ userAnchor });
 
-    for (let index = 0; index < 20; index += 1) {
+    scenario.world.pushStimulus({
+      type: "task.waiting",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Needs approval",
+    });
+
+    for (let index = 0; index < 200; index += 1) {
       scenario.world.step(16);
     }
 
-    const after = scenario.world.snapshot().bodies;
-    const initialDistance = Math.abs(before[1].x - before[0].x);
-    const nextDistance = Math.abs(after[1].x - after[0].x);
+    const body = scenario.world.snapshot().bodies.find((snapshotBody) => snapshotBody.id === "pet-a");
+    const distanceFromAnchor = Math.hypot((body?.x ?? 0) - userAnchor.x, (body?.y ?? 0) - userAnchor.y);
+    const speed = Math.hypot(body?.vx ?? 0, body?.vy ?? 0);
 
-    expect(nextDistance).toBeGreaterThan(initialDistance);
+    expect(distanceFromAnchor).toBeLessThanOrEqual(MOTION_ARRIVAL_RADIUS + 2);
+    expect(speed).toBeLessThan(0.05);
+  });
+
+  it("plans an avoidance waypoint when another pet blocks the target path", () => {
+    const scenario = createDemoScenario({
+      userAnchor: { x: 280, y: 200 },
+    });
+
+    scenario.world.pushStimulus({
+      type: "task.waiting",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Needs approval",
+    });
+    scenario.world.step(16);
+
+    const navigation = scenario.world.getComponent("pet-a", "NavigationState");
+    expect(navigation?.avoidanceWaypoint).toEqual({
+      x: 200,
+      y: 128,
+    });
   });
 });

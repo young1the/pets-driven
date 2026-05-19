@@ -23,5 +23,5 @@ test("waiting events update visible pet status", async ({ page }) => {
   await playground.goto();
   await playground.expectReady();
   await playground.sendWaitingEvent();
-  await playground.expectPetStatus("Alice", "seek-user", "Needs approval");
+  await playground.expectPetStatus("Alice", "seek", "Needs approval");
 });

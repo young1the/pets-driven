@@ -1,26 +1,26 @@
-import { PET_SPEECH } from "@/core/constants/pet-speech";
+import type {
+  ActivityStateComponent,
+  SpeechProfileComponent,
+  SpeechStateComponent,
+  TalkativeComponent,
+} from "@/core/components/simulation-components";
 import type { Clock } from "@/shared/time/manual-clock";
 
 type TalkativePet = {
-  components: {
-    Talkative?: { type: "Talkative"; idleAfterMs: number };
-  };
-  runtime: {
-    lastActiveAt: number;
-    speech: string | null;
-    intent: string;
-  };
+  talkative: TalkativeComponent;
+  speechProfile: SpeechProfileComponent;
+  activity: ActivityStateComponent;
+  speech: SpeechStateComponent;
 };
 
 export function runIdleConversationSystem(pets: TalkativePet[], clock: Clock) {
   for (const pet of pets) {
-    const talkative = pet.components.Talkative;
-    if (!talkative || pet.runtime.speech) {
+    if (pet.speech.speech) {
       continue;
     }
 
-    if (clock.now() - pet.runtime.lastActiveAt >= talkative.idleAfterMs) {
-      pet.runtime.speech = PET_SPEECH.idleCompanion;
+    if (clock.now() - pet.activity.lastActiveAt >= pet.talkative.idleAfterMs) {
+      pet.speech.speech = pet.speechProfile.idleCompanion;
     }
   }
 }

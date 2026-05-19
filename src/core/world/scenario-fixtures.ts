@@ -1,5 +1,40 @@
+import type { SimulationComponent } from "@/core/components/simulation-components";
+import { DEFAULT_PET_BODY_SIZE } from "@/core/constants/pet-body";
+import { DEFAULT_PET_SPEECH } from "@/core/constants/pet-speech";
 import { createManualClock } from "@/shared/time/manual-clock";
 import { createWorld } from "./create-world";
+
+function createFixturePet(input: {
+  id: string;
+  sourceId: string;
+  name: string;
+  x: number;
+  y: number;
+  components?: SimulationComponent[];
+}) {
+  return {
+    id: input.id,
+    components: [
+      { type: "PetIdentity" as const, name: input.name },
+      { type: "AgentBinding" as const, sourceId: input.sourceId },
+      {
+        type: "MovementProfile" as const,
+        idleSpeed: 0.0006,
+        activeSpeed: 0.0012,
+        seekSpeed: 0.0018,
+      },
+      { type: "IntentState" as const, intent: "idle" as const },
+      { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+      { type: "NavigationState" as const, avoidanceWaypoint: null },
+      { type: "ActivityState" as const, lastActiveAt: 0 },
+      { type: "SpeechState" as const, speech: null },
+      { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
+      { type: "Transform" as const, position: { x: input.x, y: input.y } },
+      { type: "PhysicsBody" as const, shape: "rectangle" as const, ...DEFAULT_PET_BODY_SIZE },
+      ...(input.components ?? []),
+    ],
+  };
+}
 
 export function createDemoScenario(options?: {
   userAnchor?: { x: number; y: number };
@@ -12,50 +47,36 @@ export function createDemoScenario(options?: {
     entities: [
       {
         id: "user-anchor",
-        kind: "user-anchor",
-        position: options?.userAnchor ?? { x: 480, y: 500 },
+        components: [
+          { type: "UserAnchor" },
+          {
+            type: "Transform",
+            position: options?.userAnchor ?? { x: 480, y: 500 },
+          },
+        ],
       },
-    ],
-    pets: [
-      {
+      createFixturePet({
         id: "pet-a",
         sourceId: "agent-a",
         name: "Alice",
-        movement: { idleSpeed: 0.0006, activeSpeed: 0.0012, seekUserSpeed: 0.0018 },
-        components: { Talkative: { type: "Talkative", idleAfterMs: 5_000 } },
-        runtime: {
-          lastActiveAt: 0,
-          speech: null,
-          intent: "idle",
-          motion: { targetEntityId: null, targetPosition: null },
-        },
-      },
-      {
+        x: 120,
+        y: 200,
+        components: [{ type: "Talkative", idleAfterMs: 5_000 }],
+      }),
+      createFixturePet({
         id: "pet-b",
         sourceId: "agent-b",
         name: "Bob",
-        movement: { idleSpeed: 0.0006, activeSpeed: 0.0012, seekUserSpeed: 0.0018 },
-        components: {},
-        runtime: {
-          lastActiveAt: 0,
-          speech: null,
-          intent: "idle",
-          motion: { targetEntityId: null, targetPosition: null },
-        },
-      },
-      {
+        x: 200,
+        y: 200,
+      }),
+      createFixturePet({
         id: "pet-c",
         sourceId: "agent-c",
         name: "Charlie",
-        movement: { idleSpeed: 0.0006, activeSpeed: 0.0012, seekUserSpeed: 0.0018 },
-        components: {},
-        runtime: {
-          lastActiveAt: 0,
-          speech: null,
-          intent: "idle",
-          motion: { targetEntityId: null, targetPosition: null },
-        },
-      },
+        x: 280,
+        y: 200,
+      }),
     ],
   });
 

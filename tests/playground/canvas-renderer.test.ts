@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { DEFAULT_PET_BODY_SIZE } from "@/core/constants/pet-body";
 import { drawWorld } from "@/playground/browser/canvas-renderer";
 
 describe("canvas renderer", () => {
@@ -7,6 +8,7 @@ describe("canvas renderer", () => {
       clearRect: vi.fn(),
       beginPath: vi.fn(),
       arc: vi.fn(),
+      rect: vi.fn(),
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
@@ -17,13 +19,24 @@ describe("canvas renderer", () => {
       {
         width: 320,
         height: 180,
-        bodies: [{ id: "pet-a", x: 100, y: 80, vx: 1, vy: 0, radius: 16 }],
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 80,
+            vx: 1,
+            vy: 0,
+            shape: "rectangle",
+            ...DEFAULT_PET_BODY_SIZE,
+          },
+        ],
         pets: [],
       },
       {},
     );
 
-    expect(context.arc).toHaveBeenCalledWith(100, 80, 16, 0, Math.PI * 2);
+    expect(context.rect).toHaveBeenCalledWith(84, 61, 32, 38);
+    expect(context.arc).not.toHaveBeenCalled();
   });
 
   it("draws a sprite when an asset exists for a body", () => {
@@ -45,7 +58,8 @@ describe("canvas renderer", () => {
             y: 80,
             vx: 1,
             vy: 0,
-            radius: 16,
+            shape: "rectangle",
+            ...DEFAULT_PET_BODY_SIZE,
             animationState: "waiting",
           },
         ],
@@ -63,6 +77,7 @@ describe("canvas renderer", () => {
       clearRect: vi.fn(),
       beginPath: vi.fn(),
       arc: vi.fn(),
+      rect: vi.fn(),
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
@@ -73,7 +88,17 @@ describe("canvas renderer", () => {
       {
         width: 320,
         height: 180,
-        bodies: [{ id: "pet-a", x: 100, y: 120, vx: 1, vy: 0, radius: 16 }],
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 120,
+            vx: 1,
+            vy: 0,
+            shape: "rectangle",
+            ...DEFAULT_PET_BODY_SIZE,
+          },
+        ],
         pets: [
           {
             id: "pet-a",
@@ -99,6 +124,7 @@ describe("canvas renderer", () => {
       clearRect: vi.fn(),
       beginPath: vi.fn(),
       arc: vi.fn(),
+      rect: vi.fn(),
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
@@ -111,7 +137,17 @@ describe("canvas renderer", () => {
       {
         width: 320,
         height: 180,
-        bodies: [{ id: "pet-a", x: 100, y: 120, vx: 1, vy: 0, radius: 16 }],
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 120,
+            vx: 1,
+            vy: 0,
+            shape: "rectangle",
+            ...DEFAULT_PET_BODY_SIZE,
+          },
+        ],
         pets: [
           {
             id: "pet-a",

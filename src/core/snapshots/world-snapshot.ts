@@ -4,7 +4,10 @@ export type BodySnapshot = {
   y: number;
   vx: number;
   vy: number;
-  radius: number;
+  shape: "circle" | "rectangle";
+  width: number;
+  height: number;
+  radius?: number;
   animationState?: import("@/pets/assets/pet-atlas").PetAnimationState;
 };
 
