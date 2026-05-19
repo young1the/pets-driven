@@ -2,10 +2,10 @@ import type {
   ActivityStateComponent,
   AgentBindingComponent,
   CompletionBehaviorComponent,
-  FlyableComponent,
-  GravityScaleComponent,
+  FlightMovementComponent,
   IdleConversationComponent,
   IntentStateComponent,
+  LocomotionStateComponent,
   MotionTargetComponent,
   MovementProfileComponent,
   NavigationStateComponent,
@@ -21,7 +21,7 @@ import { createMatterPhysicsWorld, type MatterPhysicsWorld } from "@/core/physic
 import type { Stimulus } from "@/core/stimuli/stimulus";
 import { createStimulusQueue, type StimulusQueue } from "@/core/stimuli/stimulus-queue";
 import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-system";
-import { runGravityControlSystem } from "@/core/systems/gravity-control-system";
+import { runFlightSystem } from "@/core/systems/flight-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
 import { runMotionTargetSystem } from "@/core/systems/motion-target-system";
@@ -186,13 +186,13 @@ export function createWorld(input: WorldDefinition) {
     });
   }
 
-  function getGravityControlledEntities(componentStore: ComponentStore) {
-    return componentStore.query("PhysicsBody", "GravityScale").map((entity) => {
-      const [, gravityScale] = entity.components;
+  function getFlightEntities(componentStore: ComponentStore) {
+    return componentStore.query("PhysicsBody", "LocomotionState", "FlightMovement").map((entity) => {
+      const [, locomotion, flight] = entity.components;
       return {
         id: entity.id,
-        gravityScale: gravityScale as GravityScaleComponent,
-        flyable: componentStore.getComponent(entity.id, "Flyable") as FlyableComponent | undefined,
+        locomotion: locomotion as LocomotionStateComponent,
+        flight: flight as FlightMovementComponent,
       };
     });
   }
@@ -275,17 +275,17 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "GravityControlSystem",
+      name: "FlightSystem",
       dependsOn: ["IntentSteeringSystem"],
-      reads: ["PhysicsBody", "GravityScale", "Flyable"],
+      reads: ["PhysicsBody", "LocomotionState", "FlightMovement"],
       writes: ["PhysicsGravityScale"],
       update(context) {
-        runGravityControlSystem(getGravityControlledEntities(context.components), context.physics);
+        runFlightSystem(getFlightEntities(context.components), context.physics);
       },
     },
     {
       name: "PhysicsIntegrationSystem",
-      dependsOn: ["IntentSteeringSystem", "GravityControlSystem"],
+      dependsOn: ["IntentSteeringSystem", "FlightSystem"],
       reads: ["PhysicsForce"],
       writes: ["PhysicsWorld"],
       update(context) {

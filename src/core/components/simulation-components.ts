@@ -6,6 +6,7 @@ export type Vector = {
 };
 
 export type CompletionIntent = "idle" | "seek";
+export type LocomotionMode = "idle" | "walk" | "jump" | "fly" | "climbWall";
 
 /**
  * Connects a pet entity to the external agent or hook source it represents.
@@ -40,19 +41,22 @@ export type IdleConversationComponent = {
 };
 
 /**
- * Capability marker for entities that can counteract gravity or hover.
+ * Flight movement tuning. Component presence means the entity can fly; the
+ * active locomotion state decides whether flight is currently in control.
  */
-export type FlyableComponent = {
-  type: "Flyable";
+export type FlightMovementComponent = {
+  type: "FlightMovement";
+  gravityScale: number;
   hoverStrength: number;
 };
 
 /**
- * Per-entity gravity multiplier applied by the gravity control system.
+ * Current locomotion mode. Movement capabilities are represented by their own
+ * components; this component only records the selected movement state.
  */
-export type GravityScaleComponent = {
-  type: "GravityScale";
-  scale: number;
+export type LocomotionStateComponent = {
+  type: "LocomotionState";
+  activeMode: LocomotionMode;
 };
 
 /**
@@ -164,11 +168,11 @@ export type SimulationComponent =
   | ActivityStateComponent
   | AgentBindingComponent
   | CompletionBehaviorComponent
-  | FlyableComponent
-  | GravityScaleComponent
+  | FlightMovementComponent
   | GroundComponent
   | IdleConversationComponent
   | IntentStateComponent
+  | LocomotionStateComponent
   | MotionTargetComponent
   | NavigationStateComponent
   | MovementProfileComponent

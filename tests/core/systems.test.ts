@@ -4,7 +4,7 @@ import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-sy
 import { runPhysicsIntegrationSystem } from "@/core/systems/physics-integration-system";
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
-import { runGravityControlSystem } from "@/core/systems/gravity-control-system";
+import { runFlightSystem } from "@/core/systems/flight-system";
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
 import { createManualClock } from "@/shared/time/manual-clock";
 
@@ -206,7 +206,7 @@ describe("behavior systems", () => {
     expect(snapshot.bodies[0]?.id).toBe("pet-a");
   });
 
-  it("applies gravity scale and optional hover force for flyable entities", () => {
+  it("applies flight gravity scale and hover force only when flight is active", () => {
     const gravityScales: Array<{ id: string; scale: number }> = [];
     const appliedForces: Array<{ id: string; force: { x: number; y: number } }> = [];
     const physics = {
@@ -218,12 +218,17 @@ describe("behavior systems", () => {
       },
     };
 
-    runGravityControlSystem(
+    runFlightSystem(
       [
         {
           id: "pet-a",
-          gravityScale: { type: "GravityScale" as const, scale: 0 },
-          flyable: { type: "Flyable" as const, hoverStrength: 0.003 },
+          locomotion: { type: "LocomotionState" as const, activeMode: "fly" },
+          flight: { type: "FlightMovement" as const, gravityScale: 0, hoverStrength: 0.003 },
+        },
+        {
+          id: "pet-b",
+          locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
+          flight: { type: "FlightMovement" as const, gravityScale: 0, hoverStrength: 0.003 },
         },
       ],
       physics,

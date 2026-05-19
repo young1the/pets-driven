@@ -21,7 +21,7 @@ describe("demo scenario", () => {
       "MotionTargetSystem",
       "AvoidancePlanningSystem",
       "IntentSteeringSystem",
-      "GravityControlSystem",
+      "FlightSystem",
       "PhysicsIntegrationSystem",
       "PhysicsTransformSyncSystem",
     ]);
@@ -31,9 +31,9 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
 
     expect(scenario.world.systemPlan()).toContainEqual({
-      name: "GravityControlSystem",
+      name: "FlightSystem",
       dependsOn: ["IntentSteeringSystem"],
-      reads: ["PhysicsBody", "GravityScale", "Flyable"],
+      reads: ["PhysicsBody", "LocomotionState", "FlightMovement"],
       writes: ["PhysicsGravityScale"],
     });
   });
@@ -86,13 +86,14 @@ describe("demo scenario", () => {
       type: "CompletionBehavior",
       intentAfterCompletion: "idle",
     });
-    expect(scenario.world.getComponent("pet-a", "Flyable")).toEqual({
-      type: "Flyable",
-      hoverStrength: 0,
+    expect(scenario.world.getComponent("pet-a", "LocomotionState")).toEqual({
+      type: "LocomotionState",
+      activeMode: "fly",
     });
-    expect(scenario.world.getComponent("pet-a", "GravityScale")).toEqual({
-      type: "GravityScale",
-      scale: 0,
+    expect(scenario.world.getComponent("pet-a", "FlightMovement")).toEqual({
+      type: "FlightMovement",
+      hoverStrength: 0,
+      gravityScale: 0,
     });
   });
 
