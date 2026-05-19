@@ -10,6 +10,21 @@ describe("demo scenario", () => {
     expect(snapshot.bodies).toHaveLength(3);
   });
 
+  it("exposes the simulation system order used by each step", () => {
+    const scenario = createDemoScenario();
+
+    expect(scenario.world.systems()).toEqual([
+      "StimulusReactionSystem",
+      "IdleConversationSystem",
+      "PhysicsTransformSyncSystem",
+      "MotionTargetSystem",
+      "AvoidancePlanningSystem",
+      "IntentSteeringSystem",
+      "PhysicsIntegrationSystem",
+      "PhysicsTransformSyncSystem",
+    ]);
+  });
+
   it("creates a configurable user anchor entity", () => {
     const scenario = createDemoScenario({
       userAnchor: { x: 480, y: 500 },
