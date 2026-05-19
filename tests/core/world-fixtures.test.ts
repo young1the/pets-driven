@@ -7,7 +7,8 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();
 
-    expect(snapshot.bodies).toHaveLength(3);
+    expect(snapshot.bodies.filter((body) => body.id.startsWith("pet-"))).toHaveLength(3);
+    expect(snapshot.bodies.some((body) => body.id === "monitor-ground")).toBe(true);
   });
 
   it("exposes the simulation system order used by each step", () => {
@@ -20,9 +21,21 @@ describe("demo scenario", () => {
       "MotionTargetSystem",
       "AvoidancePlanningSystem",
       "IntentSteeringSystem",
+      "GravityControlSystem",
       "PhysicsIntegrationSystem",
       "PhysicsTransformSyncSystem",
     ]);
+  });
+
+  it("exposes system metadata for validation and documentation", () => {
+    const scenario = createDemoScenario();
+
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "GravityControlSystem",
+      dependsOn: ["IntentSteeringSystem"],
+      reads: ["PhysicsBody", "GravityScale", "Flyable"],
+      writes: ["PhysicsGravityScale"],
+    });
   });
 
   it("creates a configurable user anchor entity", () => {
@@ -73,6 +86,27 @@ describe("demo scenario", () => {
       type: "CompletionBehavior",
       intentAfterCompletion: "idle",
     });
+    expect(scenario.world.getComponent("pet-a", "Flyable")).toEqual({
+      type: "Flyable",
+      hoverStrength: 0,
+    });
+    expect(scenario.world.getComponent("pet-a", "GravityScale")).toEqual({
+      type: "GravityScale",
+      scale: 0,
+    });
+  });
+
+  it("models the monitor bottom as a ground entity", () => {
+    const scenario = createDemoScenario();
+
+    expect(scenario.world.getComponent("monitor-ground", "Ground")).toEqual({
+      type: "Ground",
+    });
+    expect(scenario.world.getComponent("monitor-ground", "PhysicsMaterial")).toEqual({
+      type: "PhysicsMaterial",
+      friction: 0.8,
+      restitution: 0,
+    });
   });
 
   it("includes fixture pet render state in the snapshot", () => {
@@ -92,10 +126,11 @@ describe("demo scenario", () => {
   it("aligns pet snapshot positions with their body positions", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();
+    const petBody = snapshot.bodies.find((body) => body.id === "pet-a");
 
     expect(snapshot.pets[0].position).toEqual({
-      x: snapshot.bodies[0].x,
-      y: snapshot.bodies[0].y,
+      x: petBody?.x,
+      y: petBody?.y,
     });
   });
 

@@ -4,6 +4,7 @@ import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-sy
 import { runPhysicsIntegrationSystem } from "@/core/systems/physics-integration-system";
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
+import { runGravityControlSystem } from "@/core/systems/gravity-control-system";
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
 import { createManualClock } from "@/shared/time/manual-clock";
 
@@ -203,5 +204,32 @@ describe("behavior systems", () => {
 
     expect(transform.position).toEqual({ x: 42, y: 24 });
     expect(snapshot.bodies[0]?.id).toBe("pet-a");
+  });
+
+  it("applies gravity scale and optional hover force for flyable entities", () => {
+    const gravityScales: Array<{ id: string; scale: number }> = [];
+    const appliedForces: Array<{ id: string; force: { x: number; y: number } }> = [];
+    const physics = {
+      setGravityScale(id: string, scale: number) {
+        gravityScales.push({ id, scale });
+      },
+      applyForce(id: string, force: { x: number; y: number }) {
+        appliedForces.push({ id, force });
+      },
+    };
+
+    runGravityControlSystem(
+      [
+        {
+          id: "pet-a",
+          gravityScale: { type: "GravityScale" as const, scale: 0 },
+          flyable: { type: "Flyable" as const, hoverStrength: 0.003 },
+        },
+      ],
+      physics,
+    );
+
+    expect(gravityScales).toEqual([{ id: "pet-a", scale: 0 }]);
+    expect(appliedForces).toEqual([{ id: "pet-a", force: { x: 0, y: -0.003 } }]);
   });
 });
