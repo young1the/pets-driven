@@ -1,121 +1,207 @@
-import type { ManualClock } from "@/shared/time/manual-clock";
-import type { WorldEntity } from "../entities/world-entity";
-import { createMatterPhysicsWorld } from "../physics/matter-physics-world";
-import type { Stimulus } from "../stimuli/stimulus";
-import { createStimulusQueue } from "../stimuli/stimulus-queue";
-import { computeIntentSteeringForces } from "../systems/intent-steering-system";
-import { runIdleConversationSystem } from "../systems/idle-conversation-system";
-import { resolveMotionTargets } from "../systems/motion-target-system";
-import { computeSeparationForces } from "../systems/separation-steering-system";
-import { runStimulusReactionSystem } from "../systems/stimulus-reaction-system";
+import type {
+  ActivityStateComponent,
+  AgentBindingComponent,
+  IntentStateComponent,
+  MotionTargetComponent,
+  MovementProfileComponent,
+  NavigationStateComponent,
+  PetIdentityComponent,
+  SimulationComponent,
+  SimulationComponentType,
+  SpeechProfileComponent,
+  SpeechStateComponent,
+  TalkativeComponent,
+  TransformComponent,
+} from "@/core/components/simulation-components";
+import { createComponentStore, type EntityDeclaration } from "@/core/ecs/component-store";
+import { createMatterPhysicsWorld } from "@/core/physics/matter-physics-world";
+import type { Stimulus } from "@/core/stimuli/stimulus";
+import { createStimulusQueue } from "@/core/stimuli/stimulus-queue";
+import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-system";
+import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
+import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
+import { runMotionTargetSystem } from "@/core/systems/motion-target-system";
+import { runPhysicsIntegrationSystem } from "@/core/systems/physics-integration-system";
+import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
+import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
 import { createSeededRandom, type RandomSource } from "@/shared/random/seeded-random";
+import type { ManualClock } from "@/shared/time/manual-clock";
 
-export type RuntimePet = {
-  id: string;
-  sourceId: string;
-  name: string;
-  movement: {
-    idleSpeed: number;
-    activeSpeed: number;
-    seekUserSpeed: number;
-  };
-  components: {
-    Talkative?: { type: "Talkative"; idleAfterMs: number };
-  };
-  runtime: {
-    lastActiveAt: number;
-    speech: string | null;
-    intent: string;
-    motion: {
-      targetEntityId: string | null;
-      targetPosition: { x: number; y: number } | null;
-    };
-  };
-};
-
-export function createWorld(input: {
+export type WorldDefinition = {
   width: number;
   height: number;
   clock: ManualClock;
-  pets: RuntimePet[];
-  entities: WorldEntity[];
+  entities: EntityDeclaration[];
   random?: RandomSource;
-}) {
+};
+
+export function createWorld(input: WorldDefinition) {
+  const components = createComponentStore(input.entities);
   const physics = createMatterPhysicsWorld({ width: input.width, height: input.height });
   const stimuli = createStimulusQueue();
   const random = input.random ?? createSeededRandom(1);
 
-  for (const [index, pet] of input.pets.entries()) {
-    physics.addCircle(pet.id, { x: 120 + index * 80, y: 200 }, 16);
+  for (const entity of components.query("Transform", "PhysicsBody")) {
+    const [transform, body] = entity.components;
+    if (body.shape === "rectangle") {
+      physics.addRectangle(entity.id, transform.position, {
+        width: body.width,
+        height: body.height,
+      });
+    }
+  }
+
+  function getReactivePets() {
+    return components
+      .query("AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState")
+      .map((entity) => {
+        const [agent, intent, speechProfile, speech, activity] = entity.components;
+        return {
+          id: entity.id,
+          agent: agent as AgentBindingComponent,
+          intent: intent as IntentStateComponent,
+          speechProfile: speechProfile as SpeechProfileComponent,
+          speech: speech as SpeechStateComponent,
+          activity: activity as ActivityStateComponent,
+        };
+      });
+  }
+
+  function getTalkativePets() {
+    return components.query("Talkative", "SpeechProfile", "SpeechState", "ActivityState").map((entity) => {
+      const [talkative, speechProfile, speech, activity] = entity.components;
+      return {
+        id: entity.id,
+        talkative: talkative as TalkativeComponent,
+        speechProfile: speechProfile as SpeechProfileComponent,
+        speech: speech as SpeechStateComponent,
+        activity: activity as ActivityStateComponent,
+      };
+    });
+  }
+
+  function getMotionPets() {
+    return components.query("IntentState", "MotionTarget").map((entity) => {
+      const [intent, motion] = entity.components;
+      return {
+        id: entity.id,
+        intent: intent as IntentStateComponent,
+        motion: motion as MotionTargetComponent,
+      };
+    });
+  }
+
+  function getUserAnchorTargets() {
+    return components.query("Transform", "UserAnchor").map((entity) => {
+      const [transform] = entity.components;
+      return {
+        id: entity.id,
+        transform: transform as TransformComponent,
+      };
+    });
+  }
+
+  function getTransformEntities() {
+    return components.query("Transform").map((entity) => {
+      const [transform] = entity.components;
+      return {
+        id: entity.id,
+        transform: transform as TransformComponent,
+      };
+    });
+  }
+
+  function getSteeringPets() {
+    return components.query("Transform", "MovementProfile", "IntentState", "MotionTarget", "NavigationState").map((entity) => {
+      const [transform, movement, intent, motion, navigation] = entity.components;
+      return {
+        id: entity.id,
+        position: (transform as TransformComponent).position,
+        movement: movement as MovementProfileComponent,
+        intent: intent as IntentStateComponent,
+        motion: motion as MotionTargetComponent,
+        navigation: navigation as NavigationStateComponent,
+      };
+    });
+  }
+
+  function getNavigatingPets() {
+    return components.query("Transform", "MotionTarget", "NavigationState").map((entity) => {
+      const [transform, motion, navigation] = entity.components;
+      return {
+        id: entity.id,
+        position: (transform as TransformComponent).position,
+        motion: motion as MotionTargetComponent,
+        navigation: navigation as NavigationStateComponent,
+      };
+    });
+  }
+
+  function getAvoidanceObstacles() {
+    return components.query("Transform", "PhysicsBody").map((entity) => {
+      const [transform] = entity.components;
+      return {
+        id: entity.id,
+        position: (transform as TransformComponent).position,
+      };
+    });
+  }
+
+  function getPetSnapshots() {
+    return components
+      .query("PetIdentity", "AgentBinding", "IntentState", "SpeechState", "Transform")
+      .map((entity) => {
+        const [identity, agent, intent, speech, transform] = entity.components;
+
+        return {
+          id: entity.id,
+          sourceId: (agent as AgentBindingComponent).sourceId,
+          name: (identity as PetIdentityComponent).name,
+          intent: (intent as IntentStateComponent).intent,
+          speech: (speech as SpeechStateComponent).speech,
+          position: (transform as TransformComponent).position,
+        };
+      });
   }
 
   return {
     getEntity(id: string) {
-      return input.entities.find((entity) => entity.id === id);
+      const entity = components.getEntity(id);
+      return entity ? { id: entity.id } : undefined;
     },
-    getPet(id: string) {
-      return input.pets.find((pet) => pet.id === id);
+    getComponent<TType extends SimulationComponentType>(id: string, type: TType) {
+      return components.getComponent(id, type);
+    },
+    setComponent(id: string, component: SimulationComponent) {
+      components.setComponent(id, component);
     },
     pushStimulus(stimulus: Stimulus) {
       stimuli.push(stimulus);
     },
     step(deltaMs: number) {
-      runStimulusReactionSystem(input.pets, stimuli.drain());
-      runIdleConversationSystem(input.pets, input.clock);
-      const snapshot = physics.snapshot();
-      resolveMotionTargets(input.pets, input.entities, random, {
+      runStimulusReactionSystem(getReactivePets(), stimuli.drain());
+      runIdleConversationSystem(getTalkativePets(), input.clock);
+
+      runPhysicsTransformSyncSystem(getTransformEntities(), physics);
+      runMotionTargetSystem(getMotionPets(), getUserAnchorTargets(), random, {
         width: input.width,
         height: input.height,
       });
-      const bodiesById = new Map(snapshot.bodies.map((body) => [body.id, body]));
-      const intentForces = computeIntentSteeringForces(
-        input.pets.map((pet) => ({
-          id: pet.id,
-          position: {
-            x: bodiesById.get(pet.id)?.x ?? 0,
-            y: bodiesById.get(pet.id)?.y ?? 0,
-          },
-          movement: pet.movement,
-          runtime: pet.runtime,
-        })),
-      );
-      const separationForces = computeSeparationForces(snapshot.bodies, 96);
-      const forcesById = new Map<string, { x: number; y: number }>();
-
-      for (const force of [...intentForces, ...separationForces]) {
-        const previous = forcesById.get(force.id) ?? { x: 0, y: 0 };
-        forcesById.set(force.id, {
-          x: previous.x + force.x,
-          y: previous.y + force.y,
-        });
-      }
-
-      for (const [id, force] of forcesById) {
-        physics.applyForce(id, force);
-      }
-      physics.step(deltaMs);
+      runAvoidancePlanningSystem(getNavigatingPets(), getAvoidanceObstacles());
+      const intentForces = runIntentSteeringSystem(getSteeringPets());
+      runPhysicsIntegrationSystem({
+        physics,
+        deltaMs,
+        forceGroups: [intentForces],
+      });
+      runPhysicsTransformSyncSystem(getTransformEntities(), physics);
     },
     snapshot() {
-      const physicsSnapshot = physics.snapshot();
-      const bodiesById = new Map(physicsSnapshot.bodies.map((body) => [body.id, body]));
+      const physicsSnapshot = runPhysicsTransformSyncSystem(getTransformEntities(), physics);
 
       return {
         ...physicsSnapshot,
-        pets: input.pets.map((pet) => {
-          const body = bodiesById.get(pet.id);
-
-          return {
-            id: pet.id,
-            sourceId: pet.sourceId,
-            name: pet.name,
-            intent: pet.runtime.intent,
-            speech: pet.runtime.speech,
-            position: {
-              x: body?.x ?? 0,
-              y: body?.y ?? 0,
-            },
-          };
-        }),
+        pets: getPetSnapshots(),
       };
     },
   };

@@ -1,30 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { resolveMotionTargets } from "@/core/systems/motion-target-system";
+import type { PetIntent } from "@/core/components/simulation-components";
+import { runMotionTargetSystem } from "@/core/systems/motion-target-system";
 
-function createPet(intent: string) {
+function createPet(intent: PetIntent) {
   return {
-    runtime: {
+    id: "pet-a",
+    intent: {
+      type: "IntentState" as const,
       intent,
-      motion: {
-        targetEntityId: null as string | null,
-        targetPosition: null as { x: number; y: number } | null,
-      },
+    },
+    motion: {
+      type: "MotionTarget" as const,
+      targetEntityId: null as string | null,
+      targetPosition: null as { x: number; y: number } | null,
     },
   };
 }
 
 describe("motion target system", () => {
-  it("targets the user anchor for seek-user pets", () => {
-    const pet = createPet("seek-user");
+  it("targets the user anchor for seeking pets", () => {
+    const pet = createPet("seek");
 
-    resolveMotionTargets(
+    runMotionTargetSystem(
       [pet],
-      [{ id: "user-anchor", kind: "user-anchor", position: { x: 480, y: 500 } }],
+      [
+        {
+          id: "user-anchor",
+          transform: { type: "Transform", position: { x: 480, y: 500 } },
+        },
+      ],
       { next: () => 0.5 },
       { width: 960, height: 540 },
     );
 
-    expect(pet.runtime.motion).toEqual({
+    expect(pet.motion).toEqual({
+      type: "MotionTarget",
       targetEntityId: "user-anchor",
       targetPosition: { x: 480, y: 500 },
     });
@@ -34,14 +44,15 @@ describe("motion target system", () => {
     const pet = createPet("idle");
     const randomValues = [0.25, 0.25];
 
-    resolveMotionTargets(
+    runMotionTargetSystem(
       [pet],
       [],
       { next: () => randomValues.shift() ?? 0 },
       { width: 960, height: 540 },
     );
 
-    expect(pet.runtime.motion).toEqual({
+    expect(pet.motion).toEqual({
+      type: "MotionTarget",
       targetEntityId: null,
       targetPosition: { x: 240, y: 135 },
     });
@@ -51,14 +62,15 @@ describe("motion target system", () => {
     const pet = createPet("active");
     const randomValues = [0.75, 0.75];
 
-    resolveMotionTargets(
+    runMotionTargetSystem(
       [pet],
       [],
       { next: () => randomValues.shift() ?? 0 },
       { width: 960, height: 540 },
     );
 
-    expect(pet.runtime.motion).toEqual({
+    expect(pet.motion).toEqual({
+      type: "MotionTarget",
       targetEntityId: null,
       targetPosition: { x: 720, y: 405 },
     });

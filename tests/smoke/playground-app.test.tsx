@@ -56,7 +56,7 @@ describe("PlaygroundApp", () => {
 
     fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }));
 
-    expect(screen.getByText("seek-user")).toBeInTheDocument();
+    expect(screen.getByText("seek")).toBeInTheDocument();
     expect(screen.getByText("Needs approval")).toBeInTheDocument();
   });
 });
