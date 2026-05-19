@@ -28,6 +28,8 @@ function createFixturePet(input: {
       { type: "NavigationState" as const, avoidanceWaypoint: null },
       { type: "ActivityState" as const, lastActiveAt: 0 },
       { type: "CompletionBehavior" as const, intentAfterCompletion: "idle" as const },
+      { type: "Flyable" as const, hoverStrength: 0 },
+      { type: "GravityScale" as const, scale: 0 },
       { type: "SpeechState" as const, speech: null },
       { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
       { type: "Transform" as const, position: { x: input.x, y: input.y } },
@@ -41,11 +43,23 @@ export function createDemoScenario(options?: {
   userAnchor?: { x: number; y: number };
 }) {
   const clock = createManualClock(0);
+  const width = 960;
+  const height = 540;
+  const groundThickness = 48;
   const world = createWorld({
-    width: 960,
-    height: 540,
+    width,
+    height,
     clock,
     entities: [
+      {
+        id: "monitor-ground",
+        components: [
+          { type: "Ground" },
+          { type: "Transform", position: { x: width / 2, y: height + groundThickness / 2 } },
+          { type: "PhysicsBody", shape: "rectangle", width, height: groundThickness },
+          { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
+        ],
+      },
       {
         id: "user-anchor",
         components: [

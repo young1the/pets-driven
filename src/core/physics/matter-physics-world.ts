@@ -3,14 +3,17 @@ import type { WorldSnapshot } from "../snapshots/world-snapshot";
 
 export type Vector = { x: number; y: number };
 type Size = { width: number; height: number };
+type PhysicsMaterial = { friction?: number; frictionAir?: number; restitution?: number };
 type BodyShape =
-  | { shape: "circle"; radius: number; width: number; height: number }
-  | { shape: "rectangle"; width: number; height: number };
+  | { shape: "circle"; radius: number; width: number; height: number; isStatic?: boolean }
+  | { shape: "rectangle"; width: number; height: number; isStatic?: boolean };
 
 export type MatterPhysicsWorld = {
   addCircle(id: string, position: Vector, radius: number): void;
-  addRectangle(id: string, position: Vector, size: Size): void;
+  addRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
+  addStaticRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
   applyForce(id: string, force: Vector): void;
+  setGravityScale(id: string, scale: number): void;
   step(deltaMs: number): void;
   snapshot(): WorldSnapshot;
 };
@@ -18,10 +21,20 @@ export type MatterPhysicsWorld = {
 export function createMatterPhysicsWorld(bounds: {
   width: number;
   height: number;
+  gravity?: Vector;
 }): MatterPhysicsWorld {
-  const engine = Engine.create({ gravity: { x: 0, y: 0 } });
+  const engine = Engine.create();
+  engine.gravity.x = bounds.gravity?.x ?? 0;
+  engine.gravity.y = bounds.gravity?.y ?? 1;
   const bodies = new Map<string, MatterBody>();
   const shapes = new Map<string, BodyShape>();
+  const gravityScales = new Map<string, number>();
+
+  function addBody(id: string, body: MatterBody, shape: BodyShape) {
+    bodies.set(id, body);
+    shapes.set(id, shape);
+    World.add(engine.world, body);
+  }
 
   return {
     addCircle(id, position, radius) {
@@ -29,19 +42,24 @@ export function createMatterPhysicsWorld(bounds: {
         frictionAir: 0.08,
         restitution: 0.2,
       });
-      bodies.set(id, body);
-      shapes.set(id, { shape: "circle", radius, width: radius * 2, height: radius * 2 });
-      World.add(engine.world, body);
+      addBody(id, body, { shape: "circle", radius, width: radius * 2, height: radius * 2 });
     },
-    addRectangle(id, position, size) {
+    addRectangle(id, position, size, material) {
       const body = Bodies.rectangle(position.x, position.y, size.width, size.height, {
-        frictionAir: 0.16,
-        restitution: 0,
+        friction: material?.friction,
+        frictionAir: material?.frictionAir ?? 0.16,
+        restitution: material?.restitution ?? 0,
       });
       Body.setInertia(body, Infinity);
-      bodies.set(id, body);
-      shapes.set(id, { shape: "rectangle", ...size });
-      World.add(engine.world, body);
+      addBody(id, body, { shape: "rectangle", ...size });
+    },
+    addStaticRectangle(id, position, size, material) {
+      const body = Bodies.rectangle(position.x, position.y, size.width, size.height, {
+        isStatic: true,
+        friction: material?.friction,
+        restitution: material?.restitution ?? 0,
+      });
+      addBody(id, body, { shape: "rectangle", isStatic: true, ...size });
     },
     applyForce(id, force) {
       const body = bodies.get(id);
@@ -49,7 +67,22 @@ export function createMatterPhysicsWorld(bounds: {
         Body.applyForce(body, body.position, force);
       }
     },
+    setGravityScale(id, scale) {
+      gravityScales.set(id, scale);
+    },
     step(deltaMs) {
+      for (const [id, scale] of gravityScales) {
+        const body = bodies.get(id);
+        if (!body || body.isStatic || scale === 1) {
+          continue;
+        }
+
+        Body.applyForce(body, body.position, {
+          x: body.mass * engine.gravity.x * engine.gravity.scale * (scale - 1),
+          y: body.mass * engine.gravity.y * engine.gravity.scale * (scale - 1),
+        });
+      }
+
       Engine.update(engine, deltaMs);
     },
     snapshot() {
@@ -71,6 +104,7 @@ export function createMatterPhysicsWorld(bounds: {
             vx: body.velocity.x,
             vy: body.velocity.y,
             ...shape,
+            isStatic: body.isStatic || shape.isStatic,
           };
         }),
         pets: [],

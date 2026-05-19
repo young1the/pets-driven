@@ -2,6 +2,8 @@ import type {
   ActivityStateComponent,
   AgentBindingComponent,
   CompletionBehaviorComponent,
+  FlyableComponent,
+  GravityScaleComponent,
   IdleConversationComponent,
   IntentStateComponent,
   MotionTargetComponent,
@@ -19,12 +21,17 @@ import { createMatterPhysicsWorld, type MatterPhysicsWorld } from "@/core/physic
 import type { Stimulus } from "@/core/stimuli/stimulus";
 import { createStimulusQueue, type StimulusQueue } from "@/core/stimuli/stimulus-queue";
 import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-system";
+import { runGravityControlSystem } from "@/core/systems/gravity-control-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
 import { runMotionTargetSystem } from "@/core/systems/motion-target-system";
 import { runPhysicsIntegrationSystem, type Force } from "@/core/systems/physics-integration-system";
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
-import { runSimulationSystems, type SimulationSystem } from "@/core/systems/simulation-system";
+import {
+  describeSimulationSystems,
+  runSimulationSystems,
+  type SimulationSystem,
+} from "@/core/systems/simulation-system";
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
 import { createSeededRandom, type RandomSource } from "@/shared/random/seeded-random";
 import type { ManualClock } from "@/shared/time/manual-clock";
@@ -59,11 +66,25 @@ export function createWorld(input: WorldDefinition) {
   function registerPhysicsBodies() {
     for (const entity of components.query("Transform", "PhysicsBody")) {
       const [transform, body] = entity.components;
+      const material = components.getComponent(entity.id, "PhysicsMaterial");
       if (body.shape === "rectangle") {
-        physics.addRectangle(entity.id, transform.position, {
+        const size = {
           width: body.width,
           height: body.height,
-        });
+        };
+        const materialOptions = material
+          ? {
+              friction: material.friction,
+              restitution: material.restitution,
+            }
+          : undefined;
+
+        if (components.getComponent(entity.id, "Ground")) {
+          physics.addStaticRectangle(entity.id, transform.position, size, materialOptions);
+          continue;
+        }
+
+        physics.addRectangle(entity.id, transform.position, size, materialOptions);
       }
     }
   }
@@ -165,6 +186,17 @@ export function createWorld(input: WorldDefinition) {
     });
   }
 
+  function getGravityControlledEntities(componentStore: ComponentStore) {
+    return componentStore.query("PhysicsBody", "GravityScale").map((entity) => {
+      const [, gravityScale] = entity.components;
+      return {
+        id: entity.id,
+        gravityScale: gravityScale as GravityScaleComponent,
+        flyable: componentStore.getComponent(entity.id, "Flyable") as FlyableComponent | undefined,
+      };
+    });
+  }
+
   function getPetSnapshots(componentStore: ComponentStore) {
     return componentStore
       .query("PetIdentity", "AgentBinding", "IntentState", "SpeechState", "Transform")
@@ -185,24 +217,33 @@ export function createWorld(input: WorldDefinition) {
   const stepSystems: Array<SimulationSystem<WorldStepContext>> = [
     {
       name: "StimulusReactionSystem",
+      reads: ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
+      writes: ["IntentState", "SpeechState", "ActivityState"],
       update(context) {
         runStimulusReactionSystem(getReactivePets(context.components), context.stimuli.drain());
       },
     },
     {
       name: "IdleConversationSystem",
+      reads: ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
+      writes: ["SpeechState"],
       update(context) {
         runIdleConversationSystem(getIdleConversationPets(context.components), context.clock);
       },
     },
     {
       name: "PhysicsTransformSyncSystem",
+      reads: ["PhysicsBody"],
+      writes: ["Transform"],
       update(context) {
         runPhysicsTransformSyncSystem(getTransformEntities(context.components), context.physics);
       },
     },
     {
       name: "MotionTargetSystem",
+      dependsOn: ["PhysicsTransformSyncSystem"],
+      reads: ["IntentState", "MotionTarget", "Transform", "UserAnchor"],
+      writes: ["MotionTarget"],
       update(context) {
         runMotionTargetSystem(
           getMotionPets(context.components),
@@ -214,6 +255,9 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "AvoidancePlanningSystem",
+      dependsOn: ["MotionTargetSystem"],
+      reads: ["Transform", "MotionTarget", "NavigationState", "PhysicsBody"],
+      writes: ["NavigationState"],
       update(context) {
         runAvoidancePlanningSystem(
           getNavigatingPets(context.components),
@@ -223,12 +267,27 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "IntentSteeringSystem",
+      dependsOn: ["AvoidancePlanningSystem"],
+      reads: ["Transform", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
+      writes: ["PhysicsForce"],
       update(context) {
         context.forceGroups.push(runIntentSteeringSystem(getSteeringPets(context.components)));
       },
     },
     {
+      name: "GravityControlSystem",
+      dependsOn: ["IntentSteeringSystem"],
+      reads: ["PhysicsBody", "GravityScale", "Flyable"],
+      writes: ["PhysicsGravityScale"],
+      update(context) {
+        runGravityControlSystem(getGravityControlledEntities(context.components), context.physics);
+      },
+    },
+    {
       name: "PhysicsIntegrationSystem",
+      dependsOn: ["IntentSteeringSystem", "GravityControlSystem"],
+      reads: ["PhysicsForce"],
+      writes: ["PhysicsWorld"],
       update(context) {
         runPhysicsIntegrationSystem({
           physics: context.physics,
@@ -239,6 +298,9 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "PhysicsTransformSyncSystem",
+      dependsOn: ["PhysicsIntegrationSystem"],
+      reads: ["PhysicsWorld"],
+      writes: ["Transform"],
       update(context) {
         runPhysicsTransformSyncSystem(getTransformEntities(context.components), context.physics);
       },
@@ -248,6 +310,9 @@ export function createWorld(input: WorldDefinition) {
   return {
     systems() {
       return stepSystems.map((system) => system.name);
+    },
+    systemPlan() {
+      return describeSimulationSystems(stepSystems);
     },
     getEntity(id: string) {
       const entity = components.getEntity(id);

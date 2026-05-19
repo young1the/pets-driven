@@ -40,6 +40,29 @@ export type IdleConversationComponent = {
 };
 
 /**
+ * Capability marker for entities that can counteract gravity or hover.
+ */
+export type FlyableComponent = {
+  type: "Flyable";
+  hoverStrength: number;
+};
+
+/**
+ * Per-entity gravity multiplier applied by the gravity control system.
+ */
+export type GravityScaleComponent = {
+  type: "GravityScale";
+  scale: number;
+};
+
+/**
+ * Marker for entities that act as immovable ground or platform surfaces.
+ */
+export type GroundComponent = {
+  type: "Ground";
+};
+
+/**
  * Stores the current high-level behavior intent selected for the entity.
  */
 export type IntentStateComponent = {
@@ -94,6 +117,15 @@ export type PhysicsBodyComponent = {
 };
 
 /**
+ * Surface tuning for physics bodies.
+ */
+export type PhysicsMaterialComponent = {
+  type: "PhysicsMaterial";
+  friction: number;
+  restitution: number;
+};
+
+/**
  * Live speech bubble state. SpeechProfile defines defaults; this stores output.
  */
 export type SpeechStateComponent = {
@@ -132,6 +164,9 @@ export type SimulationComponent =
   | ActivityStateComponent
   | AgentBindingComponent
   | CompletionBehaviorComponent
+  | FlyableComponent
+  | GravityScaleComponent
+  | GroundComponent
   | IdleConversationComponent
   | IntentStateComponent
   | MotionTargetComponent
@@ -139,6 +174,7 @@ export type SimulationComponent =
   | MovementProfileComponent
   | PetIdentityComponent
   | PhysicsBodyComponent
+  | PhysicsMaterialComponent
   | SpeechProfileComponent
   | SpeechStateComponent
   | TransformComponent
