@@ -4,11 +4,11 @@ import type {
   SimulationComponentType,
 } from "@/core/components/simulation-components";
 import type { EntityId, RuntimeEntity } from "./entity";
-import { addComponent, createRuntimeEntity, getComponent as getEntityComponent } from "./entity";
+import { createRuntimeEntity } from "./entity";
 
 /**
  * Serialized input shape for fixtures, presets, and future JSON models.
- * The component store hydrates this array shape into RuntimeEntity maps.
+ * The component store hydrates this array shape into type-owned component tables.
  */
 export type EntityDeclaration = {
   id: EntityId;
@@ -22,6 +22,9 @@ export type ComponentStore = {
     id: EntityId,
     type: TType,
   ): ComponentOf<TType> | undefined;
+  components<TType extends SimulationComponentType>(
+    type: TType,
+  ): ReadonlyMap<EntityId, ComponentOf<TType>>;
   setComponent(componentOwnerId: EntityId, component: SimulationComponent): void;
   query<TTypes extends SimulationComponentType[]>(
     ...types: TTypes
@@ -35,13 +38,31 @@ export type ComponentStore = {
 
 export function createComponentStore(declarations: EntityDeclaration[]): ComponentStore {
   const entitiesById = new Map<EntityId, RuntimeEntity>();
+  const componentTables = new Map<SimulationComponentType, Map<EntityId, SimulationComponent>>();
 
   for (const declaration of declarations) {
     const entity = createRuntimeEntity(declaration.id);
     for (const component of declaration.components) {
-      addComponent(entity, component);
+      setComponentForEntity(entity.id, component);
     }
     entitiesById.set(entity.id, entity);
+  }
+
+  function getComponentTable<TType extends SimulationComponentType>(
+    type: TType,
+  ): Map<EntityId, ComponentOf<TType>> {
+    let table = componentTables.get(type);
+    if (!table) {
+      table = new Map<EntityId, SimulationComponent>();
+      componentTables.set(type, table);
+    }
+
+    return table as Map<EntityId, ComponentOf<TType>>;
+  }
+
+  function setComponentForEntity(id: EntityId, component: SimulationComponent) {
+    const table = getComponentTable(component.type) as Map<EntityId, SimulationComponent>;
+    table.set(id, component);
   }
 
   return {
@@ -52,26 +73,41 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
       return entitiesById.get(id);
     },
     getComponent(id, type) {
-      const entity = entitiesById.get(id);
-      return entity ? getEntityComponent<ComponentOf<typeof type>>(entity, type) : undefined;
+      return getComponentTable(type).get(id);
+    },
+    components(type) {
+      return getComponentTable(type);
     },
     setComponent(id, component) {
       const entity = entitiesById.get(id);
       if (!entity) {
         throw new Error(`Unknown entity: ${id}`);
       }
-      addComponent(entity, component);
+      setComponentForEntity(id, component);
     },
     query(...types) {
-      return [...entitiesById.values()].flatMap((entity) => {
-        const components = types.map((type) => getEntityComponent(entity, type));
+      if (types.length === 0) {
+        return [...entitiesById.values()].map((entity) => ({
+          id: entity.id,
+          components: [] as unknown as {
+            [Index in keyof typeof types]: ComponentOf<(typeof types)[Index]>;
+          },
+        }));
+      }
+
+      const smallestTable = types
+        .map((type) => getComponentTable(type))
+        .reduce((smallest, table) => (table.size < smallest.size ? table : smallest));
+
+      return [...smallestTable.keys()].flatMap((id) => {
+        const components = types.map((type) => getComponentTable(type).get(id));
         if (components.some((component) => component === undefined)) {
           return [];
         }
 
         return [
           {
-            id: entity.id,
+            id,
             components: components as {
               [Index in keyof typeof types]: ComponentOf<(typeof types)[Index]>;
             },
