@@ -4,30 +4,30 @@ import {
   type ComponentDefinition,
 } from "@/core/ecs/component-registry";
 
-type Curious = { type: "Curious"; weight: number };
+type ExampleComponent = { type: "ExampleComponent"; weight: number };
 
-const curiousDefinition: ComponentDefinition<Curious> = {
-  type: "Curious",
-  validate(value): value is Curious {
+const exampleDefinition: ComponentDefinition<ExampleComponent> = {
+  type: "ExampleComponent",
+  validate(value): value is ExampleComponent {
     return (
       typeof value === "object" &&
       value !== null &&
-      (value as Curious).type === "Curious" &&
-      typeof (value as Curious).weight === "number"
+      (value as ExampleComponent).type === "ExampleComponent" &&
+      typeof (value as ExampleComponent).weight === "number"
     );
   },
 };
 
 describe("component registry", () => {
   it("registers and validates known component payloads", () => {
-    const registry = createComponentRegistry([curiousDefinition]);
+    const registry = createComponentRegistry([exampleDefinition]);
 
-    expect(registry.validate({ type: "Curious", weight: 0.8 })).toBe(true);
-    expect(registry.validate({ type: "Curious", weight: "high" })).toBe(false);
+    expect(registry.validate({ type: "ExampleComponent", weight: 0.8 })).toBe(true);
+    expect(registry.validate({ type: "ExampleComponent", weight: "high" })).toBe(false);
   });
 
   it("rejects unknown component types", () => {
-    const registry = createComponentRegistry([curiousDefinition]);
+    const registry = createComponentRegistry([exampleDefinition]);
 
     expect(registry.validate({ type: "Unknown" })).toBe(false);
   });

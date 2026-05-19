@@ -1,7 +1,0 @@
-{
-  "id": "reserved",
-  "name": "Reserved",
-  "components": [
-    { "type": "AvoidsCrowds", "radius": 96 }
-  ]
-}

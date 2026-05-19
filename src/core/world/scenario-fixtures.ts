@@ -27,6 +27,7 @@ function createFixturePet(input: {
       { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
       { type: "NavigationState" as const, avoidanceWaypoint: null },
       { type: "ActivityState" as const, lastActiveAt: 0 },
+      { type: "CompletionBehavior" as const, intentAfterCompletion: "idle" as const },
       { type: "SpeechState" as const, speech: null },
       { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
       { type: "Transform" as const, position: { x: input.x, y: input.y } },

@@ -17,6 +17,8 @@ describe("behavior systems", () => {
         type: "SpeechProfile" as const,
         idleCompanion: "Custom idle line",
         attentionNeeded: DEFAULT_PET_SPEECH.attentionNeeded,
+        taskStarted: DEFAULT_PET_SPEECH.taskStarted,
+        taskCompleted: DEFAULT_PET_SPEECH.taskCompleted,
       },
       activity: { type: "ActivityState" as const, lastActiveAt: 0 },
       speech: { type: "SpeechState" as const, speech: null as string | null },
@@ -38,8 +40,14 @@ describe("behavior systems", () => {
         type: "SpeechProfile" as const,
         idleCompanion: DEFAULT_PET_SPEECH.idleCompanion,
         attentionNeeded: "Custom attention line",
+        taskStarted: DEFAULT_PET_SPEECH.taskStarted,
+        taskCompleted: DEFAULT_PET_SPEECH.taskCompleted,
       },
       activity: { type: "ActivityState" as const, lastActiveAt: 0 },
+      completionBehavior: {
+        type: "CompletionBehavior" as const,
+        intentAfterCompletion: "idle" as const,
+      },
     };
 
     runStimulusReactionSystem([pet], [
@@ -59,6 +67,8 @@ describe("behavior systems", () => {
         type: "SpeechProfile" as const,
         idleCompanion: DEFAULT_PET_SPEECH.idleCompanion,
         attentionNeeded: DEFAULT_PET_SPEECH.attentionNeeded,
+        taskStarted: "Custom working line",
+        taskCompleted: DEFAULT_PET_SPEECH.taskCompleted,
       },
       speech: {
         type: "SpeechState" as const,
@@ -68,26 +78,32 @@ describe("behavior systems", () => {
         type: "ActivityState" as const,
         lastActiveAt: 0,
       },
+      completionBehavior: {
+        type: "CompletionBehavior" as const,
+        intentAfterCompletion: "idle" as const,
+      },
     };
 
     runStimulusReactionSystem([pet], [
-      { type: "task.started", sourceId: "agent-a", at: 10, summary: "Working" },
+      { type: "task.started", sourceId: "agent-a", at: 10 },
     ]);
 
     expect(pet.intent.intent).toBe("active");
-    expect(pet.speech.speech).toBeNull();
+    expect(pet.speech.speech).toBe("Custom working line");
     expect(pet.activity.lastActiveAt).toBe(10);
   });
 
-  it("turns completed stimuli into idle pets with a summary", () => {
+  it("turns completed stimuli into the configured completion intent with speech", () => {
     const pet = {
       id: "pet-a",
       agent: { type: "AgentBinding" as const, sourceId: "agent-a" },
-      intent: { type: "IntentState" as const, intent: "seek" as const },
+      intent: { type: "IntentState" as const, intent: "active" as const },
       speechProfile: {
         type: "SpeechProfile" as const,
         idleCompanion: DEFAULT_PET_SPEECH.idleCompanion,
         attentionNeeded: DEFAULT_PET_SPEECH.attentionNeeded,
+        taskStarted: DEFAULT_PET_SPEECH.taskStarted,
+        taskCompleted: "Custom completed line",
       },
       speech: {
         type: "SpeechState" as const,
@@ -97,14 +113,18 @@ describe("behavior systems", () => {
         type: "ActivityState" as const,
         lastActiveAt: 0,
       },
+      completionBehavior: {
+        type: "CompletionBehavior" as const,
+        intentAfterCompletion: "seek" as const,
+      },
     };
 
     runStimulusReactionSystem([pet], [
-      { type: "task.completed", sourceId: "agent-a", at: 20, summary: "Done" },
+      { type: "task.completed", sourceId: "agent-a", at: 20 },
     ]);
 
-    expect(pet.intent.intent).toBe("idle");
-    expect(pet.speech.speech).toBe("Done");
+    expect(pet.intent.intent).toBe("seek");
+    expect(pet.speech.speech).toBe("Custom completed line");
     expect(pet.activity.lastActiveAt).toBe(20);
   });
 

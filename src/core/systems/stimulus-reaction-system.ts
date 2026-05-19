@@ -1,6 +1,7 @@
 import type {
   ActivityStateComponent,
   AgentBindingComponent,
+  CompletionBehaviorComponent,
   IntentStateComponent,
   SpeechProfileComponent,
   SpeechStateComponent,
@@ -14,6 +15,7 @@ type ReactivePet = {
   speechProfile: SpeechProfileComponent;
   speech: SpeechStateComponent;
   activity: ActivityStateComponent;
+  completionBehavior: CompletionBehaviorComponent;
 };
 
 export function runStimulusReactionSystem(pets: ReactivePet[], stimuli: Stimulus[]) {
@@ -25,7 +27,7 @@ export function runStimulusReactionSystem(pets: ReactivePet[], stimuli: Stimulus
 
     if (stimulus.type === "task.started") {
       pet.intent.intent = "active";
-      pet.speech.speech = null;
+      pet.speech.speech = stimulus.summary ?? pet.speechProfile.taskStarted;
       pet.activity.lastActiveAt = stimulus.at;
     }
 
@@ -35,8 +37,8 @@ export function runStimulusReactionSystem(pets: ReactivePet[], stimuli: Stimulus
     }
 
     if (stimulus.type === "task.completed") {
-      pet.intent.intent = "idle";
-      pet.speech.speech = stimulus.summary ?? null;
+      pet.intent.intent = pet.completionBehavior.intentAfterCompletion;
+      pet.speech.speech = stimulus.summary ?? pet.speechProfile.taskCompleted;
       pet.activity.lastActiveAt = stimulus.at;
     }
   }

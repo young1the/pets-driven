@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { PetIntent } from "@/core/components/simulation-components";
-import { MOTION_SLOW_RADIUS } from "@/core/constants/motion";
 import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
+
+const SLOW_RADIUS = 96;
 
 function createSteeringPet(intent: PetIntent, speed: number) {
   return {
@@ -20,7 +21,7 @@ function createSteeringPet(intent: PetIntent, speed: number) {
     motion: {
       type: "MotionTarget" as const,
       targetEntityId: null,
-      targetPosition: { x: MOTION_SLOW_RADIUS * 2, y: 0 },
+      targetPosition: { x: SLOW_RADIUS * 2, y: 0 },
     },
     navigation: {
       type: "NavigationState" as const,
@@ -63,8 +64,8 @@ describe("intent steering system", () => {
 
   it("steers toward an avoidance waypoint before the final motion target", () => {
     const pet = createSteeringPet("seek", 0.0018);
-    pet.motion.targetPosition = { x: MOTION_SLOW_RADIUS * 2, y: 0 };
-    pet.navigation.avoidanceWaypoint = { x: 0, y: MOTION_SLOW_RADIUS * 2 };
+    pet.motion.targetPosition = { x: SLOW_RADIUS * 2, y: 0 };
+    pet.navigation.avoidanceWaypoint = { x: 0, y: SLOW_RADIUS * 2 };
 
     const forces = runIntentSteeringSystem([pet]);
 

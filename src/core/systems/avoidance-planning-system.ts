@@ -3,7 +3,9 @@ import type {
   NavigationStateComponent,
   Vector,
 } from "@/core/components/simulation-components";
-import { AVOIDANCE_PATH_RADIUS, AVOIDANCE_WAYPOINT_OFFSET } from "@/core/constants/motion";
+
+const AVOIDANCE_PATH_RADIUS = 48;
+const AVOIDANCE_WAYPOINT_OFFSET = 72;
 
 type NavigatingPet = {
   id: string;

@@ -1,14 +1,9 @@
-import type { AvoidsCrowds } from "@/pets/personalities/components/avoids-crowds";
-import type { Curious } from "@/pets/personalities/components/curious";
-import type { SeeksUser } from "@/pets/personalities/components/seeks-user";
-import type { Talkative } from "@/pets/personalities/components/talkative";
-
-export type PersonalityComponent = AvoidsCrowds | Curious | SeeksUser | Talkative;
+import type { SimulationComponent } from "@/core/components/simulation-components";
 
 export type PetProfile = {
   id: string;
   petAssetId: string;
-  components: PersonalityComponent[];
+  components: SimulationComponent[];
 };
 
 export function isPetProfile(value: unknown): value is PetProfile {

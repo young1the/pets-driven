@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MOTION_ARRIVAL_RADIUS } from "@/core/constants/motion";
+import { MOTION_ARRIVAL_RADIUS } from "@/core/systems/intent-steering-system";
 import { createDemoScenario } from "@/core/world/scenario-fixtures";
 
 describe("demo scenario", () => {
@@ -47,10 +47,16 @@ describe("demo scenario", () => {
       type: "SpeechProfile",
       idleCompanion: "Still here with you.",
       attentionNeeded: "I need you.",
+      taskStarted: "Working on it.",
+      taskCompleted: "Done.",
     });
     expect(scenario.world.getComponent("pet-a", "IdleConversation")).toEqual({
       type: "IdleConversation",
       idleAfterMs: 5_000,
+    });
+    expect(scenario.world.getComponent("pet-a", "CompletionBehavior")).toEqual({
+      type: "CompletionBehavior",
+      intentAfterCompletion: "idle",
     });
   });
 
