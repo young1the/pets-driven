@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isPetAsset } from "@/pets/assets/pet-asset";
-import playfulPreset from "@/pets/personalities/presets/playful.json";
-import { compilePersonalityComponents } from "@/pets/profiles/personality-compiler";
+import { createPlayfulPersonality } from "@/pets/personalities/factories";
 import { isPetProfile } from "@/pets/profiles/pet-profile";
 
 describe("pet contracts", () => {
@@ -21,20 +20,24 @@ describe("pet contracts", () => {
       isPetProfile({
         id: "my-jori",
         petAssetId: "jori",
-        components: [{ type: "Talkative", idleAfterMs: 9000 }],
+        components: [{ type: "IdleConversation", idleAfterMs: 9000 }],
       }),
     ).toBe(true);
   });
 
-  it("ships reusable presets rather than service-owned pet profiles", () => {
-    expect(playfulPreset.id).toBe("playful");
-    expect(playfulPreset.components.map((component) => component.type)).toContain("Curious");
-    expect(playfulPreset).not.toHaveProperty("petAssetId");
-  });
-
-  it("compiles talkative personality into an idle conversation runtime component", () => {
-    expect(compilePersonalityComponents([{ type: "Talkative", idleAfterMs: 9000 }])).toEqual([
+  it("builds reusable personalities as simulation component factories", () => {
+    expect(createPlayfulPersonality()).toEqual([
+      {
+        type: "MovementProfile",
+        idleSpeed: 0.0008,
+        activeSpeed: 0.0016,
+        seekSpeed: 0.002,
+      },
       { type: "IdleConversation", idleAfterMs: 9000 },
+      {
+        type: "CompletionBehavior",
+        intentAfterCompletion: "seek",
+      },
     ]);
   });
 });

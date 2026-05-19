@@ -5,6 +5,8 @@ export type Vector = {
   y: number;
 };
 
+export type CompletionIntent = "idle" | "seek";
+
 /**
  * Connects a pet entity to the external agent or hook source it represents.
  */
@@ -22,8 +24,15 @@ export type ActivityStateComponent = {
 };
 
 /**
+ * Runtime behavior selected when a source reports task completion.
+ */
+export type CompletionBehaviorComponent = {
+  type: "CompletionBehavior";
+  intentAfterCompletion: CompletionIntent;
+};
+
+/**
  * Runtime capability that triggers speech after the entity has been idle.
- * Profile-level Talkative components compile into this lower-level component.
  */
 export type IdleConversationComponent = {
   type: "IdleConversation";
@@ -99,6 +108,8 @@ export type SpeechProfileComponent = {
   type: "SpeechProfile";
   idleCompanion: string;
   attentionNeeded: string;
+  taskStarted: string | null;
+  taskCompleted: string | null;
 };
 
 /**
@@ -120,6 +131,7 @@ export type UserAnchorComponent = {
 export type SimulationComponent =
   | ActivityStateComponent
   | AgentBindingComponent
+  | CompletionBehaviorComponent
   | IdleConversationComponent
   | IntentStateComponent
   | MotionTargetComponent

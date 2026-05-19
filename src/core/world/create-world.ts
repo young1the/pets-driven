@@ -1,6 +1,7 @@
 import type {
   ActivityStateComponent,
   AgentBindingComponent,
+  CompletionBehaviorComponent,
   IdleConversationComponent,
   IntentStateComponent,
   MotionTargetComponent,
@@ -57,9 +58,9 @@ export function createWorld(input: WorldDefinition) {
 
   function getReactivePets() {
     return components
-      .query("AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState")
+      .query("AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior")
       .map((entity) => {
-        const [agent, intent, speechProfile, speech, activity] = entity.components;
+        const [agent, intent, speechProfile, speech, activity, completionBehavior] = entity.components;
         return {
           id: entity.id,
           agent: agent as AgentBindingComponent,
@@ -67,6 +68,7 @@ export function createWorld(input: WorldDefinition) {
           speechProfile: speechProfile as SpeechProfileComponent,
           speech: speech as SpeechStateComponent,
           activity: activity as ActivityStateComponent,
+          completionBehavior: completionBehavior as CompletionBehaviorComponent,
         };
       });
   }

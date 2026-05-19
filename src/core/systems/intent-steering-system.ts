@@ -4,7 +4,10 @@ import type {
   MovementProfileComponent,
   NavigationStateComponent,
 } from "@/core/components/simulation-components";
-import { MOTION_ARRIVAL_RADIUS, MOTION_SLOW_RADIUS } from "@/core/constants/motion";
+
+export const MOTION_ARRIVAL_RADIUS = 16;
+
+const MOTION_SLOW_RADIUS = 96;
 
 export type SteeringPet = {
   id: string;

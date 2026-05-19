@@ -1,4 +1,0 @@
-export const AVOIDANCE_PATH_RADIUS = 48;
-export const AVOIDANCE_WAYPOINT_OFFSET = 72;
-export const MOTION_ARRIVAL_RADIUS = 16;
-export const MOTION_SLOW_RADIUS = 96;
