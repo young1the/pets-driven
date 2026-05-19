@@ -48,8 +48,8 @@ describe("demo scenario", () => {
       idleCompanion: "Still here with you.",
       attentionNeeded: "I need you.",
     });
-    expect(scenario.world.getComponent("pet-a", "Talkative")).toEqual({
-      type: "Talkative",
+    expect(scenario.world.getComponent("pet-a", "IdleConversation")).toEqual({
+      type: "IdleConversation",
       idleAfterMs: 5_000,
     });
   });

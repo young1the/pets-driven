@@ -6,6 +6,10 @@ import type {
 import type { EntityId, RuntimeEntity } from "./entity";
 import { addComponent, createRuntimeEntity, getComponent as getEntityComponent } from "./entity";
 
+/**
+ * Serialized input shape for fixtures, presets, and future JSON models.
+ * The component store hydrates this array shape into RuntimeEntity maps.
+ */
 export type EntityDeclaration = {
   id: EntityId;
   components: SimulationComponent[];

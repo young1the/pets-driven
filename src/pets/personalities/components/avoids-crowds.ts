@@ -1,3 +1,6 @@
+/**
+ * Personality component that keeps a pet away from dense groups.
+ */
 export type AvoidsCrowds = { type: "AvoidsCrowds"; radius: number };
 
 export const avoidsCrowdsDefinition = {

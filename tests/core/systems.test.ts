@@ -12,7 +12,7 @@ describe("behavior systems", () => {
     const clock = createManualClock(0);
     const pet = {
       id: "pet-a",
-      talkative: { type: "Talkative" as const, idleAfterMs: 5_000 },
+      idleConversation: { type: "IdleConversation" as const, idleAfterMs: 5_000 },
       speechProfile: {
         type: "SpeechProfile" as const,
         idleCompanion: "Custom idle line",

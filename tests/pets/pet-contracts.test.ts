@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isPetAsset } from "@/pets/assets/pet-asset";
 import playfulPreset from "@/pets/personalities/presets/playful.json";
+import { compilePersonalityComponents } from "@/pets/profiles/personality-compiler";
 import { isPetProfile } from "@/pets/profiles/pet-profile";
 
 describe("pet contracts", () => {
@@ -29,5 +30,11 @@ describe("pet contracts", () => {
     expect(playfulPreset.id).toBe("playful");
     expect(playfulPreset.components.map((component) => component.type)).toContain("Curious");
     expect(playfulPreset).not.toHaveProperty("petAssetId");
+  });
+
+  it("compiles talkative personality into an idle conversation runtime component", () => {
+    expect(compilePersonalityComponents([{ type: "Talkative", idleAfterMs: 9000 }])).toEqual([
+      { type: "IdleConversation", idleAfterMs: 9000 },
+    ]);
   });
 });

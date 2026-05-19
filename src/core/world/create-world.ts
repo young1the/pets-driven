@@ -1,6 +1,7 @@
 import type {
   ActivityStateComponent,
   AgentBindingComponent,
+  IdleConversationComponent,
   IntentStateComponent,
   MotionTargetComponent,
   MovementProfileComponent,
@@ -10,7 +11,6 @@ import type {
   SimulationComponentType,
   SpeechProfileComponent,
   SpeechStateComponent,
-  TalkativeComponent,
   TransformComponent,
 } from "@/core/components/simulation-components";
 import { createComponentStore, type EntityDeclaration } from "@/core/ecs/component-store";
@@ -41,13 +41,17 @@ export function createWorld(input: WorldDefinition) {
   const stimuli = createStimulusQueue();
   const random = input.random ?? createSeededRandom(1);
 
-  for (const entity of components.query("Transform", "PhysicsBody")) {
-    const [transform, body] = entity.components;
-    if (body.shape === "rectangle") {
-      physics.addRectangle(entity.id, transform.position, {
-        width: body.width,
-        height: body.height,
-      });
+  registerPhysicsBodies();
+
+  function registerPhysicsBodies() {
+    for (const entity of components.query("Transform", "PhysicsBody")) {
+      const [transform, body] = entity.components;
+      if (body.shape === "rectangle") {
+        physics.addRectangle(entity.id, transform.position, {
+          width: body.width,
+          height: body.height,
+        });
+      }
     }
   }
 
@@ -67,12 +71,12 @@ export function createWorld(input: WorldDefinition) {
       });
   }
 
-  function getTalkativePets() {
-    return components.query("Talkative", "SpeechProfile", "SpeechState", "ActivityState").map((entity) => {
-      const [talkative, speechProfile, speech, activity] = entity.components;
+  function getIdleConversationPets() {
+    return components.query("IdleConversation", "SpeechProfile", "SpeechState", "ActivityState").map((entity) => {
+      const [idleConversation, speechProfile, speech, activity] = entity.components;
       return {
         id: entity.id,
-        talkative: talkative as TalkativeComponent,
+        idleConversation: idleConversation as IdleConversationComponent,
         speechProfile: speechProfile as SpeechProfileComponent,
         speech: speech as SpeechStateComponent,
         activity: activity as ActivityStateComponent,
@@ -180,7 +184,7 @@ export function createWorld(input: WorldDefinition) {
     },
     step(deltaMs: number) {
       runStimulusReactionSystem(getReactivePets(), stimuli.drain());
-      runIdleConversationSystem(getTalkativePets(), input.clock);
+      runIdleConversationSystem(getIdleConversationPets(), input.clock);
 
       runPhysicsTransformSyncSystem(getTransformEntities(), physics);
       runMotionTargetSystem(getMotionPets(), getUserAnchorTargets(), random, {
