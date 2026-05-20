@@ -1,7 +1,6 @@
 import type {
   ActivityStateComponent,
   AgentBindingComponent,
-  AvoidsCrowdsComponent,
   ContactStateComponent,
   CompletionBehaviorComponent,
   FlightMovementComponent,
@@ -38,9 +37,9 @@ import {
   type StimulusQueue,
 } from "@/core/stimuli/stimulus-queue";
 import { runArrivalBehaviorSystem } from "@/core/systems/arrival-behavior-system";
+import { runCollisionReactionSystem } from "@/core/systems/collision-reaction-system";
 import { runContactSystem } from "@/core/systems/contact-system";
 import { runLocomotionModeSystem } from "@/core/systems/locomotion-mode-system";
-import { runCrowdAvoidanceSystem } from "@/core/systems/crowd-avoidance-system";
 import { runFlightSystem } from "@/core/systems/flight-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
@@ -317,27 +316,6 @@ export function createWorld(input: WorldDefinition) {
       });
   }
 
-  function getAvoidanceObstacles(componentStore: ComponentStore) {
-    return componentStore.query("Transform", "PhysicsBody").map((entity) => {
-      const [transform] = entity.components;
-      return {
-        id: entity.id,
-        position: (transform as TransformComponent).position,
-      };
-    });
-  }
-
-  function getCrowdAvoidingEntities(componentStore: ComponentStore) {
-    return componentStore.query("Transform", "AvoidsCrowds").map((entity) => {
-      const [transform, avoidsCrowds] = entity.components;
-      return {
-        id: entity.id,
-        position: (transform as TransformComponent).position,
-        avoidsCrowds: avoidsCrowds as AvoidsCrowdsComponent,
-      };
-    });
-  }
-
   function getFlightEntities(componentStore: ComponentStore) {
     return componentStore
       .query("PhysicsBody", "LocomotionState", "FlightMovement")
@@ -407,6 +385,21 @@ export function createWorld(input: WorldDefinition) {
           wallClimb: wallClimb as WallClimbMovementComponent,
           motion: motion as MotionTargetComponent,
           contact: contact as ContactStateComponent,
+        };
+      });
+  }
+
+  function getCollisionReactionEntities(componentStore: ComponentStore) {
+    return componentStore
+      .query("Transform", "PhysicsBody", "IntentState", "MotionTarget")
+      .map((entity) => {
+        const [transform, body, intent, motion] = entity.components;
+        return {
+          id: entity.id,
+          transform: transform as TransformComponent,
+          body: body,
+          intent: intent as IntentStateComponent,
+          motion: motion as MotionTargetComponent,
         };
       });
   }
@@ -538,8 +531,25 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "WalkSystem",
+      name: "CollisionReactionSystem",
       dependsOn: ["MotionTargetSystem"],
+      reads: [
+        "Transform",
+        "PhysicsBody",
+        "IntentState",
+        "MotionTarget",
+      ],
+      writes: ["MotionTarget"],
+      update(context) {
+        runCollisionReactionSystem(
+          getCollisionReactionEntities(context.components),
+          context.bounds,
+        );
+      },
+    },
+    {
+      name: "WalkSystem",
+      dependsOn: ["CollisionReactionSystem"],
       reads: [
         "Transform",
         "LocomotionState",
@@ -556,7 +566,7 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "JumpSystem",
-      dependsOn: ["MotionTargetSystem"],
+      dependsOn: ["CollisionReactionSystem"],
       reads: ["LocomotionState", "JumpMovement", "JumpState"],
       writes: ["PhysicsForce", "JumpState"],
       update(context) {
@@ -567,7 +577,7 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "WallClimbSystem",
-      dependsOn: ["MotionTargetSystem"],
+      dependsOn: ["CollisionReactionSystem"],
       reads: [
         "Transform",
         "LocomotionState",
@@ -583,22 +593,8 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "CrowdAvoidanceSystem",
-      dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "AvoidsCrowds", "PhysicsBody"],
-      writes: ["PhysicsForce"],
-      update(context) {
-        context.forceGroups.push(
-          runCrowdAvoidanceSystem(
-            getCrowdAvoidingEntities(context.components),
-            getAvoidanceObstacles(context.components),
-          ),
-        );
-      },
-    },
-    {
       name: "IntentSteeringSystem",
-      dependsOn: ["MotionTargetSystem"],
+      dependsOn: ["CollisionReactionSystem"],
       reads: [
         "Transform",
         "LocomotionState",
@@ -629,7 +625,6 @@ export function createWorld(input: WorldDefinition) {
         "WalkSystem",
         "JumpSystem",
         "WallClimbSystem",
-        "CrowdAvoidanceSystem",
         "IntentSteeringSystem",
         "FlightSystem",
       ],

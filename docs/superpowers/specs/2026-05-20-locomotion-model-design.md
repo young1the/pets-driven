@@ -128,14 +128,14 @@ WalkMovement + obstacle ahead + ContactState.grounded
 
 The former `AvoidancePlanningSystem` predicted a waypoint before collision. This was useful for a clean prototype, but it made avoidance feel global and planner-driven.
 
-The preferred long-term direction is contact- and personality-driven reaction:
+The preferred long-term direction is contact- and intent-driven reaction:
 
-- A pet with `AvoidsCrowds` backs away or chooses a new path after detecting nearby pets.
-- A stubborn pet may keep pushing forward.
-- A jump-capable pet may hop over a low obstacle.
-- A shy pet may stop and wait.
+- An idle pet backs away from another pet after collision.
+- An active pet immediately chooses a diagonal detour target.
+- A seeking pet keeps its original goal direction while choosing a temporary waypoint around the collision.
+- A jump-capable pet may later hop over a low obstacle.
 
-This means avoidance should become behavior logic driven by entity components, not a global precomputed waypoint system.
+This means avoidance should become behavior logic that rewrites motion targets after contact, not a global steering-force system.
 
 ## Arrival
 
