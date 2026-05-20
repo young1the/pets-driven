@@ -18,6 +18,7 @@ describe("demo scenario", () => {
       "StimulusReactionSystem",
       "IdleConversationSystem",
       "PhysicsTransformSyncSystem",
+      "ContactSystem",
       "MotionTargetSystem",
       "AvoidancePlanningSystem",
       "WalkSystem",
@@ -34,6 +35,12 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
 
     expect(scenario.world.systemPlan()).toContainEqual({
+      name: "ContactSystem",
+      dependsOn: ["PhysicsTransformSyncSystem"],
+      reads: ["Transform", "ContactState", "ClimbableSurface"],
+      writes: ["ContactState"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
       name: "WalkSystem",
       dependsOn: ["AvoidancePlanningSystem"],
       reads: ["Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState"],
@@ -48,7 +55,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WallClimbSystem",
       dependsOn: ["AvoidancePlanningSystem"],
-      reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget"],
+      reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget", "ContactState"],
       writes: ["PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -91,6 +98,11 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-a", "NavigationState")).toEqual({
       type: "NavigationState",
       avoidanceWaypoint: null,
+    });
+    expect(scenario.world.getComponent("pet-a", "ContactState")).toEqual({
+      type: "ContactState",
+      grounded: false,
+      climbableSurfaceId: null,
     });
     expect(scenario.world.getComponent("pet-a", "SpeechProfile")).toEqual({
       type: "SpeechProfile",
@@ -169,6 +181,23 @@ describe("demo scenario", () => {
       type: "PhysicsMaterial",
       friction: 0.8,
       restitution: 0,
+    });
+  });
+
+  it("models climbable surfaces as contact targets", () => {
+    const scenario = createDemoScenario();
+
+    expect(scenario.world.getEntity("climb-wall")).toEqual({ id: "climb-wall" });
+    expect(scenario.world.getComponent("climb-wall", "ClimbableSurface")).toEqual({
+      type: "ClimbableSurface",
+    });
+
+    scenario.world.step(16);
+
+    expect(scenario.world.getComponent("pet-c", "ContactState")).toEqual({
+      type: "ContactState",
+      grounded: false,
+      climbableSurfaceId: "climb-wall",
     });
   });
 

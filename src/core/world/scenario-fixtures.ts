@@ -26,6 +26,7 @@ function createFixturePet(input: {
       { type: "IntentState" as const, intent: "idle" as const },
       { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
       { type: "NavigationState" as const, avoidanceWaypoint: null },
+      { type: "ContactState" as const, grounded: false, climbableSurfaceId: null },
       { type: "ActivityState" as const, lastActiveAt: 0 },
       { type: "CompletionBehavior" as const, intentAfterCompletion: "idle" as const },
       { type: "SpeechState" as const, speech: null },
@@ -66,6 +67,20 @@ export function createDemoScenario(options?: {
             type: "Transform",
             position: options?.userAnchor ?? { x: 480, y: 500 },
           },
+        ],
+      },
+      {
+        id: "alice-climb-wall",
+        components: [
+          { type: "ClimbableSurface" },
+          { type: "Transform", position: { x: 120, y: 500 } },
+        ],
+      },
+      {
+        id: "climb-wall",
+        components: [
+          { type: "ClimbableSurface" },
+          { type: "Transform", position: { x: 280, y: 200 } },
         ],
       },
       createFixturePet({

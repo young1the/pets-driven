@@ -1,6 +1,7 @@
 import type {
   ActivityStateComponent,
   AgentBindingComponent,
+  ContactStateComponent,
   CompletionBehaviorComponent,
   FlightMovementComponent,
   IdleConversationComponent,
@@ -25,6 +26,7 @@ import { createMatterPhysicsWorld, type MatterPhysicsWorld } from "@/core/physic
 import type { Stimulus } from "@/core/stimuli/stimulus";
 import { createStimulusQueue, type StimulusQueue } from "@/core/stimuli/stimulus-queue";
 import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-system";
+import { runContactSystem } from "@/core/systems/contact-system";
 import { runFlightSystem } from "@/core/systems/flight-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
@@ -157,6 +159,27 @@ export function createWorld(input: WorldDefinition) {
     });
   }
 
+  function getContactEntities(componentStore: ComponentStore) {
+    return componentStore.query("Transform", "ContactState").map((entity) => {
+      const [transform, contact] = entity.components;
+      return {
+        id: entity.id,
+        position: (transform as TransformComponent).position,
+        contact: contact as ContactStateComponent,
+      };
+    });
+  }
+
+  function getClimbableSurfaces(componentStore: ComponentStore) {
+    return componentStore.query("Transform", "ClimbableSurface").map((entity) => {
+      const [transform] = entity.components;
+      return {
+        id: entity.id,
+        position: (transform as TransformComponent).position,
+      };
+    });
+  }
+
   function getSteeringPets(componentStore: ComponentStore) {
     return componentStore
       .query("Transform", "LocomotionState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState")
@@ -241,16 +264,19 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getWallClimbingEntities(componentStore: ComponentStore) {
-    return componentStore.query("Transform", "LocomotionState", "WallClimbMovement", "MotionTarget").map((entity) => {
-      const [transform, locomotion, wallClimb, motion] = entity.components;
-      return {
-        id: entity.id,
-        position: (transform as TransformComponent).position,
-        locomotion: locomotion as LocomotionStateComponent,
-        wallClimb: wallClimb as WallClimbMovementComponent,
-        motion: motion as MotionTargetComponent,
-      };
-    });
+    return componentStore
+      .query("Transform", "LocomotionState", "WallClimbMovement", "MotionTarget", "ContactState")
+      .map((entity) => {
+        const [transform, locomotion, wallClimb, motion, contact] = entity.components;
+        return {
+          id: entity.id,
+          position: (transform as TransformComponent).position,
+          locomotion: locomotion as LocomotionStateComponent,
+          wallClimb: wallClimb as WallClimbMovementComponent,
+          motion: motion as MotionTargetComponent,
+          contact: contact as ContactStateComponent,
+        };
+      });
   }
 
   function getPetSnapshots(componentStore: ComponentStore) {
@@ -297,8 +323,20 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "MotionTargetSystem",
+      name: "ContactSystem",
       dependsOn: ["PhysicsTransformSyncSystem"],
+      reads: ["Transform", "ContactState", "ClimbableSurface"],
+      writes: ["ContactState"],
+      update(context) {
+        runContactSystem(
+          getContactEntities(context.components),
+          getClimbableSurfaces(context.components),
+        );
+      },
+    },
+    {
+      name: "MotionTargetSystem",
+      dependsOn: ["ContactSystem"],
       reads: ["IntentState", "MotionTarget", "Transform", "UserAnchor"],
       writes: ["MotionTarget"],
       update(context) {
@@ -343,7 +381,7 @@ export function createWorld(input: WorldDefinition) {
     {
       name: "WallClimbSystem",
       dependsOn: ["AvoidancePlanningSystem"],
-      reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget"],
+      reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget", "ContactState"],
       writes: ["PhysicsForce"],
       update(context) {
         context.forceGroups.push(runWallClimbSystem(getWallClimbingEntities(context.components)));
