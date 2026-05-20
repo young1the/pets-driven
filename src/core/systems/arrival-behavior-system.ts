@@ -36,6 +36,7 @@ export function runArrivalBehaviorSystem(
 
       entity.intent.intent = "idle";
       entity.motion.targetEntityId = null;
+      entity.motion.targetPosition = null;
       continue;
     }
 
