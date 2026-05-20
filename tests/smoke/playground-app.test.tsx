@@ -70,8 +70,10 @@ describe("PlaygroundApp", () => {
 
     fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startWalkDemo }));
 
-    expect(screen.getByText("walk")).toBeInTheDocument();
-    expect(screen.getByText(PLAYGROUND_TEXT.walkingDemoSpeech)).toBeInTheDocument();
+    const alice = screen.getByText("Alice").closest("li");
+    expect(alice).not.toBeNull();
+    expect(within(alice as HTMLElement).getByText("walk")).toBeInTheDocument();
+    expect(within(alice as HTMLElement).getByText(PLAYGROUND_TEXT.walkingDemoSpeech)).toBeInTheDocument();
   });
 
   it("starts visible jump and wall-climb demos from the playground controls", () => {
@@ -84,13 +86,13 @@ describe("PlaygroundApp", () => {
     fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo }));
     const aliceAfterJump = screen.getByText("Alice").closest("li");
     expect(aliceAfterJump).not.toBeNull();
-    expect(within(aliceAfterJump as HTMLElement).getByText("jump")).toBeInTheDocument();
+    expect(within(aliceAfterJump as HTMLElement).getByText("walk")).toBeInTheDocument();
     expect(within(aliceAfterJump as HTMLElement).getByText(PLAYGROUND_TEXT.jumpDemoSpeech)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }));
     const aliceAfterClimb = screen.getByText("Alice").closest("li");
     expect(aliceAfterClimb).not.toBeNull();
-    expect(within(aliceAfterClimb as HTMLElement).getByText("climbWall")).toBeInTheDocument();
+    expect(within(aliceAfterClimb as HTMLElement).getByText("climb")).toBeInTheDocument();
     expect(within(aliceAfterClimb as HTMLElement).getByText(PLAYGROUND_TEXT.wallClimbDemoSpeech)).toBeInTheDocument();
   });
 });

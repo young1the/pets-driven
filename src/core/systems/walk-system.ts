@@ -20,7 +20,7 @@ type WalkingEntity = {
 
 export function runWalkSystem(entities: WalkingEntity[]): Force[] {
   return entities.flatMap((entity) => {
-    if (entity.locomotion.activeMode !== "walk") {
+    if (entity.locomotion.baseMode !== "walk") {
       return [];
     }
 

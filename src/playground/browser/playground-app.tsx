@@ -57,7 +57,7 @@ export function PlaygroundApp() {
     const alice = snapshot.pets.find((pet) => pet.id === "pet-a");
     scenarioRef.current.world.setComponent("pet-a", {
       type: "LocomotionState",
-      activeMode: "walk",
+      baseMode: "walk",
     });
     scenarioRef.current.world.setComponent("pet-a", {
       type: "MotionTarget",
@@ -80,7 +80,7 @@ export function PlaygroundApp() {
   function startJumpDemo() {
     scenarioRef.current.world.setComponent("pet-a", {
       type: "LocomotionState",
-      activeMode: "jump",
+      baseMode: "walk",
     });
     scenarioRef.current.world.setComponent("pet-a", {
       type: "JumpState",
@@ -100,7 +100,7 @@ export function PlaygroundApp() {
     const alice = snapshot.pets.find((pet) => pet.id === "pet-a");
     scenarioRef.current.world.setComponent("pet-a", {
       type: "LocomotionState",
-      activeMode: "climbWall",
+      baseMode: "climb",
     });
     scenarioRef.current.world.setComponent("pet-a", {
       type: "MotionTarget",
