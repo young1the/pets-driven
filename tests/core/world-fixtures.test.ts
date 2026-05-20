@@ -7,8 +7,12 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();
 
-    expect(snapshot.bodies.filter((body) => body.id.startsWith("pet-"))).toHaveLength(4);
-    expect(snapshot.bodies.some((body) => body.id === "monitor-ground")).toBe(true);
+    expect(
+      snapshot.bodies.filter((body) => body.id.startsWith("pet-")),
+    ).toHaveLength(4);
+    expect(snapshot.bodies.some((body) => body.id === "monitor-ground")).toBe(
+      true,
+    );
   });
 
   it("exposes the simulation system order used by each step", () => {
@@ -51,13 +55,25 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ArrivalBehaviorSystem",
       dependsOn: ["LocomotionModeSystem"],
-      reads: ["Transform", "MotionTarget", "WandersOnArrival"],
-      writes: ["MotionTarget"],
+      reads: [
+        "Transform",
+        "MotionTarget",
+        "WandersOnArrival",
+        "IntentState",
+        "UserAnchor",
+      ],
+      writes: ["MotionTarget", "IntentState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WalkSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState"],
+      reads: [
+        "Transform",
+        "LocomotionState",
+        "WalkMovement",
+        "MotionTarget",
+        "NavigationState",
+      ],
       writes: ["PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -69,7 +85,13 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WallClimbSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget", "ContactState"],
+      reads: [
+        "Transform",
+        "LocomotionState",
+        "WallClimbMovement",
+        "MotionTarget",
+        "ContactState",
+      ],
       writes: ["PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -91,7 +113,9 @@ describe("demo scenario", () => {
       userAnchor: { x: 480, y: 500 },
     });
 
-    expect(scenario.world.getEntity("user-anchor")).toEqual({ id: "user-anchor" });
+    expect(scenario.world.getEntity("user-anchor")).toEqual({
+      id: "user-anchor",
+    });
     expect(scenario.world.getComponent("user-anchor", "UserAnchor")).toEqual({
       type: "UserAnchor",
     });
@@ -143,7 +167,9 @@ describe("demo scenario", () => {
       type: "LocomotionState",
       baseMode: "walk",
     });
-    expect(scenario.world.getComponent("pet-a", "FlightMovement")).toBeUndefined();
+    expect(
+      scenario.world.getComponent("pet-a", "FlightMovement"),
+    ).toBeUndefined();
     expect(scenario.world.getComponent("pet-a", "WalkMovement")).toEqual({
       type: "WalkMovement",
       speed: 0.01,
@@ -206,7 +232,9 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("monitor-ground", "Ground")).toEqual({
       type: "Ground",
     });
-    expect(scenario.world.getComponent("monitor-ground", "PhysicsMaterial")).toEqual({
+    expect(
+      scenario.world.getComponent("monitor-ground", "PhysicsMaterial"),
+    ).toEqual({
       type: "PhysicsMaterial",
       friction: 0.8,
       restitution: 0,
@@ -216,8 +244,12 @@ describe("demo scenario", () => {
   it("models climbable surfaces as contact targets", () => {
     const scenario = createDemoScenario();
 
-    expect(scenario.world.getEntity("climb-wall")).toEqual({ id: "climb-wall" });
-    expect(scenario.world.getComponent("climb-wall", "ClimbableSurface")).toEqual({
+    expect(scenario.world.getEntity("climb-wall")).toEqual({
+      id: "climb-wall",
+    });
+    expect(
+      scenario.world.getComponent("climb-wall", "ClimbableSurface"),
+    ).toEqual({
       type: "ClimbableSurface",
     });
 
@@ -234,8 +266,18 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();
 
-    expect(snapshot.pets.map((pet) => pet.name)).toEqual(["Alice", "Bob", "Charlie", "Dana"]);
-    expect(snapshot.pets.map((pet) => pet.locomotion)).toEqual(["walk", "walk", "walk", "fly"]);
+    expect(snapshot.pets.map((pet) => pet.name)).toEqual([
+      "Alice",
+      "Bob",
+      "Charlie",
+      "Dana",
+    ]);
+    expect(snapshot.pets.map((pet) => pet.locomotion)).toEqual([
+      "walk",
+      "walk",
+      "walk",
+      "fly",
+    ]);
     expect(snapshot.pets[0]).toMatchObject({
       id: "pet-a",
       sourceId: "agent-a",
@@ -342,8 +384,13 @@ describe("demo scenario", () => {
       scenario.world.step(16);
     }
 
-    const body = scenario.world.snapshot().bodies.find((snapshotBody) => snapshotBody.id === "pet-d");
-    const distanceFromAnchor = Math.hypot((body?.x ?? 0) - userAnchor.x, (body?.y ?? 0) - userAnchor.y);
+    const body = scenario.world
+      .snapshot()
+      .bodies.find((snapshotBody) => snapshotBody.id === "pet-d");
+    const distanceFromAnchor = Math.hypot(
+      (body?.x ?? 0) - userAnchor.x,
+      (body?.y ?? 0) - userAnchor.y,
+    );
     const speed = Math.hypot(body?.vx ?? 0, body?.vy ?? 0);
 
     expect(distanceFromAnchor).toBeLessThanOrEqual(MOTION_ARRIVAL_RADIUS + 2);

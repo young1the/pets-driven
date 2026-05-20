@@ -18,7 +18,10 @@ describe("behavior systems", () => {
     const clock = createManualClock(0);
     const pet = {
       id: "pet-a",
-      idleConversation: { type: "IdleConversation" as const, idleAfterMs: 5_000 },
+      idleConversation: {
+        type: "IdleConversation" as const,
+        idleAfterMs: 5_000,
+      },
       speechProfile: {
         type: "SpeechProfile" as const,
         idleCompanion: "Custom idle line",
@@ -56,9 +59,10 @@ describe("behavior systems", () => {
       },
     };
 
-    runStimulusReactionSystem([pet], [
-      { type: "task.waiting", sourceId: "agent-a", at: 10 },
-    ]);
+    runStimulusReactionSystem(
+      [pet],
+      [{ type: "task.waiting", sourceId: "agent-a", at: 10 }],
+    );
 
     expect(pet.intent.intent).toBe("seek");
     expect(pet.speech.speech).toBe("Custom attention line");
@@ -90,9 +94,10 @@ describe("behavior systems", () => {
       },
     };
 
-    runStimulusReactionSystem([pet], [
-      { type: "task.started", sourceId: "agent-a", at: 10 },
-    ]);
+    runStimulusReactionSystem(
+      [pet],
+      [{ type: "task.started", sourceId: "agent-a", at: 10 }],
+    );
 
     expect(pet.intent.intent).toBe("active");
     expect(pet.speech.speech).toBe("Custom working line");
@@ -125,9 +130,10 @@ describe("behavior systems", () => {
       },
     };
 
-    runStimulusReactionSystem([pet], [
-      { type: "task.completed", sourceId: "agent-a", at: 20 },
-    ]);
+    runStimulusReactionSystem(
+      [pet],
+      [{ type: "task.completed", sourceId: "agent-a", at: 20 }],
+    );
 
     expect(pet.intent.intent).toBe("seek");
     expect(pet.speech.speech).toBe("Custom completed line");
@@ -167,6 +173,7 @@ describe("behavior systems", () => {
 
   it("clears a world target after a wandering pet arrives", () => {
     const pet = {
+      intent: { type: "IntentState" as const, intent: "idle" as const },
       transform: {
         type: "Transform" as const,
         position: { x: 100, y: 100 },
@@ -182,7 +189,7 @@ describe("behavior systems", () => {
       },
     };
 
-    runArrivalBehaviorSystem([pet]);
+    runArrivalBehaviorSystem([pet], []);
 
     expect(pet.motion).toEqual({
       type: "MotionTarget",
@@ -191,8 +198,9 @@ describe("behavior systems", () => {
     });
   });
 
-  it("keeps entity targets for behavior systems that care about anchors", () => {
+  it("keeps entity target when no matching anchor is present", () => {
     const pet = {
+      intent: { type: "IntentState" as const, intent: "seek" as const },
       transform: {
         type: "Transform" as const,
         position: { x: 100, y: 100 },
@@ -200,7 +208,7 @@ describe("behavior systems", () => {
       motion: {
         type: "MotionTarget" as const,
         targetEntityId: "user-anchor" as string | null,
-        targetPosition: { x: 108, y: 100 } as { x: number; y: number } | null,
+        targetPosition: null as { x: number; y: number } | null,
       },
       wandersOnArrival: {
         type: "WandersOnArrival" as const,
@@ -208,10 +216,10 @@ describe("behavior systems", () => {
       },
     };
 
-    runArrivalBehaviorSystem([pet]);
+    runArrivalBehaviorSystem([pet], []);
 
     expect(pet.motion.targetEntityId).toBe("user-anchor");
-    expect(pet.motion.targetPosition).toEqual({ x: 108, y: 100 });
+    expect(pet.intent.intent).toBe("seek");
   });
 
   it("records the nearest climbable surface contact", () => {
@@ -252,7 +260,10 @@ describe("behavior systems", () => {
   });
 
   it("merges steering forces by entity before stepping physics", () => {
-    const appliedForces: Array<{ id: string; force: { x: number; y: number } }> = [];
+    const appliedForces: Array<{
+      id: string;
+      force: { x: number; y: number };
+    }> = [];
     const physics = {
       applyForce(id: string, force: { x: number; y: number }) {
         appliedForces.push({ id, force });
@@ -263,7 +274,10 @@ describe("behavior systems", () => {
     runPhysicsIntegrationSystem({
       physics,
       deltaMs: 16,
-      forceGroups: [[{ id: "pet-a", x: 1, y: 2 }], [{ id: "pet-a", x: 0.5, y: -1 }]],
+      forceGroups: [
+        [{ id: "pet-a", x: 1, y: 2 }],
+        [{ id: "pet-a", x: 0.5, y: -1 }],
+      ],
     });
 
     expect(appliedForces).toEqual([{ id: "pet-a", force: { x: 1.5, y: 1 } }]);
@@ -293,7 +307,10 @@ describe("behavior systems", () => {
       },
     };
 
-    const snapshot = runPhysicsTransformSyncSystem([{ id: "pet-a", transform }], physics);
+    const snapshot = runPhysicsTransformSyncSystem(
+      [{ id: "pet-a", transform }],
+      physics,
+    );
 
     expect(transform.position).toEqual({ x: 42, y: 24 });
     expect(snapshot.bodies[0]?.id).toBe("pet-a");
@@ -301,7 +318,10 @@ describe("behavior systems", () => {
 
   it("applies flight gravity scale and hover force only when flight is active", () => {
     const gravityScales: Array<{ id: string; scale: number }> = [];
-    const appliedForces: Array<{ id: string; force: { x: number; y: number } }> = [];
+    const appliedForces: Array<{
+      id: string;
+      force: { x: number; y: number };
+    }> = [];
     const physics = {
       setGravityScale(id: string, scale: number) {
         gravityScales.push({ id, scale });
@@ -316,19 +336,29 @@ describe("behavior systems", () => {
         {
           id: "pet-a",
           locomotion: { type: "LocomotionState" as const, baseMode: "fly" },
-          flight: { type: "FlightMovement" as const, gravityScale: 0, hoverStrength: 0.003 },
+          flight: {
+            type: "FlightMovement" as const,
+            gravityScale: 0,
+            hoverStrength: 0.003,
+          },
         },
         {
           id: "pet-b",
           locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
-          flight: { type: "FlightMovement" as const, gravityScale: 0, hoverStrength: 0.003 },
+          flight: {
+            type: "FlightMovement" as const,
+            gravityScale: 0,
+            hoverStrength: 0.003,
+          },
         },
       ],
       physics,
     );
 
     expect(gravityScales).toEqual([{ id: "pet-a", scale: 0 }]);
-    expect(appliedForces).toEqual([{ id: "pet-a", force: { x: 0, y: -0.003 } }]);
+    expect(appliedForces).toEqual([
+      { id: "pet-a", force: { x: 0, y: -0.003 } },
+    ]);
   });
 
   it("creates horizontal walking force only when walking is active", () => {
