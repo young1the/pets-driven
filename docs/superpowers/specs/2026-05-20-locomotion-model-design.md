@@ -126,7 +126,7 @@ WalkMovement + obstacle ahead + ContactState.grounded
 
 ## Avoidance
 
-The current `AvoidancePlanningSystem` predicts a waypoint before collision. This is useful for a clean prototype, but it makes avoidance feel global and planner-driven.
+The former `AvoidancePlanningSystem` predicted a waypoint before collision. This was useful for a clean prototype, but it made avoidance feel global and planner-driven.
 
 The preferred long-term direction is contact- and personality-driven reaction:
 
