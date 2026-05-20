@@ -196,15 +196,26 @@ export function createWorld(input: WorldDefinition) {
 
   function getArrivalBehaviorEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("Transform", "MotionTarget", "WandersOnArrival")
+      .query("IntentState", "Transform", "MotionTarget", "WandersOnArrival")
       .map((entity) => {
-        const [transform, motion, wandersOnArrival] = entity.components;
+        const [intent, transform, motion, wandersOnArrival] = entity.components;
         return {
+          intent: intent as IntentStateComponent,
           transform: transform as TransformComponent,
           motion: motion as MotionTargetComponent,
           wandersOnArrival: wandersOnArrival as WandersOnArrivalComponent,
         };
       });
+  }
+
+  function getAnchorPositions(componentStore: ComponentStore) {
+    return componentStore.query("UserAnchor", "Transform").map((entity) => {
+      const [, transform] = entity.components;
+      return {
+        id: entity.id,
+        position: (transform as TransformComponent).position,
+      };
+    });
   }
 
   function getUserAnchorTargets(componentStore: ComponentStore) {
@@ -488,11 +499,18 @@ export function createWorld(input: WorldDefinition) {
     {
       name: "ArrivalBehaviorSystem",
       dependsOn: ["LocomotionModeSystem"],
-      reads: ["Transform", "MotionTarget", "WandersOnArrival"],
-      writes: ["MotionTarget"],
+      reads: [
+        "Transform",
+        "MotionTarget",
+        "WandersOnArrival",
+        "IntentState",
+        "UserAnchor",
+      ],
+      writes: ["MotionTarget", "IntentState"],
       update(context) {
         runArrivalBehaviorSystem(
           getArrivalBehaviorEntities(context.components),
+          getAnchorPositions(context.components),
         );
       },
     },
