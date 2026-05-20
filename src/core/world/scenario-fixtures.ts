@@ -78,6 +78,8 @@ export function createDemoScenario(options?: {
           { type: "IdleConversation", idleAfterMs: 5_000 },
           { type: "LocomotionState", activeMode: "walk" },
           { type: "WalkMovement", speed: 0.01 },
+          { type: "JumpMovement", impulse: 0.014 },
+          { type: "WallClimbMovement", speed: 0.004 },
         ],
       }),
       createFixturePet({

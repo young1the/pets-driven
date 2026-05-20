@@ -5,8 +5,10 @@ import { runPhysicsIntegrationSystem } from "@/core/systems/physics-integration-
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runFlightSystem } from "@/core/systems/flight-system";
+import { runJumpSystem } from "@/core/systems/jump-system";
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
 import { runWalkSystem } from "@/core/systems/walk-system";
+import { runWallClimbSystem } from "@/core/systems/wall-climb-system";
 import { createManualClock } from "@/shared/time/manual-clock";
 
 describe("behavior systems", () => {
@@ -274,5 +276,51 @@ describe("behavior systems", () => {
     ]);
 
     expect(forces).toEqual([{ id: "pet-a", x: 0.004, y: 0 }]);
+  });
+
+  it("creates upward jump force only when jumping is active", () => {
+    const forces = runJumpSystem([
+      {
+        id: "pet-a",
+        locomotion: { type: "LocomotionState" as const, activeMode: "jump" },
+        jump: { type: "JumpMovement" as const, impulse: 0.012 },
+      },
+      {
+        id: "pet-b",
+        locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
+        jump: { type: "JumpMovement" as const, impulse: 0.012 },
+      },
+    ]);
+
+    expect(forces).toEqual([{ id: "pet-a", x: 0, y: -0.012 }]);
+  });
+
+  it("creates vertical wall-climb force only when wall climbing is active", () => {
+    const forces = runWallClimbSystem([
+      {
+        id: "pet-a",
+        position: { x: 920, y: 420 },
+        locomotion: { type: "LocomotionState" as const, activeMode: "climbWall" },
+        wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
+        motion: {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: { x: 920, y: 120 },
+        },
+      },
+      {
+        id: "pet-b",
+        position: { x: 920, y: 420 },
+        locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
+        wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
+        motion: {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: { x: 920, y: 120 },
+        },
+      },
+    ]);
+
+    expect(forces).toEqual([{ id: "pet-a", x: 0, y: -0.003 }]);
   });
 });

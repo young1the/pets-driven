@@ -5,6 +5,7 @@ import type {
   FlightMovementComponent,
   IdleConversationComponent,
   IntentStateComponent,
+  JumpMovementComponent,
   LocomotionStateComponent,
   MotionTargetComponent,
   MovementProfileComponent,
@@ -15,6 +16,7 @@ import type {
   SpeechProfileComponent,
   SpeechStateComponent,
   TransformComponent,
+  WallClimbMovementComponent,
   WalkMovementComponent,
 } from "@/core/components/simulation-components";
 import { createComponentStore, type ComponentStore, type EntityDeclaration } from "@/core/ecs/component-store";
@@ -25,6 +27,7 @@ import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-sy
 import { runFlightSystem } from "@/core/systems/flight-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
+import { runJumpSystem } from "@/core/systems/jump-system";
 import { runMotionTargetSystem } from "@/core/systems/motion-target-system";
 import { runPhysicsIntegrationSystem, type Force } from "@/core/systems/physics-integration-system";
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
@@ -35,6 +38,7 @@ import {
 } from "@/core/systems/simulation-system";
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
 import { runWalkSystem } from "@/core/systems/walk-system";
+import { runWallClimbSystem } from "@/core/systems/wall-climb-system";
 import { createSeededRandom, type RandomSource } from "@/shared/random/seeded-random";
 import type { ManualClock } from "@/shared/time/manual-clock";
 
@@ -223,6 +227,30 @@ export function createWorld(input: WorldDefinition) {
       });
   }
 
+  function getJumpingEntities(componentStore: ComponentStore) {
+    return componentStore.query("LocomotionState", "JumpMovement").map((entity) => {
+      const [locomotion, jump] = entity.components;
+      return {
+        id: entity.id,
+        locomotion: locomotion as LocomotionStateComponent,
+        jump: jump as JumpMovementComponent,
+      };
+    });
+  }
+
+  function getWallClimbingEntities(componentStore: ComponentStore) {
+    return componentStore.query("Transform", "LocomotionState", "WallClimbMovement", "MotionTarget").map((entity) => {
+      const [transform, locomotion, wallClimb, motion] = entity.components;
+      return {
+        id: entity.id,
+        position: (transform as TransformComponent).position,
+        locomotion: locomotion as LocomotionStateComponent,
+        wallClimb: wallClimb as WallClimbMovementComponent,
+        motion: motion as MotionTargetComponent,
+      };
+    });
+  }
+
   function getPetSnapshots(componentStore: ComponentStore) {
     return componentStore
       .query("PetIdentity", "AgentBinding", "IntentState", "LocomotionState", "SpeechState", "Transform")
@@ -302,6 +330,24 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
+      name: "JumpSystem",
+      dependsOn: ["AvoidancePlanningSystem"],
+      reads: ["LocomotionState", "JumpMovement"],
+      writes: ["PhysicsForce"],
+      update(context) {
+        context.forceGroups.push(runJumpSystem(getJumpingEntities(context.components)));
+      },
+    },
+    {
+      name: "WallClimbSystem",
+      dependsOn: ["AvoidancePlanningSystem"],
+      reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget"],
+      writes: ["PhysicsForce"],
+      update(context) {
+        context.forceGroups.push(runWallClimbSystem(getWallClimbingEntities(context.components)));
+      },
+    },
+    {
       name: "IntentSteeringSystem",
       dependsOn: ["AvoidancePlanningSystem"],
       reads: ["Transform", "LocomotionState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
@@ -321,7 +367,7 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "PhysicsIntegrationSystem",
-      dependsOn: ["WalkSystem", "IntentSteeringSystem", "FlightSystem"],
+      dependsOn: ["WalkSystem", "JumpSystem", "WallClimbSystem", "IntentSteeringSystem", "FlightSystem"],
       reads: ["PhysicsForce"],
       writes: ["PhysicsWorld"],
       update(context) {

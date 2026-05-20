@@ -4,12 +4,18 @@ export const PLAYGROUND_TEXT = {
   sendWaitingEvent: "Send waiting event",
   sendCompletedEvent: "Send completed event",
   startWalkDemo: "Walk Alice",
+  startJumpDemo: "Jump Alice",
+  startWallClimbDemo: "Climb Alice",
   walkDemoStimulus: "walk-demo",
+  jumpDemoStimulus: "jump-demo",
+  wallClimbDemoStimulus: "wall-climb-demo",
   lastStimulusPrefix: "Last stimulus:",
   lastEventTitle: "Last event",
   petStatusTitle: "Pet status",
   noSpeech: "No speech",
   walkingDemoSpeech: "Walking to the right",
+  jumpDemoSpeech: "Jumping up",
+  wallClimbDemoSpeech: "Climbing the wall",
 } as const;
 
 export const PLAYGROUND_SAMPLE_EVENT_SUMMARIES = {

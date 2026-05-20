@@ -77,6 +77,45 @@ export function PlaygroundApp() {
     setLastStimulus(PLAYGROUND_TEXT.walkDemoStimulus);
   }
 
+  function startJumpDemo() {
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "LocomotionState",
+      activeMode: "jump",
+    });
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "SpeechState",
+      speech: PLAYGROUND_TEXT.jumpDemoSpeech,
+    });
+
+    scenarioRef.current.world.step(0);
+    setSnapshot(scenarioRef.current.world.snapshot());
+    setLastStimulus(PLAYGROUND_TEXT.jumpDemoStimulus);
+  }
+
+  function startWallClimbDemo() {
+    const alice = snapshot.pets.find((pet) => pet.id === "pet-a");
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "LocomotionState",
+      activeMode: "climbWall",
+    });
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: {
+        x: alice?.position.x ?? 120,
+        y: 120,
+      },
+    });
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "SpeechState",
+      speech: PLAYGROUND_TEXT.wallClimbDemoSpeech,
+    });
+
+    scenarioRef.current.world.step(0);
+    setSnapshot(scenarioRef.current.world.snapshot());
+    setLastStimulus(PLAYGROUND_TEXT.wallClimbDemoStimulus);
+  }
+
   return (
     <main className="playground-shell">
       <header>
@@ -90,6 +129,8 @@ export function PlaygroundApp() {
           sendEvent("task.completed", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.completed)
         }
         onStartWalkDemo={startWalkDemo}
+        onStartJumpDemo={startJumpDemo}
+        onStartWallClimbDemo={startWallClimbDemo}
       />
       <AgentEventPanel event={lastEvent} />
       <PetStatusList pets={snapshot.pets} />

@@ -21,6 +21,8 @@ describe("demo scenario", () => {
       "MotionTargetSystem",
       "AvoidancePlanningSystem",
       "WalkSystem",
+      "JumpSystem",
+      "WallClimbSystem",
       "IntentSteeringSystem",
       "FlightSystem",
       "PhysicsIntegrationSystem",
@@ -35,6 +37,18 @@ describe("demo scenario", () => {
       name: "WalkSystem",
       dependsOn: ["AvoidancePlanningSystem"],
       reads: ["Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState"],
+      writes: ["PhysicsForce"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "JumpSystem",
+      dependsOn: ["AvoidancePlanningSystem"],
+      reads: ["LocomotionState", "JumpMovement"],
+      writes: ["PhysicsForce"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "WallClimbSystem",
+      dependsOn: ["AvoidancePlanningSystem"],
+      reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget"],
       writes: ["PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -101,6 +115,14 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-a", "WalkMovement")).toEqual({
       type: "WalkMovement",
       speed: 0.01,
+    });
+    expect(scenario.world.getComponent("pet-a", "JumpMovement")).toEqual({
+      type: "JumpMovement",
+      impulse: 0.014,
+    });
+    expect(scenario.world.getComponent("pet-a", "WallClimbMovement")).toEqual({
+      type: "WallClimbMovement",
+      speed: 0.004,
     });
     expect(scenario.world.getComponent("pet-b", "LocomotionState")).toEqual({
       type: "LocomotionState",

@@ -72,4 +72,20 @@ describe("PlaygroundApp", () => {
     expect(screen.getByText("walk")).toBeInTheDocument();
     expect(screen.getByText(PLAYGROUND_TEXT.walkingDemoSpeech)).toBeInTheDocument();
   });
+
+  it("starts visible jump and wall-climb demos from the playground controls", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo }));
+    expect(screen.getByText("jump")).toBeInTheDocument();
+    expect(screen.getByText(PLAYGROUND_TEXT.jumpDemoSpeech)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }));
+    expect(screen.getByText("climbWall")).toBeInTheDocument();
+    expect(screen.getByText(PLAYGROUND_TEXT.wallClimbDemoSpeech)).toBeInTheDocument();
+  });
 });
