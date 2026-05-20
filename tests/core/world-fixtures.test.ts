@@ -19,6 +19,7 @@ describe("demo scenario", () => {
       "IdleConversationSystem",
       "PhysicsTransformSyncSystem",
       "ContactSystem",
+      "LocomotionModeSystem",
       "ArrivalBehaviorSystem",
       "MotionTargetSystem",
       "WalkSystem",
@@ -42,8 +43,14 @@ describe("demo scenario", () => {
       writes: ["ContactState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
-      name: "ArrivalBehaviorSystem",
+      name: "LocomotionModeSystem",
       dependsOn: ["ContactSystem"],
+      reads: ["LocomotionState", "ContactState", "WallClimbMovement"],
+      writes: ["LocomotionState"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "ArrivalBehaviorSystem",
+      dependsOn: ["LocomotionModeSystem"],
       reads: ["Transform", "MotionTarget", "WandersOnArrival"],
       writes: ["MotionTarget"],
     });
@@ -365,7 +372,7 @@ describe("demo scenario", () => {
     scenario.world.setComponent("pet-a", {
       type: "MotionTarget",
       targetEntityId: null,
-      targetPosition: { x: 120, y: 500 },
+      targetPosition: { x: 600, y: 500 },
     });
 
     scenario.world.step(16);
@@ -373,6 +380,6 @@ describe("demo scenario", () => {
     const motion = scenario.world.getComponent("pet-a", "MotionTarget");
     expect(motion?.targetEntityId).toBeNull();
     expect(motion?.targetPosition).not.toBeNull();
-    expect(motion?.targetPosition).not.toEqual({ x: 120, y: 500 });
+    expect(motion?.targetPosition).not.toEqual({ x: 600, y: 500 });
   });
 });

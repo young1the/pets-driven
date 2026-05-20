@@ -87,7 +87,7 @@ export function createDemoScenario(options?: {
         id: "pet-a",
         sourceId: "agent-a",
         name: "Alice",
-        x: 120,
+        x: 600,
         y: 500,
         components: [
           { type: "IdleConversation", idleAfterMs: 5_000 },
