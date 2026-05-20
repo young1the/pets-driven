@@ -53,6 +53,30 @@ export function PlaygroundApp() {
     setLastEvent(event);
   }
 
+  function startWalkDemo() {
+    const alice = snapshot.pets.find((pet) => pet.id === "pet-a");
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "LocomotionState",
+      activeMode: "walk",
+    });
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: {
+        x: 820,
+        y: alice?.position.y ?? 200,
+      },
+    });
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "SpeechState",
+      speech: PLAYGROUND_TEXT.walkingDemoSpeech,
+    });
+
+    scenarioRef.current.world.step(0);
+    setSnapshot(scenarioRef.current.world.snapshot());
+    setLastStimulus(PLAYGROUND_TEXT.walkDemoStimulus);
+  }
+
   return (
     <main className="playground-shell">
       <header>
@@ -65,6 +89,7 @@ export function PlaygroundApp() {
         onSendCompleted={() =>
           sendEvent("task.completed", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.completed)
         }
+        onStartWalkDemo={startWalkDemo}
       />
       <AgentEventPanel event={lastEvent} />
       <PetStatusList pets={snapshot.pets} />

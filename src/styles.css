@@ -82,6 +82,7 @@ body {
     minmax(80px, 1fr)
     minmax(88px, 1fr)
     minmax(88px, 1fr)
+    minmax(88px, 1fr)
     minmax(120px, 2fr);
   gap: 12px;
   align-items: center;

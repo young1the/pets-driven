@@ -15,6 +15,7 @@ import type {
   SpeechProfileComponent,
   SpeechStateComponent,
   TransformComponent,
+  WalkMovementComponent,
 } from "@/core/components/simulation-components";
 import { createComponentStore, type ComponentStore, type EntityDeclaration } from "@/core/ecs/component-store";
 import { createMatterPhysicsWorld, type MatterPhysicsWorld } from "@/core/physics/matter-physics-world";
@@ -33,6 +34,7 @@ import {
   type SimulationSystem,
 } from "@/core/systems/simulation-system";
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
+import { runWalkSystem } from "@/core/systems/walk-system";
 import { createSeededRandom, type RandomSource } from "@/shared/random/seeded-random";
 import type { ManualClock } from "@/shared/time/manual-clock";
 
@@ -151,17 +153,25 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getSteeringPets(componentStore: ComponentStore) {
-    return componentStore.query("Transform", "MovementProfile", "IntentState", "MotionTarget", "NavigationState").map((entity) => {
-      const [transform, movement, intent, motion, navigation] = entity.components;
-      return {
-        id: entity.id,
-        position: (transform as TransformComponent).position,
-        movement: movement as MovementProfileComponent,
-        intent: intent as IntentStateComponent,
-        motion: motion as MotionTargetComponent,
-        navigation: navigation as NavigationStateComponent,
-      };
-    });
+    return componentStore
+      .query("Transform", "LocomotionState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState")
+      .flatMap((entity) => {
+        const [transform, locomotion, movement, intent, motion, navigation] = entity.components;
+        if ((locomotion as LocomotionStateComponent).activeMode !== "fly") {
+          return [];
+        }
+
+        return [
+          {
+            id: entity.id,
+            position: (transform as TransformComponent).position,
+            movement: movement as MovementProfileComponent,
+            intent: intent as IntentStateComponent,
+            motion: motion as MotionTargetComponent,
+            navigation: navigation as NavigationStateComponent,
+          },
+        ];
+      });
   }
 
   function getNavigatingPets(componentStore: ComponentStore) {
@@ -197,17 +207,34 @@ export function createWorld(input: WorldDefinition) {
     });
   }
 
+  function getWalkingEntities(componentStore: ComponentStore) {
+    return componentStore
+      .query("Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState")
+      .map((entity) => {
+        const [transform, locomotion, walk, motion, navigation] = entity.components;
+        return {
+          id: entity.id,
+          position: (transform as TransformComponent).position,
+          locomotion: locomotion as LocomotionStateComponent,
+          walk: walk as WalkMovementComponent,
+          motion: motion as MotionTargetComponent,
+          navigation: navigation as NavigationStateComponent,
+        };
+      });
+  }
+
   function getPetSnapshots(componentStore: ComponentStore) {
     return componentStore
-      .query("PetIdentity", "AgentBinding", "IntentState", "SpeechState", "Transform")
+      .query("PetIdentity", "AgentBinding", "IntentState", "LocomotionState", "SpeechState", "Transform")
       .map((entity) => {
-        const [identity, agent, intent, speech, transform] = entity.components;
+        const [identity, agent, intent, locomotion, speech, transform] = entity.components;
 
         return {
           id: entity.id,
           sourceId: (agent as AgentBindingComponent).sourceId,
           name: (identity as PetIdentityComponent).name,
           intent: (intent as IntentStateComponent).intent,
+          locomotion: (locomotion as LocomotionStateComponent).activeMode,
           speech: (speech as SpeechStateComponent).speech,
           position: (transform as TransformComponent).position,
         };
@@ -266,9 +293,18 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
+      name: "WalkSystem",
+      dependsOn: ["AvoidancePlanningSystem"],
+      reads: ["Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState"],
+      writes: ["PhysicsForce"],
+      update(context) {
+        context.forceGroups.push(runWalkSystem(getWalkingEntities(context.components)));
+      },
+    },
+    {
       name: "IntentSteeringSystem",
       dependsOn: ["AvoidancePlanningSystem"],
-      reads: ["Transform", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
+      reads: ["Transform", "LocomotionState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
       writes: ["PhysicsForce"],
       update(context) {
         context.forceGroups.push(runIntentSteeringSystem(getSteeringPets(context.components)));
@@ -285,7 +321,7 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "PhysicsIntegrationSystem",
-      dependsOn: ["IntentSteeringSystem", "FlightSystem"],
+      dependsOn: ["WalkSystem", "IntentSteeringSystem", "FlightSystem"],
       reads: ["PhysicsForce"],
       writes: ["PhysicsWorld"],
       update(context) {

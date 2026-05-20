@@ -6,6 +6,7 @@ import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runFlightSystem } from "@/core/systems/flight-system";
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
+import { runWalkSystem } from "@/core/systems/walk-system";
 import { createManualClock } from "@/shared/time/manual-clock";
 
 describe("behavior systems", () => {
@@ -236,5 +237,42 @@ describe("behavior systems", () => {
 
     expect(gravityScales).toEqual([{ id: "pet-a", scale: 0 }]);
     expect(appliedForces).toEqual([{ id: "pet-a", force: { x: 0, y: -0.003 } }]);
+  });
+
+  it("creates horizontal walking force only when walking is active", () => {
+    const forces = runWalkSystem([
+      {
+        id: "pet-a",
+        position: { x: 0, y: 10 },
+        locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
+        walk: { type: "WalkMovement" as const, speed: 0.004 },
+        motion: {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: { x: 100, y: 200 },
+        },
+        navigation: {
+          type: "NavigationState" as const,
+          avoidanceWaypoint: null,
+        },
+      },
+      {
+        id: "pet-b",
+        position: { x: 0, y: 10 },
+        locomotion: { type: "LocomotionState" as const, activeMode: "fly" },
+        walk: { type: "WalkMovement" as const, speed: 0.004 },
+        motion: {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: { x: 100, y: 200 },
+        },
+        navigation: {
+          type: "NavigationState" as const,
+          avoidanceWaypoint: null,
+        },
+      },
+    ]);
+
+    expect(forces).toEqual([{ id: "pet-a", x: 0.004, y: 0 }]);
   });
 });

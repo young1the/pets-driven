@@ -10,7 +10,7 @@ function createFixturePet(input: {
   name: string;
   x: number;
   y: number;
-  components?: SimulationComponent[];
+  components: SimulationComponent[];
 }) {
   return {
     id: input.id,
@@ -28,13 +28,11 @@ function createFixturePet(input: {
       { type: "NavigationState" as const, avoidanceWaypoint: null },
       { type: "ActivityState" as const, lastActiveAt: 0 },
       { type: "CompletionBehavior" as const, intentAfterCompletion: "idle" as const },
-      { type: "LocomotionState" as const, activeMode: "fly" as const },
-      { type: "FlightMovement" as const, gravityScale: 0, hoverStrength: 0 },
       { type: "SpeechState" as const, speech: null },
       { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
       { type: "Transform" as const, position: { x: input.x, y: input.y } },
       { type: "PhysicsBody" as const, shape: "rectangle" as const, ...DEFAULT_PET_BODY_SIZE },
-      ...(input.components ?? []),
+      ...input.components,
     ],
   };
 }
@@ -75,8 +73,12 @@ export function createDemoScenario(options?: {
         sourceId: "agent-a",
         name: "Alice",
         x: 120,
-        y: 200,
-        components: [{ type: "IdleConversation", idleAfterMs: 5_000 }],
+        y: 500,
+        components: [
+          { type: "IdleConversation", idleAfterMs: 5_000 },
+          { type: "LocomotionState", activeMode: "walk" },
+          { type: "WalkMovement", speed: 0.01 },
+        ],
       }),
       createFixturePet({
         id: "pet-b",
@@ -84,6 +86,10 @@ export function createDemoScenario(options?: {
         name: "Bob",
         x: 200,
         y: 200,
+        components: [
+          { type: "LocomotionState", activeMode: "fly" },
+          { type: "FlightMovement", gravityScale: 0, hoverStrength: 0 },
+        ],
       }),
       createFixturePet({
         id: "pet-c",
@@ -91,6 +97,10 @@ export function createDemoScenario(options?: {
         name: "Charlie",
         x: 280,
         y: 200,
+        components: [
+          { type: "LocomotionState", activeMode: "fly" },
+          { type: "FlightMovement", gravityScale: 0, hoverStrength: 0 },
+        ],
       }),
     ],
   });

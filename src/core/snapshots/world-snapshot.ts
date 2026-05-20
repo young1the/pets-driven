@@ -17,6 +17,7 @@ export type PetSnapshot = {
   sourceId: string;
   name: string;
   intent: string;
+  locomotion: string;
   speech: string | null;
   position: {
     x: number;

@@ -105,6 +105,7 @@ describe("canvas renderer", () => {
             sourceId: "agent-a",
             name: "Alice",
             intent: "seek-user",
+            locomotion: "walk",
             speech: null,
             position: { x: 100, y: 120 },
           },
@@ -115,7 +116,7 @@ describe("canvas renderer", () => {
     );
 
     expect(context.fillText).toHaveBeenCalledWith("Alice", 100, 88);
-    expect(context.fillText).toHaveBeenCalledWith("seek-user", 100, 104);
+    expect(context.fillText).toHaveBeenCalledWith("seek-user / walk", 100, 104);
     expect(context.fillText).not.toHaveBeenCalledWith("pet-a", 84, 96);
   });
 
@@ -154,6 +155,7 @@ describe("canvas renderer", () => {
             sourceId: "agent-a",
             name: "Alice",
             intent: "seek-user",
+            locomotion: "walk",
             speech: "Needs approval",
             position: { x: 100, y: 120 },
           },

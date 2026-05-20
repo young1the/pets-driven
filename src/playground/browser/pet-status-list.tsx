@@ -15,6 +15,7 @@ export function PetStatusList({ pets }: PetStatusListProps) {
             <strong>{pet.name}</strong>
             <span>{pet.sourceId}</span>
             <span>{pet.intent}</span>
+            <span>{pet.locomotion}</span>
             <span>{pet.speech ?? PLAYGROUND_TEXT.noSpeech}</span>
           </li>
         ))}
