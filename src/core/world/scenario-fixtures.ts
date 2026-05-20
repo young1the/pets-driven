@@ -119,7 +119,7 @@ export function createDemoScenario(options?: {
         x: 280,
         y: 200,
         components: [
-          { type: "LocomotionState", baseMode: "climb" },
+          { type: "LocomotionState", baseMode: "walk" },
           { type: "WallClimbMovement", speed: 0.004 },
         ],
       }),
