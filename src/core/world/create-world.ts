@@ -23,19 +23,33 @@ import type {
   WallClimbMovementComponent,
   WalkMovementComponent,
 } from "@/core/components/simulation-components";
-import { createComponentStore, type ComponentStore, type EntityDeclaration } from "@/core/ecs/component-store";
-import { createMatterPhysicsWorld, type MatterPhysicsWorld } from "@/core/physics/matter-physics-world";
+import {
+  createComponentStore,
+  type ComponentStore,
+  type EntityDeclaration,
+} from "@/core/ecs/component-store";
+import {
+  createMatterPhysicsWorld,
+  type MatterPhysicsWorld,
+} from "@/core/physics/matter-physics-world";
 import type { Stimulus } from "@/core/stimuli/stimulus";
-import { createStimulusQueue, type StimulusQueue } from "@/core/stimuli/stimulus-queue";
+import {
+  createStimulusQueue,
+  type StimulusQueue,
+} from "@/core/stimuli/stimulus-queue";
 import { runArrivalBehaviorSystem } from "@/core/systems/arrival-behavior-system";
 import { runContactSystem } from "@/core/systems/contact-system";
+import { runLocomotionModeSystem } from "@/core/systems/locomotion-mode-system";
 import { runCrowdAvoidanceSystem } from "@/core/systems/crowd-avoidance-system";
 import { runFlightSystem } from "@/core/systems/flight-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
 import { runJumpSystem } from "@/core/systems/jump-system";
 import { runMotionTargetSystem } from "@/core/systems/motion-target-system";
-import { runPhysicsIntegrationSystem, type Force } from "@/core/systems/physics-integration-system";
+import {
+  runPhysicsIntegrationSystem,
+  type Force,
+} from "@/core/systems/physics-integration-system";
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
 import {
   describeSimulationSystems,
@@ -45,7 +59,10 @@ import {
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
 import { runWalkSystem } from "@/core/systems/walk-system";
 import { runWallClimbSystem } from "@/core/systems/wall-climb-system";
-import { createSeededRandom, type RandomSource } from "@/shared/random/seeded-random";
+import {
+  createSeededRandom,
+  type RandomSource,
+} from "@/shared/random/seeded-random";
 import type { ManualClock } from "@/shared/time/manual-clock";
 
 export type WorldDefinition = {
@@ -69,7 +86,10 @@ type WorldStepContext = {
 
 export function createWorld(input: WorldDefinition) {
   const components = createComponentStore(input.entities);
-  const physics = createMatterPhysicsWorld({ width: input.width, height: input.height });
+  const physics = createMatterPhysicsWorld({
+    width: input.width,
+    height: input.height,
+  });
   const stimuli = createStimulusQueue();
   const random = input.random ?? createSeededRandom(1);
 
@@ -92,20 +112,44 @@ export function createWorld(input: WorldDefinition) {
           : undefined;
 
         if (components.getComponent(entity.id, "Ground")) {
-          physics.addStaticRectangle(entity.id, transform.position, size, materialOptions);
+          physics.addStaticRectangle(
+            entity.id,
+            transform.position,
+            size,
+            materialOptions,
+          );
           continue;
         }
 
-        physics.addRectangle(entity.id, transform.position, size, materialOptions);
+        physics.addRectangle(
+          entity.id,
+          transform.position,
+          size,
+          materialOptions,
+        );
       }
     }
   }
 
   function getReactivePets(componentStore: ComponentStore) {
     return componentStore
-      .query("AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior")
+      .query(
+        "AgentBinding",
+        "IntentState",
+        "SpeechProfile",
+        "SpeechState",
+        "ActivityState",
+        "CompletionBehavior",
+      )
       .map((entity) => {
-        const [agent, intent, speechProfile, speech, activity, completionBehavior] = entity.components;
+        const [
+          agent,
+          intent,
+          speechProfile,
+          speech,
+          activity,
+          completionBehavior,
+        ] = entity.components;
         return {
           id: entity.id,
           agent: agent as AgentBindingComponent,
@@ -119,16 +163,24 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getIdleConversationPets(componentStore: ComponentStore) {
-    return componentStore.query("IdleConversation", "SpeechProfile", "SpeechState", "ActivityState").map((entity) => {
-      const [idleConversation, speechProfile, speech, activity] = entity.components;
-      return {
-        id: entity.id,
-        idleConversation: idleConversation as IdleConversationComponent,
-        speechProfile: speechProfile as SpeechProfileComponent,
-        speech: speech as SpeechStateComponent,
-        activity: activity as ActivityStateComponent,
-      };
-    });
+    return componentStore
+      .query(
+        "IdleConversation",
+        "SpeechProfile",
+        "SpeechState",
+        "ActivityState",
+      )
+      .map((entity) => {
+        const [idleConversation, speechProfile, speech, activity] =
+          entity.components;
+        return {
+          id: entity.id,
+          idleConversation: idleConversation as IdleConversationComponent,
+          speechProfile: speechProfile as SpeechProfileComponent,
+          speech: speech as SpeechStateComponent,
+          activity: activity as ActivityStateComponent,
+        };
+      });
   }
 
   function getMotionPets(componentStore: ComponentStore) {
@@ -143,14 +195,16 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getArrivalBehaviorEntities(componentStore: ComponentStore) {
-    return componentStore.query("Transform", "MotionTarget", "WandersOnArrival").map((entity) => {
-      const [transform, motion, wandersOnArrival] = entity.components;
-      return {
-        transform: transform as TransformComponent,
-        motion: motion as MotionTargetComponent,
-        wandersOnArrival: wandersOnArrival as WandersOnArrivalComponent,
-      };
-    });
+    return componentStore
+      .query("Transform", "MotionTarget", "WandersOnArrival")
+      .map((entity) => {
+        const [transform, motion, wandersOnArrival] = entity.components;
+        return {
+          transform: transform as TransformComponent,
+          motion: motion as MotionTargetComponent,
+          wandersOnArrival: wandersOnArrival as WandersOnArrivalComponent,
+        };
+      });
   }
 
   function getUserAnchorTargets(componentStore: ComponentStore) {
@@ -185,20 +239,48 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getClimbableSurfaces(componentStore: ComponentStore) {
-    return componentStore.query("Transform", "ClimbableSurface").map((entity) => {
-      const [transform] = entity.components;
-      return {
-        id: entity.id,
-        position: (transform as TransformComponent).position,
-      };
-    });
+    return componentStore
+      .query("Transform", "ClimbableSurface")
+      .map((entity) => {
+        const [transform] = entity.components;
+        return {
+          id: entity.id,
+          position: (transform as TransformComponent).position,
+        };
+      });
+  }
+
+  function getLocomotionModeEntities(componentStore: ComponentStore) {
+    return componentStore
+      .query("LocomotionState", "ContactState")
+      .map((entity) => {
+        const [locomotion, contact] = entity.components;
+        return {
+          id: entity.id,
+          locomotion: locomotion as LocomotionStateComponent,
+          contact: contact as ContactStateComponent,
+          wallClimb:
+            (componentStore.getComponent(
+              entity.id,
+              "WallClimbMovement",
+            ) as WallClimbMovementComponent) ?? null,
+        };
+      });
   }
 
   function getSteeringPets(componentStore: ComponentStore) {
     return componentStore
-      .query("Transform", "LocomotionState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState")
+      .query(
+        "Transform",
+        "LocomotionState",
+        "MovementProfile",
+        "IntentState",
+        "MotionTarget",
+        "NavigationState",
+      )
       .flatMap((entity) => {
-        const [transform, locomotion, movement, intent, motion, navigation] = entity.components;
+        const [transform, locomotion, movement, intent, motion, navigation] =
+          entity.components;
         if ((locomotion as LocomotionStateComponent).baseMode !== "fly") {
           return [];
         }
@@ -238,21 +320,30 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getFlightEntities(componentStore: ComponentStore) {
-    return componentStore.query("PhysicsBody", "LocomotionState", "FlightMovement").map((entity) => {
-      const [, locomotion, flight] = entity.components;
-      return {
-        id: entity.id,
-        locomotion: locomotion as LocomotionStateComponent,
-        flight: flight as FlightMovementComponent,
-      };
-    });
+    return componentStore
+      .query("PhysicsBody", "LocomotionState", "FlightMovement")
+      .map((entity) => {
+        const [, locomotion, flight] = entity.components;
+        return {
+          id: entity.id,
+          locomotion: locomotion as LocomotionStateComponent,
+          flight: flight as FlightMovementComponent,
+        };
+      });
   }
 
   function getWalkingEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState")
+      .query(
+        "Transform",
+        "LocomotionState",
+        "WalkMovement",
+        "MotionTarget",
+        "NavigationState",
+      )
       .map((entity) => {
-        const [transform, locomotion, walk, motion, navigation] = entity.components;
+        const [transform, locomotion, walk, motion, navigation] =
+          entity.components;
         return {
           id: entity.id,
           position: (transform as TransformComponent).position,
@@ -265,22 +356,31 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getJumpingEntities(componentStore: ComponentStore) {
-    return componentStore.query("LocomotionState", "JumpMovement", "JumpState").map((entity) => {
-      const [locomotion, jump, jumpState] = entity.components;
-      return {
-        id: entity.id,
-        locomotion: locomotion as LocomotionStateComponent,
-        jump: jump as JumpMovementComponent,
-        jumpState: jumpState as JumpStateComponent,
-      };
-    });
+    return componentStore
+      .query("LocomotionState", "JumpMovement", "JumpState")
+      .map((entity) => {
+        const [locomotion, jump, jumpState] = entity.components;
+        return {
+          id: entity.id,
+          locomotion: locomotion as LocomotionStateComponent,
+          jump: jump as JumpMovementComponent,
+          jumpState: jumpState as JumpStateComponent,
+        };
+      });
   }
 
   function getWallClimbingEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("Transform", "LocomotionState", "WallClimbMovement", "MotionTarget", "ContactState")
+      .query(
+        "Transform",
+        "LocomotionState",
+        "WallClimbMovement",
+        "MotionTarget",
+        "ContactState",
+      )
       .map((entity) => {
-        const [transform, locomotion, wallClimb, motion, contact] = entity.components;
+        const [transform, locomotion, wallClimb, motion, contact] =
+          entity.components;
         return {
           id: entity.id,
           position: (transform as TransformComponent).position,
@@ -294,9 +394,17 @@ export function createWorld(input: WorldDefinition) {
 
   function getPetSnapshots(componentStore: ComponentStore) {
     return componentStore
-      .query("PetIdentity", "AgentBinding", "IntentState", "LocomotionState", "SpeechState", "Transform")
+      .query(
+        "PetIdentity",
+        "AgentBinding",
+        "IntentState",
+        "LocomotionState",
+        "SpeechState",
+        "Transform",
+      )
       .map((entity) => {
-        const [identity, agent, intent, locomotion, speech, transform] = entity.components;
+        const [identity, agent, intent, locomotion, speech, transform] =
+          entity.components;
 
         return {
           id: entity.id,
@@ -313,18 +421,36 @@ export function createWorld(input: WorldDefinition) {
   const stepSystems: Array<SimulationSystem<WorldStepContext>> = [
     {
       name: "StimulusReactionSystem",
-      reads: ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
+      reads: [
+        "AgentBinding",
+        "IntentState",
+        "SpeechProfile",
+        "SpeechState",
+        "ActivityState",
+        "CompletionBehavior",
+      ],
       writes: ["IntentState", "SpeechState", "ActivityState"],
       update(context) {
-        runStimulusReactionSystem(getReactivePets(context.components), context.stimuli.drain());
+        runStimulusReactionSystem(
+          getReactivePets(context.components),
+          context.stimuli.drain(),
+        );
       },
     },
     {
       name: "IdleConversationSystem",
-      reads: ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
+      reads: [
+        "IdleConversation",
+        "SpeechProfile",
+        "SpeechState",
+        "ActivityState",
+      ],
       writes: ["SpeechState"],
       update(context) {
-        runIdleConversationSystem(getIdleConversationPets(context.components), context.clock);
+        runIdleConversationSystem(
+          getIdleConversationPets(context.components),
+          context.clock,
+        );
       },
     },
     {
@@ -332,7 +458,10 @@ export function createWorld(input: WorldDefinition) {
       reads: ["PhysicsBody"],
       writes: ["Transform"],
       update(context) {
-        runPhysicsTransformSyncSystem(getTransformEntities(context.components), context.physics);
+        runPhysicsTransformSyncSystem(
+          getTransformEntities(context.components),
+          context.physics,
+        );
       },
     },
     {
@@ -348,12 +477,23 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "ArrivalBehaviorSystem",
+      name: "LocomotionModeSystem",
       dependsOn: ["ContactSystem"],
+      reads: ["LocomotionState", "ContactState", "WallClimbMovement"],
+      writes: ["LocomotionState"],
+      update(context) {
+        runLocomotionModeSystem(getLocomotionModeEntities(context.components));
+      },
+    },
+    {
+      name: "ArrivalBehaviorSystem",
+      dependsOn: ["LocomotionModeSystem"],
       reads: ["Transform", "MotionTarget", "WandersOnArrival"],
       writes: ["MotionTarget"],
       update(context) {
-        runArrivalBehaviorSystem(getArrivalBehaviorEntities(context.components));
+        runArrivalBehaviorSystem(
+          getArrivalBehaviorEntities(context.components),
+        );
       },
     },
     {
@@ -373,10 +513,18 @@ export function createWorld(input: WorldDefinition) {
     {
       name: "WalkSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState"],
+      reads: [
+        "Transform",
+        "LocomotionState",
+        "WalkMovement",
+        "MotionTarget",
+        "NavigationState",
+      ],
       writes: ["PhysicsForce"],
       update(context) {
-        context.forceGroups.push(runWalkSystem(getWalkingEntities(context.components)));
+        context.forceGroups.push(
+          runWalkSystem(getWalkingEntities(context.components)),
+        );
       },
     },
     {
@@ -385,16 +533,26 @@ export function createWorld(input: WorldDefinition) {
       reads: ["LocomotionState", "JumpMovement", "JumpState"],
       writes: ["PhysicsForce", "JumpState"],
       update(context) {
-        context.forceGroups.push(runJumpSystem(getJumpingEntities(context.components)));
+        context.forceGroups.push(
+          runJumpSystem(getJumpingEntities(context.components)),
+        );
       },
     },
     {
       name: "WallClimbSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget", "ContactState"],
+      reads: [
+        "Transform",
+        "LocomotionState",
+        "WallClimbMovement",
+        "MotionTarget",
+        "ContactState",
+      ],
       writes: ["PhysicsForce"],
       update(context) {
-        context.forceGroups.push(runWallClimbSystem(getWallClimbingEntities(context.components)));
+        context.forceGroups.push(
+          runWallClimbSystem(getWallClimbingEntities(context.components)),
+        );
       },
     },
     {
@@ -414,10 +572,19 @@ export function createWorld(input: WorldDefinition) {
     {
       name: "IntentSteeringSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "LocomotionState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
+      reads: [
+        "Transform",
+        "LocomotionState",
+        "MovementProfile",
+        "IntentState",
+        "MotionTarget",
+        "NavigationState",
+      ],
       writes: ["PhysicsForce"],
       update(context) {
-        context.forceGroups.push(runIntentSteeringSystem(getSteeringPets(context.components)));
+        context.forceGroups.push(
+          runIntentSteeringSystem(getSteeringPets(context.components)),
+        );
       },
     },
     {
@@ -431,7 +598,14 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "PhysicsIntegrationSystem",
-      dependsOn: ["WalkSystem", "JumpSystem", "WallClimbSystem", "CrowdAvoidanceSystem", "IntentSteeringSystem", "FlightSystem"],
+      dependsOn: [
+        "WalkSystem",
+        "JumpSystem",
+        "WallClimbSystem",
+        "CrowdAvoidanceSystem",
+        "IntentSteeringSystem",
+        "FlightSystem",
+      ],
       reads: ["PhysicsForce"],
       writes: ["PhysicsWorld"],
       update(context) {
@@ -448,7 +622,10 @@ export function createWorld(input: WorldDefinition) {
       reads: ["PhysicsWorld"],
       writes: ["Transform"],
       update(context) {
-        runPhysicsTransformSyncSystem(getTransformEntities(context.components), context.physics);
+        runPhysicsTransformSyncSystem(
+          getTransformEntities(context.components),
+          context.physics,
+        );
       },
     },
   ];
@@ -464,7 +641,10 @@ export function createWorld(input: WorldDefinition) {
       const entity = components.getEntity(id);
       return entity ? { id: entity.id } : undefined;
     },
-    getComponent<TType extends SimulationComponentType>(id: string, type: TType) {
+    getComponent<TType extends SimulationComponentType>(
+      id: string,
+      type: TType,
+    ) {
       return components.getComponent(id, type);
     },
     setComponent(id: string, component: SimulationComponent) {
@@ -489,7 +669,10 @@ export function createWorld(input: WorldDefinition) {
       });
     },
     snapshot() {
-      const physicsSnapshot = runPhysicsTransformSyncSystem(getTransformEntities(components), physics);
+      const physicsSnapshot = runPhysicsTransformSyncSystem(
+        getTransformEntities(components),
+        physics,
+      );
 
       return {
         ...physicsSnapshot,
