@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { PetIntent, Vector } from "@/core/components/simulation-components";
 import { DEFAULT_PET_SPEECH } from "@/core/constants/pet-speech";
 import { runArrivalBehaviorSystem } from "@/core/systems/arrival-behavior-system";
+import { runCollisionReactionSystem } from "@/core/systems/collision-reaction-system";
 import { runContactSystem } from "@/core/systems/contact-system";
-import { runCrowdAvoidanceSystem } from "@/core/systems/crowd-avoidance-system";
 import { runPhysicsIntegrationSystem } from "@/core/systems/physics-integration-system";
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
@@ -12,6 +13,31 @@ import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-syst
 import { runWalkSystem } from "@/core/systems/walk-system";
 import { runWallClimbSystem } from "@/core/systems/wall-climb-system";
 import { createManualClock } from "@/shared/time/manual-clock";
+
+function createCollisionPet(id: string, intent: PetIntent, position: Vector) {
+  return {
+    id,
+    transform: {
+      type: "Transform" as const,
+      position,
+    },
+    body: {
+      type: "PhysicsBody" as const,
+      shape: "rectangle" as const,
+      width: 32,
+      height: 38,
+    },
+    intent: {
+      type: "IntentState" as const,
+      intent,
+    },
+    motion: {
+      type: "MotionTarget" as const,
+      targetEntityId: null as string | null,
+      targetPosition: { x: 400, y: 100 } as Vector | null,
+    },
+  };
+}
 
 describe("behavior systems", () => {
   it("creates a speech bubble after a talkative pet idles long enough", () => {
@@ -140,37 +166,6 @@ describe("behavior systems", () => {
     expect(pet.activity.lastActiveAt).toBe(20);
   });
 
-  it("creates crowd avoidance force only for pets with avoidance personality", () => {
-    const forces = runCrowdAvoidanceSystem(
-      [
-        {
-          id: "pet-a",
-          position: { x: 0, y: 0 },
-          avoidsCrowds: {
-            type: "AvoidsCrowds" as const,
-            radius: 80,
-            strength: 0.004,
-          },
-        },
-        {
-          id: "pet-b",
-          position: { x: 120, y: 0 },
-          avoidsCrowds: {
-            type: "AvoidsCrowds" as const,
-            radius: 80,
-            strength: 0.004,
-          },
-        },
-      ],
-      [
-        { id: "pet-a", position: { x: 0, y: 0 } },
-        { id: "pet-c", position: { x: 40, y: 0 } },
-      ],
-    );
-
-    expect(forces).toEqual([{ id: "pet-a", x: -0.002, y: 0 }]);
-  });
-
   it("clears a world target after a wandering pet arrives", () => {
     const pet = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
@@ -222,6 +217,49 @@ describe("behavior systems", () => {
 
     expect(pet.motion.targetEntityId).toBe("user-anchor");
     expect(pet.intent.intent).toBe("seek");
+  });
+
+  it("moves idle collision targets away from the collided pet", () => {
+    const pet = createCollisionPet("pet-a", "idle", { x: 200, y: 100 });
+
+    runCollisionReactionSystem(
+      [pet, createCollisionPet("pet-b", "idle", { x: 220, y: 100 })],
+      { width: 960, height: 540 },
+    );
+
+    expect(pet.motion).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 104, y: 100 },
+    });
+  });
+
+  it("moves active collision targets diagonally around the collided pet", () => {
+    const pet = createCollisionPet("pet-a", "active", { x: 200, y: 100 });
+
+    runCollisionReactionSystem(
+      [pet, createCollisionPet("pet-b", "idle", { x: 220, y: 100 })],
+      { width: 960, height: 540 },
+    );
+
+    expect(pet.motion.targetEntityId).toBeNull();
+    expect(pet.motion.targetPosition?.x).toBeCloseTo(132.118);
+    expect(pet.motion.targetPosition?.y).toBeCloseTo(48);
+  });
+
+  it("moves seeking collision targets around the collided pet while preserving progress", () => {
+    const pet = createCollisionPet("pet-a", "seek", { x: 200, y: 100 });
+    pet.motion.targetEntityId = "user-anchor";
+    pet.motion.targetPosition = { x: 500, y: 100 };
+
+    runCollisionReactionSystem(
+      [pet, createCollisionPet("pet-b", "idle", { x: 220, y: 100 })],
+      { width: 960, height: 540 },
+    );
+
+    expect(pet.motion.targetEntityId).toBeNull();
+    expect(pet.motion.targetPosition?.x).toBeCloseTo(267.882);
+    expect(pet.motion.targetPosition?.y).toBeCloseTo(48);
   });
 
   it("records the nearest climbable surface contact", () => {

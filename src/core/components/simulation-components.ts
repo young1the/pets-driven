@@ -9,15 +9,6 @@ export type CompletionIntent = "idle" | "seek";
 export type LocomotionBaseMode = "walk" | "fly" | "climb";
 
 /**
- * Personality component for pets that keep distance from nearby bodies.
- */
-export type AvoidsCrowdsComponent = {
-  type: "AvoidsCrowds";
-  radius: number;
-  strength: number;
-};
-
-/**
  * Marker for environmental entities that a climbing-capable pet can attach to.
  * Position belongs to Transform; this component only identifies the surface.
  */
@@ -238,7 +229,6 @@ export type UserAnchorComponent = {
 export type SimulationComponent =
   | ActivityStateComponent
   | AgentBindingComponent
-  | AvoidsCrowdsComponent
   | ClimbableSurfaceComponent
   | CompletionBehaviorComponent
   | ContactStateComponent

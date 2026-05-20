@@ -25,10 +25,10 @@ describe("demo scenario", () => {
       "LocomotionModeSystem",
       "ArrivalBehaviorSystem",
       "MotionTargetSystem",
+      "CollisionReactionSystem",
       "WalkSystem",
       "JumpSystem",
       "WallClimbSystem",
-      "CrowdAvoidanceSystem",
       "IntentSteeringSystem",
       "FlightSystem",
       "PhysicsIntegrationSystem",
@@ -65,8 +65,14 @@ describe("demo scenario", () => {
       writes: ["MotionTarget", "IntentState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
-      name: "WalkSystem",
+      name: "CollisionReactionSystem",
       dependsOn: ["MotionTargetSystem"],
+      reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget"],
+      writes: ["MotionTarget"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "WalkSystem",
+      dependsOn: ["CollisionReactionSystem"],
       reads: [
         "Transform",
         "LocomotionState",
@@ -78,13 +84,13 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "JumpSystem",
-      dependsOn: ["MotionTargetSystem"],
+      dependsOn: ["CollisionReactionSystem"],
       reads: ["LocomotionState", "JumpMovement", "JumpState"],
       writes: ["PhysicsForce", "JumpState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WallClimbSystem",
-      dependsOn: ["MotionTargetSystem"],
+      dependsOn: ["CollisionReactionSystem"],
       reads: [
         "Transform",
         "LocomotionState",
@@ -92,12 +98,6 @@ describe("demo scenario", () => {
         "MotionTarget",
         "ContactState",
       ],
-      writes: ["PhysicsForce"],
-    });
-    expect(scenario.world.systemPlan()).toContainEqual({
-      name: "CrowdAvoidanceSystem",
-      dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "AvoidsCrowds", "PhysicsBody"],
       writes: ["PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -186,11 +186,6 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-a", "WallClimbMovement")).toEqual({
       type: "WallClimbMovement",
       speed: 0.004,
-    });
-    expect(scenario.world.getComponent("pet-a", "AvoidsCrowds")).toEqual({
-      type: "AvoidsCrowds",
-      radius: 72,
-      strength: 0.002,
     });
     expect(scenario.world.getComponent("pet-a", "WandersOnArrival")).toEqual({
       type: "WandersOnArrival",

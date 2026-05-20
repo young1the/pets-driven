@@ -170,8 +170,7 @@ Example:
   "components": [
     { "type": "Curious", "weight": 0.9 },
     { "type": "Talkative", "idleAfterMs": 9000 },
-    { "type": "SeeksCompany", "radius": 140 },
-    { "type": "AvoidsCrowds", "radius": 80 }
+    { "type": "SeeksCompany", "radius": 140 }
   ]
 }
 ```
@@ -184,7 +183,6 @@ Examples:
 
 - `Curious`
 - `Talkative`
-- `AvoidsCrowds`
 - `SeeksUser`
 - `SeeksCompany`
 
@@ -252,7 +250,6 @@ Examples:
 
 - `Curious`
 - `Talkative`
-- `AvoidsCrowds`
 - `SeeksUser`
 - `SeeksCompany`
 
@@ -277,8 +274,8 @@ The component registry defines:
 Systems implement behavior. Example relationships:
 
 - `Talkative` is consumed by `IdleConversationSystem`
-- `AvoidsCrowds` is consumed by `SeparationSteeringSystem`
 - `SeeksUser` is consumed by `AttentionSeekingSystem`
+- intent state and collision contact are consumed by `CollisionReactionSystem`
 
 Future skills may add new component implementations and systems, but dynamic installation is out of scope for the first MVP. The core should expose clear extension points now so that future installation does not require redesigning the simulation model.
 
