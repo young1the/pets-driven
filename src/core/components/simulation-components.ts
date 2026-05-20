@@ -69,6 +69,24 @@ export type WalkMovementComponent = {
 };
 
 /**
+ * Jump movement tuning. Component presence means the entity can jump; jumping
+ * only runs when LocomotionState selects the jump mode.
+ */
+export type JumpMovementComponent = {
+  type: "JumpMovement";
+  impulse: number;
+};
+
+/**
+ * Wall-climb movement tuning. Component presence means the entity can climb
+ * vertical surfaces; climbing only runs when LocomotionState selects climbWall.
+ */
+export type WallClimbMovementComponent = {
+  type: "WallClimbMovement";
+  speed: number;
+};
+
+/**
  * Marker for entities that act as immovable ground or platform surfaces.
  */
 export type GroundComponent = {
@@ -181,6 +199,7 @@ export type SimulationComponent =
   | GroundComponent
   | IdleConversationComponent
   | IntentStateComponent
+  | JumpMovementComponent
   | LocomotionStateComponent
   | MotionTargetComponent
   | NavigationStateComponent
@@ -192,6 +211,7 @@ export type SimulationComponent =
   | SpeechStateComponent
   | TransformComponent
   | UserAnchorComponent
+  | WallClimbMovementComponent
   | WalkMovementComponent;
 
 export type SimulationComponentType = SimulationComponent["type"];

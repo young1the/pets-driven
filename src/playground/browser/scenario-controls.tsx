@@ -6,6 +6,8 @@ type ScenarioControlsProps = {
   onSendWaiting(): void;
   onSendCompleted(): void;
   onStartWalkDemo(): void;
+  onStartJumpDemo(): void;
+  onStartWallClimbDemo(): void;
 };
 
 export function ScenarioControls({
@@ -14,6 +16,8 @@ export function ScenarioControls({
   onSendWaiting,
   onSendCompleted,
   onStartWalkDemo,
+  onStartJumpDemo,
+  onStartWallClimbDemo,
 }: ScenarioControlsProps) {
   return (
     <section className="scenario-controls">
@@ -28,6 +32,12 @@ export function ScenarioControls({
       </button>
       <button type="button" onClick={onStartWalkDemo}>
         {PLAYGROUND_TEXT.startWalkDemo}
+      </button>
+      <button type="button" onClick={onStartJumpDemo}>
+        {PLAYGROUND_TEXT.startJumpDemo}
+      </button>
+      <button type="button" onClick={onStartWallClimbDemo}>
+        {PLAYGROUND_TEXT.startWallClimbDemo}
       </button>
       <p>
         {PLAYGROUND_TEXT.lastStimulusPrefix} {lastStimulus}

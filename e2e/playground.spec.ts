@@ -36,3 +36,18 @@ test("walk demo exposes locomotion state in the playground", async ({ page }) =>
   await playground.expectLocomotion("walk");
   await playground.expectPetStatus("Alice", "idle", "Walking to the right");
 });
+
+test("jump and wall-climb demos expose locomotion state in the playground", async ({ page }) => {
+  const playground = new PlaygroundPage(page);
+
+  await playground.goto();
+  await playground.expectReady();
+
+  await playground.startJumpDemo();
+  await playground.expectLocomotion("jump");
+  await playground.expectPetStatus("Alice", "idle", "Jumping up");
+
+  await playground.startWallClimbDemo();
+  await playground.expectLocomotion("climbWall");
+  await playground.expectPetStatus("Alice", "idle", "Climbing the wall");
+});

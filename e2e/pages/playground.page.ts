@@ -39,6 +39,18 @@ export class PlaygroundPage {
       .click();
   }
 
+  async startJumpDemo() {
+    await this.page
+      .getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo })
+      .click();
+  }
+
+  async startWallClimbDemo() {
+    await this.page
+      .getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo })
+      .click();
+  }
+
   async expectLastEventType(type: string) {
     await expect(
       this.page.getByText(new RegExp(`"type": "${type}"`)),
