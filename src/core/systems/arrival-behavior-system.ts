@@ -1,5 +1,6 @@
 import type {
   IntentStateComponent,
+  LocomotionStateComponent,
   MotionTargetComponent,
   TransformComponent,
   WandersOnArrivalComponent,
@@ -7,6 +8,7 @@ import type {
 
 type ArrivalBehaviorEntity = {
   intent: IntentStateComponent;
+  locomotion: LocomotionStateComponent;
   transform: TransformComponent;
   motion: MotionTargetComponent;
   wandersOnArrival: WandersOnArrivalComponent;
@@ -45,9 +47,12 @@ export function runArrivalBehaviorSystem(
       continue;
     }
 
-    const dx = Math.abs(target.x - entity.transform.position.x);
+    const delta =
+      entity.locomotion.baseMode === "climb"
+        ? Math.abs(target.y - entity.transform.position.y)
+        : Math.abs(target.x - entity.transform.position.x);
 
-    if (dx > entity.wandersOnArrival.arrivalRadius) {
+    if (delta > entity.wandersOnArrival.arrivalRadius) {
       continue;
     }
 

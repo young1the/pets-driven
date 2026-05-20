@@ -97,18 +97,10 @@ export function PlaygroundApp() {
   }
 
   function startWallClimbDemo() {
-    const alice = snapshot.pets.find((pet) => pet.id === "pet-a");
-    scenarioRef.current.world.setComponent("pet-a", {
-      type: "LocomotionState",
-      baseMode: "climb",
-    });
     scenarioRef.current.world.setComponent("pet-a", {
       type: "MotionTarget",
       targetEntityId: null,
-      targetPosition: {
-        x: alice?.position.x ?? 120,
-        y: 120,
-      },
+      targetPosition: { x: 120, y: 120 },
     });
     scenarioRef.current.world.setComponent("pet-a", {
       type: "SpeechState",

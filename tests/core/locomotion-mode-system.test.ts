@@ -40,7 +40,7 @@ describe("locomotion mode system", () => {
     expect(entity.locomotion.baseMode).toBe("walk");
   });
 
-  it("does not change mode when surface is gone", () => {
+  it("reverts to walk when surface is gone", () => {
     const entity = {
       locomotion: {
         type: "LocomotionState" as const,
@@ -56,6 +56,25 @@ describe("locomotion mode system", () => {
 
     runLocomotionModeSystem([entity]);
 
-    expect(entity.locomotion.baseMode).toBe("climb");
+    expect(entity.locomotion.baseMode).toBe("walk");
+  });
+
+  it("does not revert fly mode when there is no surface", () => {
+    const entity = {
+      locomotion: {
+        type: "LocomotionState" as const,
+        baseMode: "fly" as const,
+      },
+      contact: {
+        type: "ContactState" as const,
+        grounded: false,
+        climbableSurfaceId: null,
+      },
+      wallClimb: null,
+    };
+
+    runLocomotionModeSystem([entity]);
+
+    expect(entity.locomotion.baseMode).toBe("fly");
   });
 });

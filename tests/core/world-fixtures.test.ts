@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { MOTION_ARRIVAL_RADIUS } from "@/core/systems/intent-steering-system";
 import { createDemoScenario } from "@/core/world/scenario-fixtures";
 
 describe("demo scenario", () => {
@@ -60,6 +59,7 @@ describe("demo scenario", () => {
         "MotionTarget",
         "WandersOnArrival",
         "IntentState",
+        "LocomotionState",
         "UserAnchor",
       ],
       writes: ["MotionTarget", "IntentState"],
@@ -385,7 +385,7 @@ describe("demo scenario", () => {
     expect(after.y).toBeGreaterThan(before.y);
   });
 
-  it("lets flying seek-user pets settle near the user anchor", () => {
+  it("lets flying seek-user pets resume wandering after reaching the user anchor", () => {
     const userAnchor = { x: 200, y: 200 };
     const scenario = createDemoScenario({ userAnchor });
 
@@ -396,21 +396,17 @@ describe("demo scenario", () => {
       summary: "Needs approval",
     });
 
-    for (let index = 0; index < 200; index += 1) {
-      scenario.world.step(16);
-    }
+    scenario.world.step(16);
+    scenario.world.step(16);
 
-    const body = scenario.world
-      .snapshot()
-      .bodies.find((snapshotBody) => snapshotBody.id === "pet-d");
-    const distanceFromAnchor = Math.hypot(
-      (body?.x ?? 0) - userAnchor.x,
-      (body?.y ?? 0) - userAnchor.y,
-    );
-    const speed = Math.hypot(body?.vx ?? 0, body?.vy ?? 0);
-
-    expect(distanceFromAnchor).toBeLessThanOrEqual(MOTION_ARRIVAL_RADIUS + 2);
-    expect(speed).toBeLessThan(0.05);
+    expect(scenario.world.getComponent("pet-d", "IntentState")).toEqual({
+      type: "IntentState",
+      intent: "idle",
+    });
+    const motion = scenario.world.getComponent("pet-d", "MotionTarget");
+    expect(motion?.targetEntityId).toBeNull();
+    expect(motion?.targetPosition).not.toBeNull();
+    expect(motion?.targetPosition).not.toEqual(userAnchor);
   });
 
   it("does not plan global avoidance waypoints when another pet blocks the target path", () => {

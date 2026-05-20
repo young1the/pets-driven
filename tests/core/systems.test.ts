@@ -174,6 +174,7 @@ describe("behavior systems", () => {
   it("clears a world target after a wandering pet arrives", () => {
     const pet = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
+      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: {
         type: "Transform" as const,
         position: { x: 100, y: 100 },
@@ -201,6 +202,7 @@ describe("behavior systems", () => {
   it("keeps entity target when no matching anchor is present", () => {
     const pet = {
       intent: { type: "IntentState" as const, intent: "seek" as const },
+      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: {
         type: "Transform" as const,
         position: { x: 100, y: 100 },
