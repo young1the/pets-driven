@@ -24,15 +24,30 @@ function createFixturePet(input: {
         seekSpeed: 0.0018,
       },
       { type: "IntentState" as const, intent: "idle" as const },
-      { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+      {
+        type: "MotionTarget" as const,
+        targetEntityId: null,
+        targetPosition: null,
+      },
       { type: "NavigationState" as const, avoidanceWaypoint: null },
-      { type: "ContactState" as const, grounded: false, climbableSurfaceId: null },
+      {
+        type: "ContactState" as const,
+        grounded: false,
+        climbableSurfaceId: null,
+      },
       { type: "ActivityState" as const, lastActiveAt: 0 },
-      { type: "CompletionBehavior" as const, intentAfterCompletion: "idle" as const },
+      {
+        type: "CompletionBehavior" as const,
+        intentAfterCompletion: "idle" as const,
+      },
       { type: "SpeechState" as const, speech: null },
       { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
       { type: "Transform" as const, position: { x: input.x, y: input.y } },
-      { type: "PhysicsBody" as const, shape: "rectangle" as const, ...DEFAULT_PET_BODY_SIZE },
+      {
+        type: "PhysicsBody" as const,
+        shape: "rectangle" as const,
+        ...DEFAULT_PET_BODY_SIZE,
+      },
       ...input.components,
     ],
   };
@@ -54,8 +69,16 @@ export function createDemoScenario(options?: {
         id: "monitor-ground",
         components: [
           { type: "Ground" },
-          { type: "Transform", position: { x: width / 2, y: height + groundThickness / 2 } },
-          { type: "PhysicsBody", shape: "rectangle", width, height: groundThickness },
+          {
+            type: "Transform",
+            position: { x: width / 2, y: height + groundThickness / 2 },
+          },
+          {
+            type: "PhysicsBody",
+            shape: "rectangle",
+            width,
+            height: groundThickness,
+          },
           { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
         ],
       },
@@ -108,8 +131,10 @@ export function createDemoScenario(options?: {
         y: 500,
         components: [
           { type: "LocomotionState", baseMode: "walk" },
+          { type: "WalkMovement", speed: 0.01 },
           { type: "JumpMovement", impulse: 0.014 },
           { type: "JumpState", pending: true },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
         ],
       }),
       createFixturePet({
@@ -120,7 +145,9 @@ export function createDemoScenario(options?: {
         y: 200,
         components: [
           { type: "LocomotionState", baseMode: "walk" },
+          { type: "WalkMovement", speed: 0.01 },
           { type: "WallClimbMovement", speed: 0.004 },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
         ],
       }),
       createFixturePet({

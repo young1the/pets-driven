@@ -199,6 +199,10 @@ describe("demo scenario", () => {
       type: "LocomotionState",
       baseMode: "walk",
     });
+    expect(scenario.world.getComponent("pet-b", "WalkMovement")).toEqual({
+      type: "WalkMovement",
+      speed: 0.01,
+    });
     expect(scenario.world.getComponent("pet-b", "JumpMovement")).toEqual({
       type: "JumpMovement",
       impulse: 0.014,
@@ -207,13 +211,25 @@ describe("demo scenario", () => {
       type: "JumpState",
       pending: true,
     });
+    expect(scenario.world.getComponent("pet-b", "WandersOnArrival")).toEqual({
+      type: "WandersOnArrival",
+      arrivalRadius: 16,
+    });
     expect(scenario.world.getComponent("pet-c", "LocomotionState")).toEqual({
       type: "LocomotionState",
       baseMode: "walk",
     });
+    expect(scenario.world.getComponent("pet-c", "WalkMovement")).toEqual({
+      type: "WalkMovement",
+      speed: 0.01,
+    });
     expect(scenario.world.getComponent("pet-c", "WallClimbMovement")).toEqual({
       type: "WallClimbMovement",
       speed: 0.004,
+    });
+    expect(scenario.world.getComponent("pet-c", "WandersOnArrival")).toEqual({
+      type: "WandersOnArrival",
+      arrivalRadius: 16,
     });
     expect(scenario.world.getComponent("pet-d", "LocomotionState")).toEqual({
       type: "LocomotionState",
