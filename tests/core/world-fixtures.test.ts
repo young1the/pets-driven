@@ -109,7 +109,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-a", "LocomotionState")).toEqual({
       type: "LocomotionState",
-      activeMode: "walk",
+      baseMode: "walk",
     });
     expect(scenario.world.getComponent("pet-a", "FlightMovement")).toBeUndefined();
     expect(scenario.world.getComponent("pet-a", "WalkMovement")).toEqual({
@@ -130,7 +130,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-b", "LocomotionState")).toEqual({
       type: "LocomotionState",
-      activeMode: "jump",
+      baseMode: "walk",
     });
     expect(scenario.world.getComponent("pet-b", "JumpMovement")).toEqual({
       type: "JumpMovement",
@@ -142,7 +142,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-c", "LocomotionState")).toEqual({
       type: "LocomotionState",
-      activeMode: "climbWall",
+      baseMode: "climb",
     });
     expect(scenario.world.getComponent("pet-c", "WallClimbMovement")).toEqual({
       type: "WallClimbMovement",
@@ -150,7 +150,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-d", "LocomotionState")).toEqual({
       type: "LocomotionState",
-      activeMode: "fly",
+      baseMode: "fly",
     });
     expect(scenario.world.getComponent("pet-d", "FlightMovement")).toEqual({
       type: "FlightMovement",
@@ -177,7 +177,7 @@ describe("demo scenario", () => {
     const snapshot = scenario.world.snapshot();
 
     expect(snapshot.pets.map((pet) => pet.name)).toEqual(["Alice", "Bob", "Charlie", "Dana"]);
-    expect(snapshot.pets.map((pet) => pet.locomotion)).toEqual(["walk", "jump", "climbWall", "fly"]);
+    expect(snapshot.pets.map((pet) => pet.locomotion)).toEqual(["walk", "walk", "climb", "fly"]);
     expect(snapshot.pets[0]).toMatchObject({
       id: "pet-a",
       sourceId: "agent-a",

@@ -18,7 +18,7 @@ type WallClimbingEntity = {
 
 export function runWallClimbSystem(entities: WallClimbingEntity[]): Force[] {
   return entities.flatMap((entity) => {
-    if (entity.locomotion.activeMode !== "climbWall" || !entity.motion.targetPosition) {
+    if (entity.locomotion.baseMode !== "climb" || !entity.motion.targetPosition) {
       return [];
     }
 

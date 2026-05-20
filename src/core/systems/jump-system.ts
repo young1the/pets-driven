@@ -14,7 +14,7 @@ type JumpingEntity = {
 
 export function runJumpSystem(entities: JumpingEntity[]): Force[] {
   return entities.flatMap((entity) => {
-    if (entity.locomotion.activeMode !== "jump" || !entity.jumpState.pending) {
+    if (!entity.jumpState.pending) {
       return [];
     }
 

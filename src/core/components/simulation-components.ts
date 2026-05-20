@@ -6,7 +6,7 @@ export type Vector = {
 };
 
 export type CompletionIntent = "idle" | "seek";
-export type LocomotionMode = "idle" | "walk" | "jump" | "fly" | "climbWall";
+export type LocomotionBaseMode = "walk" | "fly" | "climb";
 
 /**
  * Connects a pet entity to the external agent or hook source it represents.
@@ -51,12 +51,12 @@ export type FlightMovementComponent = {
 };
 
 /**
- * Current locomotion mode. Movement capabilities are represented by their own
- * components; this component only records the selected movement state.
+ * Current long-lived locomotion mode. Short-lived actions such as jump are
+ * represented by their own request state instead of becoming base modes.
  */
 export type LocomotionStateComponent = {
   type: "LocomotionState";
-  activeMode: LocomotionMode;
+  baseMode: LocomotionBaseMode;
 };
 
 /**
@@ -70,7 +70,7 @@ export type WalkMovementComponent = {
 
 /**
  * Jump movement tuning. Component presence means the entity can jump; jumping
- * only runs when LocomotionState selects the jump mode.
+ * runs when JumpState requests a one-shot jump action.
  */
 export type JumpMovementComponent = {
   type: "JumpMovement";
@@ -88,7 +88,7 @@ export type JumpStateComponent = {
 
 /**
  * Wall-climb movement tuning. Component presence means the entity can climb
- * vertical surfaces; climbing only runs when LocomotionState selects climbWall.
+ * vertical surfaces; climbing only runs when LocomotionState selects climb.
  */
 export type WallClimbMovementComponent = {
   type: "WallClimbMovement";

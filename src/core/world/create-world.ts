@@ -162,7 +162,7 @@ export function createWorld(input: WorldDefinition) {
       .query("Transform", "LocomotionState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState")
       .flatMap((entity) => {
         const [transform, locomotion, movement, intent, motion, navigation] = entity.components;
-        if ((locomotion as LocomotionStateComponent).activeMode !== "fly") {
+        if ((locomotion as LocomotionStateComponent).baseMode !== "fly") {
           return [];
         }
 
@@ -264,7 +264,7 @@ export function createWorld(input: WorldDefinition) {
           sourceId: (agent as AgentBindingComponent).sourceId,
           name: (identity as PetIdentityComponent).name,
           intent: (intent as IntentStateComponent).intent,
-          locomotion: (locomotion as LocomotionStateComponent).activeMode,
+          locomotion: (locomotion as LocomotionStateComponent).baseMode,
           speech: (speech as SpeechStateComponent).speech,
           position: (transform as TransformComponent).position,
         };

@@ -225,12 +225,12 @@ describe("behavior systems", () => {
       [
         {
           id: "pet-a",
-          locomotion: { type: "LocomotionState" as const, activeMode: "fly" },
+          locomotion: { type: "LocomotionState" as const, baseMode: "fly" },
           flight: { type: "FlightMovement" as const, gravityScale: 0, hoverStrength: 0.003 },
         },
         {
           id: "pet-b",
-          locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
+          locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
           flight: { type: "FlightMovement" as const, gravityScale: 0, hoverStrength: 0.003 },
         },
       ],
@@ -246,7 +246,7 @@ describe("behavior systems", () => {
       {
         id: "pet-a",
         position: { x: 0, y: 10 },
-        locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
+        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
         walk: { type: "WalkMovement" as const, speed: 0.004 },
         motion: {
           type: "MotionTarget" as const,
@@ -261,7 +261,7 @@ describe("behavior systems", () => {
       {
         id: "pet-b",
         position: { x: 0, y: 10 },
-        locomotion: { type: "LocomotionState" as const, activeMode: "fly" },
+        locomotion: { type: "LocomotionState" as const, baseMode: "fly" },
         walk: { type: "WalkMovement" as const, speed: 0.004 },
         motion: {
           type: "MotionTarget" as const,
@@ -278,20 +278,20 @@ describe("behavior systems", () => {
     expect(forces).toEqual([{ id: "pet-a", x: 0.004, y: 0 }]);
   });
 
-  it("creates upward jump force only when jumping is active", () => {
+  it("creates upward jump force when jump is requested by a walking pet", () => {
     const jumpState = { type: "JumpState" as const, pending: true };
     const forces = runJumpSystem([
       {
         id: "pet-a",
-        locomotion: { type: "LocomotionState" as const, activeMode: "jump" },
+        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
         jump: { type: "JumpMovement" as const, impulse: 0.012 },
         jumpState,
       },
       {
         id: "pet-b",
-        locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
+        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
         jump: { type: "JumpMovement" as const, impulse: 0.012 },
-        jumpState: { type: "JumpState" as const, pending: true },
+        jumpState: { type: "JumpState" as const, pending: false },
       },
     ]);
 
@@ -303,7 +303,7 @@ describe("behavior systems", () => {
     const jumpState = { type: "JumpState" as const, pending: true };
     const entity = {
       id: "pet-a",
-      locomotion: { type: "LocomotionState" as const, activeMode: "jump" },
+      locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
       jump: { type: "JumpMovement" as const, impulse: 0.012 },
       jumpState,
     } as const;
@@ -317,7 +317,7 @@ describe("behavior systems", () => {
       {
         id: "pet-a",
         position: { x: 920, y: 420 },
-        locomotion: { type: "LocomotionState" as const, activeMode: "climbWall" },
+        locomotion: { type: "LocomotionState" as const, baseMode: "climb" },
         wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
         motion: {
           type: "MotionTarget" as const,
@@ -328,7 +328,7 @@ describe("behavior systems", () => {
       {
         id: "pet-b",
         position: { x: 920, y: 420 },
-        locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
+        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
         wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
         motion: {
           type: "MotionTarget" as const,

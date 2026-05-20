@@ -16,7 +16,7 @@ type FlightPhysics = {
 
 export function runFlightSystem(entities: FlightEntity[], physics: FlightPhysics) {
   for (const entity of entities) {
-    if (entity.locomotion.activeMode !== "fly") {
+    if (entity.locomotion.baseMode !== "fly") {
       continue;
     }
 
