@@ -9,6 +9,14 @@ export type CompletionIntent = "idle" | "seek";
 export type LocomotionBaseMode = "walk" | "fly" | "climb";
 
 /**
+ * Marker for environmental entities that a climbing-capable pet can attach to.
+ * Position belongs to Transform; this component only identifies the surface.
+ */
+export type ClimbableSurfaceComponent = {
+  type: "ClimbableSurface";
+};
+
+/**
  * Connects a pet entity to the external agent or hook source it represents.
  */
 export type AgentBindingComponent = {
@@ -30,6 +38,15 @@ export type ActivityStateComponent = {
 export type CompletionBehaviorComponent = {
   type: "CompletionBehavior";
   intentAfterCompletion: CompletionIntent;
+};
+
+/**
+ * Runtime environmental contact sensed for an entity.
+ */
+export type ContactStateComponent = {
+  type: "ContactState";
+  grounded: boolean;
+  climbableSurfaceId: string | null;
 };
 
 /**
@@ -203,7 +220,9 @@ export type UserAnchorComponent = {
 export type SimulationComponent =
   | ActivityStateComponent
   | AgentBindingComponent
+  | ClimbableSurfaceComponent
   | CompletionBehaviorComponent
+  | ContactStateComponent
   | FlightMovementComponent
   | GroundComponent
   | IdleConversationComponent

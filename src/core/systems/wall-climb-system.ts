@@ -1,4 +1,5 @@
 import type {
+  ContactStateComponent,
   LocomotionStateComponent,
   MotionTargetComponent,
   Vector,
@@ -13,12 +14,17 @@ type WallClimbingEntity = {
   position: Vector;
   locomotion: LocomotionStateComponent;
   wallClimb: WallClimbMovementComponent;
+  contact: ContactStateComponent;
   motion: MotionTargetComponent;
 };
 
 export function runWallClimbSystem(entities: WallClimbingEntity[]): Force[] {
   return entities.flatMap((entity) => {
-    if (entity.locomotion.baseMode !== "climb" || !entity.motion.targetPosition) {
+    if (
+      entity.locomotion.baseMode !== "climb" ||
+      !entity.contact.climbableSurfaceId ||
+      !entity.motion.targetPosition
+    ) {
       return [];
     }
 

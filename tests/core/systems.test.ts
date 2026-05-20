@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PET_SPEECH } from "@/core/constants/pet-speech";
 import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-system";
+import { runContactSystem } from "@/core/systems/contact-system";
 import { runPhysicsIntegrationSystem } from "@/core/systems/physics-integration-system";
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
@@ -161,6 +162,43 @@ describe("behavior systems", () => {
     });
   });
 
+  it("records the nearest climbable surface contact", () => {
+    const nearContact = {
+      type: "ContactState" as const,
+      grounded: false,
+      climbableSurfaceId: null as string | null,
+    };
+    const farContact = {
+      type: "ContactState" as const,
+      grounded: false,
+      climbableSurfaceId: "old-surface" as string | null,
+    };
+
+    runContactSystem(
+      [
+        {
+          id: "pet-a",
+          position: { x: 100, y: 120 },
+          contact: nearContact,
+        },
+        {
+          id: "pet-b",
+          position: { x: 400, y: 120 },
+          contact: farContact,
+        },
+      ],
+      [
+        {
+          id: "climb-wall",
+          position: { x: 124, y: 120 },
+        },
+      ],
+    );
+
+    expect(nearContact.climbableSurfaceId).toBe("climb-wall");
+    expect(farContact.climbableSurfaceId).toBeNull();
+  });
+
   it("merges steering forces by entity before stepping physics", () => {
     const appliedForces: Array<{ id: string; force: { x: number; y: number } }> = [];
     const physics = {
@@ -319,6 +357,11 @@ describe("behavior systems", () => {
         position: { x: 920, y: 420 },
         locomotion: { type: "LocomotionState" as const, baseMode: "climb" },
         wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
+        contact: {
+          type: "ContactState" as const,
+          grounded: false,
+          climbableSurfaceId: "climb-wall",
+        },
         motion: {
           type: "MotionTarget" as const,
           targetEntityId: null,
@@ -328,8 +371,13 @@ describe("behavior systems", () => {
       {
         id: "pet-b",
         position: { x: 920, y: 420 },
-        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+        locomotion: { type: "LocomotionState" as const, baseMode: "climb" },
         wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
+        contact: {
+          type: "ContactState" as const,
+          grounded: false,
+          climbableSurfaceId: null,
+        },
         motion: {
           type: "MotionTarget" as const,
           targetEntityId: null,
