@@ -262,6 +262,13 @@ export function createWorld(input: WorldDefinition) {
       });
   }
 
+  function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {
+    return getClimbableSurfaces(componentStore).map((surface) => ({
+      id: surface.id,
+      position: surface.position,
+    }));
+  }
+
   function getLocomotionModeEntities(componentStore: ComponentStore) {
     return componentStore
       .query("LocomotionState", "ContactState")
@@ -697,6 +704,7 @@ export function createWorld(input: WorldDefinition) {
       return {
         ...physicsSnapshot,
         pets: getPetSnapshots(components),
+        climbableSurfaces: getClimbableSurfaceSnapshots(components),
       };
     },
   };
