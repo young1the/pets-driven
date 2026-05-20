@@ -19,11 +19,12 @@ describe("demo scenario", () => {
       "IdleConversationSystem",
       "PhysicsTransformSyncSystem",
       "ContactSystem",
+      "ArrivalBehaviorSystem",
       "MotionTargetSystem",
-      "AvoidancePlanningSystem",
       "WalkSystem",
       "JumpSystem",
       "WallClimbSystem",
+      "CrowdAvoidanceSystem",
       "IntentSteeringSystem",
       "FlightSystem",
       "PhysicsIntegrationSystem",
@@ -41,21 +42,33 @@ describe("demo scenario", () => {
       writes: ["ContactState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
+      name: "ArrivalBehaviorSystem",
+      dependsOn: ["ContactSystem"],
+      reads: ["Transform", "MotionTarget", "WandersOnArrival"],
+      writes: ["MotionTarget"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
       name: "WalkSystem",
-      dependsOn: ["AvoidancePlanningSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: ["Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState"],
       writes: ["PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "JumpSystem",
-      dependsOn: ["AvoidancePlanningSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: ["LocomotionState", "JumpMovement", "JumpState"],
       writes: ["PhysicsForce", "JumpState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WallClimbSystem",
-      dependsOn: ["AvoidancePlanningSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget", "ContactState"],
+      writes: ["PhysicsForce"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "CrowdAvoidanceSystem",
+      dependsOn: ["MotionTargetSystem"],
+      reads: ["Transform", "AvoidsCrowds", "PhysicsBody"],
       writes: ["PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -139,6 +152,15 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-a", "WallClimbMovement")).toEqual({
       type: "WallClimbMovement",
       speed: 0.004,
+    });
+    expect(scenario.world.getComponent("pet-a", "AvoidsCrowds")).toEqual({
+      type: "AvoidsCrowds",
+      radius: 72,
+      strength: 0.002,
+    });
+    expect(scenario.world.getComponent("pet-a", "WandersOnArrival")).toEqual({
+      type: "WandersOnArrival",
+      arrivalRadius: 16,
     });
     expect(scenario.world.getComponent("pet-b", "LocomotionState")).toEqual({
       type: "LocomotionState",
@@ -321,7 +343,7 @@ describe("demo scenario", () => {
     expect(speed).toBeLessThan(0.05);
   });
 
-  it("plans an avoidance waypoint when another pet blocks the target path", () => {
+  it("does not plan global avoidance waypoints when another pet blocks the target path", () => {
     const scenario = createDemoScenario({
       userAnchor: { x: 360, y: 200 },
     });
@@ -335,9 +357,22 @@ describe("demo scenario", () => {
     scenario.world.step(16);
 
     const navigation = scenario.world.getComponent("pet-d", "NavigationState");
-    expect(navigation?.avoidanceWaypoint).toEqual({
-      x: 280,
-      y: 128,
+    expect(navigation?.avoidanceWaypoint).toBeNull();
+  });
+
+  it("chooses a new wander target after a pet reaches its previous one", () => {
+    const scenario = createDemoScenario();
+    scenario.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 120, y: 500 },
     });
+
+    scenario.world.step(16);
+
+    const motion = scenario.world.getComponent("pet-a", "MotionTarget");
+    expect(motion?.targetEntityId).toBeNull();
+    expect(motion?.targetPosition).not.toBeNull();
+    expect(motion?.targetPosition).not.toEqual({ x: 120, y: 500 });
   });
 });

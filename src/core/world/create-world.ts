@@ -1,6 +1,7 @@
 import type {
   ActivityStateComponent,
   AgentBindingComponent,
+  AvoidsCrowdsComponent,
   ContactStateComponent,
   CompletionBehaviorComponent,
   FlightMovementComponent,
@@ -18,6 +19,7 @@ import type {
   SpeechProfileComponent,
   SpeechStateComponent,
   TransformComponent,
+  WandersOnArrivalComponent,
   WallClimbMovementComponent,
   WalkMovementComponent,
 } from "@/core/components/simulation-components";
@@ -25,8 +27,9 @@ import { createComponentStore, type ComponentStore, type EntityDeclaration } fro
 import { createMatterPhysicsWorld, type MatterPhysicsWorld } from "@/core/physics/matter-physics-world";
 import type { Stimulus } from "@/core/stimuli/stimulus";
 import { createStimulusQueue, type StimulusQueue } from "@/core/stimuli/stimulus-queue";
-import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-system";
+import { runArrivalBehaviorSystem } from "@/core/systems/arrival-behavior-system";
 import { runContactSystem } from "@/core/systems/contact-system";
+import { runCrowdAvoidanceSystem } from "@/core/systems/crowd-avoidance-system";
 import { runFlightSystem } from "@/core/systems/flight-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runIntentSteeringSystem } from "@/core/systems/intent-steering-system";
@@ -139,6 +142,17 @@ export function createWorld(input: WorldDefinition) {
     });
   }
 
+  function getArrivalBehaviorEntities(componentStore: ComponentStore) {
+    return componentStore.query("Transform", "MotionTarget", "WandersOnArrival").map((entity) => {
+      const [transform, motion, wandersOnArrival] = entity.components;
+      return {
+        transform: transform as TransformComponent,
+        motion: motion as MotionTargetComponent,
+        wandersOnArrival: wandersOnArrival as WandersOnArrivalComponent,
+      };
+    });
+  }
+
   function getUserAnchorTargets(componentStore: ComponentStore) {
     return componentStore.query("Transform", "UserAnchor").map((entity) => {
       const [transform] = entity.components;
@@ -202,24 +216,23 @@ export function createWorld(input: WorldDefinition) {
       });
   }
 
-  function getNavigatingPets(componentStore: ComponentStore) {
-    return componentStore.query("Transform", "MotionTarget", "NavigationState").map((entity) => {
-      const [transform, motion, navigation] = entity.components;
-      return {
-        id: entity.id,
-        position: (transform as TransformComponent).position,
-        motion: motion as MotionTargetComponent,
-        navigation: navigation as NavigationStateComponent,
-      };
-    });
-  }
-
   function getAvoidanceObstacles(componentStore: ComponentStore) {
     return componentStore.query("Transform", "PhysicsBody").map((entity) => {
       const [transform] = entity.components;
       return {
         id: entity.id,
         position: (transform as TransformComponent).position,
+      };
+    });
+  }
+
+  function getCrowdAvoidingEntities(componentStore: ComponentStore) {
+    return componentStore.query("Transform", "AvoidsCrowds").map((entity) => {
+      const [transform, avoidsCrowds] = entity.components;
+      return {
+        id: entity.id,
+        position: (transform as TransformComponent).position,
+        avoidsCrowds: avoidsCrowds as AvoidsCrowdsComponent,
       };
     });
   }
@@ -335,8 +348,17 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "MotionTargetSystem",
+      name: "ArrivalBehaviorSystem",
       dependsOn: ["ContactSystem"],
+      reads: ["Transform", "MotionTarget", "WandersOnArrival"],
+      writes: ["MotionTarget"],
+      update(context) {
+        runArrivalBehaviorSystem(getArrivalBehaviorEntities(context.components));
+      },
+    },
+    {
+      name: "MotionTargetSystem",
+      dependsOn: ["ArrivalBehaviorSystem"],
       reads: ["IntentState", "MotionTarget", "Transform", "UserAnchor"],
       writes: ["MotionTarget"],
       update(context) {
@@ -349,20 +371,8 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "AvoidancePlanningSystem",
-      dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "MotionTarget", "NavigationState", "PhysicsBody"],
-      writes: ["NavigationState"],
-      update(context) {
-        runAvoidancePlanningSystem(
-          getNavigatingPets(context.components),
-          getAvoidanceObstacles(context.components),
-        );
-      },
-    },
-    {
       name: "WalkSystem",
-      dependsOn: ["AvoidancePlanningSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: ["Transform", "LocomotionState", "WalkMovement", "MotionTarget", "NavigationState"],
       writes: ["PhysicsForce"],
       update(context) {
@@ -371,7 +381,7 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "JumpSystem",
-      dependsOn: ["AvoidancePlanningSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: ["LocomotionState", "JumpMovement", "JumpState"],
       writes: ["PhysicsForce", "JumpState"],
       update(context) {
@@ -380,7 +390,7 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "WallClimbSystem",
-      dependsOn: ["AvoidancePlanningSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: ["Transform", "LocomotionState", "WallClimbMovement", "MotionTarget", "ContactState"],
       writes: ["PhysicsForce"],
       update(context) {
@@ -388,8 +398,22 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
+      name: "CrowdAvoidanceSystem",
+      dependsOn: ["MotionTargetSystem"],
+      reads: ["Transform", "AvoidsCrowds", "PhysicsBody"],
+      writes: ["PhysicsForce"],
+      update(context) {
+        context.forceGroups.push(
+          runCrowdAvoidanceSystem(
+            getCrowdAvoidingEntities(context.components),
+            getAvoidanceObstacles(context.components),
+          ),
+        );
+      },
+    },
+    {
       name: "IntentSteeringSystem",
-      dependsOn: ["AvoidancePlanningSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: ["Transform", "LocomotionState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
       writes: ["PhysicsForce"],
       update(context) {
@@ -407,7 +431,7 @@ export function createWorld(input: WorldDefinition) {
     },
     {
       name: "PhysicsIntegrationSystem",
-      dependsOn: ["WalkSystem", "JumpSystem", "WallClimbSystem", "IntentSteeringSystem", "FlightSystem"],
+      dependsOn: ["WalkSystem", "JumpSystem", "WallClimbSystem", "CrowdAvoidanceSystem", "IntentSteeringSystem", "FlightSystem"],
       reads: ["PhysicsForce"],
       writes: ["PhysicsWorld"],
       update(context) {

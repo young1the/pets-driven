@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PET_SPEECH } from "@/core/constants/pet-speech";
-import { runAvoidancePlanningSystem } from "@/core/systems/avoidance-planning-system";
+import { runArrivalBehaviorSystem } from "@/core/systems/arrival-behavior-system";
 import { runContactSystem } from "@/core/systems/contact-system";
+import { runCrowdAvoidanceSystem } from "@/core/systems/crowd-avoidance-system";
 import { runPhysicsIntegrationSystem } from "@/core/systems/physics-integration-system";
 import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-sync-system";
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
@@ -133,33 +134,84 @@ describe("behavior systems", () => {
     expect(pet.activity.lastActiveAt).toBe(20);
   });
 
-  it("plans an avoidance waypoint before a pet reaches another pet", () => {
-    const pet = {
-      id: "pet-a",
-      position: { x: 0, y: 0 },
-      motion: {
-        type: "MotionTarget" as const,
-        targetEntityId: "user-anchor",
-        targetPosition: { x: 120, y: 0 },
-      },
-      navigation: {
-        type: "NavigationState" as const,
-        avoidanceWaypoint: null as { x: number; y: number } | null,
-      },
-    };
-
-    runAvoidancePlanningSystem(
-      [pet],
+  it("creates crowd avoidance force only for pets with avoidance personality", () => {
+    const forces = runCrowdAvoidanceSystem(
+      [
+        {
+          id: "pet-a",
+          position: { x: 0, y: 0 },
+          avoidsCrowds: {
+            type: "AvoidsCrowds" as const,
+            radius: 80,
+            strength: 0.004,
+          },
+        },
+        {
+          id: "pet-b",
+          position: { x: 120, y: 0 },
+          avoidsCrowds: {
+            type: "AvoidsCrowds" as const,
+            radius: 80,
+            strength: 0.004,
+          },
+        },
+      ],
       [
         { id: "pet-a", position: { x: 0, y: 0 } },
-        { id: "pet-b", position: { x: 60, y: 0 } },
+        { id: "pet-c", position: { x: 40, y: 0 } },
       ],
     );
 
-    expect(pet.navigation.avoidanceWaypoint).toEqual({
-      x: 60,
-      y: -72,
+    expect(forces).toEqual([{ id: "pet-a", x: -0.002, y: 0 }]);
+  });
+
+  it("clears a world target after a wandering pet arrives", () => {
+    const pet = {
+      transform: {
+        type: "Transform" as const,
+        position: { x: 100, y: 100 },
+      },
+      motion: {
+        type: "MotionTarget" as const,
+        targetEntityId: null as string | null,
+        targetPosition: { x: 108, y: 100 } as { x: number; y: number } | null,
+      },
+      wandersOnArrival: {
+        type: "WandersOnArrival" as const,
+        arrivalRadius: 16,
+      },
+    };
+
+    runArrivalBehaviorSystem([pet]);
+
+    expect(pet.motion).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
     });
+  });
+
+  it("keeps entity targets for behavior systems that care about anchors", () => {
+    const pet = {
+      transform: {
+        type: "Transform" as const,
+        position: { x: 100, y: 100 },
+      },
+      motion: {
+        type: "MotionTarget" as const,
+        targetEntityId: "user-anchor" as string | null,
+        targetPosition: { x: 108, y: 100 } as { x: number; y: number } | null,
+      },
+      wandersOnArrival: {
+        type: "WandersOnArrival" as const,
+        arrivalRadius: 16,
+      },
+    };
+
+    runArrivalBehaviorSystem([pet]);
+
+    expect(pet.motion.targetEntityId).toBe("user-anchor");
+    expect(pet.motion.targetPosition).toEqual({ x: 108, y: 100 });
   });
 
   it("records the nearest climbable surface contact", () => {
