@@ -78,6 +78,15 @@ export type JumpMovementComponent = {
 };
 
 /**
+ * Mutable jump request state. A pending jump is consumed by JumpSystem so a
+ * jump applies one impulse instead of becoming continuous upward thrust.
+ */
+export type JumpStateComponent = {
+  type: "JumpState";
+  pending: boolean;
+};
+
+/**
  * Wall-climb movement tuning. Component presence means the entity can climb
  * vertical surfaces; climbing only runs when LocomotionState selects climbWall.
  */
@@ -200,6 +209,7 @@ export type SimulationComponent =
   | IdleConversationComponent
   | IntentStateComponent
   | JumpMovementComponent
+  | JumpStateComponent
   | LocomotionStateComponent
   | MotionTargetComponent
   | NavigationStateComponent

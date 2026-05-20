@@ -6,6 +6,7 @@ import type {
   IdleConversationComponent,
   IntentStateComponent,
   JumpMovementComponent,
+  JumpStateComponent,
   LocomotionStateComponent,
   MotionTargetComponent,
   MovementProfileComponent,
@@ -228,12 +229,13 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getJumpingEntities(componentStore: ComponentStore) {
-    return componentStore.query("LocomotionState", "JumpMovement").map((entity) => {
-      const [locomotion, jump] = entity.components;
+    return componentStore.query("LocomotionState", "JumpMovement", "JumpState").map((entity) => {
+      const [locomotion, jump, jumpState] = entity.components;
       return {
         id: entity.id,
         locomotion: locomotion as LocomotionStateComponent,
         jump: jump as JumpMovementComponent,
+        jumpState: jumpState as JumpStateComponent,
       };
     });
   }
@@ -332,8 +334,8 @@ export function createWorld(input: WorldDefinition) {
     {
       name: "JumpSystem",
       dependsOn: ["AvoidancePlanningSystem"],
-      reads: ["LocomotionState", "JumpMovement"],
-      writes: ["PhysicsForce"],
+      reads: ["LocomotionState", "JumpMovement", "JumpState"],
+      writes: ["PhysicsForce", "JumpState"],
       update(context) {
         context.forceGroups.push(runJumpSystem(getJumpingEntities(context.components)));
       },

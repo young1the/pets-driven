@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
 import { PLAYGROUND_TEXT } from "@/playground/browser/playground-text";
@@ -45,6 +45,7 @@ describe("PlaygroundApp", () => {
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("Bob")).toBeInTheDocument();
     expect(screen.getByText("Charlie")).toBeInTheDocument();
+    expect(screen.getByText("Dana")).toBeInTheDocument();
   });
 
   it("updates visible pet status after a waiting event", () => {
@@ -81,11 +82,15 @@ describe("PlaygroundApp", () => {
     render(<PlaygroundApp />);
 
     fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo }));
-    expect(screen.getByText("jump")).toBeInTheDocument();
-    expect(screen.getByText(PLAYGROUND_TEXT.jumpDemoSpeech)).toBeInTheDocument();
+    const aliceAfterJump = screen.getByText("Alice").closest("li");
+    expect(aliceAfterJump).not.toBeNull();
+    expect(within(aliceAfterJump as HTMLElement).getByText("jump")).toBeInTheDocument();
+    expect(within(aliceAfterJump as HTMLElement).getByText(PLAYGROUND_TEXT.jumpDemoSpeech)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }));
-    expect(screen.getByText("climbWall")).toBeInTheDocument();
-    expect(screen.getByText(PLAYGROUND_TEXT.wallClimbDemoSpeech)).toBeInTheDocument();
+    const aliceAfterClimb = screen.getByText("Alice").closest("li");
+    expect(aliceAfterClimb).not.toBeNull();
+    expect(within(aliceAfterClimb as HTMLElement).getByText("climbWall")).toBeInTheDocument();
+    expect(within(aliceAfterClimb as HTMLElement).getByText(PLAYGROUND_TEXT.wallClimbDemoSpeech)).toBeInTheDocument();
   });
 });

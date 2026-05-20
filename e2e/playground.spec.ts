@@ -44,10 +44,10 @@ test("jump and wall-climb demos expose locomotion state in the playground", asyn
   await playground.expectReady();
 
   await playground.startJumpDemo();
-  await playground.expectLocomotion("jump");
+  await playground.expectPetLocomotion("Alice", "jump");
   await playground.expectPetStatus("Alice", "idle", "Jumping up");
 
   await playground.startWallClimbDemo();
-  await playground.expectLocomotion("climbWall");
+  await playground.expectPetLocomotion("Alice", "climbWall");
   await playground.expectPetStatus("Alice", "idle", "Climbing the wall");
 });

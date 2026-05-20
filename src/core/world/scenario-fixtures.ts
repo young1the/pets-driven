@@ -79,6 +79,7 @@ export function createDemoScenario(options?: {
           { type: "LocomotionState", activeMode: "walk" },
           { type: "WalkMovement", speed: 0.01 },
           { type: "JumpMovement", impulse: 0.014 },
+          { type: "JumpState", pending: false },
           { type: "WallClimbMovement", speed: 0.004 },
         ],
       }),
@@ -86,11 +87,12 @@ export function createDemoScenario(options?: {
         id: "pet-b",
         sourceId: "agent-b",
         name: "Bob",
-        x: 200,
-        y: 200,
+        x: 840,
+        y: 500,
         components: [
-          { type: "LocomotionState", activeMode: "fly" },
-          { type: "FlightMovement", gravityScale: 0, hoverStrength: 0 },
+          { type: "LocomotionState", activeMode: "jump" },
+          { type: "JumpMovement", impulse: 0.014 },
+          { type: "JumpState", pending: true },
         ],
       }),
       createFixturePet({
@@ -98,6 +100,17 @@ export function createDemoScenario(options?: {
         sourceId: "agent-c",
         name: "Charlie",
         x: 280,
+        y: 200,
+        components: [
+          { type: "LocomotionState", activeMode: "climbWall" },
+          { type: "WallClimbMovement", speed: 0.004 },
+        ],
+      }),
+      createFixturePet({
+        id: "pet-d",
+        sourceId: "agent-d",
+        name: "Dana",
+        x: 200,
         y: 200,
         components: [
           { type: "LocomotionState", activeMode: "fly" },
