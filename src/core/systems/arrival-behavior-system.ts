@@ -45,12 +45,9 @@ export function runArrivalBehaviorSystem(
       continue;
     }
 
-    const distance = Math.hypot(
-      target.x - entity.transform.position.x,
-      target.y - entity.transform.position.y,
-    );
+    const dx = Math.abs(target.x - entity.transform.position.x);
 
-    if (distance > entity.wandersOnArrival.arrivalRadius) {
+    if (dx > entity.wandersOnArrival.arrivalRadius) {
       continue;
     }
 

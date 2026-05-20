@@ -22,6 +22,26 @@ describe("arrival behavior system", () => {
     expect(entity.motion.targetPosition).toBeNull();
   });
 
+  it("clears position target when x is within arrival radius even if y differs", () => {
+    const entity = {
+      intent: { type: "IntentState" as const, intent: "idle" as const },
+      transform: { type: "Transform" as const, position: { x: 108, y: 500 } },
+      motion: {
+        type: "MotionTarget" as const,
+        targetEntityId: null,
+        targetPosition: { x: 100, y: 100 },
+      },
+      wandersOnArrival: {
+        type: "WandersOnArrival" as const,
+        arrivalRadius: 16,
+      },
+    };
+
+    runArrivalBehaviorSystem([entity], []);
+
+    expect(entity.motion.targetPosition).toBeNull();
+  });
+
   it("does not clear position target when outside arrival radius", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
