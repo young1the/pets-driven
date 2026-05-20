@@ -59,4 +59,17 @@ describe("PlaygroundApp", () => {
     expect(screen.getByText("seek")).toBeInTheDocument();
     expect(screen.getByText("Needs approval")).toBeInTheDocument();
   });
+
+  it("starts a visible walking demo from the playground controls", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startWalkDemo }));
+
+    expect(screen.getByText("walk")).toBeInTheDocument();
+    expect(screen.getByText(PLAYGROUND_TEXT.walkingDemoSpeech)).toBeInTheDocument();
+  });
 });

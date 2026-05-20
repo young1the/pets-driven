@@ -60,6 +60,15 @@ export type LocomotionStateComponent = {
 };
 
 /**
+ * Walk movement tuning. Component presence means the entity can walk; walking
+ * only runs when LocomotionState selects the walk mode.
+ */
+export type WalkMovementComponent = {
+  type: "WalkMovement";
+  speed: number;
+};
+
+/**
  * Marker for entities that act as immovable ground or platform surfaces.
  */
 export type GroundComponent = {
@@ -182,7 +191,8 @@ export type SimulationComponent =
   | SpeechProfileComponent
   | SpeechStateComponent
   | TransformComponent
-  | UserAnchorComponent;
+  | UserAnchorComponent
+  | WalkMovementComponent;
 
 export type SimulationComponentType = SimulationComponent["type"];
 

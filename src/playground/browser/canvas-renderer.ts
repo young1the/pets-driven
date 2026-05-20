@@ -39,7 +39,7 @@ export function drawWorld(
     context.font = "12px Inter, Arial, sans-serif";
     context.fillText(pet.name, pet.position.x, pet.position.y - 32);
     context.fillStyle = "#526074";
-    context.fillText(pet.intent, pet.position.x, pet.position.y - 16);
+    context.fillText(`${pet.intent} / ${pet.locomotion}`, pet.position.x, pet.position.y - 16);
 
     if (pet.speech) {
       context.fillStyle = "#ffffff";

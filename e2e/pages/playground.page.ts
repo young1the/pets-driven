@@ -33,6 +33,12 @@ export class PlaygroundPage {
       .click();
   }
 
+  async startWalkDemo() {
+    await this.page
+      .getByRole("button", { name: PLAYGROUND_TEXT.startWalkDemo })
+      .click();
+  }
+
   async expectLastEventType(type: string) {
     await expect(
       this.page.getByText(new RegExp(`"type": "${type}"`)),
@@ -40,8 +46,15 @@ export class PlaygroundPage {
   }
 
   async expectPetStatus(name: string, intent: string, speech: string) {
-    await expect(this.page.getByText(name, { exact: true })).toBeVisible();
-    await expect(this.page.getByText(intent, { exact: true })).toBeVisible();
-    await expect(this.page.getByText(speech, { exact: true })).toBeVisible();
+    const row = this.page.getByRole("listitem").filter({
+      has: this.page.getByText(name, { exact: true }),
+    });
+    await expect(row).toBeVisible();
+    await expect(row.getByText(intent, { exact: true })).toBeVisible();
+    await expect(row.getByText(speech, { exact: true })).toBeVisible();
+  }
+
+  async expectLocomotion(mode: string) {
+    await expect(this.page.getByText(mode, { exact: true })).toBeVisible();
   }
 }
