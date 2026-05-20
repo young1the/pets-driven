@@ -3,7 +3,7 @@ import type {
   Vector,
 } from "@/core/components/simulation-components";
 
-const CLIMBABLE_CONTACT_RADIUS = 56;
+const CLIMBABLE_CONTACT_X_RADIUS = 56;
 
 type ContactEntity = {
   id: string;
@@ -24,14 +24,17 @@ export function runContactSystem(
     const nearestSurface = climbableSurfaces
       .map((surface) => ({
         surface,
-        distance: Math.hypot(
-          surface.position.x - entity.position.x,
-          surface.position.y - entity.position.y,
-        ),
+        horizontalDistance: Math.abs(surface.position.x - entity.position.x),
+        distance: Math.hypot(surface.position.x - entity.position.x, surface.position.y - entity.position.y),
       }))
-      .filter((candidate) => candidate.distance <= CLIMBABLE_CONTACT_RADIUS)
-      .sort((left, right) => left.distance - right.distance)[0]?.surface;
+      .filter((candidate) => candidate.horizontalDistance <= CLIMBABLE_CONTACT_X_RADIUS)
+      .sort(
+        (left, right) =>
+          left.horizontalDistance - right.horizontalDistance ||
+          left.distance - right.distance,
+      )[0]?.surface;
 
     entity.contact.climbableSurfaceId = nearestSurface?.id ?? null;
+    entity.contact.climbableSurfacePosition = nearestSurface?.position ?? null;
   }
 }

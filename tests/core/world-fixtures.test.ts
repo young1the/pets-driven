@@ -147,6 +147,7 @@ describe("demo scenario", () => {
       type: "ContactState",
       grounded: false,
       climbableSurfaceId: null,
+      climbableSurfacePosition: null,
     });
     expect(scenario.world.getComponent("pet-a", "SpeechProfile")).toEqual({
       type: "SpeechProfile",
@@ -275,6 +276,7 @@ describe("demo scenario", () => {
       type: "ContactState",
       grounded: false,
       climbableSurfaceId: "climb-wall",
+      climbableSurfacePosition: { x: 280, y: 200 },
     });
   });
 
