@@ -31,9 +31,10 @@ export function runMotionTargetSystem(
 
     if (!pet.motion.targetPosition) {
       pet.motion.targetEntityId = null;
+      const margin = 48;
       pet.motion.targetPosition = {
-        x: bounds.width * random.next(),
-        y: bounds.height * random.next(),
+        x: margin + (bounds.width - margin * 2) * random.next(),
+        y: margin + (bounds.height - margin * 2) * random.next(),
       };
     }
   }

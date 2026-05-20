@@ -159,6 +159,7 @@ export function createDemoScenario(options?: {
         components: [
           { type: "LocomotionState", baseMode: "fly" },
           { type: "FlightMovement", gravityScale: 0, hoverStrength: 0 },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
         ],
       }),
     ],

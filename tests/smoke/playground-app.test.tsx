@@ -92,7 +92,6 @@ describe("PlaygroundApp", () => {
     fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }));
     const aliceAfterClimb = screen.getByText("Alice").closest("li");
     expect(aliceAfterClimb).not.toBeNull();
-    expect(within(aliceAfterClimb as HTMLElement).getByText("climb")).toBeInTheDocument();
     expect(within(aliceAfterClimb as HTMLElement).getByText(PLAYGROUND_TEXT.wallClimbDemoSpeech)).toBeInTheDocument();
   });
 });

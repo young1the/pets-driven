@@ -16,6 +16,8 @@ export function runLocomotionModeSystem(
   for (const entity of entities) {
     if (entity.wallClimb && entity.contact.climbableSurfaceId) {
       entity.locomotion.baseMode = "climb";
+    } else if (entity.wallClimb && entity.locomotion.baseMode === "climb" && !entity.contact.climbableSurfaceId) {
+      entity.locomotion.baseMode = "walk";
     }
   }
 }

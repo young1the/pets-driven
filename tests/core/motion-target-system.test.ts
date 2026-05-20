@@ -76,7 +76,7 @@ describe("motion target system", () => {
     expect(pet.motion).toEqual({
       type: "MotionTarget",
       targetEntityId: null,
-      targetPosition: { x: 240, y: 135 },
+      targetPosition: { x: 264, y: 159 },
     });
   });
 
@@ -94,7 +94,7 @@ describe("motion target system", () => {
     expect(pet.motion).toEqual({
       type: "MotionTarget",
       targetEntityId: null,
-      targetPosition: { x: 720, y: 405 },
+      targetPosition: { x: 696, y: 381 },
     });
   });
 });

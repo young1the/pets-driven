@@ -196,11 +196,12 @@ export function createWorld(input: WorldDefinition) {
 
   function getArrivalBehaviorEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("IntentState", "Transform", "MotionTarget", "WandersOnArrival")
+      .query("IntentState", "LocomotionState", "Transform", "MotionTarget", "WandersOnArrival")
       .map((entity) => {
-        const [intent, transform, motion, wandersOnArrival] = entity.components;
+        const [intent, locomotion, transform, motion, wandersOnArrival] = entity.components;
         return {
           intent: intent as IntentStateComponent,
+          locomotion: locomotion as LocomotionStateComponent,
           transform: transform as TransformComponent,
           motion: motion as MotionTargetComponent,
           wandersOnArrival: wandersOnArrival as WandersOnArrivalComponent,
@@ -504,6 +505,7 @@ export function createWorld(input: WorldDefinition) {
         "MotionTarget",
         "WandersOnArrival",
         "IntentState",
+        "LocomotionState",
         "UserAnchor",
       ],
       writes: ["MotionTarget", "IntentState"],
