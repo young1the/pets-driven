@@ -34,6 +34,7 @@ function createFixturePet(input: {
         type: "ContactState" as const,
         grounded: false,
         climbableSurfaceId: null,
+        climbableSurfacePosition: null,
       },
       { type: "ActivityState" as const, lastActiveAt: 0 },
       {

@@ -12,6 +12,7 @@ describe("locomotion mode system", () => {
         type: "ContactState" as const,
         grounded: true,
         climbableSurfaceId: "wall-1",
+        climbableSurfacePosition: { x: 100, y: 100 },
       },
       wallClimb: { type: "WallClimbMovement" as const, speed: 0.004 },
     };
@@ -31,6 +32,7 @@ describe("locomotion mode system", () => {
         type: "ContactState" as const,
         grounded: true,
         climbableSurfaceId: "wall-1",
+        climbableSurfacePosition: { x: 100, y: 100 },
       },
       wallClimb: null,
     };
@@ -50,6 +52,7 @@ describe("locomotion mode system", () => {
         type: "ContactState" as const,
         grounded: false,
         climbableSurfaceId: null,
+        climbableSurfacePosition: null,
       },
       wallClimb: { type: "WallClimbMovement" as const, speed: 0.004 },
     };
@@ -69,6 +72,7 @@ describe("locomotion mode system", () => {
         type: "ContactState" as const,
         grounded: false,
         climbableSurfaceId: null,
+        climbableSurfacePosition: null,
       },
       wallClimb: null,
     };

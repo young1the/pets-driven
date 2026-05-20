@@ -64,6 +64,7 @@ export type ContactStateComponent = {
   type: "ContactState";
   grounded: boolean;
   climbableSurfaceId: string | null;
+  climbableSurfacePosition: Vector | null;
 };
 
 /**
