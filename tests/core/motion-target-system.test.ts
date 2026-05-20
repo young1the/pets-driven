@@ -40,6 +40,28 @@ describe("motion target system", () => {
     });
   });
 
+  it("clears entity target and picks a waypoint when pet is no longer seeking", () => {
+    const pet = {
+      id: "pet-a",
+      intent: { type: "IntentState" as const, intent: "idle" as const },
+      motion: {
+        type: "MotionTarget" as const,
+        targetEntityId: "user-anchor" as string | null,
+        targetPosition: null as { x: number; y: number } | null,
+      },
+    };
+
+    runMotionTargetSystem(
+      [pet],
+      [],
+      { next: () => 0.5 },
+      { width: 960, height: 540 },
+    );
+
+    expect(pet.motion.targetEntityId).toBeNull();
+    expect(pet.motion.targetPosition).toEqual({ x: 480, y: 270 });
+  });
+
   it("chooses deterministic waypoints for idle pets", () => {
     const pet = createPet("idle");
     const randomValues = [0.25, 0.25];

@@ -49,7 +49,7 @@ describe("arrival behavior system", () => {
       motion: {
         type: "MotionTarget" as const,
         targetEntityId: "user-anchor",
-        targetPosition: null,
+        targetPosition: { x: 100, y: 100 } as { x: number; y: number } | null,
       },
       wandersOnArrival: {
         type: "WandersOnArrival" as const,
@@ -62,6 +62,7 @@ describe("arrival behavior system", () => {
 
     expect(entity.intent.intent).toBe("idle");
     expect(entity.motion.targetEntityId).toBeNull();
+    expect(entity.motion.targetPosition).toBeNull();
   });
 
   it("does not switch to idle when seeking pet is far from user anchor", () => {
