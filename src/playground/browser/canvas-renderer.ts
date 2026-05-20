@@ -1,6 +1,6 @@
 import type { WorldSnapshot } from "@/core/snapshots/world-snapshot";
 import { getAtlasFrame, PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
-import { drawDebugBody } from "./debug-overlay";
+import { drawClimbableSurface, drawDebugBody } from "./debug-overlay";
 
 export type AssetCatalog = Record<string, HTMLImageElement>;
 
@@ -11,6 +11,10 @@ export function drawWorld(
   elapsedMs = 0,
 ) {
   context.clearRect(0, 0, snapshot.width, snapshot.height);
+
+  for (const surface of snapshot.climbableSurfaces) {
+    drawClimbableSurface(context, surface, snapshot.height);
+  }
 
   for (const body of snapshot.bodies) {
     const sprite = assets[body.id];

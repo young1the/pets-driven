@@ -278,6 +278,21 @@ describe("demo scenario", () => {
     });
   });
 
+  it("includes climbable surfaces in the render snapshot", () => {
+    const scenario = createDemoScenario();
+
+    expect(scenario.world.snapshot().climbableSurfaces).toEqual([
+      {
+        id: "alice-climb-wall",
+        position: { x: 120, y: 500 },
+      },
+      {
+        id: "climb-wall",
+        position: { x: 280, y: 200 },
+      },
+    ]);
+  });
+
   it("includes fixture pet render state in the snapshot", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();

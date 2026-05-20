@@ -31,6 +31,7 @@ describe("canvas renderer", () => {
           },
         ],
         pets: [],
+        climbableSurfaces: [],
       },
       {},
     );
@@ -64,6 +65,7 @@ describe("canvas renderer", () => {
           },
         ],
         pets: [],
+        climbableSurfaces: [],
       },
       { "pet-a": image },
       320,
@@ -99,6 +101,7 @@ describe("canvas renderer", () => {
             ...DEFAULT_PET_BODY_SIZE,
           },
         ],
+        climbableSurfaces: [],
         pets: [
           {
             id: "pet-a",
@@ -149,6 +152,7 @@ describe("canvas renderer", () => {
             ...DEFAULT_PET_BODY_SIZE,
           },
         ],
+        climbableSurfaces: [],
         pets: [
           {
             id: "pet-a",
@@ -166,5 +170,36 @@ describe("canvas renderer", () => {
     );
 
     expect(context.fillText).toHaveBeenCalledWith("Needs approval", 100, 72);
+  });
+
+  it("draws climbable surfaces as visible playground markers", () => {
+    const context = {
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      fillText: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [],
+        pets: [],
+        climbableSurfaces: [
+          {
+            id: "climb-wall",
+            position: { x: 120, y: 90 },
+          },
+        ],
+      },
+      {},
+      0,
+    );
+
+    expect(context.fillRect).toHaveBeenCalledWith(108, 24, 24, 132);
+    expect(context.strokeRect).toHaveBeenCalledWith(108, 24, 24, 132);
+    expect(context.fillText).toHaveBeenCalledWith("CLIMB SPACE", 120, 48);
   });
 });

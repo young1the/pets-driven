@@ -108,6 +108,7 @@ export function createMatterPhysicsWorld(bounds: {
           };
         }),
         pets: [],
+        climbableSurfaces: [],
       };
     },
   };

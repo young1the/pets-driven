@@ -25,9 +25,18 @@ export type PetSnapshot = {
   };
 };
 
+export type ClimbableSurfaceSnapshot = {
+  id: string;
+  position: {
+    x: number;
+    y: number;
+  };
+};
+
 export type WorldSnapshot = {
   width: number;
   height: number;
   bodies: BodySnapshot[];
   pets: PetSnapshot[];
+  climbableSurfaces: ClimbableSurfaceSnapshot[];
 };
