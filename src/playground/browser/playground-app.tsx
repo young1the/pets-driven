@@ -83,6 +83,10 @@ export function PlaygroundApp() {
       activeMode: "jump",
     });
     scenarioRef.current.world.setComponent("pet-a", {
+      type: "JumpState",
+      pending: true,
+    });
+    scenarioRef.current.world.setComponent("pet-a", {
       type: "SpeechState",
       speech: PLAYGROUND_TEXT.jumpDemoSpeech,
     });

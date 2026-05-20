@@ -7,7 +7,7 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();
 
-    expect(snapshot.bodies.filter((body) => body.id.startsWith("pet-"))).toHaveLength(3);
+    expect(snapshot.bodies.filter((body) => body.id.startsWith("pet-"))).toHaveLength(4);
     expect(snapshot.bodies.some((body) => body.id === "monitor-ground")).toBe(true);
   });
 
@@ -42,8 +42,8 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "JumpSystem",
       dependsOn: ["AvoidancePlanningSystem"],
-      reads: ["LocomotionState", "JumpMovement"],
-      writes: ["PhysicsForce"],
+      reads: ["LocomotionState", "JumpMovement", "JumpState"],
+      writes: ["PhysicsForce", "JumpState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WallClimbSystem",
@@ -120,15 +120,39 @@ describe("demo scenario", () => {
       type: "JumpMovement",
       impulse: 0.014,
     });
+    expect(scenario.world.getComponent("pet-a", "JumpState")).toEqual({
+      type: "JumpState",
+      pending: false,
+    });
     expect(scenario.world.getComponent("pet-a", "WallClimbMovement")).toEqual({
       type: "WallClimbMovement",
       speed: 0.004,
     });
     expect(scenario.world.getComponent("pet-b", "LocomotionState")).toEqual({
       type: "LocomotionState",
+      activeMode: "jump",
+    });
+    expect(scenario.world.getComponent("pet-b", "JumpMovement")).toEqual({
+      type: "JumpMovement",
+      impulse: 0.014,
+    });
+    expect(scenario.world.getComponent("pet-b", "JumpState")).toEqual({
+      type: "JumpState",
+      pending: true,
+    });
+    expect(scenario.world.getComponent("pet-c", "LocomotionState")).toEqual({
+      type: "LocomotionState",
+      activeMode: "climbWall",
+    });
+    expect(scenario.world.getComponent("pet-c", "WallClimbMovement")).toEqual({
+      type: "WallClimbMovement",
+      speed: 0.004,
+    });
+    expect(scenario.world.getComponent("pet-d", "LocomotionState")).toEqual({
+      type: "LocomotionState",
       activeMode: "fly",
     });
-    expect(scenario.world.getComponent("pet-b", "FlightMovement")).toEqual({
+    expect(scenario.world.getComponent("pet-d", "FlightMovement")).toEqual({
       type: "FlightMovement",
       hoverStrength: 0,
       gravityScale: 0,
@@ -152,7 +176,8 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();
 
-    expect(snapshot.pets.map((pet) => pet.name)).toEqual(["Alice", "Bob", "Charlie"]);
+    expect(snapshot.pets.map((pet) => pet.name)).toEqual(["Alice", "Bob", "Charlie", "Dana"]);
+    expect(snapshot.pets.map((pet) => pet.locomotion)).toEqual(["walk", "jump", "climbWall", "fly"]);
     expect(snapshot.pets[0]).toMatchObject({
       id: "pet-a",
       sourceId: "agent-a",
@@ -228,11 +253,11 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario({
       userAnchor: { x: 480, y: 500 },
     });
-    const before = scenario.world.snapshot().pets[1].position;
+    const before = scenario.world.snapshot().pets[3].position;
 
     scenario.world.pushStimulus({
       type: "task.waiting",
-      sourceId: "agent-b",
+      sourceId: "agent-d",
       at: 1,
       summary: "Needs approval",
     });
@@ -240,17 +265,17 @@ describe("demo scenario", () => {
       scenario.world.step(16);
     }
 
-    const after = scenario.world.snapshot().pets[1].position;
+    const after = scenario.world.snapshot().pets[3].position;
     expect(after.y).toBeGreaterThan(before.y);
   });
 
   it("lets flying seek-user pets settle near the user anchor", () => {
-    const userAnchor = { x: 160, y: 230 };
+    const userAnchor = { x: 200, y: 200 };
     const scenario = createDemoScenario({ userAnchor });
 
     scenario.world.pushStimulus({
       type: "task.waiting",
-      sourceId: "agent-b",
+      sourceId: "agent-d",
       at: 1,
       summary: "Needs approval",
     });
@@ -259,7 +284,7 @@ describe("demo scenario", () => {
       scenario.world.step(16);
     }
 
-    const body = scenario.world.snapshot().bodies.find((snapshotBody) => snapshotBody.id === "pet-b");
+    const body = scenario.world.snapshot().bodies.find((snapshotBody) => snapshotBody.id === "pet-d");
     const distanceFromAnchor = Math.hypot((body?.x ?? 0) - userAnchor.x, (body?.y ?? 0) - userAnchor.y);
     const speed = Math.hypot(body?.vx ?? 0, body?.vy ?? 0);
 
@@ -274,13 +299,13 @@ describe("demo scenario", () => {
 
     scenario.world.pushStimulus({
       type: "task.waiting",
-      sourceId: "agent-b",
+      sourceId: "agent-d",
       at: 1,
       summary: "Needs approval",
     });
     scenario.world.step(16);
 
-    const navigation = scenario.world.getComponent("pet-b", "NavigationState");
+    const navigation = scenario.world.getComponent("pet-d", "NavigationState");
     expect(navigation?.avoidanceWaypoint).toEqual({
       x: 280,
       y: 128,

@@ -279,20 +279,37 @@ describe("behavior systems", () => {
   });
 
   it("creates upward jump force only when jumping is active", () => {
+    const jumpState = { type: "JumpState" as const, pending: true };
     const forces = runJumpSystem([
       {
         id: "pet-a",
         locomotion: { type: "LocomotionState" as const, activeMode: "jump" },
         jump: { type: "JumpMovement" as const, impulse: 0.012 },
+        jumpState,
       },
       {
         id: "pet-b",
         locomotion: { type: "LocomotionState" as const, activeMode: "walk" },
         jump: { type: "JumpMovement" as const, impulse: 0.012 },
+        jumpState: { type: "JumpState" as const, pending: true },
       },
     ]);
 
     expect(forces).toEqual([{ id: "pet-a", x: 0, y: -0.012 }]);
+    expect(jumpState.pending).toBe(false);
+  });
+
+  it("does not keep applying jump force after the pending jump is consumed", () => {
+    const jumpState = { type: "JumpState" as const, pending: true };
+    const entity = {
+      id: "pet-a",
+      locomotion: { type: "LocomotionState" as const, activeMode: "jump" },
+      jump: { type: "JumpMovement" as const, impulse: 0.012 },
+      jumpState,
+    } as const;
+
+    expect(runJumpSystem([entity])).toEqual([{ id: "pet-a", x: 0, y: -0.012 }]);
+    expect(runJumpSystem([entity])).toEqual([]);
   });
 
   it("creates vertical wall-climb force only when wall climbing is active", () => {

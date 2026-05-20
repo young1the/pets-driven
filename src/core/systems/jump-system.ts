@@ -1,5 +1,6 @@
 import type {
   JumpMovementComponent,
+  JumpStateComponent,
   LocomotionStateComponent,
 } from "@/core/components/simulation-components";
 import type { Force } from "@/core/systems/physics-integration-system";
@@ -8,13 +9,16 @@ type JumpingEntity = {
   id: string;
   locomotion: LocomotionStateComponent;
   jump: JumpMovementComponent;
+  jumpState: JumpStateComponent;
 };
 
 export function runJumpSystem(entities: JumpingEntity[]): Force[] {
   return entities.flatMap((entity) => {
-    if (entity.locomotion.activeMode !== "jump") {
+    if (entity.locomotion.activeMode !== "jump" || !entity.jumpState.pending) {
       return [];
     }
+
+    entity.jumpState.pending = false;
 
     return [
       {

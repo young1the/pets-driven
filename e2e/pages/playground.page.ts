@@ -66,6 +66,14 @@ export class PlaygroundPage {
     await expect(row.getByText(speech, { exact: true })).toBeVisible();
   }
 
+  async expectPetLocomotion(name: string, mode: string) {
+    const row = this.page.getByRole("listitem").filter({
+      has: this.page.getByText(name, { exact: true }),
+    });
+    await expect(row).toBeVisible();
+    await expect(row.getByText(mode, { exact: true })).toBeVisible();
+  }
+
   async expectLocomotion(mode: string) {
     await expect(this.page.getByText(mode, { exact: true })).toBeVisible();
   }
