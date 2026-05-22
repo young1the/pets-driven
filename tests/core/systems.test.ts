@@ -537,15 +537,26 @@ describe("behavior systems", () => {
     });
   });
 
-  it("clears horizontal velocity when a pet attaches to climb", () => {
+  it("locks horizontal position and velocity when a pet attaches to climb", () => {
     const velocityUpdates: Array<{
       id: string;
       velocity: { x?: number; y?: number };
+    }> = [];
+    const positionUpdates: Array<{
+      id: string;
+      position: { x?: number; y?: number };
     }> = [];
     const physics = {
       setVelocity(id: string, velocity: { x?: number; y?: number }) {
         velocityUpdates.push({ id, velocity });
       },
+      setPosition(id: string, position: { x?: number; y?: number }) {
+        positionUpdates.push({ id, position });
+      },
+    };
+    const transform = {
+      type: "Transform" as const,
+      position: { x: 176, y: 500 },
     };
 
     runClimbAttachmentSystem(
@@ -553,6 +564,7 @@ describe("behavior systems", () => {
         {
           id: "pet-a",
           climbing: { type: "ClimbingState" as const },
+          transform,
           contact: {
             type: "ContactState" as const,
             grounded: true,
@@ -567,6 +579,10 @@ describe("behavior systems", () => {
     expect(velocityUpdates).toEqual([
       { id: "pet-a", velocity: { x: 0 } },
     ]);
+    expect(positionUpdates).toEqual([
+      { id: "pet-a", position: { x: 120 } },
+    ]);
+    expect(transform.position.x).toBe(120);
   });
 
   it("creates horizontal walking force only when walking is active", () => {
@@ -625,38 +641,86 @@ describe("behavior systems", () => {
     expect(forces).toEqual([]);
   });
 
-  it("creates upward jump force when jump is requested by a walking pet", () => {
-    const jumpState = { type: "JumpState" as const, pending: true };
+  it("creates upward jump force when jump is requested by a grounded walking pet", () => {
+    const jumpAction = {
+      type: "JumpActionState" as const,
+      phase: "requested" as const,
+      cooldownMs: 0,
+    };
     const forces = runJumpSystem([
       {
         id: "pet-a",
         locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+        contact: {
+          type: "ContactState" as const,
+          grounded: true,
+          climbableSurfaceId: null,
+          climbableSurfacePosition: null,
+        },
         jump: { type: "CanJump" as const, impulse: 0.012 },
-        jumpState,
+        jumpAction,
       },
       {
         id: "pet-b",
         locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+        contact: {
+          type: "ContactState" as const,
+          grounded: true,
+          climbableSurfaceId: null,
+          climbableSurfacePosition: null,
+        },
         jump: { type: "CanJump" as const, impulse: 0.012 },
-        jumpState: { type: "JumpState" as const, pending: false },
+        jumpAction: {
+          type: "JumpActionState" as const,
+          phase: "ready" as const,
+          cooldownMs: 0,
+        },
       },
     ]);
 
     expect(forces).toEqual([{ id: "pet-a", x: 0, y: -0.012 }]);
-    expect(jumpState.pending).toBe(false);
+    expect(jumpAction.phase).toBe("rising");
   });
 
-  it("does not keep applying jump force after the pending jump is consumed", () => {
-    const jumpState = { type: "JumpState" as const, pending: true };
+  it("advances jump phases through airborne and landing cooldown", () => {
+    const jumpAction = {
+      type: "JumpActionState" as const,
+      phase: "requested" as const,
+      cooldownMs: 0,
+    };
+    const contact = {
+      type: "ContactState" as const,
+      grounded: true,
+      climbableSurfaceId: null as string | null,
+      climbableSurfacePosition: null as Vector | null,
+    };
     const entity = {
       id: "pet-a",
       locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+      contact,
       jump: { type: "CanJump" as const, impulse: 0.012 },
-      jumpState,
+      jumpAction,
     } as const;
 
     expect(runJumpSystem([entity])).toEqual([{ id: "pet-a", x: 0, y: -0.012 }]);
     expect(runJumpSystem([entity])).toEqual([]);
+    expect(jumpAction.phase).toBe("rising");
+
+    contact.grounded = false;
+    expect(runJumpSystem([entity])).toEqual([]);
+    expect(jumpAction.phase).toBe("falling");
+
+    contact.grounded = true;
+    expect(runJumpSystem([entity], 16)).toEqual([]);
+    expect(jumpAction.phase).toBe("landingCooldown");
+    expect(jumpAction.cooldownMs).toBe(250);
+
+    expect(runJumpSystem([entity], 250)).toEqual([]);
+    expect(jumpAction).toEqual({
+      type: "JumpActionState",
+      phase: "ready",
+      cooldownMs: 0,
+    });
   });
 
   it("creates vertical wall-climb force only when wall climbing is active", () => {
@@ -769,7 +833,11 @@ describe("behavior systems", () => {
       walk: { type: "CanWalk" as const, speed: 0.01 },
       wallClimb: { type: "CanWallClimb" as const, speed: 0.004 },
       jump: { type: "CanJump" as const, impulse: 0.014 },
-      jumpState: { type: "JumpState" as const, pending: false },
+      jumpAction: {
+        type: "JumpActionState" as const,
+        phase: "ready" as const,
+        cooldownMs: 0,
+      },
       climbDismount: {
         type: "ClimbDismountState" as const,
         phase: "ready" as const,
@@ -780,7 +848,11 @@ describe("behavior systems", () => {
     runClimbDismountSystem([entity], 16);
 
     expect(entity.locomotion.baseMode).toBe("walk");
-    expect(entity.jumpState.pending).toBe(false);
+    expect(entity.jumpAction).toEqual({
+      type: "JumpActionState",
+      phase: "falling",
+      cooldownMs: 0,
+    });
     expect(entity.climbDismount.phase).toBe("airborne");
     expect(entity.climbDismount.cooldownMs).toBe(0);
   });
@@ -803,7 +875,11 @@ describe("behavior systems", () => {
       walk: { type: "CanWalk" as const, speed: 0.01 },
       wallClimb: { type: "CanWallClimb" as const, speed: 0.004 },
       jump: { type: "CanJump" as const, impulse: 0.014 },
-      jumpState: { type: "JumpState" as const, pending: false },
+      jumpAction: {
+        type: "JumpActionState" as const,
+        phase: "ready" as const,
+        cooldownMs: 0,
+      },
       climbDismount: {
         type: "ClimbDismountState" as const,
         phase: "ready" as const,
@@ -814,7 +890,7 @@ describe("behavior systems", () => {
     runClimbDismountSystem([entity], 16);
 
     expect(entity.locomotion.baseMode).toBe("climb");
-    expect(entity.jumpState.pending).toBe(false);
+    expect(entity.jumpAction.phase).toBe("ready");
     expect(entity.climbDismount.phase).toBe("ready");
     expect(entity.climbDismount.cooldownMs).toBe(0);
   });
@@ -837,7 +913,11 @@ describe("behavior systems", () => {
       walk: { type: "CanWalk" as const, speed: 0.01 },
       wallClimb: { type: "CanWallClimb" as const, speed: 0.004 },
       jump: { type: "CanJump" as const, impulse: 0.014 },
-      jumpState: { type: "JumpState" as const, pending: false },
+      jumpAction: {
+        type: "JumpActionState" as const,
+        phase: "ready" as const,
+        cooldownMs: 0,
+      },
       climbDismount: {
         type: "ClimbDismountState" as const,
         phase: "airborne" as const,

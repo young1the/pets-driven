@@ -2,7 +2,7 @@ import type {
   ClimbDismountStateComponent,
   ContactStateComponent,
   CanJumpComponent,
-  JumpStateComponent,
+  JumpActionStateComponent,
   LocomotionStateComponent,
   MotionTargetComponent,
   CanWallClimbComponent,
@@ -19,7 +19,7 @@ type ClimbDismountEntity = {
   walk: CanWalkComponent;
   wallClimb: CanWallClimbComponent;
   jump: CanJumpComponent;
-  jumpState: JumpStateComponent;
+  jumpAction: JumpActionStateComponent;
   climbDismount: ClimbDismountStateComponent;
 };
 
@@ -57,7 +57,8 @@ export function runClimbDismountSystem(
     }
 
     entity.locomotion.baseMode = "walk";
-    entity.jumpState.pending = false;
+    entity.jumpAction.phase = "falling";
+    entity.jumpAction.cooldownMs = 0;
     entity.climbDismount.phase = "airborne";
     entity.climbDismount.cooldownMs = 0;
   }

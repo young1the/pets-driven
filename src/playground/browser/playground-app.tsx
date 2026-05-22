@@ -85,8 +85,9 @@ export function PlaygroundApp() {
       baseMode: "walk",
     });
     scenarioRef.current.world.setComponent("pet-a", {
-      type: "JumpState",
-      pending: true,
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
     });
     scenarioRef.current.world.setComponent("pet-a", {
       type: "SpeechState",
