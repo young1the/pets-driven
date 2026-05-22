@@ -86,6 +86,15 @@ export type LocomotionStateComponent = {
 };
 
 /**
+ * Temporary state after a pet jumps away from a climbable surface. While the
+ * cooldown is active, locomotion will not immediately reattach to the surface.
+ */
+export type ClimbDismountStateComponent = {
+  type: "ClimbDismountState";
+  cooldownMs: number;
+};
+
+/**
  * Walk movement tuning. Component presence means the entity can walk; walking
  * only runs when LocomotionState selects the walk mode.
  */
@@ -229,6 +238,7 @@ export type UserAnchorComponent = {
 export type SimulationComponent =
   | ActivityStateComponent
   | AgentBindingComponent
+  | ClimbDismountStateComponent
   | ClimbableSurfaceComponent
   | CompletionBehaviorComponent
   | ContactStateComponent

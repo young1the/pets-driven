@@ -81,4 +81,28 @@ describe("locomotion mode system", () => {
 
     expect(entity.locomotion.baseMode).toBe("fly");
   });
+
+  it("does not re-enter climb while a climb dismount cooldown is active", () => {
+    const entity = {
+      locomotion: {
+        type: "LocomotionState" as const,
+        baseMode: "walk" as const,
+      },
+      contact: {
+        type: "ContactState" as const,
+        grounded: false,
+        climbableSurfaceId: "wall-1",
+        climbableSurfacePosition: { x: 100, y: 100 },
+      },
+      wallClimb: { type: "WallClimbMovement" as const, speed: 0.004 },
+      climbDismount: {
+        type: "ClimbDismountState" as const,
+        cooldownMs: 500,
+      },
+    };
+
+    runLocomotionModeSystem([entity]);
+
+    expect(entity.locomotion.baseMode).toBe("walk");
+  });
 });

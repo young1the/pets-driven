@@ -1,4 +1,5 @@
 import type {
+  ContactStateComponent,
   LocomotionStateComponent,
   MotionTargetComponent,
   NavigationStateComponent,
@@ -13,6 +14,7 @@ type WalkingEntity = {
   id: string;
   position: Vector;
   locomotion: LocomotionStateComponent;
+  contact: ContactStateComponent;
   walk: WalkMovementComponent;
   motion: MotionTargetComponent;
   navigation?: NavigationStateComponent;
@@ -21,6 +23,10 @@ type WalkingEntity = {
 export function runWalkSystem(entities: WalkingEntity[]): Force[] {
   return entities.flatMap((entity) => {
     if (entity.locomotion.baseMode !== "walk") {
+      return [];
+    }
+
+    if (!entity.contact.grounded) {
       return [];
     }
 
