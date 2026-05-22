@@ -1,5 +1,5 @@
 import type {
-  JumpMovementComponent,
+  CanJumpComponent,
   JumpStateComponent,
   LocomotionStateComponent,
 } from "@/core/components/simulation-components";
@@ -8,7 +8,7 @@ import type { Force } from "@/core/systems/physics-integration-system";
 type JumpingEntity = {
   id: string;
   locomotion: LocomotionStateComponent;
-  jump: JumpMovementComponent;
+  jump: CanJumpComponent;
   jumpState: JumpStateComponent;
 };
 

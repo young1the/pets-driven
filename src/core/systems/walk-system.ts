@@ -1,10 +1,10 @@
 import type {
+  CanWalkComponent,
   ContactStateComponent,
-  LocomotionStateComponent,
   MotionTargetComponent,
   NavigationStateComponent,
   Vector,
-  WalkMovementComponent,
+  WalkingStateComponent,
 } from "@/core/components/simulation-components";
 import type { Force } from "@/core/systems/physics-integration-system";
 
@@ -13,19 +13,15 @@ const WALK_ARRIVAL_RADIUS = 16;
 type WalkingEntity = {
   id: string;
   position: Vector;
-  locomotion: LocomotionStateComponent;
+  walking: WalkingStateComponent;
   contact: ContactStateComponent;
-  walk: WalkMovementComponent;
+  canWalk: CanWalkComponent;
   motion: MotionTargetComponent;
   navigation?: NavigationStateComponent;
 };
 
 export function runWalkSystem(entities: WalkingEntity[]): Force[] {
   return entities.flatMap((entity) => {
-    if (entity.locomotion.baseMode !== "walk") {
-      return [];
-    }
-
     if (!entity.contact.grounded) {
       return [];
     }
@@ -43,7 +39,7 @@ export function runWalkSystem(entities: WalkingEntity[]): Force[] {
     return [
       {
         id: entity.id,
-        x: Math.sign(dx) * entity.walk.speed,
+        x: Math.sign(dx) * entity.canWalk.speed,
         y: 0,
       },
     ];

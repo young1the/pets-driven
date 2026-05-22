@@ -26,6 +26,7 @@ export type ComponentStore = {
     type: TType,
   ): ReadonlyMap<EntityId, ComponentOf<TType>>;
   setComponent(componentOwnerId: EntityId, component: SimulationComponent): void;
+  removeComponent(componentOwnerId: EntityId, type: SimulationComponentType): void;
   query<TTypes extends SimulationComponentType[]>(
     ...types: TTypes
   ): Array<{
@@ -84,6 +85,13 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
         throw new Error(`Unknown entity: ${id}`);
       }
       setComponentForEntity(id, component);
+    },
+    removeComponent(id, type) {
+      const entity = entitiesById.get(id);
+      if (!entity) {
+        throw new Error(`Unknown entity: ${id}`);
+      }
+      getComponentTable(type).delete(id);
     },
     query(...types) {
       if (types.length === 0) {

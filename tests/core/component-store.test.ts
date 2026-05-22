@@ -57,4 +57,21 @@ describe("component store", () => {
       },
     ]);
   });
+
+  it("removes components from their type table", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "LocomotionState", baseMode: "walk" },
+          { type: "WalkingState" },
+        ],
+      },
+    ]);
+
+    store.removeComponent("pet-a", "WalkingState");
+
+    expect(store.getComponent("pet-a", "WalkingState")).toBeUndefined();
+    expect(store.query("LocomotionState", "WalkingState")).toEqual([]);
+  });
 });

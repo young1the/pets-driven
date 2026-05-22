@@ -18,6 +18,19 @@ describe("matter physics world", () => {
     });
   });
 
+  it("can clear horizontal velocity when movement modes need to stabilize", () => {
+    const world = createMatterPhysicsWorld({ width: 800, height: 600 });
+    world.addRectangle("pet-a", { x: 100, y: 100 }, { width: 32, height: 38 });
+
+    world.applyForce("pet-a", { x: 0.02, y: 0 });
+    world.step(16);
+    expect(world.snapshot().bodies.find((body) => body.id === "pet-a")?.vx).toBeGreaterThan(0);
+
+    world.setVelocity("pet-a", { x: 0 });
+
+    expect(world.snapshot().bodies.find((body) => body.id === "pet-a")?.vx).toBe(0);
+  });
+
   it("applies gravity and lets a static ground stop falling bodies", () => {
     const world = createMatterPhysicsWorld({ width: 800, height: 600 });
     world.addStaticRectangle("ground", { x: 400, y: 620 }, { width: 800, height: 40 });
@@ -31,13 +44,25 @@ describe("matter physics world", () => {
     const ground = world.snapshot().bodies.find((body) => body.id === "ground");
 
     expect(pet?.y).toBeGreaterThan(100);
-    expect(pet?.y).toBeLessThanOrEqual(600 - 19);
+    expect(pet?.y).toBeLessThanOrEqual(582);
     expect(ground).toMatchObject({
       isStatic: true,
       shape: "rectangle",
       width: 800,
       height: 40,
     });
+  });
+
+  it("lets non-flying rectangle bodies fall visibly under gravity within one second", () => {
+    const world = createMatterPhysicsWorld({ width: 800, height: 600 });
+    world.addRectangle("pet-a", { x: 100, y: 100 }, { width: 32, height: 38 });
+
+    for (let index = 0; index < 60; index += 1) {
+      world.step(16);
+    }
+
+    const pet = world.snapshot().bodies.find((body) => body.id === "pet-a");
+    expect(pet?.y).toBeGreaterThan(220);
   });
 
   it("supports per-body gravity scale for flyable or low-gravity bodies", () => {

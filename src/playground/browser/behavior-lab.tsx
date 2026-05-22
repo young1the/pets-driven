@@ -8,12 +8,16 @@ import { PLAYGROUND_TEXT } from "./playground-text";
 const INSPECTED_COMPONENTS: SimulationComponentType[] = [
   "IdleConversation",
   "LocomotionState",
-  "WalkMovement",
-  "JumpMovement",
+  "WalkingState",
+  "ClimbingState",
+  "FlyingState",
+  "AirborneState",
+  "CanWalk",
+  "CanJump",
   "JumpState",
-  "WallClimbMovement",
+  "CanWallClimb",
   "ClimbDismountState",
-  "FlightMovement",
+  "CanFly",
   "WandersOnArrival",
   "ContactState",
   "MotionTarget",
@@ -93,6 +97,10 @@ export function BehaviorLab({
         <div>
           <dt>Jump pending</dt>
           <dd>{jumpState?.pending ? "true" : "false"}</dd>
+        </div>
+        <div>
+          <dt>Dismount phase</dt>
+          <dd>{climbDismount?.phase ?? "none"}</dd>
         </div>
         <div>
           <dt>Dismount cooldown</dt>
