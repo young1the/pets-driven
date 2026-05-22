@@ -4,6 +4,7 @@ import { DEFAULT_PET_SPEECH } from "@/core/constants/pet-speech";
 import { runArrivalBehaviorSystem } from "@/core/systems/arrival-behavior-system";
 import { runClimbAttachmentSystem } from "@/core/systems/climb-attachment-system";
 import { runClimbDismountSystem } from "@/core/systems/climb-dismount-system";
+import { runClimbApproachSystem } from "@/core/systems/climb-approach-system";
 import { runCollisionReactionSystem } from "@/core/systems/collision-reaction-system";
 import { runContactSystem } from "@/core/systems/contact-system";
 import { runPhysicsIntegrationSystem } from "@/core/systems/physics-integration-system";
@@ -565,6 +566,11 @@ describe("behavior systems", () => {
           id: "pet-a",
           climbing: { type: "ClimbingState" as const },
           transform,
+          motion: {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           contact: {
             type: "ContactState" as const,
             grounded: true,
@@ -583,6 +589,87 @@ describe("behavior systems", () => {
       { id: "pet-a", position: { x: 120 } },
     ]);
     expect(transform.position.x).toBe(120);
+  });
+
+  it("sets an approach target before climbing and a climb target after attaching", () => {
+    const motion = {
+      type: "MotionTarget" as const,
+      targetEntityId: null as string | null,
+      targetPosition: null as Vector | null,
+    };
+    const climbIntent = {
+      type: "ClimbIntentState" as const,
+      phase: "approaching" as const,
+      surfaceEntityId: "climb-wall",
+      targetY: 120,
+    };
+
+    runClimbApproachSystem(
+      [
+        {
+          id: "pet-a",
+          locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
+          transform: { type: "Transform" as const, position: { x: 600, y: 500 } },
+          motion,
+          climbIntent,
+          canWallClimb: { type: "CanWallClimb" as const, speed: 1.1 },
+        },
+      ],
+      [{ id: "climb-wall", position: { x: 120, y: 500 } }],
+    );
+
+    expect(motion).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 120, y: 500 },
+    });
+
+    const velocityUpdates: Array<{
+      id: string;
+      velocity: { x?: number; y?: number };
+    }> = [];
+    const positionUpdates: Array<{
+      id: string;
+      position: { x?: number; y?: number };
+    }> = [];
+    const physics = {
+      setVelocity(id: string, velocity: { x?: number; y?: number }) {
+        velocityUpdates.push({ id, velocity });
+      },
+      setPosition(id: string, position: { x?: number; y?: number }) {
+        positionUpdates.push({ id, position });
+      },
+    };
+    const transform = {
+      type: "Transform" as const,
+      position: { x: 123, y: 500 },
+    };
+
+    runClimbAttachmentSystem(
+      [
+        {
+          id: "pet-a",
+          climbing: { type: "ClimbingState" as const },
+          transform,
+          motion,
+          climbIntent,
+          contact: {
+            type: "ContactState" as const,
+            grounded: true,
+            climbableSurfaceId: "climb-wall",
+            climbableSurfacePosition: { x: 120, y: 500 },
+          },
+        },
+      ],
+      physics,
+    );
+
+    expect(motion).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 120, y: 120 },
+    });
+    expect(climbIntent.phase).toBe("attached");
   });
 
   it("creates horizontal walking force only when walking is active", () => {
@@ -723,13 +810,18 @@ describe("behavior systems", () => {
     });
   });
 
-  it("creates vertical wall-climb force only when wall climbing is active", () => {
-    const forces = runWallClimbSystem([
+  it("sets vertical wall-climb velocity only when wall climbing is active", () => {
+    const velocityUpdates: Array<{
+      id: string;
+      velocity: { x?: number; y?: number };
+    }> = [];
+
+    runWallClimbSystem([
       {
         id: "pet-a",
         position: { x: 920, y: 420 },
         climbing: { type: "ClimbingState" as const },
-        canWallClimb: { type: "CanWallClimb" as const, speed: 0.003 },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 1.1 },
         contact: {
           type: "ContactState" as const,
           grounded: false,
@@ -746,7 +838,7 @@ describe("behavior systems", () => {
         id: "pet-b",
         position: { x: 920, y: 420 },
         climbing: { type: "ClimbingState" as const },
-        canWallClimb: { type: "CanWallClimb" as const, speed: 0.003 },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 1.1 },
         contact: {
           type: "ContactState" as const,
           grounded: false,
@@ -759,18 +851,27 @@ describe("behavior systems", () => {
           targetPosition: { x: 920, y: 120 },
         },
       },
-    ]);
+    ], {
+      setVelocity(id, velocity) {
+        velocityUpdates.push({ id, velocity });
+      },
+    });
 
-    expect(forces).toEqual([{ id: "pet-a", x: 0, y: -0.003 }]);
+    expect(velocityUpdates).toEqual([{ id: "pet-a", velocity: { x: 0, y: -1.1 } }]);
   });
 
-  it("uses proportional surface grip while wall climbing", () => {
-    const forces = runWallClimbSystem([
+  it("uses constant wall-climb speed instead of accumulating force", () => {
+    const velocityUpdates: Array<{
+      id: string;
+      velocity: { x?: number; y?: number };
+    }> = [];
+
+    runWallClimbSystem([
       {
         id: "pet-a",
-        position: { x: 132, y: 420 },
+        position: { x: 120, y: 420 },
         climbing: { type: "ClimbingState" as const },
-        canWallClimb: { type: "CanWallClimb" as const, speed: 0.003 },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 1.1 },
         contact: {
           type: "ContactState" as const,
           grounded: false,
@@ -783,21 +884,18 @@ describe("behavior systems", () => {
           targetPosition: { x: 400, y: 120 },
         },
       },
-    ]);
+    ], {
+      setVelocity(id, velocity) {
+        velocityUpdates.push({ id, velocity });
+      },
+    });
 
-    expect(forces).toHaveLength(1);
-    expect(forces[0]?.id).toBe("pet-a");
-    expect(forces[0]?.x).toBeCloseTo(-0.0024);
-    expect(forces[0]?.y).toBeCloseTo(-0.003);
-  });
-
-  it("does not apply horizontal wall-climb grip inside the surface dead zone", () => {
-    const forces = runWallClimbSystem([
+    runWallClimbSystem([
       {
         id: "pet-a",
-        position: { x: 121, y: 420 },
+        position: { x: 120, y: 410 },
         climbing: { type: "ClimbingState" as const },
-        canWallClimb: { type: "CanWallClimb" as const, speed: 0.003 },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 1.1 },
         contact: {
           type: "ContactState" as const,
           grounded: false,
@@ -810,9 +908,49 @@ describe("behavior systems", () => {
           targetPosition: { x: 120, y: 120 },
         },
       },
-    ]);
+    ], {
+      setVelocity(id, velocity) {
+        velocityUpdates.push({ id, velocity });
+      },
+    });
 
-    expect(forces).toEqual([{ id: "pet-a", x: 0, y: -0.003 }]);
+    expect(velocityUpdates).toEqual([
+      { id: "pet-a", velocity: { x: 0, y: -1.1 } },
+      { id: "pet-a", velocity: { x: 0, y: -1.1 } },
+    ]);
+  });
+
+  it("stops wall-climb velocity inside the arrival radius", () => {
+    const velocityUpdates: Array<{
+      id: string;
+      velocity: { x?: number; y?: number };
+    }> = [];
+
+    runWallClimbSystem([
+      {
+        id: "pet-a",
+        position: { x: 120, y: 126 },
+        climbing: { type: "ClimbingState" as const },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 1.1 },
+        contact: {
+          type: "ContactState" as const,
+          grounded: false,
+          climbableSurfaceId: "climb-wall",
+          climbableSurfacePosition: { x: 120, y: 420 },
+        },
+        motion: {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: { x: 120, y: 120 },
+        },
+      },
+    ], {
+      setVelocity(id, velocity) {
+        velocityUpdates.push({ id, velocity });
+      },
+    });
+
+    expect(velocityUpdates).toEqual([{ id: "pet-a", velocity: { x: 0, y: 0 } }]);
   });
 
   it("lets a walking, climbing, and jumping pet dismount after finishing a climb target", () => {

@@ -1,4 +1,5 @@
 import type {
+  ClimbIntentStateComponent,
   IntentStateComponent,
   LocomotionStateComponent,
   MotionTargetComponent,
@@ -12,6 +13,7 @@ type ArrivalBehaviorEntity = {
   transform: TransformComponent;
   motion: MotionTargetComponent;
   wandersOnArrival: WandersOnArrivalComponent;
+  climbIntent?: ClimbIntentStateComponent | null;
 };
 
 type AnchorPosition = {
@@ -44,6 +46,10 @@ export function runArrivalBehaviorSystem(
 
     const target = entity.motion.targetPosition;
     if (!target) {
+      continue;
+    }
+
+    if (entity.climbIntent?.phase === "approaching") {
       continue;
     }
 

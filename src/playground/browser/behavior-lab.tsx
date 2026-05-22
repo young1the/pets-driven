@@ -16,6 +16,7 @@ const INSPECTED_COMPONENTS: SimulationComponentType[] = [
   "CanJump",
   "JumpActionState",
   "CanWallClimb",
+  "ClimbIntentState",
   "ClimbDismountState",
   "CanFly",
   "WandersOnArrival",
@@ -50,6 +51,7 @@ export function BehaviorLab({
   const contact = getComponent(selectedPet.id, "ContactState");
   const motion = getComponent(selectedPet.id, "MotionTarget");
   const jumpAction = getComponent(selectedPet.id, "JumpActionState");
+  const climbIntent = getComponent(selectedPet.id, "ClimbIntentState");
   const climbDismount = getComponent(selectedPet.id, "ClimbDismountState");
   const componentTypes = INSPECTED_COMPONENTS.filter((type) =>
     getComponent(selectedPet.id, type),
@@ -103,6 +105,10 @@ export function BehaviorLab({
           <dd>{jumpAction?.cooldownMs ?? 0}ms</dd>
         </div>
         <div>
+          <dt>Climb intent</dt>
+          <dd>{formatClimbIntent(climbIntent)}</dd>
+        </div>
+        <div>
           <dt>Dismount phase</dt>
           <dd>{climbDismount?.phase ?? "none"}</dd>
         </div>
@@ -121,6 +127,18 @@ export function BehaviorLab({
       </dl>
     </section>
   );
+}
+
+function formatClimbIntent(
+  climbIntent: ComponentOf<"ClimbIntentState"> | undefined,
+) {
+  if (!climbIntent) {
+    return "none";
+  }
+
+  return `${climbIntent.phase} ${climbIntent.surfaceEntityId} -> ${Math.round(
+    climbIntent.targetY,
+  )}`;
 }
 
 function formatMotionTarget(

@@ -1,5 +1,6 @@
 import type {
   ClimbDismountStateComponent,
+  ClimbIntentStateComponent,
   ContactStateComponent,
   LocomotionStateComponent,
   MotionTargetComponent,
@@ -12,6 +13,7 @@ type LocomotionModeEntity = {
   locomotion: LocomotionStateComponent;
   contact: ContactStateComponent;
   motion?: MotionTargetComponent | null;
+  climbIntent?: ClimbIntentStateComponent | null;
   wallClimb: CanWallClimbComponent | null;
   climbDismount?: ClimbDismountStateComponent | null;
 };
@@ -41,6 +43,13 @@ export function runLocomotionModeSystem(
 
 function canEnterClimb(entity: LocomotionModeEntity) {
   if (!entity.contact.climbableSurfaceId || !entity.contact.climbableSurfacePosition) {
+    return false;
+  }
+
+  if (
+    entity.climbIntent &&
+    entity.contact.climbableSurfaceId !== entity.climbIntent.surfaceEntityId
+  ) {
     return false;
   }
 

@@ -1,5 +1,6 @@
 import type {
   ClimbDismountStateComponent,
+  ClimbIntentStateComponent,
   ContactStateComponent,
   CanJumpComponent,
   JumpActionStateComponent,
@@ -21,6 +22,7 @@ type ClimbDismountEntity = {
   jump: CanJumpComponent;
   jumpAction: JumpActionStateComponent;
   climbDismount: ClimbDismountStateComponent;
+  climbIntent?: ClimbIntentStateComponent | null;
 };
 
 export function runClimbDismountSystem(
@@ -51,6 +53,7 @@ export function runClimbDismountSystem(
     if (
       entity.locomotion.baseMode !== "climb" ||
       !entity.contact.climbableSurfaceId ||
+      entity.climbIntent?.phase === "approaching" ||
       entity.motion.targetPosition
     ) {
       continue;

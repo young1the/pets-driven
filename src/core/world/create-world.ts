@@ -2,6 +2,7 @@ import type {
   ActivityStateComponent,
   AgentBindingComponent,
   ClimbDismountStateComponent,
+  ClimbIntentStateComponent,
   ContactStateComponent,
   CompletionBehaviorComponent,
   CanFlyComponent,
@@ -40,6 +41,7 @@ import {
 } from "@/core/stimuli/stimulus-queue";
 import { runArrivalBehaviorSystem } from "@/core/systems/arrival-behavior-system";
 import { runClimbAttachmentSystem } from "@/core/systems/climb-attachment-system";
+import { runClimbApproachSystem } from "@/core/systems/climb-approach-system";
 import { runClimbDismountSystem } from "@/core/systems/climb-dismount-system";
 import { runCollisionReactionSystem } from "@/core/systems/collision-reaction-system";
 import { runContactSystem } from "@/core/systems/contact-system";
@@ -209,6 +211,11 @@ export function createWorld(input: WorldDefinition) {
           transform: transform as TransformComponent,
           motion: motion as MotionTargetComponent,
           wandersOnArrival: wandersOnArrival as WandersOnArrivalComponent,
+          climbIntent:
+            (componentStore.getComponent(
+              entity.id,
+              "ClimbIntentState",
+            ) as ClimbIntentStateComponent) ?? null,
         };
       });
   }
@@ -300,6 +307,11 @@ export function createWorld(input: WorldDefinition) {
           locomotion: locomotion as LocomotionStateComponent,
           contact: contact as ContactStateComponent,
           motion: motion as MotionTargetComponent,
+          climbIntent:
+            (componentStore.getComponent(
+              entity.id,
+              "ClimbIntentState",
+            ) as ClimbIntentStateComponent) ?? null,
           wallClimb:
             (componentStore.getComponent(
               entity.id,
@@ -347,20 +359,54 @@ export function createWorld(input: WorldDefinition) {
           jump: jump as CanJumpComponent,
           jumpAction: jumpAction as JumpActionStateComponent,
           climbDismount: climbDismount as ClimbDismountStateComponent,
+          climbIntent:
+            (componentStore.getComponent(
+              entity.id,
+              "ClimbIntentState",
+            ) as ClimbIntentStateComponent) ?? null,
         };
       });
   }
 
   function getClimbAttachmentEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("ClimbingState", "ContactState", "Transform")
+      .query("ClimbingState", "ContactState", "Transform", "MotionTarget")
       .map((entity) => {
-        const [climbing, contact, transform] = entity.components;
+        const [climbing, contact, transform, motion] = entity.components;
         return {
           id: entity.id,
           climbing,
           contact: contact as ContactStateComponent,
           transform: transform as TransformComponent,
+          motion: motion as MotionTargetComponent,
+          climbIntent:
+            (componentStore.getComponent(
+              entity.id,
+              "ClimbIntentState",
+            ) as ClimbIntentStateComponent) ?? null,
+        };
+      });
+  }
+
+  function getClimbApproachEntities(componentStore: ComponentStore) {
+    return componentStore
+      .query(
+        "LocomotionState",
+        "Transform",
+        "MotionTarget",
+        "ClimbIntentState",
+        "CanWallClimb",
+      )
+      .map((entity) => {
+        const [locomotion, transform, motion, climbIntent, canWallClimb] =
+          entity.components;
+        return {
+          id: entity.id,
+          locomotion: locomotion as LocomotionStateComponent,
+          transform: transform as TransformComponent,
+          motion: motion as MotionTargetComponent,
+          climbIntent: climbIntent as ClimbIntentStateComponent,
+          canWallClimb: canWallClimb as CanWallClimbComponent,
         };
       });
   }
@@ -592,6 +638,7 @@ export function createWorld(input: WorldDefinition) {
         "LocomotionState",
         "ContactState",
         "MotionTarget",
+        "ClimbIntentState",
         "CanWallClimb",
         "ClimbDismountState",
       ],
@@ -601,8 +648,27 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "ArrivalBehaviorSystem",
+      name: "ClimbApproachSystem",
       dependsOn: ["LocomotionModeSystem"],
+      reads: [
+        "LocomotionState",
+        "Transform",
+        "MotionTarget",
+        "ClimbIntentState",
+        "CanWallClimb",
+        "ClimbableSurface",
+      ],
+      writes: ["MotionTarget"],
+      update(context) {
+        runClimbApproachSystem(
+          getClimbApproachEntities(context.components),
+          getClimbableSurfaces(context.components),
+        );
+      },
+    },
+    {
+      name: "ArrivalBehaviorSystem",
+      dependsOn: ["ClimbApproachSystem"],
       reads: [
         "Transform",
         "MotionTarget",
@@ -610,6 +676,7 @@ export function createWorld(input: WorldDefinition) {
         "IntentState",
         "LocomotionState",
         "UserAnchor",
+        "ClimbIntentState",
       ],
       writes: ["MotionTarget", "IntentState"],
       update(context) {
@@ -631,6 +698,7 @@ export function createWorld(input: WorldDefinition) {
         "CanJump",
         "JumpActionState",
         "ClimbDismountState",
+        "ClimbIntentState",
       ],
       writes: ["LocomotionState", "JumpActionState", "ClimbDismountState"],
       update(context) {
@@ -660,8 +728,14 @@ export function createWorld(input: WorldDefinition) {
     {
       name: "ClimbAttachmentSystem",
       dependsOn: ["LocomotionActiveStateSystem"],
-      reads: ["ClimbingState", "ContactState", "Transform"],
-      writes: ["Transform", "PhysicsPosition", "PhysicsVelocity"],
+      reads: [
+        "ClimbingState",
+        "ContactState",
+        "Transform",
+        "MotionTarget",
+        "ClimbIntentState",
+      ],
+      writes: ["Transform", "MotionTarget", "PhysicsPosition", "PhysicsVelocity"],
       update(context) {
         runClimbAttachmentSystem(
           getClimbAttachmentEntities(context.components),
@@ -739,10 +813,11 @@ export function createWorld(input: WorldDefinition) {
         "MotionTarget",
         "ContactState",
       ],
-      writes: ["PhysicsForce"],
+      writes: ["PhysicsVelocity"],
       update(context) {
-        context.forceGroups.push(
-          runWallClimbSystem(getWallClimbingEntities(context.components)),
+        runWallClimbSystem(
+          getWallClimbingEntities(context.components),
+          context.physics,
         );
       },
     },
