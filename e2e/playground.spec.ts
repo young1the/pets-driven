@@ -51,3 +51,18 @@ test("jump and wall-climb demos expose locomotion state in the playground", asyn
   await playground.expectPetLocomotion("Alice", "climb");
   await playground.expectPetStatus("Alice", "idle", "Climbing the wall");
 });
+
+test("behavior lab inspects pet movement components", async ({ page }) => {
+  const playground = new PlaygroundPage(page);
+
+  await playground.goto();
+  await playground.expectReady();
+
+  await playground.expectSelectedBehaviorPet("Alice");
+  await playground.expectBehaviorComponent("WalkMovement");
+  await playground.expectBehaviorComponent("WallClimbMovement");
+
+  await playground.selectBehaviorPet("Dana");
+  await playground.expectSelectedBehaviorPet("Dana");
+  await playground.expectBehaviorComponent("FlightMovement");
+});
