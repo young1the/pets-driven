@@ -1,7 +1,7 @@
 import type {
   ClimbIntentStateComponent,
+  ClimbingStateComponent,
   IntentStateComponent,
-  LocomotionStateComponent,
   MotionTargetComponent,
   TransformComponent,
   WandersOnArrivalComponent,
@@ -9,7 +9,7 @@ import type {
 
 type ArrivalBehaviorEntity = {
   intent: IntentStateComponent;
-  locomotion: LocomotionStateComponent;
+  climbing?: ClimbingStateComponent | null;
   transform: TransformComponent;
   motion: MotionTargetComponent;
   wandersOnArrival: WandersOnArrivalComponent;
@@ -54,7 +54,7 @@ export function runArrivalBehaviorSystem(
     }
 
     const delta =
-      entity.locomotion.baseMode === "climb"
+      entity.climbing
         ? Math.abs(target.y - entity.transform.position.y)
         : Math.abs(target.x - entity.transform.position.x);
 

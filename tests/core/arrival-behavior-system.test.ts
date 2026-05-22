@@ -5,7 +5,6 @@ describe("arrival behavior system", () => {
   it("clears position target when walk pet arrives within x radius", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: { type: "Transform" as const, position: { x: 108, y: 100 } },
       motion: {
         type: "MotionTarget" as const,
@@ -23,7 +22,6 @@ describe("arrival behavior system", () => {
   it("keeps approach target while a pet is trying to attach to a climb surface", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: { type: "Transform" as const, position: { x: 124, y: 500 } },
       motion: {
         type: "MotionTarget" as const,
@@ -47,7 +45,6 @@ describe("arrival behavior system", () => {
   it("clears position target when x is within radius even if y differs", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: { type: "Transform" as const, position: { x: 108, y: 500 } },
       motion: {
         type: "MotionTarget" as const,
@@ -65,7 +62,6 @@ describe("arrival behavior system", () => {
   it("does not clear position target when outside x radius", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: { type: "Transform" as const, position: { x: 200, y: 100 } },
       motion: {
         type: "MotionTarget" as const,
@@ -83,7 +79,7 @@ describe("arrival behavior system", () => {
   it("clears position target when climb pet arrives within y radius", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "climb" as const },
+      climbing: { type: "ClimbingState" as const },
       transform: { type: "Transform" as const, position: { x: 280, y: 108 } },
       motion: {
         type: "MotionTarget" as const,
@@ -101,7 +97,7 @@ describe("arrival behavior system", () => {
   it("does not clear position target when climb pet is outside y radius", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "climb" as const },
+      climbing: { type: "ClimbingState" as const },
       transform: { type: "Transform" as const, position: { x: 280, y: 300 } },
       motion: {
         type: "MotionTarget" as const,
@@ -119,7 +115,6 @@ describe("arrival behavior system", () => {
   it("switches seeking pet to idle after arriving at user anchor", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "seek" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: { type: "Transform" as const, position: { x: 108, y: 100 } },
       motion: {
         type: "MotionTarget" as const,
@@ -140,7 +135,6 @@ describe("arrival behavior system", () => {
   it("does not switch to idle when seeking pet is far from user anchor", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "seek" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: { type: "Transform" as const, position: { x: 200, y: 100 } },
       motion: {
         type: "MotionTarget" as const,
@@ -160,7 +154,6 @@ describe("arrival behavior system", () => {
   it("does not affect non-seek pets at the user anchor", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "active" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: { type: "Transform" as const, position: { x: 108, y: 100 } },
       motion: {
         type: "MotionTarget" as const,

@@ -63,7 +63,7 @@ describe("component store", () => {
       {
         id: "pet-a",
         components: [
-          { type: "LocomotionState", baseMode: "walk" },
+          { type: "CanWalk", speed: 0.01 },
           { type: "WalkingState" },
         ],
       },
@@ -72,6 +72,6 @@ describe("component store", () => {
     store.removeComponent("pet-a", "WalkingState");
 
     expect(store.getComponent("pet-a", "WalkingState")).toBeUndefined();
-    expect(store.query("LocomotionState", "WalkingState")).toEqual([]);
+    expect(store.query("CanWalk", "WalkingState")).toEqual([]);
   });
 });

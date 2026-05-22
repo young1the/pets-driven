@@ -59,20 +59,22 @@ describe("demo scenario", () => {
       name: "LocomotionModeSystem",
       dependsOn: ["ContactSystem"],
       reads: [
-        "LocomotionState",
         "ContactState",
         "MotionTarget",
+        "WalkingState",
+        "ClimbingState",
+        "FlyingState",
         "ClimbIntentState",
         "CanWallClimb",
         "ClimbDismountState",
       ],
-      writes: ["LocomotionState"],
+      writes: ["WalkingState", "ClimbingState", "FlyingState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ClimbApproachSystem",
       dependsOn: ["LocomotionModeSystem"],
       reads: [
-        "LocomotionState",
+        "ClimbingState",
         "Transform",
         "MotionTarget",
         "ClimbIntentState",
@@ -101,7 +103,7 @@ describe("demo scenario", () => {
         "MotionTarget",
         "WandersOnArrival",
         "IntentState",
-        "LocomotionState",
+        "ClimbingState",
         "UserAnchor",
         "ClimbIntentState",
       ],
@@ -111,7 +113,7 @@ describe("demo scenario", () => {
       name: "ClimbDismountSystem",
       dependsOn: ["ArrivalBehaviorSystem"],
       reads: [
-        "LocomotionState",
+        "ClimbingState",
         "MotionTarget",
         "ContactState",
         "CanWalk",
@@ -121,18 +123,13 @@ describe("demo scenario", () => {
         "ClimbDismountState",
         "ClimbIntentState",
       ],
-      writes: ["LocomotionState", "JumpActionState", "ClimbDismountState"],
+      writes: ["WalkingState", "ClimbingState", "JumpActionState", "ClimbDismountState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "LocomotionActiveStateSystem",
       dependsOn: ["ClimbDismountSystem"],
-      reads: ["LocomotionState", "ContactState"],
-      writes: [
-        "WalkingState",
-        "ClimbingState",
-        "FlyingState",
-        "AirborneState",
-      ],
+      reads: ["ContactState", "WalkingState", "ClimbingState", "FlyingState"],
+      writes: ["AirborneState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "CollisionReactionSystem",
@@ -156,7 +153,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "JumpSystem",
       dependsOn: ["CollisionReactionSystem"],
-      reads: ["LocomotionState", "ContactState", "CanJump", "JumpActionState"],
+      reads: ["WalkingState", "ContactState", "CanJump", "JumpActionState"],
       writes: ["PhysicsForce", "JumpActionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -235,10 +232,6 @@ describe("demo scenario", () => {
       type: "CompletionBehavior",
       intentAfterCompletion: "idle",
     });
-    expect(scenario.world.getComponent("pet-a", "LocomotionState")).toEqual({
-      type: "LocomotionState",
-      baseMode: "walk",
-    });
     expect(scenario.world.getComponent("pet-a", "WalkingState")).toEqual({
       type: "WalkingState",
     });
@@ -271,10 +264,6 @@ describe("demo scenario", () => {
       type: "WandersOnArrival",
       arrivalRadius: 16,
     });
-    expect(scenario.world.getComponent("pet-b", "LocomotionState")).toEqual({
-      type: "LocomotionState",
-      baseMode: "walk",
-    });
     expect(scenario.world.getComponent("pet-b", "WalkingState")).toEqual({
       type: "WalkingState",
     });
@@ -295,10 +284,6 @@ describe("demo scenario", () => {
       type: "WandersOnArrival",
       arrivalRadius: 16,
     });
-    expect(scenario.world.getComponent("pet-c", "LocomotionState")).toEqual({
-      type: "LocomotionState",
-      baseMode: "walk",
-    });
     expect(scenario.world.getComponent("pet-c", "WalkingState")).toEqual({
       type: "WalkingState",
     });
@@ -313,10 +298,6 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-c", "WandersOnArrival")).toEqual({
       type: "WandersOnArrival",
       arrivalRadius: 16,
-    });
-    expect(scenario.world.getComponent("pet-d", "LocomotionState")).toEqual({
-      type: "LocomotionState",
-      baseMode: "fly",
     });
     expect(scenario.world.getComponent("pet-d", "FlyingState")).toEqual({
       type: "FlyingState",

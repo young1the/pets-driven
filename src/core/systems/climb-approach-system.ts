@@ -1,7 +1,7 @@
 import type {
   CanWallClimbComponent,
   ClimbIntentStateComponent,
-  LocomotionStateComponent,
+  ClimbingStateComponent,
   MotionTargetComponent,
   TransformComponent,
   Vector,
@@ -9,7 +9,7 @@ import type {
 
 type ClimbApproachEntity = {
   id: string;
-  locomotion: LocomotionStateComponent;
+  climbing?: ClimbingStateComponent | null;
   transform: TransformComponent;
   motion: MotionTargetComponent;
   climbIntent: ClimbIntentStateComponent;
@@ -26,7 +26,7 @@ export function runClimbApproachSystem(
   surfaces: ClimbableSurface[],
 ) {
   for (const entity of entities) {
-    if (entity.locomotion.baseMode === "climb") {
+    if (entity.climbing) {
       continue;
     }
 
