@@ -139,7 +139,7 @@ export type CanWalkComponent = {
 
 /**
  * Jump movement capability and tuning. Component presence means the entity can jump; jumping
- * runs when JumpState requests a one-shot jump action.
+ * runs when JumpActionState requests a one-shot jump action.
  */
 export type CanJumpComponent = {
   type: "CanJump";
@@ -147,12 +147,20 @@ export type CanJumpComponent = {
 };
 
 /**
- * Mutable jump request state. A pending jump is consumed by JumpSystem so a
- * jump applies one impulse instead of becoming continuous upward thrust.
+ * Runtime phase for the jump action. Jump is modeled as an action rather than
+ * a locomotion mode so it can combine with walking and airborne contact.
  */
-export type JumpStateComponent = {
-  type: "JumpState";
-  pending: boolean;
+export type JumpActionPhase =
+  | "ready"
+  | "requested"
+  | "rising"
+  | "falling"
+  | "landingCooldown";
+
+export type JumpActionStateComponent = {
+  type: "JumpActionState";
+  phase: JumpActionPhase;
+  cooldownMs: number;
 };
 
 /**
@@ -284,7 +292,7 @@ export type SimulationComponent =
   | IdleConversationComponent
   | IntentStateComponent
   | CanJumpComponent
-  | JumpStateComponent
+  | JumpActionStateComponent
   | LocomotionStateComponent
   | MotionTargetComponent
   | NavigationStateComponent

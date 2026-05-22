@@ -42,6 +42,56 @@ describe("locomotion mode system", () => {
     expect(entity.locomotion.baseMode).toBe("walk");
   });
 
+  it("does not switch to an unrelated climb surface while walking toward another target", () => {
+    const entity = {
+      locomotion: {
+        type: "LocomotionState" as const,
+        baseMode: "walk" as const,
+      },
+      contact: {
+        type: "ContactState" as const,
+        grounded: true,
+        climbableSurfaceId: "wall-280",
+        climbableSurfacePosition: { x: 280, y: 100 },
+      },
+      motion: {
+        type: "MotionTarget" as const,
+        targetEntityId: null as string | null,
+        targetPosition: { x: 120, y: 120 } as { x: number; y: number } | null,
+      },
+      wallClimb: { type: "CanWallClimb" as const, speed: 0.004 },
+    };
+
+    runLocomotionModeSystem([entity]);
+
+    expect(entity.locomotion.baseMode).toBe("walk");
+  });
+
+  it("switches to climb when the contacted surface matches the target x position", () => {
+    const entity = {
+      locomotion: {
+        type: "LocomotionState" as const,
+        baseMode: "walk" as const,
+      },
+      contact: {
+        type: "ContactState" as const,
+        grounded: true,
+        climbableSurfaceId: "wall-120",
+        climbableSurfacePosition: { x: 120, y: 500 },
+      },
+      motion: {
+        type: "MotionTarget" as const,
+        targetEntityId: null as string | null,
+        targetPosition: { x: 120, y: 120 } as { x: number; y: number } | null,
+      },
+      wallClimb: { type: "CanWallClimb" as const, speed: 0.004 },
+    };
+
+    runLocomotionModeSystem([entity]);
+
+    expect(entity.locomotion.baseMode).toBe("climb");
+  });
+
   it("reverts to walk when surface is gone", () => {
     const entity = {
       locomotion: {

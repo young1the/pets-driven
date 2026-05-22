@@ -14,7 +14,7 @@ const INSPECTED_COMPONENTS: SimulationComponentType[] = [
   "AirborneState",
   "CanWalk",
   "CanJump",
-  "JumpState",
+  "JumpActionState",
   "CanWallClimb",
   "ClimbDismountState",
   "CanFly",
@@ -49,7 +49,7 @@ export function BehaviorLab({
 
   const contact = getComponent(selectedPet.id, "ContactState");
   const motion = getComponent(selectedPet.id, "MotionTarget");
-  const jumpState = getComponent(selectedPet.id, "JumpState");
+  const jumpAction = getComponent(selectedPet.id, "JumpActionState");
   const climbDismount = getComponent(selectedPet.id, "ClimbDismountState");
   const componentTypes = INSPECTED_COMPONENTS.filter((type) =>
     getComponent(selectedPet.id, type),
@@ -95,8 +95,12 @@ export function BehaviorLab({
           <dd>{formatMotionTarget(motion)}</dd>
         </div>
         <div>
-          <dt>Jump pending</dt>
-          <dd>{jumpState?.pending ? "true" : "false"}</dd>
+          <dt>Jump phase</dt>
+          <dd>{jumpAction?.phase ?? "none"}</dd>
+        </div>
+        <div>
+          <dt>Jump cooldown</dt>
+          <dd>{jumpAction?.cooldownMs ?? 0}ms</dd>
         </div>
         <div>
           <dt>Dismount phase</dt>

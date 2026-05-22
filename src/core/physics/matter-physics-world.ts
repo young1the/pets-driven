@@ -8,12 +8,16 @@ type BodyShape =
   | { shape: "circle"; radius: number; width: number; height: number; isStatic?: boolean }
   | { shape: "rectangle"; width: number; height: number; isStatic?: boolean };
 
+const COLLISION_CATEGORY_SURFACE = 0x0001;
+const COLLISION_CATEGORY_DYNAMIC_BODY = 0x0002;
+
 export type MatterPhysicsWorld = {
   addCircle(id: string, position: Vector, radius: number): void;
   addRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
   addStaticRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
   applyForce(id: string, force: Vector): void;
   setGravityScale(id: string, scale: number): void;
+  setPosition(id: string, position: Partial<Vector>): void;
   setVelocity(id: string, velocity: Partial<Vector>): void;
   step(deltaMs: number): void;
   snapshot(): WorldSnapshot;
@@ -40,6 +44,10 @@ export function createMatterPhysicsWorld(bounds: {
   return {
     addCircle(id, position, radius) {
       const body = Bodies.circle(position.x, position.y, radius, {
+        collisionFilter: {
+          category: COLLISION_CATEGORY_DYNAMIC_BODY,
+          mask: COLLISION_CATEGORY_SURFACE,
+        },
         frictionAir: 0.08,
         restitution: 0.2,
       });
@@ -47,6 +55,10 @@ export function createMatterPhysicsWorld(bounds: {
     },
     addRectangle(id, position, size, material) {
       const body = Bodies.rectangle(position.x, position.y, size.width, size.height, {
+        collisionFilter: {
+          category: COLLISION_CATEGORY_DYNAMIC_BODY,
+          mask: COLLISION_CATEGORY_SURFACE,
+        },
         friction: material?.friction,
         frictionAir: material?.frictionAir ?? 0.04,
         restitution: material?.restitution ?? 0,
@@ -57,6 +69,10 @@ export function createMatterPhysicsWorld(bounds: {
     addStaticRectangle(id, position, size, material) {
       const body = Bodies.rectangle(position.x, position.y, size.width, size.height, {
         isStatic: true,
+        collisionFilter: {
+          category: COLLISION_CATEGORY_SURFACE,
+          mask: COLLISION_CATEGORY_DYNAMIC_BODY,
+        },
         friction: material?.friction,
         restitution: material?.restitution ?? 0,
       });
@@ -70,6 +86,15 @@ export function createMatterPhysicsWorld(bounds: {
     },
     setGravityScale(id, scale) {
       gravityScales.set(id, scale);
+    },
+    setPosition(id, position) {
+      const body = bodies.get(id);
+      if (body) {
+        Body.setPosition(body, {
+          x: position.x ?? body.position.x,
+          y: position.y ?? body.position.y,
+        });
+      }
     },
     setVelocity(id, velocity) {
       const body = bodies.get(id);

@@ -2,12 +2,16 @@ import type {
   ClimbDismountStateComponent,
   ContactStateComponent,
   LocomotionStateComponent,
+  MotionTargetComponent,
   CanWallClimbComponent,
 } from "@/core/components/simulation-components";
+
+const CLIMB_TARGET_X_TOLERANCE = 24;
 
 type LocomotionModeEntity = {
   locomotion: LocomotionStateComponent;
   contact: ContactStateComponent;
+  motion?: MotionTargetComponent | null;
   wallClimb: CanWallClimbComponent | null;
   climbDismount?: ClimbDismountStateComponent | null;
 };
@@ -23,7 +27,7 @@ export function runLocomotionModeSystem(
       continue;
     }
 
-    if (entity.wallClimb && entity.contact.climbableSurfaceId) {
+    if (entity.wallClimb && canEnterClimb(entity)) {
       entity.locomotion.baseMode = "climb";
     } else if (
       entity.wallClimb &&
@@ -33,4 +37,20 @@ export function runLocomotionModeSystem(
       entity.locomotion.baseMode = "walk";
     }
   }
+}
+
+function canEnterClimb(entity: LocomotionModeEntity) {
+  if (!entity.contact.climbableSurfaceId || !entity.contact.climbableSurfacePosition) {
+    return false;
+  }
+
+  if (!entity.motion?.targetPosition) {
+    return true;
+  }
+
+  return (
+    Math.abs(
+      entity.motion.targetPosition.x - entity.contact.climbableSurfacePosition.x,
+    ) <= CLIMB_TARGET_X_TOLERANCE
+  );
 }

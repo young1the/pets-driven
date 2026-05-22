@@ -60,6 +60,7 @@ describe("demo scenario", () => {
       reads: [
         "LocomotionState",
         "ContactState",
+        "MotionTarget",
         "CanWallClimb",
         "ClimbDismountState",
       ],
@@ -68,8 +69,8 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ClimbAttachmentSystem",
       dependsOn: ["LocomotionActiveStateSystem"],
-      reads: ["ClimbingState", "ContactState"],
-      writes: ["PhysicsVelocity"],
+      reads: ["ClimbingState", "ContactState", "Transform"],
+      writes: ["Transform", "PhysicsPosition", "PhysicsVelocity"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ArrivalBehaviorSystem",
@@ -94,10 +95,10 @@ describe("demo scenario", () => {
         "CanWalk",
         "CanWallClimb",
         "CanJump",
-        "JumpState",
+        "JumpActionState",
         "ClimbDismountState",
       ],
-      writes: ["LocomotionState", "JumpState", "ClimbDismountState"],
+      writes: ["LocomotionState", "JumpActionState", "ClimbDismountState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "LocomotionActiveStateSystem",
@@ -132,8 +133,8 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "JumpSystem",
       dependsOn: ["CollisionReactionSystem"],
-      reads: ["LocomotionState", "CanJump", "JumpState"],
-      writes: ["PhysicsForce", "JumpState"],
+      reads: ["LocomotionState", "ContactState", "CanJump", "JumpActionState"],
+      writes: ["PhysicsForce", "JumpActionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WallClimbSystem",
@@ -227,11 +228,12 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-a", "CanJump")).toEqual({
       type: "CanJump",
-      impulse: 0.014,
+      impulse: 0.009,
     });
-    expect(scenario.world.getComponent("pet-a", "JumpState")).toEqual({
-      type: "JumpState",
-      pending: false,
+    expect(scenario.world.getComponent("pet-a", "JumpActionState")).toEqual({
+      type: "JumpActionState",
+      phase: "ready",
+      cooldownMs: 0,
     });
     expect(scenario.world.getComponent("pet-a", "CanWallClimb")).toEqual({
       type: "CanWallClimb",
@@ -259,11 +261,12 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-b", "CanJump")).toEqual({
       type: "CanJump",
-      impulse: 0.014,
+      impulse: 0.009,
     });
-    expect(scenario.world.getComponent("pet-b", "JumpState")).toEqual({
-      type: "JumpState",
-      pending: true,
+    expect(scenario.world.getComponent("pet-b", "JumpActionState")).toEqual({
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
     });
     expect(scenario.world.getComponent("pet-b", "WandersOnArrival")).toEqual({
       type: "WandersOnArrival",
@@ -337,6 +340,26 @@ describe("demo scenario", () => {
       climbableSurfaceId: "climb-wall",
       climbableSurfacePosition: { x: 280, y: 200 },
     });
+  });
+
+  it("locks Alice to the climb surface while transitioning from walk to climb", () => {
+    const scenario = createDemoScenario();
+    scenario.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 120, y: 120 },
+    });
+
+    for (let index = 0; index < 240; index += 1) {
+      scenario.world.step(16);
+      if (scenario.world.snapshot().pets[0].locomotion === "climb") {
+        break;
+      }
+    }
+
+    const alice = scenario.world.snapshot().pets[0];
+    expect(alice.locomotion).toBe("climb");
+    expect(alice.position.x).toBeCloseTo(120, 0);
   });
 
   it("includes climbable surfaces in the render snapshot", () => {
