@@ -7,7 +7,6 @@ import { PLAYGROUND_TEXT } from "./playground-text";
 
 const INSPECTED_COMPONENTS: SimulationComponentType[] = [
   "IdleConversation",
-  "LocomotionState",
   "WalkingState",
   "ClimbingState",
   "FlyingState",

@@ -2,7 +2,7 @@ import type {
   CanJumpComponent,
   ContactStateComponent,
   JumpActionStateComponent,
-  LocomotionStateComponent,
+  WalkingStateComponent,
 } from "@/core/components/simulation-components";
 import type { Force } from "@/core/systems/physics-integration-system";
 
@@ -10,7 +10,7 @@ const JUMP_LANDING_COOLDOWN_MS = 250;
 
 type JumpingEntity = {
   id: string;
-  locomotion: LocomotionStateComponent;
+  walking: WalkingStateComponent;
   contact: ContactStateComponent;
   jump: CanJumpComponent;
   jumpAction: JumpActionStateComponent;
@@ -49,7 +49,7 @@ export function runJumpSystem(
       return [];
     }
 
-    if (entity.locomotion.baseMode !== "walk" || !entity.contact.grounded) {
+    if (!entity.walking || !entity.contact.grounded) {
       entity.jumpAction.phase = "falling";
       return [];
     }

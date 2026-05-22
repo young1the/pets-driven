@@ -173,7 +173,6 @@ describe("behavior systems", () => {
   it("clears a world target after a wandering pet arrives", () => {
     const pet = {
       intent: { type: "IntentState" as const, intent: "idle" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: {
         type: "Transform" as const,
         position: { x: 100, y: 100 },
@@ -201,7 +200,6 @@ describe("behavior systems", () => {
   it("keeps entity target when no matching anchor is present", () => {
     const pet = {
       intent: { type: "IntentState" as const, intent: "seek" as const },
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
       transform: {
         type: "Transform" as const,
         position: { x: 100, y: 100 },
@@ -483,7 +481,7 @@ describe("behavior systems", () => {
     ]);
   });
 
-  it("syncs active locomotion tags from the transitional locomotion state", () => {
+  it("syncs airborne tags from active locomotion tags and contact state", () => {
     const writes: Array<{ id: string; component: { type: string } }> = [];
     const removals: Array<{ id: string; type: string }> = [];
     const components = {
@@ -499,7 +497,7 @@ describe("behavior systems", () => {
       [
         {
           id: "pet-a",
-          locomotion: { type: "LocomotionState" as const, baseMode: "climb" },
+          climbing: { type: "ClimbingState" as const },
           contact: {
             type: "ContactState" as const,
             grounded: false,
@@ -509,7 +507,7 @@ describe("behavior systems", () => {
         },
         {
           id: "pet-b",
-          locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+          walking: { type: "WalkingState" as const },
           contact: {
             type: "ContactState" as const,
             grounded: false,
@@ -521,17 +519,7 @@ describe("behavior systems", () => {
       components,
     );
 
-    expect(removals).toContainEqual({ id: "pet-a", type: "WalkingState" });
-    expect(removals).toContainEqual({ id: "pet-a", type: "ClimbingState" });
-    expect(removals).toContainEqual({ id: "pet-a", type: "FlyingState" });
-    expect(writes).toContainEqual({
-      id: "pet-a",
-      component: { type: "ClimbingState" },
-    });
-    expect(writes).toContainEqual({
-      id: "pet-b",
-      component: { type: "WalkingState" },
-    });
+    expect(removals).toContainEqual({ id: "pet-a", type: "AirborneState" });
     expect(writes).toContainEqual({
       id: "pet-b",
       component: { type: "AirborneState" },
@@ -608,7 +596,6 @@ describe("behavior systems", () => {
       [
         {
           id: "pet-a",
-          locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
           transform: { type: "Transform" as const, position: { x: 600, y: 500 } },
           motion,
           climbIntent,
@@ -737,7 +724,7 @@ describe("behavior systems", () => {
     const forces = runJumpSystem([
       {
         id: "pet-a",
-        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+        walking: { type: "WalkingState" as const },
         contact: {
           type: "ContactState" as const,
           grounded: true,
@@ -749,7 +736,7 @@ describe("behavior systems", () => {
       },
       {
         id: "pet-b",
-        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+        walking: { type: "WalkingState" as const },
         contact: {
           type: "ContactState" as const,
           grounded: true,
@@ -783,7 +770,7 @@ describe("behavior systems", () => {
     };
     const entity = {
       id: "pet-a",
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+      walking: { type: "WalkingState" as const },
       contact,
       jump: { type: "CanJump" as const, impulse: 0.012 },
       jumpAction,
@@ -956,7 +943,7 @@ describe("behavior systems", () => {
   it("lets a walking, climbing, and jumping pet dismount after finishing a climb target", () => {
     const entity = {
       id: "pet-a",
-      locomotion: { type: "LocomotionState" as const, baseMode: "climb" as const },
+      climbing: { type: "ClimbingState" as const },
       motion: {
         type: "MotionTarget" as const,
         targetEntityId: null as string | null,
@@ -982,10 +969,23 @@ describe("behavior systems", () => {
         cooldownMs: 0,
       },
     };
+    const writes: Array<{ id: string; component: { type: string } }> = [];
+    const removals: Array<{ id: string; type: string }> = [];
 
-    runClimbDismountSystem([entity], 16);
+    runClimbDismountSystem([entity], 16, {
+      setComponent(id, component) {
+        writes.push({ id, component });
+      },
+      removeComponent(id, type) {
+        removals.push({ id, type });
+      },
+    });
 
-    expect(entity.locomotion.baseMode).toBe("walk");
+    expect(removals).toContainEqual({ id: "pet-a", type: "ClimbingState" });
+    expect(writes).toContainEqual({
+      id: "pet-a",
+      component: { type: "WalkingState" },
+    });
     expect(entity.jumpAction).toEqual({
       type: "JumpActionState",
       phase: "falling",
@@ -998,7 +998,7 @@ describe("behavior systems", () => {
   it("keeps climbing when a climbing pet still has a target", () => {
     const entity = {
       id: "pet-a",
-      locomotion: { type: "LocomotionState" as const, baseMode: "climb" as const },
+      climbing: { type: "ClimbingState" as const },
       motion: {
         type: "MotionTarget" as const,
         targetEntityId: null as string | null,
@@ -1024,10 +1024,20 @@ describe("behavior systems", () => {
         cooldownMs: 0,
       },
     };
+    const writes: Array<{ id: string; component: { type: string } }> = [];
+    const removals: Array<{ id: string; type: string }> = [];
 
-    runClimbDismountSystem([entity], 16);
+    runClimbDismountSystem([entity], 16, {
+      setComponent(id, component) {
+        writes.push({ id, component });
+      },
+      removeComponent(id, type) {
+        removals.push({ id, type });
+      },
+    });
 
-    expect(entity.locomotion.baseMode).toBe("climb");
+    expect(writes).toEqual([]);
+    expect(removals).toEqual([]);
     expect(entity.jumpAction.phase).toBe("ready");
     expect(entity.climbDismount.phase).toBe("ready");
     expect(entity.climbDismount.cooldownMs).toBe(0);
@@ -1036,7 +1046,7 @@ describe("behavior systems", () => {
   it("starts climb dismount cooldown only after the pet lands", () => {
     const entity = {
       id: "pet-a",
-      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
+      climbing: { type: "ClimbingState" as const },
       motion: {
         type: "MotionTarget" as const,
         targetEntityId: null as string | null,

@@ -10,7 +10,6 @@ import type {
   IntentStateComponent,
   CanJumpComponent,
   JumpActionStateComponent,
-  LocomotionStateComponent,
   MotionTargetComponent,
   MovementProfileComponent,
   NavigationStateComponent,
@@ -202,12 +201,12 @@ export function createWorld(input: WorldDefinition) {
 
   function getArrivalBehaviorEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("IntentState", "LocomotionState", "Transform", "MotionTarget", "WandersOnArrival")
+      .query("IntentState", "Transform", "MotionTarget", "WandersOnArrival")
       .map((entity) => {
-        const [intent, locomotion, transform, motion, wandersOnArrival] = entity.components;
+        const [intent, transform, motion, wandersOnArrival] = entity.components;
         return {
           intent: intent as IntentStateComponent,
-          locomotion: locomotion as LocomotionStateComponent,
+          climbing: componentStore.getComponent(entity.id, "ClimbingState") ?? null,
           transform: transform as TransformComponent,
           motion: motion as MotionTargetComponent,
           wandersOnArrival: wandersOnArrival as WandersOnArrivalComponent,
@@ -299,14 +298,16 @@ export function createWorld(input: WorldDefinition) {
 
   function getLocomotionModeEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("LocomotionState", "ContactState", "MotionTarget")
+      .query("ContactState", "MotionTarget")
       .map((entity) => {
-        const [locomotion, contact, motion] = entity.components;
+        const [contact, motion] = entity.components;
         return {
           id: entity.id,
-          locomotion: locomotion as LocomotionStateComponent,
           contact: contact as ContactStateComponent,
           motion: motion as MotionTargetComponent,
+          walking: componentStore.getComponent(entity.id, "WalkingState") ?? null,
+          climbing: componentStore.getComponent(entity.id, "ClimbingState") ?? null,
+          flying: componentStore.getComponent(entity.id, "FlyingState") ?? null,
           climbIntent:
             (componentStore.getComponent(
               entity.id,
@@ -329,7 +330,6 @@ export function createWorld(input: WorldDefinition) {
   function getClimbDismountEntities(componentStore: ComponentStore) {
     return componentStore
       .query(
-        "LocomotionState",
         "MotionTarget",
         "ContactState",
         "CanWalk",
@@ -340,7 +340,6 @@ export function createWorld(input: WorldDefinition) {
       )
       .map((entity) => {
         const [
-          locomotion,
           motion,
           contact,
           walk,
@@ -351,7 +350,7 @@ export function createWorld(input: WorldDefinition) {
         ] = entity.components;
         return {
           id: entity.id,
-          locomotion: locomotion as LocomotionStateComponent,
+          climbing: componentStore.getComponent(entity.id, "ClimbingState") ?? null,
           motion: motion as MotionTargetComponent,
           contact: contact as ContactStateComponent,
           walk: walk as CanWalkComponent,
@@ -391,18 +390,17 @@ export function createWorld(input: WorldDefinition) {
   function getClimbApproachEntities(componentStore: ComponentStore) {
     return componentStore
       .query(
-        "LocomotionState",
         "Transform",
         "MotionTarget",
         "ClimbIntentState",
         "CanWallClimb",
       )
       .map((entity) => {
-        const [locomotion, transform, motion, climbIntent, canWallClimb] =
+        const [transform, motion, climbIntent, canWallClimb] =
           entity.components;
         return {
           id: entity.id,
-          locomotion: locomotion as LocomotionStateComponent,
+          climbing: componentStore.getComponent(entity.id, "ClimbingState") ?? null,
           transform: transform as TransformComponent,
           motion: motion as MotionTargetComponent,
           climbIntent: climbIntent as ClimbIntentStateComponent,
@@ -413,13 +411,15 @@ export function createWorld(input: WorldDefinition) {
 
   function getLocomotionActiveStateEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("LocomotionState", "ContactState")
+      .query("ContactState")
       .map((entity) => {
-        const [locomotion, contact] = entity.components;
+        const [contact] = entity.components;
         return {
           id: entity.id,
-          locomotion: locomotion as LocomotionStateComponent,
           contact: contact as ContactStateComponent,
+          walking: componentStore.getComponent(entity.id, "WalkingState") ?? null,
+          climbing: componentStore.getComponent(entity.id, "ClimbingState") ?? null,
+          flying: componentStore.getComponent(entity.id, "FlyingState") ?? null,
         };
       });
   }
@@ -489,12 +489,12 @@ export function createWorld(input: WorldDefinition) {
 
   function getJumpingEntities(componentStore: ComponentStore) {
     return componentStore
-      .query("LocomotionState", "ContactState", "CanJump", "JumpActionState")
+      .query("WalkingState", "ContactState", "CanJump", "JumpActionState")
       .map((entity) => {
-        const [locomotion, contact, jump, jumpAction] = entity.components;
+        const [walking, contact, jump, jumpAction] = entity.components;
         return {
           id: entity.id,
-          locomotion: locomotion as LocomotionStateComponent,
+          walking,
           contact: contact as ContactStateComponent,
           jump: jump as CanJumpComponent,
           jumpAction: jumpAction as JumpActionStateComponent,
@@ -546,12 +546,11 @@ export function createWorld(input: WorldDefinition) {
         "PetIdentity",
         "AgentBinding",
         "IntentState",
-        "LocomotionState",
         "SpeechState",
         "Transform",
       )
       .map((entity) => {
-        const [identity, agent, intent, locomotion, speech, transform] =
+        const [identity, agent, intent, speech, transform] =
           entity.components;
 
         return {
@@ -559,11 +558,23 @@ export function createWorld(input: WorldDefinition) {
           sourceId: (agent as AgentBindingComponent).sourceId,
           name: (identity as PetIdentityComponent).name,
           intent: (intent as IntentStateComponent).intent,
-          locomotion: (locomotion as LocomotionStateComponent).baseMode,
+          locomotion: getLocomotionLabel(componentStore, entity.id),
           speech: (speech as SpeechStateComponent).speech,
           position: (transform as TransformComponent).position,
         };
       });
+  }
+
+  function getLocomotionLabel(componentStore: ComponentStore, id: string) {
+    if (componentStore.getComponent(id, "ClimbingState")) {
+      return "climb";
+    }
+
+    if (componentStore.getComponent(id, "FlyingState")) {
+      return "fly";
+    }
+
+    return "walk";
   }
 
   const stepSystems: Array<SimulationSystem<WorldStepContext>> = [
@@ -635,23 +646,28 @@ export function createWorld(input: WorldDefinition) {
       name: "LocomotionModeSystem",
       dependsOn: ["ContactSystem"],
       reads: [
-        "LocomotionState",
         "ContactState",
         "MotionTarget",
+        "WalkingState",
+        "ClimbingState",
+        "FlyingState",
         "ClimbIntentState",
         "CanWallClimb",
         "ClimbDismountState",
       ],
-      writes: ["LocomotionState"],
+      writes: ["WalkingState", "ClimbingState", "FlyingState"],
       update(context) {
-        runLocomotionModeSystem(getLocomotionModeEntities(context.components));
+        runLocomotionModeSystem(
+          getLocomotionModeEntities(context.components),
+          context.components,
+        );
       },
     },
     {
       name: "ClimbApproachSystem",
       dependsOn: ["LocomotionModeSystem"],
       reads: [
-        "LocomotionState",
+        "ClimbingState",
         "Transform",
         "MotionTarget",
         "ClimbIntentState",
@@ -674,7 +690,7 @@ export function createWorld(input: WorldDefinition) {
         "MotionTarget",
         "WandersOnArrival",
         "IntentState",
-        "LocomotionState",
+        "ClimbingState",
         "UserAnchor",
         "ClimbIntentState",
       ],
@@ -690,7 +706,7 @@ export function createWorld(input: WorldDefinition) {
       name: "ClimbDismountSystem",
       dependsOn: ["ArrivalBehaviorSystem"],
       reads: [
-        "LocomotionState",
+        "ClimbingState",
         "MotionTarget",
         "ContactState",
         "CanWalk",
@@ -700,24 +716,20 @@ export function createWorld(input: WorldDefinition) {
         "ClimbDismountState",
         "ClimbIntentState",
       ],
-      writes: ["LocomotionState", "JumpActionState", "ClimbDismountState"],
+      writes: ["WalkingState", "ClimbingState", "JumpActionState", "ClimbDismountState"],
       update(context) {
         runClimbDismountSystem(
           getClimbDismountEntities(context.components),
           context.deltaMs,
+          context.components,
         );
       },
     },
     {
       name: "LocomotionActiveStateSystem",
       dependsOn: ["ClimbDismountSystem"],
-      reads: ["LocomotionState", "ContactState"],
-      writes: [
-        "WalkingState",
-        "ClimbingState",
-        "FlyingState",
-        "AirborneState",
-      ],
+      reads: ["ContactState", "WalkingState", "ClimbingState", "FlyingState"],
+      writes: ["AirborneState"],
       update(context) {
         runLocomotionActiveStateSystem(
           getLocomotionActiveStateEntities(context.components),
@@ -795,7 +807,7 @@ export function createWorld(input: WorldDefinition) {
     {
       name: "JumpSystem",
       dependsOn: ["CollisionReactionSystem"],
-      reads: ["LocomotionState", "ContactState", "CanJump", "JumpActionState"],
+      reads: ["WalkingState", "ContactState", "CanJump", "JumpActionState"],
       writes: ["PhysicsForce", "JumpActionState"],
       update(context) {
         context.forceGroups.push(
@@ -900,6 +912,9 @@ export function createWorld(input: WorldDefinition) {
     },
     setComponent(id: string, component: SimulationComponent) {
       components.setComponent(id, component);
+    },
+    removeComponent(id: string, type: SimulationComponentType) {
+      components.removeComponent(id, type);
     },
     pushStimulus(stimulus: Stimulus) {
       stimuli.push(stimulus);

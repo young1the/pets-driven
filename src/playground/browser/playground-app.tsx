@@ -57,10 +57,7 @@ export function PlaygroundApp() {
 
   function startWalkDemo() {
     const alice = snapshot.pets.find((pet) => pet.id === "pet-a");
-    scenarioRef.current.world.setComponent("pet-a", {
-      type: "LocomotionState",
-      baseMode: "walk",
-    });
+    switchAliceToWalk();
     scenarioRef.current.world.setComponent("pet-a", {
       type: "MotionTarget",
       targetEntityId: null,
@@ -80,10 +77,7 @@ export function PlaygroundApp() {
   }
 
   function startJumpDemo() {
-    scenarioRef.current.world.setComponent("pet-a", {
-      type: "LocomotionState",
-      baseMode: "walk",
-    });
+    switchAliceToWalk();
     scenarioRef.current.world.setComponent("pet-a", {
       type: "JumpActionState",
       phase: "requested",
@@ -100,10 +94,7 @@ export function PlaygroundApp() {
   }
 
   function startWallClimbDemo() {
-    scenarioRef.current.world.setComponent("pet-a", {
-      type: "LocomotionState",
-      baseMode: "walk",
-    });
+    switchAliceToWalk();
     scenarioRef.current.world.setComponent("pet-a", {
       type: "ClimbIntentState",
       phase: "approaching",
@@ -118,6 +109,12 @@ export function PlaygroundApp() {
     scenarioRef.current.world.step(0);
     setSnapshot(scenarioRef.current.world.snapshot());
     setLastStimulus(PLAYGROUND_TEXT.wallClimbDemoStimulus);
+  }
+
+  function switchAliceToWalk() {
+    scenarioRef.current.world.removeComponent("pet-a", "ClimbingState");
+    scenarioRef.current.world.removeComponent("pet-a", "FlyingState");
+    scenarioRef.current.world.setComponent("pet-a", { type: "WalkingState" });
   }
 
   return (

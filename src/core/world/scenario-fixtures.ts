@@ -115,7 +115,6 @@ export function createDemoScenario(options?: {
         y: 500,
         components: [
           { type: "IdleConversation", idleAfterMs: 5_000 },
-          { type: "LocomotionState", baseMode: "walk" },
           { type: "WalkingState" },
           { type: "CanWalk", speed: 0.01 },
           { type: "CanJump", impulse: 0.009 },
@@ -132,7 +131,6 @@ export function createDemoScenario(options?: {
         x: 840,
         y: 500,
         components: [
-          { type: "LocomotionState", baseMode: "walk" },
           { type: "WalkingState" },
           { type: "CanWalk", speed: 0.01 },
           { type: "CanJump", impulse: 0.009 },
@@ -147,7 +145,6 @@ export function createDemoScenario(options?: {
         x: 280,
         y: 200,
         components: [
-          { type: "LocomotionState", baseMode: "walk" },
           { type: "WalkingState" },
           { type: "CanWalk", speed: 0.01 },
           { type: "CanWallClimb", speed: 1.1 },
@@ -161,7 +158,6 @@ export function createDemoScenario(options?: {
         x: 200,
         y: 200,
         components: [
-          { type: "LocomotionState", baseMode: "fly" },
           { type: "FlyingState" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },

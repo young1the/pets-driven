@@ -6,7 +6,6 @@ export type Vector = {
 };
 
 export type CompletionIntent = "idle" | "seek";
-export type LocomotionBaseMode = "walk" | "fly" | "climb";
 
 /**
  * Active locomotion tag for entities currently controlled by walking systems.
@@ -105,15 +104,6 @@ export type CanFlyComponent = {
   type: "CanFly";
   gravityScale: number;
   hoverStrength: number;
-};
-
-/**
- * Current long-lived locomotion mode. Short-lived actions such as jump are
- * represented by their own request state instead of becoming base modes.
- */
-export type LocomotionStateComponent = {
-  type: "LocomotionState";
-  baseMode: LocomotionBaseMode;
 };
 
 /**
@@ -306,7 +296,6 @@ export type SimulationComponent =
   | IntentStateComponent
   | CanJumpComponent
   | JumpActionStateComponent
-  | LocomotionStateComponent
   | MotionTargetComponent
   | NavigationStateComponent
   | MovementProfileComponent

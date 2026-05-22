@@ -2,41 +2,59 @@ import type {
   ClimbDismountStateComponent,
   ClimbIntentStateComponent,
   ContactStateComponent,
-  LocomotionStateComponent,
   MotionTargetComponent,
   CanWallClimbComponent,
+  SimulationComponent,
+  SimulationComponentType,
+  WalkingStateComponent,
+  ClimbingStateComponent,
+  FlyingStateComponent,
 } from "@/core/components/simulation-components";
 
 const CLIMB_TARGET_X_TOLERANCE = 24;
+const ACTIVE_LOCOMOTION_TAGS = [
+  "WalkingState",
+  "ClimbingState",
+  "FlyingState",
+] as const satisfies SimulationComponentType[];
 
 type LocomotionModeEntity = {
-  locomotion: LocomotionStateComponent;
+  id: string;
   contact: ContactStateComponent;
   motion?: MotionTargetComponent | null;
   climbIntent?: ClimbIntentStateComponent | null;
   wallClimb: CanWallClimbComponent | null;
   climbDismount?: ClimbDismountStateComponent | null;
+  walking?: WalkingStateComponent | null;
+  climbing?: ClimbingStateComponent | null;
+  flying?: FlyingStateComponent | null;
+};
+
+type LocomotionModeStore = {
+  setComponent(id: string, component: SimulationComponent): void;
+  removeComponent(id: string, type: SimulationComponentType): void;
 };
 
 export function runLocomotionModeSystem(
   entities: LocomotionModeEntity[],
+  components: LocomotionModeStore,
 ): void {
   for (const entity of entities) {
     if (entity.climbDismount && entity.climbDismount.phase !== "ready") {
-      if (entity.locomotion.baseMode === "climb") {
-        entity.locomotion.baseMode = "walk";
+      if (entity.climbing) {
+        switchLocomotion(entity.id, "walk", components);
       }
       continue;
     }
 
     if (entity.wallClimb && canEnterClimb(entity)) {
-      entity.locomotion.baseMode = "climb";
+      switchLocomotion(entity.id, "climb", components);
     } else if (
       entity.wallClimb &&
-      entity.locomotion.baseMode === "climb" &&
+      entity.climbing &&
       !entity.contact.climbableSurfaceId
     ) {
-      entity.locomotion.baseMode = "walk";
+      switchLocomotion(entity.id, "walk", components);
     }
   }
 }
@@ -62,4 +80,26 @@ function canEnterClimb(entity: LocomotionModeEntity) {
       entity.motion.targetPosition.x - entity.contact.climbableSurfacePosition.x,
     ) <= CLIMB_TARGET_X_TOLERANCE
   );
+}
+
+function switchLocomotion(
+  id: string,
+  mode: "walk" | "climb" | "fly",
+  components: LocomotionModeStore,
+) {
+  for (const tag of ACTIVE_LOCOMOTION_TAGS) {
+    components.removeComponent(id, tag);
+  }
+
+  if (mode === "walk") {
+    components.setComponent(id, { type: "WalkingState" });
+  }
+
+  if (mode === "climb") {
+    components.setComponent(id, { type: "ClimbingState" });
+  }
+
+  if (mode === "fly") {
+    components.setComponent(id, { type: "FlyingState" });
+  }
 }
