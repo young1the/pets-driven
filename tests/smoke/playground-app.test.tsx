@@ -202,10 +202,16 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
+    // First event establishes the baseline snapshot in prevSnapshotRef
     fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }),
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent }),
+    );
+    // Second event diffs against the baseline; Alice's intent changes active → seek
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }),
     );
 
-    expect(screen.getByTestId("action-timeline")).toBeInTheDocument();
+    const timeline = screen.getByTestId("action-timeline");
+    expect(within(timeline).getAllByRole("listitem").length).toBeGreaterThan(0);
   });
 });

@@ -16,6 +16,37 @@ import {
 } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
 
+type Snapshot = ReturnType<
+  ReturnType<typeof createDemoScenario>["world"]["snapshot"]
+>;
+
+function diffSnapshot(
+  prev: Snapshot,
+  next: Snapshot,
+  t: number,
+): TimelineEntry[] {
+  const entries: TimelineEntry[] = [];
+  for (const pet of next.pets) {
+    const prevPet = prev.pets.find((p) => p.id === pet.id);
+    if (!prevPet) continue;
+    if (prevPet.locomotion !== pet.locomotion) {
+      entries.push({
+        t,
+        petName: pet.name,
+        label: `locomotion: ${prevPet.locomotion} → ${pet.locomotion}`,
+      });
+    }
+    if (prevPet.intent !== pet.intent) {
+      entries.push({
+        t,
+        petName: pet.name,
+        label: `intent: ${prevPet.intent} → ${pet.intent}`,
+      });
+    }
+  }
+  return entries;
+}
+
 export function PlaygroundApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scenarioRef = useRef(createDemoScenario());
@@ -26,36 +57,7 @@ export function PlaygroundApp() {
     scenarioRef.current.world.snapshot(),
   );
   const [timelineEntries, setTimelineEntries] = useState<TimelineEntry[]>([]);
-  const prevSnapshotRef = useRef<ReturnType<
-    typeof scenarioRef.current.world.snapshot
-  > | null>(null);
-
-  function diffSnapshot(
-    prev: ReturnType<typeof scenarioRef.current.world.snapshot>,
-    next: ReturnType<typeof scenarioRef.current.world.snapshot>,
-    t: number,
-  ): TimelineEntry[] {
-    const entries: TimelineEntry[] = [];
-    for (const pet of next.pets) {
-      const prevPet = prev.pets.find((p) => p.id === pet.id);
-      if (!prevPet) continue;
-      if (prevPet.locomotion !== pet.locomotion) {
-        entries.push({
-          t,
-          petName: pet.name,
-          label: `locomotion: ${prevPet.locomotion} → ${pet.locomotion}`,
-        });
-      }
-      if (prevPet.intent !== pet.intent) {
-        entries.push({
-          t,
-          petName: pet.name,
-          label: `intent: ${prevPet.intent} → ${pet.intent}`,
-        });
-      }
-    }
-    return entries;
-  }
+  const prevSnapshotRef = useRef<Snapshot | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -97,21 +99,19 @@ export function PlaygroundApp() {
 
     scenarioRef.current.world.pushStimulus(toStimulus(event));
     scenarioRef.current.world.step(0);
-    setSnapshot(scenarioRef.current.world.snapshot());
+    const nextSnapshot = scenarioRef.current.world.snapshot();
+    setSnapshot(nextSnapshot);
+    setLastStimulus(type);
+    setLastEvent(event);
+
     const t = scenarioRef.current.clock.now();
     if (prevSnapshotRef.current) {
-      const newEntries = diffSnapshot(
-        prevSnapshotRef.current,
-        scenarioRef.current.world.snapshot(),
-        t,
-      );
+      const newEntries = diffSnapshot(prevSnapshotRef.current, nextSnapshot, t);
       if (newEntries.length > 0) {
         setTimelineEntries((prev) => [...newEntries, ...prev].slice(0, 40));
       }
     }
-    prevSnapshotRef.current = scenarioRef.current.world.snapshot();
-    setLastStimulus(type);
-    setLastEvent(event);
+    prevSnapshotRef.current = nextSnapshot;
   }
 
   function startWalkDemo() {
