@@ -19,6 +19,7 @@ export const PLAYGROUND_TEXT = {
   walkingDemoSpeech: "Walking to the right",
   jumpDemoSpeech: "Jumping up",
   wallClimbDemoSpeech: "Climbing the wall",
+  actionTimelineTitle: "Action timeline",
 } as const;
 
 export const PLAYGROUND_SAMPLE_EVENT_SUMMARIES = {

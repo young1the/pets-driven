@@ -1,12 +1,19 @@
-import { createAgentEvent, type AgentEvent } from "@/adapters/agent-events/agent-event";
+import {
+  createAgentEvent,
+  type AgentEvent,
+} from "@/adapters/agent-events/agent-event";
 import { toStimulus } from "@/adapters/agent-events/agent-event-adapter";
 import { useEffect, useRef, useState } from "react";
 import { createDemoScenario } from "@/core/world/scenario-fixtures";
+import { ActionTimeline, type TimelineEntry } from "./action-timeline";
 import { AgentEventPanel } from "./agent-event-panel";
 import { BehaviorLab } from "./behavior-lab";
 import { drawWorld } from "./canvas-renderer";
 import { PetStatusList } from "./pet-status-list";
-import { PLAYGROUND_SAMPLE_EVENT_SUMMARIES, PLAYGROUND_TEXT } from "./playground-text";
+import {
+  PLAYGROUND_SAMPLE_EVENT_SUMMARIES,
+  PLAYGROUND_TEXT,
+} from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
 
 export function PlaygroundApp() {
@@ -15,7 +22,40 @@ export function PlaygroundApp() {
   const [lastStimulus, setLastStimulus] = useState("none");
   const [lastEvent, setLastEvent] = useState<AgentEvent | null>(null);
   const [selectedPetId, setSelectedPetId] = useState("pet-a");
-  const [snapshot, setSnapshot] = useState(() => scenarioRef.current.world.snapshot());
+  const [snapshot, setSnapshot] = useState(() =>
+    scenarioRef.current.world.snapshot(),
+  );
+  const [timelineEntries, setTimelineEntries] = useState<TimelineEntry[]>([]);
+  const prevSnapshotRef = useRef<ReturnType<
+    typeof scenarioRef.current.world.snapshot
+  > | null>(null);
+
+  function diffSnapshot(
+    prev: ReturnType<typeof scenarioRef.current.world.snapshot>,
+    next: ReturnType<typeof scenarioRef.current.world.snapshot>,
+    t: number,
+  ): TimelineEntry[] {
+    const entries: TimelineEntry[] = [];
+    for (const pet of next.pets) {
+      const prevPet = prev.pets.find((p) => p.id === pet.id);
+      if (!prevPet) continue;
+      if (prevPet.locomotion !== pet.locomotion) {
+        entries.push({
+          t,
+          petName: pet.name,
+          label: `locomotion: ${prevPet.locomotion} → ${pet.locomotion}`,
+        });
+      }
+      if (prevPet.intent !== pet.intent) {
+        entries.push({
+          t,
+          petName: pet.name,
+          label: `intent: ${prevPet.intent} → ${pet.intent}`,
+        });
+      }
+    }
+    return entries;
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -29,12 +69,19 @@ export function PlaygroundApp() {
       scenarioRef.current.world.step(16);
       const nextSnapshot = scenarioRef.current.world.snapshot();
       setSnapshot(nextSnapshot);
-      drawWorld(
-        context,
-        nextSnapshot,
-        {},
-        scenarioRef.current.clock.now(),
-      );
+      const t = scenarioRef.current.clock.now();
+      if (prevSnapshotRef.current) {
+        const newEntries = diffSnapshot(
+          prevSnapshotRef.current,
+          nextSnapshot,
+          t,
+        );
+        if (newEntries.length > 0) {
+          setTimelineEntries((prev) => [...newEntries, ...prev].slice(0, 40));
+        }
+      }
+      prevSnapshotRef.current = nextSnapshot;
+      drawWorld(context, nextSnapshot, {}, scenarioRef.current.clock.now());
     }, 16);
 
     return () => window.clearInterval(intervalId);
@@ -51,6 +98,18 @@ export function PlaygroundApp() {
     scenarioRef.current.world.pushStimulus(toStimulus(event));
     scenarioRef.current.world.step(0);
     setSnapshot(scenarioRef.current.world.snapshot());
+    const t = scenarioRef.current.clock.now();
+    if (prevSnapshotRef.current) {
+      const newEntries = diffSnapshot(
+        prevSnapshotRef.current,
+        scenarioRef.current.world.snapshot(),
+        t,
+      );
+      if (newEntries.length > 0) {
+        setTimelineEntries((prev) => [...newEntries, ...prev].slice(0, 40));
+      }
+    }
+    prevSnapshotRef.current = scenarioRef.current.world.snapshot();
     setLastStimulus(type);
     setLastEvent(event);
   }
@@ -124,10 +183,17 @@ export function PlaygroundApp() {
       </header>
       <ScenarioControls
         lastStimulus={lastStimulus}
-        onSendStarted={() => sendEvent("task.started", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.started)}
-        onSendWaiting={() => sendEvent("task.waiting", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.waiting)}
+        onSendStarted={() =>
+          sendEvent("task.started", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.started)
+        }
+        onSendWaiting={() =>
+          sendEvent("task.waiting", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.waiting)
+        }
         onSendCompleted={() =>
-          sendEvent("task.completed", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.completed)
+          sendEvent(
+            "task.completed",
+            PLAYGROUND_SAMPLE_EVENT_SUMMARIES.completed,
+          )
         }
         onStartWalkDemo={startWalkDemo}
         onStartJumpDemo={startJumpDemo}
@@ -136,16 +202,24 @@ export function PlaygroundApp() {
       <AgentEventPanel event={lastEvent} />
       <div className="playground-workspace">
         <div className="playground-stage">
-          <canvas ref={canvasRef} data-testid="world-canvas" width={960} height={540} />
+          <canvas
+            ref={canvasRef}
+            data-testid="world-canvas"
+            width={960}
+            height={540}
+          />
           <PetStatusList pets={snapshot.pets} />
         </div>
         <BehaviorLab
           pets={snapshot.pets}
           selectedPetId={selectedPetId}
           onSelectPet={setSelectedPetId}
-          getComponent={(id, type) => scenarioRef.current.world.getComponent(id, type)}
+          getComponent={(id, type) =>
+            scenarioRef.current.world.getComponent(id, type)
+          }
         />
       </div>
+      <ActionTimeline entries={timelineEntries} />
     </main>
   );
 }
