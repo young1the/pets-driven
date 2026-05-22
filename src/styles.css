@@ -63,7 +63,20 @@ body {
   overflow: auto;
 }
 
-.pet-status-list h2 {
+.playground-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 960px) minmax(280px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.playground-stage {
+  display: grid;
+  gap: 16px;
+}
+
+.pet-status-list h2,
+.behavior-lab h2 {
   margin: 0 0 8px;
   font-size: 1rem;
 }
@@ -97,4 +110,86 @@ body {
   aspect-ratio: 16 / 9;
   border: 1px solid #ccd5e0;
   background: #ffffff;
+}
+
+.behavior-lab {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #ccd5e0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.behavior-lab__selector {
+  display: grid;
+  gap: 8px;
+}
+
+.behavior-lab__selector span {
+  color: #526074;
+  font-size: 0.9rem;
+}
+
+.behavior-lab__selector div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.behavior-lab button {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #bcc7d8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+}
+
+.behavior-lab button[aria-pressed="true"] {
+  border-color: #2563eb;
+  background: #eaf1ff;
+}
+
+.behavior-lab__state {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.behavior-lab__state div {
+  display: grid;
+  grid-template-columns: minmax(112px, 0.8fr) minmax(0, 1.2fr);
+  gap: 8px;
+}
+
+.behavior-lab__state dt {
+  color: #526074;
+}
+
+.behavior-lab__state dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.behavior-lab__components {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.behavior-lab__components span {
+  padding: 2px 6px;
+  border: 1px solid #d8e0eb;
+  border-radius: 6px;
+  background: #f7f9fc;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+  .playground-workspace {
+    grid-template-columns: 1fr;
+  }
 }

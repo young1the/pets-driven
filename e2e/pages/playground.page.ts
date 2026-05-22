@@ -13,6 +13,9 @@ export class PlaygroundPage {
       this.page.getByRole("heading", { name: PLAYGROUND_TEXT.title }),
     ).toBeVisible();
     await expect(this.page.getByTestId("world-canvas")).toBeVisible();
+    await expect(
+      this.page.getByRole("heading", { name: PLAYGROUND_TEXT.behaviorLabTitle }),
+    ).toBeVisible();
   }
 
   async sendStartedEvent() {
@@ -76,5 +79,19 @@ export class PlaygroundPage {
 
   async expectLocomotion(mode: string) {
     await expect(this.page.getByText(mode, { exact: true })).toBeVisible();
+  }
+
+  async selectBehaviorPet(name: string) {
+    await this.page.getByRole("button", { name, exact: true }).click();
+  }
+
+  async expectBehaviorComponent(component: string) {
+    await expect(this.page.getByText(component, { exact: true })).toBeVisible();
+  }
+
+  async expectSelectedBehaviorPet(name: string) {
+    await expect(
+      this.page.getByRole("button", { name, exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
   }
 }

@@ -12,6 +12,8 @@ export const PLAYGROUND_TEXT = {
   lastStimulusPrefix: "Last stimulus:",
   lastEventTitle: "Last event",
   petStatusTitle: "Pet status",
+  behaviorLabTitle: "Behavior lab",
+  selectedPetLabel: "Selected pet",
   noSpeech: "No speech",
   walkingDemoSpeech: "Walking to the right",
   jumpDemoSpeech: "Jumping up",

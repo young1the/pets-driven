@@ -3,6 +3,7 @@ import { toStimulus } from "@/adapters/agent-events/agent-event-adapter";
 import { useEffect, useRef, useState } from "react";
 import { createDemoScenario } from "@/core/world/scenario-fixtures";
 import { AgentEventPanel } from "./agent-event-panel";
+import { BehaviorLab } from "./behavior-lab";
 import { drawWorld } from "./canvas-renderer";
 import { PetStatusList } from "./pet-status-list";
 import { PLAYGROUND_SAMPLE_EVENT_SUMMARIES, PLAYGROUND_TEXT } from "./playground-text";
@@ -13,6 +14,7 @@ export function PlaygroundApp() {
   const scenarioRef = useRef(createDemoScenario());
   const [lastStimulus, setLastStimulus] = useState("none");
   const [lastEvent, setLastEvent] = useState<AgentEvent | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState("pet-a");
   const [snapshot, setSnapshot] = useState(() => scenarioRef.current.world.snapshot());
 
   useEffect(() => {
@@ -129,8 +131,18 @@ export function PlaygroundApp() {
         onStartWallClimbDemo={startWallClimbDemo}
       />
       <AgentEventPanel event={lastEvent} />
-      <PetStatusList pets={snapshot.pets} />
-      <canvas ref={canvasRef} data-testid="world-canvas" width={960} height={540} />
+      <div className="playground-workspace">
+        <div className="playground-stage">
+          <canvas ref={canvasRef} data-testid="world-canvas" width={960} height={540} />
+          <PetStatusList pets={snapshot.pets} />
+        </div>
+        <BehaviorLab
+          pets={snapshot.pets}
+          selectedPetId={selectedPetId}
+          onSelectPet={setSelectedPetId}
+          getComponent={(id, type) => scenarioRef.current.world.getComponent(id, type)}
+        />
+      </div>
     </main>
   );
 }
