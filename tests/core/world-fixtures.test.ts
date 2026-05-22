@@ -24,6 +24,7 @@ describe("demo scenario", () => {
       "ContactSystem",
       "LocomotionModeSystem",
       "ArrivalBehaviorSystem",
+      "ClimbDismountSystem",
       "MotionTargetSystem",
       "CollisionReactionSystem",
       "WalkSystem",
@@ -42,13 +43,24 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ContactSystem",
       dependsOn: ["PhysicsTransformSyncSystem"],
-      reads: ["Transform", "ContactState", "ClimbableSurface"],
+      reads: [
+        "Transform",
+        "PhysicsBody",
+        "ContactState",
+        "ClimbableSurface",
+        "Ground",
+      ],
       writes: ["ContactState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "LocomotionModeSystem",
       dependsOn: ["ContactSystem"],
-      reads: ["LocomotionState", "ContactState", "WallClimbMovement"],
+      reads: [
+        "LocomotionState",
+        "ContactState",
+        "WallClimbMovement",
+        "ClimbDismountState",
+      ],
       writes: ["LocomotionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -65,6 +77,21 @@ describe("demo scenario", () => {
       writes: ["MotionTarget", "IntentState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
+      name: "ClimbDismountSystem",
+      dependsOn: ["ArrivalBehaviorSystem"],
+      reads: [
+        "LocomotionState",
+        "MotionTarget",
+        "ContactState",
+        "WalkMovement",
+        "WallClimbMovement",
+        "JumpMovement",
+        "JumpState",
+        "ClimbDismountState",
+      ],
+      writes: ["LocomotionState", "JumpState", "ClimbDismountState"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
       name: "CollisionReactionSystem",
       dependsOn: ["MotionTargetSystem"],
       reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget"],
@@ -76,6 +103,7 @@ describe("demo scenario", () => {
       reads: [
         "Transform",
         "LocomotionState",
+        "ContactState",
         "WalkMovement",
         "MotionTarget",
         "NavigationState",
@@ -186,6 +214,10 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-a", "WallClimbMovement")).toEqual({
       type: "WallClimbMovement",
       speed: 0.004,
+    });
+    expect(scenario.world.getComponent("pet-a", "ClimbDismountState")).toEqual({
+      type: "ClimbDismountState",
+      cooldownMs: 0,
     });
     expect(scenario.world.getComponent("pet-a", "WandersOnArrival")).toEqual({
       type: "WandersOnArrival",

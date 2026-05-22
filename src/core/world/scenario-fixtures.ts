@@ -120,6 +120,7 @@ export function createDemoScenario(options?: {
           { type: "JumpMovement", impulse: 0.014 },
           { type: "JumpState", pending: false },
           { type: "WallClimbMovement", speed: 0.004 },
+          { type: "ClimbDismountState", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
         ],
       }),
