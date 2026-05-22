@@ -9,6 +9,37 @@ export type CompletionIntent = "idle" | "seek";
 export type LocomotionBaseMode = "walk" | "fly" | "climb";
 
 /**
+ * Active locomotion tag for entities currently controlled by walking systems.
+ * Capability remains separate in CanWalk.
+ */
+export type WalkingStateComponent = {
+  type: "WalkingState";
+};
+
+/**
+ * Active locomotion tag for entities currently attached to a climbable surface.
+ * Capability remains separate in CanWallClimb.
+ */
+export type ClimbingStateComponent = {
+  type: "ClimbingState";
+};
+
+/**
+ * Active locomotion tag for entities currently controlled by flight systems.
+ * Capability remains separate in CanFly.
+ */
+export type FlyingStateComponent = {
+  type: "FlyingState";
+};
+
+/**
+ * Active contact-derived tag for non-flying, non-climbing entities in the air.
+ */
+export type AirborneStateComponent = {
+  type: "AirborneState";
+};
+
+/**
  * Marker for environmental entities that a climbing-capable pet can attach to.
  * Position belongs to Transform; this component only identifies the surface.
  */
@@ -70,8 +101,8 @@ export type IdleConversationComponent = {
  * Flight movement tuning. Component presence means the entity can fly; the
  * active locomotion state decides whether flight is currently in control.
  */
-export type FlightMovementComponent = {
-  type: "FlightMovement";
+export type CanFlyComponent = {
+  type: "CanFly";
   gravityScale: number;
   hoverStrength: number;
 };
@@ -86,29 +117,32 @@ export type LocomotionStateComponent = {
 };
 
 /**
- * Temporary state after a pet jumps away from a climbable surface. While the
- * cooldown is active, locomotion will not immediately reattach to the surface.
+ * Temporary state after a pet leaves a climbable surface. Airborne dismounts
+ * block reattachment until the pet lands, then run a short grounded cooldown.
  */
+export type ClimbDismountPhase = "ready" | "airborne" | "coolingDown";
+
 export type ClimbDismountStateComponent = {
   type: "ClimbDismountState";
+  phase: ClimbDismountPhase;
   cooldownMs: number;
 };
 
 /**
- * Walk movement tuning. Component presence means the entity can walk; walking
- * only runs when LocomotionState selects the walk mode.
+ * Walk movement capability and tuning. WalkingState decides whether this
+ * capability is currently active.
  */
-export type WalkMovementComponent = {
-  type: "WalkMovement";
+export type CanWalkComponent = {
+  type: "CanWalk";
   speed: number;
 };
 
 /**
- * Jump movement tuning. Component presence means the entity can jump; jumping
+ * Jump movement capability and tuning. Component presence means the entity can jump; jumping
  * runs when JumpState requests a one-shot jump action.
  */
-export type JumpMovementComponent = {
-  type: "JumpMovement";
+export type CanJumpComponent = {
+  type: "CanJump";
   impulse: number;
 };
 
@@ -122,11 +156,11 @@ export type JumpStateComponent = {
 };
 
 /**
- * Wall-climb movement tuning. Component presence means the entity can climb
- * vertical surfaces; climbing only runs when LocomotionState selects climb.
+ * Wall-climb movement capability and tuning. ClimbingState decides whether
+ * this capability is currently active.
  */
-export type WallClimbMovementComponent = {
-  type: "WallClimbMovement";
+export type CanWallClimbComponent = {
+  type: "CanWallClimb";
   speed: number;
 };
 
@@ -238,15 +272,18 @@ export type UserAnchorComponent = {
 export type SimulationComponent =
   | ActivityStateComponent
   | AgentBindingComponent
+  | AirborneStateComponent
   | ClimbDismountStateComponent
   | ClimbableSurfaceComponent
+  | ClimbingStateComponent
   | CompletionBehaviorComponent
   | ContactStateComponent
-  | FlightMovementComponent
+  | CanFlyComponent
+  | FlyingStateComponent
   | GroundComponent
   | IdleConversationComponent
   | IntentStateComponent
-  | JumpMovementComponent
+  | CanJumpComponent
   | JumpStateComponent
   | LocomotionStateComponent
   | MotionTargetComponent
@@ -260,8 +297,9 @@ export type SimulationComponent =
   | TransformComponent
   | UserAnchorComponent
   | WandersOnArrivalComponent
-  | WallClimbMovementComponent
-  | WalkMovementComponent;
+  | CanWallClimbComponent
+  | CanWalkComponent
+  | WalkingStateComponent;
 
 export type SimulationComponentType = SimulationComponent["type"];
 

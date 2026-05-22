@@ -122,9 +122,9 @@ describe("PlaygroundApp", () => {
       "true",
     );
     expect(screen.getByText("Components")).toBeInTheDocument();
-    expect(screen.getByText("WalkMovement")).toBeInTheDocument();
-    expect(screen.getByText("JumpMovement")).toBeInTheDocument();
-    expect(screen.getByText("WallClimbMovement")).toBeInTheDocument();
+    expect(screen.getByText("CanWalk")).toBeInTheDocument();
+    expect(screen.getByText("CanJump")).toBeInTheDocument();
+    expect(screen.getByText("CanWallClimb")).toBeInTheDocument();
     expect(screen.getByText("Grounded")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Dana" }));
@@ -133,6 +133,6 @@ describe("PlaygroundApp", () => {
       "aria-pressed",
       "true",
     );
-    expect(screen.getByText("FlightMovement")).toBeInTheDocument();
+    expect(screen.getByText("CanFly")).toBeInTheDocument();
   });
 });

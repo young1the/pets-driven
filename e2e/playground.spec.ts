@@ -59,10 +59,12 @@ test("behavior lab inspects pet movement components", async ({ page }) => {
   await playground.expectReady();
 
   await playground.expectSelectedBehaviorPet("Alice");
-  await playground.expectBehaviorComponent("WalkMovement");
-  await playground.expectBehaviorComponent("WallClimbMovement");
+  await playground.expectBehaviorComponent("WalkingState");
+  await playground.expectBehaviorComponent("CanWalk");
+  await playground.expectBehaviorComponent("CanWallClimb");
 
   await playground.selectBehaviorPet("Dana");
   await playground.expectSelectedBehaviorPet("Dana");
-  await playground.expectBehaviorComponent("FlightMovement");
+  await playground.expectBehaviorComponent("FlyingState");
+  await playground.expectBehaviorComponent("CanFly");
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PetIntent, Vector } from "@/core/components/simulation-components";
 import { DEFAULT_PET_SPEECH } from "@/core/constants/pet-speech";
 import { runArrivalBehaviorSystem } from "@/core/systems/arrival-behavior-system";
+import { runClimbAttachmentSystem } from "@/core/systems/climb-attachment-system";
 import { runClimbDismountSystem } from "@/core/systems/climb-dismount-system";
 import { runCollisionReactionSystem } from "@/core/systems/collision-reaction-system";
 import { runContactSystem } from "@/core/systems/contact-system";
@@ -10,6 +11,7 @@ import { runPhysicsTransformSyncSystem } from "@/core/systems/physics-transform-
 import { runIdleConversationSystem } from "@/core/systems/idle-conversation-system";
 import { runFlightSystem } from "@/core/systems/flight-system";
 import { runJumpSystem } from "@/core/systems/jump-system";
+import { runLocomotionActiveStateSystem } from "@/core/systems/locomotion-active-state-system";
 import { runStimulusReactionSystem } from "@/core/systems/stimulus-reaction-system";
 import { runWalkSystem } from "@/core/systems/walk-system";
 import { runWallClimbSystem } from "@/core/systems/wall-climb-system";
@@ -463,18 +465,9 @@ describe("behavior systems", () => {
       [
         {
           id: "pet-a",
-          locomotion: { type: "LocomotionState" as const, baseMode: "fly" },
-          flight: {
-            type: "FlightMovement" as const,
-            gravityScale: 0,
-            hoverStrength: 0.003,
-          },
-        },
-        {
-          id: "pet-b",
-          locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
-          flight: {
-            type: "FlightMovement" as const,
+          flying: { type: "FlyingState" as const },
+          canFly: {
+            type: "CanFly" as const,
             gravityScale: 0,
             hoverStrength: 0.003,
           },
@@ -489,40 +482,106 @@ describe("behavior systems", () => {
     ]);
   });
 
+  it("syncs active locomotion tags from the transitional locomotion state", () => {
+    const writes: Array<{ id: string; component: { type: string } }> = [];
+    const removals: Array<{ id: string; type: string }> = [];
+    const components = {
+      setComponent(id: string, component: { type: string }) {
+        writes.push({ id, component });
+      },
+      removeComponent(id: string, type: string) {
+        removals.push({ id, type });
+      },
+    };
+
+    runLocomotionActiveStateSystem(
+      [
+        {
+          id: "pet-a",
+          locomotion: { type: "LocomotionState" as const, baseMode: "climb" },
+          contact: {
+            type: "ContactState" as const,
+            grounded: false,
+            climbableSurfaceId: "climb-wall",
+            climbableSurfacePosition: { x: 120, y: 500 },
+          },
+        },
+        {
+          id: "pet-b",
+          locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+          contact: {
+            type: "ContactState" as const,
+            grounded: false,
+            climbableSurfaceId: null,
+            climbableSurfacePosition: null,
+          },
+        },
+      ],
+      components,
+    );
+
+    expect(removals).toContainEqual({ id: "pet-a", type: "WalkingState" });
+    expect(removals).toContainEqual({ id: "pet-a", type: "ClimbingState" });
+    expect(removals).toContainEqual({ id: "pet-a", type: "FlyingState" });
+    expect(writes).toContainEqual({
+      id: "pet-a",
+      component: { type: "ClimbingState" },
+    });
+    expect(writes).toContainEqual({
+      id: "pet-b",
+      component: { type: "WalkingState" },
+    });
+    expect(writes).toContainEqual({
+      id: "pet-b",
+      component: { type: "AirborneState" },
+    });
+  });
+
+  it("clears horizontal velocity when a pet attaches to climb", () => {
+    const velocityUpdates: Array<{
+      id: string;
+      velocity: { x?: number; y?: number };
+    }> = [];
+    const physics = {
+      setVelocity(id: string, velocity: { x?: number; y?: number }) {
+        velocityUpdates.push({ id, velocity });
+      },
+    };
+
+    runClimbAttachmentSystem(
+      [
+        {
+          id: "pet-a",
+          climbing: { type: "ClimbingState" as const },
+          contact: {
+            type: "ContactState" as const,
+            grounded: true,
+            climbableSurfaceId: "climb-wall",
+            climbableSurfacePosition: { x: 120, y: 500 },
+          },
+        },
+      ],
+      physics,
+    );
+
+    expect(velocityUpdates).toEqual([
+      { id: "pet-a", velocity: { x: 0 } },
+    ]);
+  });
+
   it("creates horizontal walking force only when walking is active", () => {
     const forces = runWalkSystem([
       {
         id: "pet-a",
         position: { x: 0, y: 10 },
-        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+        walking: { type: "WalkingState" as const },
         contact: {
           type: "ContactState" as const,
           grounded: true,
           climbableSurfaceId: null,
           climbableSurfacePosition: null,
         },
-        walk: { type: "WalkMovement" as const, speed: 0.004 },
-        motion: {
-          type: "MotionTarget" as const,
-          targetEntityId: null,
-          targetPosition: { x: 100, y: 200 },
-        },
-        navigation: {
-          type: "NavigationState" as const,
-          avoidanceWaypoint: null,
-        },
-      },
-      {
-        id: "pet-b",
-        position: { x: 0, y: 10 },
-        locomotion: { type: "LocomotionState" as const, baseMode: "fly" },
-        contact: {
-          type: "ContactState" as const,
-          grounded: true,
-          climbableSurfaceId: null,
-          climbableSurfacePosition: null,
-        },
-        walk: { type: "WalkMovement" as const, speed: 0.004 },
+        canWalk: { type: "CanWalk" as const, speed: 0.004 },
         motion: {
           type: "MotionTarget" as const,
           targetEntityId: null,
@@ -543,14 +602,14 @@ describe("behavior systems", () => {
       {
         id: "pet-a",
         position: { x: 0, y: 10 },
-        locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
+        walking: { type: "WalkingState" as const },
         contact: {
           type: "ContactState" as const,
           grounded: false,
           climbableSurfaceId: null,
           climbableSurfacePosition: null,
         },
-        walk: { type: "WalkMovement" as const, speed: 0.004 },
+        canWalk: { type: "CanWalk" as const, speed: 0.004 },
         motion: {
           type: "MotionTarget" as const,
           targetEntityId: null,
@@ -572,13 +631,13 @@ describe("behavior systems", () => {
       {
         id: "pet-a",
         locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
-        jump: { type: "JumpMovement" as const, impulse: 0.012 },
+        jump: { type: "CanJump" as const, impulse: 0.012 },
         jumpState,
       },
       {
         id: "pet-b",
         locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
-        jump: { type: "JumpMovement" as const, impulse: 0.012 },
+        jump: { type: "CanJump" as const, impulse: 0.012 },
         jumpState: { type: "JumpState" as const, pending: false },
       },
     ]);
@@ -592,7 +651,7 @@ describe("behavior systems", () => {
     const entity = {
       id: "pet-a",
       locomotion: { type: "LocomotionState" as const, baseMode: "walk" },
-      jump: { type: "JumpMovement" as const, impulse: 0.012 },
+      jump: { type: "CanJump" as const, impulse: 0.012 },
       jumpState,
     } as const;
 
@@ -605,8 +664,8 @@ describe("behavior systems", () => {
       {
         id: "pet-a",
         position: { x: 920, y: 420 },
-        locomotion: { type: "LocomotionState" as const, baseMode: "climb" },
-        wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
+        climbing: { type: "ClimbingState" as const },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 0.003 },
         contact: {
           type: "ContactState" as const,
           grounded: false,
@@ -622,8 +681,8 @@ describe("behavior systems", () => {
       {
         id: "pet-b",
         position: { x: 920, y: 420 },
-        locomotion: { type: "LocomotionState" as const, baseMode: "climb" },
-        wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
+        climbing: { type: "ClimbingState" as const },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 0.003 },
         contact: {
           type: "ContactState" as const,
           grounded: false,
@@ -641,13 +700,13 @@ describe("behavior systems", () => {
     expect(forces).toEqual([{ id: "pet-a", x: 0, y: -0.003 }]);
   });
 
-  it("keeps wall-climbing pets attached to the contacted surface x position", () => {
+  it("uses proportional surface grip while wall climbing", () => {
     const forces = runWallClimbSystem([
       {
         id: "pet-a",
         position: { x: 132, y: 420 },
-        locomotion: { type: "LocomotionState" as const, baseMode: "climb" },
-        wallClimb: { type: "WallClimbMovement" as const, speed: 0.003 },
+        climbing: { type: "ClimbingState" as const },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 0.003 },
         contact: {
           type: "ContactState" as const,
           grounded: false,
@@ -662,7 +721,34 @@ describe("behavior systems", () => {
       },
     ]);
 
-    expect(forces).toEqual([{ id: "pet-a", x: -0.006, y: -0.003 }]);
+    expect(forces).toHaveLength(1);
+    expect(forces[0]?.id).toBe("pet-a");
+    expect(forces[0]?.x).toBeCloseTo(-0.0024);
+    expect(forces[0]?.y).toBeCloseTo(-0.003);
+  });
+
+  it("does not apply horizontal wall-climb grip inside the surface dead zone", () => {
+    const forces = runWallClimbSystem([
+      {
+        id: "pet-a",
+        position: { x: 121, y: 420 },
+        climbing: { type: "ClimbingState" as const },
+        canWallClimb: { type: "CanWallClimb" as const, speed: 0.003 },
+        contact: {
+          type: "ContactState" as const,
+          grounded: false,
+          climbableSurfaceId: "climb-wall",
+          climbableSurfacePosition: { x: 120, y: 420 },
+        },
+        motion: {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: { x: 120, y: 120 },
+        },
+      },
+    ]);
+
+    expect(forces).toEqual([{ id: "pet-a", x: 0, y: -0.003 }]);
   });
 
   it("lets a walking, climbing, and jumping pet dismount after finishing a climb target", () => {
@@ -680,12 +766,13 @@ describe("behavior systems", () => {
         climbableSurfaceId: "climb-wall" as string | null,
         climbableSurfacePosition: { x: 120, y: 500 } as Vector | null,
       },
-      walk: { type: "WalkMovement" as const, speed: 0.01 },
-      wallClimb: { type: "WallClimbMovement" as const, speed: 0.004 },
-      jump: { type: "JumpMovement" as const, impulse: 0.014 },
+      walk: { type: "CanWalk" as const, speed: 0.01 },
+      wallClimb: { type: "CanWallClimb" as const, speed: 0.004 },
+      jump: { type: "CanJump" as const, impulse: 0.014 },
       jumpState: { type: "JumpState" as const, pending: false },
       climbDismount: {
         type: "ClimbDismountState" as const,
+        phase: "ready" as const,
         cooldownMs: 0,
       },
     };
@@ -693,8 +780,9 @@ describe("behavior systems", () => {
     runClimbDismountSystem([entity], 16);
 
     expect(entity.locomotion.baseMode).toBe("walk");
-    expect(entity.jumpState.pending).toBe(true);
-    expect(entity.climbDismount.cooldownMs).toBeGreaterThan(0);
+    expect(entity.jumpState.pending).toBe(false);
+    expect(entity.climbDismount.phase).toBe("airborne");
+    expect(entity.climbDismount.cooldownMs).toBe(0);
   });
 
   it("keeps climbing when a climbing pet still has a target", () => {
@@ -712,12 +800,13 @@ describe("behavior systems", () => {
         climbableSurfaceId: "climb-wall" as string | null,
         climbableSurfacePosition: { x: 120, y: 500 } as Vector | null,
       },
-      walk: { type: "WalkMovement" as const, speed: 0.01 },
-      wallClimb: { type: "WallClimbMovement" as const, speed: 0.004 },
-      jump: { type: "JumpMovement" as const, impulse: 0.014 },
+      walk: { type: "CanWalk" as const, speed: 0.01 },
+      wallClimb: { type: "CanWallClimb" as const, speed: 0.004 },
+      jump: { type: "CanJump" as const, impulse: 0.014 },
       jumpState: { type: "JumpState" as const, pending: false },
       climbDismount: {
         type: "ClimbDismountState" as const,
+        phase: "ready" as const,
         cooldownMs: 0,
       },
     };
@@ -726,6 +815,51 @@ describe("behavior systems", () => {
 
     expect(entity.locomotion.baseMode).toBe("climb");
     expect(entity.jumpState.pending).toBe(false);
+    expect(entity.climbDismount.phase).toBe("ready");
     expect(entity.climbDismount.cooldownMs).toBe(0);
+  });
+
+  it("starts climb dismount cooldown only after the pet lands", () => {
+    const entity = {
+      id: "pet-a",
+      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
+      motion: {
+        type: "MotionTarget" as const,
+        targetEntityId: null as string | null,
+        targetPosition: null as Vector | null,
+      },
+      contact: {
+        type: "ContactState" as const,
+        grounded: false,
+        climbableSurfaceId: "climb-wall" as string | null,
+        climbableSurfacePosition: { x: 120, y: 500 } as Vector | null,
+      },
+      walk: { type: "CanWalk" as const, speed: 0.01 },
+      wallClimb: { type: "CanWallClimb" as const, speed: 0.004 },
+      jump: { type: "CanJump" as const, impulse: 0.014 },
+      jumpState: { type: "JumpState" as const, pending: false },
+      climbDismount: {
+        type: "ClimbDismountState" as const,
+        phase: "airborne" as const,
+        cooldownMs: 0,
+      },
+    };
+
+    runClimbDismountSystem([entity], 300);
+
+    expect(entity.climbDismount).toEqual({
+      type: "ClimbDismountState",
+      phase: "airborne",
+      cooldownMs: 0,
+    });
+
+    entity.contact.grounded = true;
+    runClimbDismountSystem([entity], 16);
+
+    expect(entity.climbDismount).toEqual({
+      type: "ClimbDismountState",
+      phase: "coolingDown",
+      cooldownMs: 700,
+    });
   });
 });

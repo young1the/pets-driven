@@ -14,6 +14,7 @@ export type MatterPhysicsWorld = {
   addStaticRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
   applyForce(id: string, force: Vector): void;
   setGravityScale(id: string, scale: number): void;
+  setVelocity(id: string, velocity: Partial<Vector>): void;
   step(deltaMs: number): void;
   snapshot(): WorldSnapshot;
 };
@@ -47,7 +48,7 @@ export function createMatterPhysicsWorld(bounds: {
     addRectangle(id, position, size, material) {
       const body = Bodies.rectangle(position.x, position.y, size.width, size.height, {
         friction: material?.friction,
-        frictionAir: material?.frictionAir ?? 0.16,
+        frictionAir: material?.frictionAir ?? 0.04,
         restitution: material?.restitution ?? 0,
       });
       Body.setInertia(body, Infinity);
@@ -69,6 +70,15 @@ export function createMatterPhysicsWorld(bounds: {
     },
     setGravityScale(id, scale) {
       gravityScales.set(id, scale);
+    },
+    setVelocity(id, velocity) {
+      const body = bodies.get(id);
+      if (body) {
+        Body.setVelocity(body, {
+          x: velocity.x ?? body.velocity.x,
+          y: velocity.y ?? body.velocity.y,
+        });
+      }
     },
     step(deltaMs) {
       for (const [id, scale] of gravityScales) {

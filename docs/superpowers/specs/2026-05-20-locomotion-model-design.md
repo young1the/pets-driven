@@ -4,7 +4,7 @@ Date: 2026-05-20
 
 ## Context
 
-The current prototype models pet movement with locomotion components such as `WalkMovement`, `JumpMovement`, `WallClimbMovement`, and `FlightMovement`, plus a selected locomotion state. This was enough to make each movement visible, but it blurs several different concepts:
+The current prototype models pet movement with locomotion capability components such as `CanWalk`, `CanJump`, `CanWallClimb`, and `CanFly`, plus active locomotion tags such as `WalkingState`, `ClimbingState`, and `FlyingState`. This is enough to make each movement visible, but it still leaves several concepts that must stay distinct:
 
 - A long-lived movement mode, such as walking or flying.
 - A short-lived action, such as jumping.
@@ -120,7 +120,7 @@ Example:
 LikesClimbing + ContactState.climbableSurfaceId
   -> set LocomotionState.baseMode = "climb"
 
-WalkMovement + obstacle ahead + ContactState.grounded
+CanWalk + obstacle ahead + ContactState.grounded
   -> request JumpAction
 ```
 

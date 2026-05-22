@@ -1,12 +1,12 @@
 import type {
-  FlightMovementComponent,
-  LocomotionStateComponent,
+  CanFlyComponent,
+  FlyingStateComponent,
 } from "@/core/components/simulation-components";
 
 type FlightEntity = {
   id: string;
-  locomotion: LocomotionStateComponent;
-  flight: FlightMovementComponent;
+  flying: FlyingStateComponent;
+  canFly: CanFlyComponent;
 };
 
 type FlightPhysics = {
@@ -16,14 +16,10 @@ type FlightPhysics = {
 
 export function runFlightSystem(entities: FlightEntity[], physics: FlightPhysics) {
   for (const entity of entities) {
-    if (entity.locomotion.baseMode !== "fly") {
-      continue;
-    }
+    physics.setGravityScale(entity.id, entity.canFly.gravityScale);
 
-    physics.setGravityScale(entity.id, entity.flight.gravityScale);
-
-    if (entity.flight.hoverStrength > 0) {
-      physics.applyForce(entity.id, { x: 0, y: -entity.flight.hoverStrength });
+    if (entity.canFly.hoverStrength > 0) {
+      physics.applyForce(entity.id, { x: 0, y: -entity.canFly.hoverStrength });
     }
   }
 }

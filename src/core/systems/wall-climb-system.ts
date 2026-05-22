@@ -1,21 +1,21 @@
 import type {
+  CanWallClimbComponent,
+  ClimbingStateComponent,
   ContactStateComponent,
-  LocomotionStateComponent,
   MotionTargetComponent,
   Vector,
-  WallClimbMovementComponent,
 } from "@/core/components/simulation-components";
 import type { Force } from "@/core/systems/physics-integration-system";
 
 const WALL_CLIMB_ARRIVAL_RADIUS = 16;
 const WALL_CLIMB_SURFACE_GRIP_DEAD_ZONE = 2;
-const WALL_CLIMB_SURFACE_GRIP_MULTIPLIER = 2;
+const WALL_CLIMB_SURFACE_GRIP_STIFFNESS = 0.0002;
 
 type WallClimbingEntity = {
   id: string;
   position: Vector;
-  locomotion: LocomotionStateComponent;
-  wallClimb: WallClimbMovementComponent;
+  climbing: ClimbingStateComponent;
+  canWallClimb: CanWallClimbComponent;
   contact: ContactStateComponent;
   motion: MotionTargetComponent;
 };
@@ -23,7 +23,6 @@ type WallClimbingEntity = {
 export function runWallClimbSystem(entities: WallClimbingEntity[]): Force[] {
   return entities.flatMap((entity) => {
     if (
-      entity.locomotion.baseMode !== "climb" ||
       !entity.contact.climbableSurfaceId ||
       !entity.motion.targetPosition
     ) {
@@ -41,16 +40,22 @@ export function runWallClimbSystem(entities: WallClimbingEntity[]): Force[] {
     const surfaceGripForce =
       Math.abs(deltaX) <= WALL_CLIMB_SURFACE_GRIP_DEAD_ZONE
         ? 0
-        : Math.sign(deltaX) *
-          entity.wallClimb.speed *
-          WALL_CLIMB_SURFACE_GRIP_MULTIPLIER;
+        : clamp(
+            deltaX * WALL_CLIMB_SURFACE_GRIP_STIFFNESS,
+            -entity.canWallClimb.speed,
+            entity.canWallClimb.speed,
+          );
 
     return [
       {
         id: entity.id,
         x: surfaceGripForce,
-        y: Math.sign(deltaY) * entity.wallClimb.speed,
+        y: Math.sign(deltaY) * entity.canWallClimb.speed,
       },
     ];
   });
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
