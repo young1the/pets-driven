@@ -14,6 +14,7 @@ export const PLAYGROUND_TEXT = {
   petStatusTitle: "Pet status",
   behaviorLabTitle: "Behavior lab",
   selectedPetLabel: "Selected pet",
+  componentPanelTitle: "Components",
   noSpeech: "No speech",
   walkingDemoSpeech: "Walking to the right",
   jumpDemoSpeech: "Jumping up",

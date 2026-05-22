@@ -116,11 +116,28 @@ export function BehaviorLab({
           <dd>{climbDismount?.cooldownMs ?? 0}ms</dd>
         </div>
         <div>
-          <dt>Components</dt>
+          <dt>{PLAYGROUND_TEXT.componentPanelTitle}</dt>
           <dd className="behavior-lab__components">
-            {componentTypes.map((type) => (
-              <span key={type}>{type}</span>
-            ))}
+            {componentTypes.map((type) => {
+              const comp = getComponent(selectedPet.id, type);
+              if (!comp) return null;
+              const fields = Object.entries(comp).filter(([key]) => key !== "type");
+              return (
+                <details key={type} className="behavior-lab__component-detail">
+                  <summary>{type}</summary>
+                  {fields.length > 0 && (
+                    <dl className="behavior-lab__component-fields">
+                      {fields.map(([key, value]) => (
+                        <div key={key}>
+                          <dt>{key}</dt>
+                          <dd>{formatComponentValue(value)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                </details>
+              );
+            })}
           </dd>
         </div>
       </dl>
@@ -138,6 +155,12 @@ function formatClimbIntent(
   return `${climbIntent.phase} ${climbIntent.surfaceEntityId} -> ${Math.round(
     climbIntent.targetY,
   )}`;
+}
+
+function formatComponentValue(value: unknown): string {
+  if (value === null) return "null";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
 }
 
 function formatMotionTarget(

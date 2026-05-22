@@ -135,4 +135,19 @@ describe("PlaygroundApp", () => {
     );
     expect(screen.getByText("CanFly")).toBeInTheDocument();
   });
+
+  it("shows component field values in the behavior lab component panel", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    // CanJump component shows its impulse field value
+    expect(screen.getAllByText("impulse").length).toBeGreaterThan(0);
+    // CanWalk component shows its speed field value (also present in CanWallClimb)
+    expect(screen.getAllByText("speed").length).toBeGreaterThan(0);
+    // JumpActionState shows the phase field value (also present in ClimbDismountState)
+    expect(screen.getAllByText("phase").length).toBeGreaterThan(0);
+  });
 });
