@@ -1,6 +1,11 @@
 import type { WorldSnapshot } from "@/core/snapshots/world-snapshot";
 import { getAtlasFrame, PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
-import { drawClimbableSurface, drawDebugBody } from "./debug-overlay";
+import {
+  drawClimbableSurface,
+  drawDebugBody,
+  drawGroundContact,
+  drawMotionTargetMarker,
+} from "./debug-overlay";
 
 export type AssetCatalog = Record<string, HTMLImageElement>;
 
@@ -19,7 +24,10 @@ export function drawWorld(
   for (const body of snapshot.bodies) {
     const sprite = assets[body.id];
     if (sprite) {
-      const atlasFrame = getAtlasFrame(body.animationState ?? "idle", elapsedMs);
+      const atlasFrame = getAtlasFrame(
+        body.animationState ?? "idle",
+        elapsedMs,
+      );
       context.drawImage(
         sprite,
         atlasFrame.sourceX,
@@ -38,12 +46,24 @@ export function drawWorld(
   }
 
   for (const pet of snapshot.pets) {
+    if (pet.contact.grounded) {
+      drawGroundContact(context, pet.position.x, pet.position.y);
+    }
+
+    if (pet.motionTarget) {
+      drawMotionTargetMarker(context, pet.motionTarget.x, pet.motionTarget.y);
+    }
+
     context.textAlign = "center";
     context.fillStyle = "#172033";
     context.font = "12px Inter, Arial, sans-serif";
     context.fillText(pet.name, pet.position.x, pet.position.y - 32);
     context.fillStyle = "#526074";
-    context.fillText(`${pet.intent} / ${pet.locomotion}`, pet.position.x, pet.position.y - 16);
+    context.fillText(
+      `${pet.intent} / ${pet.locomotion}`,
+      pet.position.x,
+      pet.position.y - 16,
+    );
 
     if (pet.speech) {
       context.fillStyle = "#ffffff";
