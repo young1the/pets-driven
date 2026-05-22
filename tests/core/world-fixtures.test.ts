@@ -411,6 +411,8 @@ describe("demo scenario", () => {
       locomotion: "walk",
       speech: null,
     });
+    expect(snapshot.pets[0].contact).toEqual({ grounded: false, climbableSurfaceId: null });
+    expect(snapshot.pets[0].motionTarget).toBeNull();
   });
 
   it("aligns pet snapshot positions with their body positions", () => {

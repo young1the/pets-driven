@@ -561,6 +561,13 @@ export function createWorld(input: WorldDefinition) {
           locomotion: getLocomotionLabel(componentStore, entity.id),
           speech: (speech as SpeechStateComponent).speech,
           position: (transform as TransformComponent).position,
+          contact: {
+            grounded: componentStore.getComponent(entity.id, "ContactState")?.grounded ?? false,
+            climbableSurfaceId:
+              componentStore.getComponent(entity.id, "ContactState")?.climbableSurfaceId ?? null,
+          },
+          motionTarget:
+            componentStore.getComponent(entity.id, "MotionTarget")?.targetPosition ?? null,
         };
       });
   }
