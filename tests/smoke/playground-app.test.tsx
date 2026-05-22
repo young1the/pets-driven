@@ -20,7 +20,9 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    expect(screen.getByRole("heading", { name: PLAYGROUND_TEXT.title })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: PLAYGROUND_TEXT.title }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: PLAYGROUND_TEXT.behaviorLabTitle }),
@@ -34,13 +36,19 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent }));
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent }),
+    );
     expect(screen.getByText(/"type": "task.started"/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }));
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }),
+    );
     expect(screen.getByText(/"type": "task.waiting"/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendCompletedEvent }));
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendCompletedEvent }),
+    );
     expect(screen.getByText(/"type": "task.completed"/)).toBeInTheDocument();
     expect(
       screen.getByText(`${PLAYGROUND_TEXT.lastStimulusPrefix} task.completed`),
@@ -68,7 +76,9 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }));
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }),
+    );
 
     const petStatus = petStatusList();
     expect(petStatus.getByText("seek")).toBeInTheDocument();
@@ -82,12 +92,16 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startWalkDemo }));
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.startWalkDemo }),
+    );
 
     const alice = petStatusList().getByText("Alice").closest("li");
     expect(alice).not.toBeNull();
     expect(within(alice as HTMLElement).getByText("walk")).toBeInTheDocument();
-    expect(within(alice as HTMLElement).getByText(PLAYGROUND_TEXT.walkingDemoSpeech)).toBeInTheDocument();
+    expect(
+      within(alice as HTMLElement).getByText(PLAYGROUND_TEXT.walkingDemoSpeech),
+    ).toBeInTheDocument();
   });
 
   it("starts visible jump and wall-climb demos from the playground controls", () => {
@@ -97,16 +111,30 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo }));
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo }),
+    );
     const aliceAfterJump = petStatusList().getByText("Alice").closest("li");
     expect(aliceAfterJump).not.toBeNull();
-    expect(within(aliceAfterJump as HTMLElement).getByText("walk")).toBeInTheDocument();
-    expect(within(aliceAfterJump as HTMLElement).getByText(PLAYGROUND_TEXT.jumpDemoSpeech)).toBeInTheDocument();
+    expect(
+      within(aliceAfterJump as HTMLElement).getByText("walk"),
+    ).toBeInTheDocument();
+    expect(
+      within(aliceAfterJump as HTMLElement).getByText(
+        PLAYGROUND_TEXT.jumpDemoSpeech,
+      ),
+    ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }));
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }),
+    );
     const aliceAfterClimb = petStatusList().getByText("Alice").closest("li");
     expect(aliceAfterClimb).not.toBeNull();
-    expect(within(aliceAfterClimb as HTMLElement).getByText(PLAYGROUND_TEXT.wallClimbDemoSpeech)).toBeInTheDocument();
+    expect(
+      within(aliceAfterClimb as HTMLElement).getByText(
+        PLAYGROUND_TEXT.wallClimbDemoSpeech,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows selected pet behavior state for behavior experiments", () => {
@@ -116,7 +144,9 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    expect(screen.getByText(PLAYGROUND_TEXT.selectedPetLabel)).toBeInTheDocument();
+    expect(
+      screen.getByText(PLAYGROUND_TEXT.selectedPetLabel),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Alice" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -149,5 +179,33 @@ describe("PlaygroundApp", () => {
     expect(screen.getAllByText("speed").length).toBeGreaterThan(0);
     // JumpActionState shows the phase field value (also present in ClimbDismountState)
     expect(screen.getAllByText("phase").length).toBeGreaterThan(0);
+  });
+
+  it("shows the action timeline section", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: PLAYGROUND_TEXT.actionTimelineTitle,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("records a locomotion change in the action timeline", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }),
+    );
+
+    expect(screen.getByTestId("action-timeline")).toBeInTheDocument();
   });
 });
