@@ -552,6 +552,7 @@ export function createWorld(input: WorldDefinition) {
       .map((entity) => {
         const [identity, agent, intent, speech, transform] =
           entity.components;
+        const contactState = componentStore.getComponent(entity.id, "ContactState");
 
         return {
           id: entity.id,
@@ -562,9 +563,8 @@ export function createWorld(input: WorldDefinition) {
           speech: (speech as SpeechStateComponent).speech,
           position: (transform as TransformComponent).position,
           contact: {
-            grounded: componentStore.getComponent(entity.id, "ContactState")?.grounded ?? false,
-            climbableSurfaceId:
-              componentStore.getComponent(entity.id, "ContactState")?.climbableSurfaceId ?? null,
+            grounded: contactState?.grounded ?? false,
+            climbableSurfaceId: contactState?.climbableSurfaceId ?? null,
           },
           motionTarget:
             componentStore.getComponent(entity.id, "MotionTarget")?.targetPosition ?? null,
