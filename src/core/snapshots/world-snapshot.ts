@@ -23,6 +23,11 @@ export type PetSnapshot = {
     x: number;
     y: number;
   };
+  contact: {
+    grounded: boolean;
+    climbableSurfaceId: string | null;
+  };
+  motionTarget: { x: number; y: number } | null;
 };
 
 export type ClimbableSurfaceSnapshot = {
