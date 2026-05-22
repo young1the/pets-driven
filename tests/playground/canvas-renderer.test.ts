@@ -71,7 +71,17 @@ describe("canvas renderer", () => {
       320,
     );
 
-    expect(context.drawImage).toHaveBeenCalledWith(image, 384, 1248, 192, 208, 52, 28, 96, 104);
+    expect(context.drawImage).toHaveBeenCalledWith(
+      image,
+      384,
+      1248,
+      192,
+      208,
+      52,
+      28,
+      96,
+      104,
+    );
   });
 
   it("draws pet names and intents from the world snapshot", () => {
@@ -174,6 +184,99 @@ describe("canvas renderer", () => {
     );
 
     expect(context.fillText).toHaveBeenCalledWith("Needs approval", 100, 72);
+  });
+
+  it("draws a ground contact indicator under a grounded pet", () => {
+    const context = {
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      rect: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      fillText: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      ellipse: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [],
+        climbableSurfaces: [],
+        pets: [
+          {
+            id: "pet-a",
+            sourceId: "agent-a",
+            name: "Alice",
+            intent: "idle",
+            locomotion: "walk",
+            speech: null,
+            position: { x: 100, y: 120 },
+            contact: { grounded: true, climbableSurfaceId: null },
+            motionTarget: null,
+          },
+        ],
+      },
+      {},
+      0,
+    );
+
+    expect(context.ellipse).toHaveBeenCalledWith(
+      100,
+      127,
+      12,
+      4,
+      0,
+      0,
+      Math.PI * 2,
+    );
+  });
+
+  it("draws a motion target marker when a pet has a motion target", () => {
+    const context = {
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      rect: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      fillText: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [],
+        climbableSurfaces: [],
+        pets: [
+          {
+            id: "pet-a",
+            sourceId: "agent-a",
+            name: "Alice",
+            intent: "idle",
+            locomotion: "walk",
+            speech: null,
+            position: { x: 100, y: 120 },
+            contact: { grounded: false, climbableSurfaceId: null },
+            motionTarget: { x: 200, y: 120 },
+          },
+        ],
+      },
+      {},
+      0,
+    );
+
+    // X marker: two crossing lines at (200, 120)
+    expect(context.moveTo).toHaveBeenCalledWith(194, 114);
+    expect(context.lineTo).toHaveBeenCalledWith(206, 126);
   });
 
   it("draws climbable surfaces as visible playground markers", () => {
