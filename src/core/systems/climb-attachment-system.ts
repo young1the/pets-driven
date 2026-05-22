@@ -1,6 +1,8 @@
 import type {
+  ClimbIntentStateComponent,
   ClimbingStateComponent,
   ContactStateComponent,
+  MotionTargetComponent,
   TransformComponent,
 } from "@/core/components/simulation-components";
 
@@ -9,6 +11,8 @@ type ClimbAttachmentEntity = {
   climbing: ClimbingStateComponent;
   contact: ContactStateComponent;
   transform: TransformComponent;
+  motion: MotionTargetComponent;
+  climbIntent?: ClimbIntentStateComponent | null;
 };
 
 type VelocityWritablePhysics = {
@@ -22,11 +26,24 @@ export function runClimbAttachmentSystem(
 ) {
   for (const entity of entities) {
     if (entity.contact.climbableSurfaceId && entity.contact.climbableSurfacePosition) {
-      entity.transform.position.x = entity.contact.climbableSurfacePosition.x;
+      const surfaceX = entity.contact.climbableSurfacePosition.x;
+      entity.transform.position.x = surfaceX;
       physics.setPosition(entity.id, {
-        x: entity.contact.climbableSurfacePosition.x,
+        x: surfaceX,
       });
       physics.setVelocity(entity.id, { x: 0 });
+
+      if (
+        entity.climbIntent &&
+        entity.climbIntent.surfaceEntityId === entity.contact.climbableSurfaceId
+      ) {
+        entity.climbIntent.phase = "attached";
+        entity.motion.targetEntityId = null;
+        entity.motion.targetPosition = {
+          x: surfaceX,
+          y: entity.climbIntent.targetY,
+        };
+      }
     }
   }
 }

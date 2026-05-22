@@ -20,6 +20,30 @@ describe("arrival behavior system", () => {
     expect(entity.motion.targetPosition).toBeNull();
   });
 
+  it("keeps approach target while a pet is trying to attach to a climb surface", () => {
+    const entity = {
+      intent: { type: "IntentState" as const, intent: "idle" as const },
+      locomotion: { type: "LocomotionState" as const, baseMode: "walk" as const },
+      transform: { type: "Transform" as const, position: { x: 124, y: 500 } },
+      motion: {
+        type: "MotionTarget" as const,
+        targetEntityId: null,
+        targetPosition: { x: 120, y: 500 },
+      },
+      climbIntent: {
+        type: "ClimbIntentState" as const,
+        phase: "approaching" as const,
+        surfaceEntityId: "alice-climb-wall",
+        targetY: 120,
+      },
+      wandersOnArrival: { type: "WandersOnArrival" as const, arrivalRadius: 16 },
+    };
+
+    runArrivalBehaviorSystem([entity], []);
+
+    expect(entity.motion.targetPosition).toEqual({ x: 120, y: 500 });
+  });
+
   it("clears position target when x is within radius even if y differs", () => {
     const entity = {
       intent: { type: "IntentState" as const, intent: "idle" as const },

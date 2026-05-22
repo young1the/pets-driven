@@ -101,9 +101,14 @@ export function PlaygroundApp() {
 
   function startWallClimbDemo() {
     scenarioRef.current.world.setComponent("pet-a", {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: { x: 120, y: 120 },
+      type: "LocomotionState",
+      baseMode: "walk",
+    });
+    scenarioRef.current.world.setComponent("pet-a", {
+      type: "ClimbIntentState",
+      phase: "approaching",
+      surfaceEntityId: "alice-climb-wall",
+      targetY: 120,
     });
     scenarioRef.current.world.setComponent("pet-a", {
       type: "SpeechState",

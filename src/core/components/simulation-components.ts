@@ -129,6 +129,18 @@ export type ClimbDismountStateComponent = {
 };
 
 /**
+ * Runtime request to climb a specific surface. Approach systems use the
+ * surface id for walking attachment, then attachment turns targetY into the
+ * actual climb MotionTarget after contact is established.
+ */
+export type ClimbIntentStateComponent = {
+  type: "ClimbIntentState";
+  phase: "approaching" | "attached";
+  surfaceEntityId: string;
+  targetY: number;
+};
+
+/**
  * Walk movement capability and tuning. WalkingState decides whether this
  * capability is currently active.
  */
@@ -282,6 +294,7 @@ export type SimulationComponent =
   | AgentBindingComponent
   | AirborneStateComponent
   | ClimbDismountStateComponent
+  | ClimbIntentStateComponent
   | ClimbableSurfaceComponent
   | ClimbingStateComponent
   | CompletionBehaviorComponent
