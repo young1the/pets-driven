@@ -304,17 +304,19 @@ function nearestClimbableSurface(
   components: ComponentStore,
   ctx: ApplyCtx,
 ): { id: string; x: number; y: number } | null {
-  let best: { id: string; x: number; y: number; dist: number } | null = null;
+  const candidates: Array<{ id: string; x: number; y: number; dist: number }> = [];
   components.query(["ClimbableSurface", "Transform"], (id, [, transform]) => {
     const dx = transform.position.x - ctx.petX;
     const dy = transform.position.y - ctx.petY;
     const dist = Math.hypot(dx, dy);
-    if (dist > 400) return;
-    if (!best || dist < best.dist) {
-      best = { id, x: transform.position.x, y: transform.position.y, dist };
+    if (dist <= 400) {
+      candidates.push({ id, x: transform.position.x, y: transform.position.y, dist });
     }
   });
-  return best ? { id: best.id, x: best.x, y: best.y } : null;
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.dist - b.dist);
+  const nearest = candidates[0];
+  return { id: nearest.id, x: nearest.x, y: nearest.y };
 }
 
 // ── BehaviorSelectionSystem (priority 4: autonomous) ─────────────────────

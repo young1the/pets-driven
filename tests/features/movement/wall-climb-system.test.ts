@@ -36,7 +36,7 @@ describe("wall climb system", () => {
   });
 
   it("stops velocity when within arrival radius of target", () => {
-    const store = makeClimber(100, 108); // 8px gap — inside 16px radius
+    const store = makeClimber(100, 108); // 8px gap, inside 16px radius
     const physics = makePhysicsMock();
     runWallClimbSystem(store, physics);
     expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 0, y: 0 });

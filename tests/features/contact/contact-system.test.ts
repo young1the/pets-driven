@@ -32,7 +32,7 @@ function makeGround() {
 describe("contact system", () => {
   it("marks entity as grounded when standing on the ground surface", () => {
     // Entity bottom = posY + 19. Ground top = 520.
-    // Condition: |entityBottom - groundTop| <= 4  ->  posY + 19 ≈ 520  ->  posY = 503
+    // Condition: |entityBottom - groundTop| <= 4  ->  posY + 19 ~= 520  ->  posY = 503
     const store = createComponentStore([makeGround(), makePet(480, 503)]);
     runContactSystem(store);
     expect(store.getComponent("pet-a", "ContactState")?.grounded).toBe(true);
@@ -53,7 +53,7 @@ describe("contact system", () => {
           { type: "ClimbableSurface" as const },
         ],
       },
-      makePet(130, 300), // 20px from wall — inside 56px radius
+      makePet(130, 300), // 20px from wall, inside 56px radius
     ]);
     runContactSystem(store);
     expect(store.getComponent("pet-a", "ContactState")?.climbableSurfaceId).toBe("wall-1");
@@ -68,7 +68,7 @@ describe("contact system", () => {
           { type: "ClimbableSurface" as const },
         ],
       },
-      makePet(100, 300), // 300px away — outside 56px radius
+      makePet(100, 300), // 300px away, outside 56px radius
     ]);
     runContactSystem(store);
     expect(store.getComponent("pet-a", "ContactState")?.climbableSurfaceId).toBeNull();

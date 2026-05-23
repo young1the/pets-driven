@@ -45,7 +45,7 @@ describe("walk system", () => {
   });
 
   it("produces no force when already within arrival radius", () => {
-    const store = makeWalker(100, 108, true); // 8px gap — inside the 16px radius
+    const store = makeWalker(100, 108, true); // 8px gap, inside the 16px radius
     const forceGroups: Force[][] = [];
     runWalkSystem(store, forceGroups);
     expect(forceGroups).toHaveLength(0);
