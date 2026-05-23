@@ -3,11 +3,11 @@
  * in what order they are dispatched per simulation tick.
  *
  * Phase ordering contract:
- *  PRE_UPDATE  → sync external state (physics positions, contact detection)
- *  BEHAVIOR    → priority-ordered behavior decisions (claim/skip model)
- *  UPDATE      → locomotion state transitions and motion target resolution
- *  POST_UPDATE → force accumulation (walk, jump, flight, steering)
- *  SIMULATE    → physics integration and final position sync
+ *  PRE_UPDATE  : sync external state (physics positions, contact detection)
+ *  BEHAVIOR    : priority-ordered behavior decisions (claim/skip model)
+ *  UPDATE      : locomotion state transitions and motion target resolution
+ *  POST_UPDATE : force accumulation (walk, jump, flight, steering)
+ *  SIMULATE    : physics integration and final position sync
  */
 
 export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
@@ -19,10 +19,10 @@ export const SYSTEM_PHASES: Record<PhaseName, string[]> = {
   ],
 
   BEHAVIOR: [
-    "UserInteractionBehaviorSystem", // 1순위: user touch / pointer events
-    "AgentEventBehaviorSystem",       // 2순위: external agent stimuli
-    "CollisionBehaviorSystem",        // 3순위: entity overlap avoidance
-    "AutonomousBehaviorSystem",       // 4순위: idle speech and wandering
+    "UserInteractionBehaviorSystem", // priority 1: user touch / pointer events
+    "AgentEventBehaviorSystem",       // priority 2: external agent stimuli
+    "CollisionBehaviorSystem",        // priority 3: entity overlap avoidance
+    "AutonomousBehaviorSystem",       // priority 4: idle speech and wandering
   ],
 
   UPDATE: [
