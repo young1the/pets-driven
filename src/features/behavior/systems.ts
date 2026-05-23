@@ -212,7 +212,13 @@ export function runArrivalBehaviorSystem(components: ComponentStore): void {
         if (intent.intent !== "seek") return;
         const anchor = anchors.find((a) => a.id === motion.targetEntityId);
         if (!anchor) return;
-        const dist = Math.hypot(anchor.x - transform.position.x, anchor.y - transform.position.y);
+        // Flying pets can close the gap in both axes; walking pets are locked to
+        // the ground and can only reduce horizontal distance — use |dx| so arrival
+        // fires as soon as the walk system stops (they share the same threshold).
+        const dx = anchor.x - transform.position.x;
+        const dy = anchor.y - transform.position.y;
+        const isFlying = !!components.getComponent(id, "FlyingState");
+        const dist = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
         if (dist > wandersOnArrival.arrivalRadius) return;
         intent.intent = "idle";
         motion.targetEntityId = null;

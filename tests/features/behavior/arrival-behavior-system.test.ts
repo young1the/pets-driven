@@ -95,6 +95,35 @@ describe("arrival behavior system", () => {
     expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
   });
 
+  it("switches seeking walk pet to idle even when anchor is at a different y", () => {
+    // Pet has settled on the ground (y=521); anchor sits above (y=500).
+    // 2D dist = hypot(8, 21) ≈ 22.4 which exceeds arrivalRadius(16), but |dx|=8
+    // which is within it — walking arrival must use horizontal distance only.
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "IntentState", intent: "seek" as const },
+          { type: "Transform", position: { x: 108, y: 521 } },
+          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 100, y: 500 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+        ],
+      },
+      {
+        id: "user-anchor",
+        components: [
+          { type: "UserAnchor" },
+          { type: "Transform", position: { x: 100, y: 500 } },
+        ],
+      },
+    ]);
+
+    runArrivalBehaviorSystem(store);
+
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
+  });
+
   it("does not switch to idle when seeking pet is far from user anchor", () => {
     const store = createComponentStore([
       {
