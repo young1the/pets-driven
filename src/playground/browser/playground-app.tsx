@@ -43,6 +43,19 @@ function diffSnapshot(
         label: `intent: ${prevPet.intent} -> ${pet.intent}`,
       });
     }
+    const prevDecision = prevPet.decision;
+    const nextDecision = pet.decision;
+    const decidedChanged =
+      prevDecision?.decidedAt !== nextDecision?.decidedAt ||
+      prevDecision?.reason !== nextDecision?.reason ||
+      prevDecision?.source !== nextDecision?.source;
+    if (nextDecision && decidedChanged) {
+      entries.push({
+        t,
+        petName: pet.name,
+        label: `behavior: ${nextDecision.source}/${nextDecision.reason}`,
+      });
+    }
   }
   return entries;
 }
