@@ -181,6 +181,11 @@ export function runMotionTargetSystem(
       return;
     }
 
+    // BehaviorPreference pets get their targets from BehaviorSelectionSystem.
+    // MotionTargetSystem must not assign random targets for them, otherwise
+    // BehaviorSelectionSystem would never see an empty target to trigger on.
+    if (components.getComponent(_id, "BehaviorPreference")) return;
+
     if (!motion.targetPosition) {
       motion.targetEntityId = null;
       const margin = 48;

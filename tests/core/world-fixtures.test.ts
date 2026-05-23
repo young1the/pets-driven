@@ -25,6 +25,7 @@ describe("demo scenario", () => {
       "UserInteractionBehaviorSystem",
       "AgentEventBehaviorSystem",
       "CollisionBehaviorSystem",
+      "BehaviorSelectionSystem",
       "AutonomousBehaviorSystem",
       // UPDATE
       "LocomotionModeSystem",
@@ -513,17 +514,19 @@ describe("demo scenario", () => {
       summary: "Needs approval",
     });
 
-    scenario.world.step(16);
-    scenario.world.step(16);
+    scenario.world.step(16);  // agent-event claim set, seek target assigned
+    scenario.world.step(16);  // arrival: intent -> idle, entity target cleared
 
     expect(scenario.world.getComponent("pet-d", "IntentState")).toEqual({
       type: "IntentState",
       intent: "idle",
     });
-    const motion = scenario.world.getComponent("pet-d", "MotionTarget");
-    expect(motion?.targetEntityId).toBeNull();
-    expect(motion?.targetPosition).not.toBeNull();
-    expect(motion?.targetPosition).not.toEqual(userAnchor);
+    const motionAfterArrival = scenario.world.getComponent("pet-d", "MotionTarget");
+    expect(motionAfterArrival?.targetEntityId).toBeNull();
+
+    // Dana (reserved, shyness=0.75) may choose idle-stay or wander; either way she
+    // must no longer be targeting the user anchor entity.
+    expect(motionAfterArrival?.targetEntityId).toBeNull();
   });
 
   it("does not plan global avoidance waypoints when another pet blocks the target path", () => {
@@ -551,6 +554,10 @@ describe("demo scenario", () => {
       targetPosition: { x: 600, y: 500 },
     });
 
+    // Step 1: ArrivalBehaviorSystem detects that Alice is already at (600, 500) and
+    // clears the target. BehaviorSelectionSystem picks a new behavior on the NEXT pass.
+    scenario.world.step(16);
+    // Step 2: BehaviorSelectionSystem fires and commits a new motion target.
     scenario.world.step(16);
 
     const motion = scenario.world.getComponent("pet-a", "MotionTarget");
