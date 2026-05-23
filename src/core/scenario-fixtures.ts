@@ -49,6 +49,14 @@ function createFixturePet(input: {
         shape: "rectangle" as const,
         ...DEFAULT_PET_BODY_SIZE,
       },
+      // Default preference — per-pet entries in input.components override this.
+      {
+        type: "BehaviorPreference" as const,
+        curiosity: 0.5,
+        sociability: 0.5,
+        playfulness: 0.5,
+        shyness: 0.2,
+      },
       ...input.components,
     ],
   };
@@ -122,6 +130,8 @@ export function createDemoScenario(options?: {
           { type: "CanWallClimb", speed: 1.1 },
           { type: "ClimbDismountState", phase: "ready", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
+          // playful: likes exploration and action
+          { type: "BehaviorPreference", curiosity: 0.7, sociability: 0.4, playfulness: 0.9, shyness: 0.1 },
         ],
       }),
       createFixturePet({
@@ -136,6 +146,8 @@ export function createDemoScenario(options?: {
           { type: "CanJump", impulse: 0.009 },
           { type: "JumpActionState", phase: "requested", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
+          // attentive: seeks user frequently
+          { type: "BehaviorPreference", curiosity: 0.3, sociability: 0.85, playfulness: 0.3, shyness: 0.2 },
         ],
       }),
       createFixturePet({
@@ -149,6 +161,8 @@ export function createDemoScenario(options?: {
           { type: "CanWalk", speed: 0.01 },
           { type: "CanWallClimb", speed: 1.1 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
+          // playful + climb tendency
+          { type: "BehaviorPreference", curiosity: 0.7, sociability: 0.4, playfulness: 0.9, shyness: 0.1 },
         ],
       }),
       createFixturePet({
@@ -161,6 +175,8 @@ export function createDemoScenario(options?: {
           { type: "FlyingState" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
+          // reserved: prefers to hover near and stay
+          { type: "BehaviorPreference", curiosity: 0.2, sociability: 0.2, playfulness: 0.15, shyness: 0.75 },
         ],
       }),
     ],

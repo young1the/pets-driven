@@ -14,5 +14,12 @@ export function buildPersonalityComponents(personality: PetPersonality): Simulat
     components.push({ type: "IdleConversation", idleAfterMs: personality.idleConversationMs });
   }
   components.push({ type: "CompletionBehavior", intentAfterCompletion: personality.completionIntent });
+  components.push({
+    type: "BehaviorPreference",
+    curiosity: personality.curiosity,
+    sociability: personality.sociability,
+    playfulness: personality.playfulness,
+    shyness: personality.shyness,
+  });
   return components;
 }

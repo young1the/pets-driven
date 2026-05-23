@@ -34,6 +34,10 @@ describe("pet contracts", () => {
       seekSpeed: 0.002,
       idleConversationMs: 9000,
       completionIntent: "seek",
+      curiosity: 0.7,
+      sociability: 0.4,
+      playfulness: 0.9,
+      shyness: 0.1,
     });
   });
 
