@@ -3,3 +3,4 @@ dist/
 test-results/
 dev-server*.log
 .DS_Store
+.claude/settings.local.json
