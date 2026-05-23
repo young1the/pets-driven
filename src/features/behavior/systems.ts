@@ -12,6 +12,16 @@ import {
 
 const COLLISION_REACTION_DISTANCE = 96;
 const COLLISION_TARGET_MARGIN = 48;
+const USER_PROXIMITY_RADIUS = 96;
+
+const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
+  "wander-near": 750,
+  "wander-far": 750,
+  "seek-user": 4_000,
+  "request-jump": 2_500,
+  "request-climb": 6_000,
+  "idle-stay": 1_500,
+};
 
 // Duration of each claim in milliseconds
 const CLAIM_DURATION_MS: Record<BehaviorDecisionSource, number> = {
@@ -33,6 +43,18 @@ function isClaimed(
   return BEHAVIOR_PRIORITY[existing.source] < BEHAVIOR_PRIORITY[source];
 }
 
+function isClaimedBySameOrHigherPriority(
+  components: ComponentStore,
+  id: string,
+  source: BehaviorDecisionSource,
+  now: number,
+): boolean {
+  const existing = components.getComponent(id, "BehaviorDecisionState");
+  if (!existing) return false;
+  if (existing.expiresAt <= now) return false;
+  return BEHAVIOR_PRIORITY[existing.source] <= BEHAVIOR_PRIORITY[source];
+}
+
 function claim(
   components: ComponentStore,
   id: string,
@@ -40,12 +62,26 @@ function claim(
   now: number,
   reason: string,
 ): void {
+  const existing = components.getComponent(id, "BehaviorDecisionState");
+  // When a higher-priority (non-autonomous) source overwrites an autonomous
+  // claim, carry the autonomous history forward so repeat-cooldowns survive.
+  const lastAutonomousReason =
+    source === "autonomous" ? reason
+    : existing?.source === "autonomous" ? existing.reason
+    : (existing?.lastAutonomousReason ?? null);
+  const lastAutonomousAt =
+    source === "autonomous" ? now
+    : existing?.source === "autonomous" ? existing.decidedAt
+    : (existing?.lastAutonomousAt ?? null);
+
   components.setComponent(id, {
     type: "BehaviorDecisionState",
     source,
     decidedAt: now,
     expiresAt: now + CLAIM_DURATION_MS[source],
     reason,
+    lastAutonomousReason,
+    lastAutonomousAt,
   });
 }
 
@@ -136,7 +172,7 @@ export function runCollisionBehaviorSystem(
   );
 
   for (const entity of entities) {
-    if (isClaimed(components, entity.id, "collision", now)) continue;
+    if (isClaimedBySameOrHigherPriority(components, entity.id, "collision", now)) continue;
 
     const collision = entities.find(
       (c) =>
@@ -263,6 +299,40 @@ type Candidate = {
   apply(ctx: ApplyCtx): void;
 };
 
+function pushCandidate(
+  candidates: Candidate[],
+  components: ComponentStore,
+  id: string,
+  now: number,
+  candidate: Candidate,
+): void {
+  if (isAutonomousRepeatCoolingDown(components, id, candidate.reason, now)) return;
+  candidates.push(candidate);
+}
+
+function isAutonomousRepeatCoolingDown(
+  components: ComponentStore,
+  id: string,
+  reason: string,
+  now: number,
+): boolean {
+  const decision = components.getComponent(id, "BehaviorDecisionState");
+  if (!decision) return false;
+
+  // Use the most recent autonomous decision, whether it is the current claim
+  // (source === "autonomous") or was carried over when a higher-priority claim
+  // (collision, agent-event) overwrote it.
+  const lastReason =
+    decision.source === "autonomous" ? decision.reason : decision.lastAutonomousReason;
+  const lastAt =
+    decision.source === "autonomous" ? decision.decidedAt : decision.lastAutonomousAt;
+
+  if (lastReason !== reason || lastAt == null) return false;
+
+  const cooldownMs = AUTONOMOUS_REPEAT_COOLDOWN_MS[reason] ?? 0;
+  return now - lastAt < cooldownMs;
+}
+
 function scoreWanderNear(pref: BehaviorPreferenceComponent): number {
   return 0.3 + pref.curiosity * 0.3 + pref.shyness * 0.4;
 }
@@ -305,6 +375,17 @@ function pickWanderPosition(
 
 function setIntent(ctx: ApplyCtx, intent: PetIntent): void {
   ctx.components.setComponent(ctx.id, { type: "IntentState", intent });
+}
+
+function isNearUserAnchor(ctx: ApplyCtx): boolean {
+  if (!ctx.userAnchor) return false;
+
+  const dx = ctx.userAnchor.x - ctx.petX;
+  const dy = ctx.userAnchor.y - ctx.petY;
+  const isFlying = !!ctx.components.getComponent(ctx.id, "FlyingState");
+  const distance = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
+
+  return distance <= USER_PROXIMITY_RADIUS;
 }
 
 function nearestClimbableSurface(
@@ -376,7 +457,7 @@ export function runBehaviorSelectionSystem(
 
       const candidates: Candidate[] = [];
 
-      candidates.push({
+      pushCandidate(candidates, components, id, now, {
         reason: "wander-near",
         score: scoreWanderNear(pref) + random.next() * 0.05,
         apply: (c) => {
@@ -389,7 +470,7 @@ export function runBehaviorSelectionSystem(
         },
       });
 
-      candidates.push({
+      pushCandidate(candidates, components, id, now, {
         reason: "wander-far",
         score: scoreWanderFar(pref) + random.next() * 0.05,
         apply: (c) => {
@@ -402,8 +483,8 @@ export function runBehaviorSelectionSystem(
         },
       });
 
-      if (userAnchor) {
-        candidates.push({
+      if (userAnchor && !isNearUserAnchor(ctx)) {
+        pushCandidate(candidates, components, id, now, {
           reason: "seek-user",
           score: scoreSeekUser(pref) + random.next() * 0.05,
           apply: (c) => {
@@ -420,8 +501,9 @@ export function runBehaviorSelectionSystem(
 
       const canJump = components.getComponent(id, "CanJump");
       const jumpState = components.getComponent(id, "JumpActionState");
-      if (canJump && jumpState?.phase === "ready") {
-        candidates.push({
+      const contact = components.getComponent(id, "ContactState");
+      if (canJump && jumpState?.phase === "ready" && (!contact || contact.grounded)) {
+        pushCandidate(candidates, components, id, now, {
           reason: "request-jump",
           score: scoreJump(pref) + random.next() * 0.05,
           apply: (c) => {
@@ -437,10 +519,12 @@ export function runBehaviorSelectionSystem(
       }
 
       const canClimb = components.getComponent(id, "CanWallClimb");
-      if (canClimb) {
+      const climbing = components.getComponent(id, "ClimbingState");
+      const climbDismount = components.getComponent(id, "ClimbDismountState");
+      if (canClimb && !climbing && (!climbDismount || climbDismount.phase === "ready")) {
         const surface = nearestClimbableSurface(components, ctx);
         if (surface) {
-          candidates.push({
+          pushCandidate(candidates, components, id, now, {
             reason: "request-climb",
             score: scoreClimb(pref) + random.next() * 0.05,
             apply: (c) => {
@@ -456,7 +540,7 @@ export function runBehaviorSelectionSystem(
         }
       }
 
-      candidates.push({
+      pushCandidate(candidates, components, id, now, {
         reason: "idle-stay",
         score: scoreIdleStay(pref) + random.next() * 0.05,
         apply: () => {
@@ -464,6 +548,7 @@ export function runBehaviorSelectionSystem(
         },
       });
 
+      if (candidates.length === 0) return;
       const winner = candidates.reduce((best, c) => (c.score > best.score ? c : best));
       winner.apply(ctx);
       claim(components, id, "autonomous", now, winner.reason);

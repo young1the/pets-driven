@@ -60,6 +60,8 @@ describe("collision behavior system", () => {
             decidedAt: 900,
             expiresAt: 6000,
             reason: "task.started",
+            lastAutonomousReason: null,
+            lastAutonomousAt: null,
           },
         ],
       },
@@ -71,6 +73,26 @@ describe("collision behavior system", () => {
     // pet-a has an agent-event claim (higher priority than collision) — should not be overwritten
     expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("agent-event");
     expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBe("user-anchor");
+  });
+
+  it("does not refresh an active collision claim every frame while overlap persists", () => {
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      makePet("pet-a", 100, "idle"),
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    const firstDecision = store.getComponent("pet-a", "BehaviorDecisionState");
+    const firstTarget = store.getComponent("pet-a", "MotionTarget")?.targetPosition;
+    expect(firstDecision?.source).toBe("collision");
+
+    clock.advanceBy(16);
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toEqual(firstDecision);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(firstTarget);
   });
 
   it("overwrites an expired claim", () => {
@@ -89,6 +111,8 @@ describe("collision behavior system", () => {
             decidedAt: 900,
             expiresAt: 5000,
             reason: "task.started",
+            lastAutonomousReason: null,
+            lastAutonomousAt: null,
           },
         ],
       },

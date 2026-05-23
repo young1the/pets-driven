@@ -35,6 +35,14 @@ export type BehaviorDecisionStateComponent = {
   decidedAt: number;
   expiresAt: number;
   reason: string;
+  /**
+   * Carried forward from the previous autonomous decision when a
+   * higher-priority claim (collision, agent-event) overwrites this component.
+   * Used by isAutonomousRepeatCoolingDown so that repeat-cooldowns survive
+   * collision and agent-event claims.
+   */
+  lastAutonomousReason: string | null;
+  lastAutonomousAt: number | null;
 };
 
 /** Numeric priority — lower value wins. */

@@ -76,6 +76,56 @@ describe("BehaviorSelectionSystem", () => {
     expect(claim?.reason).toBe("seek-user");
   });
 
+  it("does not pick seek-user while already close to the user anchor", () => {
+    const store = makeStore({ sociability: 0.95, shyness: 0.05 });
+    store.setComponent("pet", {
+      type: "Transform",
+      position: { x: 492, y: 500 },
+    });
+
+    runBehaviorSelectionSystem(
+      store,
+      createManualClock(0),
+      createSeededRandom(1),
+      { width: 960, height: 540 },
+    );
+
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).not.toBe("seek-user");
+  });
+
+  it("does not repeat the same autonomous behavior immediately after its claim expires", () => {
+    const store = makeStore({ sociability: 0.95, shyness: 0.05 });
+    const clock = createManualClock(0);
+
+    runBehaviorSelectionSystem(
+      store,
+      clock,
+      createSeededRandom(1),
+      { width: 960, height: 540 },
+    );
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("seek-user");
+
+    store.setComponent("pet", {
+      type: "IntentState",
+      intent: "idle",
+    });
+    store.setComponent("pet", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    clock.advanceBy(600);
+
+    runBehaviorSelectionSystem(
+      store,
+      clock,
+      createSeededRandom(1),
+      { width: 960, height: 540 },
+    );
+
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).not.toBe("seek-user");
+  });
+
   it("picks wander-far when curiosity dominates", () => {
     const store = makeStore({
       curiosity: 0.95,
@@ -131,6 +181,8 @@ describe("BehaviorSelectionSystem", () => {
       decidedAt: 0,
       expiresAt: 10_000,
       reason: "task.started",
+      lastAutonomousReason: null,
+      lastAutonomousAt: null,
     });
 
     runBehaviorSelectionSystem(
@@ -192,5 +244,20 @@ describe("BehaviorSelectionSystem (integration via world.step)", () => {
       "request-climb",
       "idle-stay",
     ]).toContain(claim?.reason);
+  });
+
+  it("does not leave Charlie pinned on the completed climb target", () => {
+    const { world, clock } = createDemoScenario();
+
+    for (let index = 0; index < 160; index += 1) {
+      clock.advanceBy(16);
+      world.step(16);
+    }
+
+    const motion = world.getComponent("pet-c", "MotionTarget");
+    const decision = world.getComponent("pet-c", "BehaviorDecisionState");
+
+    expect(motion?.targetPosition).not.toEqual({ x: 280, y: 120 });
+    expect(decision?.reason).not.toBe("request-climb");
   });
 });
