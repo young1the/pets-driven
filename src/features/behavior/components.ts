@@ -44,3 +44,19 @@ export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   "collision": 3,
   "autonomous": 4,
 };
+
+/**
+ * Personality weights consumed by BehaviorSelectionSystem.
+ * Each axis is 0..1; values are tendencies, not absolutes.
+ */
+export type BehaviorPreferenceComponent = {
+  type: "BehaviorPreference";
+  /** Tendency for exploration — boosts wander-far. */
+  curiosity: number;
+  /** Tendency to seek the user anchor. */
+  sociability: number;
+  /** Tendency for action behaviors (jump, climb). */
+  playfulness: number;
+  /** Tendency to stay near or retreat. */
+  shyness: number;
+};
