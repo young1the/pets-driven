@@ -53,7 +53,7 @@ export function runUserInteractionBehaviorSystem(
   _clock: Clock,
 ): void {}
 
-// 2?�위: Agent event reactions (task.started, task.waiting, etc.)
+// Priority 2: Agent event reactions (task.started, task.waiting, etc.)
 export function runAgentEventBehaviorSystem(
   components: ComponentStore,
   stimuli: Stimulus[],
