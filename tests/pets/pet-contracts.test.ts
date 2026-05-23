@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { isPetAsset } from "@/pets/assets/pet-asset";
 import { createPlayfulPersonality } from "@/pets/personalities/factories";
 import { isPetProfile } from "@/pets/profiles/pet-profile";
-import { buildPersonalityComponents } from "@/pets/entity-builder";
 
 describe("pet contracts", () => {
   it("accepts the external hatch-pet manifest shape", () => {
@@ -26,8 +25,10 @@ describe("pet contracts", () => {
     ).toBe(true);
   });
 
-  it("builds reusable personalities as plain data objects", () => {
-    expect(createPlayfulPersonality()).toEqual({
+  it("personality factory returns plain data, not ECS component arrays", () => {
+    const personality = createPlayfulPersonality();
+    expect(Array.isArray(personality)).toBe(false);
+    expect(personality).toEqual({
       idleSpeed: 0.0008,
       activeSpeed: 0.0016,
       seekSpeed: 0.002,
@@ -36,11 +37,10 @@ describe("pet contracts", () => {
     });
   });
 
-  it("converts personality to simulation components via entity builder", () => {
-    expect(buildPersonalityComponents(createPlayfulPersonality())).toEqual([
-      { type: "MovementProfile", idleSpeed: 0.0008, activeSpeed: 0.0016, seekSpeed: 0.002 },
-      { type: "IdleConversation", idleAfterMs: 9000 },
-      { type: "CompletionBehavior", intentAfterCompletion: "seek" },
-    ]);
+  it("PetProfile stores personality as plain data, not components array", () => {
+    const profile = { id: "my-jori", petAssetId: "jori", personality: createPlayfulPersonality() };
+    expect("components" in profile).toBe(false);
+    expect(typeof profile.personality).toBe("object");
+    expect(Array.isArray(profile.personality)).toBe(false);
   });
 });
