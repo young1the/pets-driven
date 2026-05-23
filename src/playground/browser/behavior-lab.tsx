@@ -6,6 +6,8 @@ import type { PetSnapshot } from "@/core/world-snapshot";
 import { PLAYGROUND_TEXT } from "./playground-text";
 
 const INSPECTED_COMPONENTS: SimulationComponentType[] = [
+  "BehaviorPreference",
+  "BehaviorDecisionState",
   "IdleConversation",
   "WalkingState",
   "ClimbingState",

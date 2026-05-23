@@ -111,6 +111,7 @@ export function createWorld(input: WorldDefinition) {
       .map((entity) => {
         const [identity, agent, intent, speech, transform] = entity.components;
         const contactState = componentStore.getComponent(entity.id, "ContactState");
+        const decisionState = componentStore.getComponent(entity.id, "BehaviorDecisionState");
         return {
           id: entity.id,
           sourceId: agent.sourceId,
@@ -125,6 +126,9 @@ export function createWorld(input: WorldDefinition) {
           },
           motionTarget:
             componentStore.getComponent(entity.id, "MotionTarget")?.targetPosition ?? null,
+          decision: decisionState
+            ? { source: decisionState.source, reason: decisionState.reason, decidedAt: decisionState.decidedAt }
+            : null,
         };
       });
   }

@@ -28,6 +28,8 @@ export type PetSnapshot = {
     climbableSurfaceId: string | null;
   };
   motionTarget: { x: number; y: number } | null;
+  /** Current behavior decision claim, or null if no active claim. */
+  decision: { source: string; reason: string; decidedAt: number } | null;
 };
 
 export type ClimbableSurfaceSnapshot = {

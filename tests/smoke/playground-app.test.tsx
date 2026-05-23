@@ -232,6 +232,45 @@ describe("PlaygroundApp", () => {
     ).toBeInTheDocument();
   });
 
+  it("logs behavior selection entries into the action timeline", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {
+        beginPath: vi.fn(),
+        clearRect: vi.fn(),
+        ellipse: vi.fn(),
+        fill: vi.fn(),
+        fillRect: vi.fn(),
+        fillText: vi.fn(),
+        lineTo: vi.fn(),
+        moveTo: vi.fn(),
+        rect: vi.fn(),
+        stroke: vi.fn(),
+        strokeRect: vi.fn(),
+      } as unknown as CanvasRenderingContext2D,
+    );
+    render(<PlaygroundApp />);
+
+    // Pause auto-play so frame timing is deterministic.
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
+    );
+
+    // Frame 1: BehaviorSelectionSystem fires for all pets (all idle, no targets, no claims).
+    // prevSnapshotRef is established with autonomous decisions present.
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),
+    );
+
+    // A task.waiting event causes Alice's claim to switch from autonomous -> agent-event.
+    // diffSnapshot detects source/reason change and emits a "behavior:" timeline entry.
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }),
+    );
+
+    const timeline = screen.getByTestId("action-timeline");
+    expect(timeline.textContent).toMatch(/behavior:/);
+  });
+
   it("records a locomotion change in the action timeline", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,
