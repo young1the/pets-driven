@@ -2,9 +2,12 @@ import type { ComponentStore } from "@/core/component-store";
 import type { Vector } from "@/features/physics/components";
 import type { Stimulus } from "@/features/stimulus/stimulus";
 import type { Clock } from "@/shared/time/manual-clock";
+import type { RandomSource } from "@/shared/random/seeded-random";
 import {
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionSource,
+  type BehaviorPreferenceComponent,
+  type PetIntent,
 } from "./components";
 
 const COLLISION_REACTION_DISTANCE = 96;
@@ -231,6 +234,226 @@ export function runArrivalBehaviorSystem(components: ComponentStore): void {
       if (delta > wandersOnArrival.arrivalRadius) return;
       motion.targetEntityId = null;
       motion.targetPosition = null;
+    },
+  );
+}
+
+// ── BehaviorSelectionSystem helpers ───────────────────────────────────────
+
+type ApplyCtx = {
+  components: ComponentStore;
+  id: string;
+  petX: number;
+  petY: number;
+  bounds: { width: number; height: number };
+  random: RandomSource;
+  userAnchor: { id: string; x: number; y: number } | null;
+};
+
+type Candidate = {
+  reason: string;
+  score: number;
+  apply(ctx: ApplyCtx): void;
+};
+
+function scoreWanderNear(pref: BehaviorPreferenceComponent): number {
+  return 0.3 + pref.curiosity * 0.3 + pref.shyness * 0.4;
+}
+
+function scoreWanderFar(pref: BehaviorPreferenceComponent): number {
+  return 0.3 + pref.curiosity * 0.7;
+}
+
+function scoreSeekUser(pref: BehaviorPreferenceComponent): number {
+  return 0.3 + pref.sociability * 0.9 - pref.shyness * 0.4;
+}
+
+function scoreJump(pref: BehaviorPreferenceComponent): number {
+  return 0.2 + pref.playfulness * 0.6;
+}
+
+function scoreClimb(pref: BehaviorPreferenceComponent): number {
+  return 0.2 + pref.playfulness * 0.7 + pref.curiosity * 0.2;
+}
+
+function scoreIdleStay(pref: BehaviorPreferenceComponent): number {
+  return 0.25 + pref.shyness * 0.5;
+}
+
+function pickWanderPosition(
+  ctx: ApplyCtx,
+  range: "near" | "far",
+): { x: number; y: number } {
+  const margin = 48;
+  const angle = ctx.random.next() * Math.PI * 2;
+  const radius =
+    range === "near"
+      ? 60 + ctx.random.next() * 80   // 60–140 px
+      : 200 + ctx.random.next() * 200; // 200–400 px
+  return {
+    x: clamp(ctx.petX + Math.cos(angle) * radius, margin, ctx.bounds.width - margin),
+    y: clamp(ctx.petY + Math.sin(angle) * radius, margin, ctx.bounds.height - margin),
+  };
+}
+
+function setIntent(ctx: ApplyCtx, intent: PetIntent): void {
+  ctx.components.setComponent(ctx.id, { type: "IntentState", intent });
+}
+
+function nearestClimbableSurface(
+  components: ComponentStore,
+  ctx: ApplyCtx,
+): { id: string; x: number; y: number } | null {
+  let best: { id: string; x: number; y: number; dist: number } | null = null;
+  components.query(["ClimbableSurface", "Transform"], (id, [, transform]) => {
+    const dx = transform.position.x - ctx.petX;
+    const dy = transform.position.y - ctx.petY;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 400) return;
+    if (!best || dist < best.dist) {
+      best = { id, x: transform.position.x, y: transform.position.y, dist };
+    }
+  });
+  return best ? { id: best.id, x: best.x, y: best.y } : null;
+}
+
+// ── BehaviorSelectionSystem (priority 4: autonomous) ─────────────────────
+//
+// Trigger: no active claim AND intent !== "seek" AND no motion target.
+// Scores all candidates using BehaviorPreference weights + seeded random jitter,
+// then commits the winner via IntentState / MotionTarget / JumpActionState /
+// ClimbIntentState and claims the entity with source="autonomous".
+
+export function runBehaviorSelectionSystem(
+  components: ComponentStore,
+  clock: Clock,
+  random: RandomSource,
+  bounds: { width: number; height: number },
+): void {
+  const now = clock.now();
+
+  // Resolve user anchor once for the whole pass.
+  let userAnchor: { id: string; x: number; y: number } | null = null;
+  components.query(["UserAnchor", "Transform"], (id, [, transform]) => {
+    if (!userAnchor) {
+      userAnchor = { id, x: transform.position.x, y: transform.position.y };
+    }
+  });
+
+  components.query(
+    ["IntentState", "MotionTarget", "Transform", "BehaviorPreference"],
+    (id, [intent, motion, transform, pref]) => {
+      // Trigger conditions
+      if (intent.intent === "seek") return;
+      if (motion.targetPosition !== null) return;
+      if (motion.targetEntityId !== null) return;
+
+      // Block if any active claim exists (same- and higher-priority guard).
+      const existingClaim = components.getComponent(id, "BehaviorDecisionState");
+      if (existingClaim && existingClaim.expiresAt > now) return;
+
+      const ctx: ApplyCtx = {
+        components,
+        id,
+        petX: transform.position.x,
+        petY: transform.position.y,
+        bounds,
+        random,
+        userAnchor,
+      };
+
+      const candidates: Candidate[] = [];
+
+      candidates.push({
+        reason: "wander-near",
+        score: scoreWanderNear(pref) + random.next() * 0.05,
+        apply: (c) => {
+          c.components.setComponent(c.id, {
+            type: "MotionTarget",
+            targetEntityId: null,
+            targetPosition: pickWanderPosition(c, "near"),
+          });
+          setIntent(c, "active");
+        },
+      });
+
+      candidates.push({
+        reason: "wander-far",
+        score: scoreWanderFar(pref) + random.next() * 0.05,
+        apply: (c) => {
+          c.components.setComponent(c.id, {
+            type: "MotionTarget",
+            targetEntityId: null,
+            targetPosition: pickWanderPosition(c, "far"),
+          });
+          setIntent(c, "active");
+        },
+      });
+
+      if (userAnchor) {
+        candidates.push({
+          reason: "seek-user",
+          score: scoreSeekUser(pref) + random.next() * 0.05,
+          apply: (c) => {
+            if (!c.userAnchor) return;
+            c.components.setComponent(c.id, {
+              type: "MotionTarget",
+              targetEntityId: c.userAnchor.id,
+              targetPosition: { x: c.userAnchor.x, y: c.userAnchor.y },
+            });
+            setIntent(c, "seek");
+          },
+        });
+      }
+
+      const canJump = components.getComponent(id, "CanJump");
+      const jumpState = components.getComponent(id, "JumpActionState");
+      if (canJump && jumpState?.phase === "ready") {
+        candidates.push({
+          reason: "request-jump",
+          score: scoreJump(pref) + random.next() * 0.05,
+          apply: (c) => {
+            c.components.setComponent(c.id, {
+              type: "JumpActionState",
+              phase: "requested",
+              cooldownMs: jumpState.cooldownMs,
+            });
+            setIntent(c, "active");
+          },
+        });
+      }
+
+      const canClimb = components.getComponent(id, "CanWallClimb");
+      if (canClimb) {
+        const surface = nearestClimbableSurface(components, ctx);
+        if (surface) {
+          candidates.push({
+            reason: "request-climb",
+            score: scoreClimb(pref) + random.next() * 0.05,
+            apply: (c) => {
+              c.components.setComponent(c.id, {
+                type: "ClimbIntentState",
+                phase: "approaching",
+                surfaceEntityId: surface.id,
+                targetY: surface.y - 80,
+              });
+              setIntent(c, "active");
+            },
+          });
+        }
+      }
+
+      candidates.push({
+        reason: "idle-stay",
+        score: scoreIdleStay(pref) + random.next() * 0.05,
+        apply: () => {
+          // Intentional no-op: intent stays idle, target stays null.
+        },
+      });
+
+      const winner = candidates.reduce((best, c) => (c.score > best.score ? c : best));
+      winner.apply(ctx);
+      claim(components, id, "autonomous", now, winner.reason);
     },
   );
 }
