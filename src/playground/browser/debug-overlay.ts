@@ -1,7 +1,7 @@
 import type {
   BodySnapshot,
   ClimbableSurfaceSnapshot,
-} from "@/core/snapshots/world-snapshot";
+} from "@/core/world-snapshot";
 
 const CLIMBABLE_SURFACE_LABEL = "CLIMB SPACE";
 const CLIMBABLE_SURFACE_MARKER_WIDTH = 24;
