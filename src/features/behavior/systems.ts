@@ -46,14 +46,14 @@ function claim(
   });
 }
 
-// 1?œìœ„: User interaction (touch, click, drag).
-// No external input mechanism yet ??placeholder for future pointer events.
+// Priority 1: User interaction (touch, click, drag).
+// No external input mechanism yet â€” placeholder for future pointer events.
 export function runUserInteractionBehaviorSystem(
   _components: ComponentStore,
   _clock: Clock,
 ): void {}
 
-// 2?œìœ„: Agent event reactions (task.started, task.waiting, etc.)
+// 2?ï¿½ìœ„: Agent event reactions (task.started, task.waiting, etc.)
 export function runAgentEventBehaviorSystem(
   components: ComponentStore,
   stimuli: Stimulus[],
@@ -94,7 +94,7 @@ export function runAgentEventBehaviorSystem(
   );
 }
 
-// 3?œìœ„: Collision avoidance (entity overlap).
+// Priority 3: Collision avoidance (entity overlap).
 export function runCollisionBehaviorSystem(
   components: ComponentStore,
   bounds: { width: number; height: number },
@@ -170,14 +170,14 @@ export function runCollisionBehaviorSystem(
   }
 }
 
-// 4?œìœ„: Autonomous idle behaviors (speech, wandering).
+// Priority 4: Autonomous idle behaviors (speech, wandering).
 export function runAutonomousBehaviorSystem(
   components: ComponentStore,
   clock: Clock,
 ): void {
   const now = clock.now();
 
-  // Idle conversation ??only when no higher-priority claim holds
+  // Idle conversation â€” only when no higher-priority claim holds
   components.query(
     ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
     (id, [idleConversation, speechProfile, speech, activity]) => {

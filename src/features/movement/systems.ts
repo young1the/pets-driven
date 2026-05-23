@@ -5,7 +5,7 @@ import type { Force } from "@/features/physics/systems";
 import type { Vector } from "@/features/physics/components";
 import type { RandomSource } from "@/shared/random/seeded-random";
 
-// ── Constants ──────────────────────────────────────────────────────────────
+// Constants
 
 const WALK_ARRIVAL_RADIUS = 16;
 const CLIMB_DISMOUNT_COOLDOWN_MS = 700;
