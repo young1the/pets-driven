@@ -37,7 +37,7 @@ export type BehaviorDecisionStateComponent = {
   reason: string;
 };
 
-/** Numeric priority ??lower value wins. */
+/** Numeric priority — lower value wins. */
 export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   "user-interaction": 1,
   "agent-event": 2,

@@ -1,9 +1,9 @@
-import type { SimulationComponent } from "@/core/components";
+import type { PetPersonality } from "@/pets/personalities/factories";
 
 export type PetProfile = {
   id: string;
   petAssetId: string;
-  components: SimulationComponent[];
+  personality: PetPersonality;
 };
 
 export function isPetProfile(value: unknown): value is PetProfile {
@@ -15,6 +15,7 @@ export function isPetProfile(value: unknown): value is PetProfile {
   return (
     typeof candidate.id === "string" &&
     typeof candidate.petAssetId === "string" &&
-    Array.isArray(candidate.components)
+    typeof candidate.personality === "object" &&
+    candidate.personality !== null
   );
 }

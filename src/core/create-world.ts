@@ -142,7 +142,7 @@ export function createWorld(input: WorldDefinition) {
   }
 
   const stepSystems: Array<SimulationSystem<WorldStepContext>> = [
-    // ?�?� PRE_UPDATE: sync external physics state ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+    // PRE_UPDATE: sync external physics state
     {
       name: "PhysicsTransformSyncSystem",
       reads: ["PhysicsBody"],
@@ -161,7 +161,7 @@ export function createWorld(input: WorldDefinition) {
       },
     },
 
-    // ?�?� BEHAVIOR: priority-ordered decisions (claim/skip model) ?�?�?�?�?�?�?�?�?�?�?�
+    // BEHAVIOR: priority-ordered decisions (claim/skip model)
     {
       name: "UserInteractionBehaviorSystem",
       dependsOn: ["ContactSystem"],
@@ -199,7 +199,7 @@ export function createWorld(input: WorldDefinition) {
       },
     },
 
-    // ?�?� UPDATE: locomotion state transitions and motion target resolution ?�?�
+    // UPDATE: locomotion state transitions and motion target resolution
     {
       name: "LocomotionModeSystem",
       dependsOn: ["AutonomousBehaviorSystem"],
@@ -264,7 +264,7 @@ export function createWorld(input: WorldDefinition) {
       },
     },
 
-    // ?�?� POST_UPDATE: force accumulation ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+    // POST_UPDATE: force accumulation
     {
       name: "WalkSystem",
       dependsOn: ["MotionTargetSystem"],
@@ -311,7 +311,7 @@ export function createWorld(input: WorldDefinition) {
       },
     },
 
-    // ?�?� SIMULATE: physics integration and final position sync ?�?�?�?�?�?�?�?�?�?�?�?�?�
+    // SIMULATE: physics integration and final position sync
     {
       name: "PhysicsIntegrationSystem",
       dependsOn: ["WalkSystem", "JumpSystem", "WallClimbSystem", "IntentSteeringSystem", "FlightSystem"],
@@ -340,8 +340,19 @@ export function createWorld(input: WorldDefinition) {
     if (!byName.has(s.name)) byName.set(s.name, []);
     byName.get(s.name)!.push(s);
   }
+
+  const executionSet = new Set(SYSTEM_EXECUTION_ORDER);
+  const orphaned = [...byName.keys()].filter((name) => !executionSet.has(name));
+  if (orphaned.length > 0) {
+    throw new Error(`Systems implemented but missing from phases.ts: ${orphaned.join(", ")}`);
+  }
+  const missing = SYSTEM_EXECUTION_ORDER.filter((name) => !byName.has(name));
+  if (missing.length > 0) {
+    throw new Error(`Systems declared in phases.ts but not implemented: ${missing.join(", ")}`);
+  }
+
   const orderedSystems = SYSTEM_EXECUTION_ORDER
-    .map((name) => byName.get(name)?.shift())
+    .map((name) => byName.get(name)!.shift())
     .filter((s): s is SimulationSystem<WorldStepContext> => s !== undefined);
 
   return {
