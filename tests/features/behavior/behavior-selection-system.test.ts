@@ -3,6 +3,7 @@ import { createComponentStore } from "@/core/component-store";
 import { runBehaviorSelectionSystem } from "@/features/behavior/systems";
 import { createManualClock } from "@/shared/time/manual-clock";
 import { createSeededRandom } from "@/shared/random/seeded-random";
+import { createDemoScenario } from "@/core/scenario-fixtures";
 
 function makeStore(prefOverride: Partial<{
   curiosity: number; sociability: number; playfulness: number; shyness: number;
@@ -154,5 +155,41 @@ describe("BehaviorSelectionSystem", () => {
       .toEqual(b.getComponent("pet", "MotionTarget"));
     expect(a.getComponent("pet", "BehaviorDecisionState")?.reason)
       .toBe(b.getComponent("pet", "BehaviorDecisionState")?.reason);
+  });
+});
+
+describe("BehaviorSelectionSystem (integration via world.step)", () => {
+  it("picks a new behavior after arrival clears the motion target", () => {
+    const { world, clock } = createDemoScenario();
+
+    // Give pet-a a target very close to its starting position so arrival triggers
+    // on the very first UPDATE phase.
+    const before = world.snapshot().pets.find((p) => p.id === "pet-a");
+    world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: (before?.position.x ?? 600) + 4, y: before?.position.y ?? 500 },
+    });
+    world.setComponent("pet-a", { type: "IntentState", intent: "active" });
+
+    // Step 1: ArrivalBehaviorSystem detects arrival and clears the target.
+    // BehaviorSelectionSystem cannot see the cleared target until the next pass.
+    clock.advanceBy(16);
+    world.step(16);
+
+    // Step 2: BehaviorSelectionSystem sees intent != seek and target == null.
+    clock.advanceBy(16);
+    world.step(16);
+
+    const claim = world.getComponent("pet-a", "BehaviorDecisionState");
+    expect(claim?.source).toBe("autonomous");
+    expect([
+      "wander-near",
+      "wander-far",
+      "seek-user",
+      "request-jump",
+      "request-climb",
+      "idle-stay",
+    ]).toContain(claim?.reason);
   });
 });

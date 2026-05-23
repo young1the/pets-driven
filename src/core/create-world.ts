@@ -38,6 +38,7 @@ import {
   runUserInteractionBehaviorSystem,
   runAgentEventBehaviorSystem,
   runCollisionBehaviorSystem,
+  runBehaviorSelectionSystem,
   runAutonomousBehaviorSystem,
   runArrivalBehaviorSystem,
 } from "@/features/behavior/systems";
@@ -190,8 +191,33 @@ export function createWorld(input: WorldDefinition) {
       },
     },
     {
-      name: "AutonomousBehaviorSystem",
+      name: "BehaviorSelectionSystem",
       dependsOn: ["CollisionBehaviorSystem"],
+      reads: [
+        "IntentState",
+        "MotionTarget",
+        "Transform",
+        "BehaviorPreference",
+        "UserAnchor",
+        "CanJump",
+        "JumpActionState",
+        "CanWallClimb",
+        "ClimbableSurface",
+      ],
+      writes: [
+        "IntentState",
+        "MotionTarget",
+        "JumpActionState",
+        "ClimbIntentState",
+        "BehaviorDecisionState",
+      ],
+      update(ctx) {
+        runBehaviorSelectionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+      },
+    },
+    {
+      name: "AutonomousBehaviorSystem",
+      dependsOn: ["BehaviorSelectionSystem"],
       reads: ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
       writes: ["SpeechState", "BehaviorDecisionState"],
       update(ctx) {
