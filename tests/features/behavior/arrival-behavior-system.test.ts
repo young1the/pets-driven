@@ -3,11 +3,11 @@ import { createComponentStore } from "@/core/component-store";
 import { runArrivalBehaviorSystem } from "@/features/behavior/systems";
 
 describe("arrival behavior system", () => {
-  it("clears position target when walk pet arrives within x radius", () => {
+  it("clears position target and resets intent to idle when walk pet arrives within x radius", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
-        { type: "IntentState", intent: "idle" as const },
+        { type: "IntentState", intent: "active" as const },
         { type: "Transform", position: { x: 108, y: 100 } },
         { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
         { type: "WandersOnArrival", arrivalRadius: 16 },
@@ -17,6 +17,7 @@ describe("arrival behavior system", () => {
     runArrivalBehaviorSystem(store);
 
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
   });
 
   it("does not clear position target when outside x radius", () => {

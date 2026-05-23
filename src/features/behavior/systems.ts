@@ -240,6 +240,7 @@ export function runArrivalBehaviorSystem(components: ComponentStore): void {
       if (delta > wandersOnArrival.arrivalRadius) return;
       motion.targetEntityId = null;
       motion.targetPosition = null;
+      intent.intent = "idle";
     },
   );
 }
@@ -351,8 +352,11 @@ export function runBehaviorSelectionSystem(
   components.query(
     ["IntentState", "MotionTarget", "Transform", "BehaviorPreference"],
     (id, [intent, motion, transform, pref]) => {
-      // Trigger conditions
-      if (intent.intent === "seek") return;
+      // Trigger conditions — only fire for pets that have no active goal.
+      // "active" = pursuing a wander/climb target  "seek" = pursuing user
+      // Both set a motion target; arrival resets intent back to "idle".
+      // "idle" is the only state that means "ready for a new decision".
+      if (intent.intent !== "idle") return;
       if (motion.targetPosition !== null) return;
       if (motion.targetEntityId !== null) return;
 
@@ -426,7 +430,8 @@ export function runBehaviorSelectionSystem(
               phase: "requested",
               cooldownMs: jumpState.cooldownMs,
             });
-            setIntent(c, "active");
+            // Jump is a one-shot action with no arrival event, so intent stays
+            // "idle". BehaviorSelectionSystem re-fires after the claim expires.
           },
         });
       }

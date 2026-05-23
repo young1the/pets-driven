@@ -172,12 +172,13 @@ describe("BehaviorSelectionSystem (integration via world.step)", () => {
     });
     world.setComponent("pet-a", { type: "IntentState", intent: "active" });
 
-    // Step 1: ArrivalBehaviorSystem detects arrival and clears the target.
-    // BehaviorSelectionSystem cannot see the cleared target until the next pass.
+    // Step 1: ArrivalBehaviorSystem detects arrival, clears the target, and
+    // resets intent to "idle". BehaviorSelectionSystem runs in the BEHAVIOR
+    // phase (before UPDATE), so it cannot react until the next step.
     clock.advanceBy(16);
     world.step(16);
 
-    // Step 2: BehaviorSelectionSystem sees intent != seek and target == null.
+    // Step 2: BehaviorSelectionSystem sees intent == "idle" and target == null.
     clock.advanceBy(16);
     world.step(16);
 
