@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDemoScenario } from "@/core/world/scenario-fixtures";
+import { createDemoScenario } from "@/core/scenario-fixtures";
 
 describe("demo scenario", () => {
   it("creates multiple pets in one shared world", () => {
@@ -18,10 +18,15 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
 
     expect(scenario.world.systems()).toEqual([
-      "StimulusReactionSystem",
-      "IdleConversationSystem",
+      // PRE_UPDATE
       "PhysicsTransformSyncSystem",
       "ContactSystem",
+      // BEHAVIOR
+      "UserInteractionBehaviorSystem",
+      "AgentEventBehaviorSystem",
+      "CollisionBehaviorSystem",
+      "AutonomousBehaviorSystem",
+      // UPDATE
       "LocomotionModeSystem",
       "ClimbApproachSystem",
       "ArrivalBehaviorSystem",
@@ -29,12 +34,13 @@ describe("demo scenario", () => {
       "LocomotionActiveStateSystem",
       "ClimbAttachmentSystem",
       "MotionTargetSystem",
-      "CollisionReactionSystem",
+      // POST_UPDATE
       "WalkSystem",
       "JumpSystem",
       "WallClimbSystem",
       "IntentSteeringSystem",
       "FlightSystem",
+      // SIMULATE
       "PhysicsIntegrationSystem",
       "PhysicsTransformSyncSystem",
     ]);
@@ -57,7 +63,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "LocomotionModeSystem",
-      dependsOn: ["ContactSystem"],
+      dependsOn: ["AutonomousBehaviorSystem"],
       reads: [
         "ContactState",
         "MotionTarget",
@@ -132,14 +138,14 @@ describe("demo scenario", () => {
       writes: ["AirborneState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
-      name: "CollisionReactionSystem",
-      dependsOn: ["MotionTargetSystem"],
+      name: "CollisionBehaviorSystem",
+      dependsOn: ["AgentEventBehaviorSystem"],
       reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget"],
-      writes: ["MotionTarget"],
+      writes: ["MotionTarget", "BehaviorDecisionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WalkSystem",
-      dependsOn: ["CollisionReactionSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: [
         "Transform",
         "WalkingState",
@@ -152,13 +158,13 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "JumpSystem",
-      dependsOn: ["CollisionReactionSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: ["WalkingState", "ContactState", "CanJump", "JumpActionState"],
       writes: ["PhysicsForce", "JumpActionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WallClimbSystem",
-      dependsOn: ["CollisionReactionSystem"],
+      dependsOn: ["MotionTargetSystem"],
       reads: [
         "Transform",
         "ClimbingState",

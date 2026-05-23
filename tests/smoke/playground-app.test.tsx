@@ -195,6 +195,41 @@ describe("PlaygroundApp", () => {
     ).toBeInTheDocument();
   });
 
+  it("can pause the animation loop and manually play the next frame", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {
+        beginPath: vi.fn(),
+        clearRect: vi.fn(),
+        ellipse: vi.fn(),
+        fill: vi.fn(),
+        fillRect: vi.fn(),
+        fillText: vi.fn(),
+        lineTo: vi.fn(),
+        moveTo: vi.fn(),
+        rect: vi.fn(),
+        stroke: vi.fn(),
+        strokeRect: vi.fn(),
+      } as unknown as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
+    );
+    expect(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.resumeAnimation }),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),
+    );
+
+    expect(
+      screen.getByText(`${PLAYGROUND_TEXT.frameCounterPrefix} 1`),
+    ).toBeInTheDocument();
+  });
+
   it("records a locomotion change in the action timeline", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,

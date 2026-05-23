@@ -1,4 +1,4 @@
-import type { SimulationComponent } from "@/core/components/simulation-components";
+import type { SimulationComponent } from "@/core/components";
 
 export type PersonalityFactory = () => SimulationComponent[];
 

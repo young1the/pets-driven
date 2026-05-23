@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { SimulationSystem } from "@/core/systems/simulation-system";
-import { describeSimulationSystems, runSimulationSystems } from "@/core/systems/simulation-system";
+import type { SimulationSystem } from "@/core/simulation-system";
+import { describeSimulationSystems, runSimulationSystems } from "@/core/simulation-system";
 
 describe("simulation system runner", () => {
   it("runs systems with one shared context in declaration order", () => {

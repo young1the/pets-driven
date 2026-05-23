@@ -1,8 +1,8 @@
 import type {
   ComponentOf,
   SimulationComponentType,
-} from "@/core/components/simulation-components";
-import type { PetSnapshot } from "@/core/snapshots/world-snapshot";
+} from "@/core/components";
+import type { PetSnapshot } from "@/core/world-snapshot";
 import { PLAYGROUND_TEXT } from "./playground-text";
 
 const INSPECTED_COMPONENTS: SimulationComponentType[] = [

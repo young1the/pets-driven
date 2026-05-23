@@ -3,8 +3,8 @@ import {
   type AgentEvent,
 } from "@/adapters/agent-events/agent-event";
 import { toStimulus } from "@/adapters/agent-events/agent-event-adapter";
-import { useEffect, useRef, useState } from "react";
-import { createDemoScenario } from "@/core/world/scenario-fixtures";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createDemoScenario } from "@/core/scenario-fixtures";
 import { ActionTimeline, type TimelineEntry } from "./action-timeline";
 import { AgentEventPanel } from "./agent-event-panel";
 import { BehaviorLab } from "./behavior-lab";
@@ -33,14 +33,14 @@ function diffSnapshot(
       entries.push({
         t,
         petName: pet.name,
-        label: `locomotion: ${prevPet.locomotion} → ${pet.locomotion}`,
+        label: `locomotion: ${prevPet.locomotion} ??${pet.locomotion}`,
       });
     }
     if (prevPet.intent !== pet.intent) {
       entries.push({
         t,
         petName: pet.name,
-        label: `intent: ${prevPet.intent} → ${pet.intent}`,
+        label: `intent: ${prevPet.intent} ??${pet.intent}`,
       });
     }
   }
@@ -57,37 +57,41 @@ export function PlaygroundApp() {
     scenarioRef.current.world.snapshot(),
   );
   const [timelineEntries, setTimelineEntries] = useState<TimelineEntry[]>([]);
+  const [isAnimationPlaying, setIsAnimationPlaying] = useState(true);
+  const [frameNumber, setFrameNumber] = useState(0);
   const prevSnapshotRef = useRef<Snapshot | null>(null);
 
-  useEffect(() => {
+  const advanceFrame = useCallback(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
     if (!canvas || !context) {
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      scenarioRef.current.clock.advanceBy(16);
-      scenarioRef.current.world.step(16);
-      const nextSnapshot = scenarioRef.current.world.snapshot();
-      setSnapshot(nextSnapshot);
-      const t = scenarioRef.current.clock.now();
-      if (prevSnapshotRef.current) {
-        const newEntries = diffSnapshot(
-          prevSnapshotRef.current,
-          nextSnapshot,
-          t,
-        );
-        if (newEntries.length > 0) {
-          setTimelineEntries((prev) => [...newEntries, ...prev].slice(0, 40));
-        }
+    scenarioRef.current.clock.advanceBy(16);
+    scenarioRef.current.world.step(16);
+    const nextSnapshot = scenarioRef.current.world.snapshot();
+    setSnapshot(nextSnapshot);
+    setFrameNumber((prev) => prev + 1);
+    const t = scenarioRef.current.clock.now();
+    if (prevSnapshotRef.current) {
+      const newEntries = diffSnapshot(prevSnapshotRef.current, nextSnapshot, t);
+      if (newEntries.length > 0) {
+        setTimelineEntries((prev) => [...newEntries, ...prev].slice(0, 40));
       }
-      prevSnapshotRef.current = nextSnapshot;
-      drawWorld(context, nextSnapshot, {}, scenarioRef.current.clock.now());
-    }, 16);
-
-    return () => window.clearInterval(intervalId);
+    }
+    prevSnapshotRef.current = nextSnapshot;
+    drawWorld(context, nextSnapshot, {}, scenarioRef.current.clock.now());
   }, []);
+
+  useEffect(() => {
+    if (!isAnimationPlaying) {
+      return;
+    }
+
+    const intervalId = window.setInterval(advanceFrame, 16);
+    return () => window.clearInterval(intervalId);
+  }, [advanceFrame, isAnimationPlaying]);
 
   function sendEvent(type: AgentEvent["type"], summary: string) {
     const event = createAgentEvent({
@@ -198,6 +202,10 @@ export function PlaygroundApp() {
         onStartWalkDemo={startWalkDemo}
         onStartJumpDemo={startJumpDemo}
         onStartWallClimbDemo={startWallClimbDemo}
+        isAnimationPlaying={isAnimationPlaying}
+        frameNumber={frameNumber}
+        onToggleAnimation={() => setIsAnimationPlaying((prev) => !prev)}
+        onPlayNextFrame={advanceFrame}
       />
       <AgentEventPanel event={lastEvent} />
       <div className="playground-workspace">

@@ -8,6 +8,10 @@ type ScenarioControlsProps = {
   onStartWalkDemo(): void;
   onStartJumpDemo(): void;
   onStartWallClimbDemo(): void;
+  isAnimationPlaying: boolean;
+  frameNumber: number;
+  onToggleAnimation(): void;
+  onPlayNextFrame(): void;
 };
 
 export function ScenarioControls({
@@ -18,6 +22,10 @@ export function ScenarioControls({
   onStartWalkDemo,
   onStartJumpDemo,
   onStartWallClimbDemo,
+  isAnimationPlaying,
+  frameNumber,
+  onToggleAnimation,
+  onPlayNextFrame,
 }: ScenarioControlsProps) {
   return (
     <section className="scenario-controls">
@@ -39,8 +47,23 @@ export function ScenarioControls({
       <button type="button" onClick={onStartWallClimbDemo}>
         {PLAYGROUND_TEXT.startWallClimbDemo}
       </button>
+      <button
+        type="button"
+        aria-pressed={isAnimationPlaying}
+        onClick={onToggleAnimation}
+      >
+        {isAnimationPlaying
+          ? PLAYGROUND_TEXT.pauseAnimation
+          : PLAYGROUND_TEXT.resumeAnimation}
+      </button>
+      <button type="button" onClick={onPlayNextFrame}>
+        {PLAYGROUND_TEXT.playNextFrame}
+      </button>
       <p>
         {PLAYGROUND_TEXT.lastStimulusPrefix} {lastStimulus}
+      </p>
+      <p>
+        {PLAYGROUND_TEXT.frameCounterPrefix} {frameNumber}
       </p>
     </section>
   );

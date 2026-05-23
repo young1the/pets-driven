@@ -1,4 +1,4 @@
-import type { WorldSnapshot } from "@/core/snapshots/world-snapshot";
+import type { WorldSnapshot } from "@/core/world-snapshot";
 import { getAtlasFrame, PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
 import {
   drawClimbableSurface,

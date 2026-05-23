@@ -1,4 +1,4 @@
-import type { Stimulus } from "@/core/stimuli/stimulus";
+import type { Stimulus } from "@/features/stimulus/stimulus";
 import type { AgentEvent } from "./agent-event";
 
 export function toStimulus(event: AgentEvent): Stimulus {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { EntityDeclaration } from "@/core/ecs/component-store";
-import { createComponentStore } from "@/core/ecs/component-store";
+import type { EntityDeclaration } from "@/core/component-store";
+import { createComponentStore } from "@/core/component-store";
 
 describe("component store", () => {
   it("hydrates declarations into entity ids and component tables", () => {
