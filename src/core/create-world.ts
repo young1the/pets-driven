@@ -25,7 +25,15 @@ import {
   runLocomotionModeSystem,
   runLocomotionActiveStateSystem,
   runMotionTargetSystem,
-} from "@/features/locomotion/systems";
+  runClimbApproachSystem,
+  runClimbDismountSystem,
+  runClimbAttachmentSystem,
+  runWallClimbSystem,
+  runWalkSystem,
+  runJumpSystem,
+  runIntentSteeringSystem,
+  runFlightSystem,
+} from "@/features/movement/systems";
 import {
   runUserInteractionBehaviorSystem,
   runAgentEventBehaviorSystem,
@@ -34,19 +42,11 @@ import {
   runArrivalBehaviorSystem,
 } from "@/features/behavior/systems";
 import {
-  runClimbApproachSystem,
-  runClimbDismountSystem,
-  runClimbAttachmentSystem,
-  runWallClimbSystem,
-} from "@/features/climbing/systems";
-import { runWalkSystem } from "@/features/walking/systems";
-import { runJumpSystem } from "@/features/jumping/systems";
-import { runIntentSteeringSystem, runFlightSystem } from "@/features/flight/systems";
-import {
   describeSimulationSystems,
   runSimulationSystems,
   type SimulationSystem,
 } from "@/core/simulation-system";
+import { SYSTEM_EXECUTION_ORDER } from "@/core/phases";
 import {
   createSeededRandom,
   type RandomSource,
@@ -142,7 +142,7 @@ export function createWorld(input: WorldDefinition) {
   }
 
   const stepSystems: Array<SimulationSystem<WorldStepContext>> = [
-    // ── PRE_UPDATE: sync external physics state ────────────────────────────
+    // ?�?� PRE_UPDATE: sync external physics state ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     {
       name: "PhysicsTransformSyncSystem",
       reads: ["PhysicsBody"],
@@ -161,7 +161,7 @@ export function createWorld(input: WorldDefinition) {
       },
     },
 
-    // ── BEHAVIOR: priority-ordered decisions (claim/skip model) ───────────
+    // ?�?� BEHAVIOR: priority-ordered decisions (claim/skip model) ?�?�?�?�?�?�?�?�?�?�?�
     {
       name: "UserInteractionBehaviorSystem",
       dependsOn: ["ContactSystem"],
@@ -199,7 +199,7 @@ export function createWorld(input: WorldDefinition) {
       },
     },
 
-    // ── UPDATE: locomotion state transitions and motion target resolution ──
+    // ?�?� UPDATE: locomotion state transitions and motion target resolution ?�?�
     {
       name: "LocomotionModeSystem",
       dependsOn: ["AutonomousBehaviorSystem"],
@@ -264,7 +264,7 @@ export function createWorld(input: WorldDefinition) {
       },
     },
 
-    // ── POST_UPDATE: force accumulation ───────────────────────────────────
+    // ?�?� POST_UPDATE: force accumulation ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
     {
       name: "WalkSystem",
       dependsOn: ["MotionTargetSystem"],
@@ -311,7 +311,7 @@ export function createWorld(input: WorldDefinition) {
       },
     },
 
-    // ── SIMULATE: physics integration and final position sync ─────────────
+    // ?�?� SIMULATE: physics integration and final position sync ?�?�?�?�?�?�?�?�?�?�?�?�?�
     {
       name: "PhysicsIntegrationSystem",
       dependsOn: ["WalkSystem", "JumpSystem", "WallClimbSystem", "IntentSteeringSystem", "FlightSystem"],
@@ -332,12 +332,24 @@ export function createWorld(input: WorldDefinition) {
     },
   ];
 
+  // Order by phases.ts — SYSTEM_EXECUTION_ORDER is the single source of truth
+  // for execution order. Handles duplicate names (e.g. PhysicsTransformSyncSystem
+  // appears in both PRE_UPDATE and SIMULATE) by consuming each definition once.
+  const byName = new Map<string, Array<SimulationSystem<WorldStepContext>>>();
+  for (const s of stepSystems) {
+    if (!byName.has(s.name)) byName.set(s.name, []);
+    byName.get(s.name)!.push(s);
+  }
+  const orderedSystems = SYSTEM_EXECUTION_ORDER
+    .map((name) => byName.get(name)?.shift())
+    .filter((s): s is SimulationSystem<WorldStepContext> => s !== undefined);
+
   return {
     systems() {
-      return stepSystems.map((system) => system.name);
+      return orderedSystems.map((system) => system.name);
     },
     systemPlan() {
-      return describeSimulationSystems(stepSystems);
+      return describeSimulationSystems(orderedSystems);
     },
     getEntity(id: string) {
       const entity = components.getEntity(id);
@@ -356,7 +368,7 @@ export function createWorld(input: WorldDefinition) {
       stimuli.push(stimulus);
     },
     step(deltaMs: number) {
-      runSimulationSystems(stepSystems, {
+      runSimulationSystems(orderedSystems, {
         deltaMs,
         components,
         physics,

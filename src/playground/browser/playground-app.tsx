@@ -33,14 +33,14 @@ function diffSnapshot(
       entries.push({
         t,
         petName: pet.name,
-        label: `locomotion: ${prevPet.locomotion} ??${pet.locomotion}`,
+        label: `locomotion: ${prevPet.locomotion} -> ${pet.locomotion}`,
       });
     }
     if (prevPet.intent !== pet.intent) {
       entries.push({
         t,
         petName: pet.name,
-        label: `intent: ${prevPet.intent} ??${pet.intent}`,
+        label: `intent: ${prevPet.intent} -> ${pet.intent}`,
       });
     }
   }

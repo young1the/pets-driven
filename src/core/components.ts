@@ -33,22 +33,22 @@ export type {
   FlyingStateComponent,
   AirborneStateComponent,
   MotionTargetComponent,
-} from "@/features/locomotion/components";
+} from "@/features/movement/components";
 
 export type {
   CanWalkComponent,
   MovementProfileComponent,
   NavigationStateComponent,
   WandersOnArrivalComponent,
-} from "@/features/walking/components";
+} from "@/features/movement/components";
 
 export type {
   CanJumpComponent,
   JumpActionPhase,
   JumpActionStateComponent,
-} from "@/features/jumping/components";
+} from "@/features/movement/components";
 
-export type { CanFlyComponent } from "@/features/flight/components";
+export type { CanFlyComponent } from "@/features/movement/components";
 
 export type {
   CanWallClimbComponent,
@@ -56,17 +56,17 @@ export type {
   ClimbIntentStateComponent,
   ClimbDismountPhase,
   ClimbDismountStateComponent,
-} from "@/features/climbing/components";
+} from "@/features/movement/components";
 
 import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent } from "@/features/physics/components";
 import type { ContactStateComponent } from "@/features/contact/components";
 import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent } from "@/features/behavior/components";
 import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@/features/stimulus/components";
-import type { WalkingStateComponent, ClimbingStateComponent, FlyingStateComponent, AirborneStateComponent, MotionTargetComponent } from "@/features/locomotion/components";
-import type { CanWalkComponent, MovementProfileComponent, NavigationStateComponent, WandersOnArrivalComponent } from "@/features/walking/components";
-import type { CanJumpComponent, JumpActionStateComponent } from "@/features/jumping/components";
-import type { CanFlyComponent } from "@/features/flight/components";
-import type { CanWallClimbComponent, ClimbableSurfaceComponent, ClimbIntentStateComponent, ClimbDismountStateComponent } from "@/features/climbing/components";
+import type { WalkingStateComponent, ClimbingStateComponent, FlyingStateComponent, AirborneStateComponent, MotionTargetComponent } from "@/features/movement/components";
+import type { CanWalkComponent, MovementProfileComponent, NavigationStateComponent, WandersOnArrivalComponent } from "@/features/movement/components";
+import type { CanJumpComponent, JumpActionStateComponent } from "@/features/movement/components";
+import type { CanFlyComponent } from "@/features/movement/components";
+import type { CanWallClimbComponent, ClimbableSurfaceComponent, ClimbIntentStateComponent, ClimbDismountStateComponent } from "@/features/movement/components";
 
 export type SimulationComponent =
   | ActivityStateComponent
