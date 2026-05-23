@@ -339,9 +339,13 @@ export function runFlightSystem(
 function canEnterClimb(
   contact: { climbableSurfaceId: string | null; climbableSurfacePosition: { x: number; y: number } | null },
   motion: { targetPosition: { x: number } | null },
-  climbIntent: { surfaceEntityId: string } | undefined,
+  climbIntent: { phase: string; surfaceEntityId: string } | undefined,
 ): boolean {
   if (!contact.climbableSurfaceId || !contact.climbableSurfacePosition) return false;
+  // A stale "attached" intent from a completed climb must not re-trigger entry.
+  // Only an explicit "approaching" request (from BehaviorSelectionSystem) opens
+  // the gate. Undefined climbIntent is allowed for legacy/non-preference pets.
+  if (climbIntent && climbIntent.phase !== "approaching") return false;
   if (climbIntent && contact.climbableSurfaceId !== climbIntent.surfaceEntityId) return false;
   if (!motion.targetPosition) return true;
   return (

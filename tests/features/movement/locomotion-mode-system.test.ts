@@ -102,6 +102,28 @@ describe("locomotion mode system", () => {
     expect(store.getComponent("pet-a", "WalkingState")).toBeUndefined();
   });
 
+  it("does not re-enter climb when ClimbIntentState phase is attached (stale after dismount)", () => {
+    // After a completed climb the intent remains "attached". Without this guard
+    // canEnterClimb would return true the moment the cooldown expires, causing
+    // the pet to immediately restart the same climb indefinitely.
+    const store = createComponentStore([{
+      id: "pet-a",
+      components: [
+        { type: "WalkingState" },
+        { type: "ContactState", grounded: true, climbableSurfaceId: "wall-1", climbableSurfacePosition: { x: 100, y: 100 } },
+        { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+        { type: "CanWallClimb", speed: 0.004 },
+        { type: "ClimbDismountState", phase: "ready", cooldownMs: 0 },
+        { type: "ClimbIntentState", phase: "attached", surfaceEntityId: "wall-1", targetY: 120 },
+      ],
+    }]);
+
+    runLocomotionModeSystem(store);
+
+    expect(store.getComponent("pet-a", "WalkingState")).toBeDefined();
+    expect(store.getComponent("pet-a", "ClimbingState")).toBeUndefined();
+  });
+
   it("does not re-enter climb while ClimbDismountState is airborne", () => {
     const store = createComponentStore([{
       id: "pet-a",
