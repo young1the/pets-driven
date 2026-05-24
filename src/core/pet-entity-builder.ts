@@ -15,11 +15,12 @@ export function buildPersonalityComponents(personality: PetPersonality): Simulat
   }
   components.push({ type: "CompletionBehavior", intentAfterCompletion: personality.completionIntent });
   components.push({
-    type: "BehaviorPreference",
-    curiosity: personality.curiosity,
-    sociability: personality.sociability,
-    playfulness: personality.playfulness,
-    shyness: personality.shyness,
+    type: "Personality",
+    openness: personality.openness,
+    conscientiousness: personality.conscientiousness,
+    extraversion: personality.extraversion,
+    agreeableness: personality.agreeableness,
+    neuroticism: personality.neuroticism,
   });
   return components;
 }

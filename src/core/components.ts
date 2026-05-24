@@ -16,7 +16,7 @@ export type {
   UserAnchorComponent,
   BehaviorDecisionSource,
   BehaviorDecisionStateComponent,
-  BehaviorPreferenceComponent,
+  PersonalityComponent,
   BehaviorDecisionKind,
   BehaviorDecisionTokenComponent,
 } from "@/features/behavior/components";
@@ -65,7 +65,7 @@ export type {
 import type { PerceptionComponent } from "@/features/perception/components";
 import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent } from "@/features/physics/components";
 import type { ContactStateComponent } from "@/features/contact/components";
-import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, BehaviorPreferenceComponent, BehaviorDecisionTokenComponent } from "@/features/behavior/components";
+import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent } from "@/features/behavior/components";
 import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@/features/stimulus/components";
 import type { WalkingStateComponent, ClimbingStateComponent, FlyingStateComponent, AirborneStateComponent, MotionTargetComponent } from "@/features/movement/components";
 import type { CanWalkComponent, MovementProfileComponent, NavigationStateComponent, WandersOnArrivalComponent } from "@/features/movement/components";
@@ -78,7 +78,7 @@ export type SimulationComponent =
   | BehaviorDecisionTokenComponent
   | PerceptionComponent
   | AgentBindingComponent
-  | BehaviorPreferenceComponent
+  | PersonalityComponent
   | AirborneStateComponent
   | BehaviorDecisionStateComponent
   | CanFlyComponent

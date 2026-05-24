@@ -10,7 +10,7 @@ import {
   type BehaviorDecisionKind,
   type BehaviorDecisionSource,
   type BehaviorDecisionTokenComponent,
-  type BehaviorPreferenceComponent,
+  type PersonalityComponent,
   type PetIntent,
 } from "./components";
 
@@ -306,6 +306,33 @@ export function runArrivalBehaviorSystem(components: ComponentStore): void {
   );
 }
 
+// ── Softmax sampling ─────────────────────────────────────────────────────
+//
+// Temperature T = T_BASE * (1 + ALPHA_T * neuroticism):
+//   • Low N  (e.g. 0.1) → T ≈ 0.28  → distribution concentrated on top scorer
+//   • High N (e.g. 0.9) → T ≈ 0.52  → distribution is more uniform / erratic
+//
+// A single random.next() call per selection; no per-candidate jitter.
+
+const T_BASE = 0.25;
+const ALPHA_T = 1.2;
+
+function softmaxSample(
+  candidates: Candidate[],
+  neuroticism: number,
+  random: RandomSource,
+): Candidate {
+  const T = T_BASE * (1 + ALPHA_T * neuroticism);
+  const weights = candidates.map((c) => Math.exp(c.score / T));
+  const total = weights.reduce((s, w) => s + w, 0);
+  let r = random.next() * total;
+  for (let i = 0; i < candidates.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return candidates[i];
+  }
+  return candidates[candidates.length - 1]; // floating-point safety
+}
+
 // ── BehaviorDecisionSystem helpers ────────────────────────────────────────
 
 type TokenFields = Omit<BehaviorDecisionTokenComponent, "type" | "decidedAt" | "consumed" | "kind">;
@@ -350,28 +377,37 @@ function isAutonomousRepeatCoolingDown(
   return now - lastAt < cooldownMs;
 }
 
-function scoreWanderNear(pref: BehaviorPreferenceComponent): number {
-  return 0.3 + pref.curiosity * 0.3 + pref.shyness * 0.4;
+// ── OCEAN score functions ────────────────────────────────────────────────────
+// Each reads only PersonalityComponent axes; comments name the driving axes.
+
+function scoreWanderNear(p: PersonalityComponent): number {
+  // N (neuroticism) → wary, prefers short local moves; O (openness) → slight boost
+  return 0.3 + p.openness * 0.1 + p.neuroticism * 0.4;
 }
 
-function scoreWanderFar(pref: BehaviorPreferenceComponent): number {
-  return 0.3 + pref.curiosity * 0.7;
+function scoreWanderFar(p: PersonalityComponent): number {
+  // O (openness) → exploration drive; N (neuroticism) → reluctance to venture far
+  return 0.3 + p.openness * 0.7 - p.neuroticism * 0.2;
 }
 
-function scoreSeekUser(pref: BehaviorPreferenceComponent): number {
-  return 0.3 + pref.sociability * 0.9 - pref.shyness * 0.4;
+function scoreSeekUser(p: PersonalityComponent): number {
+  // E (extraversion) + A (agreeableness) → approach user; N → avoidance
+  return 0.3 + p.extraversion * 0.7 + p.agreeableness * 0.3 - p.neuroticism * 0.3;
 }
 
-function scoreJump(pref: BehaviorPreferenceComponent): number {
-  return 0.2 + pref.playfulness * 0.6;
+function scoreJump(p: PersonalityComponent): number {
+  // E (extraversion) → action energy; O (openness) → novelty seeking
+  return 0.2 + p.extraversion * 0.4 + p.openness * 0.3;
 }
 
-function scoreClimb(pref: BehaviorPreferenceComponent): number {
-  return 0.2 + pref.playfulness * 0.7 + pref.curiosity * 0.2;
+function scoreClimb(p: PersonalityComponent): number {
+  // O (openness) → exploration; E (extraversion) → physical energy
+  return 0.2 + p.openness * 0.6 + p.extraversion * 0.2;
 }
 
-function scoreIdleStay(pref: BehaviorPreferenceComponent): number {
-  return 0.25 + pref.shyness * 0.5;
+function scoreIdleStay(p: PersonalityComponent): number {
+  // Low E → reduced need for activity; N (neuroticism) → cautious stillness
+  return 0.25 + (1 - p.extraversion) * 0.3 + p.neuroticism * 0.2;
 }
 
 function pickWanderPosition(
@@ -441,8 +477,8 @@ export function runBehaviorDecisionSystem(
   });
 
   components.query(
-    ["IntentState", "MotionTarget", "Transform", "BehaviorPreference"],
-    (id, [intent, motion, transform, pref]) => {
+    ["IntentState", "MotionTarget", "Transform", "Personality"],
+    (id, [intent, motion, transform, personality]) => {
       // Trigger conditions — only fire for pets that have no active goal.
       // "active" = pursuing a wander/climb target  "seek" = pursuing user
       // Both set a motion target; arrival resets intent back to "idle".
@@ -470,24 +506,23 @@ export function runBehaviorDecisionSystem(
 
       pushCandidate(candidates, components, id, now, {
         kind: "wander-near",
-        score: scoreWanderNear(pref) + random.next() * 0.05,
+        score: scoreWanderNear(personality),
         build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near") }),
       });
 
       pushCandidate(candidates, components, id, now, {
         kind: "wander-far",
-        score: scoreWanderFar(pref) + random.next() * 0.05,
+        score: scoreWanderFar(personality),
         build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "far") }),
       });
 
       if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
         pushCandidate(candidates, components, id, now, {
           kind: "seek-user",
-          score: scoreSeekUser(pref) + random.next() * 0.05,
-          build: () => ({
-            targetEntityId: userAnchor.id,
-            targetPosition: { x: userAnchor.x, y: userAnchor.y },
-          }),
+          score: scoreSeekUser(personality),
+          // MotionTargetSystem (UPDATE phase) reads Perception.userAnchor and owns
+          // seek positioning; Planning only needs to promote intent to "seek".
+          build: () => ({}),
         });
       }
 
@@ -497,7 +532,7 @@ export function runBehaviorDecisionSystem(
       if (canJump && jumpState?.phase === "ready" && (!contact || contact.grounded)) {
         pushCandidate(candidates, components, id, now, {
           kind: "request-jump",
-          score: scoreJump(pref) + random.next() * 0.05,
+          score: scoreJump(personality),
           // Jump is a one-shot action; Planning reads JumpActionState directly.
           build: () => ({}),
         });
@@ -516,7 +551,7 @@ export function runBehaviorDecisionSystem(
         if (surface) {
           pushCandidate(candidates, components, id, now, {
             kind: "request-climb",
-            score: scoreClimb(pref) + random.next() * 0.05,
+            score: scoreClimb(personality),
             build: () => {
               // Reserve the surface so later entities in this same pass won't
               // double-target it (build() runs before the next entity is processed).
@@ -529,12 +564,14 @@ export function runBehaviorDecisionSystem(
 
       pushCandidate(candidates, components, id, now, {
         kind: "idle-stay",
-        score: scoreIdleStay(pref) + random.next() * 0.05,
+        score: scoreIdleStay(personality),
         build: () => ({}),
       });
 
       if (candidates.length === 0) return;
-      const winner = candidates.reduce((best, c) => (c.score > best.score ? c : best));
+      // Softmax sampling: temperature scales with neuroticism.
+      // High N → higher T → flatter distribution → more erratic behaviour.
+      const winner = softmaxSample(candidates, personality.neuroticism, random);
       components.setComponent(id, {
         type: "BehaviorDecisionToken",
         kind: winner.kind,
@@ -571,11 +608,8 @@ export function runBehaviorPlanningSystem(
         setPetIntent(components, id, "active");
         break;
       case "seek-user":
-        components.setComponent(id, {
-          type: "MotionTarget",
-          targetEntityId: token.targetEntityId ?? null,
-          targetPosition: token.targetPosition ?? null,
-        });
+        // MotionTargetSystem (UPDATE phase) reads Perception.userAnchor and owns
+        // all seek positioning. Planning only promotes the intent.
         setPetIntent(components, id, "seek");
         break;
       case "request-jump": {
@@ -655,7 +689,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "IntentState",
     "MotionTarget",
     "Transform",
-    "BehaviorPreference",
+    "Personality",
     "Perception",
     "CanJump",
     "JumpActionState",
@@ -688,7 +722,7 @@ export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
 
 export const AutonomousBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AutonomousBehaviorSystem",
-  dependsOn: ["BehaviorSelectionSystem"],
+  dependsOn: ["BehaviorDecisionSystem"],
   reads: ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
   writes: ["SpeechState", "BehaviorDecisionState"],
   update(ctx) {
