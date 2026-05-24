@@ -11,44 +11,13 @@ import {
   createMatterPhysicsWorld,
 } from "@/features/physics/matter-physics-world";
 import type { Stimulus } from "@/features/stimulus/stimulus";
-import {
-  createStimulusQueue,
-} from "@/features/stimulus/stimulus-queue";
+import { createStimulusQueue } from "@/features/stimulus/stimulus-queue";
 import { runPhysicsTransformSyncSystem } from "@/features/physics/systems";
-import {
-  PhysicsTransformSyncSystemPre,
-  PhysicsTransformSyncSystemPost,
-  PhysicsIntegrationSystem,
-} from "@/features/physics/systems";
-import { ContactSystem } from "@/features/contact/systems";
-import {
-  LocomotionModeSystem,
-  ClimbApproachSystem,
-  ClimbDismountSystem,
-  LocomotionActiveStateSystem,
-  ClimbAttachmentSystem,
-  MotionTargetSystem,
-  WalkSystem,
-  JumpSystem,
-  WallClimbSystem,
-  IntentSteeringSystem,
-  FlightSystem,
-} from "@/features/movement/systems";
-import {
-  UserInteractionBehaviorSystem,
-  AgentEventBehaviorSystem,
-  CollisionBehaviorSystem,
-  BehaviorSelectionSystem,
-  AutonomousBehaviorSystem,
-  ArrivalBehaviorSystem,
-} from "@/features/behavior/systems";
 import {
   describeSimulationSystems,
   runSimulationSystems,
-  type SimulationSystem,
 } from "@/core/simulation-system";
-import { SYSTEM_EXECUTION_ORDER } from "@/core/phases";
-import type { WorldStepContext } from "@/core/world-step-context";
+import { STEP_SYSTEMS } from "@/core/phases";
 import {
   createSeededRandom,
   type RandomSource,
@@ -134,71 +103,12 @@ export function createWorld(input: WorldDefinition) {
     });
   }
 
-  // Single source of truth for the per-tick pipeline. Each entry is a
-  // descriptor exported by its own feature module; the order here is purely
-  // for readability and is reconciled against phases.ts below.
-  const stepSystems: Array<SimulationSystem<WorldStepContext>> = [
-    // PRE_UPDATE
-    PhysicsTransformSyncSystemPre,
-    ContactSystem,
-
-    // BEHAVIOR
-    UserInteractionBehaviorSystem,
-    AgentEventBehaviorSystem,
-    CollisionBehaviorSystem,
-    BehaviorSelectionSystem,
-    AutonomousBehaviorSystem,
-
-    // UPDATE
-    LocomotionModeSystem,
-    ClimbApproachSystem,
-    ArrivalBehaviorSystem,
-    ClimbDismountSystem,
-    LocomotionActiveStateSystem,
-    ClimbAttachmentSystem,
-    MotionTargetSystem,
-
-    // POST_UPDATE
-    WalkSystem,
-    JumpSystem,
-    WallClimbSystem,
-    IntentSteeringSystem,
-    FlightSystem,
-
-    // SIMULATE
-    PhysicsIntegrationSystem,
-    PhysicsTransformSyncSystemPost,
-  ];
-
-  // Reconcile against phases.ts. Each system name must appear exactly once in
-  // both stepSystems and SYSTEM_EXECUTION_ORDER — mismatches surface here
-  // instead of as silent ordering drift at runtime.
-  const byName = new Map<string, SimulationSystem<WorldStepContext>>();
-  for (const s of stepSystems) {
-    if (byName.has(s.name)) {
-      throw new Error(`Duplicate system descriptor: ${s.name}`);
-    }
-    byName.set(s.name, s);
-  }
-
-  const executionSet = new Set(SYSTEM_EXECUTION_ORDER);
-  const orphaned = [...byName.keys()].filter((name) => !executionSet.has(name));
-  if (orphaned.length > 0) {
-    throw new Error(`Systems implemented but missing from phases.ts: ${orphaned.join(", ")}`);
-  }
-  const missing = SYSTEM_EXECUTION_ORDER.filter((name) => !byName.has(name));
-  if (missing.length > 0) {
-    throw new Error(`Systems declared in phases.ts but not implemented: ${missing.join(", ")}`);
-  }
-
-  const orderedSystems = SYSTEM_EXECUTION_ORDER.map((name) => byName.get(name)!);
-
   return {
     systems() {
-      return orderedSystems.map((system) => system.name);
+      return STEP_SYSTEMS.map((system) => system.name);
     },
     systemPlan() {
-      return describeSimulationSystems(orderedSystems);
+      return describeSimulationSystems(STEP_SYSTEMS);
     },
     getEntity(id: string) {
       const entity = components.getEntity(id);
@@ -217,7 +127,7 @@ export function createWorld(input: WorldDefinition) {
       stimuli.push(stimulus);
     },
     step(deltaMs: number) {
-      runSimulationSystems(orderedSystems, {
+      runSimulationSystems(STEP_SYSTEMS, {
         deltaMs,
         components,
         physics,

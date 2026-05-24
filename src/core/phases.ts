@@ -10,43 +10,73 @@
  *  SIMULATE    : physics integration and final position sync
  */
 
+import type { SimulationSystem } from "@/core/simulation-system";
+import type { WorldStepContext } from "@/core/world-step-context";
+import {
+  UserInteractionBehaviorSystem,
+  AgentEventBehaviorSystem,
+  CollisionBehaviorSystem,
+  BehaviorSelectionSystem,
+  AutonomousBehaviorSystem,
+  ArrivalBehaviorSystem,
+} from "@/features/behavior/systems";
+import { ContactSystem } from "@/features/contact/systems";
+import {
+  LocomotionModeSystem,
+  ClimbApproachSystem,
+  ClimbDismountSystem,
+  LocomotionActiveStateSystem,
+  ClimbAttachmentSystem,
+  MotionTargetSystem,
+  WalkSystem,
+  JumpSystem,
+  WallClimbSystem,
+  IntentSteeringSystem,
+  FlightSystem,
+} from "@/features/movement/systems";
+import {
+  PhysicsTransformSyncSystemPre,
+  PhysicsTransformSyncSystemPost,
+  PhysicsIntegrationSystem,
+} from "@/features/physics/systems";
+
 export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
 
-export const SYSTEM_PHASES: Record<PhaseName, string[]> = {
+export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepContext>>> = {
   PRE_UPDATE: [
-    "PhysicsTransformSyncSystemPre",
-    "ContactSystem",
+    PhysicsTransformSyncSystemPre,
+    ContactSystem,
   ],
 
   BEHAVIOR: [
-    "UserInteractionBehaviorSystem", // priority 1: user touch / pointer events
-    "AgentEventBehaviorSystem",       // priority 2: external agent stimuli
-    "CollisionBehaviorSystem",        // priority 3: entity overlap avoidance
-    "BehaviorSelectionSystem",        // priority 4a: personality-weighted next behavior
-    "AutonomousBehaviorSystem",       // priority 4b: idle speech
+    UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
+    AgentEventBehaviorSystem,       // priority 2: external agent stimuli
+    CollisionBehaviorSystem,        // priority 3: entity overlap avoidance
+    BehaviorSelectionSystem,        // priority 4a: personality-weighted next behavior
+    AutonomousBehaviorSystem,       // priority 4b: idle speech
   ],
 
   UPDATE: [
-    "LocomotionModeSystem",
-    "ClimbApproachSystem",
-    "ArrivalBehaviorSystem",
-    "ClimbDismountSystem",
-    "LocomotionActiveStateSystem",
-    "ClimbAttachmentSystem",
-    "MotionTargetSystem",
+    LocomotionModeSystem,
+    ClimbApproachSystem,
+    ArrivalBehaviorSystem,
+    ClimbDismountSystem,
+    LocomotionActiveStateSystem,
+    ClimbAttachmentSystem,
+    MotionTargetSystem,
   ],
 
   POST_UPDATE: [
-    "WalkSystem",
-    "JumpSystem",
-    "WallClimbSystem",
-    "IntentSteeringSystem",
-    "FlightSystem",
+    WalkSystem,
+    JumpSystem,
+    WallClimbSystem,
+    IntentSteeringSystem,
+    FlightSystem,
   ],
 
   SIMULATE: [
-    "PhysicsIntegrationSystem",
-    "PhysicsTransformSyncSystemPost",
+    PhysicsIntegrationSystem,
+    PhysicsTransformSyncSystemPost,
   ],
 };
 
@@ -58,7 +88,7 @@ export const PHASE_ORDER: PhaseName[] = [
   "SIMULATE",
 ];
 
-/** Flattened system name list in execution order, matching the pipeline above. */
-export const SYSTEM_EXECUTION_ORDER: string[] = PHASE_ORDER.flatMap(
+/** Flattened per-tick pipeline in execution order. Single source of truth. */
+export const STEP_SYSTEMS: Array<SimulationSystem<WorldStepContext>> = PHASE_ORDER.flatMap(
   (phase) => SYSTEM_PHASES[phase],
 );
