@@ -91,7 +91,11 @@ export function runClimbAttachmentSystem(
       physics.setVelocity(id, { x: 0 });
 
       const climbIntent = components.getComponent(id, "ClimbIntentState");
-      if (climbIntent && climbIntent.surfaceEntityId === contact.climbableSurfaceId) {
+      if (
+        climbIntent &&
+        climbIntent.phase === "approaching" &&
+        climbIntent.surfaceEntityId === contact.climbableSurfaceId
+      ) {
         climbIntent.phase = "attached";
         motion.targetEntityId = null;
         motion.targetPosition = { x: surfaceX, y: climbIntent.targetY };
@@ -105,9 +109,11 @@ export function runClimbDismountSystem(
   deltaMs: number,
 ): void {
   components.query(
-    ["MotionTarget", "ContactState", "CanWalk", "CanWallClimb", "CanJump", "JumpActionState", "ClimbDismountState"],
-    (id, [motion, contact, , , , jumpAction, climbDismount]) => {
-      if (climbDismount.phase === "airborne") {
+    ["MotionTarget", "ContactState"],
+    (id, [motion, contact]) => {
+      const climbDismount = components.getComponent(id, "ClimbDismountState");
+
+      if (climbDismount?.phase === "airborne") {
         if (contact.grounded) {
           climbDismount.phase = "coolingDown";
           climbDismount.cooldownMs = CLIMB_DISMOUNT_COOLDOWN_MS;
@@ -115,7 +121,7 @@ export function runClimbDismountSystem(
         return;
       }
 
-      if (climbDismount.phase === "coolingDown") {
+      if (climbDismount?.phase === "coolingDown") {
         climbDismount.cooldownMs = Math.max(0, climbDismount.cooldownMs - deltaMs);
         if (climbDismount.cooldownMs === 0) climbDismount.phase = "ready";
         return;
@@ -134,11 +140,18 @@ export function runClimbDismountSystem(
       }
 
       components.removeComponent(id, "ClimbingState");
-      components.setComponent(id, { type: "WalkingState" });
-      jumpAction.phase = "falling";
-      jumpAction.cooldownMs = 0;
-      climbDismount.phase = "airborne";
-      climbDismount.cooldownMs = 0;
+      if (components.getComponent(id, "CanWalk")) {
+        components.setComponent(id, { type: "WalkingState" });
+      }
+
+      const canJump = components.getComponent(id, "CanJump");
+      const jumpAction = components.getComponent(id, "JumpActionState");
+      if (canJump && jumpAction && climbDismount) {
+        jumpAction.phase = "falling";
+        jumpAction.cooldownMs = 0;
+        climbDismount.phase = "airborne";
+        climbDismount.cooldownMs = 0;
+      }
     },
   );
 }
