@@ -434,6 +434,20 @@ export function runBehaviorSelectionSystem(
     }
   });
 
+  // One pet per climbable surface at a time.  Pre-populate from entities that
+  // are already approaching or actively climbing.  Updated inside apply() so
+  // sequential entity passes in the same step also see fresh reservations.
+  const claimedSurfaces = new Set<string>();
+  components.query(["ClimbIntentState"], (otherId, [otherIntent]) => {
+    if (otherIntent.phase === "approaching") {
+      claimedSurfaces.add(otherIntent.surfaceEntityId);
+      return;
+    }
+    if (otherIntent.phase === "attached" && components.getComponent(otherId, "ClimbingState")) {
+      claimedSurfaces.add(otherIntent.surfaceEntityId);
+    }
+  });
+
   components.query(
     ["IntentState", "MotionTarget", "Transform", "BehaviorPreference"],
     (id, [intent, motion, transform, pref]) => {
@@ -527,11 +541,15 @@ export function runBehaviorSelectionSystem(
       const climbDismount = components.getComponent(id, "ClimbDismountState");
       if (canClimb && !climbing && (!climbDismount || climbDismount.phase === "ready")) {
         const surface = nearestClimbableSurface(components, ctx);
-        if (surface) {
+        // Only push the candidate when no other entity has reserved this surface.
+        if (surface && !claimedSurfaces.has(surface.id)) {
           pushCandidate(candidates, components, id, now, {
             reason: "request-climb",
             score: scoreClimb(pref) + random.next() * 0.05,
             apply: (c) => {
+              // Reserve the surface so later entities in this same pass won't
+              // double-target it (apply() runs before the next entity is processed).
+              claimedSurfaces.add(surface.id);
               c.components.setComponent(c.id, {
                 type: "ClimbIntentState",
                 phase: "approaching",
