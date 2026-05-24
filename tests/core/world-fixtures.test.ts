@@ -26,8 +26,9 @@ describe("demo scenario", () => {
       "UserInteractionBehaviorSystem",
       "AgentEventBehaviorSystem",
       "CollisionBehaviorSystem",
-      "BehaviorSelectionSystem",
+      "BehaviorDecisionSystem",
       "AutonomousBehaviorSystem",
+      "BehaviorPlanningSystem",
       // UPDATE
       "LocomotionModeSystem",
       "ClimbApproachSystem",

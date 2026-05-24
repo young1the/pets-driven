@@ -16,8 +16,9 @@ import {
   UserInteractionBehaviorSystem,
   AgentEventBehaviorSystem,
   CollisionBehaviorSystem,
-  BehaviorSelectionSystem,
+  BehaviorDecisionSystem,
   AutonomousBehaviorSystem,
+  BehaviorPlanningSystem,
   ArrivalBehaviorSystem,
 } from "@/features/behavior/systems";
 import { ContactSystem } from "@/features/contact/systems";
@@ -54,8 +55,9 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
     AgentEventBehaviorSystem,       // priority 2: external agent stimuli
     CollisionBehaviorSystem,        // priority 3: entity overlap avoidance
-    BehaviorSelectionSystem,        // priority 4a: personality-weighted next behavior
+    BehaviorDecisionSystem,         // priority 4a: personality-weighted next behavior (emits token)
     AutonomousBehaviorSystem,       // priority 4b: idle speech
+    BehaviorPlanningSystem,         // materializes the decision token into concrete state
   ],
 
   UPDATE: [

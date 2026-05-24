@@ -7,7 +7,9 @@ import type { Clock } from "@/shared/time/manual-clock";
 import type { RandomSource } from "@/shared/random/seeded-random";
 import {
   BEHAVIOR_PRIORITY,
+  type BehaviorDecisionKind,
   type BehaviorDecisionSource,
+  type BehaviorDecisionTokenComponent,
   type BehaviorPreferenceComponent,
   type PetIntent,
 } from "./components";
@@ -304,22 +306,14 @@ export function runArrivalBehaviorSystem(components: ComponentStore): void {
   );
 }
 
-// ── BehaviorSelectionSystem helpers ───────────────────────────────────────
+// ── BehaviorDecisionSystem helpers ────────────────────────────────────────
 
-type ApplyCtx = {
-  components: ComponentStore;
-  id: string;
-  petX: number;
-  petY: number;
-  bounds: { width: number; height: number };
-  random: RandomSource;
-  userAnchor: { id: string; x: number; y: number } | null;
-};
+type TokenFields = Omit<BehaviorDecisionTokenComponent, "type" | "decidedAt" | "consumed" | "kind">;
 
 type Candidate = {
-  reason: string;
+  kind: BehaviorDecisionKind;
   score: number;
-  apply(ctx: ApplyCtx): void;
+  build(): TokenFields;
 };
 
 function pushCandidate(
@@ -329,7 +323,7 @@ function pushCandidate(
   now: number,
   candidate: Candidate,
 ): void {
-  if (isAutonomousRepeatCoolingDown(components, id, candidate.reason, now)) return;
+  if (isAutonomousRepeatCoolingDown(components, id, candidate.kind, now)) return;
   candidates.push(candidate);
 }
 
@@ -381,44 +375,50 @@ function scoreIdleStay(pref: BehaviorPreferenceComponent): number {
 }
 
 function pickWanderPosition(
-  ctx: ApplyCtx,
+  petX: number,
+  petY: number,
+  bounds: { width: number; height: number },
+  random: RandomSource,
   range: "near" | "far",
 ): { x: number; y: number } {
   const margin = 48;
-  const angle = ctx.random.next() * Math.PI * 2;
+  const angle = random.next() * Math.PI * 2;
   const radius =
     range === "near"
-      ? 60 + ctx.random.next() * 80   // 60–140 px
-      : 200 + ctx.random.next() * 200; // 200–400 px
+      ? 60 + random.next() * 80   // 60–140 px
+      : 200 + random.next() * 200; // 200–400 px
   return {
-    x: clamp(ctx.petX + Math.cos(angle) * radius, margin, ctx.bounds.width - margin),
-    y: clamp(ctx.petY + Math.sin(angle) * radius, margin, ctx.bounds.height - margin),
+    x: clamp(petX + Math.cos(angle) * radius, margin, bounds.width - margin),
+    y: clamp(petY + Math.sin(angle) * radius, margin, bounds.height - margin),
   };
 }
 
-function setIntent(ctx: ApplyCtx, intent: PetIntent): void {
-  ctx.components.setComponent(ctx.id, { type: "IntentState", intent });
+function setPetIntent(components: ComponentStore, id: string, intent: PetIntent): void {
+  components.setComponent(id, { type: "IntentState", intent });
 }
 
-function isNearUserAnchor(ctx: ApplyCtx): boolean {
-  if (!ctx.userAnchor) return false;
-
-  const dx = ctx.userAnchor.x - ctx.petX;
-  const dy = ctx.userAnchor.y - ctx.petY;
-  const isFlying = !!ctx.components.getComponent(ctx.id, "FlyingState");
+function isNearUserAnchor(
+  userAnchor: { x: number; y: number } | null,
+  petX: number,
+  petY: number,
+  isFlying: boolean,
+): boolean {
+  if (!userAnchor) return false;
+  const dx = userAnchor.x - petX;
+  const dy = userAnchor.y - petY;
   const distance = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
-
   return distance <= USER_PROXIMITY_RADIUS;
 }
 
-// ── BehaviorSelectionSystem (priority 4: autonomous) ─────────────────────
+// ── BehaviorDecisionSystem (priority 4: autonomous) ──────────────────────
 //
-// Trigger: no active claim AND intent !== "seek" AND no motion target.
+// Trigger: no active claim AND intent === "idle" AND no motion target.
 // Scores all candidates using BehaviorPreference weights + seeded random jitter,
-// then commits the winner via IntentState / MotionTarget / JumpActionState /
-// ClimbIntentState and claims the entity with source="autonomous".
+// then emits a BehaviorDecisionToken and claims the entity with source="autonomous".
+// Does NOT mutate MotionTarget / IntentState / JumpActionState / ClimbIntentState —
+// that is the responsibility of BehaviorPlanningSystem.
 
-export function runBehaviorSelectionSystem(
+export function runBehaviorDecisionSystem(
   components: ComponentStore,
   clock: Clock,
   random: RandomSource,
@@ -427,7 +427,7 @@ export function runBehaviorSelectionSystem(
   const now = clock.now();
 
   // One pet per climbable surface at a time.  Pre-populate from entities that
-  // are already approaching or actively climbing.  Updated inside apply() so
+  // are already approaching or actively climbing.  Updated on winner selection so
   // sequential entity passes in the same step also see fresh reservations.
   const claimedSurfaces = new Set<string>();
   components.query(["ClimbIntentState"], (otherId, [otherIntent]) => {
@@ -462,57 +462,32 @@ export function runBehaviorSelectionSystem(
         ? { id: perceptionAnchor.id, x: perceptionAnchor.position.x, y: perceptionAnchor.position.y }
         : null;
 
-      const ctx: ApplyCtx = {
-        components,
-        id,
-        petX: transform.position.x,
-        petY: transform.position.y,
-        bounds,
-        random,
-        userAnchor,
-      };
+      const petX = transform.position.x;
+      const petY = transform.position.y;
+      const isFlying = !!components.getComponent(id, "FlyingState");
 
       const candidates: Candidate[] = [];
 
       pushCandidate(candidates, components, id, now, {
-        reason: "wander-near",
+        kind: "wander-near",
         score: scoreWanderNear(pref) + random.next() * 0.05,
-        apply: (c) => {
-          c.components.setComponent(c.id, {
-            type: "MotionTarget",
-            targetEntityId: null,
-            targetPosition: pickWanderPosition(c, "near"),
-          });
-          setIntent(c, "active");
-        },
+        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near") }),
       });
 
       pushCandidate(candidates, components, id, now, {
-        reason: "wander-far",
+        kind: "wander-far",
         score: scoreWanderFar(pref) + random.next() * 0.05,
-        apply: (c) => {
-          c.components.setComponent(c.id, {
-            type: "MotionTarget",
-            targetEntityId: null,
-            targetPosition: pickWanderPosition(c, "far"),
-          });
-          setIntent(c, "active");
-        },
+        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "far") }),
       });
 
-      if (userAnchor && !isNearUserAnchor(ctx)) {
+      if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
         pushCandidate(candidates, components, id, now, {
-          reason: "seek-user",
+          kind: "seek-user",
           score: scoreSeekUser(pref) + random.next() * 0.05,
-          apply: (c) => {
-            if (!c.userAnchor) return;
-            c.components.setComponent(c.id, {
-              type: "MotionTarget",
-              targetEntityId: c.userAnchor.id,
-              targetPosition: { x: c.userAnchor.x, y: c.userAnchor.y },
-            });
-            setIntent(c, "seek");
-          },
+          build: () => ({
+            targetEntityId: userAnchor.id,
+            targetPosition: { x: userAnchor.x, y: userAnchor.y },
+          }),
         });
       }
 
@@ -521,17 +496,10 @@ export function runBehaviorSelectionSystem(
       const contact = components.getComponent(id, "ContactState");
       if (canJump && jumpState?.phase === "ready" && (!contact || contact.grounded)) {
         pushCandidate(candidates, components, id, now, {
-          reason: "request-jump",
+          kind: "request-jump",
           score: scoreJump(pref) + random.next() * 0.05,
-          apply: (c) => {
-            c.components.setComponent(c.id, {
-              type: "JumpActionState",
-              phase: "requested",
-              cooldownMs: jumpState.cooldownMs,
-            });
-            // Jump is a one-shot action with no arrival event, so intent stays
-            // "idle". BehaviorSelectionSystem re-fires after the claim expires.
-          },
+          // Jump is a one-shot action; Planning reads JumpActionState directly.
+          build: () => ({}),
         });
       }
 
@@ -547,38 +515,96 @@ export function runBehaviorSelectionSystem(
             : null;
         if (surface) {
           pushCandidate(candidates, components, id, now, {
-            reason: "request-climb",
+            kind: "request-climb",
             score: scoreClimb(pref) + random.next() * 0.05,
-            apply: (c) => {
+            build: () => {
               // Reserve the surface so later entities in this same pass won't
-              // double-target it (apply() runs before the next entity is processed).
+              // double-target it (build() runs before the next entity is processed).
               claimedSurfaces.add(surface.id);
-              c.components.setComponent(c.id, {
-                type: "ClimbIntentState",
-                phase: "approaching",
-                surfaceEntityId: surface.id,
-                targetY: surface.y - 80,
-              });
-              setIntent(c, "active");
+              return { climbSurfaceId: surface.id, climbTargetY: surface.y - 80 };
             },
           });
         }
       }
 
       pushCandidate(candidates, components, id, now, {
-        reason: "idle-stay",
+        kind: "idle-stay",
         score: scoreIdleStay(pref) + random.next() * 0.05,
-        apply: () => {
-          // Intentional no-op: intent stays idle, target stays null.
-        },
+        build: () => ({}),
       });
 
       if (candidates.length === 0) return;
       const winner = candidates.reduce((best, c) => (c.score > best.score ? c : best));
-      winner.apply(ctx);
-      claim(components, id, "autonomous", now, winner.reason);
+      components.setComponent(id, {
+        type: "BehaviorDecisionToken",
+        kind: winner.kind,
+        decidedAt: now,
+        consumed: false,
+        ...winner.build(),
+      });
+      claim(components, id, "autonomous", now, winner.kind);
     },
   );
+}
+
+// ── BehaviorPlanningSystem ────────────────────────────────────────────────
+//
+// Runs at end of BEHAVIOR phase, after BehaviorDecisionSystem.
+// Reads the unconsumed BehaviorDecisionToken and materializes it into
+// concrete state components (MotionTarget, IntentState, JumpActionState,
+// ClimbIntentState). Marks the token consumed when done.
+
+export function runBehaviorPlanningSystem(
+  components: ComponentStore,
+  _clock: Clock,
+): void {
+  components.query(["BehaviorDecisionToken"], (id, [token]) => {
+    if (token.consumed) return;
+    switch (token.kind) {
+      case "wander-near":
+      case "wander-far":
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: null,
+          targetPosition: token.targetPosition!,
+        });
+        setPetIntent(components, id, "active");
+        break;
+      case "seek-user":
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: token.targetEntityId ?? null,
+          targetPosition: token.targetPosition ?? null,
+        });
+        setPetIntent(components, id, "seek");
+        break;
+      case "request-jump": {
+        const jumpState = components.getComponent(id, "JumpActionState");
+        if (jumpState) {
+          components.setComponent(id, {
+            type: "JumpActionState",
+            phase: "requested",
+            cooldownMs: jumpState.cooldownMs,
+          });
+        }
+        // Jump has no arrival event, so intent stays "idle".
+        break;
+      }
+      case "request-climb":
+        components.setComponent(id, {
+          type: "ClimbIntentState",
+          phase: "approaching",
+          surfaceEntityId: token.climbSurfaceId!,
+          targetY: token.climbTargetY!,
+        });
+        setPetIntent(components, id, "active");
+        break;
+      case "idle-stay":
+        // Intentional no-op: intent stays idle, target stays null.
+        break;
+    }
+    token.consumed = true;
+  });
 }
 
 function normalize(v: Vector): Vector {
@@ -622,8 +648,8 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
   },
 };
 
-export const BehaviorSelectionSystem: SimulationSystem<WorldStepContext> = {
-  name: "BehaviorSelectionSystem",
+export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
+  name: "BehaviorDecisionSystem",
   dependsOn: ["CollisionBehaviorSystem"],
   reads: [
     "IntentState",
@@ -636,14 +662,27 @@ export const BehaviorSelectionSystem: SimulationSystem<WorldStepContext> = {
     "CanWallClimb",
   ],
   writes: [
+    "BehaviorDecisionToken",
+    "BehaviorDecisionState",
+  ],
+  update(ctx) {
+    runBehaviorDecisionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+  },
+};
+
+export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
+  name: "BehaviorPlanningSystem",
+  dependsOn: ["AutonomousBehaviorSystem"],
+  reads: ["BehaviorDecisionToken", "JumpActionState"],
+  writes: [
     "IntentState",
     "MotionTarget",
     "JumpActionState",
     "ClimbIntentState",
-    "BehaviorDecisionState",
+    "BehaviorDecisionToken",
   ],
   update(ctx) {
-    runBehaviorSelectionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+    runBehaviorPlanningSystem(ctx.components, ctx.clock);
   },
 };
 
