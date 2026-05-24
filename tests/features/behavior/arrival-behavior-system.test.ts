@@ -79,13 +79,13 @@ describe("arrival behavior system", () => {
           { type: "Transform", position: { x: 108, y: 100 } },
           { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 100, y: 100 } },
           { type: "WandersOnArrival", arrivalRadius: 16 },
-        ],
-      },
-      {
-        id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          { type: "Transform", position: { x: 100, y: 100 } },
+          {
+            type: "Perception" as const,
+            userAnchor: { id: "user-anchor", position: { x: 100, y: 100 }, distance: 8 },
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "seek" as const },
+          },
         ],
       },
     ]);
@@ -108,13 +108,13 @@ describe("arrival behavior system", () => {
           { type: "Transform", position: { x: 108, y: 521 } },
           { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 100, y: 500 } },
           { type: "WandersOnArrival", arrivalRadius: 16 },
-        ],
-      },
-      {
-        id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          { type: "Transform", position: { x: 100, y: 500 } },
+          {
+            type: "Perception" as const,
+            userAnchor: { id: "user-anchor", position: { x: 100, y: 500 }, distance: Math.hypot(8, 21) },
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "seek" as const },
+          },
         ],
       },
     ]);
@@ -134,13 +134,13 @@ describe("arrival behavior system", () => {
           { type: "Transform", position: { x: 200, y: 100 } },
           { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: null },
           { type: "WandersOnArrival", arrivalRadius: 16 },
-        ],
-      },
-      {
-        id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          { type: "Transform", position: { x: 100, y: 100 } },
+          {
+            type: "Perception" as const,
+            userAnchor: { id: "user-anchor", position: { x: 100, y: 100 }, distance: 100 },
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "seek" as const },
+          },
         ],
       },
     ]);

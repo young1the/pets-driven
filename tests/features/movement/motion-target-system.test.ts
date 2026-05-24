@@ -10,13 +10,13 @@ describe("motion target system", () => {
         components: [
           { type: "IntentState", intent: "seek" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
-        ],
-      },
-      {
-        id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          { type: "Transform", position: { x: 480, y: 500 } },
+          {
+            type: "Perception" as const,
+            userAnchor: { id: "user-anchor", position: { x: 480, y: 500 }, distance: 300 },
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "seek" as const },
+          },
         ],
       },
     ]);

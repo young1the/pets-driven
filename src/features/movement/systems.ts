@@ -180,19 +180,12 @@ export function runMotionTargetSystem(
   random: RandomSource,
   bounds: { width: number; height: number },
 ): void {
-  type AnchorEntry = { id: string; x: number; y: number };
-  const anchors: AnchorEntry[] = [];
-
-  components.query(["Transform", "UserAnchor"], (id, [transform]) => {
-    anchors.push({ id, x: transform.position.x, y: transform.position.y });
-  });
-
-  const anchor = anchors[0];
-
   components.query(["IntentState", "MotionTarget"], (_id, [intent, motion]) => {
     if (intent.intent === "seek") {
+      const perception = components.getComponent(_id, "Perception");
+      const anchor = perception?.userAnchor ?? null;
       motion.targetEntityId = anchor?.id ?? null;
-      motion.targetPosition = anchor ? { x: anchor.x, y: anchor.y } : null;
+      motion.targetPosition = anchor ? { x: anchor.position.x, y: anchor.position.y } : null;
       return;
     }
 
@@ -436,7 +429,7 @@ export const ClimbAttachmentSystem: SimulationSystem<WorldStepContext> = {
 export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
   name: "MotionTargetSystem",
   dependsOn: ["ClimbAttachmentSystem"],
-  reads: ["IntentState", "MotionTarget", "Transform", "UserAnchor"],
+  reads: ["IntentState", "MotionTarget", "Transform", "Perception"],
   writes: ["MotionTarget"],
   update(ctx) {
     runMotionTargetSystem(ctx.components, ctx.random, ctx.bounds);

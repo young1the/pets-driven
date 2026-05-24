@@ -21,6 +21,7 @@ import {
   ArrivalBehaviorSystem,
 } from "@/features/behavior/systems";
 import { ContactSystem } from "@/features/contact/systems";
+import { PerceptionSystem } from "@/features/perception/systems";
 import {
   LocomotionModeSystem,
   ClimbApproachSystem,
@@ -46,6 +47,7 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
   PRE_UPDATE: [
     PhysicsTransformSyncSystemPre,
     ContactSystem,
+    PerceptionSystem,
   ],
 
   BEHAVIOR: [
