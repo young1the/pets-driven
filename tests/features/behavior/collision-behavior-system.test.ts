@@ -118,6 +118,28 @@ describe("collision behavior system", () => {
     expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
   });
 
+  it("expires the collision claim as soon as overlap ends", () => {
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      makePet("pet-a", 100, "idle"),
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    // First run: pets are overlapping → claim is written
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
+
+    // Move pet-b far away so they no longer overlap, advance a little (still within the 1 s window)
+    store.setComponent("pet-b", { type: "Transform", position: { x: 500, y: 500 } });
+    clock.advanceBy(200); // at 1200 ms; claim expires at 2000 ms
+
+    // Second run: overlap gone → claim should be expired immediately
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    const claim = store.getComponent("pet-a", "BehaviorDecisionState");
+    expect(claim?.expiresAt).toBeLessThanOrEqual(clock.now());
+  });
+
   it("overwrites an expired claim", () => {
     const clock = createManualClock(10000);
     const store = createComponentStore([
