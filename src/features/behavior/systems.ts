@@ -1,4 +1,6 @@
 import type { ComponentStore } from "@/core/component-store";
+import type { SimulationSystem } from "@/core/simulation-system";
+import type { WorldStepContext } from "@/core/world-step-context";
 import type { Vector } from "@/features/physics/components";
 import type { Stimulus } from "@/features/stimulus/stimulus";
 import type { Clock } from "@/shared/time/manual-clock";
@@ -609,3 +611,81 @@ function normalize(v: Vector): Vector {
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
+
+// ── System descriptors ─────────────────────────────────────────────────────
+
+export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> = {
+  name: "UserInteractionBehaviorSystem",
+  dependsOn: ["ContactSystem"],
+  reads: [],
+  writes: ["BehaviorDecisionState"],
+  update(ctx) {
+    runUserInteractionBehaviorSystem(ctx.components, ctx.clock);
+  },
+};
+
+export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
+  name: "AgentEventBehaviorSystem",
+  dependsOn: ["UserInteractionBehaviorSystem"],
+  reads: ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
+  writes: ["IntentState", "SpeechState", "ActivityState", "BehaviorDecisionState"],
+  update(ctx) {
+    runAgentEventBehaviorSystem(ctx.components, ctx.stimuli.drain(), ctx.clock);
+  },
+};
+
+export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
+  name: "CollisionBehaviorSystem",
+  dependsOn: ["AgentEventBehaviorSystem"],
+  reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget"],
+  writes: ["MotionTarget", "BehaviorDecisionState"],
+  update(ctx) {
+    runCollisionBehaviorSystem(ctx.components, ctx.bounds, ctx.clock);
+  },
+};
+
+export const BehaviorSelectionSystem: SimulationSystem<WorldStepContext> = {
+  name: "BehaviorSelectionSystem",
+  dependsOn: ["CollisionBehaviorSystem"],
+  reads: [
+    "IntentState",
+    "MotionTarget",
+    "Transform",
+    "BehaviorPreference",
+    "UserAnchor",
+    "CanJump",
+    "JumpActionState",
+    "CanWallClimb",
+    "ClimbableSurface",
+  ],
+  writes: [
+    "IntentState",
+    "MotionTarget",
+    "JumpActionState",
+    "ClimbIntentState",
+    "BehaviorDecisionState",
+  ],
+  update(ctx) {
+    runBehaviorSelectionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+  },
+};
+
+export const AutonomousBehaviorSystem: SimulationSystem<WorldStepContext> = {
+  name: "AutonomousBehaviorSystem",
+  dependsOn: ["BehaviorSelectionSystem"],
+  reads: ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
+  writes: ["SpeechState", "BehaviorDecisionState"],
+  update(ctx) {
+    runAutonomousBehaviorSystem(ctx.components, ctx.clock);
+  },
+};
+
+export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
+  name: "ArrivalBehaviorSystem",
+  dependsOn: ["ClimbApproachSystem"],
+  reads: ["Transform", "MotionTarget", "WandersOnArrival", "IntentState", "ClimbingState", "UserAnchor", "ClimbIntentState"],
+  writes: ["MotionTarget", "IntentState"],
+  update(ctx) {
+    runArrivalBehaviorSystem(ctx.components);
+  },
+};
