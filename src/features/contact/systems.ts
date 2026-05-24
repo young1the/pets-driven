@@ -1,4 +1,6 @@
 import type { ComponentStore } from "@/core/component-store";
+import type { SimulationSystem } from "@/core/simulation-system";
+import type { WorldStepContext } from "@/core/world-step-context";
 import type { Vector } from "@/features/physics/components";
 
 const CLIMBABLE_CONTACT_X_RADIUS = 56;
@@ -53,3 +55,15 @@ export function runContactSystem(components: ComponentStore): void {
     },
   );
 }
+
+// ── System descriptor ──────────────────────────────────────────────────────
+
+export const ContactSystem: SimulationSystem<WorldStepContext> = {
+  name: "ContactSystem",
+  dependsOn: ["PhysicsTransformSyncSystemPre"],
+  reads: ["Transform", "PhysicsBody", "ContactState", "ClimbableSurface", "Ground"],
+  writes: ["ContactState"],
+  update(ctx) {
+    runContactSystem(ctx.components);
+  },
+};

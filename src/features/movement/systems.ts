@@ -1,5 +1,7 @@
 import type { ComponentStore } from "@/core/component-store";
 import type { SimulationComponentType } from "@/core/components";
+import type { SimulationSystem } from "@/core/simulation-system";
+import type { WorldStepContext } from "@/core/world-step-context";
 import type { MatterPhysicsWorld } from "@/features/physics/matter-physics-world";
 import type { Force } from "@/features/physics/systems";
 import type { Vector } from "@/features/physics/components";
@@ -378,3 +380,115 @@ function switchLocomotion(
   if (mode === "climb") components.setComponent(id, { type: "ClimbingState" });
   if (mode === "fly") components.setComponent(id, { type: "FlyingState" });
 }
+
+// ── System descriptors ─────────────────────────────────────────────────────
+
+export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
+  name: "LocomotionModeSystem",
+  dependsOn: ["AutonomousBehaviorSystem"],
+  reads: ["ContactState", "MotionTarget", "WalkingState", "ClimbingState", "FlyingState", "ClimbIntentState", "CanWallClimb", "ClimbDismountState"],
+  writes: ["WalkingState", "ClimbingState", "FlyingState"],
+  update(ctx) {
+    runLocomotionModeSystem(ctx.components);
+  },
+};
+
+export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
+  name: "ClimbApproachSystem",
+  dependsOn: ["LocomotionModeSystem"],
+  reads: ["ClimbingState", "Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb", "ClimbableSurface"],
+  writes: ["MotionTarget"],
+  update(ctx) {
+    runClimbApproachSystem(ctx.components);
+  },
+};
+
+export const ClimbDismountSystem: SimulationSystem<WorldStepContext> = {
+  name: "ClimbDismountSystem",
+  dependsOn: ["ArrivalBehaviorSystem"],
+  reads: ["ClimbingState", "MotionTarget", "ContactState", "CanWalk", "CanWallClimb", "CanJump", "JumpActionState", "ClimbDismountState", "ClimbIntentState"],
+  writes: ["WalkingState", "ClimbingState", "JumpActionState", "ClimbDismountState"],
+  update(ctx) {
+    runClimbDismountSystem(ctx.components, ctx.deltaMs);
+  },
+};
+
+export const LocomotionActiveStateSystem: SimulationSystem<WorldStepContext> = {
+  name: "LocomotionActiveStateSystem",
+  dependsOn: ["ClimbDismountSystem"],
+  reads: ["ContactState", "WalkingState", "ClimbingState", "FlyingState"],
+  writes: ["AirborneState"],
+  update(ctx) {
+    runLocomotionActiveStateSystem(ctx.components);
+  },
+};
+
+export const ClimbAttachmentSystem: SimulationSystem<WorldStepContext> = {
+  name: "ClimbAttachmentSystem",
+  dependsOn: ["LocomotionActiveStateSystem"],
+  reads: ["ClimbingState", "ContactState", "Transform", "MotionTarget", "ClimbIntentState"],
+  writes: ["Transform", "MotionTarget", "PhysicsPosition", "PhysicsVelocity"],
+  update(ctx) {
+    runClimbAttachmentSystem(ctx.components, ctx.physics);
+  },
+};
+
+export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
+  name: "MotionTargetSystem",
+  dependsOn: ["ClimbAttachmentSystem"],
+  reads: ["IntentState", "MotionTarget", "Transform", "UserAnchor"],
+  writes: ["MotionTarget"],
+  update(ctx) {
+    runMotionTargetSystem(ctx.components, ctx.random, ctx.bounds);
+  },
+};
+
+export const WalkSystem: SimulationSystem<WorldStepContext> = {
+  name: "WalkSystem",
+  dependsOn: ["MotionTargetSystem"],
+  reads: ["Transform", "WalkingState", "ContactState", "CanWalk", "MotionTarget", "NavigationState"],
+  writes: ["PhysicsForce"],
+  update(ctx) {
+    runWalkSystem(ctx.components, ctx.forceGroups);
+  },
+};
+
+export const JumpSystem: SimulationSystem<WorldStepContext> = {
+  name: "JumpSystem",
+  dependsOn: ["MotionTargetSystem"],
+  reads: ["WalkingState", "ContactState", "CanJump", "JumpActionState"],
+  writes: ["PhysicsForce", "JumpActionState"],
+  update(ctx) {
+    runJumpSystem(ctx.components, ctx.deltaMs, ctx.forceGroups);
+  },
+};
+
+export const WallClimbSystem: SimulationSystem<WorldStepContext> = {
+  name: "WallClimbSystem",
+  dependsOn: ["MotionTargetSystem"],
+  reads: ["Transform", "ClimbingState", "CanWallClimb", "MotionTarget", "ContactState"],
+  writes: ["PhysicsVelocity"],
+  update(ctx) {
+    runWallClimbSystem(ctx.components, ctx.physics);
+  },
+};
+
+export const IntentSteeringSystem: SimulationSystem<WorldStepContext> = {
+  name: "IntentSteeringSystem",
+  dependsOn: ["MotionTargetSystem"],
+  reads: ["Transform", "FlyingState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
+  writes: ["PhysicsForce"],
+  update(ctx) {
+    runIntentSteeringSystem(ctx.components, ctx.forceGroups);
+  },
+};
+
+export const FlightSystem: SimulationSystem<WorldStepContext> = {
+  name: "FlightSystem",
+  dependsOn: ["IntentSteeringSystem"],
+  reads: ["PhysicsBody", "FlyingState", "CanFly"],
+  writes: ["PhysicsGravityScale"],
+  update(ctx) {
+    runFlightSystem(ctx.components, ctx.physics);
+  },
+};

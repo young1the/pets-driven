@@ -19,7 +19,7 @@ describe("demo scenario", () => {
 
     expect(scenario.world.systems()).toEqual([
       // PRE_UPDATE
-      "PhysicsTransformSyncSystem",
+      "PhysicsTransformSyncSystemPre",
       "ContactSystem",
       // BEHAVIOR
       "UserInteractionBehaviorSystem",
@@ -43,7 +43,7 @@ describe("demo scenario", () => {
       "FlightSystem",
       // SIMULATE
       "PhysicsIntegrationSystem",
-      "PhysicsTransformSyncSystem",
+      "PhysicsTransformSyncSystemPost",
     ]);
   });
 
@@ -52,7 +52,7 @@ describe("demo scenario", () => {
 
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ContactSystem",
-      dependsOn: ["PhysicsTransformSyncSystem"],
+      dependsOn: ["PhysicsTransformSyncSystemPre"],
       reads: [
         "Transform",
         "PhysicsBody",

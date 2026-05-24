@@ -14,7 +14,7 @@ export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "
 
 export const SYSTEM_PHASES: Record<PhaseName, string[]> = {
   PRE_UPDATE: [
-    "PhysicsTransformSyncSystem",
+    "PhysicsTransformSyncSystemPre",
     "ContactSystem",
   ],
 
@@ -46,7 +46,7 @@ export const SYSTEM_PHASES: Record<PhaseName, string[]> = {
 
   SIMULATE: [
     "PhysicsIntegrationSystem",
-    "PhysicsTransformSyncSystem",
+    "PhysicsTransformSyncSystemPost",
   ],
 };
 

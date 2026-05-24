@@ -1,4 +1,6 @@
 import type { ComponentStore } from "@/core/component-store";
+import type { SimulationSystem } from "@/core/simulation-system";
+import type { WorldStepContext } from "@/core/world-step-context";
 import type { MatterPhysicsWorld } from "./matter-physics-world";
 
 export type Force = {
@@ -57,3 +59,34 @@ export function runPhysicsIntegrationSystem(
 
   physics.step(deltaMs);
 }
+
+// ── System descriptors ─────────────────────────────────────────────────────
+
+export const PhysicsTransformSyncSystemPre: SimulationSystem<WorldStepContext> = {
+  name: "PhysicsTransformSyncSystemPre",
+  reads: ["PhysicsBody"],
+  writes: ["Transform"],
+  update(ctx) {
+    runPhysicsTransformSyncSystem(ctx.components, ctx.physics);
+  },
+};
+
+export const PhysicsTransformSyncSystemPost: SimulationSystem<WorldStepContext> = {
+  name: "PhysicsTransformSyncSystemPost",
+  dependsOn: ["PhysicsIntegrationSystem"],
+  reads: ["PhysicsWorld"],
+  writes: ["Transform"],
+  update(ctx) {
+    runPhysicsTransformSyncSystem(ctx.components, ctx.physics);
+  },
+};
+
+export const PhysicsIntegrationSystem: SimulationSystem<WorldStepContext> = {
+  name: "PhysicsIntegrationSystem",
+  dependsOn: ["WalkSystem", "JumpSystem", "WallClimbSystem", "IntentSteeringSystem", "FlightSystem"],
+  reads: ["PhysicsForce"],
+  writes: ["PhysicsWorld"],
+  update(ctx) {
+    runPhysicsIntegrationSystem(ctx.physics, ctx.deltaMs, ctx.forceGroups);
+  },
+};
