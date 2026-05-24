@@ -179,7 +179,7 @@ export function runCollisionBehaviorSystem(
   // overlapping.  Without this, a pet that successfully moved to its avoidance
   // position stays frozen idle until the 1 s claim expires even though it is
   // already clear of the other entity.  Expiring immediately lets
-  // BehaviorSelectionSystem pick a new behavior in the same frame.
+  // BehaviorDecisionSystem pick a new behavior in the same frame.
   for (const entity of entities) {
     if (components.getComponent(entity.id, "ClimbingState")) continue;
     const existing = components.getComponent(entity.id, "BehaviorDecisionState");
@@ -193,7 +193,7 @@ export function runCollisionBehaviorSystem(
     );
 
     if (!stillOverlapping) {
-      existing.expiresAt = now; // allow BehaviorSelectionSystem to act this frame
+      existing.expiresAt = now; // allow BehaviorDecisionSystem to act this frame
     }
   }
 
@@ -323,7 +323,10 @@ function softmaxSample(
   random: RandomSource,
 ): Candidate {
   const T = T_BASE * (1 + ALPHA_T * neuroticism);
-  const weights = candidates.map((c) => Math.exp(c.score / T));
+  // Subtract max before exp() to prevent overflow when future phases add
+  // high-magnitude scores (approach-pet, flee, collision response, etc.).
+  const maxScore = Math.max(...candidates.map((c) => c.score));
+  const weights = candidates.map((c) => Math.exp((c.score - maxScore) / T));
   const total = weights.reduce((s, w) => s + w, 0);
   let r = random.next() * total;
   for (let i = 0; i < candidates.length; i++) {
@@ -449,8 +452,9 @@ function isNearUserAnchor(
 // ── BehaviorDecisionSystem (priority 4: autonomous) ──────────────────────
 //
 // Trigger: no active claim AND intent === "idle" AND no motion target.
-// Scores all candidates using BehaviorPreference weights + seeded random jitter,
-// then emits a BehaviorDecisionToken and claims the entity with source="autonomous".
+// Scores all candidates using OCEAN Personality weights, then samples a winner
+// via softmax (temperature scales with neuroticism: high N → flatter distribution).
+// Emits a BehaviorDecisionToken and claims the entity with source="autonomous".
 // Does NOT mutate MotionTarget / IntentState / JumpActionState / ClimbIntentState —
 // that is the responsibility of BehaviorPlanningSystem.
 

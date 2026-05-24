@@ -255,7 +255,7 @@ describe("PlaygroundApp", () => {
       screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
     );
 
-    // Frame 1: BehaviorSelectionSystem fires for all pets (all idle, no targets, no claims).
+    // Frame 1: BehaviorDecisionSystem fires for all pets (all idle, no targets, no claims).
     // prevSnapshotRef is established with autonomous decisions present.
     fireEvent.click(
       screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),

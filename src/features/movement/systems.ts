@@ -351,7 +351,7 @@ function canEnterClimb(
 ): boolean {
   if (!contact.climbableSurfaceId || !contact.climbableSurfacePosition) return false;
   // A stale "attached" intent from a completed climb must not re-trigger entry.
-  // Only an explicit "approaching" request (from BehaviorSelectionSystem) opens
+  // Only an explicit "approaching" request (from BehaviorDecisionSystem) opens
   // the gate. Undefined climbIntent is allowed for legacy/non-preference pets.
   if (climbIntent && climbIntent.phase !== "approaching") return false;
   if (climbIntent && contact.climbableSurfaceId !== climbIntent.surfaceEntityId) return false;
