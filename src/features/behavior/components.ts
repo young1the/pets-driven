@@ -73,17 +73,22 @@ export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
 };
 
 /**
- * Personality weights consumed by BehaviorSelectionSystem.
+ * Big-Five (OCEAN) personality traits driving behavior selection.
  * Each axis is 0..1; values are tendencies, not absolutes.
+ *
+ * O (openness)          — exploration; boosts wander-far and request-climb
+ * C (conscientiousness) — follow-through; lowers softmax temperature (Phase 2)
+ * E (extraversion)      — social energy; boosts seek-user, speech freq, move speed
+ * A (agreeableness)     — engagement; boosts collision-engage, approach-pet (Phase 3+)
+ * N (neuroticism)       — anxiety; boosts wander-near/flee, raises softmax temperature
+ *
+ * Replaces the former 4-axis BehaviorPreferenceComponent (deleted in Phase 1).
  */
-export type BehaviorPreferenceComponent = {
-  type: "BehaviorPreference";
-  /** Tendency for exploration — boosts wander-far. */
-  curiosity: number;
-  /** Tendency to seek the user anchor. */
-  sociability: number;
-  /** Tendency for action behaviors (jump, climb). */
-  playfulness: number;
-  /** Tendency to stay near or retreat. */
-  shyness: number;
+export type PersonalityComponent = {
+  type: "Personality";
+  openness: number;
+  conscientiousness: number;
+  extraversion: number;
+  agreeableness: number;
+  neuroticism: number;
 };
