@@ -171,6 +171,29 @@ export function runCollisionBehaviorSystem(
     },
   );
 
+  // Pass 1 — expire stale collision claims for entities that are no longer
+  // overlapping.  Without this, a pet that successfully moved to its avoidance
+  // position stays frozen idle until the 1 s claim expires even though it is
+  // already clear of the other entity.  Expiring immediately lets
+  // BehaviorSelectionSystem pick a new behavior in the same frame.
+  for (const entity of entities) {
+    if (components.getComponent(entity.id, "ClimbingState")) continue;
+    const existing = components.getComponent(entity.id, "BehaviorDecisionState");
+    if (!existing || existing.source !== "collision" || existing.expiresAt <= now) continue;
+
+    const stillOverlapping = entities.some(
+      (c) =>
+        c.id !== entity.id &&
+        Math.abs(c.x - entity.x) < entity.halfW + c.halfW &&
+        Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
+    );
+
+    if (!stillOverlapping) {
+      existing.expiresAt = now; // allow BehaviorSelectionSystem to act this frame
+    }
+  }
+
+  // Pass 2 — write new collision claims for currently-overlapping entities.
   for (const entity of entities) {
     // Do not disrupt a climbing entity — the WallClimbSystem drives position
     // via the Y component of motionTarget, so overwriting it with a 2-D
