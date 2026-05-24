@@ -557,9 +557,9 @@ describe("demo scenario", () => {
     });
 
     // Step 1: ArrivalBehaviorSystem detects that Alice is already at (600, 500) and
-    // clears the target. BehaviorSelectionSystem picks a new behavior on the NEXT pass.
+    // clears the target. BehaviorDecisionSystem picks a new behavior on the NEXT pass.
     scenario.world.step(16);
-    // Step 2: BehaviorSelectionSystem fires and commits a new motion target.
+    // Step 2: BehaviorDecisionSystem fires and commits a new motion target.
     scenario.world.step(16);
 
     const motion = scenario.world.getComponent("pet-a", "MotionTarget");
