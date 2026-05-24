@@ -263,25 +263,19 @@ export function runAutonomousBehaviorSystem(
 // Not a BEHAVIOR-phase system: it detects arrival at any target regardless of
 // which source directed the pet there.
 export function runArrivalBehaviorSystem(components: ComponentStore): void {
-  type AnchorEntry = { id: string; x: number; y: number };
-  const anchors: AnchorEntry[] = [];
-
-  components.query(["UserAnchor", "Transform"], (id, [, transform]) => {
-    anchors.push({ id, x: transform.position.x, y: transform.position.y });
-  });
-
   components.query(
     ["IntentState", "Transform", "MotionTarget", "WandersOnArrival"],
     (id, [intent, transform, motion, wandersOnArrival]) => {
       if (motion.targetEntityId) {
         if (intent.intent !== "seek") return;
-        const anchor = anchors.find((a) => a.id === motion.targetEntityId);
+        const perception = components.getComponent(id, "Perception");
+        const anchor = perception?.userAnchor;
         if (!anchor) return;
         // Flying pets can close the gap in both axes; walking pets are locked to
         // the ground and can only reduce horizontal distance — use |dx| so arrival
         // fires as soon as the walk system stops (they share the same threshold).
-        const dx = anchor.x - transform.position.x;
-        const dy = anchor.y - transform.position.y;
+        const dx = anchor.position.x - transform.position.x;
+        const dy = anchor.position.y - transform.position.y;
         const isFlying = !!components.getComponent(id, "FlyingState");
         const dist = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
         if (dist > wandersOnArrival.arrivalRadius) return;
@@ -417,25 +411,6 @@ function isNearUserAnchor(ctx: ApplyCtx): boolean {
   return distance <= USER_PROXIMITY_RADIUS;
 }
 
-function nearestClimbableSurface(
-  components: ComponentStore,
-  ctx: ApplyCtx,
-): { id: string; x: number; y: number } | null {
-  const candidates: Array<{ id: string; x: number; y: number; dist: number }> = [];
-  components.query(["ClimbableSurface", "Transform"], (id, [, transform]) => {
-    const dx = transform.position.x - ctx.petX;
-    const dy = transform.position.y - ctx.petY;
-    const dist = Math.hypot(dx, dy);
-    if (dist <= 400) {
-      candidates.push({ id, x: transform.position.x, y: transform.position.y, dist });
-    }
-  });
-  if (candidates.length === 0) return null;
-  candidates.sort((a, b) => a.dist - b.dist);
-  const nearest = candidates[0];
-  return { id: nearest.id, x: nearest.x, y: nearest.y };
-}
-
 // ── BehaviorSelectionSystem (priority 4: autonomous) ─────────────────────
 //
 // Trigger: no active claim AND intent !== "seek" AND no motion target.
@@ -450,14 +425,6 @@ export function runBehaviorSelectionSystem(
   bounds: { width: number; height: number },
 ): void {
   const now = clock.now();
-
-  // Resolve user anchor once for the whole pass.
-  let userAnchor: { id: string; x: number; y: number } | null = null;
-  components.query(["UserAnchor", "Transform"], (id, [, transform]) => {
-    if (!userAnchor) {
-      userAnchor = { id, x: transform.position.x, y: transform.position.y };
-    }
-  });
 
   // One pet per climbable surface at a time.  Pre-populate from entities that
   // are already approaching or actively climbing.  Updated inside apply() so
@@ -487,6 +454,13 @@ export function runBehaviorSelectionSystem(
       // Block if any active claim exists (same- and higher-priority guard).
       const existingClaim = components.getComponent(id, "BehaviorDecisionState");
       if (existingClaim && existingClaim.expiresAt > now) return;
+
+      // Read world context from this pet's Perception snapshot.
+      const perception = components.getComponent(id, "Perception");
+      const perceptionAnchor = perception?.userAnchor;
+      const userAnchor: { id: string; x: number; y: number } | null = perceptionAnchor
+        ? { id: perceptionAnchor.id, x: perceptionAnchor.position.x, y: perceptionAnchor.position.y }
+        : null;
 
       const ctx: ApplyCtx = {
         components,
@@ -565,9 +539,13 @@ export function runBehaviorSelectionSystem(
       const climbing = components.getComponent(id, "ClimbingState");
       const climbDismount = components.getComponent(id, "ClimbDismountState");
       if (canClimb && !climbing && (!climbDismount || climbDismount.phase === "ready")) {
-        const surface = nearestClimbableSurface(components, ctx);
-        // Only push the candidate when no other entity has reserved this surface.
-        if (surface && !claimedSurfaces.has(surface.id)) {
+        // Nearest climbable surface from Perception; skip if already reserved.
+        const nearestClimbable = perception?.nearbyClimbables[0];
+        const surface =
+          nearestClimbable && !claimedSurfaces.has(nearestClimbable.id)
+            ? { id: nearestClimbable.id, x: nearestClimbable.position.x, y: nearestClimbable.position.y }
+            : null;
+        if (surface) {
           pushCandidate(candidates, components, id, now, {
             reason: "request-climb",
             score: scoreClimb(pref) + random.next() * 0.05,
@@ -652,11 +630,10 @@ export const BehaviorSelectionSystem: SimulationSystem<WorldStepContext> = {
     "MotionTarget",
     "Transform",
     "BehaviorPreference",
-    "UserAnchor",
+    "Perception",
     "CanJump",
     "JumpActionState",
     "CanWallClimb",
-    "ClimbableSurface",
   ],
   writes: [
     "IntentState",
@@ -683,7 +660,7 @@ export const AutonomousBehaviorSystem: SimulationSystem<WorldStepContext> = {
 export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "ArrivalBehaviorSystem",
   dependsOn: ["ClimbApproachSystem"],
-  reads: ["Transform", "MotionTarget", "WandersOnArrival", "IntentState", "ClimbingState", "UserAnchor", "ClimbIntentState"],
+  reads: ["Transform", "MotionTarget", "WandersOnArrival", "IntentState", "ClimbingState", "Perception", "ClimbIntentState"],
   writes: ["MotionTarget", "IntentState"],
   update(ctx) {
     runArrivalBehaviorSystem(ctx.components);

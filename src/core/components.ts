@@ -1,3 +1,4 @@
+export type { PerceivedEntity, PerceptionComponent } from "@/features/perception/components";
 export type { Vector } from "@/features/physics/components";
 export type {
   TransformComponent,
@@ -59,6 +60,7 @@ export type {
   ClimbDismountStateComponent,
 } from "@/features/movement/components";
 
+import type { PerceptionComponent } from "@/features/perception/components";
 import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent } from "@/features/physics/components";
 import type { ContactStateComponent } from "@/features/contact/components";
 import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, BehaviorPreferenceComponent } from "@/features/behavior/components";
@@ -71,6 +73,7 @@ import type { CanWallClimbComponent, ClimbableSurfaceComponent, ClimbIntentState
 
 export type SimulationComponent =
   | ActivityStateComponent
+  | PerceptionComponent
   | AgentBindingComponent
   | BehaviorPreferenceComponent
   | AirborneStateComponent

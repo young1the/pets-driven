@@ -49,6 +49,13 @@ function createFixturePet(input: {
         shape: "rectangle" as const,
         ...DEFAULT_PET_BODY_SIZE,
       },
+      {
+        type: "Perception" as const,
+        userAnchor: null,
+        nearbyPets: [],
+        nearbyClimbables: [],
+        self: { grounded: false, climbing: false, intent: "idle" as const },
+      },
       // Default preference — per-pet entries in input.components override this.
       {
         type: "BehaviorPreference" as const,

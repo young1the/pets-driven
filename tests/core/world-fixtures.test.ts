@@ -21,6 +21,7 @@ describe("demo scenario", () => {
       // PRE_UPDATE
       "PhysicsTransformSyncSystemPre",
       "ContactSystem",
+      "PerceptionSystem",
       // BEHAVIOR
       "UserInteractionBehaviorSystem",
       "AgentEventBehaviorSystem",
@@ -111,7 +112,7 @@ describe("demo scenario", () => {
         "WandersOnArrival",
         "IntentState",
         "ClimbingState",
-        "UserAnchor",
+        "Perception",
         "ClimbIntentState",
       ],
       writes: ["MotionTarget", "IntentState"],
