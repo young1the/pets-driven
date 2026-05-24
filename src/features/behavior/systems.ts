@@ -172,6 +172,10 @@ export function runCollisionBehaviorSystem(
   );
 
   for (const entity of entities) {
+    // Do not disrupt a climbing entity — the WallClimbSystem drives position
+    // via the Y component of motionTarget, so overwriting it with a 2-D
+    // avoidance vector would send the pet to an unintended height.
+    if (components.getComponent(entity.id, "ClimbingState")) continue;
     if (isClaimedBySameOrHigherPriority(components, entity.id, "collision", now)) continue;
 
     const collision = entities.find(

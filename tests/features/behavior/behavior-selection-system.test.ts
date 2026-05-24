@@ -260,4 +260,44 @@ describe("BehaviorSelectionSystem (integration via world.step)", () => {
     expect(motion?.targetPosition).not.toEqual({ x: 280, y: 120 });
     expect(decision?.reason).not.toBe("request-climb");
   });
+
+  it("collision does not hijack Charlie's climb target between frames 700-1200", () => {
+    // Regression: runCollisionBehaviorSystem was overwriting the Y of a
+    // climbing pet's motionTarget with an avoidance vector, causing the
+    // WallClimbSystem to climb to an unintended height.  Pet stayed visually
+    // stuck for ~80 frames at a time.
+    const { world, clock } = createDemoScenario();
+
+    let climbingWithWrongTarget = false;
+
+    for (let f = 0; f < 1200; f++) {
+      clock.advanceBy(16);
+      world.step(16);
+
+      if (f < 700) continue;
+
+      const climbing = world.getComponent("pet-c", "ClimbingState");
+      const decision = world.getComponent("pet-c", "BehaviorDecisionState");
+      const motion = world.getComponent("pet-c", "MotionTarget");
+
+      // Climbing while the active claim is a collision (not autonomous "request-climb")
+      // means a collision hijacked the motion target.
+      if (climbing && decision?.source === "collision") {
+        climbingWithWrongTarget = true;
+      }
+
+      // A collision-source claim must not exist while the entity is climbing.
+      if (climbing) {
+        expect(decision?.source).not.toBe("collision");
+      }
+
+      // The motion target, if any, should never be the old climb-wall position
+      // after the first climb completes.
+      if (f > 160) {
+        expect(motion?.targetPosition).not.toEqual({ x: 280, y: 120 });
+      }
+    }
+
+    expect(climbingWithWrongTarget).toBe(false);
+  });
 });

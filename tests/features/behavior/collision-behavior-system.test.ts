@@ -95,6 +95,29 @@ describe("collision behavior system", () => {
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(firstTarget);
   });
 
+  it("does not override motion target of a climbing entity", () => {
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 400 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "active" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: { x: 100, y: 280 } },
+          { type: "ClimbingState" as const },
+        ],
+      },
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    // pet-a is climbing — collision must not touch it
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual({ x: 100, y: 280 });
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
+  });
+
   it("overwrites an expired claim", () => {
     const clock = createManualClock(10000);
     const store = createComponentStore([
