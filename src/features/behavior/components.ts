@@ -45,6 +45,25 @@ export type BehaviorDecisionStateComponent = {
   lastAutonomousAt: number | null;
 };
 
+export type BehaviorDecisionKind =
+  | "wander-near"
+  | "wander-far"
+  | "seek-user"
+  | "request-jump"
+  | "request-climb"
+  | "idle-stay";
+
+export type BehaviorDecisionTokenComponent = {
+  type: "BehaviorDecisionToken";
+  kind: BehaviorDecisionKind;
+  decidedAt: number;
+  consumed: boolean;
+  targetPosition?: { x: number; y: number };
+  targetEntityId?: string;
+  climbSurfaceId?: string;
+  climbTargetY?: number;
+};
+
 /** Numeric priority — lower value wins. */
 export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   "user-interaction": 1,
