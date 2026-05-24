@@ -207,6 +207,10 @@ export function createWorld(input: WorldDefinition) {
         "JumpActionState",
         "CanWallClimb",
         "ClimbableSurface",
+        "ClimbingState",
+        "ClimbDismountState",
+        "ContactState",
+        "FlyingState",
       ],
       writes: [
         "IntentState",
