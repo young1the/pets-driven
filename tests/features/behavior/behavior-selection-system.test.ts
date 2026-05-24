@@ -173,6 +173,59 @@ describe("BehaviorSelectionSystem", () => {
     expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("request-jump");
   });
 
+  it("does not let two pets target the same climbable surface simultaneously", () => {
+    // Two pets both capable of climbing, same preference weights. The second
+    // pet processed in the same BehaviorSelectionSystem pass must not pick the
+    // same surface that the first pet just reserved.
+    const store = createComponentStore([
+      {
+        id: "user-anchor",
+        components: [
+          { type: "UserAnchor" },
+          { type: "Transform", position: { x: 480, y: 500 } },
+        ],
+      },
+      {
+        id: "wall-a",
+        components: [
+          { type: "ClimbableSurface" },
+          { type: "Transform", position: { x: 120, y: 300 } },
+        ],
+      },
+      {
+        id: "pet-1",
+        components: [
+          { type: "Transform", position: { x: 100, y: 500 } },
+          { type: "IntentState", intent: "idle" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "CanWallClimb", speed: 1.1 },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          { type: "BehaviorPreference", curiosity: 0.7, sociability: 0.1, playfulness: 0.95, shyness: 0.05 },
+        ],
+      },
+      {
+        id: "pet-2",
+        components: [
+          { type: "Transform", position: { x: 140, y: 500 } },
+          { type: "IntentState", intent: "idle" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "CanWallClimb", speed: 1.1 },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          { type: "BehaviorPreference", curiosity: 0.7, sociability: 0.1, playfulness: 0.95, shyness: 0.05 },
+        ],
+      },
+    ]);
+
+    runBehaviorSelectionSystem(store, createManualClock(0), createSeededRandom(1), { width: 960, height: 540 });
+
+    const ci1 = store.getComponent("pet-1", "ClimbIntentState");
+    const ci2 = store.getComponent("pet-2", "ClimbIntentState");
+
+    // At most one of them may be approaching wall-a in the same pass.
+    const approachingCount = [ci1, ci2].filter((c) => c?.phase === "approaching").length;
+    expect(approachingCount).toBeLessThanOrEqual(1);
+  });
+
   it("respects existing higher-priority claims", () => {
     const store = makeStore({});
     store.setComponent("pet", {
