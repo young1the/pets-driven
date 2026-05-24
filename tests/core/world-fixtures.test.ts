@@ -563,8 +563,11 @@ describe("demo scenario", () => {
     scenario.world.step(16);
 
     const motion = scenario.world.getComponent("pet-a", "MotionTarget");
-    expect(motion?.targetEntityId).toBeNull();
-    expect(motion?.targetPosition).not.toBeNull();
+    // Alice has high extraversion and may choose seek-user (targetEntityId) or a wander
+    // (targetPosition). Either is a valid post-arrival autonomous decision.
+    const hasNewTarget = motion?.targetEntityId !== null || motion?.targetPosition !== null;
+    expect(hasNewTarget).toBe(true);
+    // Must not have kept the completed wander position unchanged.
     expect(motion?.targetPosition).not.toEqual({ x: 600, y: 500 });
   });
 });

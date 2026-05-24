@@ -5,38 +5,41 @@ import {
   createReservedPersonality,
 } from "@/pets/personalities/factories";
 
-describe("personality factories — BehaviorPreference axes", () => {
-  it("playful has high playfulness and curiosity", () => {
+describe("personality factories — OCEAN axes", () => {
+  it("playful has high extraversion and openness, low neuroticism", () => {
     const p = createPlayfulPersonality();
-    expect(p.curiosity).toBe(0.7);
-    expect(p.sociability).toBe(0.4);
-    expect(p.playfulness).toBe(0.9);
-    expect(p.shyness).toBe(0.1);
+    expect(p.extraversion).toBe(0.85);
+    expect(p.openness).toBe(0.7);
+    expect(p.neuroticism).toBe(0.1);
+    expect(p.agreeableness).toBe(0.5);
+    expect(p.conscientiousness).toBe(0.4);
   });
 
-  it("attentive has high sociability and low playfulness", () => {
+  it("attentive has high extraversion and agreeableness", () => {
     const p = createAttentivePersonality();
-    expect(p.sociability).toBeGreaterThan(0.7);
-    expect(p.playfulness).toBeLessThan(0.5);
-    expect(p.curiosity).toBe(0.3);
-    expect(p.shyness).toBe(0.2);
+    expect(p.extraversion).toBeGreaterThan(0.7);
+    expect(p.agreeableness).toBeGreaterThan(0.7);
+    expect(p.conscientiousness).toBeGreaterThan(0.5);
+    expect(p.openness).toBe(0.3);
+    expect(p.neuroticism).toBe(0.2);
   });
 
-  it("reserved has high shyness and low playfulness", () => {
+  it("reserved has high neuroticism and low extraversion", () => {
     const p = createReservedPersonality();
-    expect(p.shyness).toBeGreaterThan(0.6);
-    expect(p.playfulness).toBeLessThan(0.3);
-    expect(p.curiosity).toBe(0.2);
-    expect(p.sociability).toBe(0.2);
+    expect(p.neuroticism).toBeGreaterThan(0.6);
+    expect(p.extraversion).toBeLessThan(0.3);
+    expect(p.openness).toBe(0.3);
+    expect(p.agreeableness).toBe(0.4);
   });
 
-  it("all factories return plain objects with all four axes", () => {
+  it("all factories return all five OCEAN axes as numbers", () => {
     for (const factory of [createPlayfulPersonality, createAttentivePersonality, createReservedPersonality]) {
       const p = factory();
-      expect(typeof p.curiosity).toBe("number");
-      expect(typeof p.sociability).toBe("number");
-      expect(typeof p.playfulness).toBe("number");
-      expect(typeof p.shyness).toBe("number");
+      expect(typeof p.openness).toBe("number");
+      expect(typeof p.conscientiousness).toBe("number");
+      expect(typeof p.extraversion).toBe("number");
+      expect(typeof p.agreeableness).toBe("number");
+      expect(typeof p.neuroticism).toBe("number");
       expect(Array.isArray(p)).toBe(false);
     }
   });
