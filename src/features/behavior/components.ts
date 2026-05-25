@@ -51,7 +51,15 @@ export type BehaviorDecisionKind =
   | "seek-user"
   | "request-jump"
   | "request-climb"
-  | "idle-stay";
+  | "idle-stay"
+  // Phase 3 — social reactions driven by Perception.nearbyPets
+  | "approach-pet"
+  | "flee-from-pet"
+  // Phase 4 — personality-shaped collision responses (after deliberation latency)
+  | "collision-flee"
+  | "collision-engage"
+  | "collision-avoid"
+  | "collision-unfazed";
 
 export type BehaviorDecisionTokenComponent = {
   type: "BehaviorDecisionToken";
@@ -70,6 +78,29 @@ export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   "agent-event": 2,
   "collision": 3,
   "autonomous": 4,
+};
+
+// ── Phase 4: Pending Reaction ──────────────────────────────────────────────
+
+/**
+ * Written by CollisionBehaviorSystem when an overlap is detected.
+ * The pet "freezes" until `now >= reactsAt`, at which point
+ * BehaviorDecisionSystem reads this component and routes the pet
+ * into the reactive candidate pool (collision-flee / engage / avoid / unfazed).
+ * Removed immediately after the reaction token is emitted.
+ */
+export type ReactionSource = "collision" | "stimulus" | "arrival";
+
+export type PendingReactionComponent = {
+  type: "PendingReaction";
+  source: ReactionSource;
+  triggeredAt: number;
+  reactsAt: number;
+  context: {
+    otherEntityId?: string;
+    otherPosition?: { x: number; y: number };
+    stimulusType?: string;
+  };
 };
 
 /**
