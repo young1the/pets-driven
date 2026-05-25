@@ -591,6 +591,12 @@ export function runBehaviorDecisionSystem(
           { kind: "collision-avoid",   score: scoreCollisionAvoid(),              build: () => ({ targetPosition: avoidTarget }) },
           // unfazedTarget is computed lazily in build() so random is consumed only
           // if this candidate wins, keeping the softmax r-draw at position 1.
+          //
+          // NOTE: plan specified "re-emit previous goal" (copy MotionTarget before
+          // collision disrupted it). Current implementation picks a fresh wander-near
+          // position instead — intentional simplification. The visual result is similar
+          // ("stays nearby") but the pet doesn't resume its original trajectory.
+          // Restore-previous-goal semantics deferred to Phase 6 visual review.
           { kind: "collision-unfazed", score: scoreCollisionUnfazed(personality), build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near") }) },
         ];
 
