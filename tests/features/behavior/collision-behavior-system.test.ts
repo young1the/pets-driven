@@ -380,6 +380,43 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-engage");
   });
 
+  // Regression: engageTarget must sit BETWEEN self and other, not on the far
+  // side. The earlier `otherPos - away * D` placed the target past the other
+  // pet, causing pets to walk through each other and re-collide forever (the
+  // "pets clustering in one spot" bug). The y axis is clamped near the floor
+  // (y=500 → 492 due to COLLISION_TARGET_MARGIN=48 within bounds.height=540),
+  // so assertions focus on x — that is where the sign-flip bug lives.
+  it("collision-engage Decision places target on SELF's side, 80px from other", () => {
+    // Pet at (100, 500), other at (200, 500). away points (-1, 0).
+    // Correct engage target: other + away*80 = (200-80, 500) = (120, 500).
+    // Buggy target would be (280, 500) — past the other pet.
+    const store = makeReactionStore(0.9, 0.1, 0.9, { x: 200, y: 500 });
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("collision-engage");
+    expect(token?.targetPosition?.x).toBeCloseTo(120, 0);
+    // The target must lie between pet (100) and other (200), strictly.
+    expect(token?.targetPosition?.x).toBeGreaterThan(100);
+    expect(token?.targetPosition?.x).toBeLessThan(200);
+  });
+
+  it("collision-engage Decision target is closer to other than pet is (approach, not pass-through)", () => {
+    // Pet at (100, 500), other at (300, 500). away = (-1, 0).
+    // Correct: target = other + away*80 = (220, 500) — between pet and other,
+    //   closer to other. Pet walks 120 units toward other and stops 80 short.
+    // Buggy: target = other - away*80 = (380, 500) — past the other pet,
+    //   would force the pet to walk through other and re-collide forever.
+    const store = makeReactionStore(0.9, 0.1, 0.9, { x: 300, y: 500 });
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("collision-engage");
+    expect(token?.targetPosition?.x).toBeCloseTo(220, 0);
+    expect(token?.targetPosition?.x).toBeLessThan(300); // not past the other pet
+    expect(token?.targetPosition?.x).toBeGreaterThan(100); // moved toward other
+  });
+
   it("collision-flee Planning: MotionTarget points away from otherPosition", () => {
     // Pet at (100,500), other at (200,500) → flee direction = (-1,0) → target ≈ (4,500) clamped to (48,500)
     const store = createComponentStore([
