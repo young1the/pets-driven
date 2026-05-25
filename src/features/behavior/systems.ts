@@ -487,7 +487,10 @@ function scoreFleeFromPet(p: PersonalityComponent): number {
 
 /**
  * Personality-modulated wander radii.
- * "near": high N → tighter circle (anxious pets stay close).
+ * "near": high N → tighter range but still meaningfully visible movement.
+ *         Previous range [60..140 → 80..80] left high-N pets making
+ *         imperceptible "wanders" of 80 px in a fixed direction. The new
+ *         range guarantees a window of at least 40 px even at N=1.
  * "far":  high O → wider exploration range.
  * Exported for unit testing.
  */
@@ -496,7 +499,7 @@ export function wanderRadius(
   range: "near" | "far",
 ): [number, number] {
   if (range === "near") {
-    return [60 + p.neuroticism * 20, 140 - p.neuroticism * 60];
+    return [100 + p.neuroticism * 40, 220 - p.neuroticism * 40];
   } else {
     return [200 + p.openness * 100, 400 + p.openness * 200];
   }

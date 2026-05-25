@@ -15,16 +15,16 @@ function p(overrides: Partial<Omit<PersonalityComponent, "type">> = {}): Persona
 }
 
 describe("wanderRadius — near", () => {
-  it("N=0 → [60, 140] (widest range)", () => {
+  it("N=0 → [100, 220] (widest range)", () => {
     const [min, max] = wanderRadius(p({ neuroticism: 0.0 }), "near");
-    expect(min).toBe(60);
-    expect(max).toBe(140);
+    expect(min).toBe(100);
+    expect(max).toBe(220);
   });
 
-  it("N=1 → [80, 80] (collapsed range — pet stays very close)", () => {
+  it("N=1 → [140, 180] (narrower but still meaningful)", () => {
     const [min, max] = wanderRadius(p({ neuroticism: 1.0 }), "near");
-    expect(min).toBe(80);  // 60 + 1.0*20
-    expect(max).toBe(80);  // 140 - 1.0*60
+    expect(min).toBe(140); // 100 + 1.0*40
+    expect(max).toBe(180); // 220 - 1.0*40
   });
 
   it("high-N max < low-N max (tighter circle for anxious pets)", () => {
@@ -39,6 +39,11 @@ describe("wanderRadius — near", () => {
     const [min9] = wanderRadius(p({ neuroticism: 0.9 }), "near");
     expect(min0).toBeLessThan(min5);
     expect(min5).toBeLessThan(min9);
+  });
+
+  it("range width is at least 40 even at high N (visible movement guaranteed)", () => {
+    const [min, max] = wanderRadius(p({ neuroticism: 1.0 }), "near");
+    expect(max - min).toBeGreaterThanOrEqual(40);
   });
 });
 
