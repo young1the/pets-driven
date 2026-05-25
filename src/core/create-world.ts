@@ -86,6 +86,10 @@ export function createWorld(input: WorldDefinition) {
           decision: decisionState
             ? { source: decisionState.source, reason: decisionState.reason, decidedAt: decisionState.decidedAt }
             : null,
+          pendingReaction: (() => {
+            const pr = componentStore.getComponent(entity.id, "PendingReaction");
+            return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
+          })(),
         };
       });
   }
