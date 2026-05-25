@@ -1,10 +1,48 @@
-import type { SimulationComponent } from "@/core/components";
+import type {
+  SimulationComponent,
+  PersonalityComponent,
+  MovementProfileComponent,
+  IdleConversationComponent,
+} from "@/core/components";
 import { DEFAULT_PET_BODY_SIZE } from "@/pets/constants/pet-body";
 import { DEFAULT_PET_SPEECH } from "@/pets/constants/pet-speech";
 import { createManualClock } from "@/shared/time/manual-clock";
 import { createWorld } from "@/core/create-world";
 
-function createFixturePet(input: {
+// ─── Personality derivation helpers (exported for testing) ───────────────────
+
+/**
+ * Derive movement speeds from OCEAN personality.
+ * High E moves faster; high N moves slower (cautious).
+ * energy = 0.6 + E×0.5 − N×0.2
+ */
+export function deriveMovementProfile(
+  p: PersonalityComponent,
+): MovementProfileComponent {
+  const energy = 0.6 + p.extraversion * 0.5 - p.neuroticism * 0.2;
+  return {
+    type: "MovementProfile",
+    idleSpeed: 0.0005 * energy,
+    activeSpeed: 0.0012 * energy,
+    seekSpeed: 0.0018 * energy,
+  };
+}
+
+/**
+ * Derive idle-speech interval from OCEAN personality.
+ * High E → short interval (talkative). Range ≈ 3 s..15 s.
+ * interval = 14000 − E×11000 ms
+ */
+export function deriveIdleConversation(
+  p: PersonalityComponent,
+): IdleConversationComponent {
+  const interval = 14_000 - p.extraversion * 11_000;
+  return { type: "IdleConversation", idleAfterMs: Math.round(interval) };
+}
+
+// ─── Fixture pet builder ──────────────────────────────────────────────────────
+
+export function createFixturePet(input: {
   id: string;
   sourceId: string;
   name: string;
@@ -12,17 +50,20 @@ function createFixturePet(input: {
   y: number;
   components: SimulationComponent[];
 }) {
-  return {
-    id: input.id,
-    components: [
+  // Default personality (may be overridden by input.components).
+  const defaultPersonality: PersonalityComponent = {
+    type: "Personality",
+    openness: 0.5,
+    conscientiousness: 0.4,
+    extraversion: 0.5,
+    agreeableness: 0.5,
+    neuroticism: 0.2,
+  };
+
+  const allComponents: SimulationComponent[] = [
       { type: "PetIdentity" as const, name: input.name },
       { type: "AgentBinding" as const, sourceId: input.sourceId },
-      {
-        type: "MovementProfile" as const,
-        idleSpeed: 0.0006,
-        activeSpeed: 0.0012,
-        seekSpeed: 0.0018,
-      },
+      // MovementProfile is NOT hardcoded here — derived from Personality below.
       { type: "IntentState" as const, intent: "idle" as const },
       {
         type: "MotionTarget" as const,
@@ -57,17 +98,28 @@ function createFixturePet(input: {
         self: { grounded: false, climbing: false, intent: "idle" as const },
       },
       // Default personality — per-pet entries in input.components override this.
-      {
-        type: "Personality" as const,
-        openness: 0.5,
-        conscientiousness: 0.4,
-        extraversion: 0.5,
-        agreeableness: 0.5,
-        neuroticism: 0.2,
-      },
+      defaultPersonality,
       ...input.components,
-    ],
-  };
+  ];
+
+  // Post-processing: derive MovementProfile and IdleConversation from the
+  // effective Personality (last-write-wins, matching ECS component-store
+  // semantics) when no explicit component was provided.
+  const effectivePersonality = [...allComponents]
+    .reverse()
+    .find((c): c is PersonalityComponent => c.type === "Personality");
+
+  const hasMovementProfile = allComponents.some((c) => c.type === "MovementProfile");
+  const hasIdleConversation = allComponents.some((c) => c.type === "IdleConversation");
+
+  if (!hasMovementProfile && effectivePersonality) {
+    allComponents.push(deriveMovementProfile(effectivePersonality));
+  }
+  if (!hasIdleConversation && effectivePersonality) {
+    allComponents.push(deriveIdleConversation(effectivePersonality));
+  }
+
+  return { id: input.id, components: allComponents };
 }
 
 export function createDemoScenario(options?: {

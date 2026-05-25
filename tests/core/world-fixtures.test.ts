@@ -205,11 +205,13 @@ describe("demo scenario", () => {
   it("gives fixture pets ECS components for movement profiles and motion state", () => {
     const scenario = createDemoScenario();
 
+    // pet-a (Alice): E=0.85, N=0.1 → energy = 0.6 + 0.85×0.5 − 0.1×0.2
+    const aliceEnergy = 0.6 + 0.85 * 0.5 - 0.1 * 0.2;
     expect(scenario.world.getComponent("pet-a", "MovementProfile")).toEqual({
       type: "MovementProfile",
-      idleSpeed: 0.0006,
-      activeSpeed: 0.0012,
-      seekSpeed: 0.0018,
+      idleSpeed: 0.0005 * aliceEnergy,
+      activeSpeed: 0.0012 * aliceEnergy,
+      seekSpeed: 0.0018 * aliceEnergy,
     });
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
       type: "MotionTarget",
