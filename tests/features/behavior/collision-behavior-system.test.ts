@@ -205,17 +205,18 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
 // ── Phase 4: Reaction latency + decision + planning ────────────────────────
 
-describe("Phase 4 — collision reaction latency and personality-shaped response", () => {
-  /**
-   * Build a store where pet-a has a PendingReaction already set and a matching
-   * (already-expired) collision claim, simulating the state at reactsAt.
-   */
-  function makeReactionStore(
-    extraversion: number,
-    neuroticism: number,
-    agreeableness: number,
-    otherPosition = { x: 200, y: 500 },
-  ) {
+/**
+ * Build a store where pet has a PendingReaction already set and a matching
+ * (already-expired) collision claim at reactsAt=1400, simulating the instant
+ * the deliberation window closes and BehaviorDecisionSystem should fire.
+ * Hoisted to file scope so distribution and reachability describe blocks can reuse it.
+ */
+function makeReactionStore(
+  extraversion: number,
+  neuroticism: number,
+  agreeableness: number,
+  otherPosition = { x: 200, y: 500 },
+) {
     const reactsAt = 1400; // now will be 1400 (claim expired)
     return createComponentStore([
       {
@@ -259,8 +260,9 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         ],
       },
     ]);
-  }
+}
 
+describe("Phase 4 — collision reaction latency and personality-shaped response", () => {
   it("PendingReaction.reactsAt = triggeredAt + reactionLatencyMs(personality, collision)", () => {
     // Alice-like (E=0.85, N=0.1): latency = 400*(1 + 0.1*1.5 - 0.85*0.5) = 400*0.725 = 290ms
     const clock = createManualClock(1000);
@@ -457,5 +459,97 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
 
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({ x: 150, y: 480 });
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+  });
+});
+
+// ── Phase 4: Reactive candidate distribution and reachability ─────────────
+//
+// Verifies that the softmax weights over collision-* candidates produce
+// statistically correct distributions, and that all four outcomes are
+// reachable under the right personality configuration.
+
+describe("Phase 4 — reactive candidate distribution (1000 samples)", () => {
+  /**
+   * High-N (0.9) low-A (0.1):
+   *   flee   = 0.78  (dominant)
+   *   avoid  = 0.40
+   *   unfazed= 0.19
+   *   engage = 0.14
+   *   T = 0.52 → theoretical flee ≈ 47.7%, engage ≈ 13.9%
+   */
+  it("high-N low-A: collision-flee wins significantly more often than collision-engage", () => {
+    const SAMPLES = 1000;
+    const counts: Record<string, number> = {};
+    for (let seed = 0; seed < SAMPLES; seed++) {
+      const store = makeReactionStore(0.5, 0.9, 0.1); // E=0.5, N=0.9, A=0.1
+      runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(seed * 1013 + 7), BOUNDS);
+      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
+      counts[kind] = (counts[kind] ?? 0) + 1;
+    }
+    // Theoretical flee ≈ 477; generous band to account for sampling variance
+    expect(counts["collision-flee"] ?? 0).toBeGreaterThan(350);
+    // Theoretical engage ≈ 139; must not dominate
+    expect(counts["collision-engage"] ?? 0).toBeLessThan(220);
+  });
+
+  /**
+   * High-E (0.9) high-A (0.9) low-N (0.1):
+   *   engage = 1.06  (dominant)
+   *   unfazed= 0.51
+   *   avoid  = 0.40
+   *   flee   = -0.18
+   *   T = 0.28 → theoretical engage ≈ 80.2%, flee < 1%
+   */
+  it("high-E high-A low-N: collision-engage wins significantly more often than collision-flee", () => {
+    const SAMPLES = 1000;
+    const counts: Record<string, number> = {};
+    for (let seed = 0; seed < SAMPLES; seed++) {
+      const store = makeReactionStore(0.9, 0.1, 0.9); // E=0.9, N=0.1, A=0.9
+      runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(seed * 1013 + 7), BOUNDS);
+      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
+      counts[kind] = (counts[kind] ?? 0) + 1;
+    }
+    // Theoretical engage ≈ 802; generous lower bound
+    expect(counts["collision-engage"] ?? 0).toBeGreaterThan(700);
+    // Theoretical flee ≈ 9.5; essentially never
+    expect(counts["collision-flee"] ?? 0).toBeLessThan(50);
+  });
+});
+
+describe("Phase 4 — all four reactive outcomes are reachable", () => {
+  /**
+   * collision-avoid (score = 0.40 constant) wins when flee, engage, and unfazed
+   * are all suppressed: low-E (0.2), mid-N (0.5), mid-A (0.5).
+   *   flee   = 0.30, engage = 0.35, avoid = 0.40 (max), unfazed = 0.35
+   *   T = 0.40 → avoid wins ≈ 28% of samples; found within 500 seeds.
+   */
+  it("collision-avoid is reachable (low-E mid-N mid-A, sweep 500 seeds)", () => {
+    let found = false;
+    for (let seed = 0; seed < 500 && !found; seed++) {
+      const store = makeReactionStore(0.2, 0.5, 0.5); // E=0.2, N=0.5, A=0.5
+      runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(seed * 1013), BOUNDS);
+      if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "collision-avoid") {
+        found = true;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  /**
+   * collision-unfazed (score = 0.15 + (1-N)*0.4) wins when N is near 0
+   * and E+A are low enough to keep engage below unfazed.
+   *   N=0, E=0.2, A=0.2: flee=0.10, engage=0.40, avoid=0.40, unfazed=0.55 (max)
+   *   T = 0.25 → unfazed wins ≈ 44% of samples; found within 100 seeds.
+   */
+  it("collision-unfazed is reachable (low-N low-E low-A, sweep 100 seeds)", () => {
+    let found = false;
+    for (let seed = 0; seed < 100 && !found; seed++) {
+      const store = makeReactionStore(0.2, 0.0, 0.2); // E=0.2, N=0.0, A=0.2
+      runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(seed * 1013), BOUNDS);
+      if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "collision-unfazed") {
+        found = true;
+      }
+    }
+    expect(found).toBe(true);
   });
 });
