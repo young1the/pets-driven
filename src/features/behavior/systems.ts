@@ -248,6 +248,17 @@ export function runCollisionBehaviorSystem(
       },
     } satisfies PendingReactionComponent);
 
+    // Freeze the pet immediately: clear existing MotionTarget and reset intent
+    // to idle so locomotion systems see no active goal and the pet stops.
+    // Without this, a pet heading toward its approach-pet target keeps flying
+    // into the collider throughout the deliberation window.
+    components.setComponent(entity.id, {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    components.setComponent(entity.id, { type: "IntentState", intent: "idle" });
+
     // Hold the claim until reactsAt so BehaviorDecisionSystem skips this pet
     // during the deliberation window.
     claim(components, entity.id, "collision", now, "entity overlap", reactsAt);

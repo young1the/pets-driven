@@ -50,7 +50,7 @@ function makePetWithPersonality(
 }
 
 describe("collision behavior system (Phase 4: PendingReaction)", () => {
-  it("writes PendingReaction and claims decision when entities overlap; MotionTarget unchanged", () => {
+  it("writes PendingReaction and claims decision when entities overlap", () => {
     const clock = createManualClock(1000);
     const store = createComponentStore([
       makePet("pet-a", 100, "idle"),
@@ -59,10 +59,45 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
-    // Phase 4: PendingReaction written, MotionTarget NOT changed (pet freezes)
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
     expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
+  });
+
+  it("clears existing MotionTarget and resets intent to idle on collision (pet truly freezes)", () => {
+    // Pet-a was actively heading toward pet-b (approach-pet target) when they collided.
+    // The collision freeze must clear the target immediately so pet-a stops moving.
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "active" as const },
+          // Active motion target — e.g., from approach-pet
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: { x: 110, y: 500 } },
+        ],
+      },
+      {
+        id: "pet-b",
+        components: [
+          { type: "Transform" as const, position: { x: 110, y: 500 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "idle" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+        ],
+      },
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    // PendingReaction written
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
+    // MotionTarget cleared so locomotion systems see no target → pet stops
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
+    // Intent reset to idle
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
   });
 
   it("does not react when entities are far apart", () => {
