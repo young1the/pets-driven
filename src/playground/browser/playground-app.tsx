@@ -56,6 +56,16 @@ function diffSnapshot(
         label: `behavior: ${nextDecision.source}/${nextDecision.reason}`,
       });
     }
+    // Reaction latency: log when a new PendingReaction appears on this pet.
+    const prevReaction = prevPet.pendingReaction;
+    const nextReaction = pet.pendingReaction;
+    if (!prevReaction && nextReaction) {
+      entries.push({
+        t,
+        petName: pet.name,
+        label: `reaction: ${nextReaction.source} → reacts at ${nextReaction.reactsAt}ms`,
+      });
+    }
   }
   return entries;
 }

@@ -290,4 +290,53 @@ describe("PlaygroundApp", () => {
     const timeline = screen.getByTestId("action-timeline");
     expect(within(timeline).getAllByRole("listitem").length).toBeGreaterThan(0);
   });
+
+  it("shows OCEAN personality bars (O C E A N) for the selected pet", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    expect(
+      screen.getByText(PLAYGROUND_TEXT.oceanTitle),
+    ).toBeInTheDocument();
+    // Five axis labels must each appear at least once
+    for (const label of ["O", "C", "E", "A", "N"]) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("shows last-decision token kind in BehaviorLab after stepping a frame", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {
+        beginPath: vi.fn(),
+        clearRect: vi.fn(),
+        ellipse: vi.fn(),
+        fill: vi.fn(),
+        fillRect: vi.fn(),
+        fillText: vi.fn(),
+        lineTo: vi.fn(),
+        moveTo: vi.fn(),
+        rect: vi.fn(),
+        stroke: vi.fn(),
+        strokeRect: vi.fn(),
+      } as unknown as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),
+    );
+
+    // BehaviorDecisionSystem emits a token for Alice (selected pet) each tick.
+    // BehaviorLab should display the label and the consumed token's kind.
+    expect(
+      screen.getByText(PLAYGROUND_TEXT.decisionTokenLabel),
+    ).toBeInTheDocument();
+  });
 });

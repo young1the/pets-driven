@@ -54,6 +54,9 @@ export function BehaviorLab({
   const jumpAction = getComponent(selectedPet.id, "JumpActionState");
   const climbIntent = getComponent(selectedPet.id, "ClimbIntentState");
   const climbDismount = getComponent(selectedPet.id, "ClimbDismountState");
+  const personality = getComponent(selectedPet.id, "Personality");
+  const decisionToken = getComponent(selectedPet.id, "BehaviorDecisionToken");
+  const pendingReaction = getComponent(selectedPet.id, "PendingReaction");
   const componentTypes = INSPECTED_COMPONENTS.filter((type) =>
     getComponent(selectedPet.id, type),
   );
@@ -76,7 +79,48 @@ export function BehaviorLab({
           ))}
         </div>
       </div>
+      {personality && (
+        <div className="behavior-lab__ocean">
+          <h3>{PLAYGROUND_TEXT.oceanTitle}</h3>
+          <dl className="behavior-lab__ocean-bars">
+            {(
+              [
+                ["O", personality.openness],
+                ["C", personality.conscientiousness],
+                ["E", personality.extraversion],
+                ["A", personality.agreeableness],
+                ["N", personality.neuroticism],
+              ] as [string, number][]
+            ).map(([label, value]) => (
+              <div key={label} className="behavior-lab__ocean-bar">
+                <dt>{label}</dt>
+                <dd>
+                  <meter min={0} max={1} value={value} />
+                  <span>{value.toFixed(2)}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
       <dl className="behavior-lab__state">
+        {decisionToken && (
+          <div>
+            <dt>{PLAYGROUND_TEXT.decisionTokenLabel}</dt>
+            <dd>
+              {decisionToken.kind}
+              {decisionToken.consumed ? " (consumed)" : " (pending)"}
+            </dd>
+          </div>
+        )}
+        {pendingReaction && (
+          <div>
+            <dt>{PLAYGROUND_TEXT.pendingReactionLabel}</dt>
+            <dd>
+              {pendingReaction.source} — reacts at {pendingReaction.reactsAt}ms
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Intent</dt>
           <dd>{selectedPet.intent}</dd>

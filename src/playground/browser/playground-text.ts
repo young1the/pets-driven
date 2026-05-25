@@ -24,6 +24,10 @@ export const PLAYGROUND_TEXT = {
   jumpDemoSpeech: "Jumping up",
   wallClimbDemoSpeech: "Climbing the wall",
   actionTimelineTitle: "Action timeline",
+  // Phase 6 — personality exposure
+  oceanTitle: "Personality (OCEAN)",
+  decisionTokenLabel: "Last decision",
+  pendingReactionLabel: "Pending reaction",
 } as const;
 
 export const PLAYGROUND_SAMPLE_EVENT_SUMMARIES = {

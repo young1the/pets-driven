@@ -473,19 +473,39 @@ function scoreFleeFromPet(p: PersonalityComponent): number {
   return 0.1 + p.neuroticism * 0.7 - p.agreeableness * 0.4;
 }
 
+/**
+ * Personality-modulated wander radii.
+ * "near": high N → tighter circle (anxious pets stay close).
+ * "far":  high O → wider exploration range.
+ * Exported for unit testing.
+ */
+export function wanderRadius(
+  p: PersonalityComponent,
+  range: "near" | "far",
+): [number, number] {
+  if (range === "near") {
+    return [60 + p.neuroticism * 20, 140 - p.neuroticism * 60];
+  } else {
+    return [200 + p.openness * 100, 400 + p.openness * 200];
+  }
+}
+
 function pickWanderPosition(
   petX: number,
   petY: number,
   bounds: { width: number; height: number },
   random: RandomSource,
   range: "near" | "far",
+  personality?: PersonalityComponent,
 ): { x: number; y: number } {
   const margin = 48;
   const angle = random.next() * Math.PI * 2;
-  const radius =
-    range === "near"
-      ? 60 + random.next() * 80   // 60–140 px
-      : 200 + random.next() * 200; // 200–400 px
+  const [minR, maxR] = personality
+    ? wanderRadius(personality, range)
+    : range === "near"
+      ? [60, 140]
+      : [200, 400];
+  const radius = minR + random.next() * (maxR - minR);
   return {
     x: clamp(petX + Math.cos(angle) * radius, margin, bounds.width - margin),
     y: clamp(petY + Math.sin(angle) * radius, margin, bounds.height - margin),
@@ -597,7 +617,7 @@ export function runBehaviorDecisionSystem(
           // position instead — intentional simplification. The visual result is similar
           // ("stays nearby") but the pet doesn't resume its original trajectory.
           // Restore-previous-goal semantics deferred to Phase 6 visual review.
-          { kind: "collision-unfazed", score: scoreCollisionUnfazed(personality), build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near") }) },
+          { kind: "collision-unfazed", score: scoreCollisionUnfazed(personality), build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near", personality) }) },
         ];
 
         const reactionWinner = softmaxSample(reactiveCandidates, personality.neuroticism, random);
@@ -627,13 +647,13 @@ export function runBehaviorDecisionSystem(
       pushCandidate(candidates, components, id, now, {
         kind: "wander-near",
         score: scoreWanderNear(personality),
-        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near") }),
+        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near", personality) }),
       });
 
       pushCandidate(candidates, components, id, now, {
         kind: "wander-far",
         score: scoreWanderFar(personality),
-        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "far") }),
+        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "far", personality) }),
       });
 
       if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {

@@ -30,6 +30,8 @@ export type PetSnapshot = {
   motionTarget: { x: number; y: number } | null;
   /** Current behavior decision claim, or null if no active claim. */
   decision: { source: string; reason: string; decidedAt: number } | null;
+  /** Active deliberation timer, or null if no pending reaction. */
+  pendingReaction: { source: string; reactsAt: number } | null;
 };
 
 export type ClimbableSurfaceSnapshot = {
