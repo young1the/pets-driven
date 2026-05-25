@@ -39,6 +39,7 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
 
 // Phase 3: social interaction distances
 const PET_FLEE_DISTANCE = 200; // px — how far to run from a nearby pet
+const PET_APPROACH_STOP_DISTANCE = 80; // px — when approaching, stop this far from the other pet's centre
 
 // Phase 4: collision reaction constants
 const PET_ENGAGE_STOP_DISTANCE = 80; // px — stop this far from the other pet's centre
@@ -723,15 +724,33 @@ export function runBehaviorDecisionSystem(
       const nearbyPets = perception?.nearbyPets ?? [];
       if (nearbyPets.length > 0) {
         const nearestPet = nearbyPets[0];
-        pushCandidate(candidates, components, id, now, {
-          kind: "approach-pet",
-          score: scoreApproachPet(personality),
-          // Planning sets MotionTarget to the snapshot position (not entity-tracked).
-          build: () => ({
-            targetEntityId: nearestPet.id,
-            targetPosition: { x: nearestPet.position.x, y: nearestPet.position.y },
-          }),
-        });
+
+        // approach-pet: only meaningful when the pet is meaningfully farther than
+        // the social stop distance. Otherwise the two pets are already in personal
+        // space and "approaching" would either collapse into a collision (target =
+        // other's centre) or oscillate around the stop distance. Excluding this
+        // candidate when close lets wander / idle pick up and the pair drift apart
+        // naturally.
+        if (nearestPet.distance > PET_APPROACH_STOP_DISTANCE) {
+          // Walk toward the other pet but stop PET_APPROACH_STOP_DISTANCE short.
+          // Same formula as collision-engage: otherPos + (self→other unit)·D.
+          const towardSelfDirX = petX - nearestPet.position.x;
+          const towardSelfDirY = petY - nearestPet.position.y;
+          const towardSelfLen = Math.hypot(towardSelfDirX, towardSelfDirY) || 1;
+          const approachPos = {
+            x: clamp(nearestPet.position.x + (towardSelfDirX / towardSelfLen) * PET_APPROACH_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+            y: clamp(nearestPet.position.y + (towardSelfDirY / towardSelfLen) * PET_APPROACH_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          };
+          pushCandidate(candidates, components, id, now, {
+            kind: "approach-pet",
+            score: scoreApproachPet(personality),
+            // Planning sets MotionTarget to the snapshot position (not entity-tracked).
+            build: () => ({
+              targetEntityId: nearestPet.id,
+              targetPosition: approachPos,
+            }),
+          });
+        }
 
         const fleeDirX = petX - nearestPet.position.x;
         const fleeDirY = petY - nearestPet.position.y;
