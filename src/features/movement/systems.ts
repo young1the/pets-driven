@@ -17,6 +17,15 @@ const MOTION_ARRIVAL_RADIUS = 16;
 const MOTION_SLOW_RADIUS = 96;
 const JUMP_LANDING_COOLDOWN_MS = 250;
 
+// Seek-user stops at this distance from the user anchor instead of walking
+// onto the anchor itself. Without this, all seeking pets converge to the
+// exact anchor position and pile up there during the first ~800 frames of
+// the demo. Must be strictly less than USER_PROXIMITY_RADIUS (96, in behavior/
+// systems.ts isNearUserAnchor) to create hysteresis — once a pet stops at
+// SEEK_USER_STOP_DISTANCE, it is "near" and won't re-pick seek-user until it
+// has wandered outside USER_PROXIMITY_RADIUS.
+const SEEK_USER_STOP_DISTANCE = 80;
+
 const ACTIVE_LOCOMOTION_TAGS: SimulationComponentType[] = [
   "WalkingState",
   "ClimbingState",
@@ -184,8 +193,31 @@ export function runMotionTargetSystem(
     if (intent.intent === "seek") {
       const perception = components.getComponent(_id, "Perception");
       const anchor = perception?.userAnchor ?? null;
-      motion.targetEntityId = anchor?.id ?? null;
-      motion.targetPosition = anchor ? { x: anchor.position.x, y: anchor.position.y } : null;
+      if (!anchor) {
+        motion.targetEntityId = null;
+        motion.targetPosition = null;
+        return;
+      }
+      motion.targetEntityId = anchor.id;
+      // Stop SEEK_USER_STOP_DISTANCE from the anchor in the pet's current
+      // direction. Falls back to the anchor itself when Transform is missing.
+      const transform = components.getComponent(_id, "Transform");
+      if (!transform) {
+        motion.targetPosition = { x: anchor.position.x, y: anchor.position.y };
+        return;
+      }
+      const dx = transform.position.x - anchor.position.x;
+      const dy = transform.position.y - anchor.position.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist <= SEEK_USER_STOP_DISTANCE) {
+        // Already in social proximity — stop where we are so Arrival fires.
+        motion.targetPosition = { x: transform.position.x, y: transform.position.y };
+        return;
+      }
+      motion.targetPosition = {
+        x: anchor.position.x + (dx / dist) * SEEK_USER_STOP_DISTANCE,
+        y: anchor.position.y + (dy / dist) * SEEK_USER_STOP_DISTANCE,
+      };
       return;
     }
 
