@@ -62,6 +62,52 @@ function makeStore(prefOverride: Partial<{
   ]);
 }
 
+/**
+ * Store with one nearby pet in Perception.nearbyPets.
+ * userAnchor is null to isolate Phase 3 social candidates from seek-user.
+ */
+function makeNearbyStore(prefOverride: Partial<{
+  openness: number;
+  conscientiousness: number;
+  extraversion: number;
+  agreeableness: number;
+  neuroticism: number;
+}> = {}) {
+  return createComponentStore([
+    {
+      id: "other-pet",
+      components: [
+        { type: "Transform", position: { x: 250, y: 200 } },
+      ],
+    },
+    {
+      id: "pet",
+      components: [
+        { type: "Transform", position: { x: 200, y: 200 } },
+        { type: "IntentState", intent: "idle" as const },
+        { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+        { type: "WandersOnArrival", arrivalRadius: 16 },
+        {
+          type: "Perception" as const,
+          userAnchor: null, // excluded so seek-user is never a candidate
+          nearbyPets: [{ id: "other-pet", position: { x: 250, y: 200 }, distance: 50 }],
+          nearbyClimbables: [],
+          self: { grounded: false, climbing: false, intent: "idle" as const },
+        },
+        {
+          type: "Personality" as const,
+          openness: 0.5,
+          conscientiousness: 0.4,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          neuroticism: 0.2,
+          ...prefOverride,
+        },
+      ],
+    },
+  ]);
+}
+
 describe("BehaviorDecisionSystem", () => {
   it("does nothing while the pet still has a motion target", () => {
     const store = makeStore();
@@ -470,6 +516,8 @@ describe("BehaviorDecisionSystem + BehaviorPlanningSystem (integration via world
       "request-jump",
       "request-climb",
       "idle-stay",
+      "approach-pet",
+      "flee-from-pet",
     ]).toContain(claim?.reason);
   });
 
@@ -628,5 +676,101 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
 
     // Higher neuroticism → flatter distribution → lower dominant-choice count
     expect(highN).toBeLessThan(lowN);
+  });
+});
+
+// ── Phase 3: Social Candidates (approach-pet / flee-from-pet) ─────────────
+
+describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
+  it("approach-pet and flee-from-pet are not candidates when nearbyPets is empty", () => {
+    // makeStore() has nearbyPets=[]; verify social kinds never appear over 200 seeds.
+    let foundApproach = false;
+    let foundFlee = false;
+    for (let seed = 0; seed < 200; seed++) {
+      const store = makeStore({ extraversion: 0.9, agreeableness: 0.9 });
+      runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed), BOUNDS);
+      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind;
+      if (kind === "approach-pet") foundApproach = true;
+      if (kind === "flee-from-pet") foundFlee = true;
+    }
+    expect(foundApproach).toBe(false);
+    expect(foundFlee).toBe(false);
+  });
+
+  it("selects approach-pet for high-E high-A low-N personality (seed 1)", () => {
+    // E=0.9, A=0.9, N=0.1 → approach-pet score ≈ 1.26 (highest), T≈0.28
+    // Seed 1 first random ≈ 0.2365 → approach-pet bucket [0.1263, 0.9679) ✓
+    const store = makeNearbyStore({ extraversion: 0.9, agreeableness: 0.9, neuroticism: 0.1 });
+    runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), BOUNDS);
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("approach-pet");
+  });
+
+  it("selects flee-from-pet for high-N low-A personality (seed 800)", () => {
+    // N=1.0, A=0.0, E=0.1 → flee-from-pet score = 0.80, wander-near = 0.75, T≈0.55
+    // Seed 800 first random ≈ 0.5461 → flee-from-pet bucket [0.4780, 0.7579) ✓
+    const store = makeNearbyStore({ neuroticism: 1.0, agreeableness: 0.0, extraversion: 0.1 });
+    runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(800), BOUNDS);
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("flee-from-pet");
+  });
+
+  it("stores approach-pet targetPosition matching the nearby pet's Perception snapshot", () => {
+    // The token's targetPosition must be the snapshot position, not entity-tracked.
+    const store = makeNearbyStore({ extraversion: 0.9, agreeableness: 0.9, neuroticism: 0.1 });
+    runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("approach-pet");
+    expect(token?.targetPosition).toEqual({ x: 250, y: 200 });
+  });
+});
+
+describe("BehaviorPlanningSystem — Phase 3 social tokens", () => {
+  function makeSocialTokenStore(
+    kind: "approach-pet" | "flee-from-pet",
+    targetPosition: { x: number; y: number },
+  ) {
+    return createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Transform", position: { x: 200, y: 200 } },
+          { type: "IntentState", intent: "idle" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "idle" as const },
+          },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind,
+            decidedAt: 0,
+            consumed: false,
+            targetPosition,
+          },
+        ],
+      },
+    ]);
+  }
+
+  it("materializes an approach-pet token into MotionTarget with intent=active", () => {
+    const store = makeSocialTokenStore("approach-pet", { x: 250, y: 200 });
+    runBehaviorPlanningSystem(store, createManualClock(0));
+    const motion = store.getComponent("pet", "MotionTarget");
+    expect(motion?.targetEntityId).toBeNull();
+    expect(motion?.targetPosition).toEqual({ x: 250, y: 200 });
+    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
+  });
+
+  it("materializes a flee-from-pet token into MotionTarget with intent=active", () => {
+    const store = makeSocialTokenStore("flee-from-pet", { x: 100, y: 200 });
+    runBehaviorPlanningSystem(store, createManualClock(0));
+    const motion = store.getComponent("pet", "MotionTarget");
+    expect(motion?.targetEntityId).toBeNull();
+    expect(motion?.targetPosition).toEqual({ x: 100, y: 200 });
+    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 });

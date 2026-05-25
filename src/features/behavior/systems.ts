@@ -10,7 +10,9 @@ import {
   type BehaviorDecisionKind,
   type BehaviorDecisionSource,
   type BehaviorDecisionTokenComponent,
+  type PendingReactionComponent,
   type PersonalityComponent,
+  type ReactionSource,
   type PetIntent,
 } from "./components";
 
@@ -25,7 +27,21 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "request-jump": 2_500,
   "request-climb": 6_000,
   "idle-stay": 1_500,
+  // Phase 3
+  "approach-pet": 1_500,
+  "flee-from-pet": 2_000,
+  // Phase 4 — collision reactions share the collision claim window
+  "collision-flee": 750,
+  "collision-engage": 1_500,
+  "collision-avoid": 750,
+  "collision-unfazed": 500,
 };
+
+// Phase 3: social interaction distances
+const PET_FLEE_DISTANCE = 200; // px — how far to run from a nearby pet
+
+// Phase 4: collision reaction constants
+const PET_ENGAGE_STOP_DISTANCE = 80; // px — stop this far from the other pet's centre
 
 // Duration of each claim in milliseconds
 const CLAIM_DURATION_MS: Record<BehaviorDecisionSource, number> = {
@@ -65,6 +81,7 @@ function claim(
   source: BehaviorDecisionSource,
   now: number,
   reason: string,
+  customExpiresAt?: number,
 ): void {
   const existing = components.getComponent(id, "BehaviorDecisionState");
   // When a higher-priority (non-autonomous) source overwrites an autonomous
@@ -82,7 +99,7 @@ function claim(
     type: "BehaviorDecisionState",
     source,
     decidedAt: now,
-    expiresAt: now + CLAIM_DURATION_MS[source],
+    expiresAt: customExpiresAt ?? now + CLAIM_DURATION_MS[source],
     reason,
     lastAutonomousReason,
     lastAutonomousAt,
@@ -197,13 +214,16 @@ export function runCollisionBehaviorSystem(
     }
   }
 
-  // Pass 2 — write new collision claims for currently-overlapping entities.
+  // Pass 2 — write PendingReaction for currently-overlapping entities.
+  // Phase 4: pets "freeze" until reactsAt; BehaviorDecisionSystem then picks
+  // a personality-shaped response (collision-flee/engage/avoid/unfazed).
   for (const entity of entities) {
-    // Do not disrupt a climbing entity — the WallClimbSystem drives position
-    // via the Y component of motionTarget, so overwriting it with a 2-D
-    // avoidance vector would send the pet to an unintended height.
+    // Do not disrupt a climbing entity or one that is mid-approach to a surface.
     if (components.getComponent(entity.id, "ClimbingState")) continue;
+    if (components.getComponent(entity.id, "ClimbIntentState")?.phase === "approaching") continue;
     if (isClaimedBySameOrHigherPriority(components, entity.id, "collision", now)) continue;
+    // Skip if a reaction is already pending (avoid overwriting mid-deliberation).
+    if (components.getComponent(entity.id, "PendingReaction")) continue;
 
     const collision = entities.find(
       (c) =>
@@ -213,31 +233,59 @@ export function runCollisionBehaviorSystem(
     );
     if (!collision) continue;
 
-    const away = normalize({ x: entity.x - collision.x, y: entity.y - collision.y });
-    let dir: Vector;
+    const personality = components.getComponent(entity.id, "Personality");
+    const latency = personality ? reactionLatencyMs(personality, "collision") : 400;
+    const reactsAt = now + latency;
 
-    if (entity.intent === "idle") {
-      dir = away;
-    } else if (entity.intent === "active") {
-      const side = normalize({ x: -away.y, y: away.x });
-      dir = normalize({ x: away.x + side.x, y: away.y + side.y });
-    } else {
-      const targetDir =
-        entity.targetX !== null && entity.targetY !== null
-          ? normalize({ x: entity.targetX - entity.x, y: entity.targetY - entity.y })
-          : away;
-      const side = normalize({ x: -away.y, y: away.x });
-      dir = normalize({ x: targetDir.x + side.x, y: targetDir.y + side.y });
-    }
+    components.setComponent(entity.id, {
+      type: "PendingReaction",
+      source: "collision",
+      triggeredAt: now,
+      reactsAt,
+      context: {
+        otherEntityId: collision.id,
+        otherPosition: { x: collision.x, y: collision.y },
+      },
+    } satisfies PendingReactionComponent);
 
-    entity.motion.targetEntityId = null;
-    entity.motion.targetPosition = {
-      x: clamp(entity.x + dir.x * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-      y: clamp(entity.y + dir.y * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
-    };
-
-    claim(components, entity.id, "collision", now, "entity overlap");
+    // Hold the claim until reactsAt so BehaviorDecisionSystem skips this pet
+    // during the deliberation window.
+    claim(components, entity.id, "collision", now, "entity overlap", reactsAt);
   }
+}
+
+// ── Phase 4: Reaction latency ─────────────────────────────────────────────
+//
+// High N (anxiety) → longer freeze before reacting.
+// High E (extraversion) → snappier reaction.
+// Clamped to 0..2000 ms.
+
+function reactionLatencyMs(p: PersonalityComponent, source: ReactionSource): number {
+  const baseMs = source === "collision" ? 400 : source === "stimulus" ? 250 : 200;
+  const latency = baseMs * (1 + p.neuroticism * 1.5 - p.extraversion * 0.5);
+  return Math.max(0, Math.min(2000, latency));
+}
+
+// ── Phase 4: Collision response score functions ───────────────────────────
+
+function scoreCollisionFlee(p: PersonalityComponent): number {
+  // N → flee instinct; A → reduce (agreeable pets less likely to flee)
+  return 0.2 + p.neuroticism * 0.7 - p.agreeableness * 0.5;
+}
+
+function scoreCollisionEngage(p: PersonalityComponent): number {
+  // E + A → curiosity/warmth; N → avoidance
+  return 0.2 + p.extraversion * 0.5 + p.agreeableness * 0.5 - p.neuroticism * 0.4;
+}
+
+function scoreCollisionAvoid(): number {
+  // Always a neutral fallback — perpendicular sidestep
+  return 0.4;
+}
+
+function scoreCollisionUnfazed(p: PersonalityComponent): number {
+  // Low N → composure; high N → less likely to shrug it off
+  return 0.15 + (1 - p.neuroticism) * 0.4;
 }
 
 // Priority 4: Autonomous idle behaviors (speech, wandering).
@@ -413,6 +461,18 @@ function scoreIdleStay(p: PersonalityComponent): number {
   return 0.25 + (1 - p.extraversion) * 0.3 + p.neuroticism * 0.2;
 }
 
+// Phase 3 — social interaction score functions (require Perception.nearbyPets)
+
+function scoreApproachPet(p: PersonalityComponent): number {
+  // E + A → social draw; N → reluctance
+  return 0.3 + p.extraversion * 0.7 + p.agreeableness * 0.4 - p.neuroticism * 0.3;
+}
+
+function scoreFleeFromPet(p: PersonalityComponent): number {
+  // N → flight instinct; A → reduces urge to flee
+  return 0.1 + p.neuroticism * 0.7 - p.agreeableness * 0.4;
+}
+
 function pickWanderPosition(
   petX: number,
   petY: number,
@@ -495,6 +555,58 @@ export function runBehaviorDecisionSystem(
       const existingClaim = components.getComponent(id, "BehaviorDecisionState");
       if (existingClaim && existingClaim.expiresAt > now) return;
 
+      // If the pet is already committed to approaching a climb surface, don't
+      // emit a new autonomous decision — that would change intent and allow
+      // MotionTargetSystem (seek) to overwrite ClimbApproachSystem's target.
+      const climbIntent = components.getComponent(id, "ClimbIntentState");
+      if (climbIntent?.phase === "approaching") return;
+
+      const petX = transform.position.x;
+      const petY = transform.position.y;
+
+      // Phase 4: PendingReaction present → claim just expired at reactsAt.
+      // Route to the personality-shaped reactive candidate pool instead of
+      // the normal autonomous pool.
+      const pendingReaction = components.getComponent(id, "PendingReaction");
+      if (pendingReaction) {
+        const otherPos = pendingReaction.context.otherPosition ?? { x: petX + 100, y: petY };
+        const away = normalize({ x: petX - otherPos.x, y: petY - otherPos.y });
+        const side = { x: -away.y, y: away.x };
+
+        const fleeTarget = {
+          x: clamp(petX + away.x * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(petY + away.y * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+        };
+        const engageTarget = {
+          x: clamp(otherPos.x - away.x * PET_ENGAGE_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(otherPos.y - away.y * PET_ENGAGE_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+        };
+        const avoidTarget = {
+          x: clamp(petX + side.x * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(petY + side.y * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+        };
+        const reactiveCandidates: Candidate[] = [
+          { kind: "collision-flee",    score: scoreCollisionFlee(personality),    build: () => ({ targetPosition: fleeTarget }) },
+          { kind: "collision-engage",  score: scoreCollisionEngage(personality),  build: () => ({ targetPosition: engageTarget }) },
+          { kind: "collision-avoid",   score: scoreCollisionAvoid(),              build: () => ({ targetPosition: avoidTarget }) },
+          // unfazedTarget is computed lazily in build() so random is consumed only
+          // if this candidate wins, keeping the softmax r-draw at position 1.
+          { kind: "collision-unfazed", score: scoreCollisionUnfazed(personality), build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near") }) },
+        ];
+
+        const reactionWinner = softmaxSample(reactiveCandidates, personality.neuroticism, random);
+        components.setComponent(id, {
+          type: "BehaviorDecisionToken",
+          kind: reactionWinner.kind,
+          decidedAt: now,
+          consumed: false,
+          ...reactionWinner.build(),
+        });
+        claim(components, id, "autonomous", now, reactionWinner.kind);
+        components.removeComponent(id, "PendingReaction");
+        return;
+      }
+
       // Read world context from this pet's Perception snapshot.
       const perception = components.getComponent(id, "Perception");
       const perceptionAnchor = perception?.userAnchor;
@@ -502,8 +614,6 @@ export function runBehaviorDecisionSystem(
         ? { id: perceptionAnchor.id, x: perceptionAnchor.position.x, y: perceptionAnchor.position.y }
         : null;
 
-      const petX = transform.position.x;
-      const petY = transform.position.y;
       const isFlying = !!components.getComponent(id, "FlyingState");
 
       const candidates: Candidate[] = [];
@@ -564,6 +674,34 @@ export function runBehaviorDecisionSystem(
             },
           });
         }
+      }
+
+      // Phase 3: social candidates — only when another pet is within perception range.
+      const nearbyPets = perception?.nearbyPets ?? [];
+      if (nearbyPets.length > 0) {
+        const nearestPet = nearbyPets[0];
+        pushCandidate(candidates, components, id, now, {
+          kind: "approach-pet",
+          score: scoreApproachPet(personality),
+          // Planning sets MotionTarget to the snapshot position (not entity-tracked).
+          build: () => ({
+            targetEntityId: nearestPet.id,
+            targetPosition: { x: nearestPet.position.x, y: nearestPet.position.y },
+          }),
+        });
+
+        const fleeDirX = petX - nearestPet.position.x;
+        const fleeDirY = petY - nearestPet.position.y;
+        const fleeLen = Math.hypot(fleeDirX, fleeDirY) || 1;
+        const fleePos = {
+          x: clamp(petX + (fleeDirX / fleeLen) * PET_FLEE_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(petY + (fleeDirY / fleeLen) * PET_FLEE_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+        };
+        pushCandidate(candidates, components, id, now, {
+          kind: "flee-from-pet",
+          score: scoreFleeFromPet(personality),
+          build: () => ({ targetPosition: fleePos }),
+        });
       }
 
       pushCandidate(candidates, components, id, now, {
@@ -640,6 +778,30 @@ export function runBehaviorPlanningSystem(
       case "idle-stay":
         // Intentional no-op: intent stays idle, target stays null.
         break;
+      // Phase 3 — social movements (position snapshot; not entity-tracked)
+      case "approach-pet":
+      case "flee-from-pet":
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: null,
+          targetPosition: token.targetPosition!,
+        });
+        setPetIntent(components, id, "active");
+        break;
+      // Phase 4 — collision reactions (position pre-computed in Decision)
+      case "collision-flee":
+      case "collision-engage":
+      case "collision-avoid":
+      case "collision-unfazed":
+        if (token.targetPosition) {
+          components.setComponent(id, {
+            type: "MotionTarget",
+            targetEntityId: null,
+            targetPosition: token.targetPosition,
+          });
+          setPetIntent(components, id, "active");
+        }
+        break;
     }
     token.consumed = true;
   });
@@ -679,8 +841,8 @@ export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
 export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "CollisionBehaviorSystem",
   dependsOn: ["AgentEventBehaviorSystem"],
-  reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget"],
-  writes: ["MotionTarget", "BehaviorDecisionState"],
+  reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget", "Personality"],
+  writes: ["PendingReaction", "BehaviorDecisionState"],
   update(ctx) {
     runCollisionBehaviorSystem(ctx.components, ctx.bounds, ctx.clock);
   },
@@ -695,6 +857,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "Transform",
     "Personality",
     "Perception",
+    "PendingReaction",
     "CanJump",
     "JumpActionState",
     "CanWallClimb",
@@ -702,6 +865,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
   writes: [
     "BehaviorDecisionToken",
     "BehaviorDecisionState",
+    "PendingReaction",
   ],
   update(ctx) {
     runBehaviorDecisionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);

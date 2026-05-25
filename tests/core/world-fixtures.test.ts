@@ -143,8 +143,8 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "CollisionBehaviorSystem",
       dependsOn: ["AgentEventBehaviorSystem"],
-      reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget"],
-      writes: ["MotionTarget", "BehaviorDecisionState"],
+      reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget", "Personality"],
+      writes: ["PendingReaction", "BehaviorDecisionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WalkSystem",
