@@ -608,9 +608,15 @@ export function runBehaviorDecisionSystem(
           x: clamp(petX + away.x * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
           y: clamp(petY + away.y * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
         };
+        // engageTarget sits 80 px from the other pet on SELF's side — close
+        // enough to "engage" but not so close that the pet walks straight
+        // through. `away` points from other to self, so adding (not subtracting)
+        // it to otherPos keeps the target between the two pets. The earlier
+        // `otherPos - away * D` placed the target on the FAR side, causing pets
+        // to walk through each other and immediately re-collide (cluster bug).
         const engageTarget = {
-          x: clamp(otherPos.x - away.x * PET_ENGAGE_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(otherPos.y - away.y * PET_ENGAGE_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clamp(otherPos.x + away.x * PET_ENGAGE_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(otherPos.y + away.y * PET_ENGAGE_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
         };
         const avoidTarget = {
           x: clamp(petX + side.x * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
