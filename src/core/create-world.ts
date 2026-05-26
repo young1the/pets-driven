@@ -113,6 +113,7 @@ export function createWorld(input: WorldDefinition) {
     switch (decisionState?.reason) {
       case "approach-pet":
       case "collision-engage":
+      case "collision-stay":
         return {
           kind: "affection",
           icon: "♥",
