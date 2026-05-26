@@ -114,6 +114,39 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
   });
 
+  it("uses Matter-derived PetCollision even when bodies no longer overlap by AABB", () => {
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "idle" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "PetCollision" as const,
+            otherEntityId: "pet-b",
+            otherPosition: { x: 150, y: 500 },
+            startedAt: 984,
+            lastSeenAt: 1000,
+          },
+        ],
+      },
+      makePet("pet-b", 150, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toMatchObject({
+      source: "collision",
+      context: {
+        otherEntityId: "pet-b",
+        otherPosition: { x: 150, y: 500 },
+      },
+    });
+  });
+
   it("skips entity that already has a higher-priority claim", () => {
     const clock = createManualClock(1000);
     const store = createComponentStore([
@@ -360,6 +393,13 @@ function makeReactionStore(
           },
         ],
       },
+      {
+        id: "pet-b",
+        components: [
+          { type: "Transform" as const, position: otherPosition },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+        ],
+      },
     ]);
 }
 
@@ -437,6 +477,45 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     const store = makeReactionStore(0.5, 0.9, 0.1);
     runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-flee");
+  });
+
+  it("grounded walking pets can pick collision-jump when still trapped in contact", () => {
+    const store = makeReactionStore(0.95, 0.9, 0.1, { x: 110, y: 500 });
+    store.setComponent("pet", {
+      type: "PhysicsBody",
+      shape: "rectangle",
+      width: 32,
+      height: 38,
+    });
+    store.setComponent("pet-b", {
+      type: "Transform",
+      position: { x: 110, y: 500 },
+    });
+    store.setComponent("pet-b", {
+      type: "PhysicsBody",
+      shape: "rectangle",
+      width: 32,
+      height: 38,
+    });
+    store.setComponent("pet", { type: "WalkingTag" });
+    store.setComponent("pet", { type: "CanJump", impulse: 0.009 });
+    store.setComponent("pet", {
+      type: "ContactState",
+      grounded: true,
+      climbableSurfaceId: null,
+      climbableSurfacePosition: null,
+    });
+
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorPlanningSystem(store, createManualClock(1400));
+
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-jump");
+    expect(store.getComponent("pet", "JumpActionState")).toEqual({
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
+    });
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition?.x).toBeLessThan(100);
   });
 
   it("collision-flee target is far enough to escape the collision area", () => {

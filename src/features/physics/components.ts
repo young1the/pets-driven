@@ -31,3 +31,12 @@ export type PhysicsMaterialComponent = {
 export type GroundComponent = {
   type: "Ground";
 };
+
+/** Physics-derived pet-to-pet contact used as a behavior trigger. */
+export type PetCollisionComponent = {
+  type: "PetCollision";
+  otherEntityId: string;
+  otherPosition: Vector;
+  startedAt: number;
+  lastSeenAt: number;
+};

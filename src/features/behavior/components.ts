@@ -59,6 +59,7 @@ export type BehaviorDecisionKind =
   | "collision-flee"
   | "collision-engage"
   | "collision-avoid"
+  | "collision-jump"
   | "collision-stay"
   | "collision-unfazed";
 
