@@ -16,7 +16,8 @@ import {
   type PetIntent,
 } from "./components";
 
-const COLLISION_REACTION_DISTANCE = 96;
+const DEFAULT_BEHAVIOR_BODY_WIDTH = 32;
+const COLLISION_REACTION_WIDTH_MULTIPLIER = 3;
 const COLLISION_TARGET_MARGIN = 48;
 const USER_PROXIMITY_RADIUS = 96;
 
@@ -38,11 +39,11 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
 };
 
 // Phase 3: social interaction distances
-const PET_FLEE_DISTANCE = 200; // px — how far to run from a nearby pet
-const PET_APPROACH_STOP_DISTANCE = 80; // px — when approaching, stop this far from the other pet's centre
+const PET_FLEE_WIDTH_MULTIPLIER = 6;
+const PET_APPROACH_STOP_WIDTH_MULTIPLIER = 2.5;
 
 // Phase 4: collision reaction constants
-const PET_ENGAGE_STOP_DISTANCE = 80; // px — stop this far from the other pet's centre
+const PET_ENGAGE_STOP_WIDTH_MULTIPLIER = 2.5;
 
 // Duration of each claim in milliseconds
 const CLAIM_DURATION_MS: Record<BehaviorDecisionSource, number> = {
@@ -623,10 +624,12 @@ export function runBehaviorDecisionSystem(
         const otherPos = pendingReaction.context.otherPosition ?? { x: petX + 100, y: petY };
         const away = normalize({ x: petX - otherPos.x, y: petY - otherPos.y });
         const side = { x: -away.y, y: away.x };
+        const reactionDistance = petWidth(components, id) * COLLISION_REACTION_WIDTH_MULTIPLIER;
+        const engageStopDistance = petWidth(components, id) * PET_ENGAGE_STOP_WIDTH_MULTIPLIER;
 
         const fleeTarget = {
-          x: clamp(petX + away.x * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(petY + away.y * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clamp(petX + away.x * reactionDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(petY + away.y * reactionDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
         };
         // engageTarget sits 80 px from the other pet on SELF's side — close
         // enough to "engage" but not so close that the pet walks straight
@@ -635,12 +638,12 @@ export function runBehaviorDecisionSystem(
         // `otherPos - away * D` placed the target on the FAR side, causing pets
         // to walk through each other and immediately re-collide (cluster bug).
         const engageTarget = {
-          x: clamp(otherPos.x + away.x * PET_ENGAGE_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(otherPos.y + away.y * PET_ENGAGE_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clamp(otherPos.x + away.x * engageStopDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(otherPos.y + away.y * engageStopDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
         };
         const avoidTarget = {
-          x: clamp(petX + side.x * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(petY + side.y * COLLISION_REACTION_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clamp(petX + side.x * reactionDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(petY + side.y * reactionDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
         };
         const reactiveCandidates: Candidate[] = [
           { kind: "collision-flee",    score: scoreCollisionFlee(personality),    build: () => ({ targetPosition: fleeTarget }) },
@@ -743,6 +746,7 @@ export function runBehaviorDecisionSystem(
       const nearbyPets = perception?.nearbyPets ?? [];
       if (nearbyPets.length > 0) {
         const nearestPet = nearbyPets[0];
+        const approachStopDistance = petWidth(components, id) * PET_APPROACH_STOP_WIDTH_MULTIPLIER;
 
         // approach-pet: only meaningful when the pet is meaningfully farther than
         // the social stop distance. Otherwise the two pets are already in personal
@@ -750,15 +754,15 @@ export function runBehaviorDecisionSystem(
         // other's centre) or oscillate around the stop distance. Excluding this
         // candidate when close lets wander / idle pick up and the pair drift apart
         // naturally.
-        if (nearestPet.distance > PET_APPROACH_STOP_DISTANCE) {
-          // Walk toward the other pet but stop PET_APPROACH_STOP_DISTANCE short.
+        if (nearestPet.distance > approachStopDistance) {
+          // Walk toward the other pet but stop a body-width-scaled distance short.
           // Same formula as collision-engage: otherPos + (self→other unit)·D.
           const towardSelfDirX = petX - nearestPet.position.x;
           const towardSelfDirY = petY - nearestPet.position.y;
           const towardSelfLen = Math.hypot(towardSelfDirX, towardSelfDirY) || 1;
           const approachPos = {
-            x: clamp(nearestPet.position.x + (towardSelfDirX / towardSelfLen) * PET_APPROACH_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-            y: clamp(nearestPet.position.y + (towardSelfDirY / towardSelfLen) * PET_APPROACH_STOP_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+            x: clamp(nearestPet.position.x + (towardSelfDirX / towardSelfLen) * approachStopDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+            y: clamp(nearestPet.position.y + (towardSelfDirY / towardSelfLen) * approachStopDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
           };
           pushCandidate(candidates, components, id, now, {
             kind: "approach-pet",
@@ -774,9 +778,10 @@ export function runBehaviorDecisionSystem(
         const fleeDirX = petX - nearestPet.position.x;
         const fleeDirY = petY - nearestPet.position.y;
         const fleeLen = Math.hypot(fleeDirX, fleeDirY) || 1;
+        const fleeDistance = petWidth(components, id) * PET_FLEE_WIDTH_MULTIPLIER;
         const fleePos = {
-          x: clamp(petX + (fleeDirX / fleeLen) * PET_FLEE_DISTANCE, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(petY + (fleeDirY / fleeLen) * PET_FLEE_DISTANCE, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clamp(petX + (fleeDirX / fleeLen) * fleeDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(petY + (fleeDirY / fleeLen) * fleeDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
         };
         pushCandidate(candidates, components, id, now, {
           kind: "flee-from-pet",
@@ -895,6 +900,10 @@ function normalize(v: Vector): Vector {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function petWidth(components: ComponentStore, id: string): number {
+  return components.getComponent(id, "PhysicsBody")?.width ?? DEFAULT_BEHAVIOR_BODY_WIDTH;
 }
 
 // ── System descriptors ─────────────────────────────────────────────────────

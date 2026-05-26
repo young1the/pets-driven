@@ -73,7 +73,7 @@ function makeNearbyStore(prefOverride: Partial<{
   agreeableness: number;
   neuroticism: number;
 }> = {}) {
-  // other-pet is at distance 150 (well beyond PET_APPROACH_STOP_DISTANCE=80)
+  // other-pet is at distance 150 (well beyond the default 80px social stop distance)
   // so the "approach-pet" candidate is included and we can verify selection.
   return createComponentStore([
     {
@@ -713,7 +713,7 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("flee-from-pet");
   });
 
-  it("stores approach-pet targetPosition at PET_APPROACH_STOP_DISTANCE from the nearby pet", () => {
+  it("stores approach-pet targetPosition at the default body-scaled stop distance from the nearby pet", () => {
     // Pet at (200,200), other at (350,200), distance=150.
     // approach target = other + (self→other unit)·80 = (350 + (-1)·80, 200) = (270, 200).
     // The pet walks from 200→270, stopping 80px short of other (at 350).
@@ -726,6 +726,60 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
     // Target must NOT be on top of the other pet (the old behavior that caused
     // pets to immediately collide after approaching).
     expect(token?.targetPosition?.x).toBeLessThan(350);
+  });
+
+  it("scales social approach distance from the pet body width", () => {
+    const store = makeNearbyStore({ extraversion: 0.9, agreeableness: 0.9, neuroticism: 0.1 });
+    store.setComponent("pet", {
+      type: "PhysicsBody",
+      shape: "rectangle",
+      width: 40,
+      height: 38,
+    });
+
+    runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), BOUNDS);
+
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("approach-pet");
+    expect(token?.targetPosition?.x).toBeCloseTo(250, 0);
+  });
+
+  it("scales flee distance from the pet body width", () => {
+    const store = createComponentStore([
+      { id: "other-pet", components: [{ type: "Transform", position: { x: 650, y: 200 } }] },
+      {
+        id: "pet",
+        components: [
+          { type: "Transform", position: { x: 500, y: 200 } },
+          { type: "PhysicsBody", shape: "rectangle", width: 40, height: 38 },
+          { type: "IntentState", intent: "idle" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [{ id: "other-pet", position: { x: 650, y: 200 }, distance: 150 }],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "idle" as const },
+          },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.1,
+            agreeableness: 0,
+            neuroticism: 1,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(800), BOUNDS);
+
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("flee-from-pet");
+    expect(token?.targetPosition?.x).toBeCloseTo(260, 0);
+    expect(token?.targetPosition?.y).toBeCloseTo(200, 0);
   });
 
   // Regression: when two pets are already within social distance, approach-pet
@@ -744,7 +798,7 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
           {
             type: "Perception" as const,
             userAnchor: null,
-            // distance = 70 < PET_APPROACH_STOP_DISTANCE (80)
+            // distance = 70 < default body-scaled stop distance (80)
             nearbyPets: [{ id: "other-pet", position: { x: 270, y: 200 }, distance: 70 }],
             nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
