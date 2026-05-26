@@ -45,6 +45,14 @@ describe("wanderRadius — near", () => {
     const [min, max] = wanderRadius(p({ neuroticism: 1.0 }), "near");
     expect(max - min).toBeGreaterThanOrEqual(40);
   });
+
+  it("scales from pet body width", () => {
+    const [defaultMin, defaultMax] = wanderRadius(p({ neuroticism: 0.0 }), "near", 32);
+    const [largeMin, largeMax] = wanderRadius(p({ neuroticism: 0.0 }), "near", 64);
+
+    expect(largeMin).toBe(defaultMin * 2);
+    expect(largeMax).toBe(defaultMax * 2);
+  });
 });
 
 describe("wanderRadius — far", () => {
@@ -71,5 +79,13 @@ describe("wanderRadius — far", () => {
     const [min9, max9] = wanderRadius(p({ openness: 0.5, neuroticism: 0.9 }), "far");
     expect(min0).toBe(min9);
     expect(max0).toBe(max9);
+  });
+
+  it("scales from pet body width", () => {
+    const [defaultMin, defaultMax] = wanderRadius(p({ openness: 1.0 }), "far", 32);
+    const [largeMin, largeMax] = wanderRadius(p({ openness: 1.0 }), "far", 64);
+
+    expect(largeMin).toBe(defaultMin * 2);
+    expect(largeMax).toBe(defaultMax * 2);
   });
 });
