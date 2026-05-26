@@ -177,8 +177,9 @@ describe("PlaygroundApp", () => {
 
     // CanJump component shows its impulse field value
     expect(screen.getAllByText("impulse").length).toBeGreaterThan(0);
-    // CanWalk component shows its speed field value (also present in CanWallClimb)
-    expect(screen.getAllByText("speed").length).toBeGreaterThan(0);
+    // CanWalk and CanWallClimb expose unit-specific movement fields.
+    expect(screen.getAllByText("force").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("velocity").length).toBeGreaterThan(0);
     // JumpActionState shows the phase field value (also present in ClimbDismountState)
     expect(screen.getAllByText("phase").length).toBeGreaterThan(0);
   });

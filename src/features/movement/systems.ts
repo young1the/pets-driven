@@ -1,5 +1,5 @@
 import type { ComponentStore } from "@/core/component-store";
-import type { SimulationComponentType } from "@/core/components";
+import type { ComponentType } from "@/core/components";
 import type { SimulationSystem } from "@/core/simulation-system";
 import type { WorldStepContext } from "@/core/world-step-context";
 import type { MatterPhysicsWorld } from "@/features/physics/matter-physics-world";
@@ -26,21 +26,21 @@ const JUMP_LANDING_COOLDOWN_MS = 250;
 // has wandered outside USER_PROXIMITY_RADIUS.
 const SEEK_USER_STOP_DISTANCE = 80;
 
-const ACTIVE_LOCOMOTION_TAGS: SimulationComponentType[] = [
-  "WalkingState",
-  "ClimbingState",
-  "FlyingState",
+const ACTIVE_LOCOMOTION_TAGS: ComponentType[] = [
+  "WalkingTag",
+  "ClimbingTag",
+  "FlyingTag",
 ];
 
 // ── MOVEMENT_STATE phase ───────────────────────────────────────────────────
 
 export function runLocomotionModeSystem(components: ComponentStore): void {
-  components.query(
+  components.forEach(
     ["ContactState", "MotionTarget"],
     (id, [contact, motion]) => {
       const climbDismount = components.getComponent(id, "ClimbDismountState");
       if (climbDismount && climbDismount.phase !== "ready") {
-        if (components.getComponent(id, "ClimbingState")) {
+        if (components.getComponent(id, "ClimbingTag")) {
           switchLocomotion(id, "walk", components);
         }
         return;
@@ -50,7 +50,7 @@ export function runLocomotionModeSystem(components: ComponentStore): void {
       if (!wallClimb) return;
 
       const climbIntent = components.getComponent(id, "ClimbIntentState");
-      const climbing = components.getComponent(id, "ClimbingState");
+      const climbing = components.getComponent(id, "ClimbingTag");
 
       if (canEnterClimb(contact, motion, climbIntent)) {
         switchLocomotion(id, "climb", components);
@@ -65,14 +65,14 @@ export function runClimbApproachSystem(components: ComponentStore): void {
   type SurfaceEntry = { id: string; position: Vector };
   const surfaces: SurfaceEntry[] = [];
 
-  components.query(["Transform", "ClimbableSurface"], (id, [transform]) => {
+  components.forEach(["Transform", "ClimbableSurface"], (id, [transform]) => {
     surfaces.push({ id, position: transform.position });
   });
 
-  components.query(
+  components.forEach(
     ["Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb"],
     (id, [transform, motion, climbIntent]) => {
-      if (components.getComponent(id, "ClimbingState")) return;
+      if (components.getComponent(id, "ClimbingTag")) return;
       if (climbIntent.phase !== "approaching") return;
 
       const surface = surfaces.find((s) => s.id === climbIntent.surfaceEntityId);
@@ -91,8 +91,8 @@ export function runClimbAttachmentSystem(
   components: ComponentStore,
   physics: MatterPhysicsWorld,
 ): void {
-  components.query(
-    ["ClimbingState", "ContactState", "Transform", "MotionTarget"],
+  components.forEach(
+    ["ClimbingTag", "ContactState", "Transform", "MotionTarget"],
     (id, [, contact, transform, motion]) => {
       if (!contact.climbableSurfaceId || !contact.climbableSurfacePosition) return;
 
@@ -119,7 +119,7 @@ export function runClimbDismountSystem(
   components: ComponentStore,
   deltaMs: number,
 ): void {
-  components.query(
+  components.forEach(
     ["MotionTarget", "ContactState"],
     (id, [motion, contact]) => {
       const climbDismount = components.getComponent(id, "ClimbDismountState");
@@ -138,7 +138,7 @@ export function runClimbDismountSystem(
         return;
       }
 
-      const climbing = components.getComponent(id, "ClimbingState");
+      const climbing = components.getComponent(id, "ClimbingTag");
       const climbIntent = components.getComponent(id, "ClimbIntentState");
 
       if (
@@ -150,9 +150,9 @@ export function runClimbDismountSystem(
         return;
       }
 
-      components.removeComponent(id, "ClimbingState");
+      components.removeComponent(id, "ClimbingTag");
       if (components.getComponent(id, "CanWalk")) {
-        components.setComponent(id, { type: "WalkingState" });
+        components.setComponent(id, { type: "WalkingTag" });
       }
 
       const canJump = components.getComponent(id, "CanJump");
@@ -168,16 +168,16 @@ export function runClimbDismountSystem(
 }
 
 export function runLocomotionActiveStateSystem(components: ComponentStore): void {
-  components.query(["ContactState"], (id, [contact]) => {
-    const walking = components.getComponent(id, "WalkingState");
-    const climbing = components.getComponent(id, "ClimbingState");
-    const flying = components.getComponent(id, "FlyingState");
+  components.forEach(["ContactState"], (id, [contact]) => {
+    const walking = components.getComponent(id, "WalkingTag");
+    const climbing = components.getComponent(id, "ClimbingTag");
+    const flying = components.getComponent(id, "FlyingTag");
     const isAirborne = walking && !climbing && !flying && !contact.grounded;
 
     if (isAirborne) {
-      components.setComponent(id, { type: "AirborneState" });
+      components.setComponent(id, { type: "AirborneTag" });
     } else {
-      components.removeComponent(id, "AirborneState");
+      components.removeComponent(id, "AirborneTag");
     }
   });
 }
@@ -189,7 +189,7 @@ export function runMotionTargetSystem(
   random: RandomSource,
   bounds: { width: number; height: number },
 ): void {
-  components.query(["IntentState", "MotionTarget"], (_id, [intent, motion]) => {
+  components.forEach(["IntentState", "MotionTarget"], (_id, [intent, motion]) => {
     if (intent.intent === "seek") {
       const perception = components.getComponent(_id, "Perception");
       const anchor = perception?.userAnchor ?? null;
@@ -240,8 +240,8 @@ export function runMotionTargetSystem(
 export function runWalkSystem(components: ComponentStore, forceGroups: Force[][]): void {
   const forces: Force[] = [];
 
-  components.query(
-    ["Transform", "WalkingState", "ContactState", "CanWalk", "MotionTarget", "NavigationState"],
+  components.forEach(
+    ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget", "NavigationState"],
     (id, [transform, , contact, canWalk, motion, navigation]) => {
       if (!contact.grounded) return;
 
@@ -251,7 +251,7 @@ export function runWalkSystem(components: ComponentStore, forceGroups: Force[][]
       const dx = target.x - transform.position.x;
       if (Math.abs(dx) <= WALK_ARRIVAL_RADIUS) return;
 
-      forces.push({ id, x: Math.sign(dx) * canWalk.speed, y: 0 });
+      forces.push({ id, x: Math.sign(dx) * canWalk.force, y: 0 });
     },
   );
 
@@ -265,8 +265,8 @@ export function runJumpSystem(
 ): void {
   const forces: Force[] = [];
 
-  components.query(
-    ["WalkingState", "ContactState", "CanJump", "JumpActionState"],
+  components.forEach(
+    ["WalkingTag", "ContactState", "CanJump", "JumpActionState"],
     (id, [, contact, jump, jumpAction]) => {
       if (jumpAction.phase === "landingCooldown") {
         jumpAction.cooldownMs = Math.max(0, jumpAction.cooldownMs - deltaMs);
@@ -304,8 +304,8 @@ export function runWallClimbSystem(
   components: ComponentStore,
   physics: MatterPhysicsWorld,
 ): void {
-  components.query(
-    ["Transform", "ClimbingState", "CanWallClimb", "MotionTarget", "ContactState"],
+  components.forEach(
+    ["Transform", "ClimbingTag", "CanWallClimb", "MotionTarget", "ContactState"],
     (id, [transform, , canWallClimb, motion, contact]) => {
       if (!contact.climbableSurfaceId || !motion.targetPosition) return;
 
@@ -314,7 +314,7 @@ export function runWallClimbSystem(
         physics.setVelocity(id, { x: 0, y: 0 });
         return;
       }
-      physics.setVelocity(id, { x: 0, y: Math.sign(deltaY) * canWallClimb.speed });
+      physics.setVelocity(id, { x: 0, y: Math.sign(deltaY) * canWallClimb.velocity });
     },
   );
 }
@@ -325,8 +325,8 @@ export function runIntentSteeringSystem(
 ): void {
   const forces: Force[] = [];
 
-  components.query(
-    ["Transform", "FlyingState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
+  components.forEach(
+    ["Transform", "FlyingTag", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
     (id, [transform, , movement, intent, motion, navigation]) => {
       const target = navigation.avoidanceWaypoint ?? motion.targetPosition;
       if (!target) {
@@ -344,10 +344,10 @@ export function runIntentSteeringSystem(
 
       const speed =
         intent.intent === "seek"
-          ? movement.seekSpeed
+          ? movement.seekForce
           : intent.intent === "active"
-            ? movement.activeSpeed
-            : movement.idleSpeed;
+            ? movement.activeForce
+            : movement.idleForce;
 
       const easedSpeed =
         distance >= MOTION_SLOW_RADIUS
@@ -366,7 +366,7 @@ export function runFlightSystem(
   components: ComponentStore,
   physics: MatterPhysicsWorld,
 ): void {
-  components.query(["PhysicsBody", "FlyingState", "CanFly"], (id, [, , canFly]) => {
+  components.forEach(["PhysicsBody", "FlyingTag", "CanFly"], (id, [, , canFly]) => {
     physics.setGravityScale(id, canFly.gravityScale);
     if (canFly.hoverStrength > 0) {
       physics.applyForce(id, { x: 0, y: -canFly.hoverStrength });
@@ -401,9 +401,9 @@ function switchLocomotion(
   for (const tag of ACTIVE_LOCOMOTION_TAGS) {
     components.removeComponent(id, tag);
   }
-  if (mode === "walk") components.setComponent(id, { type: "WalkingState" });
-  if (mode === "climb") components.setComponent(id, { type: "ClimbingState" });
-  if (mode === "fly") components.setComponent(id, { type: "FlyingState" });
+  if (mode === "walk") components.setComponent(id, { type: "WalkingTag" });
+  if (mode === "climb") components.setComponent(id, { type: "ClimbingTag" });
+  if (mode === "fly") components.setComponent(id, { type: "FlyingTag" });
 }
 
 // ── System descriptors ─────────────────────────────────────────────────────
@@ -411,8 +411,8 @@ function switchLocomotion(
 export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
   name: "LocomotionModeSystem",
   dependsOn: ["AutonomousBehaviorSystem"],
-  reads: ["ContactState", "MotionTarget", "WalkingState", "ClimbingState", "FlyingState", "ClimbIntentState", "CanWallClimb", "ClimbDismountState"],
-  writes: ["WalkingState", "ClimbingState", "FlyingState"],
+  reads: ["ContactState", "MotionTarget", "WalkingTag", "ClimbingTag", "FlyingTag", "ClimbIntentState", "CanWallClimb", "ClimbDismountState"],
+  writes: ["WalkingTag", "ClimbingTag", "FlyingTag"],
   update(ctx) {
     runLocomotionModeSystem(ctx.components);
   },
@@ -421,7 +421,7 @@ export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbApproachSystem",
   dependsOn: ["LocomotionModeSystem"],
-  reads: ["ClimbingState", "Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb", "ClimbableSurface"],
+  reads: ["ClimbingTag", "Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb", "ClimbableSurface"],
   writes: ["MotionTarget"],
   update(ctx) {
     runClimbApproachSystem(ctx.components);
@@ -431,8 +431,8 @@ export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbDismountSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbDismountSystem",
   dependsOn: ["ArrivalBehaviorSystem"],
-  reads: ["ClimbingState", "MotionTarget", "ContactState", "CanWalk", "CanWallClimb", "CanJump", "JumpActionState", "ClimbDismountState", "ClimbIntentState"],
-  writes: ["WalkingState", "ClimbingState", "JumpActionState", "ClimbDismountState"],
+  reads: ["ClimbingTag", "MotionTarget", "ContactState", "CanWalk", "CanWallClimb", "CanJump", "JumpActionState", "ClimbDismountState", "ClimbIntentState"],
+  writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState"],
   update(ctx) {
     runClimbDismountSystem(ctx.components, ctx.deltaMs);
   },
@@ -441,8 +441,8 @@ export const ClimbDismountSystem: SimulationSystem<WorldStepContext> = {
 export const LocomotionActiveStateSystem: SimulationSystem<WorldStepContext> = {
   name: "LocomotionActiveStateSystem",
   dependsOn: ["ClimbDismountSystem"],
-  reads: ["ContactState", "WalkingState", "ClimbingState", "FlyingState"],
-  writes: ["AirborneState"],
+  reads: ["ContactState", "WalkingTag", "ClimbingTag", "FlyingTag"],
+  writes: ["AirborneTag"],
   update(ctx) {
     runLocomotionActiveStateSystem(ctx.components);
   },
@@ -451,7 +451,7 @@ export const LocomotionActiveStateSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbAttachmentSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbAttachmentSystem",
   dependsOn: ["LocomotionActiveStateSystem"],
-  reads: ["ClimbingState", "ContactState", "Transform", "MotionTarget", "ClimbIntentState"],
+  reads: ["ClimbingTag", "ContactState", "Transform", "MotionTarget", "ClimbIntentState"],
   writes: ["Transform", "MotionTarget", "PhysicsPosition", "PhysicsVelocity"],
   update(ctx) {
     runClimbAttachmentSystem(ctx.components, ctx.physics);
@@ -471,7 +471,7 @@ export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
 export const WalkSystem: SimulationSystem<WorldStepContext> = {
   name: "WalkSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "WalkingState", "ContactState", "CanWalk", "MotionTarget", "NavigationState"],
+  reads: ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget", "NavigationState"],
   writes: ["PhysicsForce"],
   update(ctx) {
     runWalkSystem(ctx.components, ctx.forceGroups);
@@ -481,7 +481,7 @@ export const WalkSystem: SimulationSystem<WorldStepContext> = {
 export const JumpSystem: SimulationSystem<WorldStepContext> = {
   name: "JumpSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["WalkingState", "ContactState", "CanJump", "JumpActionState"],
+  reads: ["WalkingTag", "ContactState", "CanJump", "JumpActionState"],
   writes: ["PhysicsForce", "JumpActionState"],
   update(ctx) {
     runJumpSystem(ctx.components, ctx.deltaMs, ctx.forceGroups);
@@ -491,7 +491,7 @@ export const JumpSystem: SimulationSystem<WorldStepContext> = {
 export const WallClimbSystem: SimulationSystem<WorldStepContext> = {
   name: "WallClimbSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "ClimbingState", "CanWallClimb", "MotionTarget", "ContactState"],
+  reads: ["Transform", "ClimbingTag", "CanWallClimb", "MotionTarget", "ContactState"],
   writes: ["PhysicsVelocity"],
   update(ctx) {
     runWallClimbSystem(ctx.components, ctx.physics);
@@ -501,7 +501,7 @@ export const WallClimbSystem: SimulationSystem<WorldStepContext> = {
 export const IntentSteeringSystem: SimulationSystem<WorldStepContext> = {
   name: "IntentSteeringSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "FlyingState", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
+  reads: ["Transform", "FlyingTag", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
   writes: ["PhysicsForce"],
   update(ctx) {
     runIntentSteeringSystem(ctx.components, ctx.forceGroups);
@@ -511,7 +511,7 @@ export const IntentSteeringSystem: SimulationSystem<WorldStepContext> = {
 export const FlightSystem: SimulationSystem<WorldStepContext> = {
   name: "FlightSystem",
   dependsOn: ["IntentSteeringSystem"],
-  reads: ["PhysicsBody", "FlyingState", "CanFly"],
+  reads: ["PhysicsBody", "FlyingTag", "CanFly"],
   writes: ["PhysicsGravityScale"],
   update(ctx) {
     runFlightSystem(ctx.components, ctx.physics);

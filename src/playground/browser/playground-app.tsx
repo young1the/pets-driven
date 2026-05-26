@@ -198,9 +198,9 @@ export function PlaygroundApp() {
   }
 
   function switchAliceToWalk() {
-    scenarioRef.current.world.removeComponent("pet-a", "ClimbingState");
-    scenarioRef.current.world.removeComponent("pet-a", "FlyingState");
-    scenarioRef.current.world.setComponent("pet-a", { type: "WalkingState" });
+    scenarioRef.current.world.removeComponent("pet-a", "ClimbingTag");
+    scenarioRef.current.world.removeComponent("pet-a", "FlyingTag");
+    scenarioRef.current.world.setComponent("pet-a", { type: "WalkingTag" });
   }
 
   return (

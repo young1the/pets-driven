@@ -23,7 +23,7 @@ export function runPhysicsTransformSyncSystem<TSnapshot extends PhysicsTransform
 ): TSnapshot {
   const snapshot = physics.snapshot();
 
-  components.query(["Transform"], (_id, [transform]) => {
+  components.forEach(["Transform"], (_id, [transform]) => {
     // match is done by id below
     void transform;
   });

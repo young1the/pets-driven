@@ -13,9 +13,9 @@ function makeWalker(
     id: "pet-a",
     components: [
       { type: "Transform" as const, position: { x: posX, y: 500 } },
-      { type: "WalkingState" },
+      { type: "WalkingTag" },
       { type: "ContactState" as const, grounded, climbableSurfaceId: null, climbableSurfacePosition: null },
-      { type: "CanWalk" as const, speed: 0.001 },
+      { type: "CanWalk" as const, force: 0.001 },
       { type: "MotionTarget" as const, targetEntityId: null, targetPosition: targetX !== null ? { x: targetX, y: 500 } : null },
       { type: "NavigationState" as const, avoidanceWaypoint },
     ],

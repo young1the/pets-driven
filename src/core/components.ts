@@ -34,10 +34,10 @@ export type {
 } from "@/features/stimulus/components";
 
 export type {
-  WalkingStateComponent,
-  ClimbingStateComponent,
-  FlyingStateComponent,
-  AirborneStateComponent,
+  WalkingTagComponent,
+  ClimbingTagComponent,
+  FlyingTagComponent,
+  AirborneTagComponent,
   MotionTargetComponent,
 } from "@/features/movement/components";
 
@@ -69,20 +69,20 @@ import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent
 import type { ContactStateComponent } from "@/features/contact/components";
 import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent, PendingReactionComponent } from "@/features/behavior/components";
 import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@/features/stimulus/components";
-import type { WalkingStateComponent, ClimbingStateComponent, FlyingStateComponent, AirborneStateComponent, MotionTargetComponent } from "@/features/movement/components";
+import type { WalkingTagComponent, ClimbingTagComponent, FlyingTagComponent, AirborneTagComponent, MotionTargetComponent } from "@/features/movement/components";
 import type { CanWalkComponent, MovementProfileComponent, NavigationStateComponent, WandersOnArrivalComponent } from "@/features/movement/components";
 import type { CanJumpComponent, JumpActionStateComponent } from "@/features/movement/components";
 import type { CanFlyComponent } from "@/features/movement/components";
 import type { CanWallClimbComponent, ClimbableSurfaceComponent, ClimbIntentStateComponent, ClimbDismountStateComponent } from "@/features/movement/components";
 
-export type SimulationComponent =
+export type Component =
   | ActivityStateComponent
   | PendingReactionComponent
   | BehaviorDecisionTokenComponent
   | PerceptionComponent
   | AgentBindingComponent
   | PersonalityComponent
-  | AirborneStateComponent
+  | AirborneTagComponent
   | BehaviorDecisionStateComponent
   | CanFlyComponent
   | CanJumpComponent
@@ -91,10 +91,10 @@ export type SimulationComponent =
   | ClimbDismountStateComponent
   | ClimbIntentStateComponent
   | ClimbableSurfaceComponent
-  | ClimbingStateComponent
+  | ClimbingTagComponent
   | CompletionBehaviorComponent
   | ContactStateComponent
-  | FlyingStateComponent
+  | FlyingTagComponent
   | GroundComponent
   | IdleConversationComponent
   | IntentStateComponent
@@ -109,12 +109,12 @@ export type SimulationComponent =
   | SpeechStateComponent
   | TransformComponent
   | UserAnchorComponent
-  | WalkingStateComponent
+  | WalkingTagComponent
   | WandersOnArrivalComponent;
 
-export type SimulationComponentType = SimulationComponent["type"];
+export type ComponentType = Component["type"];
 
-export type ComponentOf<TType extends SimulationComponentType> = Extract<
-  SimulationComponent,
+export type ComponentOf<TType extends ComponentType> = Extract<
+  Component,
   { type: TType }
 >;

@@ -243,7 +243,7 @@ describe("BehaviorDecisionSystem", () => {
           { type: "Transform", position: { x: 100, y: 500 } },
           { type: "IntentState", intent: "idle" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
-          { type: "CanWallClimb", speed: 1.1 },
+          { type: "CanWallClimb", velocity: 1.1 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
             type: "Perception" as const,
@@ -261,7 +261,7 @@ describe("BehaviorDecisionSystem", () => {
           { type: "Transform", position: { x: 140, y: 500 } },
           { type: "IntentState", intent: "idle" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
-          { type: "CanWallClimb", speed: 1.1 },
+          { type: "CanWallClimb", velocity: 1.1 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
             type: "Perception" as const,
@@ -549,13 +549,13 @@ describe("BehaviorDecisionSystem + BehaviorPlanningSystem (integration via world
 
       if (f < 700) continue;
 
-      const climbing = world.getComponent("pet-c", "ClimbingState");
+      const climbing = world.getComponent("pet-c", "ClimbingTag");
       const decision = world.getComponent("pet-c", "BehaviorDecisionState");
       const motion = world.getComponent("pet-c", "MotionTarget");
 
       // The real invariant: while climbing, MotionTarget must not point at the stale
       // pre-climb position. A stale BehaviorDecisionState.source="collision" is harmless
-      // once CollisionBehaviorSystem skips the entity (because it has ClimbingState).
+      // once CollisionBehaviorSystem skips the entity (because it has ClimbingTag).
       if (climbing && motion?.targetPosition?.x === 280 && motion?.targetPosition?.y === 120) {
         climbingWithWrongTarget = true;
       }

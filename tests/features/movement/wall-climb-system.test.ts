@@ -8,8 +8,8 @@ function makeClimber(posY: number, targetY: number | null) {
     id: "pet-a",
     components: [
       { type: "Transform" as const, position: { x: 100, y: posY } },
-      { type: "ClimbingState" },
-      { type: "CanWallClimb" as const, speed: 0.004 },
+      { type: "ClimbingTag" },
+      { type: "CanWallClimb" as const, velocity: 0.004 },
       { type: "MotionTarget" as const, targetEntityId: null, targetPosition: targetY !== null ? { x: 100, y: targetY } : null },
       { type: "ContactState" as const, grounded: false, climbableSurfaceId: "wall-1", climbableSurfacePosition: { x: 100, y: 0 } },
     ],

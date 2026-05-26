@@ -3,23 +3,23 @@ import type { Vector } from "@/features/physics/components";
 // ── Locomotion mode tags ───────────────────────────────────────────────────
 
 /** Active locomotion tag for entities currently controlled by walking systems. */
-export type WalkingStateComponent = {
-  type: "WalkingState";
+export type WalkingTagComponent = {
+  type: "WalkingTag";
 };
 
 /** Active locomotion tag for entities currently attached to a climbable surface. */
-export type ClimbingStateComponent = {
-  type: "ClimbingState";
+export type ClimbingTagComponent = {
+  type: "ClimbingTag";
 };
 
 /** Active locomotion tag for entities currently controlled by flight systems. */
-export type FlyingStateComponent = {
-  type: "FlyingState";
+export type FlyingTagComponent = {
+  type: "FlyingTag";
 };
 
 /** Active contact-derived tag for non-flying, non-climbing entities in the air. */
-export type AirborneStateComponent = {
-  type: "AirborneState";
+export type AirborneTagComponent = {
+  type: "AirborneTag";
 };
 
 /** Stores the entity or world position the pet is currently trying to reach. */
@@ -31,18 +31,18 @@ export type MotionTargetComponent = {
 
 // ── Capability components ──────────────────────────────────────────────────
 
-/** Walk movement capability and tuning. */
+/** Walk movement capability and force tuning. */
 export type CanWalkComponent = {
   type: "CanWalk";
-  speed: number;
+  force: number;
 };
 
-/** Defines how quickly the entity moves for each intent. */
+/** Force magnitudes used by steering-based movement for each intent. */
 export type MovementProfileComponent = {
   type: "MovementProfile";
-  idleSpeed: number;
-  activeSpeed: number;
-  seekSpeed: number;
+  idleForce: number;
+  activeForce: number;
+  seekForce: number;
 };
 
 /** Stores temporary pathing decisions, such as predictive avoidance waypoints. */
@@ -83,10 +83,10 @@ export type CanFlyComponent = {
   hoverStrength: number;
 };
 
-/** Wall-climb movement capability and tuning. */
+/** Wall-climb movement capability and constant velocity tuning. */
 export type CanWallClimbComponent = {
   type: "CanWallClimb";
-  speed: number;
+  velocity: number;
 };
 
 /** Marker for environmental entities that a climbing-capable pet can attach to. */

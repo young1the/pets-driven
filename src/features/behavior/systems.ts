@@ -123,7 +123,7 @@ export function runAgentEventBehaviorSystem(
   if (stimuli.length === 0) return;
   const now = clock.now();
 
-  components.query(
+  components.forEach(
     ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
     (id, [agent, intent, speechProfile, speech, activity, completionBehavior]) => {
       if (isClaimed(components, id, "agent-event", now)) return;
@@ -176,7 +176,7 @@ export function runCollisionBehaviorSystem(
   };
 
   const entities: Collidable[] = [];
-  components.query(
+  components.forEach(
     ["Transform", "PhysicsBody", "IntentState", "MotionTarget"],
     (id, [transform, body, intent, motion]) => {
       entities.push({
@@ -199,7 +199,7 @@ export function runCollisionBehaviorSystem(
   // already clear of the other entity.  Expiring immediately lets
   // BehaviorDecisionSystem pick a new behavior in the same frame.
   for (const entity of entities) {
-    if (components.getComponent(entity.id, "ClimbingState")) continue;
+    if (components.getComponent(entity.id, "ClimbingTag")) continue;
     const existing = components.getComponent(entity.id, "BehaviorDecisionState");
     if (!existing || existing.source !== "collision" || existing.expiresAt <= now) continue;
 
@@ -220,7 +220,7 @@ export function runCollisionBehaviorSystem(
   // a personality-shaped response (collision-flee/engage/avoid/unfazed).
   for (const entity of entities) {
     // Do not disrupt a climbing entity or one that is mid-approach to a surface.
-    if (components.getComponent(entity.id, "ClimbingState")) continue;
+    if (components.getComponent(entity.id, "ClimbingTag")) continue;
     if (components.getComponent(entity.id, "ClimbIntentState")?.phase === "approaching") continue;
     if (isClaimedBySameOrHigherPriority(components, entity.id, "collision", now)) continue;
     // Skip if a reaction is already pending (avoid overwriting mid-deliberation).
@@ -308,7 +308,7 @@ export function runAutonomousBehaviorSystem(
   const now = clock.now();
 
   // Idle conversation — only when no higher-priority claim holds
-  components.query(
+  components.forEach(
     ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
     (id, [idleConversation, speechProfile, speech, activity]) => {
       if (isClaimed(components, id, "autonomous", now)) return;
@@ -325,7 +325,7 @@ export function runAutonomousBehaviorSystem(
 // Not a BEHAVIOR-phase system: it detects arrival at any target regardless of
 // which source directed the pet there.
 export function runArrivalBehaviorSystem(components: ComponentStore): void {
-  components.query(
+  components.forEach(
     ["IntentState", "Transform", "MotionTarget", "WandersOnArrival"],
     (id, [intent, transform, motion, wandersOnArrival]) => {
       if (motion.targetEntityId) {
@@ -338,7 +338,7 @@ export function runArrivalBehaviorSystem(components: ComponentStore): void {
         // fires as soon as the walk system stops (they share the same threshold).
         const dx = anchor.position.x - transform.position.x;
         const dy = anchor.position.y - transform.position.y;
-        const isFlying = !!components.getComponent(id, "FlyingState");
+        const isFlying = !!components.getComponent(id, "FlyingTag");
         const dist = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
         if (dist > wandersOnArrival.arrivalRadius) return;
         intent.intent = "idle";
@@ -353,7 +353,7 @@ export function runArrivalBehaviorSystem(components: ComponentStore): void {
       const climbIntent = components.getComponent(id, "ClimbIntentState");
       if (climbIntent?.phase === "approaching") return;
 
-      const climbing = components.getComponent(id, "ClimbingState");
+      const climbing = components.getComponent(id, "ClimbingTag");
       const delta = climbing
         ? Math.abs(target.y - transform.position.y)
         : Math.abs(target.x - transform.position.x);
@@ -565,17 +565,17 @@ export function runBehaviorDecisionSystem(
   // are already approaching or actively climbing.  Updated on winner selection so
   // sequential entity passes in the same step also see fresh reservations.
   const claimedSurfaces = new Set<string>();
-  components.query(["ClimbIntentState"], (otherId, [otherIntent]) => {
+  components.forEach(["ClimbIntentState"], (otherId, [otherIntent]) => {
     if (otherIntent.phase === "approaching") {
       claimedSurfaces.add(otherIntent.surfaceEntityId);
       return;
     }
-    if (otherIntent.phase === "attached" && components.getComponent(otherId, "ClimbingState")) {
+    if (otherIntent.phase === "attached" && components.getComponent(otherId, "ClimbingTag")) {
       claimedSurfaces.add(otherIntent.surfaceEntityId);
     }
   });
 
-  components.query(
+  components.forEach(
     ["IntentState", "MotionTarget", "Transform", "Personality"],
     (id, [intent, motion, transform, personality]) => {
       // Trigger conditions — only fire for pets that have no active goal.
@@ -661,7 +661,7 @@ export function runBehaviorDecisionSystem(
         ? { id: perceptionAnchor.id, x: perceptionAnchor.position.x, y: perceptionAnchor.position.y }
         : null;
 
-      const isFlying = !!components.getComponent(id, "FlyingState");
+      const isFlying = !!components.getComponent(id, "FlyingTag");
 
       const candidates: Candidate[] = [];
 
@@ -700,7 +700,7 @@ export function runBehaviorDecisionSystem(
       }
 
       const canClimb = components.getComponent(id, "CanWallClimb");
-      const climbing = components.getComponent(id, "ClimbingState");
+      const climbing = components.getComponent(id, "ClimbingTag");
       const climbDismount = components.getComponent(id, "ClimbDismountState");
       if (canClimb && !climbing && (!climbDismount || climbDismount.phase === "ready")) {
         // Nearest climbable surface from Perception; skip if already reserved.
@@ -802,7 +802,7 @@ export function runBehaviorPlanningSystem(
   components: ComponentStore,
   _clock: Clock,
 ): void {
-  components.query(["BehaviorDecisionToken"], (id, [token]) => {
+  components.forEach(["BehaviorDecisionToken"], (id, [token]) => {
     if (token.consumed) return;
     switch (token.kind) {
       case "wander-near":
@@ -966,7 +966,7 @@ export const AutonomousBehaviorSystem: SimulationSystem<WorldStepContext> = {
 export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "ArrivalBehaviorSystem",
   dependsOn: ["ClimbApproachSystem"],
-  reads: ["Transform", "MotionTarget", "WandersOnArrival", "IntentState", "ClimbingState", "Perception", "ClimbIntentState"],
+  reads: ["Transform", "MotionTarget", "WandersOnArrival", "IntentState", "ClimbingTag", "Perception", "ClimbIntentState"],
   writes: ["MotionTarget", "IntentState"],
   update(ctx) {
     runArrivalBehaviorSystem(ctx.components);

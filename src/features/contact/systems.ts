@@ -13,11 +13,11 @@ export function runContactSystem(components: ComponentStore): void {
   const climbableSurfaces: ClimbableSurface[] = [];
   const groundSurfaces: GroundSurface[] = [];
 
-  components.query(["Transform", "ClimbableSurface"], (_id, [transform]) => {
+  components.forEach(["Transform", "ClimbableSurface"], (_id, [transform]) => {
     climbableSurfaces.push({ id: _id, position: transform.position });
   });
 
-  components.query(["Transform", "PhysicsBody", "Ground"], (_id, [transform, body]) => {
+  components.forEach(["Transform", "PhysicsBody", "Ground"], (_id, [transform, body]) => {
     groundSurfaces.push({
       id: _id,
       position: transform.position,
@@ -25,7 +25,7 @@ export function runContactSystem(components: ComponentStore): void {
     });
   });
 
-  components.query(
+  components.forEach(
     ["Transform", "PhysicsBody", "ContactState"],
     (_id, [transform, body, contact]) => {
       const pos = transform.position;

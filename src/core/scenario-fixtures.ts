@@ -1,5 +1,5 @@
 import type {
-  SimulationComponent,
+  Component,
   PersonalityComponent,
   MovementProfileComponent,
   IdleConversationComponent,
@@ -22,9 +22,9 @@ export function deriveMovementProfile(
   const energy = 0.6 + p.extraversion * 0.5 - p.neuroticism * 0.2;
   return {
     type: "MovementProfile",
-    idleSpeed: 0.0005 * energy,
-    activeSpeed: 0.0012 * energy,
-    seekSpeed: 0.0018 * energy,
+    idleForce: 0.0005 * energy,
+    activeForce: 0.0012 * energy,
+    seekForce: 0.0018 * energy,
   };
 }
 
@@ -48,7 +48,7 @@ export function createFixturePet(input: {
   name: string;
   x: number;
   y: number;
-  components: SimulationComponent[];
+  components: Component[];
 }) {
   // Default personality (may be overridden by input.components).
   const defaultPersonality: PersonalityComponent = {
@@ -60,7 +60,7 @@ export function createFixturePet(input: {
     neuroticism: 0.2,
   };
 
-  const allComponents: SimulationComponent[] = [
+  const allComponents: Component[] = [
       { type: "PetIdentity" as const, name: input.name },
       { type: "AgentBinding" as const, sourceId: input.sourceId },
       // MovementProfile is NOT hardcoded here — derived from Personality below.
@@ -183,11 +183,11 @@ export function createDemoScenario(options?: {
         y: 500,
         components: [
           { type: "IdleConversation", idleAfterMs: 5_000 },
-          { type: "WalkingState" },
-          { type: "CanWalk", speed: 0.01 },
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: 0.01 },
           { type: "CanJump", impulse: 0.009 },
           { type: "JumpActionState", phase: "ready", cooldownMs: 0 },
-          { type: "CanWallClimb", speed: 1.1 },
+          { type: "CanWallClimb", velocity: 1.1 },
           { type: "ClimbDismountState", phase: "ready", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // playful: high openness + extraversion, low neuroticism
@@ -201,8 +201,8 @@ export function createDemoScenario(options?: {
         x: 840,
         y: 500,
         components: [
-          { type: "WalkingState" },
-          { type: "CanWalk", speed: 0.01 },
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: 0.01 },
           { type: "CanJump", impulse: 0.009 },
           { type: "JumpActionState", phase: "requested", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
@@ -217,9 +217,9 @@ export function createDemoScenario(options?: {
         x: 280,
         y: 200,
         components: [
-          { type: "WalkingState" },
-          { type: "CanWalk", speed: 0.01 },
-          { type: "CanWallClimb", speed: 1.1 },
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: 0.01 },
+          { type: "CanWallClimb", velocity: 1.1 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // playful + climb tendency: high openness + extraversion
           { type: "Personality", openness: 0.7, conscientiousness: 0.4, extraversion: 0.85, agreeableness: 0.5, neuroticism: 0.1 },
@@ -232,7 +232,7 @@ export function createDemoScenario(options?: {
         x: 200,
         y: 200,
         components: [
-          { type: "FlyingState" },
+          { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // reserved: high neuroticism, low extraversion
