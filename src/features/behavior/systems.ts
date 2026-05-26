@@ -200,6 +200,14 @@ export function runCollisionBehaviorSystem(
   // BehaviorDecisionSystem pick a new behavior in the same frame.
   for (const entity of entities) {
     if (components.getComponent(entity.id, "ClimbingTag")) continue;
+    if (components.getComponent(entity.id, "AirborneTag")) {
+      const existing = components.getComponent(entity.id, "BehaviorDecisionState");
+      if (existing?.source === "collision" && existing.expiresAt > now) {
+        existing.expiresAt = now;
+        components.removeComponent(entity.id, "PendingReaction");
+      }
+      continue;
+    }
     const existing = components.getComponent(entity.id, "BehaviorDecisionState");
     if (!existing || existing.source !== "collision" || existing.expiresAt <= now) continue;
 
@@ -221,6 +229,7 @@ export function runCollisionBehaviorSystem(
   for (const entity of entities) {
     // Do not disrupt a climbing entity or one that is mid-approach to a surface.
     if (components.getComponent(entity.id, "ClimbingTag")) continue;
+    if (components.getComponent(entity.id, "AirborneTag")) continue;
     if (components.getComponent(entity.id, "ClimbIntentState")?.phase === "approaching") continue;
     if (isClaimedBySameOrHigherPriority(components, entity.id, "collision", now)) continue;
     // Skip if a reaction is already pending (avoid overwriting mid-deliberation).
