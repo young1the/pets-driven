@@ -15,6 +15,8 @@ const CLIMB_TARGET_X_TOLERANCE = 24;
 const MOTION_ARRIVAL_RADIUS = 16;
 const MOTION_SLOW_RADIUS = 96;
 const JUMP_LANDING_COOLDOWN_MS = 250;
+const APPROACH_JUMP_HORIZONTAL_RADIUS = WALK_ARRIVAL_RADIUS;
+const APPROACH_JUMP_VERTICAL_BODY_MULTIPLIER = 1;
 
 // Seek-user stops at this distance from the user anchor instead of walking
 // onto the anchor itself. Without this, all seeking pets converge to the
@@ -199,7 +201,8 @@ export function runMotionTargetSystem(
       const perception = components.getComponent(_id, "Perception");
       const targetPet = perception?.nearbyPets.find((pet) => pet.id === motion.targetEntityId);
       if (targetPet) {
-        motion.targetPosition = { ...targetPet.position };
+        motion.targetPosition = resolveApproachPetTarget(components, _id, targetPet.position);
+        requestJumpWhenWalkingTargetIsAbove(components, _id, targetPet.position);
       }
       return;
     }
@@ -409,6 +412,47 @@ function canEnterClimb(
   );
 }
 
+function resolveApproachPetTarget(
+  components: ComponentStore,
+  id: string,
+  targetPosition: Vector,
+): Vector {
+  const transform = components.getComponent(id, "Transform");
+  const isWalking =
+    !!components.getComponent(id, "WalkingTag") &&
+    !components.getComponent(id, "FlyingTag") &&
+    !components.getComponent(id, "ClimbingTag");
+
+  if (!transform || !isWalking) return { ...targetPosition };
+  return { x: targetPosition.x, y: transform.position.y };
+}
+
+function requestJumpWhenWalkingTargetIsAbove(
+  components: ComponentStore,
+  id: string,
+  targetPosition: Vector,
+): void {
+  const transform = components.getComponent(id, "Transform");
+  const body = components.getComponent(id, "PhysicsBody");
+  const contact = components.getComponent(id, "ContactState");
+  const canJump = components.getComponent(id, "CanJump");
+  if (!transform || !body || !contact?.grounded || !canJump) return;
+  if (components.getComponent(id, "JumpActionState")) return;
+  if (!components.getComponent(id, "WalkingTag")) return;
+  if (components.getComponent(id, "FlyingTag") || components.getComponent(id, "ClimbingTag")) return;
+
+  const dx = Math.abs(targetPosition.x - transform.position.x);
+  const upwardGap = transform.position.y - targetPosition.y;
+  const minVerticalGap = body.height * APPROACH_JUMP_VERTICAL_BODY_MULTIPLIER;
+  if (dx > APPROACH_JUMP_HORIZONTAL_RADIUS || upwardGap < minVerticalGap) return;
+
+  components.setComponent(id, {
+    type: "JumpActionState",
+    phase: "requested",
+    cooldownMs: 0,
+  });
+}
+
 // ── System descriptors ─────────────────────────────────────────────────────
 
 export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
@@ -464,8 +508,8 @@ export const ClimbAttachmentSystem: SimulationSystem<WorldStepContext> = {
 export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
   name: "MotionTargetSystem",
   dependsOn: ["ClimbAttachmentSystem"],
-  reads: ["IntentState", "MotionTarget", "Transform", "Perception", "Personality"],
-  writes: ["MotionTarget"],
+  reads: ["IntentState", "MotionTarget", "Transform", "Perception", "Personality", "WalkingTag", "FlyingTag", "ClimbingTag", "PhysicsBody", "ContactState", "CanJump", "JumpActionState"],
+  writes: ["MotionTarget", "JumpActionState"],
   update(ctx) {
     runMotionTargetSystem(ctx.components, ctx.random, ctx.bounds);
   },
