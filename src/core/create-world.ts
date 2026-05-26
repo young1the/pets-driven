@@ -10,6 +10,7 @@ import {
 import {
   createMatterPhysicsWorld,
 } from "@/features/physics/matter-physics-world";
+import type { PetAnimationState } from "@/pets/assets/pet-atlas";
 import type { WorldEvent } from "@/features/events/world-event";
 import { createWorldEventQueue } from "@/features/events/world-event-queue";
 import { runPhysicsTransformSyncSystem } from "@/features/physics/systems";
@@ -170,6 +171,50 @@ export function createWorld(input: WorldDefinition) {
     return "none";
   }
 
+  function getPetAnimationState(
+    componentStore: ComponentStore,
+    id: string,
+    body: { vy: number },
+  ): PetAnimationState | undefined {
+    if (!componentStore.getComponent(id, "PetIdentity")) {
+      return undefined;
+    }
+
+    const decision = componentStore.getComponent(id, "BehaviorDecisionState");
+    if (
+      decision?.reason === "task.waiting" ||
+      decision?.reason === "attention.requested"
+    ) {
+      return "waiting";
+    }
+
+    const jumpAction = componentStore.getComponent(id, "JumpActionState");
+    if (
+      jumpAction ||
+      componentStore.getComponent(id, "AirborneTag") ||
+      Math.abs(body.vy) > 0.5
+    ) {
+      return "jumping";
+    }
+
+    const transform = componentStore.getComponent(id, "Transform");
+    const motionTarget = componentStore.getComponent(id, "MotionTarget");
+    const targetX = motionTarget?.targetPosition?.x;
+    if (transform && targetX !== undefined) {
+      const deltaX = targetX - transform.position.x;
+      if (Math.abs(deltaX) > 2) {
+        return deltaX > 0 ? "running-right" : "running-left";
+      }
+    }
+
+    const intent = componentStore.getComponent(id, "IntentState");
+    if (intent?.intent === "active") {
+      return "running";
+    }
+
+    return "idle";
+  }
+
   function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {
     return componentStore.query("Transform", "ClimbableSurface").map((entity) => {
       const [transform] = entity.components;
@@ -214,8 +259,14 @@ export function createWorld(input: WorldDefinition) {
     },
     snapshot() {
       const physicsSnapshot = runPhysicsTransformSyncSystem(components, physics);
+      const bodies = physicsSnapshot.bodies.map((body) => ({
+        ...body,
+        animationState: getPetAnimationState(components, body.id, body),
+      }));
+
       return {
         ...physicsSnapshot,
+        bodies,
         pets: getPetSnapshots(components),
         climbableSurfaces: getClimbableSurfaceSnapshots(components),
       };

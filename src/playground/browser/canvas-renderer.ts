@@ -34,10 +34,10 @@ export function drawWorld(
         atlasFrame.sourceY,
         PET_CELL_SIZE.width,
         PET_CELL_SIZE.height,
-        body.x - 48,
-        body.y - 52,
-        96,
-        104,
+        body.x - body.width / 2,
+        body.y - body.height / 2,
+        body.width,
+        body.height,
       );
       continue;
     }

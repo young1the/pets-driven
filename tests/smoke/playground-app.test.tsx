@@ -67,6 +67,9 @@ describe("PlaygroundApp", () => {
     expect(petStatus.getByText("Bob")).toBeInTheDocument();
     expect(petStatus.getByText("Charlie")).toBeInTheDocument();
     expect(petStatus.getByText("Dana")).toBeInTheDocument();
+    expect(petStatus.getByText("Eve")).toBeInTheDocument();
+    expect(petStatus.getByText("Finn")).toBeInTheDocument();
+    expect(petStatus.getByText("Gwen")).toBeInTheDocument();
   });
 
   it("updates visible pet status after a waiting event", () => {
@@ -160,9 +163,9 @@ describe("PlaygroundApp", () => {
     expect(screen.getByText("Transform")).toBeInTheDocument();
     expect(screen.getByText("Grounded")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Dana" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eve" }));
 
-    expect(screen.getByRole("button", { name: "Dana" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Eve" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
