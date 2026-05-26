@@ -410,7 +410,7 @@ function switchLocomotion(
 
 export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
   name: "LocomotionModeSystem",
-  dependsOn: ["AutonomousBehaviorSystem"],
+  dependsOn: ["BehaviorPlanningSystem"],
   reads: ["ContactState", "MotionTarget", "WalkingTag", "ClimbingTag", "FlyingTag", "ClimbIntentState", "CanWallClimb", "ClimbDismountState"],
   writes: ["WalkingTag", "ClimbingTag", "FlyingTag"],
   update(ctx) {
@@ -431,7 +431,7 @@ export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbDismountSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbDismountSystem",
   dependsOn: ["ArrivalBehaviorSystem"],
-  reads: ["ClimbingTag", "MotionTarget", "ContactState", "CanWalk", "CanWallClimb", "CanJump", "JumpActionState", "ClimbDismountState", "ClimbIntentState"],
+  reads: ["ClimbingTag", "MotionTarget", "ContactState", "CanWalk", "CanJump", "JumpActionState", "ClimbDismountState", "ClimbIntentState"],
   writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState"],
   update(ctx) {
     runClimbDismountSystem(ctx.components, ctx.deltaMs);
@@ -461,7 +461,7 @@ export const ClimbAttachmentSystem: SimulationSystem<WorldStepContext> = {
 export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
   name: "MotionTargetSystem",
   dependsOn: ["ClimbAttachmentSystem"],
-  reads: ["IntentState", "MotionTarget", "Transform", "Perception"],
+  reads: ["IntentState", "MotionTarget", "Transform", "Perception", "Personality"],
   writes: ["MotionTarget"],
   update(ctx) {
     runMotionTargetSystem(ctx.components, ctx.random, ctx.bounds);

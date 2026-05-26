@@ -66,7 +66,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "LocomotionModeSystem",
-      dependsOn: ["AutonomousBehaviorSystem"],
+      dependsOn: ["BehaviorPlanningSystem"],
       reads: [
         "ContactState",
         "MotionTarget",
@@ -126,7 +126,6 @@ describe("demo scenario", () => {
         "MotionTarget",
         "ContactState",
         "CanWalk",
-        "CanWallClimb",
         "CanJump",
         "JumpActionState",
         "ClimbDismountState",
@@ -143,8 +142,53 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "CollisionBehaviorSystem",
       dependsOn: ["AgentEventBehaviorSystem"],
-      reads: ["Transform", "PhysicsBody", "IntentState", "MotionTarget", "Personality"],
-      writes: ["PendingReaction", "BehaviorDecisionState"],
+      reads: [
+        "Transform",
+        "PhysicsBody",
+        "IntentState",
+        "MotionTarget",
+        "Personality",
+        "BehaviorDecisionState",
+        "PendingReaction",
+        "ClimbingTag",
+        "AirborneTag",
+        "ClimbIntentState",
+      ],
+      writes: ["PendingReaction", "BehaviorDecisionState", "MotionTarget", "IntentState"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "BehaviorDecisionSystem",
+      dependsOn: ["CollisionBehaviorSystem"],
+      reads: [
+        "IntentState",
+        "MotionTarget",
+        "Transform",
+        "Personality",
+        "BehaviorDecisionState",
+        "ClimbIntentState",
+        "ClimbingTag",
+        "Perception",
+        "PendingReaction",
+        "FlyingTag",
+        "CanJump",
+        "JumpActionState",
+        "ContactState",
+        "CanWallClimb",
+        "ClimbDismountState",
+      ],
+      writes: ["BehaviorDecisionToken", "BehaviorDecisionState", "PendingReaction"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "BehaviorPlanningSystem",
+      dependsOn: ["AutonomousBehaviorSystem"],
+      reads: ["BehaviorDecisionToken", "JumpActionState"],
+      writes: [
+        "IntentState",
+        "MotionTarget",
+        "JumpActionState",
+        "ClimbIntentState",
+        "BehaviorDecisionToken",
+      ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WalkSystem",
