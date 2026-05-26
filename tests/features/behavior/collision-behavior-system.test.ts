@@ -450,6 +450,56 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     expect(token?.targetPosition?.x).toBeGreaterThan(100); // moved toward other
   });
 
+  it("walking pets use a horizontal escape target for vertical collision-flee", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "WalkingTag" as const },
+          { type: "IntentState" as const, intent: "idle" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.5,
+            agreeableness: 0.1,
+            neuroticism: 0.9,
+          },
+          {
+            type: "Perception" as const,
+            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            self: { grounded: true, climbing: false, intent: "idle" as const },
+          },
+          {
+            type: "PendingReaction" as const,
+            source: "collision" as const,
+            triggeredAt: 1000,
+            reactsAt: 1400,
+            context: { otherEntityId: "flying-pet", otherPosition: { x: 100, y: 430 } },
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "collision" as const,
+            decidedAt: 1000,
+            expiresAt: 1400,
+            reason: "entity overlap",
+            lastAutonomousReason: null,
+            lastAutonomousAt: null,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("collision-flee");
+    expect(Math.abs((token?.targetPosition?.x ?? 100) - 100)).toBeGreaterThanOrEqual(90);
+  });
+
   it("collision-flee Planning: MotionTarget points away from otherPosition", () => {
     // Pet at (100,500), other at (200,500) → flee direction = (-1,0) → target ≈ (4,500) clamped to (48,500)
     const store = createComponentStore([
@@ -572,6 +622,62 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
 
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-stay");
+  });
+
+  it("does not select collision-stay while the colliding bodies still overlap", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "idle" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.1,
+            agreeableness: 0.95,
+            neuroticism: 0.1,
+          },
+          {
+            type: "Perception" as const,
+            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            self: { grounded: true, climbing: false, intent: "idle" as const },
+          },
+          {
+            type: "PendingReaction" as const,
+            source: "collision" as const,
+            triggeredAt: 1000,
+            reactsAt: 1400,
+            context: { otherEntityId: "pet-b", otherPosition: { x: 110, y: 500 } },
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "collision" as const,
+            decidedAt: 1000,
+            expiresAt: 1400,
+            reason: "entity overlap",
+            lastAutonomousReason: null,
+            lastAutonomousAt: null,
+          },
+        ],
+      },
+      {
+        id: "pet-b",
+        components: [
+          { type: "Transform" as const, position: { x: 110, y: 500 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "idle" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+        ],
+      },
+    ]);
+
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).not.toBe("collision-stay");
   });
 
   it("collision-stay Planning keeps the pet idle without a target", () => {
