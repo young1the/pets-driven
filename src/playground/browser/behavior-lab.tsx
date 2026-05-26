@@ -23,7 +23,6 @@ const INSPECTED_COMPONENTS: ComponentType[] = [
   "WandersOnArrival",
   "ContactState",
   "MotionTarget",
-  "NavigationState",
 ];
 
 type ComponentReader = <TType extends ComponentType>(

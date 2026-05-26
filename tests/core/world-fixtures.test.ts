@@ -155,7 +155,6 @@ describe("demo scenario", () => {
         "ContactState",
         "CanWalk",
         "MotionTarget",
-        "NavigationState",
       ],
       writes: ["PhysicsForce"],
     });
@@ -217,10 +216,6 @@ describe("demo scenario", () => {
       type: "MotionTarget",
       targetEntityId: null,
       targetPosition: null,
-    });
-    expect(scenario.world.getComponent("pet-a", "NavigationState")).toEqual({
-      type: "NavigationState",
-      avoidanceWaypoint: null,
     });
     expect(scenario.world.getComponent("pet-a", "ContactState")).toEqual({
       type: "ContactState",
@@ -533,7 +528,7 @@ describe("demo scenario", () => {
     expect(motionAfterArrival?.targetEntityId).toBeNull();
   });
 
-  it("does not plan global avoidance waypoints when another pet blocks the target path", () => {
+  it("does not expose global avoidance navigation state in the system plan", () => {
     const scenario = createDemoScenario({
       userAnchor: { x: 360, y: 200 },
     });
@@ -546,8 +541,10 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    const navigation = scenario.world.getComponent("pet-d", "NavigationState");
-    expect(navigation?.avoidanceWaypoint).toBeNull();
+    const declaredComponents = scenario.world
+      .systemPlan()
+      .flatMap((system) => [...(system.reads ?? []), ...(system.writes ?? [])]);
+    expect(declaredComponents).not.toContain("NavigationState");
   });
 
   it("chooses a new wander target after a pet reaches its previous one", () => {

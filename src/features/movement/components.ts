@@ -45,12 +45,6 @@ export type MovementProfileComponent = {
   seekForce: number;
 };
 
-/** Stores temporary pathing decisions, such as predictive avoidance waypoints. */
-export type NavigationStateComponent = {
-  type: "NavigationState";
-  avoidanceWaypoint: Vector | null;
-};
-
 /** Personality component for pets that keep wandering after reaching a target. */
 export type WandersOnArrivalComponent = {
   type: "WandersOnArrival";
