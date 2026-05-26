@@ -69,6 +69,36 @@ describe("locomotion mode system", () => {
     expect(store.getComponent("pet-a", "ClimbingTag")).toBeDefined();
   });
 
+  it("allows only one pet to enter the same climbable surface", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "WalkingTag" },
+          { type: "ContactState", grounded: true, climbableSurfaceId: "wall-1", climbableSurfacePosition: { x: 120, y: 500 } },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 120 } },
+          { type: "CanWallClimb", velocity: 0.004 },
+        ],
+      },
+      {
+        id: "pet-b",
+        components: [
+          { type: "WalkingTag" },
+          { type: "ContactState", grounded: true, climbableSurfaceId: "wall-1", climbableSurfacePosition: { x: 120, y: 500 } },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 140 } },
+          { type: "CanWallClimb", velocity: 0.004 },
+        ],
+      },
+    ]);
+
+    runLocomotionModeSystem(store);
+
+    const climbingCount = ["pet-a", "pet-b"].filter((id) =>
+      store.getComponent(id, "ClimbingTag"),
+    ).length;
+    expect(climbingCount).toBe(1);
+  });
+
   it("reverts to walk when climbing but surface is gone", () => {
     const store = createComponentStore([{
       id: "pet-a",
