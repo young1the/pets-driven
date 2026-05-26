@@ -319,6 +319,59 @@ function scoreCollisionUnfazed(p: PersonalityComponent): number {
   return 0.15 + (1 - p.neuroticism) * 0.4;
 }
 
+function constrainCollisionDirectionForLocomotion(
+  components: ComponentStore,
+  id: string,
+  otherId: string | undefined,
+  away: Vector,
+): Vector {
+  if (!isHorizontalOnlyCollisionResponse(components, id)) return away;
+  if (Math.abs(away.x) > 0.2) {
+    return { x: Math.sign(away.x), y: 0 };
+  }
+
+  return {
+    x: fallbackHorizontalDirection(id, otherId),
+    y: 0,
+  };
+}
+
+function isHorizontalOnlyCollisionResponse(
+  components: ComponentStore,
+  id: string,
+): boolean {
+  return (
+    !!components.getComponent(id, "WalkingTag") &&
+    !components.getComponent(id, "FlyingTag") &&
+    !components.getComponent(id, "ClimbingTag")
+  );
+}
+
+function fallbackHorizontalDirection(id: string, otherId: string | undefined): -1 | 1 {
+  if (!otherId) return -1;
+  return id.localeCompare(otherId) <= 0 ? -1 : 1;
+}
+
+function isPendingReactionStillOverlapping(
+  components: ComponentStore,
+  id: string,
+  pendingReaction: PendingReactionComponent,
+): boolean {
+  const otherId = pendingReaction.context.otherEntityId;
+  if (!otherId) return false;
+
+  const transform = components.getComponent(id, "Transform");
+  const body = components.getComponent(id, "PhysicsBody");
+  const otherTransform = components.getComponent(otherId, "Transform");
+  const otherBody = components.getComponent(otherId, "PhysicsBody");
+  if (!transform || !body || !otherTransform || !otherBody) return false;
+
+  return (
+    Math.abs(transform.position.x - otherTransform.position.x) < body.width / 2 + otherBody.width / 2 &&
+    Math.abs(transform.position.y - otherTransform.position.y) < body.height / 2 + otherBody.height / 2
+  );
+}
+
 // Priority 4: Autonomous idle behaviors (speech, wandering).
 export function runAutonomousBehaviorSystem(
   components: ComponentStore,
@@ -639,13 +692,22 @@ export function runBehaviorDecisionSystem(
       if (pendingReaction) {
         const otherPos = pendingReaction.context.otherPosition ?? { x: petX + 100, y: petY };
         const away = normalize({ x: petX - otherPos.x, y: petY - otherPos.y });
-        const side = { x: -away.y, y: away.x };
+        const movementAway = constrainCollisionDirectionForLocomotion(
+          components,
+          id,
+          pendingReaction.context.otherEntityId,
+          away,
+        );
+        const side = isHorizontalOnlyCollisionResponse(components, id)
+          ? movementAway
+          : { x: -away.y, y: away.x };
         const reactionDistance = petWidth(components, id) * COLLISION_REACTION_WIDTH_MULTIPLIER;
         const engageStopDistance = petWidth(components, id) * PET_ENGAGE_STOP_WIDTH_MULTIPLIER;
+        const stillOverlapping = isPendingReactionStillOverlapping(components, id, pendingReaction);
 
         const fleeTarget = {
-          x: clamp(petX + away.x * reactionDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(petY + away.y * reactionDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clamp(petX + movementAway.x * reactionDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(petY + movementAway.y * reactionDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
         };
         // engageTarget sits 80 px from the other pet on SELF's side — close
         // enough to "engage" but not so close that the pet walks straight
@@ -654,8 +716,8 @@ export function runBehaviorDecisionSystem(
         // `otherPos - away * D` placed the target on the FAR side, causing pets
         // to walk through each other and immediately re-collide (cluster bug).
         const engageTarget = {
-          x: clamp(otherPos.x + away.x * engageStopDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(otherPos.y + away.y * engageStopDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clamp(otherPos.x + movementAway.x * engageStopDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
+          y: clamp(otherPos.y + movementAway.y * engageStopDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
         };
         const avoidTarget = {
           x: clamp(petX + side.x * reactionDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
@@ -665,17 +727,37 @@ export function runBehaviorDecisionSystem(
           { kind: "collision-flee",    score: scoreCollisionFlee(personality),    build: () => ({ targetPosition: fleeTarget }) },
           { kind: "collision-engage",  score: scoreCollisionEngage(personality),  build: () => ({ targetPosition: engageTarget }) },
           { kind: "collision-avoid",   score: scoreCollisionAvoid(),              build: () => ({ targetPosition: avoidTarget }) },
-          { kind: "collision-stay",    score: scoreCollisionStay(personality),     build: () => ({}) },
-          // unfazedTarget is computed lazily in build() so random is consumed only
-          // if this candidate wins, keeping the softmax r-draw at position 1.
+        ];
+        if (!stillOverlapping) {
+          reactiveCandidates.push({
+            kind: "collision-stay",
+            score: scoreCollisionStay(personality),
+            build: () => ({}),
+          });
+        }
+        reactiveCandidates.push({
+          kind: "collision-unfazed",
+          score: scoreCollisionUnfazed(personality),
+          // unfazedTarget is computed lazily in build() so random is consumed
+          // only if this candidate wins, keeping the softmax r-draw stable.
           //
           // NOTE: plan specified "re-emit previous goal" (copy MotionTarget before
           // collision disrupted it). Current implementation picks a fresh wander-near
           // position instead — intentional simplification. The visual result is similar
           // ("stays nearby") but the pet doesn't resume its original trajectory.
           // Restore-previous-goal semantics deferred to Phase 6 visual review.
-          { kind: "collision-unfazed", score: scoreCollisionUnfazed(personality), build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near", personality, petWidth(components, id)) }) },
-        ];
+          build: () => ({
+            targetPosition: pickWanderPosition(
+              petX,
+              petY,
+              bounds,
+              random,
+              "near",
+              personality,
+              petWidth(components, id),
+            ),
+          }),
+        });
 
         const reactionWinner = softmaxSample(reactiveCandidates, personality.neuroticism, random);
         components.setComponent(id, {
