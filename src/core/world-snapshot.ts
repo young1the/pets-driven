@@ -18,6 +18,8 @@ export type PetSnapshot = {
   name: string;
   intent: string;
   locomotion: string;
+  /** Current behavior/action overlay, separate from locomotion. */
+  action?: string;
   speech: string | null;
   position: {
     x: number;

@@ -1,5 +1,4 @@
 import type { ComponentStore } from "@/core/component-store";
-import type { ComponentType } from "@/core/components";
 import type { SimulationSystem } from "@/core/simulation-system";
 import type { WorldStepContext } from "@/core/world-step-context";
 import type { MatterPhysicsWorld } from "@/features/physics/matter-physics-world";
@@ -26,12 +25,6 @@ const JUMP_LANDING_COOLDOWN_MS = 250;
 // has wandered outside USER_PROXIMITY_RADIUS.
 const SEEK_USER_STOP_DISTANCE = 80;
 
-const ACTIVE_LOCOMOTION_TAGS: ComponentType[] = [
-  "WalkingTag",
-  "ClimbingTag",
-  "FlyingTag",
-];
-
 // ── MOVEMENT_STATE phase ───────────────────────────────────────────────────
 
 export function runLocomotionModeSystem(components: ComponentStore): void {
@@ -40,8 +33,9 @@ export function runLocomotionModeSystem(components: ComponentStore): void {
     (id, [contact, motion]) => {
       const climbDismount = components.getComponent(id, "ClimbDismountState");
       if (climbDismount && climbDismount.phase !== "ready") {
-        if (components.getComponent(id, "ClimbingTag")) {
-          switchLocomotion(id, "walk", components);
+        components.removeComponent(id, "ClimbingTag");
+        if (!components.getComponent(id, "FlyingTag")) {
+          components.setComponent(id, { type: "WalkingTag" });
         }
         return;
       }
@@ -53,9 +47,12 @@ export function runLocomotionModeSystem(components: ComponentStore): void {
       const climbing = components.getComponent(id, "ClimbingTag");
 
       if (canEnterClimb(contact, motion, climbIntent)) {
-        switchLocomotion(id, "climb", components);
+        components.setComponent(id, { type: "ClimbingTag" });
       } else if (climbing && !contact.climbableSurfaceId) {
-        switchLocomotion(id, "walk", components);
+        components.removeComponent(id, "ClimbingTag");
+        if (!components.getComponent(id, "FlyingTag")) {
+          components.setComponent(id, { type: "WalkingTag" });
+        }
       }
     },
   );
@@ -410,19 +407,6 @@ function canEnterClimb(
   return (
     Math.abs(motion.targetPosition.x - contact.climbableSurfacePosition.x) <= CLIMB_TARGET_X_TOLERANCE
   );
-}
-
-function switchLocomotion(
-  id: string,
-  mode: "walk" | "climb" | "fly",
-  components: ComponentStore,
-) {
-  for (const tag of ACTIVE_LOCOMOTION_TAGS) {
-    components.removeComponent(id, tag);
-  }
-  if (mode === "walk") components.setComponent(id, { type: "WalkingTag" });
-  if (mode === "climb") components.setComponent(id, { type: "ClimbingTag" });
-  if (mode === "fly") components.setComponent(id, { type: "FlyingTag" });
 }
 
 // ── System descriptors ─────────────────────────────────────────────────────

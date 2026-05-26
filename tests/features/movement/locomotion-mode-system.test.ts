@@ -3,7 +3,7 @@ import { createComponentStore } from "@/core/component-store";
 import { runLocomotionModeSystem } from "@/features/movement/systems";
 
 describe("locomotion mode system", () => {
-  it("switches to climb when touching a climbable surface with CanWallClimb", () => {
+  it("starts climb action without replacing walking locomotion", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
@@ -17,7 +17,7 @@ describe("locomotion mode system", () => {
     runLocomotionModeSystem(store);
 
     expect(store.getComponent("pet-a", "ClimbingTag")).toBeDefined();
-    expect(store.getComponent("pet-a", "WalkingTag")).toBeUndefined();
+    expect(store.getComponent("pet-a", "WalkingTag")).toBeDefined();
   });
 
   it("does not switch to climb when entity has no CanWallClimb", () => {
