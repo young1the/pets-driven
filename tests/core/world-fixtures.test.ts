@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createDemoScenario } from "@/core/scenario-fixtures";
-import { DEFAULT_PET_JUMP_IMPULSE } from "@/pets/constants/pet-body";
+import {
+  DEFAULT_PET_CLIMB_VELOCITY,
+  DEFAULT_PET_JUMP_IMPULSE,
+  DEFAULT_PET_WALK_FORCE,
+} from "@/pets/constants/pet-body";
 
 describe("demo scenario", () => {
   it("creates multiple pets in one shared world", () => {
@@ -291,7 +295,7 @@ describe("demo scenario", () => {
     ).toBeUndefined();
     expect(scenario.world.getComponent("pet-a", "CanWalk")).toEqual({
       type: "CanWalk",
-      force: 0.01,
+      force: DEFAULT_PET_WALK_FORCE,
     });
     expect(scenario.world.getComponent("pet-a", "CanJump")).toEqual({
       type: "CanJump",
@@ -304,7 +308,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-a", "CanWallClimb")).toEqual({
       type: "CanWallClimb",
-      velocity: 1.1,
+      velocity: DEFAULT_PET_CLIMB_VELOCITY,
     });
     expect(scenario.world.getComponent("pet-a", "ClimbDismountState")).toEqual({
       type: "ClimbDismountState",
@@ -320,7 +324,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-b", "CanWalk")).toEqual({
       type: "CanWalk",
-      force: 0.01,
+      force: DEFAULT_PET_WALK_FORCE,
     });
     expect(scenario.world.getComponent("pet-b", "CanJump")).toEqual({
       type: "CanJump",
@@ -340,11 +344,11 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-c", "CanWalk")).toEqual({
       type: "CanWalk",
-      force: 0.01,
+      force: DEFAULT_PET_WALK_FORCE,
     });
     expect(scenario.world.getComponent("pet-c", "CanWallClimb")).toEqual({
       type: "CanWallClimb",
-      velocity: 1.1,
+      velocity: DEFAULT_PET_CLIMB_VELOCITY,
     });
     expect(scenario.world.getComponent("pet-c", "WandersOnArrival")).toEqual({
       type: "WandersOnArrival",

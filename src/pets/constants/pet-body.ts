@@ -3,5 +3,9 @@ export const DEFAULT_PET_BODY_SIZE = {
   height: 38,
 } as const;
 
+export const DEFAULT_PET_WALK_FORCE = 0.01;
+
 // Tuned so the default pet jumps above its own body height under Matter.js gravity.
 export const DEFAULT_PET_JUMP_IMPULSE = 0.03;
+
+export const DEFAULT_PET_CLIMB_VELOCITY = 1.1;
