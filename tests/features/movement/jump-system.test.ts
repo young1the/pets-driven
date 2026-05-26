@@ -54,7 +54,7 @@ describe("jump system", () => {
     expect(state?.cooldownMs).toBeGreaterThan(0);
   });
 
-  it("counts down landingCooldown and returns to ready", () => {
+  it("counts down landingCooldown and removes the completed jump action", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
@@ -67,16 +67,6 @@ describe("jump system", () => {
 
     runJumpSystem(store, 16, []);
 
-    expect(store.getComponent("pet-a", "JumpActionState")?.phase).toBe("ready");
-  });
-
-  it("does not fire when phase is ready", () => {
-    const store = makeJumper("ready", true);
-    const forces: Force[][] = [];
-
-    runJumpSystem(store, 16, forces);
-
-    expect(forces).toHaveLength(0);
-    expect(store.getComponent("pet-a", "JumpActionState")?.phase).toBe("ready");
+    expect(store.getComponent("pet-a", "JumpActionState")).toBeUndefined();
   });
 });

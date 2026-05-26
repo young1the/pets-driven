@@ -190,7 +190,7 @@ describe("BehaviorDecisionSystem", () => {
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("wander-far");
   });
 
-  it("requests a jump when action-tendency dominates and CanJump is ready", () => {
+  it("requests a jump when action-tendency dominates and no jump action is active", () => {
     // High extraversion + moderate openness; seek-user excluded (no userAnchor in Perception)
     const store = makeStore({ extraversion: 0.9, openness: 0.6, neuroticism: 0.25 });
     // Remove user anchor from Perception so seek-user is not a candidate
@@ -202,14 +202,13 @@ describe("BehaviorDecisionSystem", () => {
       self: { grounded: false, climbing: false, intent: "idle" as const },
     });
     store.setComponent("pet", { type: "CanJump", impulse: 0.009 });
-    store.setComponent("pet", { type: "JumpActionState", phase: "ready", cooldownMs: 0 });
 
     // Seed 700 first output ≈ 0.507, inside the request-jump softmax bucket [0.489, 0.887]
     runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(700), BOUNDS);
 
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("request-jump");
-    // jump state must NOT change yet (Planning does that)
-    expect(store.getComponent("pet", "JumpActionState")?.phase).toBe("ready");
+    // JumpActionState must not be created yet (Planning does that).
+    expect(store.getComponent("pet", "JumpActionState")).toBeUndefined();
   });
 
   it("does not let two pets target the same climbable surface simultaneously", () => {
@@ -389,7 +388,7 @@ describe("BehaviorPlanningSystem", () => {
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 
-  it("materializes a request-jump token by setting JumpActionState to requested", () => {
+  it("materializes a request-jump token by creating JumpActionState as requested", () => {
     const store = createComponentStore([
       {
         id: "pet",
@@ -404,7 +403,6 @@ describe("BehaviorPlanningSystem", () => {
             nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
           },
-          { type: "JumpActionState", phase: "ready" as const, cooldownMs: 0 },
           {
             type: "BehaviorDecisionToken" as const,
             kind: "request-jump" as const,

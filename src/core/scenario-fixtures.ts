@@ -190,9 +190,7 @@ export function createDemoScenario(options?: {
           { type: "WalkingTag" },
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
           { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
-          { type: "JumpActionState", phase: "ready", cooldownMs: 0 },
           { type: "CanWallClimb", velocity: DEFAULT_PET_CLIMB_VELOCITY },
-          { type: "ClimbDismountState", phase: "ready", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // playful: high openness + extraversion, low neuroticism
           { type: "Personality", openness: 0.7, conscientiousness: 0.4, extraversion: 0.85, agreeableness: 0.5, neuroticism: 0.1 },
