@@ -42,6 +42,7 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
 const PET_FLEE_WIDTH_MULTIPLIER = 6;
 const PET_APPROACH_STOP_WIDTH_MULTIPLIER = 2.5;
 const DEFAULT_WANDER_BODY_WIDTH = DEFAULT_BEHAVIOR_BODY_WIDTH;
+const WANDER_BASE_BODY_MULTIPLIER = 3;
 
 // Phase 4: collision reaction constants
 const PET_ENGAGE_STOP_WIDTH_MULTIPLIER = 2.5;
@@ -517,16 +518,16 @@ export function wanderRadius(
   range: "near" | "far",
   bodyWidth = DEFAULT_WANDER_BODY_WIDTH,
 ): [number, number] {
-  const bodyScale = bodyWidth / DEFAULT_WANDER_BODY_WIDTH;
+  const base = bodyWidth * WANDER_BASE_BODY_MULTIPLIER;
   if (range === "near") {
     return [
-      (100 + p.neuroticism * 40) * bodyScale,
-      (220 - p.neuroticism * 40) * bodyScale,
+      base + p.neuroticism * bodyWidth * 1.25,
+      base * 2.25 - p.neuroticism * bodyWidth * 1.25,
     ];
   } else {
     return [
-      (200 + p.openness * 100) * bodyScale,
-      (400 + p.openness * 200) * bodyScale,
+      base * 2 + p.openness * base,
+      base * 4 + p.openness * base * 2,
     ];
   }
 }
