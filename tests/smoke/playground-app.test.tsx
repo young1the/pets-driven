@@ -157,6 +157,7 @@ describe("PlaygroundApp", () => {
     expect(screen.getByText("CanWalk")).toBeInTheDocument();
     expect(screen.getByText("CanJump")).toBeInTheDocument();
     expect(screen.getByText("CanWallClimb")).toBeInTheDocument();
+    expect(screen.getByText("Transform")).toBeInTheDocument();
     expect(screen.getByText("Grounded")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Dana" }));
@@ -177,6 +178,7 @@ describe("PlaygroundApp", () => {
 
     // CanJump component shows its impulse field value
     expect(screen.getAllByText("impulse").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("position").length).toBeGreaterThan(0);
     // CanWalk and CanWallClimb expose unit-specific movement fields.
     expect(screen.getAllByText("force").length).toBeGreaterThan(0);
     expect(screen.getAllByText("velocity").length).toBeGreaterThan(0);

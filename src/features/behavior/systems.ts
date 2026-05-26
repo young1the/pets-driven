@@ -344,11 +344,16 @@ export function runArrivalBehaviorSystem(components: ComponentStore): void {
         const perception = components.getComponent(id, "Perception");
         const anchor = perception?.userAnchor;
         if (!anchor) return;
+        // MotionTargetSystem may set a concrete stop-short position for entity
+        // targets such as user-anchor. Arrival must compare against that resolved
+        // position, not the entity center, otherwise walkers stop at their target
+        // while the entity target remains permanently active.
+        const arrivalTarget = motion.targetPosition ?? anchor.position;
         // Flying pets can close the gap in both axes; walking pets are locked to
         // the ground and can only reduce horizontal distance — use |dx| so arrival
         // fires as soon as the walk system stops (they share the same threshold).
-        const dx = anchor.position.x - transform.position.x;
-        const dy = anchor.position.y - transform.position.y;
+        const dx = arrivalTarget.x - transform.position.x;
+        const dy = arrivalTarget.y - transform.position.y;
         const isFlying = !!components.getComponent(id, "FlyingTag");
         const dist = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
         if (dist > wandersOnArrival.arrivalRadius) return;

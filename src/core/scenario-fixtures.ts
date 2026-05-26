@@ -4,7 +4,10 @@ import type {
   MovementProfileComponent,
   IdleConversationComponent,
 } from "@/core/components";
-import { DEFAULT_PET_BODY_SIZE } from "@/pets/constants/pet-body";
+import {
+  DEFAULT_PET_BODY_SIZE,
+  DEFAULT_PET_JUMP_IMPULSE,
+} from "@/pets/constants/pet-body";
 import { DEFAULT_PET_SPEECH } from "@/pets/constants/pet-speech";
 import { createManualClock } from "@/shared/time/manual-clock";
 import { createWorld } from "@/core/create-world";
@@ -184,7 +187,7 @@ export function createDemoScenario(options?: {
           { type: "IdleConversation", idleAfterMs: 5_000 },
           { type: "WalkingTag" },
           { type: "CanWalk", force: 0.01 },
-          { type: "CanJump", impulse: 0.009 },
+          { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE },
           { type: "JumpActionState", phase: "ready", cooldownMs: 0 },
           { type: "CanWallClimb", velocity: 1.1 },
           { type: "ClimbDismountState", phase: "ready", cooldownMs: 0 },
@@ -202,7 +205,7 @@ export function createDemoScenario(options?: {
         components: [
           { type: "WalkingTag" },
           { type: "CanWalk", force: 0.01 },
-          { type: "CanJump", impulse: 0.009 },
+          { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE },
           { type: "JumpActionState", phase: "requested", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // attentive: high extraversion + agreeableness
