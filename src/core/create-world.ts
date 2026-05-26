@@ -10,8 +10,8 @@ import {
 import {
   createMatterPhysicsWorld,
 } from "@/features/physics/matter-physics-world";
-import type { Stimulus } from "@/features/stimulus/stimulus";
-import { createStimulusQueue } from "@/features/stimulus/stimulus-queue";
+import type { WorldEvent } from "@/features/events/world-event";
+import { createWorldEventQueue } from "@/features/events/world-event-queue";
 import { runPhysicsTransformSyncSystem } from "@/features/physics/systems";
 import {
   describeSimulationSystems,
@@ -38,7 +38,7 @@ export function createWorld(input: WorldDefinition) {
     width: input.width,
     height: input.height,
   });
-  const stimuli = createStimulusQueue();
+  const events = createWorldEventQueue();
   const random = input.random ?? createSeededRandom(1);
 
   registerPhysicsBodies();
@@ -127,15 +127,15 @@ export function createWorld(input: WorldDefinition) {
     removeComponent(id: string, type: ComponentType) {
       components.removeComponent(id, type);
     },
-    pushStimulus(stimulus: Stimulus) {
-      stimuli.push(stimulus);
+    pushEvent(event: WorldEvent) {
+      events.push(event);
     },
     step(deltaMs: number) {
       runSimulationSystems(STEP_SYSTEMS, {
         deltaMs,
         components,
         physics,
-        stimuli,
+        events,
         clock: input.clock,
         random,
         bounds: { width: input.width, height: input.height },

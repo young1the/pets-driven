@@ -1,7 +1,7 @@
 import { PLAYGROUND_TEXT } from "@/playground/browser/playground-text";
 
 type ScenarioControlsProps = {
-  lastStimulus: string;
+  lastEventType: string;
   onSendStarted(): void;
   onSendWaiting(): void;
   onSendCompleted(): void;
@@ -15,7 +15,7 @@ type ScenarioControlsProps = {
 };
 
 export function ScenarioControls({
-  lastStimulus,
+  lastEventType,
   onSendStarted,
   onSendWaiting,
   onSendCompleted,
@@ -60,7 +60,7 @@ export function ScenarioControls({
         {PLAYGROUND_TEXT.playNextFrame}
       </button>
       <p>
-        {PLAYGROUND_TEXT.lastStimulusPrefix} {lastStimulus}
+        {PLAYGROUND_TEXT.lastEventTypePrefix} {lastEventType}
       </p>
       <p>
         {PLAYGROUND_TEXT.frameCounterPrefix} {frameNumber}

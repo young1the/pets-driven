@@ -51,7 +51,7 @@ describe("PlaygroundApp", () => {
     );
     expect(screen.getByText(/"type": "task.completed"/)).toBeInTheDocument();
     expect(
-      screen.getByText(`${PLAYGROUND_TEXT.lastStimulusPrefix} task.completed`),
+      screen.getByText(`${PLAYGROUND_TEXT.lastEventTypePrefix} task.completed`),
     ).toBeInTheDocument();
   });
 

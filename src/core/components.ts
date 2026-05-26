@@ -31,7 +31,7 @@ export type {
   SpeechProfileComponent,
   SpeechStateComponent,
   IdleConversationComponent,
-} from "@/features/stimulus/components";
+} from "@/features/agent/components";
 
 export type {
   WalkingTagComponent,
@@ -67,7 +67,7 @@ import type { PerceptionComponent } from "@/features/perception/components";
 import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent } from "@/features/physics/components";
 import type { ContactStateComponent } from "@/features/contact/components";
 import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent, PendingReactionComponent } from "@/features/behavior/components";
-import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@/features/stimulus/components";
+import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@/features/agent/components";
 import type { WalkingTagComponent, ClimbingTagComponent, FlyingTagComponent, AirborneTagComponent, MotionTargetComponent } from "@/features/movement/components";
 import type { CanWalkComponent, MovementProfileComponent, WandersOnArrivalComponent } from "@/features/movement/components";
 import type { CanJumpComponent, JumpActionStateComponent } from "@/features/movement/components";

@@ -89,7 +89,7 @@ export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
  * into the reactive candidate pool (collision-flee / engage / avoid / unfazed).
  * Removed immediately after the reaction token is emitted.
  */
-export type ReactionSource = "collision" | "stimulus" | "arrival";
+export type ReactionSource = "collision" | "agent-event" | "arrival";
 
 export type PendingReactionComponent = {
   type: "PendingReaction";
@@ -99,7 +99,7 @@ export type PendingReactionComponent = {
   context: {
     otherEntityId?: string;
     otherPosition?: { x: number; y: number };
-    stimulusType?: string;
+    eventType?: string;
   };
 };
 
