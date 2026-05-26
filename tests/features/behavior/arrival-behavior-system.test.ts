@@ -58,7 +58,7 @@ describe("arrival behavior system", () => {
       id: "pet-a",
       components: [
         { type: "IntentState", intent: "idle" as const },
-        { type: "ClimbingState" },
+        { type: "ClimbingTag" },
         { type: "Transform", position: { x: 280, y: 108 } },
         { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 700, y: 100 } },
         { type: "WandersOnArrival", arrivalRadius: 16 },

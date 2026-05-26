@@ -63,15 +63,15 @@ describe("component store", () => {
       {
         id: "pet-a",
         components: [
-          { type: "CanWalk", speed: 0.01 },
-          { type: "WalkingState" },
+          { type: "CanWalk", force: 0.01 },
+          { type: "WalkingTag" },
         ],
       },
     ]);
 
-    store.removeComponent("pet-a", "WalkingState");
+    store.removeComponent("pet-a", "WalkingTag");
 
-    expect(store.getComponent("pet-a", "WalkingState")).toBeUndefined();
-    expect(store.query("CanWalk", "WalkingState")).toEqual([]);
+    expect(store.getComponent("pet-a", "WalkingTag")).toBeUndefined();
+    expect(store.query("CanWalk", "WalkingTag")).toEqual([]);
   });
 });

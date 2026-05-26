@@ -29,9 +29,9 @@ describe("pet contracts", () => {
     const personality = createPlayfulPersonality();
     expect(Array.isArray(personality)).toBe(false);
     expect(personality).toEqual({
-      idleSpeed: 0.0008,
-      activeSpeed: 0.0016,
-      seekSpeed: 0.002,
+      idleForce: 0.0008,
+      activeForce: 0.0016,
+      seekForce: 0.002,
       idleConversationMs: 9000,
       completionIntent: "seek",
       openness: 0.7,

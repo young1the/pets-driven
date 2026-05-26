@@ -8,24 +8,24 @@ const MAX_PERCEPTION_RANGE = 400; // px
 export function runPerceptionSystem(components: ComponentStore): void {
   // Pass 1: collect world-wide entities once per tick
   let userAnchorEntry: { id: string; x: number; y: number } | null = null;
-  components.query(["UserAnchor", "Transform"], (id, [, transform]) => {
+  components.forEach(["UserAnchor", "Transform"], (id, [, transform]) => {
     if (!userAnchorEntry) {
       userAnchorEntry = { id, x: transform.position.x, y: transform.position.y };
     }
   });
 
   const climbables: { id: string; x: number; y: number }[] = [];
-  components.query(["ClimbableSurface", "Transform"], (id, [, transform]) => {
+  components.forEach(["ClimbableSurface", "Transform"], (id, [, transform]) => {
     climbables.push({ id, x: transform.position.x, y: transform.position.y });
   });
 
   const allPets: { id: string; x: number; y: number }[] = [];
-  components.query(["PetIdentity", "Transform"], (id, [, transform]) => {
+  components.forEach(["PetIdentity", "Transform"], (id, [, transform]) => {
     allPets.push({ id, x: transform.position.x, y: transform.position.y });
   });
 
   // Pass 2: write each pet's Perception
-  components.query(
+  components.forEach(
     ["Perception", "Transform", "IntentState", "ContactState"],
     (id, [perception, transform, intentState, contact]) => {
       const px = transform.position.x;
@@ -48,7 +48,7 @@ export function runPerceptionSystem(components: ComponentStore): void {
 
       perception.self = {
         grounded: contact.grounded,
-        climbing: !!components.getComponent(id, "ClimbingState"),
+        climbing: !!components.getComponent(id, "ClimbingTag"),
         intent: intentState.intent,
       };
     },
@@ -80,7 +80,7 @@ export const PerceptionSystem: SimulationSystem<WorldStepContext> = {
     "Perception",
     "IntentState",
     "ContactState",
-    "ClimbingState",
+    "ClimbingTag",
   ],
   writes: ["Perception"],
   update(ctx) {

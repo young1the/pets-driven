@@ -1,6 +1,6 @@
 import type {
-  SimulationComponent,
-  SimulationComponentType,
+  Component,
+  ComponentType,
 } from "@/core/components";
 import {
   createComponentStore,
@@ -95,8 +95,8 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getLocomotionLabel(componentStore: ComponentStore, id: string) {
-    if (componentStore.getComponent(id, "ClimbingState")) return "climb";
-    if (componentStore.getComponent(id, "FlyingState")) return "fly";
+    if (componentStore.getComponent(id, "ClimbingTag")) return "climb";
+    if (componentStore.getComponent(id, "FlyingTag")) return "fly";
     return "walk";
   }
 
@@ -118,13 +118,13 @@ export function createWorld(input: WorldDefinition) {
       const entity = components.getEntity(id);
       return entity ? { id: entity.id } : undefined;
     },
-    getComponent<TType extends SimulationComponentType>(id: string, type: TType) {
+    getComponent<TType extends ComponentType>(id: string, type: TType) {
       return components.getComponent(id, type);
     },
-    setComponent(id: string, component: SimulationComponent) {
+    setComponent(id: string, component: Component) {
       components.setComponent(id, component);
     },
-    removeComponent(id: string, type: SimulationComponentType) {
+    removeComponent(id: string, type: ComponentType) {
       components.removeComponent(id, type);
     },
     pushStimulus(stimulus: Stimulus) {

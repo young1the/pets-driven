@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@/core/component-store";
 import { runClimbDismountSystem } from "@/features/movement/systems";
-import type { SimulationComponent } from "@/core/components";
+import type { Component } from "@/core/components";
 
-function makeCompletedClimber(extraComponents: SimulationComponent[] = []) {
+function makeCompletedClimber(extraComponents: Component[] = []) {
   return createComponentStore([{
     id: "pet-a",
     components: [
-      { type: "ClimbingState" as const },
-      { type: "CanWalk" as const, speed: 0.01 },
-      { type: "CanWallClimb" as const, speed: 1.1 },
+      { type: "ClimbingTag" as const },
+      { type: "CanWalk" as const, force: 0.01 },
+      { type: "CanWallClimb" as const, velocity: 1.1 },
       {
         type: "ContactState" as const,
         grounded: false,
@@ -29,8 +29,8 @@ describe("climb dismount system", () => {
 
     runClimbDismountSystem(store, 16);
 
-    expect(store.getComponent("pet-a", "ClimbingState")).toBeUndefined();
-    expect(store.getComponent("pet-a", "WalkingState")).toBeDefined();
+    expect(store.getComponent("pet-a", "ClimbingTag")).toBeUndefined();
+    expect(store.getComponent("pet-a", "WalkingTag")).toBeDefined();
     expect(store.getComponent("pet-a", "ClimbIntentState")?.phase).toBe("attached");
   });
 
@@ -43,8 +43,8 @@ describe("climb dismount system", () => {
 
     runClimbDismountSystem(store, 16);
 
-    expect(store.getComponent("pet-a", "ClimbingState")).toBeUndefined();
-    expect(store.getComponent("pet-a", "WalkingState")).toBeDefined();
+    expect(store.getComponent("pet-a", "ClimbingTag")).toBeUndefined();
+    expect(store.getComponent("pet-a", "WalkingTag")).toBeDefined();
     expect(store.getComponent("pet-a", "JumpActionState")?.phase).toBe("falling");
     expect(store.getComponent("pet-a", "ClimbDismountState")?.phase).toBe("airborne");
   });
@@ -59,7 +59,7 @@ describe("climb dismount system", () => {
 
     runClimbDismountSystem(store, 16);
 
-    expect(store.getComponent("pet-a", "ClimbingState")).toBeDefined();
-    expect(store.getComponent("pet-a", "WalkingState")).toBeUndefined();
+    expect(store.getComponent("pet-a", "ClimbingTag")).toBeDefined();
+    expect(store.getComponent("pet-a", "WalkingTag")).toBeUndefined();
   });
 });

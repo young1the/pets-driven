@@ -7,7 +7,7 @@ function makeJumper(phase: "ready" | "requested" | "rising" | "falling" | "landi
   return createComponentStore([{
     id: "pet-a",
     components: [
-      { type: "WalkingState" },
+      { type: "WalkingTag" },
       { type: "ContactState", grounded, climbableSurfaceId: null, climbableSurfacePosition: null },
       { type: "CanJump", impulse: 0.009 },
       { type: "JumpActionState", phase, cooldownMs: 0 },
@@ -58,7 +58,7 @@ describe("jump system", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
-        { type: "WalkingState" },
+        { type: "WalkingTag" },
         { type: "ContactState", grounded: true, climbableSurfaceId: null, climbableSurfacePosition: null },
         { type: "CanJump", impulse: 0.009 },
         { type: "JumpActionState", phase: "landingCooldown", cooldownMs: 16 },

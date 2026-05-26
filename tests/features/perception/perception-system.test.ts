@@ -232,7 +232,7 @@ describe("PerceptionSystem", () => {
     expect(perception?.nearbyPets).toHaveLength(0);
   });
 
-  it("reflects climbing state from ClimbingState marker component", () => {
+  it("reflects climbing state from ClimbingTag marker component", () => {
     const store = createComponentStore([
       {
         id: "pet-a",
@@ -252,7 +252,7 @@ describe("PerceptionSystem", () => {
             climbableSurfaceId: "wall-1",
             climbableSurfacePosition: { x: 200, y: 200 },
           },
-          { type: "ClimbingState" },
+          { type: "ClimbingTag" },
           { type: "PetIdentity", name: "A" },
         ],
       },

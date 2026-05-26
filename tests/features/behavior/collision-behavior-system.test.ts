@@ -175,7 +175,7 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
           { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
           { type: "IntentState" as const, intent: "active" as const },
           { type: "MotionTarget" as const, targetEntityId: null, targetPosition: { x: 100, y: 280 } },
-          { type: "ClimbingState" as const },
+          { type: "ClimbingTag" as const },
         ],
       },
       makePet("pet-b", 110, "idle"),

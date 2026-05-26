@@ -8,7 +8,7 @@ function makeFlyer(gravityScale: number, hoverStrength: number) {
     id: "pet-a",
     components: [
       { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 32 },
-      { type: "FlyingState" },
+      { type: "FlyingTag" },
       { type: "CanFly" as const, gravityScale, hoverStrength },
     ],
   }]);

@@ -8,8 +8,8 @@ function makeFlyer(intent: "idle" | "active" | "seek", targetX: number | null, t
     id: "pet-a",
     components: [
       { type: "Transform" as const, position: { x: 100, y: 100 } },
-      { type: "FlyingState" },
-      { type: "MovementProfile" as const, idleSpeed: 0.001, activeSpeed: 0.002, seekSpeed: 0.003 },
+      { type: "FlyingTag" },
+      { type: "MovementProfile" as const, idleForce: 0.001, activeForce: 0.002, seekForce: 0.003 },
       { type: "IntentState" as const, intent },
       { type: "MotionTarget" as const, targetEntityId: null, targetPosition: targetX !== null ? { x: targetX, y: targetY! } : null },
       { type: "NavigationState" as const, avoidanceWaypoint: null },
@@ -32,14 +32,14 @@ describe("intent steering system", () => {
     expect(forceGroups.flat()).toContainEqual({ id: "pet-a", x: 0, y: 0 });
   });
 
-  it("uses seekSpeed when intent is seek and target is far", () => {
+  it("uses seekForce when intent is seek and target is far", () => {
     const store = makeFlyer("seek", 1100, 100); // far right, dy=0 so all force is on x
     const forceGroups: Force[][] = [];
     runIntentSteeringSystem(store, forceGroups);
     expect(forceGroups.flat()[0]?.x).toBeCloseTo(0.003);
   });
 
-  it("uses idleSpeed when intent is idle and target is far", () => {
+  it("uses idleForce when intent is idle and target is far", () => {
     const store = makeFlyer("idle", 1100, 100);
     const forceGroups: Force[][] = [];
     runIntentSteeringSystem(store, forceGroups);

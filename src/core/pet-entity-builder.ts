@@ -1,13 +1,13 @@
-import type { SimulationComponent } from "@/core/components";
+import type { Component } from "@/core/components";
 import type { PetPersonality } from "@/pets/personalities/factories";
 
-export function buildPersonalityComponents(personality: PetPersonality): SimulationComponent[] {
-  const components: SimulationComponent[] = [
+export function buildPersonalityComponents(personality: PetPersonality): Component[] {
+  const components: Component[] = [
     {
       type: "MovementProfile",
-      idleSpeed: personality.idleSpeed,
-      activeSpeed: personality.activeSpeed,
-      seekSpeed: personality.seekSpeed,
+      idleForce: personality.idleForce,
+      activeForce: personality.activeForce,
+      seekForce: personality.seekForce,
     },
   ];
   if (personality.idleConversationMs !== undefined) {

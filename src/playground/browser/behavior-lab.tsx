@@ -1,18 +1,18 @@
 import type {
   ComponentOf,
-  SimulationComponentType,
+  ComponentType,
 } from "@/core/components";
 import type { PetSnapshot } from "@/core/world-snapshot";
 import { PLAYGROUND_TEXT } from "./playground-text";
 
-const INSPECTED_COMPONENTS: SimulationComponentType[] = [
+const INSPECTED_COMPONENTS: ComponentType[] = [
   "Personality",
   "BehaviorDecisionState",
   "IdleConversation",
-  "WalkingState",
-  "ClimbingState",
-  "FlyingState",
-  "AirborneState",
+  "WalkingTag",
+  "ClimbingTag",
+  "FlyingTag",
+  "AirborneTag",
   "CanWalk",
   "CanJump",
   "JumpActionState",
@@ -26,7 +26,7 @@ const INSPECTED_COMPONENTS: SimulationComponentType[] = [
   "NavigationState",
 ];
 
-type ComponentReader = <TType extends SimulationComponentType>(
+type ComponentReader = <TType extends ComponentType>(
   id: string,
   type: TType,
 ) => ComponentOf<TType> | undefined;

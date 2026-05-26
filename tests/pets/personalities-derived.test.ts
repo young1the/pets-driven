@@ -32,7 +32,7 @@ function last<T extends { type: string }>(
   return [...components].reverse().find((c) => c.type === type) as T | undefined;
 }
 
-function buildPet(extra: SimulationComponentLike[]) {
+function buildPet(extra: ComponentLike[]) {
   return createFixturePet({
     id: "test-pet",
     sourceId: "agent-test",
@@ -44,7 +44,7 @@ function buildPet(extra: SimulationComponentLike[]) {
 }
 
 // Loose type so we can pass plain objects in tests without full union types.
-type SimulationComponentLike = { type: string; [key: string]: unknown };
+type ComponentLike = { type: string; [key: string]: unknown };
 
 // ─── deriveMovementProfile ────────────────────────────────────────────────────
 
@@ -52,23 +52,23 @@ describe("deriveMovementProfile", () => {
   it("high-E speeds exceed low-E speeds (same N)", () => {
     const highE = deriveMovementProfile(p({ extraversion: 0.9, neuroticism: 0.1 }));
     const lowE  = deriveMovementProfile(p({ extraversion: 0.1, neuroticism: 0.1 }));
-    expect(highE.activeSpeed).toBeGreaterThan(lowE.activeSpeed);
-    expect(highE.idleSpeed).toBeGreaterThan(lowE.idleSpeed);
-    expect(highE.seekSpeed).toBeGreaterThan(lowE.seekSpeed);
+    expect(highE.activeForce).toBeGreaterThan(lowE.activeForce);
+    expect(highE.idleForce).toBeGreaterThan(lowE.idleForce);
+    expect(highE.seekForce).toBeGreaterThan(lowE.seekForce);
   });
 
   it("high-N speeds are slower than low-N (same E)", () => {
     const highN = deriveMovementProfile(p({ extraversion: 0.5, neuroticism: 0.9 }));
     const lowN  = deriveMovementProfile(p({ extraversion: 0.5, neuroticism: 0.0 }));
-    expect(highN.activeSpeed).toBeLessThan(lowN.activeSpeed);
+    expect(highN.activeForce).toBeLessThan(lowN.activeForce);
   });
 
   it("exact values for E=0.9, N=0.1 — energy = 0.6 + 0.9×0.5 − 0.1×0.2 = 1.03", () => {
     const energy = 0.6 + 0.9 * 0.5 - 0.1 * 0.2;        // 1.03
     const mp = deriveMovementProfile(p({ extraversion: 0.9, neuroticism: 0.1 }));
-    expect(mp.idleSpeed).toBeCloseTo(0.0005 * energy, 10);
-    expect(mp.activeSpeed).toBeCloseTo(0.0012 * energy, 10);
-    expect(mp.seekSpeed).toBeCloseTo(0.0018 * energy, 10);
+    expect(mp.idleForce).toBeCloseTo(0.0005 * energy, 10);
+    expect(mp.activeForce).toBeCloseTo(0.0012 * energy, 10);
+    expect(mp.seekForce).toBeCloseTo(0.0018 * energy, 10);
   });
 
   it("returns a MovementProfile component type tag", () => {
@@ -107,18 +107,18 @@ describe("createFixturePet — Personality-derived components", () => {
     // energy = 0.6 + 0.9×0.5 − 0.1×0.2 = 1.03
     const energy = 0.6 + 0.9 * 0.5 - 0.1 * 0.2;
     expect(mp).toBeDefined();
-    expect(mp!.activeSpeed).toBeCloseTo(0.0012 * energy, 10);
+    expect(mp!.activeForce).toBeCloseTo(0.0012 * energy, 10);
   });
 
   it("explicit MovementProfile in input.components wins over derivation", () => {
     const { components } = buildPet([
       p({ extraversion: 0.9 }),
-      { type: "MovementProfile", idleSpeed: 0.001, activeSpeed: 0.002, seekSpeed: 0.003 },
+      { type: "MovementProfile", idleForce: 0.001, activeForce: 0.002, seekForce: 0.003 },
     ]);
     const mp = last<MovementProfileComponent>(components, "MovementProfile");
-    expect(mp!.idleSpeed).toBe(0.001);
-    expect(mp!.activeSpeed).toBe(0.002);
-    expect(mp!.seekSpeed).toBe(0.003);
+    expect(mp!.idleForce).toBe(0.001);
+    expect(mp!.activeForce).toBe(0.002);
+    expect(mp!.seekForce).toBe(0.003);
   });
 
   it("pet with no explicit IdleConversation gets one derived from Personality", () => {
@@ -144,7 +144,7 @@ describe("createFixturePet — Personality-derived components", () => {
     const mp = last<MovementProfileComponent>(components, "MovementProfile");
     const energy = 0.6 + 0.5 * 0.5 - 0.2 * 0.2;        // 0.81
     expect(mp).toBeDefined();
-    expect(mp!.activeSpeed).toBeCloseTo(0.0012 * energy, 10);
+    expect(mp!.activeForce).toBeCloseTo(0.0012 * energy, 10);
   });
 
   it("exactly one MovementProfile component per pet (no double-attach)", () => {

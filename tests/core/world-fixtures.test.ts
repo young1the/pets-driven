@@ -70,20 +70,20 @@ describe("demo scenario", () => {
       reads: [
         "ContactState",
         "MotionTarget",
-        "WalkingState",
-        "ClimbingState",
-        "FlyingState",
+        "WalkingTag",
+        "ClimbingTag",
+        "FlyingTag",
         "ClimbIntentState",
         "CanWallClimb",
         "ClimbDismountState",
       ],
-      writes: ["WalkingState", "ClimbingState", "FlyingState"],
+      writes: ["WalkingTag", "ClimbingTag", "FlyingTag"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ClimbApproachSystem",
       dependsOn: ["LocomotionModeSystem"],
       reads: [
-        "ClimbingState",
+        "ClimbingTag",
         "Transform",
         "MotionTarget",
         "ClimbIntentState",
@@ -96,7 +96,7 @@ describe("demo scenario", () => {
       name: "ClimbAttachmentSystem",
       dependsOn: ["LocomotionActiveStateSystem"],
       reads: [
-        "ClimbingState",
+        "ClimbingTag",
         "ContactState",
         "Transform",
         "MotionTarget",
@@ -112,7 +112,7 @@ describe("demo scenario", () => {
         "MotionTarget",
         "WandersOnArrival",
         "IntentState",
-        "ClimbingState",
+        "ClimbingTag",
         "Perception",
         "ClimbIntentState",
       ],
@@ -122,7 +122,7 @@ describe("demo scenario", () => {
       name: "ClimbDismountSystem",
       dependsOn: ["ArrivalBehaviorSystem"],
       reads: [
-        "ClimbingState",
+        "ClimbingTag",
         "MotionTarget",
         "ContactState",
         "CanWalk",
@@ -132,13 +132,13 @@ describe("demo scenario", () => {
         "ClimbDismountState",
         "ClimbIntentState",
       ],
-      writes: ["WalkingState", "ClimbingState", "JumpActionState", "ClimbDismountState"],
+      writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "LocomotionActiveStateSystem",
       dependsOn: ["ClimbDismountSystem"],
-      reads: ["ContactState", "WalkingState", "ClimbingState", "FlyingState"],
-      writes: ["AirborneState"],
+      reads: ["ContactState", "WalkingTag", "ClimbingTag", "FlyingTag"],
+      writes: ["AirborneTag"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "CollisionBehaviorSystem",
@@ -151,7 +151,7 @@ describe("demo scenario", () => {
       dependsOn: ["MotionTargetSystem"],
       reads: [
         "Transform",
-        "WalkingState",
+        "WalkingTag",
         "ContactState",
         "CanWalk",
         "MotionTarget",
@@ -162,7 +162,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "JumpSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["WalkingState", "ContactState", "CanJump", "JumpActionState"],
+      reads: ["WalkingTag", "ContactState", "CanJump", "JumpActionState"],
       writes: ["PhysicsForce", "JumpActionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -170,7 +170,7 @@ describe("demo scenario", () => {
       dependsOn: ["MotionTargetSystem"],
       reads: [
         "Transform",
-        "ClimbingState",
+        "ClimbingTag",
         "CanWallClimb",
         "MotionTarget",
         "ContactState",
@@ -180,7 +180,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "FlightSystem",
       dependsOn: ["IntentSteeringSystem"],
-      reads: ["PhysicsBody", "FlyingState", "CanFly"],
+      reads: ["PhysicsBody", "FlyingTag", "CanFly"],
       writes: ["PhysicsGravityScale"],
     });
   });
@@ -209,9 +209,9 @@ describe("demo scenario", () => {
     const aliceEnergy = 0.6 + 0.85 * 0.5 - 0.1 * 0.2;
     expect(scenario.world.getComponent("pet-a", "MovementProfile")).toEqual({
       type: "MovementProfile",
-      idleSpeed: 0.0005 * aliceEnergy,
-      activeSpeed: 0.0012 * aliceEnergy,
-      seekSpeed: 0.0018 * aliceEnergy,
+      idleForce: 0.0005 * aliceEnergy,
+      activeForce: 0.0012 * aliceEnergy,
+      seekForce: 0.0018 * aliceEnergy,
     });
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
       type: "MotionTarget",
@@ -243,15 +243,15 @@ describe("demo scenario", () => {
       type: "CompletionBehavior",
       intentAfterCompletion: "idle",
     });
-    expect(scenario.world.getComponent("pet-a", "WalkingState")).toEqual({
-      type: "WalkingState",
+    expect(scenario.world.getComponent("pet-a", "WalkingTag")).toEqual({
+      type: "WalkingTag",
     });
     expect(
       scenario.world.getComponent("pet-a", "CanFly"),
     ).toBeUndefined();
     expect(scenario.world.getComponent("pet-a", "CanWalk")).toEqual({
       type: "CanWalk",
-      speed: 0.01,
+      force: 0.01,
     });
     expect(scenario.world.getComponent("pet-a", "CanJump")).toEqual({
       type: "CanJump",
@@ -264,7 +264,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-a", "CanWallClimb")).toEqual({
       type: "CanWallClimb",
-      speed: 1.1,
+      velocity: 1.1,
     });
     expect(scenario.world.getComponent("pet-a", "ClimbDismountState")).toEqual({
       type: "ClimbDismountState",
@@ -275,12 +275,12 @@ describe("demo scenario", () => {
       type: "WandersOnArrival",
       arrivalRadius: 16,
     });
-    expect(scenario.world.getComponent("pet-b", "WalkingState")).toEqual({
-      type: "WalkingState",
+    expect(scenario.world.getComponent("pet-b", "WalkingTag")).toEqual({
+      type: "WalkingTag",
     });
     expect(scenario.world.getComponent("pet-b", "CanWalk")).toEqual({
       type: "CanWalk",
-      speed: 0.01,
+      force: 0.01,
     });
     expect(scenario.world.getComponent("pet-b", "CanJump")).toEqual({
       type: "CanJump",
@@ -295,23 +295,23 @@ describe("demo scenario", () => {
       type: "WandersOnArrival",
       arrivalRadius: 16,
     });
-    expect(scenario.world.getComponent("pet-c", "WalkingState")).toEqual({
-      type: "WalkingState",
+    expect(scenario.world.getComponent("pet-c", "WalkingTag")).toEqual({
+      type: "WalkingTag",
     });
     expect(scenario.world.getComponent("pet-c", "CanWalk")).toEqual({
       type: "CanWalk",
-      speed: 0.01,
+      force: 0.01,
     });
     expect(scenario.world.getComponent("pet-c", "CanWallClimb")).toEqual({
       type: "CanWallClimb",
-      speed: 1.1,
+      velocity: 1.1,
     });
     expect(scenario.world.getComponent("pet-c", "WandersOnArrival")).toEqual({
       type: "WandersOnArrival",
       arrivalRadius: 16,
     });
-    expect(scenario.world.getComponent("pet-d", "FlyingState")).toEqual({
-      type: "FlyingState",
+    expect(scenario.world.getComponent("pet-d", "FlyingTag")).toEqual({
+      type: "FlyingTag",
     });
     expect(scenario.world.getComponent("pet-d", "CanFly")).toEqual({
       type: "CanFly",

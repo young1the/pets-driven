@@ -1,10 +1,10 @@
 import type {
   ComponentOf,
-  SimulationComponent,
-  SimulationComponentType,
+  Component,
+  ComponentType,
 } from "@/core/components";
-import type { EntityId, RuntimeEntity } from "./entity";
-import { createRuntimeEntity } from "./entity";
+import type { EntityId, Entity } from "./entity";
+import { createEntity } from "./entity";
 
 /**
  * Serialized input shape for fixtures, presets, and future JSON models.
@@ -12,37 +12,24 @@ import { createRuntimeEntity } from "./entity";
  */
 export type EntityDeclaration = {
   id: EntityId;
-  components: SimulationComponent[];
+  components: Component[];
 };
 
 export type ComponentStore = {
-  entities(): RuntimeEntity[];
-  getEntity(id: EntityId): RuntimeEntity | undefined;
-  getComponent<TType extends SimulationComponentType>(
+  entities(): Entity[];
+  getEntity(id: EntityId): Entity | undefined;
+  getComponent<TType extends ComponentType>(
     id: EntityId,
     type: TType,
   ): ComponentOf<TType> | undefined;
-  components<TType extends SimulationComponentType>(
+  components<TType extends ComponentType>(
     type: TType,
   ): ReadonlyMap<EntityId, ComponentOf<TType>>;
-  setComponent(componentOwnerId: EntityId, component: SimulationComponent): void;
-  removeComponent(componentOwnerId: EntityId, type: SimulationComponentType): void;
-
-  /**
-   * Zero-allocation callback form. Iterates matching entities directly without
-   * building intermediate arrays or named-prop objects. Prefer this in hot
-   * system loops.
-   */
-  query<TTypes extends SimulationComponentType[]>(
-    types: [...TTypes],
-    callback: (
-      id: EntityId,
-      components: { [K in keyof TTypes]: ComponentOf<TTypes[K]> },
-    ) => void,
-  ): void;
+  setComponent(componentOwnerId: EntityId, component: Component): void;
+  removeComponent(componentOwnerId: EntityId, type: ComponentType): void;
 
   /** Array form for one-off queries and snapshot builders. */
-  query<TTypes extends SimulationComponentType[]>(
+  query<TTypes extends ComponentType[]>(
     ...types: TTypes
   ): Array<{
     id: EntityId;
@@ -50,42 +37,57 @@ export type ComponentStore = {
       [Index in keyof TTypes]: ComponentOf<TTypes[Index]>;
     };
   }>;
+
+  /**
+   * Zero-allocation callback form. Iterates matching entities directly without
+   * building intermediate arrays. Prefer this in hot system loops.
+   */
+  forEach<TTypes extends ComponentType[]>(
+    types: [...TTypes],
+    callback: (
+      id: EntityId,
+      components: { [K in keyof TTypes]: ComponentOf<TTypes[K]> },
+    ) => void,
+  ): void;
 };
 
 export function createComponentStore(declarations: EntityDeclaration[]): ComponentStore {
-  const entitiesById = new Map<EntityId, RuntimeEntity>();
-  const componentTables = new Map<SimulationComponentType, Map<EntityId, SimulationComponent>>();
+  const entitiesById = new Map<EntityId, Entity>();
+  const componentTables = new Map<ComponentType, Map<EntityId, Component>>();
 
   for (const declaration of declarations) {
-    const entity = createRuntimeEntity(declaration.id);
+    const entity = createEntity(declaration.id);
     for (const component of declaration.components) {
       setComponentForEntity(entity.id, component);
     }
     entitiesById.set(entity.id, entity);
   }
 
-  function getComponentTable<TType extends SimulationComponentType>(
+  function getComponentTable<TType extends ComponentType>(
     type: TType,
   ): Map<EntityId, ComponentOf<TType>> {
     let table = componentTables.get(type);
     if (!table) {
-      table = new Map<EntityId, SimulationComponent>();
+      table = new Map<EntityId, Component>();
       componentTables.set(type, table);
     }
 
     return table as Map<EntityId, ComponentOf<TType>>;
   }
 
-  function setComponentForEntity(id: EntityId, component: SimulationComponent) {
-    const table = getComponentTable(component.type) as Map<EntityId, SimulationComponent>;
+  function setComponentForEntity(id: EntityId, component: Component) {
+    const table = getComponentTable(component.type) as Map<EntityId, Component>;
     table.set(id, component);
   }
 
-  function queryArray(types: SimulationComponentType[]) {
+  function queryArray<TTypes extends ComponentType[]>(types: TTypes): Array<{
+    id: EntityId;
+    components: { [Index in keyof TTypes]: ComponentOf<TTypes[Index]> };
+  }> {
     if (types.length === 0) {
       return [...entitiesById.values()].map((entity) => ({
         id: entity.id,
-        components: [] as unknown as never[],
+        components: [] as unknown as { [Index in keyof TTypes]: ComponentOf<TTypes[Index]> },
       }));
     }
 
@@ -97,13 +99,16 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
       if (comps.some((c) => c === undefined)) {
         return [];
       }
-      return [{ id, components: comps as never[] }];
+      return [{
+        id,
+        components: comps as { [Index in keyof TTypes]: ComponentOf<TTypes[Index]> },
+      }];
     });
   }
 
   function queryCallback(
-    types: SimulationComponentType[],
-    callback: (id: EntityId, components: SimulationComponent[]) => void,
+    types: ComponentType[],
+    callback: (id: EntityId, components: Component[]) => void,
   ): void {
     if (types.length === 0) {
       for (const entity of entitiesById.values()) {
@@ -116,7 +121,7 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
     const smallestTable = tables.reduce((a, b) => (b.size < a.size ? b : a));
 
     for (const id of smallestTable.keys()) {
-      const comps: SimulationComponent[] = [];
+      const comps: Component[] = [];
       let allPresent = true;
       for (let i = 0; i < types.length; i++) {
         const comp = tables[i].get(id);
@@ -159,13 +164,11 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
       }
       getComponentTable(type).delete(id);
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    query(...args: any[]): any {
-      if (Array.isArray(args[0]) && typeof args[1] === "function") {
-        queryCallback(args[0] as SimulationComponentType[], args[1]);
-        return undefined;
-      }
-      return queryArray(args as SimulationComponentType[]);
+    query(...types) {
+      return queryArray(types);
+    },
+    forEach(types, callback) {
+      queryCallback(types, callback as (id: EntityId, components: Component[]) => void);
     },
   };
 }
