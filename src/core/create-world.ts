@@ -76,6 +76,7 @@ export function createWorld(input: WorldDefinition) {
           name: identity.name,
           intent: intent.intent,
           locomotion: getLocomotionLabel(componentStore, entity.id),
+          action: getActionLabel(componentStore, entity.id),
           speech: speech.speech,
           position: transform.position,
           contact: {
@@ -141,9 +142,26 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getLocomotionLabel(componentStore: ComponentStore, id: string) {
-    if (componentStore.getComponent(id, "ClimbingTag")) return "climb";
     if (componentStore.getComponent(id, "FlyingTag")) return "fly";
     return "walk";
+  }
+
+  function getActionLabel(componentStore: ComponentStore, id: string) {
+    const climbDismount = componentStore.getComponent(id, "ClimbDismountState");
+    if (climbDismount) return "climb-dismounting";
+
+    const climbIntent = componentStore.getComponent(id, "ClimbIntentState");
+    if (climbIntent?.phase === "approaching") return "climb-approaching";
+    if (climbIntent?.phase === "attached" || componentStore.getComponent(id, "ClimbingTag")) {
+      return "climb-attached";
+    }
+
+    const jumpAction = componentStore.getComponent(id, "JumpActionState");
+    if (jumpAction) return `jump-${jumpAction.phase}`;
+
+    if (componentStore.getComponent(id, "AirborneTag")) return "airborne";
+
+    return "none";
   }
 
   function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {

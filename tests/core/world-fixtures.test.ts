@@ -404,13 +404,14 @@ describe("demo scenario", () => {
 
     for (let index = 0; index < 240; index += 1) {
       scenario.world.step(16);
-      if (scenario.world.snapshot().pets[0].locomotion === "climb") {
+      if (scenario.world.snapshot().pets[0].action === "climb-attached") {
         break;
       }
     }
 
     const alice = scenario.world.snapshot().pets[0];
-    expect(alice.locomotion).toBe("climb");
+    expect(alice.locomotion).toBe("walk");
+    expect(alice.action).toBe("climb-attached");
     expect(alice.position.x).toBeCloseTo(120, 0);
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
       type: "MotionTarget",
@@ -450,12 +451,19 @@ describe("demo scenario", () => {
       "walk",
       "fly",
     ]);
+    expect(snapshot.pets.map((pet) => pet.action)).toEqual([
+      "none",
+      "jump-requested",
+      "none",
+      "none",
+    ]);
     expect(snapshot.pets[0]).toMatchObject({
       id: "pet-a",
       sourceId: "agent-a",
       name: "Alice",
       intent: "idle",
       locomotion: "walk",
+      action: "none",
       speech: null,
     });
     expect(snapshot.pets[0].contact).toEqual({ grounded: false, climbableSurfaceId: null });

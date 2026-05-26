@@ -71,7 +71,9 @@ export function drawWorld(
     context.fillText(pet.name, pet.position.x, pet.position.y - 32);
     context.fillStyle = "#526074";
     context.fillText(
-      `${pet.intent} / ${pet.locomotion}`,
+      pet.action && pet.action !== "none"
+        ? `${pet.intent} / ${pet.locomotion} / ${pet.action}`
+        : `${pet.intent} / ${pet.locomotion}`,
       pet.position.x,
       pet.position.y - 16,
     );

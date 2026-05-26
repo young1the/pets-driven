@@ -130,6 +130,10 @@ export function BehaviorLab({
           <dd>{selectedPet.locomotion}</dd>
         </div>
         <div>
+          <dt>Action</dt>
+          <dd>{selectedPet.action ?? "none"}</dd>
+        </div>
+        <div>
           <dt>Grounded</dt>
           <dd>{contact?.grounded ? "true" : "false"}</dd>
         </div>

@@ -36,6 +36,13 @@ function diffSnapshot(
         label: `locomotion: ${prevPet.locomotion} -> ${pet.locomotion}`,
       });
     }
+    if (prevPet.action !== pet.action) {
+      entries.push({
+        t,
+        petName: pet.name,
+        label: `action: ${prevPet.action ?? "none"} -> ${pet.action ?? "none"}`,
+      });
+    }
     if (prevPet.intent !== pet.intent) {
       entries.push({
         t,
