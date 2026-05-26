@@ -301,20 +301,12 @@ describe("demo scenario", () => {
       type: "CanJump",
       impulse: DEFAULT_PET_JUMP_IMPULSE,
     });
-    expect(scenario.world.getComponent("pet-a", "JumpActionState")).toEqual({
-      type: "JumpActionState",
-      phase: "ready",
-      cooldownMs: 0,
-    });
+    expect(scenario.world.getComponent("pet-a", "JumpActionState")).toBeUndefined();
     expect(scenario.world.getComponent("pet-a", "CanWallClimb")).toEqual({
       type: "CanWallClimb",
       velocity: DEFAULT_PET_CLIMB_VELOCITY,
     });
-    expect(scenario.world.getComponent("pet-a", "ClimbDismountState")).toEqual({
-      type: "ClimbDismountState",
-      phase: "ready",
-      cooldownMs: 0,
-    });
+    expect(scenario.world.getComponent("pet-a", "ClimbDismountState")).toBeUndefined();
     expect(scenario.world.getComponent("pet-a", "WandersOnArrival")).toEqual({
       type: "WandersOnArrival",
       arrivalRadius: 16,

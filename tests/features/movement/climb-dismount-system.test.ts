@@ -31,14 +31,12 @@ describe("climb dismount system", () => {
 
     expect(store.getComponent("pet-a", "ClimbingTag")).toBeUndefined();
     expect(store.getComponent("pet-a", "WalkingTag")).toBeDefined();
-    expect(store.getComponent("pet-a", "ClimbIntentState")?.phase).toBe("attached");
+    expect(store.getComponent("pet-a", "ClimbIntentState")).toBeUndefined();
   });
 
-  it("uses jump dismount state when the pet has the dismount capability", () => {
+  it("creates jump and dismount actions when a jump-capable pet detaches", () => {
     const store = makeCompletedClimber([
       { type: "CanJump" as const, impulse: 0.009 },
-      { type: "JumpActionState" as const, phase: "ready", cooldownMs: 0 },
-      { type: "ClimbDismountState" as const, phase: "ready", cooldownMs: 0 },
     ]);
 
     runClimbDismountSystem(store, 16);
@@ -47,6 +45,26 @@ describe("climb dismount system", () => {
     expect(store.getComponent("pet-a", "WalkingTag")).toBeDefined();
     expect(store.getComponent("pet-a", "JumpActionState")?.phase).toBe("falling");
     expect(store.getComponent("pet-a", "ClimbDismountState")?.phase).toBe("airborne");
+  });
+
+  it("removes dismount state after landing cooldown completes", () => {
+    const store = createComponentStore([{
+      id: "pet-a",
+      components: [
+        {
+          type: "ContactState" as const,
+          grounded: true,
+          climbableSurfaceId: null,
+          climbableSurfacePosition: null,
+        },
+        { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+        { type: "ClimbDismountState" as const, phase: "coolingDown", cooldownMs: 16 },
+      ],
+    }]);
+
+    runClimbDismountSystem(store, 16);
+
+    expect(store.getComponent("pet-a", "ClimbDismountState")).toBeUndefined();
   });
 
   it("keeps climbing while a climb target is still active", () => {

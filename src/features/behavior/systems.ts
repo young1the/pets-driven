@@ -706,7 +706,7 @@ export function runBehaviorDecisionSystem(
       const canJump = components.getComponent(id, "CanJump");
       const jumpState = components.getComponent(id, "JumpActionState");
       const contact = components.getComponent(id, "ContactState");
-      if (canJump && jumpState?.phase === "ready" && (!contact || contact.grounded)) {
+      if (canJump && !jumpState && (!contact || contact.grounded)) {
         pushCandidate(candidates, components, id, now, {
           kind: "request-jump",
           score: scoreJump(personality),
@@ -837,11 +837,11 @@ export function runBehaviorPlanningSystem(
         break;
       case "request-jump": {
         const jumpState = components.getComponent(id, "JumpActionState");
-        if (jumpState) {
+        if (!jumpState) {
           components.setComponent(id, {
             type: "JumpActionState",
             phase: "requested",
-            cooldownMs: jumpState.cooldownMs,
+            cooldownMs: 0,
           });
         }
         // Jump has no arrival event, so intent stays "idle".

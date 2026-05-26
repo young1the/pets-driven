@@ -182,7 +182,12 @@ describe("PlaygroundApp", () => {
     // CanWalk and CanWallClimb expose unit-specific movement fields.
     expect(screen.getAllByText("force").length).toBeGreaterThan(0);
     expect(screen.getAllByText("velocity").length).toBeGreaterThan(0);
-    // JumpActionState shows the phase field value (also present in ClimbDismountState)
+
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo }),
+    );
+    // JumpActionState is transient, so its phase field appears only while the
+    // jump action is active.
     expect(screen.getAllByText("phase").length).toBeGreaterThan(0);
   });
 

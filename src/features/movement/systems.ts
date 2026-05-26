@@ -134,7 +134,9 @@ export function runClimbDismountSystem(
 
       if (climbDismount?.phase === "coolingDown") {
         climbDismount.cooldownMs = Math.max(0, climbDismount.cooldownMs - deltaMs);
-        if (climbDismount.cooldownMs === 0) climbDismount.phase = "ready";
+        if (climbDismount.cooldownMs === 0) {
+          components.removeComponent(id, "ClimbDismountState");
+        }
         return;
       }
 
@@ -151,17 +153,23 @@ export function runClimbDismountSystem(
       }
 
       components.removeComponent(id, "ClimbingTag");
+      components.removeComponent(id, "ClimbIntentState");
       if (components.getComponent(id, "CanWalk")) {
         components.setComponent(id, { type: "WalkingTag" });
       }
 
       const canJump = components.getComponent(id, "CanJump");
-      const jumpAction = components.getComponent(id, "JumpActionState");
-      if (canJump && jumpAction && climbDismount) {
-        jumpAction.phase = "falling";
-        jumpAction.cooldownMs = 0;
-        climbDismount.phase = "airborne";
-        climbDismount.cooldownMs = 0;
+      if (canJump) {
+        components.setComponent(id, {
+          type: "JumpActionState",
+          phase: "falling",
+          cooldownMs: 0,
+        });
+        components.setComponent(id, {
+          type: "ClimbDismountState",
+          phase: "airborne",
+          cooldownMs: 0,
+        });
       }
     },
   );
@@ -270,7 +278,9 @@ export function runJumpSystem(
     (id, [, contact, jump, jumpAction]) => {
       if (jumpAction.phase === "landingCooldown") {
         jumpAction.cooldownMs = Math.max(0, jumpAction.cooldownMs - deltaMs);
-        if (jumpAction.cooldownMs === 0) jumpAction.phase = "ready";
+        if (jumpAction.cooldownMs === 0) {
+          components.removeComponent(id, "JumpActionState");
+        }
         return;
       }
 
