@@ -7,6 +7,7 @@ import { PLAYGROUND_TEXT } from "./playground-text";
 
 const INSPECTED_COMPONENTS: ComponentType[] = [
   "Personality",
+  "Transform",
   "BehaviorDecisionState",
   "IdleConversation",
   "WalkingTag",

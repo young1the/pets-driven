@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDemoScenario } from "@/core/scenario-fixtures";
+import { DEFAULT_PET_JUMP_IMPULSE } from "@/pets/constants/pet-body";
 
 describe("demo scenario", () => {
   it("creates multiple pets in one shared world", () => {
@@ -294,7 +295,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-a", "CanJump")).toEqual({
       type: "CanJump",
-      impulse: 0.009,
+      impulse: DEFAULT_PET_JUMP_IMPULSE,
     });
     expect(scenario.world.getComponent("pet-a", "JumpActionState")).toEqual({
       type: "JumpActionState",
@@ -323,7 +324,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-b", "CanJump")).toEqual({
       type: "CanJump",
-      impulse: 0.009,
+      impulse: DEFAULT_PET_JUMP_IMPULSE,
     });
     expect(scenario.world.getComponent("pet-b", "JumpActionState")).toEqual({
       type: "JumpActionState",
@@ -493,6 +494,64 @@ describe("demo scenario", () => {
     });
   });
 
+  it("moves walking seek-user pets toward the user anchor", () => {
+    const scenario = createDemoScenario({
+      userAnchor: { x: 240, y: 500 },
+    });
+
+    for (let index = 0; index < 90; index += 1) {
+      scenario.world.step(16);
+    }
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.waiting",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Needs approval",
+    });
+
+    const before = scenario.world.snapshot().pets.find((pet) => pet.id === "pet-a")?.position;
+
+    for (let index = 0; index < 45; index += 1) {
+      scenario.world.step(16);
+    }
+
+    const after = scenario.world.snapshot().pets.find((pet) => pet.id === "pet-a")?.position;
+    expect(scenario.world.getComponent("pet-a", "WalkingTag")).toBeDefined();
+    expect(scenario.world.getComponent("pet-a", "ContactState")?.grounded).toBe(true);
+    expect(after?.x).toBeLessThan(before?.x ?? Number.POSITIVE_INFINITY);
+  });
+
+  it("clears stale seek-user targets after walking pets reach the resolved stop target", () => {
+    const scenario = createDemoScenario({
+      userAnchor: { x: 360, y: 500 },
+    });
+
+    for (let index = 0; index < 90; index += 1) {
+      scenario.world.step(16);
+    }
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.waiting",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Needs approval",
+    });
+
+    for (let index = 0; index < 2; index += 1) {
+      scenario.world.step(16);
+    }
+
+    expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    expect(scenario.world.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+  });
+
   it("reacts to a started then completed task lifecycle", () => {
     const scenario = createDemoScenario();
 
@@ -618,5 +677,35 @@ describe("demo scenario", () => {
     expect(hasNewTarget).toBe(true);
     // Must not have kept the completed wander position unchanged.
     expect(motion?.targetPosition).not.toEqual({ x: 600, y: 500 });
+  });
+
+  it("jumps higher than the pet body height", () => {
+    const scenario = createDemoScenario();
+
+    for (let index = 0; index < 90; index += 1) {
+      scenario.world.step(16);
+    }
+
+    const takeoffSnapshot = scenario.world.snapshot();
+    const takeoffPet = takeoffSnapshot.pets.find((pet) => pet.id === "pet-a");
+    const takeoffBody = takeoffSnapshot.bodies.find((body) => body.id === "pet-a");
+    expect(scenario.world.getComponent("pet-a", "ContactState")?.grounded).toBe(true);
+    expect(takeoffPet).toBeDefined();
+    expect(takeoffBody?.height).toBeGreaterThan(0);
+
+    scenario.world.setComponent("pet-a", {
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
+    });
+
+    let minY = takeoffPet!.position.y;
+    for (let index = 0; index < 90; index += 1) {
+      scenario.world.step(16);
+      const pet = scenario.world.snapshot().pets.find((entry) => entry.id === "pet-a");
+      if (pet) minY = Math.min(minY, pet.position.y);
+    }
+
+    expect(takeoffPet!.position.y - minY).toBeGreaterThan(takeoffBody!.height);
   });
 });
