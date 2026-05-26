@@ -41,6 +41,7 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
 // Phase 3: social interaction distances
 const PET_FLEE_WIDTH_MULTIPLIER = 6;
 const PET_APPROACH_STOP_WIDTH_MULTIPLIER = 2.5;
+const DEFAULT_WANDER_BODY_WIDTH = DEFAULT_BEHAVIOR_BODY_WIDTH;
 
 // Phase 4: collision reaction constants
 const PET_ENGAGE_STOP_WIDTH_MULTIPLIER = 2.5;
@@ -514,11 +515,19 @@ function scoreFleeFromPet(p: PersonalityComponent): number {
 export function wanderRadius(
   p: PersonalityComponent,
   range: "near" | "far",
+  bodyWidth = DEFAULT_WANDER_BODY_WIDTH,
 ): [number, number] {
+  const bodyScale = bodyWidth / DEFAULT_WANDER_BODY_WIDTH;
   if (range === "near") {
-    return [100 + p.neuroticism * 40, 220 - p.neuroticism * 40];
+    return [
+      (100 + p.neuroticism * 40) * bodyScale,
+      (220 - p.neuroticism * 40) * bodyScale,
+    ];
   } else {
-    return [200 + p.openness * 100, 400 + p.openness * 200];
+    return [
+      (200 + p.openness * 100) * bodyScale,
+      (400 + p.openness * 200) * bodyScale,
+    ];
   }
 }
 
@@ -529,11 +538,12 @@ function pickWanderPosition(
   random: RandomSource,
   range: "near" | "far",
   personality?: PersonalityComponent,
+  bodyWidth = DEFAULT_WANDER_BODY_WIDTH,
 ): { x: number; y: number } {
   const margin = 48;
   const angle = random.next() * Math.PI * 2;
   const [minR, maxR] = personality
-    ? wanderRadius(personality, range)
+    ? wanderRadius(personality, range, bodyWidth)
     : range === "near"
       ? [60, 140]
       : [200, 400];
@@ -657,7 +667,7 @@ export function runBehaviorDecisionSystem(
           // position instead — intentional simplification. The visual result is similar
           // ("stays nearby") but the pet doesn't resume its original trajectory.
           // Restore-previous-goal semantics deferred to Phase 6 visual review.
-          { kind: "collision-unfazed", score: scoreCollisionUnfazed(personality), build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near", personality) }) },
+          { kind: "collision-unfazed", score: scoreCollisionUnfazed(personality), build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near", personality, petWidth(components, id)) }) },
         ];
 
         const reactionWinner = softmaxSample(reactiveCandidates, personality.neuroticism, random);
@@ -687,13 +697,13 @@ export function runBehaviorDecisionSystem(
       pushCandidate(candidates, components, id, now, {
         kind: "wander-near",
         score: scoreWanderNear(personality),
-        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near", personality) }),
+        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near", personality, petWidth(components, id)) }),
       });
 
       pushCandidate(candidates, components, id, now, {
         kind: "wander-far",
         score: scoreWanderFar(personality),
-        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "far", personality) }),
+        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "far", personality, petWidth(components, id)) }),
       });
 
       if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {

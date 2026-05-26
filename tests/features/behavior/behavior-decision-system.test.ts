@@ -10,6 +10,14 @@ import { createDemoScenario } from "@/core/scenario-fixtures";
 
 const BOUNDS = { width: 960, height: 540 };
 
+function distanceFrom(
+  origin: { x: number; y: number },
+  target: { x: number; y: number } | undefined,
+) {
+  if (!target) return 0;
+  return Math.hypot(target.x - origin.x, target.y - origin.y);
+}
+
 /**
  * Minimal store: one pet with OCEAN personality, a user anchor in Perception,
  * and no jump/climb capabilities. Perfect for testing seek-user / wander selection.
@@ -188,6 +196,54 @@ describe("BehaviorDecisionSystem", () => {
     runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), BOUNDS);
 
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("wander-far");
+  });
+
+  it("uses body-scaled wander radius when choosing the next motion target", () => {
+    const origin = { x: 2000, y: 2000 };
+    const wideBounds = { width: 4000, height: 4000 };
+
+    function makeWanderStore(bodyWidth: number) {
+      return createComponentStore([
+        {
+          id: "pet",
+          components: [
+            { type: "Transform", position: origin },
+            { type: "PhysicsBody", shape: "rectangle", width: bodyWidth, height: 38 },
+            { type: "IntentState", intent: "idle" as const },
+            { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+            { type: "WandersOnArrival", arrivalRadius: 16 },
+            {
+              type: "Perception" as const,
+              userAnchor: null,
+              nearbyPets: [],
+              nearbyClimbables: [],
+              self: { grounded: true, climbing: false, intent: "idle" as const },
+            },
+            {
+              type: "Personality" as const,
+              openness: 0.95,
+              conscientiousness: 0.4,
+              extraversion: 0.1,
+              agreeableness: 0.5,
+              neuroticism: 0.05,
+            },
+          ],
+        },
+      ]);
+    }
+
+    const normal = makeWanderStore(32);
+    const large = makeWanderStore(64);
+
+    runBehaviorDecisionSystem(normal, createManualClock(0), createSeededRandom(1), wideBounds);
+    runBehaviorDecisionSystem(large, createManualClock(0), createSeededRandom(1), wideBounds);
+
+    const normalTarget = normal.getComponent("pet", "BehaviorDecisionToken")?.targetPosition;
+    const largeTarget = large.getComponent("pet", "BehaviorDecisionToken")?.targetPosition;
+
+    expect(normal.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("wander-far");
+    expect(large.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("wander-far");
+    expect(distanceFrom(origin, largeTarget)).toBeGreaterThan(distanceFrom(origin, normalTarget) * 1.8);
   });
 
   it("requests a jump when action-tendency dominates and no jump action is active", () => {
