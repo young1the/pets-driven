@@ -70,7 +70,6 @@ export function createFixturePet(input: {
         targetEntityId: null,
         targetPosition: null,
       },
-      { type: "NavigationState" as const, avoidanceWaypoint: null },
       {
         type: "ContactState" as const,
         grounded: false,

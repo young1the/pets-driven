@@ -241,11 +241,11 @@ export function runWalkSystem(components: ComponentStore, forceGroups: Force[][]
   const forces: Force[] = [];
 
   components.forEach(
-    ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget", "NavigationState"],
-    (id, [transform, , contact, canWalk, motion, navigation]) => {
+    ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget"],
+    (id, [transform, , contact, canWalk, motion]) => {
       if (!contact.grounded) return;
 
-      const target = navigation.avoidanceWaypoint ?? motion.targetPosition;
+      const target = motion.targetPosition;
       if (!target) return;
 
       const dx = target.x - transform.position.x;
@@ -326,9 +326,9 @@ export function runIntentSteeringSystem(
   const forces: Force[] = [];
 
   components.forEach(
-    ["Transform", "FlyingTag", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
-    (id, [transform, , movement, intent, motion, navigation]) => {
-      const target = navigation.avoidanceWaypoint ?? motion.targetPosition;
+    ["Transform", "FlyingTag", "MovementProfile", "IntentState", "MotionTarget"],
+    (id, [transform, , movement, intent, motion]) => {
+      const target = motion.targetPosition;
       if (!target) {
         forces.push({ id, x: 0, y: 0 });
         return;
@@ -471,7 +471,7 @@ export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
 export const WalkSystem: SimulationSystem<WorldStepContext> = {
   name: "WalkSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget", "NavigationState"],
+  reads: ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget"],
   writes: ["PhysicsForce"],
   update(ctx) {
     runWalkSystem(ctx.components, ctx.forceGroups);
@@ -501,7 +501,7 @@ export const WallClimbSystem: SimulationSystem<WorldStepContext> = {
 export const IntentSteeringSystem: SimulationSystem<WorldStepContext> = {
   name: "IntentSteeringSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "FlyingTag", "MovementProfile", "IntentState", "MotionTarget", "NavigationState"],
+  reads: ["Transform", "FlyingTag", "MovementProfile", "IntentState", "MotionTarget"],
   writes: ["PhysicsForce"],
   update(ctx) {
     runIntentSteeringSystem(ctx.components, ctx.forceGroups);

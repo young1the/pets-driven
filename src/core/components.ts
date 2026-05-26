@@ -44,7 +44,6 @@ export type {
 export type {
   CanWalkComponent,
   MovementProfileComponent,
-  NavigationStateComponent,
   WandersOnArrivalComponent,
 } from "@/features/movement/components";
 
@@ -70,7 +69,7 @@ import type { ContactStateComponent } from "@/features/contact/components";
 import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent, PendingReactionComponent } from "@/features/behavior/components";
 import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@/features/stimulus/components";
 import type { WalkingTagComponent, ClimbingTagComponent, FlyingTagComponent, AirborneTagComponent, MotionTargetComponent } from "@/features/movement/components";
-import type { CanWalkComponent, MovementProfileComponent, NavigationStateComponent, WandersOnArrivalComponent } from "@/features/movement/components";
+import type { CanWalkComponent, MovementProfileComponent, WandersOnArrivalComponent } from "@/features/movement/components";
 import type { CanJumpComponent, JumpActionStateComponent } from "@/features/movement/components";
 import type { CanFlyComponent } from "@/features/movement/components";
 import type { CanWallClimbComponent, ClimbableSurfaceComponent, ClimbIntentStateComponent, ClimbDismountStateComponent } from "@/features/movement/components";
@@ -101,7 +100,6 @@ export type Component =
   | JumpActionStateComponent
   | MotionTargetComponent
   | MovementProfileComponent
-  | NavigationStateComponent
   | PetIdentityComponent
   | PhysicsBodyComponent
   | PhysicsMaterialComponent

@@ -12,7 +12,6 @@ function makeFlyer(intent: "idle" | "active" | "seek", targetX: number | null, t
       { type: "MovementProfile" as const, idleForce: 0.001, activeForce: 0.002, seekForce: 0.003 },
       { type: "IntentState" as const, intent },
       { type: "MotionTarget" as const, targetEntityId: null, targetPosition: targetX !== null ? { x: targetX, y: targetY! } : null },
-      { type: "NavigationState" as const, avoidanceWaypoint: null },
     ],
   }]);
 }

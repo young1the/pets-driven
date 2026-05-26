@@ -7,7 +7,6 @@ function makeWalker(
   posX: number,
   targetX: number | null,
   grounded: boolean,
-  avoidanceWaypoint: { x: number; y: number } | null = null,
 ) {
   return createComponentStore([{
     id: "pet-a",
@@ -17,7 +16,6 @@ function makeWalker(
       { type: "ContactState" as const, grounded, climbableSurfaceId: null, climbableSurfacePosition: null },
       { type: "CanWalk" as const, force: 0.001 },
       { type: "MotionTarget" as const, targetEntityId: null, targetPosition: targetX !== null ? { x: targetX, y: 500 } : null },
-      { type: "NavigationState" as const, avoidanceWaypoint },
     ],
   }]);
 }
@@ -51,11 +49,4 @@ describe("walk system", () => {
     expect(forceGroups).toHaveLength(0);
   });
 
-  it("prefers avoidance waypoint over motion target when both are set", () => {
-    // target is to the right, waypoint is to the left
-    const store = makeWalker(100, 300, true, { x: -100, y: 500 });
-    const forceGroups: Force[][] = [];
-    runWalkSystem(store, forceGroups);
-    expect(forceGroups.flat()).toContainEqual({ id: "pet-a", x: -0.001, y: 0 });
-  });
 });
