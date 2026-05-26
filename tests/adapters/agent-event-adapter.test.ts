@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createAgentEvent } from "@/adapters/agent-events/agent-event";
-import { toStimulus } from "@/adapters/agent-events/agent-event-adapter";
+import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 
 describe("agent event adapter", () => {
   it.each(["task.started", "task.waiting", "task.completed"] as const)(
-    "maps %s into the matching stimulus",
+    "maps %s into the matching agent world event",
     (type) => {
       const event = createAgentEvent({
         type,
@@ -13,7 +13,8 @@ describe("agent event adapter", () => {
         summary: "Lifecycle update",
       });
 
-      expect(toStimulus(event)).toEqual({
+      expect(toWorldEvent(event)).toEqual({
+        kind: "agent",
         type,
         sourceId: "agent-a",
         at: 10,

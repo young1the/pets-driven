@@ -1,8 +1,9 @@
-import type { Stimulus } from "@/features/stimulus/stimulus";
+import type { AgentWorldEvent } from "@/features/events/world-event";
 import type { AgentEvent } from "./agent-event";
 
-export function toStimulus(event: AgentEvent): Stimulus {
+export function toWorldEvent(event: AgentEvent): AgentWorldEvent {
   return {
+    kind: "agent",
     type: event.type,
     sourceId: event.sourceId,
     at: event.at,

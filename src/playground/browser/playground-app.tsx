@@ -2,7 +2,7 @@ import {
   createAgentEvent,
   type AgentEvent,
 } from "@/adapters/agent-events/agent-event";
-import { toStimulus } from "@/adapters/agent-events/agent-event-adapter";
+import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createDemoScenario } from "@/core/scenario-fixtures";
 import { ActionTimeline, type TimelineEntry } from "./action-timeline";
@@ -73,7 +73,7 @@ function diffSnapshot(
 export function PlaygroundApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scenarioRef = useRef(createDemoScenario());
-  const [lastStimulus, setLastStimulus] = useState("none");
+  const [lastEventType, setLastEventType] = useState("none");
   const [lastEvent, setLastEvent] = useState<AgentEvent | null>(null);
   const [selectedPetId, setSelectedPetId] = useState("pet-a");
   const [snapshot, setSnapshot] = useState(() =>
@@ -124,11 +124,11 @@ export function PlaygroundApp() {
       summary,
     });
 
-    scenarioRef.current.world.pushStimulus(toStimulus(event));
+    scenarioRef.current.world.pushEvent(toWorldEvent(event));
     scenarioRef.current.world.step(0);
     const nextSnapshot = scenarioRef.current.world.snapshot();
     setSnapshot(nextSnapshot);
-    setLastStimulus(type);
+    setLastEventType(type);
     setLastEvent(event);
 
     const t = scenarioRef.current.clock.now();
@@ -159,7 +159,7 @@ export function PlaygroundApp() {
 
     scenarioRef.current.world.step(0);
     setSnapshot(scenarioRef.current.world.snapshot());
-    setLastStimulus(PLAYGROUND_TEXT.walkDemoStimulus);
+    setLastEventType(PLAYGROUND_TEXT.walkDemoEventType);
   }
 
   function startJumpDemo() {
@@ -176,7 +176,7 @@ export function PlaygroundApp() {
 
     scenarioRef.current.world.step(0);
     setSnapshot(scenarioRef.current.world.snapshot());
-    setLastStimulus(PLAYGROUND_TEXT.jumpDemoStimulus);
+    setLastEventType(PLAYGROUND_TEXT.jumpDemoEventType);
   }
 
   function startWallClimbDemo() {
@@ -194,7 +194,7 @@ export function PlaygroundApp() {
 
     scenarioRef.current.world.step(0);
     setSnapshot(scenarioRef.current.world.snapshot());
-    setLastStimulus(PLAYGROUND_TEXT.wallClimbDemoStimulus);
+    setLastEventType(PLAYGROUND_TEXT.wallClimbDemoEventType);
   }
 
   function switchAliceToWalk() {
@@ -209,7 +209,7 @@ export function PlaygroundApp() {
         <h1>{PLAYGROUND_TEXT.title}</h1>
       </header>
       <ScenarioControls
-        lastStimulus={lastStimulus}
+        lastEventType={lastEventType}
         onSendStarted={() =>
           sendEvent("task.started", PLAYGROUND_SAMPLE_EVENT_SUMMARIES.started)
         }

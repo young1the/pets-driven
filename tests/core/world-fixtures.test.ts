@@ -476,9 +476,10 @@ describe("demo scenario", () => {
     });
   });
 
-  it("reacts to stimuli without needing pet assets", () => {
+  it("reacts to events without needing pet assets", () => {
     const scenario = createDemoScenario();
-    scenario.world.pushStimulus({
+    scenario.world.pushEvent({
+      kind: "agent",
       type: "task.waiting",
       sourceId: "agent-a",
       at: 1,
@@ -495,7 +496,8 @@ describe("demo scenario", () => {
   it("reacts to a started then completed task lifecycle", () => {
     const scenario = createDemoScenario();
 
-    scenario.world.pushStimulus({
+    scenario.world.pushEvent({
+      kind: "agent",
       type: "task.started",
       sourceId: "agent-a",
       at: 10,
@@ -508,7 +510,8 @@ describe("demo scenario", () => {
       intent: "active",
     });
 
-    scenario.world.pushStimulus({
+    scenario.world.pushEvent({
+      kind: "agent",
       type: "task.completed",
       sourceId: "agent-a",
       at: 20,
@@ -532,7 +535,8 @@ describe("demo scenario", () => {
     });
     const before = scenario.world.snapshot().pets[3].position;
 
-    scenario.world.pushStimulus({
+    scenario.world.pushEvent({
+      kind: "agent",
       type: "task.waiting",
       sourceId: "agent-d",
       at: 1,
@@ -550,7 +554,8 @@ describe("demo scenario", () => {
     const userAnchor = { x: 200, y: 200 };
     const scenario = createDemoScenario({ userAnchor });
 
-    scenario.world.pushStimulus({
+    scenario.world.pushEvent({
+      kind: "agent",
       type: "task.waiting",
       sourceId: "agent-d",
       at: 1,
@@ -577,7 +582,8 @@ describe("demo scenario", () => {
       userAnchor: { x: 360, y: 200 },
     });
 
-    scenario.world.pushStimulus({
+    scenario.world.pushEvent({
+      kind: "agent",
       type: "task.waiting",
       sourceId: "agent-d",
       at: 1,

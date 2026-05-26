@@ -1,8 +1,8 @@
 import type { ComponentStore } from "@/core/component-store";
 import type { SimulationSystem } from "@/core/simulation-system";
 import type { WorldStepContext } from "@/core/world-step-context";
+import type { AgentWorldEvent, WorldEvent } from "@/features/events/world-event";
 import type { Vector } from "@/features/physics/components";
-import type { Stimulus } from "@/features/stimulus/stimulus";
 import type { Clock } from "@/shared/time/manual-clock";
 import type { RandomSource } from "@/shared/random/seeded-random";
 import {
@@ -117,10 +117,12 @@ export function runUserInteractionBehaviorSystem(
 // Priority 2: Agent event reactions (task.started, task.waiting, etc.)
 export function runAgentEventBehaviorSystem(
   components: ComponentStore,
-  stimuli: Stimulus[],
+  events: WorldEvent[],
   clock: Clock,
 ): void {
-  if (stimuli.length === 0) return;
+  if (events.length === 0) return;
+  const agentEvents = events.filter((event): event is AgentWorldEvent => event.kind === "agent");
+  if (agentEvents.length === 0) return;
   const now = clock.now();
 
   components.forEach(
@@ -128,26 +130,26 @@ export function runAgentEventBehaviorSystem(
     (id, [agent, intent, speechProfile, speech, activity, completionBehavior]) => {
       if (isClaimed(components, id, "agent-event", now)) return;
 
-      for (const stimulus of stimuli) {
-        if (agent.sourceId !== stimulus.sourceId) continue;
+      for (const event of agentEvents) {
+        if (agent.sourceId !== event.sourceId) continue;
 
-        if (stimulus.type === "task.started") {
+        if (event.type === "task.started") {
           intent.intent = "active";
-          speech.speech = stimulus.summary ?? speechProfile.taskStarted;
-          activity.lastActiveAt = stimulus.at;
+          speech.speech = event.summary ?? speechProfile.taskStarted;
+          activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.started");
         }
 
-        if (stimulus.type === "task.waiting" || stimulus.type === "attention.requested") {
+        if (event.type === "task.waiting" || event.type === "attention.requested") {
           intent.intent = "seek";
-          speech.speech = stimulus.summary ?? speechProfile.attentionNeeded;
-          claim(components, id, "agent-event", now, stimulus.type);
+          speech.speech = event.summary ?? speechProfile.attentionNeeded;
+          claim(components, id, "agent-event", now, event.type);
         }
 
-        if (stimulus.type === "task.completed") {
+        if (event.type === "task.completed") {
           intent.intent = completionBehavior.intentAfterCompletion;
-          speech.speech = stimulus.summary ?? speechProfile.taskCompleted;
-          activity.lastActiveAt = stimulus.at;
+          speech.speech = event.summary ?? speechProfile.taskCompleted;
+          activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
         }
       }
@@ -282,7 +284,7 @@ export function runCollisionBehaviorSystem(
 // Clamped to 0..2000 ms.
 
 function reactionLatencyMs(p: PersonalityComponent, source: ReactionSource): number {
-  const baseMs = source === "collision" ? 400 : source === "stimulus" ? 250 : 200;
+  const baseMs = source === "collision" ? 400 : source === "agent-event" ? 250 : 200;
   const latency = baseMs * (1 + p.neuroticism * 1.5 - p.extraversion * 0.5);
   return Math.max(0, Math.min(2000, latency));
 }
@@ -908,7 +910,7 @@ export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
   reads: ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
   writes: ["IntentState", "SpeechState", "ActivityState", "BehaviorDecisionState"],
   update(ctx) {
-    runAgentEventBehaviorSystem(ctx.components, ctx.stimuli.drain(), ctx.clock);
+    runAgentEventBehaviorSystem(ctx.components, ctx.events.drain(), ctx.clock);
   },
 };
 

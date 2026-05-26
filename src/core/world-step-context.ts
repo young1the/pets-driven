@@ -1,7 +1,7 @@
 import type { ComponentStore } from "@/core/component-store";
 import type { MatterPhysicsWorld } from "@/features/physics/matter-physics-world";
 import type { Force } from "@/features/physics/systems";
-import type { StimulusQueue } from "@/features/stimulus/stimulus-queue";
+import type { WorldEventQueue } from "@/features/events/world-event-queue";
 import type { RandomSource } from "@/shared/random/seeded-random";
 import type { ManualClock } from "@/shared/time/manual-clock";
 
@@ -14,7 +14,7 @@ export type WorldStepContext = {
   deltaMs: number;
   components: ComponentStore;
   physics: MatterPhysicsWorld;
-  stimuli: StimulusQueue;
+  events: WorldEventQueue;
   clock: ManualClock;
   random: RandomSource;
   bounds: { width: number; height: number };

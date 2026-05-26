@@ -53,7 +53,7 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
 
   BEHAVIOR: [
     UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
-    AgentEventBehaviorSystem,       // priority 2: external agent stimuli
+    AgentEventBehaviorSystem,       // priority 2: external agent events
     CollisionBehaviorSystem,        // priority 3: entity overlap avoidance
     BehaviorDecisionSystem,         // priority 4a: personality-weighted next behavior (emits token)
     AutonomousBehaviorSystem,       // priority 4b: idle speech
