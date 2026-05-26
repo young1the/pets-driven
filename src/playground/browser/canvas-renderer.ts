@@ -54,6 +54,17 @@ export function drawWorld(
       drawMotionTargetMarker(context, pet.motionTarget.x, pet.motionTarget.y);
     }
 
+    if (pet.visualCue) {
+      context.textAlign = "center";
+      context.fillStyle = "#dc2626";
+      context.font = "20px Inter, Arial, sans-serif";
+      context.fillText(
+        pet.visualCue.icon,
+        pet.position.x,
+        pet.position.y - (pet.speech ? 80 : 48),
+      );
+    }
+
     context.textAlign = "center";
     context.fillStyle = "#172033";
     context.font = "12px Inter, Arial, sans-serif";

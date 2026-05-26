@@ -13,6 +13,7 @@ import {
 import type { WorldEvent } from "@/features/events/world-event";
 import { createWorldEventQueue } from "@/features/events/world-event-queue";
 import { runPhysicsTransformSyncSystem } from "@/features/physics/systems";
+import type { PetVisualCue } from "@/core/world-snapshot";
 import {
   describeSimulationSystems,
   runSimulationSystems,
@@ -90,8 +91,52 @@ export function createWorld(input: WorldDefinition) {
             const pr = componentStore.getComponent(entity.id, "PendingReaction");
             return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
           })(),
+          visualCue: getPetVisualCue(componentStore, entity.id),
         };
       });
+  }
+
+  function getPetVisualCue(
+    componentStore: ComponentStore,
+    id: string,
+  ): PetVisualCue | null {
+    const pendingReaction = componentStore.getComponent(id, "PendingReaction");
+    if (pendingReaction?.source === "collision") {
+      return {
+        kind: "surprised",
+        icon: "!",
+        label: "surprised by collision",
+      };
+    }
+
+    const decisionState = componentStore.getComponent(id, "BehaviorDecisionState");
+    switch (decisionState?.reason) {
+      case "approach-pet":
+      case "collision-engage":
+        return {
+          kind: "affection",
+          icon: "♥",
+          label: "approaching another pet",
+        };
+      case "flee-from-pet":
+      case "collision-avoid":
+      case "collision-flee":
+        return {
+          kind: "flee",
+          icon: ">>",
+          label: "fleeing",
+        };
+      case "wander-near":
+      case "wander-far":
+      case "collision-unfazed":
+        return {
+          kind: "wander",
+          icon: "♪",
+          label: "wandering",
+        };
+      default:
+        return null;
+    }
   }
 
   function getLocomotionLabel(componentStore: ComponentStore, id: string) {
