@@ -188,6 +188,39 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
   });
 
+  it("does not freeze a non-flying airborne entity during overlap", () => {
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 430 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "WalkingTag" as const },
+          { type: "AirborneTag" as const },
+          { type: "IntentState" as const, intent: "active" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: { x: 240, y: 430 } },
+        ],
+      },
+      {
+        id: "pet-b",
+        components: [
+          { type: "Transform" as const, position: { x: 110, y: 430 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "idle" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+        ],
+      },
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual({ x: 240, y: 430 });
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
+  });
+
   it("expires the collision claim as soon as overlap ends", () => {
     const clock = createManualClock(1000);
     const store = createComponentStore([
