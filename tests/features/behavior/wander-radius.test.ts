@@ -15,16 +15,16 @@ function p(overrides: Partial<Omit<PersonalityComponent, "type">> = {}): Persona
 }
 
 describe("wanderRadius — near", () => {
-  it("N=0 → [100, 220] (widest range)", () => {
+  it("N=0 → [96, 216] from the 3x body-width base", () => {
     const [min, max] = wanderRadius(p({ neuroticism: 0.0 }), "near");
-    expect(min).toBe(100);
-    expect(max).toBe(220);
+    expect(min).toBe(96);
+    expect(max).toBe(216);
   });
 
-  it("N=1 → [140, 180] (narrower but still meaningful)", () => {
+  it("N=1 → [136, 176] (narrower but still meaningful)", () => {
     const [min, max] = wanderRadius(p({ neuroticism: 1.0 }), "near");
-    expect(min).toBe(140); // 100 + 1.0*40
-    expect(max).toBe(180); // 220 - 1.0*40
+    expect(min).toBe(136);
+    expect(max).toBe(176);
   });
 
   it("high-N max < low-N max (tighter circle for anxious pets)", () => {
@@ -56,16 +56,16 @@ describe("wanderRadius — near", () => {
 });
 
 describe("wanderRadius — far", () => {
-  it("O=0 → [200, 400] (standard range)", () => {
+  it("O=0 → [192, 384] from the 3x body-width base", () => {
     const [min, max] = wanderRadius(p({ openness: 0.0 }), "far");
-    expect(min).toBe(200);
-    expect(max).toBe(400);
+    expect(min).toBe(192);
+    expect(max).toBe(384);
   });
 
-  it("O=1 → [300, 600] (extended range for curious pets)", () => {
+  it("O=1 → [288, 576] (extended range for curious pets)", () => {
     const [min, max] = wanderRadius(p({ openness: 1.0 }), "far");
-    expect(min).toBe(300);  // 200 + 1.0*100
-    expect(max).toBe(600);  // 400 + 1.0*200
+    expect(min).toBe(288);
+    expect(max).toBe(576);
   });
 
   it("high-O max > low-O max (curious pets explore further)", () => {
