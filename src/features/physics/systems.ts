@@ -2,6 +2,7 @@ import type { ComponentStore } from "@/core/component-store";
 import type { SimulationSystem } from "@/core/simulation-system";
 import type { WorldStepContext } from "@/core/world-step-context";
 import type { MatterPhysicsWorld } from "./matter-physics-world";
+import type { Clock } from "@/shared/time/manual-clock";
 
 export type Force = {
   id: string;
@@ -60,6 +61,53 @@ export function runPhysicsIntegrationSystem(
   physics.step(deltaMs);
 }
 
+type ActiveCollisionSource = {
+  activeCollisions(): Array<{ bodyAId: string; bodyBId: string }>;
+};
+
+export function runPetCollisionSyncSystem(
+  components: ComponentStore,
+  physics: ActiveCollisionSource,
+  clock: Clock,
+): void {
+  const now = clock.now();
+  const seenEntityIds = new Set<string>();
+
+  for (const pair of physics.activeCollisions()) {
+    syncPetCollision(components, pair.bodyAId, pair.bodyBId, now);
+    syncPetCollision(components, pair.bodyBId, pair.bodyAId, now);
+    seenEntityIds.add(pair.bodyAId);
+    seenEntityIds.add(pair.bodyBId);
+  }
+
+  for (const [id] of components.components("PetCollision")) {
+    if (!seenEntityIds.has(id)) {
+      components.removeComponent(id, "PetCollision");
+    }
+  }
+}
+
+function syncPetCollision(
+  components: ComponentStore,
+  id: string,
+  otherId: string,
+  now: number,
+): void {
+  if (!components.getEntity(id) || !components.getEntity(otherId)) return;
+
+  const otherTransform = components.getComponent(otherId, "Transform");
+  if (!otherTransform) return;
+
+  const existing = components.getComponent(id, "PetCollision");
+  components.setComponent(id, {
+    type: "PetCollision",
+    otherEntityId: otherId,
+    otherPosition: { ...otherTransform.position },
+    startedAt: existing?.otherEntityId === otherId ? existing.startedAt : now,
+    lastSeenAt: now,
+  });
+}
+
 // ── System descriptors ─────────────────────────────────────────────────────
 
 export const PhysicsTransformSyncSystemPre: SimulationSystem<WorldStepContext> = {
@@ -68,6 +116,16 @@ export const PhysicsTransformSyncSystemPre: SimulationSystem<WorldStepContext> =
   writes: ["Transform"],
   update(ctx) {
     runPhysicsTransformSyncSystem(ctx.components, ctx.physics);
+  },
+};
+
+export const PetCollisionSyncSystem: SimulationSystem<WorldStepContext> = {
+  name: "PetCollisionSyncSystem",
+  dependsOn: ["PhysicsTransformSyncSystemPre"],
+  reads: ["PhysicsWorld"],
+  writes: ["PetCollision"],
+  update(ctx) {
+    runPetCollisionSyncSystem(ctx.components, ctx.physics, ctx.clock);
   },
 };
 
@@ -83,7 +141,7 @@ export const PhysicsTransformSyncSystemPost: SimulationSystem<WorldStepContext> 
 
 export const PhysicsIntegrationSystem: SimulationSystem<WorldStepContext> = {
   name: "PhysicsIntegrationSystem",
-  dependsOn: ["WalkSystem", "JumpSystem", "WallClimbSystem", "IntentSteeringSystem", "FlightSystem"],
+  dependsOn: ["WalkSystem", "CollisionEscapeSystem", "JumpSystem", "WallClimbSystem", "IntentSteeringSystem", "FlightSystem"],
   reads: ["PhysicsForce"],
   writes: ["PhysicsWorld"],
   update(ctx) {

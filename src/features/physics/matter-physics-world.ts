@@ -1,4 +1,4 @@
-import { Bodies, Body, Engine, World, type Body as MatterBody } from "matter-js";
+import { Bodies, Body, Engine, Events, World, type Body as MatterBody } from "matter-js";
 import type { WorldSnapshot } from "@/core/world-snapshot";
 
 export type Vector = { x: number; y: number };
@@ -19,6 +19,7 @@ export type MatterPhysicsWorld = {
   setGravityScale(id: string, scale: number): void;
   setPosition(id: string, position: Partial<Vector>): void;
   setVelocity(id: string, velocity: Partial<Vector>): void;
+  activeCollisions(): Array<{ bodyAId: string; bodyBId: string }>;
   step(deltaMs: number): void;
   snapshot(): WorldSnapshot;
 };
@@ -34,8 +35,43 @@ export function createMatterPhysicsWorld(bounds: {
   const bodies = new Map<string, MatterBody>();
   const shapes = new Map<string, BodyShape>();
   const gravityScales = new Map<string, number>();
+  const activeCollisionPairs = new Map<string, { bodyAId: string; bodyBId: string }>();
+
+  function pairKey(bodyAId: string, bodyBId: string) {
+    return bodyAId < bodyBId ? `${bodyAId}\0${bodyBId}` : `${bodyBId}\0${bodyAId}`;
+  }
+
+  function collisionPairFromBodies(bodyA: MatterBody, bodyB: MatterBody) {
+    if (bodyA.isStatic || bodyB.isStatic) return null;
+    const bodyAId = bodyA.label;
+    const bodyBId = bodyB.label;
+    if (!bodies.has(bodyAId) || !bodies.has(bodyBId)) return null;
+    return bodyAId < bodyBId ? { bodyAId, bodyBId } : { bodyAId: bodyBId, bodyBId: bodyAId };
+  }
+
+  Events.on(engine, "collisionStart", (event) => {
+    for (const pair of event.pairs) {
+      const activePair = collisionPairFromBodies(pair.bodyA, pair.bodyB);
+      if (activePair) activeCollisionPairs.set(pairKey(activePair.bodyAId, activePair.bodyBId), activePair);
+    }
+  });
+
+  Events.on(engine, "collisionActive", (event) => {
+    for (const pair of event.pairs) {
+      const activePair = collisionPairFromBodies(pair.bodyA, pair.bodyB);
+      if (activePair) activeCollisionPairs.set(pairKey(activePair.bodyAId, activePair.bodyBId), activePair);
+    }
+  });
+
+  Events.on(engine, "collisionEnd", (event) => {
+    for (const pair of event.pairs) {
+      const activePair = collisionPairFromBodies(pair.bodyA, pair.bodyB);
+      if (activePair) activeCollisionPairs.delete(pairKey(activePair.bodyAId, activePair.bodyBId));
+    }
+  });
 
   function addBody(id: string, body: MatterBody, shape: BodyShape) {
+    body.label = id;
     bodies.set(id, body);
     shapes.set(id, shape);
     World.add(engine.world, body);
@@ -46,7 +82,7 @@ export function createMatterPhysicsWorld(bounds: {
       const body = Bodies.circle(position.x, position.y, radius, {
         collisionFilter: {
           category: COLLISION_CATEGORY_DYNAMIC_BODY,
-          mask: COLLISION_CATEGORY_SURFACE,
+          mask: COLLISION_CATEGORY_SURFACE | COLLISION_CATEGORY_DYNAMIC_BODY,
         },
         frictionAir: 0.08,
         restitution: 0.2,
@@ -57,7 +93,7 @@ export function createMatterPhysicsWorld(bounds: {
       const body = Bodies.rectangle(position.x, position.y, size.width, size.height, {
         collisionFilter: {
           category: COLLISION_CATEGORY_DYNAMIC_BODY,
-          mask: COLLISION_CATEGORY_SURFACE,
+          mask: COLLISION_CATEGORY_SURFACE | COLLISION_CATEGORY_DYNAMIC_BODY,
         },
         friction: material?.friction,
         frictionAir: material?.frictionAir ?? 0.04,
@@ -104,6 +140,9 @@ export function createMatterPhysicsWorld(bounds: {
           y: velocity.y ?? body.velocity.y,
         });
       }
+    },
+    activeCollisions() {
+      return [...activeCollisionPairs.values()];
     },
     step(deltaMs) {
       for (const [id, scale] of gravityScales) {

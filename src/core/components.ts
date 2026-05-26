@@ -5,6 +5,7 @@ export type {
   PhysicsBodyComponent,
   PhysicsMaterialComponent,
   GroundComponent,
+  PetCollisionComponent,
 } from "@/features/physics/components";
 
 export type { ContactStateComponent } from "@/features/contact/components";
@@ -64,7 +65,7 @@ export type {
 } from "@/features/movement/components";
 
 import type { PerceptionComponent } from "@/features/perception/components";
-import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent } from "@/features/physics/components";
+import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent, PetCollisionComponent } from "@/features/physics/components";
 import type { ContactStateComponent } from "@/features/contact/components";
 import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent, PendingReactionComponent } from "@/features/behavior/components";
 import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@/features/agent/components";
@@ -100,6 +101,7 @@ export type Component =
   | JumpActionStateComponent
   | MotionTargetComponent
   | MovementProfileComponent
+  | PetCollisionComponent
   | PetIdentityComponent
   | PhysicsBodyComponent
   | PhysicsMaterialComponent

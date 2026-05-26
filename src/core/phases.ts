@@ -31,6 +31,7 @@ import {
   ClimbAttachmentSystem,
   MotionTargetSystem,
   WalkSystem,
+  CollisionEscapeSystem,
   JumpSystem,
   WallClimbSystem,
   IntentSteeringSystem,
@@ -38,6 +39,7 @@ import {
 } from "@/features/movement/systems";
 import {
   PhysicsTransformSyncSystemPre,
+  PetCollisionSyncSystem,
   PhysicsTransformSyncSystemPost,
   PhysicsIntegrationSystem,
 } from "@/features/physics/systems";
@@ -47,6 +49,7 @@ export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "
 export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepContext>>> = {
   PRE_UPDATE: [
     PhysicsTransformSyncSystemPre,
+    PetCollisionSyncSystem,
     ContactSystem,
     PerceptionSystem,
   ],
@@ -72,6 +75,7 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
 
   POST_UPDATE: [
     WalkSystem,
+    CollisionEscapeSystem,
     JumpSystem,
     WallClimbSystem,
     IntentSteeringSystem,

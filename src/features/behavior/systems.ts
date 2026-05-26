@@ -182,6 +182,7 @@ export function runCollisionBehaviorSystem(
     targetY: number | null;
     motion: { targetEntityId: string | null; targetPosition: { x: number; y: number } | null };
   };
+  type CollisionCandidate = { id: string; x: number; y: number };
 
   const entities: Collidable[] = [];
   components.forEach(
@@ -219,7 +220,7 @@ export function runCollisionBehaviorSystem(
     const existing = components.getComponent(entity.id, "BehaviorDecisionState");
     if (!existing || existing.source !== "collision" || existing.expiresAt <= now) continue;
 
-    const stillOverlapping = entities.some(
+    const stillOverlapping = !!components.getComponent(entity.id, "PetCollision") || entities.some(
       (c) =>
         c.id !== entity.id &&
         Math.abs(c.x - entity.x) < entity.halfW + c.halfW &&
@@ -243,12 +244,14 @@ export function runCollisionBehaviorSystem(
     // Skip if a reaction is already pending (avoid overwriting mid-deliberation).
     if (components.getComponent(entity.id, "PendingReaction")) continue;
 
-    const collision = entities.find(
-      (c) =>
-        c.id !== entity.id &&
-        Math.abs(c.x - entity.x) < entity.halfW + c.halfW &&
-        Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
-    );
+    const collision: CollisionCandidate | undefined =
+      matterPetCollisionCandidate(components, entity, entities) ??
+      entities.find(
+        (c) =>
+          c.id !== entity.id &&
+          Math.abs(c.x - entity.x) < entity.halfW + c.halfW &&
+          Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
+      );
     if (!collision) continue;
     if (isEscapingCollisionFlee(components, entity, collision)) continue;
 
@@ -289,6 +292,22 @@ export function runCollisionBehaviorSystem(
 // High N (anxiety) → longer freeze before reacting.
 // High E (extraversion) → snappier reaction.
 // Clamped to 0..2000 ms.
+
+function matterPetCollisionCandidate(
+  components: ComponentStore,
+  entity: { id: string },
+  entities: Array<{ id: string; x: number; y: number }>,
+): { id: string; x: number; y: number } | undefined {
+  const petCollision = components.getComponent(entity.id, "PetCollision");
+  if (!petCollision) return undefined;
+
+  const liveEntity = entities.find((candidate) => candidate.id === petCollision.otherEntityId);
+  return liveEntity ?? {
+    id: petCollision.otherEntityId,
+    x: petCollision.otherPosition.x,
+    y: petCollision.otherPosition.y,
+  };
+}
 
 function isEscapingCollisionFlee(
   components: ComponentStore,
@@ -337,6 +356,10 @@ function scoreCollisionEngage(p: PersonalityComponent): number {
 function scoreCollisionAvoid(): number {
   // Always a neutral fallback — perpendicular sidestep
   return 0.4;
+}
+
+function scoreCollisionJump(p: PersonalityComponent): number {
+  return 1.2 + p.extraversion * 0.45 + p.openness * 0.25 + p.neuroticism * 0.15;
 }
 
 function scoreCollisionStay(p: PersonalityComponent): number {
@@ -784,6 +807,14 @@ export function runBehaviorDecisionSystem(
         const reactionDistance = petWidth(components, id) * COLLISION_REACTION_WIDTH_MULTIPLIER;
         const engageStopDistance = petWidth(components, id) * PET_ENGAGE_STOP_WIDTH_MULTIPLIER;
         const stillOverlapping = isPendingReactionStillOverlapping(components, id, pendingReaction);
+        const canCollisionJump =
+          stillOverlapping &&
+          !!components.getComponent(id, "CanJump") &&
+          !components.getComponent(id, "JumpActionState") &&
+          !!components.getComponent(id, "WalkingTag") &&
+          !components.getComponent(id, "FlyingTag") &&
+          !components.getComponent(id, "ClimbingTag") &&
+          (components.getComponent(id, "ContactState")?.grounded ?? true);
 
         const fleeTarget = {
           x: clamp(petX + movementAway.x * reactionDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
@@ -808,6 +839,13 @@ export function runBehaviorDecisionSystem(
           { kind: "collision-engage",  score: scoreCollisionEngage(personality),  build: () => ({ targetPosition: engageTarget }) },
           { kind: "collision-avoid",   score: scoreCollisionAvoid(),              build: () => ({ targetPosition: avoidTarget }) },
         ];
+        if (canCollisionJump) {
+          reactiveCandidates.push({
+            kind: "collision-jump",
+            score: scoreCollisionJump(personality),
+            build: () => ({ targetPosition: fleeTarget }),
+          });
+        }
         if (!stillOverlapping) {
           reactiveCandidates.push({
             kind: "collision-stay",
@@ -1046,8 +1084,16 @@ export function runBehaviorPlanningSystem(
       case "collision-flee":
       case "collision-engage":
       case "collision-avoid":
+      case "collision-jump":
       case "collision-stay":
       case "collision-unfazed":
+        if (token.kind === "collision-jump" && !components.getComponent(id, "JumpActionState")) {
+          components.setComponent(id, {
+            type: "JumpActionState",
+            phase: "requested",
+            cooldownMs: 0,
+          });
+        }
         if (token.targetPosition) {
           components.setComponent(id, {
             type: "MotionTarget",
@@ -1115,6 +1161,7 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "Personality",
     "BehaviorDecisionState",
     "PendingReaction",
+    "PetCollision",
     "ClimbingTag",
     "AirborneTag",
     "ClimbIntentState",
