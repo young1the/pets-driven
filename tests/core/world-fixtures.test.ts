@@ -462,6 +462,69 @@ describe("demo scenario", () => {
     expect(snapshot.pets[0].motionTarget).toBeNull();
   });
 
+  it("derives visual cues from current pet behavior", () => {
+    const scenario = createDemoScenario();
+    scenario.world.setComponent("pet-a", {
+      type: "BehaviorDecisionState",
+      source: "autonomous",
+      decidedAt: 0,
+      expiresAt: 1000,
+      reason: "approach-pet",
+      lastAutonomousReason: "approach-pet",
+      lastAutonomousAt: 0,
+    });
+    scenario.world.setComponent("pet-b", {
+      type: "BehaviorDecisionState",
+      source: "autonomous",
+      decidedAt: 0,
+      expiresAt: 1000,
+      reason: "flee-from-pet",
+      lastAutonomousReason: "flee-from-pet",
+      lastAutonomousAt: 0,
+    });
+    scenario.world.setComponent("pet-c", {
+      type: "BehaviorDecisionState",
+      source: "autonomous",
+      decidedAt: 0,
+      expiresAt: 1000,
+      reason: "wander-far",
+      lastAutonomousReason: "wander-far",
+      lastAutonomousAt: 0,
+    });
+    scenario.world.setComponent("pet-d", {
+      type: "PendingReaction",
+      source: "collision",
+      triggeredAt: 0,
+      reactsAt: 1000,
+      context: {},
+    });
+
+    const cues = new Map(
+      scenario.world.snapshot().pets.map((pet) => [pet.id, pet.visualCue]),
+    );
+
+    expect(cues.get("pet-a")).toEqual({
+      kind: "affection",
+      icon: "♥",
+      label: "approaching another pet",
+    });
+    expect(cues.get("pet-b")).toEqual({
+      kind: "flee",
+      icon: ">>",
+      label: "fleeing",
+    });
+    expect(cues.get("pet-c")).toEqual({
+      kind: "wander",
+      icon: "♪",
+      label: "wandering",
+    });
+    expect(cues.get("pet-d")).toEqual({
+      kind: "surprised",
+      icon: "!",
+      label: "surprised by collision",
+    });
+  });
+
   it("aligns pet snapshot positions with their body positions", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();

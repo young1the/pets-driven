@@ -32,6 +32,14 @@ export type PetSnapshot = {
   decision: { source: string; reason: string; decidedAt: number } | null;
   /** Active deliberation timer, or null if no pending reaction. */
   pendingReaction: { source: string; reactsAt: number } | null;
+  /** Presentation cue derived from current behavior, or null when quiet. */
+  visualCue?: PetVisualCue | null;
+};
+
+export type PetVisualCue = {
+  kind: "affection" | "flee" | "wander" | "surprised";
+  icon: string;
+  label: string;
 };
 
 export type ClimbableSurfaceSnapshot = {

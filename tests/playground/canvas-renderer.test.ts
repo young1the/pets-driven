@@ -190,6 +190,101 @@ describe("canvas renderer", () => {
     expect(context.fillText).toHaveBeenCalledWith("Needs approval", 100, 72);
   });
 
+  it("draws visual behavior cues above pets", () => {
+    const context = {
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      rect: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      fillText: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [],
+        climbableSurfaces: [],
+        pets: [
+          {
+            id: "pet-a",
+            sourceId: "agent-a",
+            name: "Alice",
+            intent: "idle",
+            locomotion: "walk",
+            speech: null,
+            position: { x: 100, y: 120 },
+            contact: { grounded: false, climbableSurfaceId: null },
+            motionTarget: null,
+            decision: null,
+            pendingReaction: null,
+            visualCue: {
+              kind: "affection",
+              icon: "♥",
+              label: "approaching another pet",
+            },
+          },
+        ],
+      },
+      {},
+      0,
+    );
+
+    expect(context.fillText).toHaveBeenCalledWith("♥", 100, 72);
+  });
+
+  it("draws visual behavior cues above speech bubbles", () => {
+    const context = {
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      rect: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      fillText: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [],
+        climbableSurfaces: [],
+        pets: [
+          {
+            id: "pet-a",
+            sourceId: "agent-a",
+            name: "Alice",
+            intent: "idle",
+            locomotion: "walk",
+            speech: "Needs approval",
+            position: { x: 100, y: 120 },
+            contact: { grounded: false, climbableSurfaceId: null },
+            motionTarget: null,
+            decision: null,
+            pendingReaction: null,
+            visualCue: {
+              kind: "surprised",
+              icon: "!",
+              label: "surprised by collision",
+            },
+          },
+        ],
+      },
+      {},
+      0,
+    );
+
+    expect(context.fillText).toHaveBeenCalledWith("!", 100, 40);
+    expect(context.fillText).toHaveBeenCalledWith("Needs approval", 100, 72);
+  });
+
   it("draws a ground contact indicator under a grounded pet", () => {
     const context = {
       clearRect: vi.fn(),
