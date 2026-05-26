@@ -59,6 +59,7 @@ export type BehaviorDecisionKind =
   | "collision-flee"
   | "collision-engage"
   | "collision-avoid"
+  | "collision-stay"
   | "collision-unfazed";
 
 export type BehaviorDecisionTokenComponent = {
@@ -86,7 +87,7 @@ export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
  * Written by CollisionBehaviorSystem when an overlap is detected.
  * The pet "freezes" until `now >= reactsAt`, at which point
  * BehaviorDecisionSystem reads this component and routes the pet
- * into the reactive candidate pool (collision-flee / engage / avoid / unfazed).
+ * into the reactive candidate pool (collision-flee / engage / avoid / stay / unfazed).
  * Removed immediately after the reaction token is emitted.
  */
 export type ReactionSource = "collision" | "agent-event" | "arrival";

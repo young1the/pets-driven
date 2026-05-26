@@ -35,12 +35,12 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "collision-flee": 750,
   "collision-engage": 1_500,
   "collision-avoid": 750,
+  "collision-stay": 1_500,
   "collision-unfazed": 500,
 };
 
 // Phase 3: social interaction distances
 const PET_FLEE_WIDTH_MULTIPLIER = 6;
-const PET_APPROACH_STOP_WIDTH_MULTIPLIER = 2.5;
 const DEFAULT_WANDER_BODY_WIDTH = DEFAULT_BEHAVIOR_BODY_WIDTH;
 const WANDER_BASE_BODY_MULTIPLIER = 3;
 
@@ -307,6 +307,11 @@ function scoreCollisionEngage(p: PersonalityComponent): number {
 function scoreCollisionAvoid(): number {
   // Always a neutral fallback — perpendicular sidestep
   return 0.4;
+}
+
+function scoreCollisionStay(p: PersonalityComponent): number {
+  // A + calm introversion → comfortable staying close without re-approaching.
+  return 0.05 + p.agreeableness * 0.3 + (1 - p.extraversion) * 1 + (1 - p.neuroticism) * 0.1;
 }
 
 function scoreCollisionUnfazed(p: PersonalityComponent): number {
@@ -660,6 +665,7 @@ export function runBehaviorDecisionSystem(
           { kind: "collision-flee",    score: scoreCollisionFlee(personality),    build: () => ({ targetPosition: fleeTarget }) },
           { kind: "collision-engage",  score: scoreCollisionEngage(personality),  build: () => ({ targetPosition: engageTarget }) },
           { kind: "collision-avoid",   score: scoreCollisionAvoid(),              build: () => ({ targetPosition: avoidTarget }) },
+          { kind: "collision-stay",    score: scoreCollisionStay(personality),     build: () => ({}) },
           // unfazedTarget is computed lazily in build() so random is consumed only
           // if this candidate wins, keeping the softmax r-draw at position 1.
           //
@@ -757,34 +763,16 @@ export function runBehaviorDecisionSystem(
       const nearbyPets = perception?.nearbyPets ?? [];
       if (nearbyPets.length > 0) {
         const nearestPet = nearbyPets[0];
-        const approachStopDistance = petWidth(components, id) * PET_APPROACH_STOP_WIDTH_MULTIPLIER;
-
-        // approach-pet: only meaningful when the pet is meaningfully farther than
-        // the social stop distance. Otherwise the two pets are already in personal
-        // space and "approaching" would either collapse into a collision (target =
-        // other's centre) or oscillate around the stop distance. Excluding this
-        // candidate when close lets wander / idle pick up and the pair drift apart
-        // naturally.
-        if (nearestPet.distance > approachStopDistance) {
-          // Walk toward the other pet but stop a body-width-scaled distance short.
-          // Same formula as collision-engage: otherPos + (self→other unit)·D.
-          const towardSelfDirX = petX - nearestPet.position.x;
-          const towardSelfDirY = petY - nearestPet.position.y;
-          const towardSelfLen = Math.hypot(towardSelfDirX, towardSelfDirY) || 1;
-          const approachPos = {
-            x: clamp(nearestPet.position.x + (towardSelfDirX / towardSelfLen) * approachStopDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-            y: clamp(nearestPet.position.y + (towardSelfDirY / towardSelfLen) * approachStopDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
-          };
-          pushCandidate(candidates, components, id, now, {
-            kind: "approach-pet",
-            score: scoreApproachPet(personality),
-            // Planning sets MotionTarget to the snapshot position (not entity-tracked).
-            build: () => ({
-              targetEntityId: nearestPet.id,
-              targetPosition: approachPos,
-            }),
-          });
-        }
+        pushCandidate(candidates, components, id, now, {
+          kind: "approach-pet",
+          score: scoreApproachPet(personality),
+          // Keep the entity id so MotionTargetSystem can track the moving pet
+          // until a collision reaction interrupts the approach.
+          build: () => ({
+            targetEntityId: nearestPet.id,
+            targetPosition: { ...nearestPet.position },
+          }),
+        });
 
         const fleeDirX = petX - nearestPet.position.x;
         const fleeDirY = petY - nearestPet.position.y;
@@ -875,8 +863,15 @@ export function runBehaviorPlanningSystem(
       case "idle-stay":
         // Intentional no-op: intent stays idle, target stays null.
         break;
-      // Phase 3 — social movements (position snapshot; not entity-tracked)
+      // Phase 3 — social movements.
       case "approach-pet":
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: token.targetEntityId ?? null,
+          targetPosition: token.targetPosition!,
+        });
+        setPetIntent(components, id, "active");
+        break;
       case "flee-from-pet":
         components.setComponent(id, {
           type: "MotionTarget",
@@ -889,6 +884,7 @@ export function runBehaviorPlanningSystem(
       case "collision-flee":
       case "collision-engage":
       case "collision-avoid":
+      case "collision-stay":
       case "collision-unfazed":
         if (token.targetPosition) {
           components.setComponent(id, {
@@ -897,6 +893,13 @@ export function runBehaviorPlanningSystem(
             targetPosition: token.targetPosition,
           });
           setPetIntent(components, id, "active");
+        } else if (token.kind === "collision-stay") {
+          components.setComponent(id, {
+            type: "MotionTarget",
+            targetEntityId: null,
+            targetPosition: null,
+          });
+          setPetIntent(components, id, "idle");
         }
         break;
     }

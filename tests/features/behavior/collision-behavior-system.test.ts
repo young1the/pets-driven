@@ -565,12 +565,52 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({ x: 150, y: 480 });
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
   });
+
+  it("calm agreeable pet can select collision-stay at reactsAt", () => {
+    const store = makeReactionStore(0.1, 0.1, 0.95);
+
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-stay");
+  });
+
+  it("collision-stay Planning keeps the pet idle without a target", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          { type: "IntentState" as const, intent: "idle" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "Perception" as const,
+            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "idle" as const },
+          },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "collision-stay" as const, decidedAt: 0, consumed: false,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "MotionTarget")).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    expect(store.getComponent("pet", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
+  });
 });
 
 // ── Phase 4: Reactive candidate distribution and reachability ─────────────
 //
 // Verifies that the softmax weights over collision-* candidates produce
-// statistically correct distributions, and that all four outcomes are
+// statistically correct distributions, and that the reactive outcomes are
 // reachable under the right personality configuration.
 
 describe("Phase 4 — reactive candidate distribution (1000 samples)", () => {
@@ -621,7 +661,7 @@ describe("Phase 4 — reactive candidate distribution (1000 samples)", () => {
   });
 });
 
-describe("Phase 4 — all four reactive outcomes are reachable", () => {
+describe("Phase 4 — reactive outcomes are reachable", () => {
   /**
    * collision-avoid (score = 0.40 constant) wins when flee, engage, and unfazed
    * are all suppressed: low-E (0.2), mid-N (0.5), mid-A (0.5).

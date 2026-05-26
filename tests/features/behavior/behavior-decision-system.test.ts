@@ -81,8 +81,8 @@ function makeNearbyStore(prefOverride: Partial<{
   agreeableness: number;
   neuroticism: number;
 }> = {}) {
-  // other-pet is at distance 150 (well beyond the default 80px social stop distance)
-  // so the "approach-pet" candidate is included and we can verify selection.
+  // other-pet is at distance 150 so the "approach-pet" candidate is included
+  // and we can verify selection.
   return createComponentStore([
     {
       id: "other-pet",
@@ -769,22 +769,20 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("flee-from-pet");
   });
 
-  it("stores approach-pet targetPosition at the default body-scaled stop distance from the nearby pet", () => {
+  it("stores approach-pet as an entity-tracked target at the nearby pet position", () => {
     // Pet at (200,200), other at (350,200), distance=150.
-    // approach target = other + (self→other unit)·80 = (350 + (-1)·80, 200) = (270, 200).
-    // The pet walks from 200→270, stopping 80px short of other (at 350).
+    // approach target follows the other pet's entity id and current position,
+    // allowing the pet to continue until collision interrupts the behavior.
     const store = makeNearbyStore({ extraversion: 0.9, agreeableness: 0.9, neuroticism: 0.1 });
     runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), BOUNDS);
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("approach-pet");
-    expect(token?.targetPosition?.x).toBeCloseTo(270, 0);
+    expect(token?.targetEntityId).toBe("other-pet");
+    expect(token?.targetPosition?.x).toBeCloseTo(350, 0);
     expect(token?.targetPosition?.y).toBeCloseTo(200, 0);
-    // Target must NOT be on top of the other pet (the old behavior that caused
-    // pets to immediately collide after approaching).
-    expect(token?.targetPosition?.x).toBeLessThan(350);
   });
 
-  it("scales social approach distance from the pet body width", () => {
+  it("does not scale approach-pet target away from the tracked entity", () => {
     const store = makeNearbyStore({ extraversion: 0.9, agreeableness: 0.9, neuroticism: 0.1 });
     store.setComponent("pet", {
       type: "PhysicsBody",
@@ -797,7 +795,8 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("approach-pet");
-    expect(token?.targetPosition?.x).toBeCloseTo(250, 0);
+    expect(token?.targetEntityId).toBe("other-pet");
+    expect(token?.targetPosition?.x).toBeCloseTo(350, 0);
   });
 
   it("scales flee distance from the pet body width", () => {
@@ -838,11 +837,7 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
     expect(token?.targetPosition?.y).toBeCloseTo(200, 0);
   });
 
-  // Regression: when two pets are already within social distance, approach-pet
-  // should NOT be a candidate. Previously approach-pet always targeted the
-  // other pet's centre, which made any close pair walk into each other and
-  // get stuck in a collision/engage/approach oscillation.
-  it("does not emit approach-pet when the nearby pet is already within social distance", () => {
+  it("can emit approach-pet when the nearby pet is close but not colliding yet", () => {
     const store = createComponentStore([
       { id: "other-pet", components: [{ type: "Transform", position: { x: 270, y: 200 } }] },
       {
@@ -854,7 +849,6 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
           {
             type: "Perception" as const,
             userAnchor: null,
-            // distance = 70 < default body-scaled stop distance (80)
             nearbyPets: [{ id: "other-pet", position: { x: 270, y: 200 }, distance: 70 }],
             nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
@@ -868,38 +862,12 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
       },
     ]);
 
-    // High-E high-A would normally make approach-pet dominant. With the close-
-    // distance gate, it must not appear regardless of seed.
-    for (let seed = 0; seed < 50; seed++) {
-      const fresh = createComponentStore([
-        { id: "other-pet", components: [{ type: "Transform", position: { x: 270, y: 200 } }] },
-        {
-          id: "pet",
-          components: [
-            { type: "Transform", position: { x: 200, y: 200 } },
-            { type: "IntentState", intent: "idle" as const },
-            { type: "MotionTarget", targetEntityId: null, targetPosition: null },
-            {
-              type: "Perception" as const,
-              userAnchor: null,
-              nearbyPets: [{ id: "other-pet", position: { x: 270, y: 200 }, distance: 70 }],
-              nearbyClimbables: [],
-              self: { grounded: false, climbing: false, intent: "idle" as const },
-            },
-            {
-              type: "Personality" as const,
-              openness: 0.5, conscientiousness: 0.4,
-              extraversion: 0.9, agreeableness: 0.9, neuroticism: 0.1,
-            },
-          ],
-        },
-      ]);
-      runBehaviorDecisionSystem(fresh, createManualClock(0), createSeededRandom(seed * 1013 + 7), BOUNDS);
-      const kind = fresh.getComponent("pet", "BehaviorDecisionToken")?.kind;
-      expect(kind).not.toBe("approach-pet");
-    }
-    // Silence unused-var lint on the outer `store` variable.
-    expect(store.getComponent("pet", "Perception")?.nearbyPets[0].distance).toBe(70);
+    runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), BOUNDS);
+
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("approach-pet");
+    expect(token?.targetEntityId).toBe("other-pet");
+    expect(token?.targetPosition).toEqual({ x: 270, y: 200 });
   });
 });
 
@@ -936,9 +904,19 @@ describe("BehaviorPlanningSystem — Phase 3 social tokens", () => {
 
   it("materializes an approach-pet token into MotionTarget with intent=active", () => {
     const store = makeSocialTokenStore("approach-pet", { x: 250, y: 200 });
+    store.setComponent("pet", {
+      type: "BehaviorDecisionToken",
+      kind: "approach-pet",
+      decidedAt: 0,
+      consumed: false,
+      targetEntityId: "other-pet",
+      targetPosition: { x: 250, y: 200 },
+    });
+
     runBehaviorPlanningSystem(store, createManualClock(0));
+
     const motion = store.getComponent("pet", "MotionTarget");
-    expect(motion?.targetEntityId).toBeNull();
+    expect(motion?.targetEntityId).toBe("other-pet");
     expect(motion?.targetPosition).toEqual({ x: 250, y: 200 });
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);

@@ -133,4 +133,35 @@ describe("motion target system", () => {
 
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual({ x: 300, y: 200 });
   });
+
+  it("updates active pet entity targets from nearby pet perception", () => {
+    const store = createComponentStore([{
+      id: "pet-a",
+      components: [
+        { type: "IntentState", intent: "active" as const },
+        { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 300, y: 200 } },
+        {
+          type: "Perception" as const,
+          userAnchor: null,
+          nearbyPets: [{ id: "pet-b", position: { x: 360, y: 210 }, distance: 120 }],
+          nearbyClimbables: [],
+          self: { grounded: true, climbing: false, intent: "active" as const },
+        },
+        {
+          type: "Personality" as const,
+          openness: 0.5,
+          conscientiousness: 0.5,
+          extraversion: 0.8,
+          agreeableness: 0.8,
+          neuroticism: 0.1,
+        },
+      ],
+    }]);
+
+    runMotionTargetSystem(store, { next: () => 0.5 }, { width: 960, height: 540 });
+
+    const motion = store.getComponent("pet-a", "MotionTarget");
+    expect(motion?.targetEntityId).toBe("pet-b");
+    expect(motion?.targetPosition).toEqual({ x: 360, y: 210 });
+  });
 });

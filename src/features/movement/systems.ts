@@ -198,6 +198,15 @@ export function runMotionTargetSystem(
   bounds: { width: number; height: number },
 ): void {
   components.forEach(["IntentState", "MotionTarget"], (_id, [intent, motion]) => {
+    if (intent.intent === "active" && motion.targetEntityId) {
+      const perception = components.getComponent(_id, "Perception");
+      const targetPet = perception?.nearbyPets.find((pet) => pet.id === motion.targetEntityId);
+      if (targetPet) {
+        motion.targetPosition = { ...targetPet.position };
+      }
+      return;
+    }
+
     if (intent.intent === "seek") {
       const perception = components.getComponent(_id, "Perception");
       const anchor = perception?.userAnchor ?? null;
