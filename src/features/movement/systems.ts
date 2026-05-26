@@ -30,6 +30,14 @@ const SEEK_USER_STOP_DISTANCE = 80;
 // ── MOVEMENT_STATE phase ───────────────────────────────────────────────────
 
 export function runLocomotionModeSystem(components: ComponentStore): void {
+  const occupiedSurfaces = new Set<string>();
+
+  components.forEach(["ClimbingTag", "ContactState"], (_id, [, contact]) => {
+    if (contact.climbableSurfaceId) {
+      occupiedSurfaces.add(contact.climbableSurfaceId);
+    }
+  });
+
   components.forEach(
     ["ContactState", "MotionTarget"],
     (id, [contact, motion]) => {
@@ -47,9 +55,16 @@ export function runLocomotionModeSystem(components: ComponentStore): void {
 
       const climbIntent = components.getComponent(id, "ClimbIntentState");
       const climbing = components.getComponent(id, "ClimbingTag");
+      const occupiedByAnother =
+        !!contact.climbableSurfaceId &&
+        !climbing &&
+        occupiedSurfaces.has(contact.climbableSurfaceId);
 
-      if (canEnterClimb(contact, motion, climbIntent)) {
+      if (!occupiedByAnother && canEnterClimb(contact, motion, climbIntent)) {
         components.setComponent(id, { type: "ClimbingTag" });
+        if (contact.climbableSurfaceId) {
+          occupiedSurfaces.add(contact.climbableSurfaceId);
+        }
       } else if (climbing && !contact.climbableSurfaceId) {
         components.removeComponent(id, "ClimbingTag");
         if (!components.getComponent(id, "FlyingTag")) {

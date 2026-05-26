@@ -533,6 +533,25 @@ describe("demo scenario", () => {
     });
   });
 
+  it("shows two hearts after a successful pet chase", () => {
+    const scenario = createDemoScenario();
+    scenario.world.setComponent("pet-a", {
+      type: "BehaviorDecisionState",
+      source: "autonomous",
+      decidedAt: 0,
+      expiresAt: 1000,
+      reason: "approach-pet-success",
+      lastAutonomousReason: "approach-pet",
+      lastAutonomousAt: 0,
+    });
+
+    expect(scenario.world.snapshot().pets[0].visualCue).toEqual({
+      kind: "affection",
+      icon: "♥♥",
+      label: "caught another pet",
+    });
+  });
+
   it("aligns pet snapshot positions with their body positions", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();

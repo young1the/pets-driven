@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@/core/component-store";
 import { runArrivalBehaviorSystem } from "@/features/behavior/systems";
+import { createManualClock } from "@/shared/time/manual-clock";
 
 describe("arrival behavior system", () => {
   it("clears position target and resets intent to idle when walk pet arrives within x radius", () => {
@@ -175,5 +176,95 @@ describe("arrival behavior system", () => {
     runArrivalBehaviorSystem(store);
 
     expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("seek");
+  });
+
+  it("marks approach-pet successful when it catches the target pet", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "IntentState", intent: "active" as const },
+          { type: "Transform", position: { x: 100, y: 100 } },
+          { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 140, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [{ id: "pet-b", position: { x: 140, y: 100 }, distance: 40 }],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "active" as const },
+          },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "approach-pet" as const,
+            decidedAt: 1000,
+            consumed: true,
+            targetEntityId: "pet-b",
+            targetPosition: { x: 140, y: 100 },
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous" as const,
+            decidedAt: 1800,
+            expiresAt: 2300,
+            reason: "approach-pet",
+            lastAutonomousReason: "approach-pet",
+            lastAutonomousAt: 1000,
+          },
+        ],
+      },
+    ]);
+
+    runArrivalBehaviorSystem(store, createManualClock(1800));
+
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("approach-pet-success");
+  });
+
+  it("abandons approach-pet after the chase time limit", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "IntentState", intent: "active" as const },
+          { type: "Transform", position: { x: 100, y: 100 } },
+          { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 500, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [{ id: "pet-b", position: { x: 500, y: 100 }, distance: 400 }],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "active" as const },
+          },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "approach-pet" as const,
+            decidedAt: 1000,
+            consumed: true,
+            targetEntityId: "pet-b",
+            targetPosition: { x: 500, y: 100 },
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous" as const,
+            decidedAt: 5000,
+            expiresAt: 5500,
+            reason: "approach-pet",
+            lastAutonomousReason: "approach-pet",
+            lastAutonomousAt: 1000,
+          },
+        ],
+      },
+    ]);
+
+    runArrivalBehaviorSystem(store, createManualClock(5101));
+
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBeLessThanOrEqual(5101);
   });
 });

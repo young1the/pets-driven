@@ -112,6 +112,12 @@ export function createWorld(input: WorldDefinition) {
 
     const decisionState = componentStore.getComponent(id, "BehaviorDecisionState");
     switch (decisionState?.reason) {
+      case "approach-pet-success":
+        return {
+          kind: "affection",
+          icon: "♥♥",
+          label: "caught another pet",
+        };
       case "approach-pet":
       case "collision-engage":
       case "collision-stay":

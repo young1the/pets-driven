@@ -17,9 +17,12 @@ import {
 } from "./components";
 
 const DEFAULT_BEHAVIOR_BODY_WIDTH = 32;
-const COLLISION_REACTION_WIDTH_MULTIPLIER = 3;
+const COLLISION_REACTION_WIDTH_MULTIPLIER = 6;
 const COLLISION_TARGET_MARGIN = 48;
 const USER_PROXIMITY_RADIUS = 96;
+const APPROACH_PET_SUCCESS_RADIUS = 64;
+const APPROACH_PET_TIMEOUT_MS = 4_000;
+const APPROACH_PET_SUCCESS_CUE_MS = 1_000;
 
 const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "wander-near": 750,
@@ -247,6 +250,7 @@ export function runCollisionBehaviorSystem(
         Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
     );
     if (!collision) continue;
+    if (isEscapingCollisionFlee(components, entity, collision)) continue;
 
     const personality = components.getComponent(entity.id, "Personality");
     const latency = personality ? reactionLatencyMs(personality, "collision") : 400;
@@ -285,6 +289,32 @@ export function runCollisionBehaviorSystem(
 // High N (anxiety) → longer freeze before reacting.
 // High E (extraversion) → snappier reaction.
 // Clamped to 0..2000 ms.
+
+function isEscapingCollisionFlee(
+  components: ComponentStore,
+  entity: {
+    id: string;
+    x: number;
+    y: number;
+    intent: string;
+    targetX: number | null;
+    targetY: number | null;
+  },
+  collision: { x: number; y: number },
+): boolean {
+  if (entity.intent !== "active") return false;
+  if (entity.targetX == null || entity.targetY == null) return false;
+
+  const decision = components.getComponent(entity.id, "BehaviorDecisionState");
+  if (decision?.reason !== "collision-flee") return false;
+
+  const currentDistanceSquared =
+    (entity.x - collision.x) ** 2 + (entity.y - collision.y) ** 2;
+  const targetDistanceSquared =
+    (entity.targetX - collision.x) ** 2 + (entity.targetY - collision.y) ** 2;
+
+  return targetDistanceSquared > currentDistanceSquared;
+}
 
 function reactionLatencyMs(p: PersonalityComponent, source: ReactionSource): number {
   const baseMs = source === "collision" ? 400 : source === "agent-event" ? 250 : 200;
@@ -396,11 +426,61 @@ export function runAutonomousBehaviorSystem(
 // Arrival detection (runs in UPDATE phase, after locomotion decisions).
 // Not a BEHAVIOR-phase system: it detects arrival at any target regardless of
 // which source directed the pet there.
-export function runArrivalBehaviorSystem(components: ComponentStore): void {
+export function runArrivalBehaviorSystem(components: ComponentStore, clock?: Clock): void {
   components.forEach(
     ["IntentState", "Transform", "MotionTarget", "WandersOnArrival"],
     (id, [intent, transform, motion, wandersOnArrival]) => {
       if (motion.targetEntityId) {
+        const decision = components.getComponent(id, "BehaviorDecisionState");
+        const decisionToken = components.getComponent(id, "BehaviorDecisionToken");
+        const isApproachingPet =
+          intent.intent === "active" &&
+          (decisionToken?.kind === "approach-pet" || decision?.reason === "approach-pet");
+
+        if (isApproachingPet) {
+          const startedAt =
+            decisionToken?.kind === "approach-pet"
+              ? decisionToken.decidedAt
+              : (decision?.decidedAt ?? 0);
+          const now = clock?.now() ?? startedAt;
+          const perception = components.getComponent(id, "Perception");
+          const targetPet = perception?.nearbyPets.find((pet) => pet.id === motion.targetEntityId);
+          const targetPosition = targetPet?.position ?? motion.targetPosition;
+          if (targetPosition) {
+            const dx = targetPosition.x - transform.position.x;
+            const dy = targetPosition.y - transform.position.y;
+            const isFlying = !!components.getComponent(id, "FlyingTag");
+            const dist = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
+            if (dist <= APPROACH_PET_SUCCESS_RADIUS) {
+              motion.targetEntityId = null;
+              motion.targetPosition = null;
+              intent.intent = "idle";
+              components.setComponent(id, {
+                type: "BehaviorDecisionState",
+                source: "autonomous",
+                decidedAt: now,
+                expiresAt: now + APPROACH_PET_SUCCESS_CUE_MS,
+                reason: "approach-pet-success",
+                lastAutonomousReason: decision?.lastAutonomousReason ?? "approach-pet",
+                lastAutonomousAt: decision?.lastAutonomousAt ?? startedAt,
+              });
+              components.removeComponent(id, "BehaviorDecisionToken");
+              return;
+            }
+          }
+
+          if (now - startedAt > APPROACH_PET_TIMEOUT_MS) {
+            motion.targetEntityId = null;
+            motion.targetPosition = null;
+            intent.intent = "idle";
+            if (decision) decision.expiresAt = now;
+            components.removeComponent(id, "BehaviorDecisionToken");
+            return;
+          }
+
+          return;
+        }
+
         if (intent.intent !== "seek") return;
         const perception = components.getComponent(id, "Perception");
         const anchor = perception?.userAnchor;
@@ -1107,6 +1187,6 @@ export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
   reads: ["Transform", "MotionTarget", "WandersOnArrival", "IntentState", "ClimbingTag", "Perception", "ClimbIntentState"],
   writes: ["MotionTarget", "IntentState"],
   update(ctx) {
-    runArrivalBehaviorSystem(ctx.components);
+    runArrivalBehaviorSystem(ctx.components, ctx.clock);
   },
 };

@@ -269,6 +269,39 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
   });
+
+  it("does not restart collision while a collision-flee target is escaping overlap", () => {
+    const clock = createManualClock(1500);
+    const fleeTarget = { x: 48, y: 500 };
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "active" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: fleeTarget },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous" as const,
+            decidedAt: 1400,
+            expiresAt: 2150,
+            reason: "collision-flee",
+            lastAutonomousReason: "collision-flee",
+            lastAutonomousAt: 1400,
+          },
+        ],
+      },
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(fleeTarget);
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("collision-flee");
+  });
 });
 
 // ── Phase 4: Reaction latency + decision + planning ────────────────────────
@@ -404,6 +437,26 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     const store = makeReactionStore(0.5, 0.9, 0.1);
     runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-flee");
+  });
+
+  it("collision-flee target is far enough to escape the collision area", () => {
+    const store = makeReactionStore(0.5, 0.9, 0.1, { x: 600, y: 500 });
+    store.setComponent("pet", {
+      type: "Transform",
+      position: { x: 500, y: 500 },
+    });
+    store.setComponent("pet", {
+      type: "PhysicsBody",
+      shape: "rectangle",
+      width: 32,
+      height: 38,
+    });
+
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("collision-flee");
+    expect(token?.targetPosition?.x).toBeCloseTo(308, 0);
   });
 
   it("high-E high-A low-N pet selects collision-engage at reactsAt (seed 1)", () => {
