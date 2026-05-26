@@ -15,6 +15,11 @@ import {
   PLAYGROUND_TEXT,
 } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
+import {
+  loadPlaygroundPetAssetCatalog,
+  type PlaygroundPetEntityId,
+} from "@/pets/assets/codex-pet-fixtures";
+import type { AssetCatalog } from "./canvas-renderer";
 
 type Snapshot = ReturnType<
   ReturnType<typeof createDemoScenario>["world"]["snapshot"]
@@ -89,6 +94,7 @@ export function PlaygroundApp() {
   const [timelineEntries, setTimelineEntries] = useState<TimelineEntry[]>([]);
   const [isAnimationPlaying, setIsAnimationPlaying] = useState(true);
   const [frameNumber, setFrameNumber] = useState(0);
+  const [assets, setAssets] = useState<AssetCatalog>({});
   const prevSnapshotRef = useRef<Snapshot | null>(null);
 
   const advanceFrame = useCallback(() => {
@@ -111,7 +117,27 @@ export function PlaygroundApp() {
       }
     }
     prevSnapshotRef.current = nextSnapshot;
-    drawWorld(context, nextSnapshot, {}, scenarioRef.current.clock.now());
+    drawWorld(context, nextSnapshot, assets, scenarioRef.current.clock.now());
+  }, [assets]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadPlaygroundPetAssetCatalog()
+      .then((catalog) => {
+        if (isMounted) {
+          setAssets(catalog);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAssets({});
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -204,10 +230,14 @@ export function PlaygroundApp() {
     setLastEventType(PLAYGROUND_TEXT.wallClimbDemoEventType);
   }
 
+  function switchPetToWalk(petId: PlaygroundPetEntityId) {
+    scenarioRef.current.world.removeComponent(petId, "ClimbingTag");
+    scenarioRef.current.world.removeComponent(petId, "FlyingTag");
+    scenarioRef.current.world.setComponent(petId, { type: "WalkingTag" });
+  }
+
   function switchAliceToWalk() {
-    scenarioRef.current.world.removeComponent("pet-a", "ClimbingTag");
-    scenarioRef.current.world.removeComponent("pet-a", "FlyingTag");
-    scenarioRef.current.world.setComponent("pet-a", { type: "WalkingTag" });
+    switchPetToWalk("pet-a");
   }
 
   return (

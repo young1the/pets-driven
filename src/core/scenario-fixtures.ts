@@ -221,6 +221,7 @@ export function createDemoScenario(options?: {
         components: [
           { type: "WalkingTag" },
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+          { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
           { type: "CanWallClimb", velocity: DEFAULT_PET_CLIMB_VELOCITY },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // playful + climb tendency: high openness + extraversion
@@ -234,11 +235,51 @@ export function createDemoScenario(options?: {
         x: 200,
         y: 200,
         components: [
-          { type: "FlyingTag" },
-          { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+          { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // reserved: high neuroticism, low extraversion
           { type: "Personality", openness: 0.3, conscientiousness: 0.5, extraversion: 0.2, agreeableness: 0.4, neuroticism: 0.75 },
+        ],
+      }),
+      createFixturePet({
+        id: "pet-e",
+        sourceId: "agent-e",
+        name: "Eve",
+        x: 420,
+        y: 500,
+        components: [
+          { type: "FlyingTag" },
+          { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          { type: "Personality", openness: 0.6, conscientiousness: 0.5, extraversion: 0.6, agreeableness: 0.7, neuroticism: 0.2 },
+        ],
+      }),
+      createFixturePet({
+        id: "pet-f",
+        sourceId: "agent-f",
+        name: "Finn",
+        x: 720,
+        y: 500,
+        components: [
+          { type: "FlyingTag" },
+          { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          { type: "Personality", openness: 0.4, conscientiousness: 0.7, extraversion: 0.5, agreeableness: 0.6, neuroticism: 0.25 },
+        ],
+      }),
+      createFixturePet({
+        id: "pet-g",
+        sourceId: "agent-g",
+        name: "Gwen",
+        x: 120,
+        y: 360,
+        components: [
+          { type: "FlyingTag" },
+          { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          { type: "Personality", openness: 0.55, conscientiousness: 0.45, extraversion: 0.65, agreeableness: 0.55, neuroticism: 0.2 },
         ],
       }),
     ],
