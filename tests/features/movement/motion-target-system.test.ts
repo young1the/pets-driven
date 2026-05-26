@@ -164,4 +164,40 @@ describe("motion target system", () => {
     expect(motion?.targetEntityId).toBe("pet-b");
     expect(motion?.targetPosition).toEqual({ x: 360, y: 210 });
   });
+
+  it("projects active pet targets onto the walker lane and requests jump when target is above", () => {
+    const store = createComponentStore([{
+      id: "pet-a",
+      components: [
+        { type: "Transform", position: { x: 356, y: 500 } },
+        { type: "PhysicsBody", shape: "rectangle" as const, width: 32, height: 32 },
+        { type: "WalkingTag" },
+        { type: "CanWalk", force: 0.001 },
+        { type: "CanJump", impulse: 0.009 },
+        { type: "ContactState" as const, grounded: true, climbableSurfaceId: null, climbableSurfacePosition: null },
+        { type: "IntentState", intent: "active" as const },
+        { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 300, y: 500 } },
+        {
+          type: "Perception" as const,
+          userAnchor: null,
+          nearbyPets: [{ id: "pet-b", position: { x: 360, y: 360 }, distance: 140 }],
+          nearbyClimbables: [],
+          self: { grounded: true, climbing: false, intent: "active" as const },
+        },
+      ],
+    }]);
+
+    runMotionTargetSystem(store, { next: () => 0.5 }, { width: 960, height: 540 });
+
+    expect(store.getComponent("pet-a", "MotionTarget")).toEqual({
+      type: "MotionTarget",
+      targetEntityId: "pet-b",
+      targetPosition: { x: 360, y: 500 },
+    });
+    expect(store.getComponent("pet-a", "JumpActionState")).toEqual({
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
+    });
+  });
 });
