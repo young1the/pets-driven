@@ -88,6 +88,9 @@ describe("canvas renderer", () => {
     const context = {
       clearRect: vi.fn(),
       drawImage: vi.fn(),
+      restore: vi.fn(),
+      save: vi.fn(),
+      strokeRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
     const image = {} as HTMLImageElement;
 
@@ -107,7 +110,7 @@ describe("canvas renderer", () => {
             width: 40,
             height: 50,
             animationState: "idle",
-            interaction: { dragged: true, scale: 1.12 },
+            interaction: { controllable: true, dragged: true, scale: 1.12 },
           },
         ],
         pets: [],
@@ -128,6 +131,51 @@ describe("canvas renderer", () => {
       40 * 1.12,
       50 * 1.12,
     );
+    expect(context.strokeRect).toHaveBeenCalledWith(
+      100 - (40 * 1.12) / 2 - 4,
+      120 - (50 * 1.12) / 2 - 4,
+      40 * 1.12 + 8,
+      50 * 1.12 + 8,
+    );
+  });
+
+  it("draws a subtle outline around controllable pet sprites", () => {
+    const context = {
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+      restore: vi.fn(),
+      save: vi.fn(),
+      strokeRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const image = {} as HTMLImageElement;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 120,
+            vx: 0,
+            vy: 0,
+            shape: "rectangle",
+            width: 40,
+            height: 50,
+            animationState: "idle",
+            interaction: { controllable: true },
+          },
+        ],
+        pets: [],
+        climbableSurfaces: [],
+      },
+      { "pet-a": image },
+      0,
+    );
+
+    expect(context.strokeRect).toHaveBeenCalledWith(76, 91, 48, 58);
   });
 
   it("mirrors right-facing jumping sprites around the body center", () => {

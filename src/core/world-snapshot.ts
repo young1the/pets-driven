@@ -43,6 +43,7 @@ export type PetSnapshot = {
 };
 
 export type InteractionSnapshot = {
+  controllable?: boolean;
   selected?: boolean;
   dragged?: boolean;
   controlled?: boolean;

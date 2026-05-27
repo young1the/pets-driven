@@ -56,6 +56,7 @@ export function drawWorld(
           drawHeight,
         );
         context.restore();
+        drawInteractionOutline(context, body.x, body.y, drawWidth, drawHeight, body.interaction);
         continue;
       }
 
@@ -70,10 +71,12 @@ export function drawWorld(
         drawWidth,
         drawHeight,
       );
+      drawInteractionOutline(context, body.x, body.y, drawWidth, drawHeight, body.interaction);
       continue;
     }
 
     drawDebugBody(context, body);
+    drawInteractionOutline(context, body.x, body.y, body.width, body.height, body.interaction);
   }
 
   for (const pet of snapshot.pets) {
@@ -116,4 +119,29 @@ function formatPetOverlayText(
   speech: string | null,
 ) {
   return visualCueIcon ?? speech ?? null;
+}
+
+function drawInteractionOutline(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  interaction: { controllable?: boolean; selected?: boolean; controlled?: boolean; dragged?: boolean } | undefined,
+) {
+  if (!interaction?.controllable && !interaction?.selected && !interaction?.controlled && !interaction?.dragged) {
+    return;
+  }
+
+  const isActive = interaction.selected || interaction.controlled || interaction.dragged;
+  context.save?.();
+  context.lineWidth = isActive ? 3 : 1.5;
+  context.strokeStyle = isActive ? "#2563eb" : "#94a3b8";
+  context.strokeRect(
+    x - width / 2 - 4,
+    y - height / 2 - 4,
+    width + 8,
+    height + 8,
+  );
+  context.restore?.();
 }

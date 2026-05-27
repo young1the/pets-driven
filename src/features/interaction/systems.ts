@@ -12,6 +12,7 @@ import type { Clock } from "@/shared/time/manual-clock";
 
 const INTERACTION_ENTITY_ID = "user-interaction";
 const DRAG_START_DISTANCE = 4;
+const HIT_TARGET_PADDING = 12;
 const MAX_DRAG_SAMPLES = 6;
 const THROW_VELOCITY_THRESHOLD = 8;
 
@@ -108,8 +109,8 @@ function hitTest(
 ): { id: string; position: Vector } | null {
   const hits: Array<{ id: string; position: Vector; area: number }> = [];
   components.forEach(["Transform", "PhysicsBody", capability], (id, [transform, body]) => {
-    const halfW = body.width / 2;
-    const halfH = body.height / 2;
+    const halfW = body.width / 2 + HIT_TARGET_PADDING;
+    const halfH = body.height / 2 + HIT_TARGET_PADDING;
     if (
       point.x >= transform.position.x - halfW &&
       point.x <= transform.position.x + halfW &&
