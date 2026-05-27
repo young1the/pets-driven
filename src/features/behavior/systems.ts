@@ -115,11 +115,6 @@ function claim(
 
 // Priority 1: User interaction (touch, click, drag).
 // No external input mechanism yet — placeholder for future pointer events.
-export function runUserInteractionBehaviorSystem(
-  _components: ComponentStore,
-  _clock: Clock,
-): void {}
-
 // Priority 2: Agent event reactions (task.started, task.waiting, etc.)
 export function runAgentEventBehaviorSystem(
   components: ComponentStore,
@@ -1129,16 +1124,6 @@ function petWidth(components: ComponentStore, id: string): number {
 }
 
 // ── System descriptors ─────────────────────────────────────────────────────
-
-export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> = {
-  name: "UserInteractionBehaviorSystem",
-  dependsOn: ["ContactSystem"],
-  reads: [],
-  writes: ["BehaviorDecisionState"],
-  update(ctx) {
-    runUserInteractionBehaviorSystem(ctx.components, ctx.clock);
-  },
-};
 
 export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentEventBehaviorSystem",
