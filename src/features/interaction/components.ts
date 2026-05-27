@@ -37,3 +37,8 @@ export type DragInteractionComponent = {
   startedAt: number;
   samples: DragSample[];
 };
+
+export type ThrowImpulseComponent = {
+  type: "ThrowImpulse";
+  velocity: Vector;
+};
