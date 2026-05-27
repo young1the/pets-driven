@@ -7,6 +7,7 @@ import type {
 } from "@/features/events/world-event";
 import type { WorldEventQueue } from "@/features/events/world-event-queue";
 import type { Vector } from "@/features/physics/components";
+import type { Force } from "@/features/physics/systems";
 import type { Clock } from "@/shared/time/manual-clock";
 
 const INTERACTION_ENTITY_ID = "user-interaction";
@@ -202,6 +203,35 @@ export function runThrowImpulseSystem(
   });
 }
 
+export function runKeyboardControlMovementSystem(
+  components: ComponentStore,
+  forceGroups: Force[][],
+  clock: Clock,
+): void {
+  const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
+  const input = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardInputState");
+  if (!target?.entityId || !input) return;
+  if (input.vector.x === 0 && input.vector.y === 0) return;
+
+  const canControl = components.getComponent(target.entityId, "CanControl");
+  if (!canControl) return;
+
+  forceGroups.push([
+    {
+      id: target.entityId,
+      x: input.vector.x * canControl.force,
+      y: input.vector.y * canControl.force,
+    },
+  ]);
+  claimUserInteraction(
+    components,
+    target.entityId,
+    clock.now(),
+    "keyboard-control",
+    250,
+  );
+}
+
 export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "UserInteractionBehaviorSystem",
   dependsOn: ["ContactSystem"],
@@ -243,5 +273,15 @@ export const ThrowImpulseSystem: SimulationSystem<WorldStepContext> = {
   writes: ["PhysicsVelocity", "ThrowImpulse"],
   update(ctx) {
     runThrowImpulseSystem(ctx.components, ctx.physics);
+  },
+};
+
+export const KeyboardControlMovementSystem: SimulationSystem<WorldStepContext> = {
+  name: "KeyboardControlMovementSystem",
+  dependsOn: ["IntentSteeringSystem"],
+  reads: ["KeyboardControlTarget", "KeyboardInputState", "CanControl"],
+  writes: ["PhysicsForce", "BehaviorDecisionState"],
+  update(ctx) {
+    runKeyboardControlMovementSystem(ctx.components, ctx.forceGroups, ctx.clock);
   },
 };

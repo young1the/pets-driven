@@ -14,6 +14,7 @@ import type { SimulationSystem } from "@/core/simulation-system";
 import type { WorldStepContext } from "@/core/world-step-context";
 import {
   DraggedEntityKinematicSystem,
+  KeyboardControlMovementSystem,
   ThrowImpulseSystem,
   UserInteractionBehaviorSystem,
 } from "@/features/interaction/systems";
@@ -83,6 +84,7 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     JumpSystem,
     WallClimbSystem,
     IntentSteeringSystem,
+    KeyboardControlMovementSystem,
     FlightSystem,
     DraggedEntityKinematicSystem,
     ThrowImpulseSystem,
