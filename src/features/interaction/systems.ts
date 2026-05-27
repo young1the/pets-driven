@@ -12,6 +12,7 @@ import type { Clock } from "@/shared/time/manual-clock";
 const INTERACTION_ENTITY_ID = "user-interaction";
 const DRAG_START_DISTANCE = 4;
 const MAX_DRAG_SAMPLES = 6;
+const THROW_VELOCITY_THRESHOLD = 8;
 
 export function runUserInteractionBehaviorSystem(
   components: ComponentStore,
@@ -75,6 +76,11 @@ function handlePointerEvent(
   }
 
   if (event.type === "pointer.up") {
+    const velocity = releaseVelocityFromSamples(drag.samples);
+    if (Math.hypot(velocity.x, velocity.y) >= THROW_VELOCITY_THRESHOLD) {
+      components.setComponent(drag.entityId, { type: "ThrowImpulse", velocity });
+      claimUserInteraction(components, drag.entityId, clock.now(), "throw", 500);
+    }
     components.removeComponent(INTERACTION_ENTITY_ID, "DragInteraction");
   }
 }
@@ -149,6 +155,53 @@ function distance(a: Vector, b: Vector): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+type KinematicPhysics = {
+  setPosition(id: string, position: Partial<Vector>): void;
+  setVelocity(id: string, velocity: Partial<Vector>): void;
+};
+
+export function runDraggedEntityKinematicSystem(
+  components: ComponentStore,
+  physics: KinematicPhysics,
+): void {
+  const drag = components.getComponent(INTERACTION_ENTITY_ID, "DragInteraction");
+  if (!drag || drag.phase !== "dragging") return;
+
+  const nextPosition = {
+    x: drag.pointerPosition.x + drag.grabOffset.x,
+    y: drag.pointerPosition.y + drag.grabOffset.y,
+  };
+  const transform = components.getComponent(drag.entityId, "Transform");
+  if (transform) transform.position = nextPosition;
+
+  physics.setPosition(drag.entityId, nextPosition);
+  physics.setVelocity(drag.entityId, { x: 0, y: 0 });
+}
+
+export function releaseVelocityFromSamples(
+  samples: Array<{ at: number; position: Vector }>,
+): Vector {
+  if (samples.length < 2) return { x: 0, y: 0 };
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  const elapsed = Math.max(1, last.at - first.at);
+  const ticks = elapsed / 16;
+  return {
+    x: (last.position.x - first.position.x) / ticks,
+    y: (last.position.y - first.position.y) / ticks,
+  };
+}
+
+export function runThrowImpulseSystem(
+  components: ComponentStore,
+  physics: Pick<KinematicPhysics, "setVelocity">,
+): void {
+  components.forEach(["ThrowImpulse"], (id, [throwImpulse]) => {
+    physics.setVelocity(id, throwImpulse.velocity);
+    components.removeComponent(id, "ThrowImpulse");
+  });
+}
+
 export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "UserInteractionBehaviorSystem",
   dependsOn: ["ContactSystem"],
@@ -170,5 +223,25 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
   ],
   update(ctx) {
     runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock);
+  },
+};
+
+export const DraggedEntityKinematicSystem: SimulationSystem<WorldStepContext> = {
+  name: "DraggedEntityKinematicSystem",
+  dependsOn: ["MotionTargetSystem"],
+  reads: ["DragInteraction", "Transform"],
+  writes: ["Transform", "PhysicsPosition", "PhysicsVelocity"],
+  update(ctx) {
+    runDraggedEntityKinematicSystem(ctx.components, ctx.physics);
+  },
+};
+
+export const ThrowImpulseSystem: SimulationSystem<WorldStepContext> = {
+  name: "ThrowImpulseSystem",
+  dependsOn: ["DraggedEntityKinematicSystem"],
+  reads: ["ThrowImpulse"],
+  writes: ["PhysicsVelocity", "ThrowImpulse"],
+  update(ctx) {
+    runThrowImpulseSystem(ctx.components, ctx.physics);
   },
 };

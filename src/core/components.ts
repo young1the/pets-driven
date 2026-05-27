@@ -70,6 +70,7 @@ export type {
   KeyboardControlTargetComponent,
   KeyboardInputStateComponent,
   DragInteractionComponent,
+  ThrowImpulseComponent,
 } from "@/features/interaction/components";
 
 import type { PerceptionComponent } from "@/features/perception/components";
@@ -82,7 +83,7 @@ import type { CanWalkComponent, MovementProfileComponent, WandersOnArrivalCompon
 import type { CanJumpComponent, JumpActionStateComponent } from "@/features/movement/components";
 import type { CanFlyComponent } from "@/features/movement/components";
 import type { CanWallClimbComponent, ClimbableSurfaceComponent, ClimbIntentStateComponent, ClimbDismountStateComponent } from "@/features/movement/components";
-import type { CanDragComponent, CanControlComponent, KeyboardControlTargetComponent, KeyboardInputStateComponent, DragInteractionComponent } from "@/features/interaction/components";
+import type { CanDragComponent, CanControlComponent, KeyboardControlTargetComponent, KeyboardInputStateComponent, DragInteractionComponent, ThrowImpulseComponent } from "@/features/interaction/components";
 
 export type Component =
   | ActivityStateComponent
@@ -122,6 +123,7 @@ export type Component =
   | SpeechProfileComponent
   | SpeechStateComponent
   | TransformComponent
+  | ThrowImpulseComponent
   | UserAnchorComponent
   | WalkingTagComponent
   | WandersOnArrivalComponent;

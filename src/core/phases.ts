@@ -12,7 +12,11 @@
 
 import type { SimulationSystem } from "@/core/simulation-system";
 import type { WorldStepContext } from "@/core/world-step-context";
-import { UserInteractionBehaviorSystem } from "@/features/interaction/systems";
+import {
+  DraggedEntityKinematicSystem,
+  ThrowImpulseSystem,
+  UserInteractionBehaviorSystem,
+} from "@/features/interaction/systems";
 import {
   AgentEventBehaviorSystem,
   CollisionBehaviorSystem,
@@ -80,6 +84,8 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     WallClimbSystem,
     IntentSteeringSystem,
     FlightSystem,
+    DraggedEntityKinematicSystem,
+    ThrowImpulseSystem,
   ],
 
   SIMULATE: [
