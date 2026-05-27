@@ -7,7 +7,6 @@ import type {
 } from "@/features/events/world-event";
 import type { WorldEventQueue } from "@/features/events/world-event-queue";
 import type { Vector } from "@/features/physics/components";
-import type { Force } from "@/features/physics/systems";
 import type { Clock } from "@/shared/time/manual-clock";
 
 const INTERACTION_ENTITY_ID = "user-interaction";
@@ -206,24 +205,29 @@ export function runThrowImpulseSystem(
 
 export function runKeyboardControlMovementSystem(
   components: ComponentStore,
-  forceGroups: Force[][],
+  physics: Pick<KinematicPhysics, "setVelocity">,
   clock: Clock,
 ): void {
   const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
   const input = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardInputState");
   if (!target?.entityId || !input) return;
-  if (input.vector.x === 0 && input.vector.y === 0) return;
 
   const canControl = components.getComponent(target.entityId, "CanControl");
   if (!canControl) return;
 
-  forceGroups.push([
-    {
-      id: target.entityId,
-      x: input.vector.x * canControl.force,
-      y: input.vector.y * canControl.force,
-    },
-  ]);
+  if (input.vector.x === 0 && input.vector.y === 0) {
+    physics.setVelocity(target.entityId, { x: 0 });
+    return;
+  }
+
+  const velocity: Partial<Vector> = {
+    x: input.vector.x * canControl.speed,
+  };
+  if (input.vector.y !== 0) {
+    velocity.y = input.vector.y * canControl.speed;
+  }
+
+  physics.setVelocity(target.entityId, velocity);
   claimUserInteraction(
     components,
     target.entityId,
@@ -281,8 +285,8 @@ export const KeyboardControlMovementSystem: SimulationSystem<WorldStepContext> =
   name: "KeyboardControlMovementSystem",
   dependsOn: ["IntentSteeringSystem"],
   reads: ["KeyboardControlTarget", "KeyboardInputState", "CanControl"],
-  writes: ["PhysicsForce", "BehaviorDecisionState"],
+  writes: ["PhysicsVelocity", "BehaviorDecisionState"],
   update(ctx) {
-    runKeyboardControlMovementSystem(ctx.components, ctx.forceGroups, ctx.clock);
+    runKeyboardControlMovementSystem(ctx.components, ctx.physics, ctx.clock);
   },
 };

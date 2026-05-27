@@ -17,7 +17,7 @@ function createStore() {
       id: "pet-a",
       components: [
         { type: "CanDrag" },
-        { type: "CanControl", force: 0.003 },
+        { type: "CanControl", speed: 1.4 },
         { type: "Transform", position: { x: 100, y: 100 } },
         { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
       ],

@@ -7,6 +7,7 @@ import type {
 import {
   DEFAULT_PET_BODY_SIZE,
   DEFAULT_PET_CLIMB_VELOCITY,
+  DEFAULT_PET_CONTROL_SPEED,
   DEFAULT_PET_JUMP_IMPULSE,
   DEFAULT_PET_WALK_FORCE,
 } from "@/pets/constants/pet-body";
@@ -95,7 +96,7 @@ export function createFixturePet(input: {
         ...DEFAULT_PET_BODY_SIZE,
       },
       { type: "CanDrag" as const },
-      { type: "CanControl" as const, force: DEFAULT_PET_WALK_FORCE * 1.25 },
+      { type: "CanControl" as const, speed: DEFAULT_PET_CONTROL_SPEED },
       {
         type: "Perception" as const,
         userAnchor: null,

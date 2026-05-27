@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createComponentStore } from "@/core/component-store";
 import { runKeyboardControlMovementSystem } from "@/features/interaction/systems";
-import type { Force } from "@/features/physics/systems";
 import { createManualClock } from "@/shared/time/manual-clock";
+
+function createPhysics() {
+  return {
+    setVelocity: vi.fn(),
+  };
+}
 
 describe("KeyboardControlMovementSystem", () => {
   it("does nothing without a control target", () => {
@@ -15,14 +20,14 @@ describe("KeyboardControlMovementSystem", () => {
         ],
       },
     ]);
-    const forceGroups: Force[][] = [];
+    const physics = createPhysics();
 
-    runKeyboardControlMovementSystem(components, forceGroups, createManualClock(0));
+    runKeyboardControlMovementSystem(components, physics, createManualClock(0));
 
-    expect(forceGroups).toEqual([]);
+    expect(physics.setVelocity).not.toHaveBeenCalled();
   });
 
-  it("applies force to the selected CanControl target", () => {
+  it("sets a constant velocity on the selected CanControl target", () => {
     const components = createComponentStore([
       {
         id: "user-interaction",
@@ -31,21 +36,57 @@ describe("KeyboardControlMovementSystem", () => {
           { type: "KeyboardInputState", pressedCodes: ["ArrowRight"], vector: { x: 1, y: 0 } },
         ],
       },
-      { id: "pet-a", components: [{ type: "CanControl", force: 0.003 }] },
+      { id: "pet-a", components: [{ type: "CanControl", speed: 1.4 }] },
     ]);
-    const forceGroups: Force[][] = [];
+    const physics = createPhysics();
     const clock = createManualClock(0);
 
-    runKeyboardControlMovementSystem(components, forceGroups, clock);
+    runKeyboardControlMovementSystem(components, physics, clock);
 
-    expect(forceGroups).toEqual([[{ id: "pet-a", x: 0.003, y: 0 }]]);
+    expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 1.4 });
     expect(components.getComponent("pet-a", "BehaviorDecisionState")).toMatchObject({
       source: "user-interaction",
       reason: "keyboard-control",
     });
   });
 
-  it("does not apply force when target lacks CanControl", () => {
+  it("uses the same speed scale for vertical input", () => {
+    const components = createComponentStore([
+      {
+        id: "user-interaction",
+        components: [
+          { type: "KeyboardControlTarget", entityId: "pet-a" },
+          { type: "KeyboardInputState", pressedCodes: ["ArrowUp"], vector: { x: 0, y: -1 } },
+        ],
+      },
+      { id: "pet-a", components: [{ type: "CanControl", speed: 1.4 }] },
+    ]);
+    const physics = createPhysics();
+
+    runKeyboardControlMovementSystem(components, physics, createManualClock(0));
+
+    expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 0, y: -1.4 });
+  });
+
+  it("stops horizontal drift when the selected target has no directional input", () => {
+    const components = createComponentStore([
+      {
+        id: "user-interaction",
+        components: [
+          { type: "KeyboardControlTarget", entityId: "pet-a" },
+          { type: "KeyboardInputState", pressedCodes: [], vector: { x: 0, y: 0 } },
+        ],
+      },
+      { id: "pet-a", components: [{ type: "CanControl", speed: 1.4 }] },
+    ]);
+    const physics = createPhysics();
+
+    runKeyboardControlMovementSystem(components, physics, createManualClock(0));
+
+    expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 0 });
+  });
+
+  it("does not set velocity when target lacks CanControl", () => {
     const components = createComponentStore([
       {
         id: "user-interaction",
@@ -56,10 +97,10 @@ describe("KeyboardControlMovementSystem", () => {
       },
       { id: "pet-a", components: [] },
     ]);
-    const forceGroups: Force[][] = [];
+    const physics = createPhysics();
 
-    runKeyboardControlMovementSystem(components, forceGroups, createManualClock(0));
+    runKeyboardControlMovementSystem(components, physics, createManualClock(0));
 
-    expect(forceGroups).toEqual([]);
+    expect(physics.setVelocity).not.toHaveBeenCalled();
   });
 });

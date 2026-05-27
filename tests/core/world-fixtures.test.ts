@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createDemoScenario } from "@/core/scenario-fixtures";
 import {
   DEFAULT_PET_CLIMB_VELOCITY,
+  DEFAULT_PET_CONTROL_SPEED,
   DEFAULT_PET_JUMP_IMPULSE,
   DEFAULT_PET_WALK_FORCE,
 } from "@/pets/constants/pet-body";
@@ -27,7 +28,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-a", "CanControl")).toEqual({
       type: "CanControl",
-      force: expect.any(Number),
+      speed: DEFAULT_PET_CONTROL_SPEED,
     });
   });
 
