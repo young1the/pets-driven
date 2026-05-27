@@ -6,7 +6,7 @@ export type CanDragComponent = {
 
 export type CanControlComponent = {
   type: "CanControl";
-  force: number;
+  speed: number;
 };
 
 export type KeyboardControlTargetComponent = {
