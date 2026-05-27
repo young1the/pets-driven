@@ -94,6 +94,8 @@ export function createFixturePet(input: {
         shape: "rectangle" as const,
         ...DEFAULT_PET_BODY_SIZE,
       },
+      { type: "CanDrag" as const },
+      { type: "CanControl" as const, force: DEFAULT_PET_WALK_FORCE * 1.25 },
       {
         type: "Perception" as const,
         userAnchor: null,
@@ -163,6 +165,13 @@ export function createDemoScenario(options?: {
             type: "Transform",
             position: options?.userAnchor ?? { x: 480, y: 500 },
           },
+        ],
+      },
+      {
+        id: "user-interaction",
+        components: [
+          { type: "KeyboardControlTarget", entityId: null },
+          { type: "KeyboardInputState", pressedCodes: [], vector: { x: 0, y: 0 } },
         ],
       },
       {
