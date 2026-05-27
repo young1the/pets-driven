@@ -23,6 +23,7 @@ const USER_PROXIMITY_RADIUS = 96;
 const APPROACH_PET_SUCCESS_RADIUS = 64;
 const APPROACH_PET_TIMEOUT_MS = 4_000;
 const APPROACH_PET_SUCCESS_CUE_MS = 1_000;
+const SPEECH_BUBBLE_DURATION_MS = 1_500;
 
 const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "wander-near": 750,
@@ -113,8 +114,29 @@ function claim(
   });
 }
 
-// Priority 1: User interaction (touch, click, drag).
-// No external input mechanism yet — placeholder for future pointer events.
+function setSpeech(
+  speech: { speech: string | null; expiresAt?: number | null },
+  line: string | null,
+  now: number,
+): void {
+  speech.speech = line;
+  speech.expiresAt = line ? now + SPEECH_BUBBLE_DURATION_MS : null;
+}
+
+export function runSpeechExpirationSystem(
+  components: ComponentStore,
+  clock: Clock,
+): void {
+  const now = clock.now();
+  components.forEach(["SpeechState"], (_id, [speech]) => {
+    if (!speech.speech) return;
+    if (speech.expiresAt == null) return;
+    if (speech.expiresAt > now) return;
+    speech.speech = null;
+    speech.expiresAt = null;
+  });
+}
+
 // Priority 2: Agent event reactions (task.started, task.waiting, etc.)
 export function runAgentEventBehaviorSystem(
   components: ComponentStore,
@@ -136,20 +158,20 @@ export function runAgentEventBehaviorSystem(
 
         if (event.type === "task.started") {
           intent.intent = "active";
-          speech.speech = event.summary ?? speechProfile.taskStarted;
+          setSpeech(speech, event.summary ?? speechProfile.taskStarted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.started");
         }
 
         if (event.type === "task.waiting" || event.type === "attention.requested") {
           intent.intent = "seek";
-          speech.speech = event.summary ?? speechProfile.attentionNeeded;
+          setSpeech(speech, event.summary ?? speechProfile.attentionNeeded, now);
           claim(components, id, "agent-event", now, event.type);
         }
 
         if (event.type === "task.completed") {
           intent.intent = completionBehavior.intentAfterCompletion;
-          speech.speech = event.summary ?? speechProfile.taskCompleted;
+          setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
         }
@@ -326,8 +348,12 @@ function isEscapingCollisionFlee(
     (entity.x - collision.x) ** 2 + (entity.y - collision.y) ** 2;
   const targetDistanceSquared =
     (entity.targetX - collision.x) ** 2 + (entity.targetY - collision.y) ** 2;
+  const movementX = entity.targetX - entity.x;
+  const movementY = entity.targetY - entity.y;
+  const awayX = entity.x - collision.x;
+  const awayY = entity.y - collision.y;
 
-  return targetDistanceSquared > currentDistanceSquared;
+  return targetDistanceSquared > currentDistanceSquared && movementX * awayX + movementY * awayY > 0;
 }
 
 function reactionLatencyMs(p: PersonalityComponent, source: ReactionSource): number {
@@ -434,7 +460,7 @@ export function runAutonomousBehaviorSystem(
       if (isClaimed(components, id, "autonomous", now)) return;
       if (speech.speech) return;
       if (clock.now() - activity.lastActiveAt >= idleConversation.idleAfterMs) {
-        speech.speech = speechProfile.idleCompanion;
+        setSpeech(speech, speechProfile.idleCompanion, now);
         claim(components, id, "autonomous", now, "idle conversation");
       }
     },
@@ -1125,9 +1151,19 @@ function petWidth(components: ComponentStore, id: string): number {
 
 // ── System descriptors ─────────────────────────────────────────────────────
 
+export const SpeechExpirationSystem: SimulationSystem<WorldStepContext> = {
+  name: "SpeechExpirationSystem",
+  dependsOn: ["UserInteractionBehaviorSystem"],
+  reads: ["SpeechState"],
+  writes: ["SpeechState"],
+  update(ctx) {
+    runSpeechExpirationSystem(ctx.components, ctx.clock);
+  },
+};
+
 export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentEventBehaviorSystem",
-  dependsOn: ["UserInteractionBehaviorSystem"],
+  dependsOn: ["SpeechExpirationSystem"],
   reads: ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
   writes: ["IntentState", "SpeechState", "ActivityState", "BehaviorDecisionState"],
   update(ctx) {

@@ -83,6 +83,7 @@ describe("demo scenario", () => {
       "PerceptionSystem",
       // BEHAVIOR
       "UserInteractionBehaviorSystem",
+      "SpeechExpirationSystem",
       "AgentEventBehaviorSystem",
       "CollisionBehaviorSystem",
       "BehaviorDecisionSystem",
@@ -471,6 +472,33 @@ describe("demo scenario", () => {
     });
   });
 
+  it("models monitor side and top boundaries as ground entities", () => {
+    const scenario = createDemoScenario();
+
+    expect(scenario.world.getComponent("monitor-left-wall", "Ground")).toEqual({
+      type: "Ground",
+    });
+    expect(scenario.world.getComponent("monitor-right-wall", "Ground")).toEqual({
+      type: "Ground",
+    });
+    expect(scenario.world.getComponent("monitor-ceiling", "Ground")).toEqual({
+      type: "Ground",
+    });
+
+    expect(scenario.world.getComponent("monitor-left-wall", "Transform")).toEqual({
+      type: "Transform",
+      position: { x: -24, y: 270 },
+    });
+    expect(scenario.world.getComponent("monitor-right-wall", "Transform")).toEqual({
+      type: "Transform",
+      position: { x: 984, y: 270 },
+    });
+    expect(scenario.world.getComponent("monitor-ceiling", "Transform")).toEqual({
+      type: "Transform",
+      position: { x: 480, y: -24 },
+    });
+  });
+
   it("models climbable surfaces as contact targets", () => {
     const scenario = createDemoScenario();
 
@@ -777,9 +805,36 @@ describe("demo scenario", () => {
       type: "IntentState",
       intent: "idle",
     });
-    expect(scenario.world.getComponent("pet-a", "SpeechState")).toEqual({
+    expect(scenario.world.getComponent("pet-a", "SpeechState")).toMatchObject({
       type: "SpeechState",
       speech: "Done",
+      expiresAt: 1_500,
+    });
+  });
+
+  it("clears speech after the speech bubble expires", () => {
+    const scenario = createDemoScenario();
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.completed",
+      sourceId: "agent-a",
+      at: 20,
+      summary: "Done",
+    });
+    scenario.world.step(16);
+
+    expect(scenario.world.getComponent("pet-a", "SpeechState")?.speech).toBe(
+      "Done",
+    );
+
+    scenario.clock.advanceBy(1_501);
+    scenario.world.step(16);
+
+    expect(scenario.world.getComponent("pet-a", "SpeechState")).toMatchObject({
+      type: "SpeechState",
+      speech: null,
+      expiresAt: null,
     });
   });
 

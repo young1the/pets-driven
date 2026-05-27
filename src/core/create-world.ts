@@ -10,7 +10,10 @@ import {
 import {
   createMatterPhysicsWorld,
 } from "@/features/physics/matter-physics-world";
-import type { PetAnimationState } from "@/pets/assets/pet-atlas";
+import type {
+  PetAnimationState,
+  PetSpriteFacing,
+} from "@/pets/assets/pet-atlas";
 import type { WorldEvent } from "@/features/events/world-event";
 import { createWorldEventQueue } from "@/features/events/world-event-queue";
 import { runPhysicsTransformSyncSystem } from "@/features/physics/systems";
@@ -214,14 +217,16 @@ export function createWorld(input: WorldDefinition) {
       return "jumping";
     }
 
-    const transform = componentStore.getComponent(id, "Transform");
     const motionTarget = componentStore.getComponent(id, "MotionTarget");
+    const transform = componentStore.getComponent(id, "Transform");
     const targetX = motionTarget?.targetPosition?.x;
     if (transform && targetX !== undefined) {
       const deltaX = targetX - transform.position.x;
       if (Math.abs(deltaX) > 2) {
         return deltaX > 0 ? "running-right" : "running-left";
       }
+
+      return "running";
     }
 
     const intent = componentStore.getComponent(id, "IntentState");
@@ -230,6 +235,23 @@ export function createWorld(input: WorldDefinition) {
     }
 
     return "idle";
+  }
+
+  function getPetSpriteFacing(
+    componentStore: ComponentStore,
+    id: string,
+  ): PetSpriteFacing {
+    const transform = componentStore.getComponent(id, "Transform");
+    const motionTarget = componentStore.getComponent(id, "MotionTarget");
+    const targetX = motionTarget?.targetPosition?.x;
+    if (transform && targetX !== undefined) {
+      const deltaX = targetX - transform.position.x;
+      if (Math.abs(deltaX) > 2) {
+        return deltaX > 0 ? "right" : "left";
+      }
+    }
+
+    return "right";
   }
 
   function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {
@@ -279,6 +301,7 @@ export function createWorld(input: WorldDefinition) {
       const bodies = physicsSnapshot.bodies.map((body) => ({
         ...body,
         animationState: getPetAnimationState(components, body.id, body),
+        spriteFacing: getPetSpriteFacing(components, body.id),
         interaction: getInteractionSnapshot(components, body.id),
       }));
 

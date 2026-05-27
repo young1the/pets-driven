@@ -3,12 +3,13 @@ import { createDemoScenario } from "@/core/scenario-fixtures";
 
 function petBodyAnimationState(id: string) {
   const scenario = createDemoScenario();
+  const bodySnapshot = () =>
+    scenario.world.snapshot().bodies.find((body) => body.id === id);
+
   return {
     scenario,
-    animationState() {
-      return scenario.world.snapshot().bodies.find((body) => body.id === id)
-        ?.animationState;
-    },
+    bodySnapshot,
+    animationState: () => bodySnapshot()?.animationState,
   };
 }
 
@@ -19,22 +20,28 @@ describe("pet animation state", () => {
     expect(animationState()).toBe("idle");
   });
 
-  it("uses directional running rows from motion targets", () => {
-    const { scenario, animationState } = petBodyAnimationState("pet-a");
+  it("uses directional running states for motion targets", () => {
+    const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
       type: "MotionTarget",
       targetEntityId: null,
       targetPosition: { x: 820, y: 500 },
     });
-    expect(animationState()).toBe("running-right");
+    expect(bodySnapshot()).toMatchObject({
+      animationState: "running-right",
+      spriteFacing: "right",
+    });
 
     scenario.world.setComponent("pet-a", {
       type: "MotionTarget",
       targetEntityId: null,
       targetPosition: { x: 120, y: 500 },
     });
-    expect(animationState()).toBe("running-left");
+    expect(bodySnapshot()).toMatchObject({
+      animationState: "running-left",
+      spriteFacing: "left",
+    });
   });
 
   it("does not infer left or right when no target exists", () => {
@@ -95,5 +102,25 @@ describe("pet animation state", () => {
       cooldownMs: 0,
     });
     expect(animationState()).toBe("jumping");
+  });
+
+  it("keeps left-facing direction while jumping toward a left motion target", () => {
+    const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
+
+    scenario.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 120, y: 500 },
+    });
+    scenario.world.setComponent("pet-a", {
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
+    });
+
+    expect(bodySnapshot()).toMatchObject({
+      animationState: "jumping",
+      spriteFacing: "left",
+    });
   });
 });

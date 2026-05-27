@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CODEX_PET_ASSETS,
+  FALLBACK_CODEX_PET_SPRITESHEET_URL,
   PLAYGROUND_PET_ASSET_BY_ENTITY_ID,
   getCodexPetSpritesheetUrl,
   loadPlaygroundPetAssetCatalog,
@@ -52,5 +53,20 @@ describe("codex pet fixtures", () => {
     ]);
     expect(catalog["pet-a"].src).toBe("/codex-pets/agumon/spritesheet.webp");
     expect(loadedUrls).toHaveLength(7);
+  });
+
+  it("falls back to the bundled Patamon spritesheet when a Codex pet is missing", async () => {
+    const loadedUrls: string[] = [];
+    const catalog = await loadPlaygroundPetAssetCatalog(async (url) => {
+      loadedUrls.push(url);
+      if (url.startsWith("/codex-pets/")) {
+        throw new Error(`Missing pet package: ${url}`);
+      }
+      return { src: url } as HTMLImageElement;
+    });
+
+    expect(catalog["pet-a"].src).toBe(FALLBACK_CODEX_PET_SPRITESHEET_URL);
+    expect(loadedUrls).toContain("/codex-pets/agumon/spritesheet.webp");
+    expect(loadedUrls).toContain(FALLBACK_CODEX_PET_SPRITESHEET_URL);
   });
 });

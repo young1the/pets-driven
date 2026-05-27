@@ -19,6 +19,7 @@ import {
   UserInteractionBehaviorSystem,
 } from "@/features/interaction/systems";
 import {
+  SpeechExpirationSystem,
   AgentEventBehaviorSystem,
   CollisionBehaviorSystem,
   BehaviorDecisionSystem,
@@ -61,6 +62,7 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
 
   BEHAVIOR: [
     UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
+    SpeechExpirationSystem,        // clear expired speech before new decisions
     AgentEventBehaviorSystem,       // priority 2: external agent events
     CollisionBehaviorSystem,        // priority 3: entity overlap avoidance
     BehaviorDecisionSystem,         // priority 4a: personality-weighted next behavior (emits token)

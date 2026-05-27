@@ -86,7 +86,7 @@ export function createFixturePet(input: {
         type: "CompletionBehavior" as const,
         intentAfterCompletion: "idle" as const,
       },
-      { type: "SpeechState" as const, speech: null },
+      { type: "SpeechState" as const, speech: null, expiresAt: null },
       { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
       { type: "Transform" as const, position: { x: input.x, y: input.y } },
       {
@@ -135,6 +135,7 @@ export function createDemoScenario(options?: {
   const width = 960;
   const height = 540;
   const groundThickness = 48;
+  const boundaryThickness = groundThickness;
   const world = createWorld({
     width,
     height,
@@ -153,6 +154,57 @@ export function createDemoScenario(options?: {
             shape: "rectangle",
             width,
             height: groundThickness,
+          },
+          { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
+        ],
+      },
+      {
+        id: "monitor-left-wall",
+        components: [
+          { type: "Ground" },
+          {
+            type: "Transform",
+            position: { x: -boundaryThickness / 2, y: height / 2 },
+          },
+          {
+            type: "PhysicsBody",
+            shape: "rectangle",
+            width: boundaryThickness,
+            height,
+          },
+          { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
+        ],
+      },
+      {
+        id: "monitor-right-wall",
+        components: [
+          { type: "Ground" },
+          {
+            type: "Transform",
+            position: { x: width + boundaryThickness / 2, y: height / 2 },
+          },
+          {
+            type: "PhysicsBody",
+            shape: "rectangle",
+            width: boundaryThickness,
+            height,
+          },
+          { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
+        ],
+      },
+      {
+        id: "monitor-ceiling",
+        components: [
+          { type: "Ground" },
+          {
+            type: "Transform",
+            position: { x: width / 2, y: -boundaryThickness / 2 },
+          },
+          {
+            type: "PhysicsBody",
+            shape: "rectangle",
+            width,
+            height: boundaryThickness,
           },
           { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
         ],

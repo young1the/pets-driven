@@ -31,6 +31,7 @@ export type SpeechProfileComponent = {
 export type SpeechStateComponent = {
   type: "SpeechState";
   speech: string | null;
+  expiresAt?: number | null;
 };
 
 /** Runtime capability that triggers speech after the entity has been idle. */
