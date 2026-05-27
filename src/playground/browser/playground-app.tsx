@@ -149,6 +149,56 @@ export function PlaygroundApp() {
     return () => window.clearInterval(intervalId);
   }, [advanceFrame, isAnimationPlaying]);
 
+  useEffect(() => {
+    function pushKeyboardEvent(
+      event: KeyboardEvent,
+      type: "keyboard.down" | "keyboard.up",
+    ) {
+      scenarioRef.current.world.pushEvent({
+        kind: "keyboard",
+        type,
+        key: event.key,
+        code: event.code,
+        at: scenarioRef.current.clock.now(),
+        repeat: event.repeat,
+      });
+    }
+
+    const down = (event: KeyboardEvent) => pushKeyboardEvent(event, "keyboard.down");
+    const up = (event: KeyboardEvent) => pushKeyboardEvent(event, "keyboard.up");
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, []);
+
+  function canvasPoint(event: React.PointerEvent<HTMLCanvasElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const scaleX = event.currentTarget.width / rect.width;
+    const scaleY = event.currentTarget.height / rect.height;
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY,
+    };
+  }
+
+  function pushPointerEvent(
+    event: React.PointerEvent<HTMLCanvasElement>,
+    type: "pointer.down" | "pointer.move" | "pointer.up",
+  ) {
+    scenarioRef.current.world.pushEvent({
+      kind: "pointer",
+      type,
+      pointerId: event.pointerId,
+      at: scenarioRef.current.clock.now(),
+      position: canvasPoint(event),
+      button: event.button,
+    });
+  }
+
   function sendEvent(type: AgentEvent["type"], summary: string) {
     const event = createAgentEvent({
       type,
@@ -275,6 +325,15 @@ export function PlaygroundApp() {
             data-testid="world-canvas"
             width={960}
             height={540}
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture?.(event.pointerId);
+              pushPointerEvent(event, "pointer.down");
+            }}
+            onPointerMove={(event) => pushPointerEvent(event, "pointer.move")}
+            onPointerUp={(event) => {
+              pushPointerEvent(event, "pointer.up");
+              event.currentTarget.releasePointerCapture?.(event.pointerId);
+            }}
           />
           <PetStatusList pets={snapshot.pets} />
         </div>
