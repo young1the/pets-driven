@@ -1146,7 +1146,11 @@ export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
   reads: ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
   writes: ["IntentState", "SpeechState", "ActivityState", "BehaviorDecisionState"],
   update(ctx) {
-    runAgentEventBehaviorSystem(ctx.components, ctx.events.drain(), ctx.clock);
+    runAgentEventBehaviorSystem(
+      ctx.components,
+      ctx.events.drainWhere((event) => event.kind === "agent"),
+      ctx.clock,
+    );
   },
 };
 
