@@ -84,6 +84,52 @@ describe("canvas renderer", () => {
     );
   });
 
+  it("scales dragged pet sprites around their center", () => {
+    const context = {
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const image = {} as HTMLImageElement;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 120,
+            vx: 0,
+            vy: 0,
+            shape: "rectangle",
+            width: 40,
+            height: 50,
+            animationState: "idle",
+            interaction: { dragged: true, scale: 1.12 },
+          },
+        ],
+        pets: [],
+        climbableSurfaces: [],
+      },
+      { "pet-a": image },
+      0,
+    );
+
+    expect(context.drawImage).toHaveBeenCalledWith(
+      image,
+      0,
+      0,
+      192,
+      208,
+      100 - (40 * 1.12) / 2,
+      120 - (50 * 1.12) / 2,
+      40 * 1.12,
+      50 * 1.12,
+    );
+  });
+
   it("draws pet names and intents from the world snapshot", () => {
     const context = {
       clearRect: vi.fn(),

@@ -94,8 +94,25 @@ export function createWorld(input: WorldDefinition) {
             return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
           })(),
           visualCue: getPetVisualCue(componentStore, entity.id),
+          interaction: getInteractionSnapshot(componentStore, entity.id),
         };
       });
+  }
+
+  function getInteractionSnapshot(componentStore: ComponentStore, id: string) {
+    const drag = componentStore.getComponent("user-interaction", "DragInteraction");
+    const target = componentStore.getComponent("user-interaction", "KeyboardControlTarget");
+    const dragged = drag?.entityId === id && drag.phase === "dragging";
+    const controlled = target?.entityId === id;
+    const selected = controlled;
+    if (!dragged && !controlled && !selected) return undefined;
+
+    return {
+      selected,
+      dragged,
+      controlled,
+      scale: dragged ? 1.12 : undefined,
+    };
   }
 
   function getPetVisualCue(
@@ -262,6 +279,7 @@ export function createWorld(input: WorldDefinition) {
       const bodies = physicsSnapshot.bodies.map((body) => ({
         ...body,
         animationState: getPetAnimationState(components, body.id, body),
+        interaction: getInteractionSnapshot(components, body.id),
       }));
 
       return {

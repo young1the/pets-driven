@@ -10,6 +10,7 @@ export type BodySnapshot = {
   radius?: number;
   isStatic?: boolean;
   animationState?: import("@/pets/assets/pet-atlas").PetAnimationState;
+  interaction?: InteractionSnapshot;
 };
 
 export type PetSnapshot = {
@@ -36,6 +37,15 @@ export type PetSnapshot = {
   pendingReaction: { source: string; reactsAt: number } | null;
   /** Presentation cue derived from current behavior, or null when quiet. */
   visualCue?: PetVisualCue | null;
+  /** Presentation state derived from current user interaction, if any. */
+  interaction?: InteractionSnapshot;
+};
+
+export type InteractionSnapshot = {
+  selected?: boolean;
+  dragged?: boolean;
+  controlled?: boolean;
+  scale?: number;
 };
 
 export type PetVisualCue = {
