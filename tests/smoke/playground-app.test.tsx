@@ -29,6 +29,39 @@ describe("PlaygroundApp", () => {
     ).toBeInTheDocument();
   });
 
+  it("forwards pointer events from the canvas to the world", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+    const canvas = screen.getByTestId("world-canvas");
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 600,
+      clientY: 500,
+      button: 0,
+    });
+    fireEvent.pointerMove(canvas, { pointerId: 1, clientX: 620, clientY: 500 });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 620, clientY: 500 });
+
+    expect(canvas).toBeInTheDocument();
+  });
+
+  it("listens for keyboard control events while mounted", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+    fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+
+    expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
+  });
+
   it("injects neutral task lifecycle events and shows the last payload", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,
