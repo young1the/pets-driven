@@ -24,6 +24,9 @@ export function drawWorld(
   for (const body of snapshot.bodies) {
     const sprite = assets[body.id];
     if (sprite) {
+      const scale = body.interaction?.scale ?? 1;
+      const drawWidth = body.width * scale;
+      const drawHeight = body.height * scale;
       const atlasFrame = getAtlasFrame(
         body.animationState ?? "idle",
         elapsedMs,
@@ -34,10 +37,10 @@ export function drawWorld(
         atlasFrame.sourceY,
         PET_CELL_SIZE.width,
         PET_CELL_SIZE.height,
-        body.x - body.width / 2,
-        body.y - body.height / 2,
-        body.width,
-        body.height,
+        body.x - drawWidth / 2,
+        body.y - drawHeight / 2,
+        drawWidth,
+        drawHeight,
       );
       continue;
     }

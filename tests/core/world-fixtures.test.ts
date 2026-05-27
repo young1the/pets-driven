@@ -49,6 +49,29 @@ describe("demo scenario", () => {
     });
   });
 
+  it("marks dragged pets with an interaction scale cue", () => {
+    const scenario = createDemoScenario();
+    scenario.world.setComponent("user-interaction", {
+      type: "DragInteraction",
+      pointerId: 1,
+      entityId: "pet-a",
+      phase: "dragging",
+      grabOffset: { x: 0, y: 0 },
+      pointerPosition: { x: 600, y: 500 },
+      startedAt: 0,
+      samples: [],
+    });
+
+    const pet = scenario.world.snapshot().pets.find((entry) => entry.id === "pet-a");
+
+    expect(pet?.interaction).toEqual({
+      dragged: true,
+      selected: false,
+      controlled: false,
+      scale: 1.12,
+    });
+  });
+
   it("exposes the simulation system order used by each step", () => {
     const scenario = createDemoScenario();
 
@@ -79,7 +102,10 @@ describe("demo scenario", () => {
       "JumpSystem",
       "WallClimbSystem",
       "IntentSteeringSystem",
+      "KeyboardControlMovementSystem",
       "FlightSystem",
+      "DraggedEntityKinematicSystem",
+      "ThrowImpulseSystem",
       // SIMULATE
       "PhysicsIntegrationSystem",
       "PhysicsTransformSyncSystemPost",
