@@ -12,8 +12,8 @@
 
 import type { SimulationSystem } from "@/core/simulation-system";
 import type { WorldStepContext } from "@/core/world-step-context";
+import { UserInteractionBehaviorSystem } from "@/features/interaction/systems";
 import {
-  UserInteractionBehaviorSystem,
   AgentEventBehaviorSystem,
   CollisionBehaviorSystem,
   BehaviorDecisionSystem,
