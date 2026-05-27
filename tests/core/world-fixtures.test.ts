@@ -65,10 +65,24 @@ describe("demo scenario", () => {
     const pet = scenario.world.snapshot().pets.find((entry) => entry.id === "pet-a");
 
     expect(pet?.interaction).toEqual({
+      controllable: true,
       dragged: true,
       selected: false,
       controlled: false,
       scale: 1.12,
+    });
+  });
+
+  it("marks controllable pets before selection", () => {
+    const scenario = createDemoScenario();
+    const pet = scenario.world.snapshot().pets.find((entry) => entry.id === "pet-a");
+
+    expect(pet?.interaction).toEqual({
+      controllable: true,
+      dragged: false,
+      selected: false,
+      controlled: false,
+      scale: undefined,
     });
   });
 

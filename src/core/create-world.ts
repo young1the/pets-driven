@@ -105,12 +105,14 @@ export function createWorld(input: WorldDefinition) {
   function getInteractionSnapshot(componentStore: ComponentStore, id: string) {
     const drag = componentStore.getComponent("user-interaction", "DragInteraction");
     const target = componentStore.getComponent("user-interaction", "KeyboardControlTarget");
+    const controllable = !!componentStore.getComponent(id, "CanControl");
     const dragged = drag?.entityId === id && drag.phase === "dragging";
     const controlled = target?.entityId === id;
     const selected = controlled;
-    if (!dragged && !controlled && !selected) return undefined;
+    if (!controllable && !dragged && !controlled && !selected) return undefined;
 
     return {
+      controllable,
       selected,
       dragged,
       controlled,

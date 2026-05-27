@@ -44,6 +44,17 @@ describe("UserInteractionBehaviorSystem", () => {
     expect(components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId).toBe("pet-a");
   });
 
+  it("selects CanControl entities from a padded hit area", () => {
+    const components = createStore();
+    const events = createWorldEventQueue();
+    const clock = createManualClock(0);
+
+    events.push({ kind: "pointer", type: "pointer.down", pointerId: 1, at: 0, position: { x: 128, y: 100 } });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    expect(components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId).toBe("pet-a");
+  });
+
   it("does not select entities without CanControl", () => {
     const components = createStore();
     const events = createWorldEventQueue();
