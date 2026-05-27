@@ -64,6 +64,14 @@ export type {
   ClimbDismountStateComponent,
 } from "@/features/movement/components";
 
+export type {
+  CanDragComponent,
+  CanControlComponent,
+  KeyboardControlTargetComponent,
+  KeyboardInputStateComponent,
+  DragInteractionComponent,
+} from "@/features/interaction/components";
+
 import type { PerceptionComponent } from "@/features/perception/components";
 import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent, PetCollisionComponent } from "@/features/physics/components";
 import type { ContactStateComponent } from "@/features/contact/components";
@@ -74,11 +82,14 @@ import type { CanWalkComponent, MovementProfileComponent, WandersOnArrivalCompon
 import type { CanJumpComponent, JumpActionStateComponent } from "@/features/movement/components";
 import type { CanFlyComponent } from "@/features/movement/components";
 import type { CanWallClimbComponent, ClimbableSurfaceComponent, ClimbIntentStateComponent, ClimbDismountStateComponent } from "@/features/movement/components";
+import type { CanDragComponent, CanControlComponent, KeyboardControlTargetComponent, KeyboardInputStateComponent, DragInteractionComponent } from "@/features/interaction/components";
 
 export type Component =
   | ActivityStateComponent
   | PendingReactionComponent
   | BehaviorDecisionTokenComponent
+  | CanControlComponent
+  | CanDragComponent
   | PerceptionComponent
   | AgentBindingComponent
   | PersonalityComponent
@@ -94,11 +105,14 @@ export type Component =
   | ClimbingTagComponent
   | CompletionBehaviorComponent
   | ContactStateComponent
+  | DragInteractionComponent
   | FlyingTagComponent
   | GroundComponent
   | IdleConversationComponent
   | IntentStateComponent
   | JumpActionStateComponent
+  | KeyboardControlTargetComponent
+  | KeyboardInputStateComponent
   | MotionTargetComponent
   | MovementProfileComponent
   | PetCollisionComponent

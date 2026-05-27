@@ -19,6 +19,36 @@ describe("demo scenario", () => {
     );
   });
 
+  it("adds drag and control capabilities to demo pets", () => {
+    const scenario = createDemoScenario();
+
+    expect(scenario.world.getComponent("pet-a", "CanDrag")).toEqual({
+      type: "CanDrag",
+    });
+    expect(scenario.world.getComponent("pet-a", "CanControl")).toEqual({
+      type: "CanControl",
+      force: expect.any(Number),
+    });
+  });
+
+  it("creates one world-level interaction state entity", () => {
+    const scenario = createDemoScenario();
+
+    expect(
+      scenario.world.getComponent("user-interaction", "KeyboardControlTarget"),
+    ).toEqual({
+      type: "KeyboardControlTarget",
+      entityId: null,
+    });
+    expect(
+      scenario.world.getComponent("user-interaction", "KeyboardInputState"),
+    ).toEqual({
+      type: "KeyboardInputState",
+      pressedCodes: [],
+      vector: { x: 0, y: 0 },
+    });
+  });
+
   it("exposes the simulation system order used by each step", () => {
     const scenario = createDemoScenario();
 
