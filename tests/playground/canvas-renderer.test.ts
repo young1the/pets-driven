@@ -130,6 +130,109 @@ describe("canvas renderer", () => {
     );
   });
 
+  it("mirrors right-facing jumping sprites around the body center", () => {
+    const context = {
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const image = {} as HTMLImageElement;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 80,
+            vx: -1,
+            vy: -3,
+            shape: "rectangle",
+            ...DEFAULT_PET_BODY_SIZE,
+            animationState: "jumping",
+            spriteFacing: "right",
+          },
+        ],
+        pets: [],
+        climbableSurfaces: [],
+      },
+      { "pet-a": image },
+      0,
+    );
+
+    expect(context.save).toHaveBeenCalledBefore(context.scale);
+    expect(context.translate).toHaveBeenCalledWith(100, 80);
+    expect(context.scale).toHaveBeenCalledWith(-1, 1);
+    expect(context.drawImage).toHaveBeenCalledWith(
+      image,
+      0,
+      832,
+      192,
+      208,
+      -16,
+      -19,
+      32,
+      38,
+    );
+    expect(context.restore).toHaveBeenCalledAfter(context.drawImage);
+  });
+
+  it("draws directional running rows without mirroring", () => {
+    const context = {
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const image = {} as HTMLImageElement;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 80,
+            vx: 1,
+            vy: 0,
+            shape: "rectangle",
+            ...DEFAULT_PET_BODY_SIZE,
+            animationState: "running-right",
+            spriteFacing: "right",
+          },
+        ],
+        pets: [],
+        climbableSurfaces: [],
+      },
+      { "pet-a": image },
+      0,
+    );
+
+    expect(context.scale).not.toHaveBeenCalled();
+    expect(context.drawImage).toHaveBeenCalledWith(
+      image,
+      0,
+      208,
+      192,
+      208,
+      84,
+      61,
+      32,
+      38,
+    );
+  });
+
   it("draws pet names and intents from the world snapshot", () => {
     const context = {
       clearRect: vi.fn(),
@@ -245,6 +348,8 @@ describe("canvas renderer", () => {
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
 
     drawWorld(
@@ -279,10 +384,12 @@ describe("canvas renderer", () => {
       0,
     );
 
+    expect(context.fillRect).toHaveBeenCalledWith(46, 56, 108, 20);
+    expect(context.strokeRect).toHaveBeenCalledWith(46, 56, 108, 20);
     expect(context.fillText).toHaveBeenCalledWith("♥", 100, 72);
   });
 
-  it("draws visual behavior cues above speech bubbles", () => {
+  it("draws only the visual cue in the shared speech bubble when speech also exists", () => {
     const context = {
       clearRect: vi.fn(),
       beginPath: vi.fn(),
@@ -327,8 +434,10 @@ describe("canvas renderer", () => {
       0,
     );
 
-    expect(context.fillText).toHaveBeenCalledWith("!", 100, 40);
-    expect(context.fillText).toHaveBeenCalledWith("Needs approval", 100, 72);
+    expect(context.fillText).toHaveBeenCalledWith("!", 100, 72);
+    expect(context.fillText).not.toHaveBeenCalledWith("Needs approval", 100, 72);
+    expect(context.fillText).not.toHaveBeenCalledWith("! Needs approval", 100, 72);
+    expect(context.fillText).not.toHaveBeenCalledWith("!", 100, 40);
   });
 
   it("draws a ground contact indicator under a grounded pet", () => {

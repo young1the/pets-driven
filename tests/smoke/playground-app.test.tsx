@@ -62,30 +62,25 @@ describe("PlaygroundApp", () => {
     expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
   });
 
-  it("injects neutral task lifecycle events and shows the last payload", () => {
+  it("does not render event, demo, or timeline controls", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,
     );
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent }),
-    );
-    expect(screen.getByText(/"type": "task.started"/)).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }),
-    );
-    expect(screen.getByText(/"type": "task.waiting"/)).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendCompletedEvent }),
-    );
-    expect(screen.getByText(/"type": "task.completed"/)).toBeInTheDocument();
     expect(
-      screen.getByText(`${PLAYGROUND_TEXT.lastEventTypePrefix} task.completed`),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Send started event" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Walk Alice" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Last event" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Action timeline" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders pet status from the world snapshot", () => {
@@ -105,73 +100,62 @@ describe("PlaygroundApp", () => {
     expect(petStatus.getByText("Gwen")).toBeInTheDocument();
   });
 
-  it("updates visible pet status after a waiting event", () => {
+  it("keeps animation controls available", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {} as CanvasRenderingContext2D,
+      {
+        beginPath: vi.fn(),
+        clearRect: vi.fn(),
+        ellipse: vi.fn(),
+        fill: vi.fn(),
+        fillRect: vi.fn(),
+        fillText: vi.fn(),
+        lineTo: vi.fn(),
+        moveTo: vi.fn(),
+        rect: vi.fn(),
+        stroke: vi.fn(),
+        strokeRect: vi.fn(),
+      } as unknown as CanvasRenderingContext2D,
     );
 
     render(<PlaygroundApp />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }),
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
     );
-
-    const petStatus = petStatusList();
-    // Multiple pets may autonomously choose to seek the user; verify at least one
-    // has been set to seek and that Alice's speech was captured.
-    expect(petStatus.getAllByText("seek").length).toBeGreaterThan(0);
-    expect(petStatus.getByText("Needs approval")).toBeInTheDocument();
-  });
-
-  it("starts a visible walking demo from the playground controls", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {} as CanvasRenderingContext2D,
-    );
-
-    render(<PlaygroundApp />);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.startWalkDemo }),
-    );
-
-    const alice = petStatusList().getByText("Alice").closest("li");
-    expect(alice).not.toBeNull();
-    expect(within(alice as HTMLElement).getByText("walk")).toBeInTheDocument();
     expect(
-      within(alice as HTMLElement).getByText(PLAYGROUND_TEXT.walkingDemoSpeech),
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.resumeAnimation }),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),
+    );
+    expect(
+      screen.getByText(`${PLAYGROUND_TEXT.frameCounterPrefix} 1`),
     ).toBeInTheDocument();
   });
 
-  it("starts visible jump and wall-climb demos from the playground controls", () => {
+  it("copies the selected behavior lab state to the clipboard", async () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,
     );
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
 
     render(<PlaygroundApp />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo }),
+      screen.getByRole("button", { name: PLAYGROUND_TEXT.copyStateToClipboard }),
     );
-    const aliceAfterJump = petStatusList().getByText("Alice").closest("li");
-    expect(aliceAfterJump).not.toBeNull();
-    expect(
-      within(aliceAfterJump as HTMLElement).getByText("walk"),
-    ).toBeInTheDocument();
-    expect(
-      within(aliceAfterJump as HTMLElement).getByText(
-        PLAYGROUND_TEXT.jumpDemoSpeech,
-      ),
-    ).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo }),
-    );
-    const aliceAfterClimb = petStatusList().getByText("Alice").closest("li");
-    expect(aliceAfterClimb).not.toBeNull();
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copied = JSON.parse(writeText.mock.calls[0][0]);
+    expect(copied.pet.id).toBe("pet-a");
+    expect(copied.components.Transform.position).toEqual({ x: 600, y: 500 });
+    expect(copied.components.MotionTarget.targetPosition).toBeNull();
     expect(
-      within(aliceAfterClimb as HTMLElement).getByText(
-        PLAYGROUND_TEXT.wallClimbDemoSpeech,
-      ),
+      await screen.findByText(PLAYGROUND_TEXT.copyStateCopied),
     ).toBeInTheDocument();
   });
 
@@ -219,120 +203,38 @@ describe("PlaygroundApp", () => {
     expect(screen.getAllByText("force").length).toBeGreaterThan(0);
     expect(screen.getAllByText("velocity").length).toBeGreaterThan(0);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo }),
-    );
-    // JumpActionState is transient, so its phase field appears only while the
-    // jump action is active.
-    expect(screen.getAllByText("phase").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("position").length).toBeGreaterThan(0);
   });
 
-  it("shows the action timeline section", () => {
+  it("can hide and show the behavior lab component state list", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,
     );
 
     render(<PlaygroundApp />);
 
+    expect(screen.getByText("Intent")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: PLAYGROUND_TEXT.hideComponentStateList,
+      }),
+    );
+
+    expect(screen.queryByText("Intent")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", {
-        name: PLAYGROUND_TEXT.actionTimelineTitle,
+      screen.getByRole("button", {
+        name: PLAYGROUND_TEXT.showComponentStateList,
       }),
     ).toBeInTheDocument();
-  });
-
-  it("can pause the animation loop and manually play the next frame", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {
-        beginPath: vi.fn(),
-        clearRect: vi.fn(),
-        ellipse: vi.fn(),
-        fill: vi.fn(),
-        fillRect: vi.fn(),
-        fillText: vi.fn(),
-        lineTo: vi.fn(),
-        moveTo: vi.fn(),
-        rect: vi.fn(),
-        stroke: vi.fn(),
-        strokeRect: vi.fn(),
-      } as unknown as CanvasRenderingContext2D,
-    );
-
-    render(<PlaygroundApp />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
-    );
-    expect(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.resumeAnimation }),
-    ).toHaveAttribute("aria-pressed", "false");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),
+      screen.getByRole("button", {
+        name: PLAYGROUND_TEXT.showComponentStateList,
+      }),
     );
 
-    expect(
-      screen.getByText(`${PLAYGROUND_TEXT.frameCounterPrefix} 1`),
-    ).toBeInTheDocument();
-  });
-
-  it("logs behavior selection entries into the action timeline", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {
-        beginPath: vi.fn(),
-        clearRect: vi.fn(),
-        ellipse: vi.fn(),
-        fill: vi.fn(),
-        fillRect: vi.fn(),
-        fillText: vi.fn(),
-        lineTo: vi.fn(),
-        moveTo: vi.fn(),
-        rect: vi.fn(),
-        stroke: vi.fn(),
-        strokeRect: vi.fn(),
-      } as unknown as CanvasRenderingContext2D,
-    );
-    render(<PlaygroundApp />);
-
-    // Pause auto-play so frame timing is deterministic.
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
-    );
-
-    // Frame 1: BehaviorDecisionSystem fires for all pets (all idle, no targets, no claims).
-    // prevSnapshotRef is established with autonomous decisions present.
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),
-    );
-
-    // A task.waiting event causes Alice's claim to switch from autonomous -> agent-event.
-    // diffSnapshot detects source/reason change and emits a "behavior:" timeline entry.
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }),
-    );
-
-    const timeline = screen.getByTestId("action-timeline");
-    expect(timeline.textContent).toMatch(/behavior:/);
-  });
-
-  it("records a locomotion change in the action timeline", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {} as CanvasRenderingContext2D,
-    );
-
-    render(<PlaygroundApp />);
-
-    // First event establishes the baseline snapshot in prevSnapshotRef
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent }),
-    );
-    // Second event diffs against the baseline; Alice's intent changes active → seek
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent }),
-    );
-
-    const timeline = screen.getByTestId("action-timeline");
-    expect(within(timeline).getAllByRole("listitem").length).toBeGreaterThan(0);
+    expect(screen.getByText("Intent")).toBeInTheDocument();
   });
 
   it("shows OCEAN personality bars (O C E A N) for the selected pet", () => {

@@ -14,6 +14,8 @@ export type PetAnimationState =
   | "running"
   | "review";
 
+export type PetSpriteFacing = "left" | "right";
+
 const PET_ANIMATION_ROWS: Record<PetAnimationState, number> = {
   idle: 0,
   "running-right": 1,
@@ -38,7 +40,24 @@ const PET_ANIMATION_DURATIONS: Record<PetAnimationState, number[]> = {
   review: [150, 150, 150, 150, 150, 280],
 };
 
-export function getAtlasFrame(animationState: PetAnimationState, elapsedMs: number) {
+export const MIRRORED_SINGLE_DIRECTION_ANIMATION_STATES: ReadonlySet<PetAnimationState> =
+  new Set(["idle", "waving", "jumping", "failed", "waiting", "review"]);
+
+export function shouldMirrorSprite(
+  animationState: PetAnimationState,
+  facing: PetSpriteFacing = "left",
+) {
+  return (
+    facing === "right" &&
+    MIRRORED_SINGLE_DIRECTION_ANIMATION_STATES.has(animationState)
+  );
+}
+
+export function getAtlasFrame(
+  animationState: PetAnimationState,
+  elapsedMs: number,
+  facing: PetSpriteFacing = "left",
+) {
   const durations = PET_ANIMATION_DURATIONS[animationState];
   const loopDuration = durations.reduce((sum, duration) => sum + duration, 0);
   let remaining = elapsedMs % loopDuration;

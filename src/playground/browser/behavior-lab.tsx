@@ -3,6 +3,7 @@ import type {
   ComponentType,
 } from "@/core/components";
 import type { PetSnapshot } from "@/core/world-snapshot";
+import { useMemo, useState } from "react";
 import { PLAYGROUND_TEXT } from "./playground-text";
 
 const INSPECTED_COMPONENTS: ComponentType[] = [
@@ -60,10 +61,60 @@ export function BehaviorLab({
   const componentTypes = INSPECTED_COMPONENTS.filter((type) =>
     getComponent(selectedPet.id, type),
   );
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
+    "idle",
+  );
+  const [isStateListVisible, setIsStateListVisible] = useState(true);
+  const clipboardPayload = useMemo(
+    () => ({
+      pet: selectedPet,
+      components: Object.fromEntries(
+        componentTypes.map((type) => [
+          type,
+          getComponent(selectedPet.id, type),
+        ]),
+      ),
+    }),
+    [componentTypes, getComponent, selectedPet],
+  );
+
+  async function copyStateToClipboard() {
+    try {
+      await navigator.clipboard.writeText(
+        JSON.stringify(clipboardPayload, null, 2),
+      );
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("failed");
+    }
+  }
 
   return (
     <section className="behavior-lab">
-      <h2>{PLAYGROUND_TEXT.behaviorLabTitle}</h2>
+      <div className="behavior-lab__header">
+        <h2>{PLAYGROUND_TEXT.behaviorLabTitle}</h2>
+        <div className="behavior-lab__header-actions">
+          <button type="button" onClick={copyStateToClipboard}>
+            {PLAYGROUND_TEXT.copyStateToClipboard}
+          </button>
+          <button
+            type="button"
+            aria-expanded={isStateListVisible}
+            onClick={() => setIsStateListVisible((visible) => !visible)}
+          >
+            {isStateListVisible
+              ? PLAYGROUND_TEXT.hideComponentStateList
+              : PLAYGROUND_TEXT.showComponentStateList}
+          </button>
+        </div>
+      </div>
+      {copyStatus !== "idle" && (
+        <p className="behavior-lab__copy-status" role="status">
+          {copyStatus === "copied"
+            ? PLAYGROUND_TEXT.copyStateCopied
+            : PLAYGROUND_TEXT.copyStateFailed}
+        </p>
+      )}
       <div className="behavior-lab__selector">
         <span>{PLAYGROUND_TEXT.selectedPetLabel}</span>
         <div>
@@ -103,94 +154,102 @@ export function BehaviorLab({
           </dl>
         </div>
       )}
-      <dl className="behavior-lab__state">
-        {decisionToken && (
+      {isStateListVisible && (
+        <dl className="behavior-lab__state">
+          {decisionToken && (
+            <div>
+              <dt>{PLAYGROUND_TEXT.decisionTokenLabel}</dt>
+              <dd>
+                {decisionToken.kind}
+                {decisionToken.consumed ? " (consumed)" : " (pending)"}
+              </dd>
+            </div>
+          )}
+          {pendingReaction && (
+            <div>
+              <dt>{PLAYGROUND_TEXT.pendingReactionLabel}</dt>
+              <dd>
+                {pendingReaction.source} — reacts at{" "}
+                {pendingReaction.reactsAt}ms
+              </dd>
+            </div>
+          )}
           <div>
-            <dt>{PLAYGROUND_TEXT.decisionTokenLabel}</dt>
-            <dd>
-              {decisionToken.kind}
-              {decisionToken.consumed ? " (consumed)" : " (pending)"}
+            <dt>Intent</dt>
+            <dd>{selectedPet.intent}</dd>
+          </div>
+          <div>
+            <dt>Locomotion</dt>
+            <dd>{selectedPet.locomotion}</dd>
+          </div>
+          <div>
+            <dt>Action</dt>
+            <dd>{selectedPet.action ?? "none"}</dd>
+          </div>
+          <div>
+            <dt>Grounded</dt>
+            <dd>{contact?.grounded ? "true" : "false"}</dd>
+          </div>
+          <div>
+            <dt>Climb contact</dt>
+            <dd>{contact?.climbableSurfaceId ?? "none"}</dd>
+          </div>
+          <div>
+            <dt>Motion target</dt>
+            <dd>{formatMotionTarget(motion)}</dd>
+          </div>
+          <div>
+            <dt>Jump phase</dt>
+            <dd>{jumpAction?.phase ?? "none"}</dd>
+          </div>
+          <div>
+            <dt>Jump cooldown</dt>
+            <dd>{jumpAction?.cooldownMs ?? 0}ms</dd>
+          </div>
+          <div>
+            <dt>Climb intent</dt>
+            <dd>{formatClimbIntent(climbIntent)}</dd>
+          </div>
+          <div>
+            <dt>Dismount phase</dt>
+            <dd>{climbDismount?.phase ?? "none"}</dd>
+          </div>
+          <div>
+            <dt>Dismount cooldown</dt>
+            <dd>{climbDismount?.cooldownMs ?? 0}ms</dd>
+          </div>
+          <div>
+            <dt>{PLAYGROUND_TEXT.componentPanelTitle}</dt>
+            <dd className="behavior-lab__components">
+              {componentTypes.map((type) => {
+                const comp = getComponent(selectedPet.id, type);
+                if (!comp) return null;
+                const fields = Object.entries(comp).filter(
+                  ([key]) => key !== "type",
+                );
+                return (
+                  <details
+                    key={type}
+                    className="behavior-lab__component-detail"
+                  >
+                    <summary>{type}</summary>
+                    {fields.length > 0 && (
+                      <dl className="behavior-lab__component-fields">
+                        {fields.map(([key, value]) => (
+                          <div key={key}>
+                            <dt>{key}</dt>
+                            <dd>{formatComponentValue(value)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                  </details>
+                );
+              })}
             </dd>
           </div>
-        )}
-        {pendingReaction && (
-          <div>
-            <dt>{PLAYGROUND_TEXT.pendingReactionLabel}</dt>
-            <dd>
-              {pendingReaction.source} — reacts at {pendingReaction.reactsAt}ms
-            </dd>
-          </div>
-        )}
-        <div>
-          <dt>Intent</dt>
-          <dd>{selectedPet.intent}</dd>
-        </div>
-        <div>
-          <dt>Locomotion</dt>
-          <dd>{selectedPet.locomotion}</dd>
-        </div>
-        <div>
-          <dt>Action</dt>
-          <dd>{selectedPet.action ?? "none"}</dd>
-        </div>
-        <div>
-          <dt>Grounded</dt>
-          <dd>{contact?.grounded ? "true" : "false"}</dd>
-        </div>
-        <div>
-          <dt>Climb contact</dt>
-          <dd>{contact?.climbableSurfaceId ?? "none"}</dd>
-        </div>
-        <div>
-          <dt>Motion target</dt>
-          <dd>{formatMotionTarget(motion)}</dd>
-        </div>
-        <div>
-          <dt>Jump phase</dt>
-          <dd>{jumpAction?.phase ?? "none"}</dd>
-        </div>
-        <div>
-          <dt>Jump cooldown</dt>
-          <dd>{jumpAction?.cooldownMs ?? 0}ms</dd>
-        </div>
-        <div>
-          <dt>Climb intent</dt>
-          <dd>{formatClimbIntent(climbIntent)}</dd>
-        </div>
-        <div>
-          <dt>Dismount phase</dt>
-          <dd>{climbDismount?.phase ?? "none"}</dd>
-        </div>
-        <div>
-          <dt>Dismount cooldown</dt>
-          <dd>{climbDismount?.cooldownMs ?? 0}ms</dd>
-        </div>
-        <div>
-          <dt>{PLAYGROUND_TEXT.componentPanelTitle}</dt>
-          <dd className="behavior-lab__components">
-            {componentTypes.map((type) => {
-              const comp = getComponent(selectedPet.id, type);
-              if (!comp) return null;
-              const fields = Object.entries(comp).filter(([key]) => key !== "type");
-              return (
-                <details key={type} className="behavior-lab__component-detail">
-                  <summary>{type}</summary>
-                  {fields.length > 0 && (
-                    <dl className="behavior-lab__component-fields">
-                      {fields.map(([key, value]) => (
-                        <div key={key}>
-                          <dt>{key}</dt>
-                          <dd>{formatComponentValue(value)}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                </details>
-              );
-            })}
-          </dd>
-        </div>
-      </dl>
+        </dl>
+      )}
     </section>
   );
 }

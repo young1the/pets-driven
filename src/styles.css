@@ -46,23 +46,6 @@ body {
   margin: 0;
 }
 
-.agent-event-panel h2 {
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
-
-.agent-event-panel pre {
-  margin: 0;
-  max-width: 480px;
-  min-height: 96px;
-  padding: 12px;
-  border: 1px solid #ccd5e0;
-  border-radius: 8px;
-  background: #ffffff;
-  box-sizing: border-box;
-  overflow: auto;
-}
-
 .playground-workspace {
   display: grid;
   grid-template-columns: minmax(0, 960px) minmax(280px, 360px);
@@ -73,6 +56,13 @@ body {
 .playground-stage {
   display: grid;
   gap: 16px;
+  min-width: 0;
+}
+
+.pet-status-list {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .pet-status-list h2,
@@ -90,19 +80,38 @@ body {
 }
 
 .pet-status-list li {
-  display: grid;
-  grid-template-columns:
-    minmax(80px, 1fr)
-    minmax(88px, 1fr)
-    minmax(88px, 1fr)
-    minmax(88px, 1fr)
-    minmax(120px, 2fr);
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
   padding: 10px 12px;
   border: 1px solid #ccd5e0;
   border-radius: 8px;
   background: #ffffff;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.pet-status-list li > * {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pet-status-list li > strong {
+  flex: 0 1 104px;
+}
+
+.pet-status-list li > span {
+  flex: 0 1 112px;
+}
+
+.pet-status-list li > span:last-child {
+  flex: 1 1 180px;
 }
 
 .playground-shell canvas {
@@ -119,6 +128,28 @@ body {
   border: 1px solid #ccd5e0;
   border-radius: 8px;
   background: #ffffff;
+}
+
+.behavior-lab__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.behavior-lab__header h2 {
+  margin: 0;
+}
+
+.behavior-lab__header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.behavior-lab__copy-status {
+  margin: 0;
+  color: #2563eb;
+  font-size: 0.86rem;
 }
 
 .behavior-lab__selector {
