@@ -216,20 +216,22 @@ export function PlaygroundApp() {
           />
           <PetStatusList pets={snapshot.pets} />
         </div>
-        <BehaviorLab
-          pets={snapshot.pets}
-          selectedPetId={selectedPetId}
-          onSelectPet={setSelectedPetId}
-          getComponent={(id, type) =>
-            scenarioRef.current.world.getComponent(id, type)
-          }
-        />
-        <AgentEventPanel
-          lastEvent={lastAgentEvent}
-          lastHookName={lastHookName}
-          error={agentEventError}
-          onSendSampleHook={sendSampleHook}
-        />
+        <aside className="playground-sidebar">
+          <AgentEventPanel
+            lastEvent={lastAgentEvent}
+            lastHookName={lastHookName}
+            error={agentEventError}
+            onSendSampleHook={sendSampleHook}
+          />
+          <BehaviorLab
+            pets={snapshot.pets}
+            selectedPetId={selectedPetId}
+            onSelectPet={setSelectedPetId}
+            getComponent={(id, type) =>
+              scenarioRef.current.world.getComponent(id, type)
+            }
+          />
+        </aside>
       </div>
     </main>
   );
