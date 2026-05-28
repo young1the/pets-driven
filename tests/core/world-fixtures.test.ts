@@ -825,6 +825,42 @@ describe("demo scenario", () => {
       speech: "Done",
       expiresAt: 1_500,
     });
+    expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+  });
+
+  it("clears movement and shows failed state for failed task lifecycle", () => {
+    const scenario = createDemoScenario();
+    scenario.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 820, y: 500 },
+    });
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.failed",
+      sourceId: "agent-a",
+      at: 20,
+      summary: "Failed",
+    });
+    scenario.world.step(16);
+
+    expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
+      type: "IntentState",
+      intent: "idle",
+    });
+    expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
+      animationState: "failed",
+    });
   });
 
   it("clears speech after the speech bubble expires", () => {

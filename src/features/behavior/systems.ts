@@ -123,6 +123,14 @@ function setSpeech(
   speech.expiresAt = line ? now + SPEECH_BUBBLE_DURATION_MS : null;
 }
 
+function clearMotionTarget(components: ComponentStore, id: string): void {
+  components.setComponent(id, {
+    type: "MotionTarget",
+    targetEntityId: null,
+    targetPosition: null,
+  });
+}
+
 export function runSpeechExpirationSystem(
   components: ComponentStore,
   clock: Clock,
@@ -171,6 +179,7 @@ export function runAgentEventBehaviorSystem(
 
         if (event.type === "task.failed") {
           intent.intent = "idle";
+          clearMotionTarget(components, id);
           setSpeech(speech, event.summary ?? "Task failed", now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.failed");
@@ -178,6 +187,7 @@ export function runAgentEventBehaviorSystem(
 
         if (event.type === "task.completed") {
           intent.intent = completionBehavior.intentAfterCompletion;
+          clearMotionTarget(components, id);
           setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
