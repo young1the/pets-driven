@@ -1,6 +1,7 @@
 node_modules/
 dist/
 test-results/
+src-tauri/target/
 dev-server*.log
 .DS_Store
 .claude/settings.local.json
