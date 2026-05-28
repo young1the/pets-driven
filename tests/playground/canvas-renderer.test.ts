@@ -178,6 +178,62 @@ describe("canvas renderer", () => {
     expect(context.strokeRect).toHaveBeenCalledWith(76, 91, 48, 58);
   });
 
+  it("draws a badge and strong outline for held agent states", () => {
+    const context = {
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+      fillRect: vi.fn(),
+      fillText: vi.fn(),
+      restore: vi.fn(),
+      save: vi.fn(),
+      strokeRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const image = {} as HTMLImageElement;
+
+    drawWorld(
+      context,
+      {
+        width: 320,
+        height: 180,
+        bodies: [
+          {
+            id: "pet-a",
+            x: 100,
+            y: 120,
+            vx: 0,
+            vy: 0,
+            shape: "rectangle",
+            width: 40,
+            height: 50,
+            animationState: "waiting",
+          },
+        ],
+        pets: [
+          {
+            id: "pet-a",
+            sourceId: "agent-a",
+            name: "Alice",
+            intent: "idle",
+            locomotion: "walk",
+            speech: null,
+            position: { x: 100, y: 120 },
+            contact: { grounded: false, climbableSurfaceId: null },
+            motionTarget: null,
+            decision: null,
+            pendingReaction: null,
+            heldAgentState: { kind: "waiting", label: "WAIT" },
+          },
+        ],
+        climbableSurfaces: [],
+      },
+      { "pet-a": image },
+      0,
+    );
+
+    expect(context.strokeRect).toHaveBeenCalledWith(73, 88, 54, 64);
+    expect(context.fillText).toHaveBeenCalledWith("WAIT", 100, 80);
+  });
+
   it("mirrors right-facing jumping sprites around the body center", () => {
     const context = {
       clearRect: vi.fn(),

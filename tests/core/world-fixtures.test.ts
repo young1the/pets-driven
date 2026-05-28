@@ -331,7 +331,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "AgentEventHoldSystem",
       dependsOn: ["FlightSystem"],
-      reads: ["BehaviorDecisionState"],
+      reads: ["HeldAgentState"],
       writes: ["MotionTarget", "PhysicsVelocity"],
     });
   });
@@ -745,6 +745,11 @@ describe("demo scenario", () => {
     expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
       animationState: "waiting",
     });
+    expect(scenario.world.snapshot().pets.find((pet) => pet.id === "pet-a")?.heldAgentState).toEqual({
+      kind: "waiting",
+      label: "WAIT",
+      summary: "Approve command",
+    });
   });
 
   it("stops walking pets while waiting for user input", () => {
@@ -823,6 +828,39 @@ describe("demo scenario", () => {
       vy: expect.closeTo(0, 0),
       animationState: "waiting",
     });
+  });
+
+  it("holds waiting pets until the user interacts with that pet", () => {
+    const scenario = createDemoScenario();
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.waiting",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Needs approval",
+    });
+    scenario.world.step(16);
+    scenario.clock.advanceBy(6_000);
+    scenario.world.step(16);
+
+    expect(scenario.world.getComponent("pet-a", "HeldAgentState")).toMatchObject({
+      kind: "waiting",
+    });
+    expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
+      animationState: "waiting",
+    });
+
+    scenario.world.pushEvent({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 1,
+      at: scenario.clock.now(),
+      position: { x: 600, y: 500 },
+    });
+    scenario.world.step(16);
+
+    expect(scenario.world.getComponent("pet-a", "HeldAgentState")).toBeUndefined();
   });
 
   it("clears stale seek-user targets after walking pets reach the resolved stop target", () => {

@@ -16,6 +16,7 @@ export function PetStatusList({ pets }: PetStatusListProps) {
             <span>{pet.sourceId}</span>
             <span>{pet.intent}</span>
             <span>{pet.locomotion}</span>
+            {pet.heldAgentState && <span>{pet.heldAgentState.label}</span>}
             {pet.action && pet.action !== "none" && <span>{pet.action}</span>}
             <span>{pet.speech ?? PLAYGROUND_TEXT.noSpeech}</span>
           </li>

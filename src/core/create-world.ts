@@ -74,6 +74,7 @@ export function createWorld(input: WorldDefinition) {
         const [identity, agent, intent, speech, transform] = entity.components;
         const contactState = componentStore.getComponent(entity.id, "ContactState");
         const decisionState = componentStore.getComponent(entity.id, "BehaviorDecisionState");
+        const heldAgentState = componentStore.getComponent(entity.id, "HeldAgentState");
         return {
           id: entity.id,
           sourceId: agent.sourceId,
@@ -96,6 +97,17 @@ export function createWorld(input: WorldDefinition) {
             const pr = componentStore.getComponent(entity.id, "PendingReaction");
             return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
           })(),
+          heldAgentState: heldAgentState
+            ? {
+                kind: heldAgentState.kind,
+                label: heldAgentState.kind === "waiting"
+                  ? "WAIT" as const
+                  : heldAgentState.kind === "failed"
+                    ? "FAIL" as const
+                    : "DONE" as const,
+                summary: heldAgentState.summary,
+              }
+            : null,
           visualCue: getPetVisualCue(componentStore, entity.id),
           interaction: getInteractionSnapshot(componentStore, entity.id),
         };
@@ -203,6 +215,19 @@ export function createWorld(input: WorldDefinition) {
     }
 
     const decision = componentStore.getComponent(id, "BehaviorDecisionState");
+    const heldAgentState = componentStore.getComponent(id, "HeldAgentState");
+    if (heldAgentState?.kind === "failed") {
+      return "failed";
+    }
+
+    if (heldAgentState?.kind === "completed") {
+      return "review";
+    }
+
+    if (heldAgentState?.kind === "waiting") {
+      return "waiting";
+    }
+
     if (decision?.reason === "task.failed") {
       return "failed";
     }
