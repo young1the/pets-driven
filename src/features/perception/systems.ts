@@ -35,16 +35,26 @@ export function runPerceptionSystem(components: ComponentStore): void {
         ? buildEntry(userAnchorEntry.id, userAnchorEntry.x, userAnchorEntry.y, px, py)
         : null;
 
-      perception.nearbyPets = allPets
-        .filter((p) => p.id !== id)
-        .map((p) => buildEntry(p.id, p.x, p.y, px, py))
-        .filter((e) => e.distance <= MAX_PERCEPTION_RANGE)
-        .sort((a, b) => a.distance - b.distance);
+      const nearbyPets: PerceivedEntity[] = [];
+      for (const pet of allPets) {
+        if (pet.id === id) continue;
+        const entry = buildEntry(pet.id, pet.x, pet.y, px, py);
+        if (entry.distance <= MAX_PERCEPTION_RANGE) {
+          nearbyPets.push(entry);
+        }
+      }
+      nearbyPets.sort((a, b) => a.distance - b.distance);
+      perception.nearbyPets = nearbyPets;
 
-      perception.nearbyClimbables = climbables
-        .map((c) => buildEntry(c.id, c.x, c.y, px, py))
-        .filter((e) => e.distance <= MAX_PERCEPTION_RANGE)
-        .sort((a, b) => a.distance - b.distance);
+      const nearbyClimbables: PerceivedEntity[] = [];
+      for (const climbable of climbables) {
+        const entry = buildEntry(climbable.id, climbable.x, climbable.y, px, py);
+        if (entry.distance <= MAX_PERCEPTION_RANGE) {
+          nearbyClimbables.push(entry);
+        }
+      }
+      nearbyClimbables.sort((a, b) => a.distance - b.distance);
+      perception.nearbyClimbables = nearbyClimbables;
 
       perception.self = {
         grounded: contact.grounded,

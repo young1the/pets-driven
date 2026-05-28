@@ -74,4 +74,31 @@ describe("component store", () => {
     expect(store.getComponent("pet-a", "WalkingTag")).toBeUndefined();
     expect(store.query("CanWalk", "WalkingTag")).toEqual([]);
   });
+
+  it("reuses callback tuple storage when iterating matching entities", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform", position: { x: 0, y: 0 } },
+          { type: "IntentState", intent: "idle" },
+        ],
+      },
+      {
+        id: "pet-b",
+        components: [
+          { type: "Transform", position: { x: 10, y: 0 } },
+          { type: "IntentState", intent: "active" },
+        ],
+      },
+    ]);
+
+    const tuples: unknown[] = [];
+    store.forEach(["Transform", "IntentState"], (_id, components) => {
+      tuples.push(components);
+    });
+
+    expect(tuples).toHaveLength(2);
+    expect(tuples[1]).toBe(tuples[0]);
+  });
 });
