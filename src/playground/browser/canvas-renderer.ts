@@ -56,6 +56,7 @@ export function drawWorld(
           drawHeight,
         );
         context.restore();
+        drawHeldAgentState(context, body.x, body.y, drawWidth, drawHeight, matchingHeldState(snapshot, body.id));
         drawInteractionOutline(context, body.x, body.y, drawWidth, drawHeight, body.interaction);
         continue;
       }
@@ -71,11 +72,13 @@ export function drawWorld(
         drawWidth,
         drawHeight,
       );
+      drawHeldAgentState(context, body.x, body.y, drawWidth, drawHeight, matchingHeldState(snapshot, body.id));
       drawInteractionOutline(context, body.x, body.y, drawWidth, drawHeight, body.interaction);
       continue;
     }
 
     drawDebugBody(context, body);
+    drawHeldAgentState(context, body.x, body.y, body.width, body.height, matchingHeldState(snapshot, body.id));
     drawInteractionOutline(context, body.x, body.y, body.width, body.height, body.interaction);
   }
 
@@ -114,11 +117,56 @@ export function drawWorld(
   }
 }
 
+function matchingHeldState(snapshot: WorldSnapshot, id: string) {
+  return snapshot.pets.find((pet) => pet.id === id)?.heldAgentState ?? null;
+}
+
 function formatPetOverlayText(
   visualCueIcon: string | undefined,
   speech: string | null,
 ) {
   return visualCueIcon ?? speech ?? null;
+}
+
+function drawHeldAgentState(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  heldState: { kind: "waiting" | "failed" | "completed"; label: "WAIT" | "FAIL" | "DONE" } | null,
+) {
+  if (!heldState) return;
+
+  const colors = {
+    waiting: "#f59e0b",
+    failed: "#dc2626",
+    completed: "#16a34a",
+  } as const;
+  const color = colors[heldState.kind];
+
+  context.save?.();
+  context.lineWidth = 4;
+  context.strokeStyle = color;
+  context.strokeRect(
+    x - width / 2 - 7,
+    y - height / 2 - 7,
+    width + 14,
+    height + 14,
+  );
+
+  context.font = "bold 11px Inter, Arial, sans-serif";
+  context.textAlign = "center";
+  const badgeWidth = 46;
+  const badgeX = x - badgeWidth / 2;
+  const badgeY = y - height / 2 - 28;
+  context.fillStyle = "#ffffff";
+  context.fillRect(badgeX, badgeY, badgeWidth, 18);
+  context.strokeStyle = color;
+  context.strokeRect(badgeX, badgeY, badgeWidth, 18);
+  context.fillStyle = color;
+  context.fillText(heldState.label, x, badgeY + 13);
+  context.restore?.();
 }
 
 function drawInteractionOutline(

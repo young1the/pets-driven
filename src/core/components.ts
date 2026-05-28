@@ -17,6 +17,7 @@ export type {
   UserAnchorComponent,
   BehaviorDecisionSource,
   BehaviorDecisionStateComponent,
+  HeldAgentStateComponent,
   PersonalityComponent,
   BehaviorDecisionKind,
   BehaviorDecisionTokenComponent,
@@ -76,7 +77,7 @@ export type {
 import type { PerceptionComponent } from "@/features/perception/components";
 import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent, PetCollisionComponent } from "@/features/physics/components";
 import type { ContactStateComponent } from "@/features/contact/components";
-import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent, PendingReactionComponent } from "@/features/behavior/components";
+import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, HeldAgentStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent, PendingReactionComponent } from "@/features/behavior/components";
 import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@/features/agent/components";
 import type { WalkingTagComponent, ClimbingTagComponent, FlyingTagComponent, AirborneTagComponent, MotionTargetComponent } from "@/features/movement/components";
 import type { CanWalkComponent, MovementProfileComponent, WandersOnArrivalComponent } from "@/features/movement/components";
@@ -96,6 +97,7 @@ export type Component =
   | PersonalityComponent
   | AirborneTagComponent
   | BehaviorDecisionStateComponent
+  | HeldAgentStateComponent
   | CanFlyComponent
   | CanJumpComponent
   | CanWalkComponent
