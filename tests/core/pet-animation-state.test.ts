@@ -96,6 +96,21 @@ describe("pet animation state", () => {
     expect(animationState()).toBe("failed");
   });
 
+  it("uses review for completed agent events", () => {
+    const { scenario, animationState } = petBodyAnimationState("pet-a");
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.completed",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Done",
+    });
+    scenario.world.step(0);
+
+    expect(animationState()).toBe("review");
+  });
+
   it("uses task-running and jumping rows for matching behavior state", () => {
     const { scenario, animationState } = petBodyAnimationState("pet-a");
 

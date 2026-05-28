@@ -207,6 +207,10 @@ export function createWorld(input: WorldDefinition) {
       return "failed";
     }
 
+    if (decision?.reason === "task.completed") {
+      return "review";
+    }
+
     if (
       decision?.reason === "task.waiting" ||
       decision?.reason === "attention.requested"
