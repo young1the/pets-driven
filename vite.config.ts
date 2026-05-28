@@ -1,56 +1,53 @@
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vite";
 
-function codexPetsPlugin(): Plugin {
+const host = process.env.TAURI_DEV_HOST;
+const tauriDevPort = 1420;
+
+export default defineConfig(({ mode }) => {
+  const isTauri = mode === "tauri";
+
   return {
-    name: "codex-pets",
-    async configureServer(server) {
-      const [{ default: fs }, { default: os }, { default: path }] =
-        await Promise.all([
-          import("node:fs"),
-          import("node:os"),
-          import("node:path"),
-        ]);
-      const petsRoot = path.join(os.homedir(), ".codex", "pets");
-
-      server.middlewares.use("/codex-pets", (request, response, next) => {
-        const url = request.url?.split("?")[0] ?? "";
-        const normalizedUrl = decodeURIComponent(url).replace(/^\/+/, "");
-        const filePath = path.resolve(petsRoot, normalizedUrl);
-
-        if (!filePath.startsWith(petsRoot + path.sep)) {
-          response.statusCode = 403;
-          response.end("Forbidden");
-          return;
-        }
-
-        fs.stat(filePath, (statError, stat) => {
-          if (statError || !stat.isFile()) {
-            next();
-            return;
+    plugins: [react()],
+    resolve: {
+      alias: {
+        "@": fileURLToPath(new URL("./src", import.meta.url)),
+      },
+    },
+    clearScreen: false,
+    server: {
+      port: isTauri ? tauriDevPort : undefined,
+      strictPort: isTauri,
+      host: host || false,
+      hmr: host
+        ? {
+            protocol: "ws",
+            host,
+            port: 1421,
           }
-
-          if (filePath.endsWith(".webp")) {
-            response.setHeader("Content-Type", "image/webp");
-          }
-          fs.createReadStream(filePath).pipe(response);
-        });
-      });
+        : undefined,
+      watch: {
+        ignored: ["**/src-tauri/**"],
+      },
+    },
+    envPrefix: ["VITE_", "TAURI_ENV_*"],
+    build: {
+      target:
+        process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
+      minify: process.env.TAURI_ENV_DEBUG ? false : "esbuild",
+      sourcemap: Boolean(process.env.TAURI_ENV_DEBUG),
+      rollupOptions: {
+        input: {
+          main: "index.html",
+          playground: "playground.html",
+        },
+      },
+    },
+    test: {
+      environment: "jsdom",
+      setupFiles: ["./tests/setup.ts"],
+      include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     },
   };
-}
-
-export default defineConfig({
-  plugins: [react(), codexPetsPlugin()],
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-    },
-  },
-  test: {
-    environment: "jsdom",
-    setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
-  },
 });

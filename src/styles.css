@@ -11,6 +11,128 @@ body {
   background: #f5f7fb;
 }
 
+button {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 20px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d8e0eb;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.app-header p {
+  margin: 4px 0 0;
+  color: #526074;
+}
+
+.app-header button,
+.app-back-button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid #172033;
+  border-radius: 8px;
+  background: #172033;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.app-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.app-summary div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #ccd5e0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.app-summary span,
+.app-section-header span,
+.app-pets li span {
+  color: #526074;
+  font-size: 0.88rem;
+}
+
+.app-summary strong {
+  font-size: 1.2rem;
+}
+
+.app-pets {
+  display: grid;
+  gap: 12px;
+}
+
+.app-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-section-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.app-pets ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.app-pets li {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #ccd5e0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.app-pets li p {
+  margin: 0;
+  color: #344055;
+  line-height: 1.45;
+}
+
+.app-playground-view {
+  min-height: 100vh;
+}
+
+.app-back-button {
+  position: fixed;
+  z-index: 10;
+  top: 16px;
+  right: 16px;
+}
+
 .playground-shell {
   min-height: 100vh;
   display: grid;
@@ -249,6 +371,15 @@ body {
 }
 
 @media (max-width: 900px) {
+  .app-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app-summary {
+    grid-template-columns: 1fr;
+  }
+
   .playground-workspace {
     grid-template-columns: 1fr;
   }
