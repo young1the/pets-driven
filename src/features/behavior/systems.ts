@@ -169,6 +169,13 @@ export function runAgentEventBehaviorSystem(
           claim(components, id, "agent-event", now, event.type);
         }
 
+        if (event.type === "task.failed") {
+          intent.intent = "idle";
+          setSpeech(speech, event.summary ?? "Task failed", now);
+          activity.lastActiveAt = event.at;
+          claim(components, id, "agent-event", now, "task.failed");
+        }
+
         if (event.type === "task.completed") {
           intent.intent = completionBehavior.intentAfterCompletion;
           setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);

@@ -1,4 +1,8 @@
-export type AgentEventType = "task.started" | "task.waiting" | "task.completed";
+export type AgentEventType =
+  | "task.started"
+  | "task.waiting"
+  | "task.completed"
+  | "task.failed";
 
 export type AgentEvent = {
   type: AgentEventType;
@@ -18,6 +22,7 @@ const AGENT_EVENT_TYPES = new Set<AgentEventType>([
   "task.started",
   "task.waiting",
   "task.completed",
+  "task.failed",
 ]);
 
 export function createAgentEvent(input: AgentEventInput): AgentEvent {

@@ -62,7 +62,7 @@ describe("PlaygroundApp", () => {
     expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
   });
 
-  it("does not render event, demo, or timeline controls", () => {
+  it("renders agent hook sample controls without demo or timeline controls", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,
     );
@@ -70,17 +70,54 @@ describe("PlaygroundApp", () => {
     render(<PlaygroundApp />);
 
     expect(
-      screen.queryByRole("button", { name: "Send started event" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("region", { name: PLAYGROUND_TEXT.agentEventPanelTitle }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Prompt" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Waiting" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Failed" })).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Walk Alice" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("heading", { name: "Last event" }),
-    ).not.toBeInTheDocument();
-    expect(
       screen.queryByRole("heading", { name: "Action timeline" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("routes sample Claude hooks through the adapter into the playground panel", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Failed" }));
+
+    expect(screen.getByText("PostToolUseFailure")).toBeInTheDocument();
+    expect(screen.getByText(/"type": "task.failed"/)).toBeInTheDocument();
+    expect(screen.getByText(/"sourceId": "agent-a"/)).toBeInTheDocument();
+  });
+
+  it("accepts future Tauri bridge events through a browser custom event", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent(
+      window,
+      new CustomEvent("pets-driven:agent-event", {
+        detail: {
+          type: "task.waiting",
+          sourceId: "agent-a",
+          at: 10,
+          summary: "Approve this",
+        },
+      }),
+    );
+
+    expect(screen.getByText(/"type": "task.waiting"/)).toBeInTheDocument();
+    expect(screen.getByText(/"summary": "Approve this"/)).toBeInTheDocument();
   });
 
   it("renders pet status from the world snapshot", () => {
