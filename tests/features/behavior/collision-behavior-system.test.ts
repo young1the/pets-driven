@@ -335,6 +335,46 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("active");
     expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("collision-flee");
   });
+
+  it("restarts collision when a stale collision-flee target crosses the current collider", () => {
+    const clock = createManualClock(26750);
+    const staleFleeTarget = { x: 355, y: 492 };
+    const store = createComponentStore([
+      {
+        id: "pet-c",
+        components: [
+          { type: "Transform" as const, position: { x: 203, y: 521 } },
+          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState" as const, intent: "active" as const },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: staleFleeTarget },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous" as const,
+            decidedAt: 26736,
+            expiresAt: 27236,
+            reason: "collision-flee",
+            lastAutonomousReason: "collision-flee",
+            lastAutonomousAt: 26736,
+          },
+          {
+            type: "PetCollision" as const,
+            otherEntityId: "pet-d",
+            otherPosition: { x: 239, y: 521 },
+            startedAt: 26736,
+            lastSeenAt: 26750,
+          },
+        ],
+      },
+      makePet("pet-d", 239, "active"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    expect(store.getComponent("pet-c", "PendingReaction")).toBeDefined();
+    expect(store.getComponent("pet-c", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-c", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet-c", "BehaviorDecisionState")?.source).toBe("collision");
+  });
 });
 
 // ── Phase 4: Reaction latency + decision + planning ────────────────────────
