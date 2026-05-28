@@ -653,13 +653,20 @@ function softmaxSample(
   const T = T_BASE * (1 + ALPHA_T * neuroticism);
   // Subtract max before exp() to prevent overflow when future phases add
   // high-magnitude scores (approach-pet, flee, collision response, etc.).
-  const maxScore = Math.max(...candidates.map((c) => c.score));
-  const weights = candidates.map((c) => Math.exp((c.score - maxScore) / T));
-  const total = weights.reduce((s, w) => s + w, 0);
+  let maxScore = -Infinity;
+  for (const candidate of candidates) {
+    if (candidate.score > maxScore) maxScore = candidate.score;
+  }
+
+  let total = 0;
+  for (const candidate of candidates) {
+    total += Math.exp((candidate.score - maxScore) / T);
+  }
+
   let r = random.next() * total;
-  for (let i = 0; i < candidates.length; i++) {
-    r -= weights[i];
-    if (r <= 0) return candidates[i];
+  for (const candidate of candidates) {
+    r -= Math.exp((candidate.score - maxScore) / T);
+    if (r <= 0) return candidate;
   }
   return candidates[candidates.length - 1]; // floating-point safety
 }

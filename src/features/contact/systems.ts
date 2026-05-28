@@ -30,15 +30,23 @@ export function runContactSystem(components: ComponentStore): void {
     (_id, [transform, body, contact]) => {
       const pos = transform.position;
 
-      const nearestSurface = climbableSurfaces
-        .map((surface) => ({
-          surface,
-          horizontalDistance: Math.abs(surface.position.x - pos.x),
-          distance: Math.hypot(surface.position.x - pos.x, surface.position.y - pos.y),
-        }))
-        .filter((c) => c.horizontalDistance <= CLIMBABLE_CONTACT_X_RADIUS)
-        .sort((a, b) => a.horizontalDistance - b.horizontalDistance || a.distance - b.distance)[0]
-        ?.surface;
+      let nearestSurface: ClimbableSurface | null = null;
+      let nearestHorizontalDistance = Infinity;
+      let nearestDistance = Infinity;
+      for (const surface of climbableSurfaces) {
+        const horizontalDistance = Math.abs(surface.position.x - pos.x);
+        if (horizontalDistance > CLIMBABLE_CONTACT_X_RADIUS) continue;
+
+        const distance = Math.hypot(surface.position.x - pos.x, surface.position.y - pos.y);
+        if (
+          horizontalDistance < nearestHorizontalDistance ||
+          (horizontalDistance === nearestHorizontalDistance && distance < nearestDistance)
+        ) {
+          nearestSurface = surface;
+          nearestHorizontalDistance = horizontalDistance;
+          nearestDistance = distance;
+        }
+      }
 
       contact.climbableSurfaceId = nearestSurface?.id ?? null;
       contact.climbableSurfacePosition = nearestSurface?.position ?? null;

@@ -31,6 +31,14 @@ Each cell is `192x208`. The final atlas is `1536x1872`.
 - If a Codex pet package is missing, fall back to `/fallback-pets/patamon/spritesheet.webp`.
 - Keep the fallback asset under `public/fallback-pets/patamon/spritesheet.webp`.
 
+## ECS Iteration And Performance
+
+- Prefer `ComponentStore.forEach(...)` in hot system loops instead of `query(...)`.
+- `query(...)` is for one-off reads, setup, and snapshot builders where an array result is useful.
+- `forEach(...)` reuses its callback component tuple storage between entities. Destructure or read the tuple inside the callback and do not retain the tuple array after the callback returns.
+- Component value mutation and immediate `setComponent` / `removeComponent` calls are part of the current system contract; later systems in the same tick should observe those changes.
+- Avoid `map` / `filter` / `sort` chains inside per-entity hot loops when a single-pass loop can preserve the same behavior.
+
 ## Verification
 
 Run focused tests after changing sprite or atlas logic:

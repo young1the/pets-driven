@@ -46,12 +46,14 @@ export function runPhysicsIntegrationSystem(
 ): void {
   const forcesById = new Map<string, { x: number; y: number }>();
 
-  for (const force of forceGroups.flat()) {
-    const previous = forcesById.get(force.id) ?? { x: 0, y: 0 };
-    forcesById.set(force.id, {
-      x: previous.x + force.x,
-      y: previous.y + force.y,
-    });
+  for (const group of forceGroups) {
+    for (const force of group) {
+      const previous = forcesById.get(force.id) ?? { x: 0, y: 0 };
+      forcesById.set(force.id, {
+        x: previous.x + force.x,
+        y: previous.y + force.y,
+      });
+    }
   }
 
   for (const [id, force] of forcesById) {

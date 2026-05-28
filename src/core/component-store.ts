@@ -39,8 +39,9 @@ export type ComponentStore = {
   }>;
 
   /**
-   * Zero-allocation callback form. Iterates matching entities directly without
-   * building intermediate arrays. Prefer this in hot system loops.
+   * Low-allocation callback form. Iterates matching entities directly without
+   * building result arrays. The component tuple is reused between callbacks, so
+   * read or destructure it inside the callback instead of retaining it.
    */
   forEach<TTypes extends ComponentType[]>(
     types: [...TTypes],
@@ -111,19 +112,24 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
     callback: (id: EntityId, components: Component[]) => void,
   ): void {
     if (types.length === 0) {
+      const components: Component[] = [];
       for (const entity of entitiesById.values()) {
-        callback(entity.id, []);
+        callback(entity.id, components);
       }
       return;
     }
 
-    const tables = types.map((t) => getComponentTable(t));
+    const tables: Array<Map<EntityId, Component>> = [];
+    for (const type of types) {
+      tables.push(getComponentTable(type) as Map<EntityId, Component>);
+    }
     const smallestTable = tables.reduce((a, b) => (b.size < a.size ? b : a));
+    const comps: Component[] = [];
 
     for (const id of smallestTable.keys()) {
-      const comps: Component[] = [];
+      comps.length = 0;
       let allPresent = true;
-      for (let i = 0; i < types.length; i++) {
+      for (let i = 0; i < tables.length; i++) {
         const comp = tables[i].get(id);
         if (comp === undefined) {
           allPresent = false;
