@@ -715,7 +715,7 @@ describe("demo scenario", () => {
     });
   });
 
-  it("reacts to events without needing pet assets", () => {
+  it("parks waiting pets without needing pet assets", () => {
     const scenario = createDemoScenario();
     scenario.world.pushEvent({
       kind: "agent",
@@ -728,11 +728,19 @@ describe("demo scenario", () => {
 
     expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
       type: "IntentState",
-      intent: "seek",
+      intent: "idle",
+    });
+    expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
+      animationState: "waiting",
     });
   });
 
-  it("moves walking seek-user pets toward the user anchor", () => {
+  it("stops walking pets while waiting for user input", () => {
     const scenario = createDemoScenario({
       userAnchor: { x: 240, y: 500 },
     });
@@ -740,6 +748,16 @@ describe("demo scenario", () => {
     for (let index = 0; index < 90; index += 1) {
       scenario.world.step(16);
     }
+    scenario.world.setComponent("pet-a", {
+      type: "IntentState",
+      intent: "active",
+    });
+    scenario.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 120, y: 500 },
+    });
+    scenario.world.step(16);
 
     scenario.world.pushEvent({
       kind: "agent",
@@ -758,7 +776,11 @@ describe("demo scenario", () => {
     const after = scenario.world.snapshot().pets.find((pet) => pet.id === "pet-a")?.position;
     expect(scenario.world.getComponent("pet-a", "WalkingTag")).toBeDefined();
     expect(scenario.world.getComponent("pet-a", "ContactState")?.grounded).toBe(true);
-    expect(after?.x).toBeLessThan(before?.x ?? Number.POSITIVE_INFINITY);
+    expect(after?.x).toBeCloseTo(before?.x ?? 0, 0);
+    expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
+      vx: expect.closeTo(0, 0),
+      animationState: "waiting",
+    });
   });
 
   it("clears stale seek-user targets after walking pets reach the resolved stop target", () => {
@@ -889,7 +911,7 @@ describe("demo scenario", () => {
     });
   });
 
-  it("moves flying seek-user pets toward the user anchor", () => {
+  it("stops flying pets while waiting for user input", () => {
     const scenario = createDemoScenario({
       userAnchor: { x: 800, y: 500 },
     });
@@ -907,10 +929,15 @@ describe("demo scenario", () => {
     }
 
     const after = scenario.world.snapshot().pets[4].position;
-    expect(after.x).toBeGreaterThan(before.x);
+    expect(after.x).toBeCloseTo(before.x, 0);
+    expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-e")).toMatchObject({
+      vx: expect.closeTo(0, 0),
+      vy: expect.closeTo(0, 0),
+      animationState: "waiting",
+    });
   });
 
-  it("lets flying seek-user pets resume wandering after reaching the user anchor", () => {
+  it("keeps flying waiting pets parked instead of targeting the user anchor", () => {
     const userAnchor = { x: 420, y: 500 };
     const scenario = createDemoScenario({ userAnchor });
 
@@ -922,8 +949,8 @@ describe("demo scenario", () => {
       summary: "Needs approval",
     });
 
-    scenario.world.step(16);  // agent-event claim set, seek target assigned
-    scenario.world.step(16);  // arrival: intent -> idle, entity target cleared
+    scenario.world.step(16);
+    scenario.world.step(16);
 
     expect(scenario.world.getComponent("pet-e", "IntentState")).toEqual({
       type: "IntentState",
@@ -931,10 +958,7 @@ describe("demo scenario", () => {
     });
     const motionAfterArrival = scenario.world.getComponent("pet-e", "MotionTarget");
     expect(motionAfterArrival?.targetEntityId).toBeNull();
-
-    // Eve may choose idle-stay or wander; either way she
-    // must no longer be targeting the user anchor entity.
-    expect(motionAfterArrival?.targetEntityId).toBeNull();
+    expect(motionAfterArrival?.targetPosition).toBeNull();
   });
 
   it("does not expose global avoidance navigation state in the system plan", () => {
