@@ -131,6 +131,19 @@ function clearMotionTarget(components: ComponentStore, id: string): void {
   });
 }
 
+type VelocityWriter = {
+  setVelocity(id: string, velocity: Partial<Vector>): void;
+};
+
+function stopPetMovement(
+  components: ComponentStore,
+  physics: VelocityWriter | undefined,
+  id: string,
+): void {
+  clearMotionTarget(components, id);
+  physics?.setVelocity(id, { x: 0, y: 0 });
+}
+
 export function runSpeechExpirationSystem(
   components: ComponentStore,
   clock: Clock,
@@ -150,6 +163,7 @@ export function runAgentEventBehaviorSystem(
   components: ComponentStore,
   events: WorldEvent[],
   clock: Clock,
+  physics?: VelocityWriter,
 ): void {
   if (events.length === 0) return;
   const agentEvents = events.filter((event): event is AgentWorldEvent => event.kind === "agent");
@@ -172,14 +186,15 @@ export function runAgentEventBehaviorSystem(
         }
 
         if (event.type === "task.waiting" || event.type === "attention.requested") {
-          intent.intent = "seek";
+          intent.intent = "idle";
+          stopPetMovement(components, physics, id);
           setSpeech(speech, event.summary ?? speechProfile.attentionNeeded, now);
           claim(components, id, "agent-event", now, event.type);
         }
 
         if (event.type === "task.failed") {
           intent.intent = "idle";
-          clearMotionTarget(components, id);
+          stopPetMovement(components, physics, id);
           setSpeech(speech, event.summary ?? "Task failed", now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.failed");
@@ -187,7 +202,7 @@ export function runAgentEventBehaviorSystem(
 
         if (event.type === "task.completed") {
           intent.intent = completionBehavior.intentAfterCompletion;
-          clearMotionTarget(components, id);
+          stopPetMovement(components, physics, id);
           setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
@@ -1182,12 +1197,13 @@ export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentEventBehaviorSystem",
   dependsOn: ["SpeechExpirationSystem"],
   reads: ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
-  writes: ["IntentState", "SpeechState", "ActivityState", "BehaviorDecisionState"],
+  writes: ["IntentState", "SpeechState", "ActivityState", "BehaviorDecisionState", "MotionTarget", "PhysicsVelocity"],
   update(ctx) {
     runAgentEventBehaviorSystem(
       ctx.components,
       ctx.events.drainWhere((event) => event.kind === "agent"),
       ctx.clock,
+      ctx.physics,
     );
   },
 };
