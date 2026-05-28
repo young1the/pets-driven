@@ -120,6 +120,7 @@ describe("demo scenario", () => {
       "IntentSteeringSystem",
       "KeyboardControlMovementSystem",
       "FlightSystem",
+      "AgentEventHoldSystem",
       "DraggedEntityKinematicSystem",
       "ThrowImpulseSystem",
       // SIMULATE
@@ -326,6 +327,12 @@ describe("demo scenario", () => {
       dependsOn: ["IntentSteeringSystem"],
       reads: ["PhysicsBody", "FlyingTag", "CanFly"],
       writes: ["PhysicsGravityScale"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "AgentEventHoldSystem",
+      dependsOn: ["FlightSystem"],
+      reads: ["BehaviorDecisionState"],
+      writes: ["MotionTarget", "PhysicsVelocity"],
     });
   });
 
@@ -779,6 +786,41 @@ describe("demo scenario", () => {
     expect(after?.x).toBeCloseTo(before?.x ?? 0, 0);
     expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
       vx: expect.closeTo(0, 0),
+      animationState: "waiting",
+    });
+  });
+
+  it("keeps waiting pets parked when a collision happens during the hook state", () => {
+    const scenario = createDemoScenario();
+    const alicePosition = scenario.world.getComponent("pet-a", "Transform")?.position;
+    expect(alicePosition).toBeDefined();
+    scenario.world.setComponent("pet-b", {
+      type: "Transform",
+      position: { ...alicePosition! },
+    });
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.waiting",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Needs approval",
+    });
+    scenario.world.step(16);
+    scenario.world.step(16);
+
+    expect(scenario.world.getComponent("pet-a", "BehaviorDecisionState")).toMatchObject({
+      source: "agent-event",
+      reason: "task.waiting",
+    });
+    expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
+      vx: expect.closeTo(0, 0),
+      vy: expect.closeTo(0, 0),
       animationState: "waiting",
     });
   });

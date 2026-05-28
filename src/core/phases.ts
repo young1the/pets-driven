@@ -21,6 +21,7 @@ import {
 import {
   SpeechExpirationSystem,
   AgentEventBehaviorSystem,
+  AgentEventHoldSystem,
   CollisionBehaviorSystem,
   BehaviorDecisionSystem,
   AutonomousBehaviorSystem,
@@ -88,6 +89,7 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     IntentSteeringSystem,
     KeyboardControlMovementSystem,
     FlightSystem,
+    AgentEventHoldSystem,
     DraggedEntityKinematicSystem,
     ThrowImpulseSystem,
   ],

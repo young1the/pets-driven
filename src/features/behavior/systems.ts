@@ -212,6 +212,28 @@ export function runAgentEventBehaviorSystem(
   );
 }
 
+export function runAgentEventHoldSystem(
+  components: ComponentStore,
+  physics: VelocityWriter,
+  clock: Clock,
+): void {
+  const now = clock.now();
+  components.forEach(["BehaviorDecisionState"], (id, [decision]) => {
+    if (decision.source !== "agent-event") return;
+    if (decision.expiresAt <= now) return;
+    if (
+      decision.reason !== "task.waiting" &&
+      decision.reason !== "attention.requested" &&
+      decision.reason !== "task.failed" &&
+      decision.reason !== "task.completed"
+    ) {
+      return;
+    }
+
+    stopPetMovement(components, physics, id);
+  });
+}
+
 // Priority 3: Collision avoidance (entity overlap).
 export function runCollisionBehaviorSystem(
   components: ComponentStore,
@@ -1205,6 +1227,16 @@ export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
       ctx.clock,
       ctx.physics,
     );
+  },
+};
+
+export const AgentEventHoldSystem: SimulationSystem<WorldStepContext> = {
+  name: "AgentEventHoldSystem",
+  dependsOn: ["FlightSystem"],
+  reads: ["BehaviorDecisionState"],
+  writes: ["MotionTarget", "PhysicsVelocity"],
+  update(ctx) {
+    runAgentEventHoldSystem(ctx.components, ctx.physics, ctx.clock);
   },
 };
 
