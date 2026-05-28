@@ -1,0 +1,43 @@
+<h2>Playground adapter verification slice</h2>
+<p class="subtitle">Scope corrected: no Tauri backend, no local HTTP receiver yet. Just make adapter-received AgentEvents visible and testable in the playground.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Minimal flow for this repo slice</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:1fr 40px 1fr 40px 1fr 40px 1fr;gap:10px;align-items:center;text-align:center">
+      <div class="placeholder">Playground injection<br>sample / window API</div>
+      <div style="font-size:24px">→</div>
+      <div class="placeholder">createAgentEvent<br>validation</div>
+      <div style="font-size:24px">→</div>
+      <div class="placeholder">toWorldEvent<br>adapter</div>
+      <div style="font-size:24px">→</div>
+      <div class="placeholder">WorldEventQueue<br>pet reaction</div>
+    </div>
+  </div>
+</div>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">What we add</div>
+    <div class="mockup-body">
+      <div class="placeholder">AgentEvent panel</div>
+      <p>Shows the last accepted neutral AgentEvent and, if validation fails, a compact error.</p>
+      <div class="placeholder">Sample buttons</div>
+      <p>Started / waiting / completed events all route through the same adapter path.</p>
+      <div class="placeholder">Test hook</div>
+      <p>A small browser-facing function or custom event lets future Tauri code inject AgentEvent without UI coupling.</p>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">What stays out</div>
+    <div class="mockup-body">
+      <div class="placeholder">No local HTTP</div>
+      <p>Transport belongs to a later Tauri integration slice.</p>
+      <div class="placeholder">No Claude payload parsing</div>
+      <p>This slice accepts the existing neutral AgentEvent shape only.</p>
+      <div class="placeholder">No product UI</div>
+      <p>This is playground/dev verification, not final app chrome.</p>
+    </div>
+  </div>
+</div>

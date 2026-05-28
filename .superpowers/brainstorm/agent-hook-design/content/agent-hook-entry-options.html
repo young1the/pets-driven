@@ -1,0 +1,55 @@
+<h2>agent-hook entry point</h2>
+<p class="subtitle">We already have a neutral AgentEvent boundary. The next choice is where external hook payloads enter the app.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Current internal flow</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:center;text-align:center">
+      <div class="placeholder">agent-hook<br>payload</div>
+      <div style="font-size:24px">→</div>
+      <div class="placeholder">Source adapter<br>to AgentEvent</div>
+      <div style="font-size:24px">→</div>
+      <div class="placeholder">WorldEvent<br>pet reaction</div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Local HTTP hook receiver</h3>
+      <p>Run a small local endpoint. agent-hook sends POST payloads, the playground subscribes or polls translated AgentEvents.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Good</h4><ul><li>Closest to real integration</li><li>Works outside the browser</li><li>Easy to test with curl</li></ul></div>
+        <div class="cons"><h4>Cost</h4><ul><li>Needs a tiny dev server process</li><li>Requires payload validation</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Browser-only hook simulator</h3>
+      <p>Add a textarea/control panel in the playground that accepts agent-hook-shaped JSON and maps it into AgentEvent.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Good</h4><ul><li>Fastest visual iteration</li><li>No backend process</li><li>Great for mapping design</li></ul></div>
+        <div class="cons"><h4>Cost</h4><ul><li>Not real hook transport</li><li>Still needs a later receiver</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Desktop bridge first</h3>
+      <p>Design the adapter as if Tauri/desktop receives hooks and forwards AgentEvents into the renderer.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Good</h4><ul><li>Matches eventual product shape</li><li>Clean desktop boundary</li></ul></div>
+        <div class="cons"><h4>Cost</h4><ul><li>Too heavy for the browser playground slice</li><li>More moving parts now</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle">My recommendation: A if you want real integration now, B if we need to finalize payload mapping first.</p>

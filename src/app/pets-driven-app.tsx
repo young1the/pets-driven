@@ -87,10 +87,6 @@ export function PetsDrivenApp() {
           <strong>{pets.length}</strong>
         </div>
         <div>
-          <span>Renderer</span>
-          <strong>9-row atlas</strong>
-        </div>
-        <div>
           <span>Source</span>
           <strong>{isTauri() ? "Tauri" : "Browser"}</strong>
         </div>
