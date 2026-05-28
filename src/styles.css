@@ -121,7 +121,8 @@ body {
   background: #ffffff;
 }
 
-.behavior-lab {
+.behavior-lab,
+.agent-event-panel {
   display: grid;
   gap: 12px;
   padding: 12px;
@@ -130,19 +131,28 @@ body {
   background: #ffffff;
 }
 
-.behavior-lab__header {
+.behavior-lab__header,
+.agent-event-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.behavior-lab__header h2 {
+.behavior-lab__header h2,
+.agent-event-panel__header h2 {
   margin: 0;
 }
 
-.behavior-lab__header-actions {
+.agent-event-panel__header span {
+  color: #526074;
+  font-size: 0.82rem;
+}
+
+.behavior-lab__header-actions,
+.agent-event-panel__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -168,7 +178,8 @@ body {
   gap: 8px;
 }
 
-.behavior-lab button {
+.behavior-lab button,
+.agent-event-panel button {
   min-height: 36px;
   padding: 6px 10px;
   border: 1px solid #bcc7d8;
@@ -176,6 +187,24 @@ body {
   background: #ffffff;
   color: #172033;
   cursor: pointer;
+}
+
+.agent-event-panel__error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.86rem;
+}
+
+.agent-event-panel pre {
+  margin: 0;
+  max-height: 180px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid #d8e0eb;
+  border-radius: 6px;
+  background: #f7f9fc;
+  color: #172033;
+  font-size: 0.78rem;
 }
 
 .behavior-lab button[aria-pressed="true"] {

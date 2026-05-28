@@ -6,6 +6,7 @@ export const PLAYGROUND_TEXT = {
   frameCounterPrefix: "Frame:",
   petStatusTitle: "Pet status",
   behaviorLabTitle: "Behavior lab",
+  agentEventPanelTitle: "Agent hook",
   selectedPetLabel: "Selected pet",
   componentPanelTitle: "Components",
   copyStateToClipboard: "Copy state",

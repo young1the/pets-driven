@@ -81,6 +81,21 @@ describe("pet animation state", () => {
     expect(animationState()).toBe("waiting");
   });
 
+  it("uses failed for failed agent events", () => {
+    const { scenario, animationState } = petBodyAnimationState("pet-a");
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.failed",
+      sourceId: "agent-a",
+      at: 1,
+      summary: "Tool failed",
+    });
+    scenario.world.step(0);
+
+    expect(animationState()).toBe("failed");
+  });
+
   it("uses task-running and jumping rows for matching behavior state", () => {
     const { scenario, animationState } = petBodyAnimationState("pet-a");
 

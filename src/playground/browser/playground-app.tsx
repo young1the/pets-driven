@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createDemoScenario } from "@/core/scenario-fixtures";
+import { createAgentEventFromClaudeHook, type ClaudeHookEventName } from "@/adapters/agent-events/claude-hook-adapter";
+import { createAgentEvent, type AgentEvent } from "@/adapters/agent-events/agent-event";
+import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
+import { AgentEventPanel } from "./agent-event-panel";
 import { BehaviorLab } from "./behavior-lab";
 import { drawWorld } from "./canvas-renderer";
 import { PetStatusList } from "./pet-status-list";
@@ -22,6 +26,9 @@ export function PlaygroundApp() {
   const [isAnimationPlaying, setIsAnimationPlaying] = useState(true);
   const [frameNumber, setFrameNumber] = useState(0);
   const [assets, setAssets] = useState<AssetCatalog>({});
+  const [lastAgentEvent, setLastAgentEvent] = useState<AgentEvent | null>(null);
+  const [lastHookName, setLastHookName] = useState<ClaudeHookEventName | null>(null);
+  const [agentEventError, setAgentEventError] = useState<string | null>(null);
 
   const advanceFrame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -93,6 +100,68 @@ export function PlaygroundApp() {
     };
   }, []);
 
+  const pushAgentEvent = useCallback((agentEvent: AgentEvent) => {
+    scenarioRef.current.world.pushEvent(toWorldEvent(agentEvent));
+    setLastAgentEvent(agentEvent);
+    setAgentEventError(null);
+  }, []);
+
+  const handleClaudeHookPayload = useCallback((payload: unknown) => {
+    try {
+      const agentEvent = createAgentEventFromClaudeHook(payload, {
+        defaultSourceId: selectedPetId === "pet-b" ? "agent-b" : "agent-a",
+        now: scenarioRef.current.clock.now(),
+      });
+      setLastHookName(
+        (payload as { hook_event_name?: ClaudeHookEventName }).hook_event_name ?? null,
+      );
+      pushAgentEvent(agentEvent);
+    } catch (error) {
+      setAgentEventError(error instanceof Error ? error.message : String(error));
+    }
+  }, [pushAgentEvent, selectedPetId]);
+
+  const handleAgentEventInput = useCallback((input: unknown) => {
+    try {
+      const agentEvent = createAgentEvent(input as {
+        type: string;
+        sourceId: string;
+        at: number;
+        summary?: string;
+      });
+      setLastHookName(null);
+      pushAgentEvent(agentEvent);
+    } catch (error) {
+      setAgentEventError(error instanceof Error ? error.message : String(error));
+    }
+  }, [pushAgentEvent]);
+
+  useEffect(() => {
+    const handleClaudeHook = (event: Event) => {
+      handleClaudeHookPayload((event as CustomEvent).detail);
+    };
+    const handleAgentEvent = (event: Event) => {
+      handleAgentEventInput((event as CustomEvent).detail);
+    };
+
+    window.addEventListener("pets-driven:claude-hook", handleClaudeHook);
+    window.addEventListener("pets-driven:agent-event", handleAgentEvent);
+    return () => {
+      window.removeEventListener("pets-driven:claude-hook", handleClaudeHook);
+      window.removeEventListener("pets-driven:agent-event", handleAgentEvent);
+    };
+  }, [handleAgentEventInput, handleClaudeHookPayload]);
+
+  function sendSampleHook(hookEventName: ClaudeHookEventName) {
+    handleClaudeHookPayload({
+      hook_event_name: hookEventName,
+      sourceId: selectedPetId === "pet-b" ? "agent-b" : "agent-a",
+      at: scenarioRef.current.clock.now(),
+      tool_name: hookEventName.includes("Tool") ? "Bash" : undefined,
+    });
+    advanceFrame();
+  }
+
   function canvasPoint(event: React.PointerEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     const scaleX = event.currentTarget.width / rect.width;
@@ -154,6 +223,12 @@ export function PlaygroundApp() {
           getComponent={(id, type) =>
             scenarioRef.current.world.getComponent(id, type)
           }
+        />
+        <AgentEventPanel
+          lastEvent={lastAgentEvent}
+          lastHookName={lastHookName}
+          error={agentEventError}
+          onSendSampleHook={sendSampleHook}
         />
       </div>
     </main>

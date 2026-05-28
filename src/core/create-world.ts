@@ -203,6 +203,10 @@ export function createWorld(input: WorldDefinition) {
     }
 
     const decision = componentStore.getComponent(id, "BehaviorDecisionState");
+    if (decision?.reason === "task.failed") {
+      return "failed";
+    }
+
     if (
       decision?.reason === "task.waiting" ||
       decision?.reason === "attention.requested"
