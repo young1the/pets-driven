@@ -24,6 +24,14 @@ _Avoid_: terminal channel
 A user-acknowledged state where a **Pet** stops moving and shows an attention badge or ring after an event.
 _Avoid_: terminal focus, notification only
 
+**Attention-Producing Event**:
+An **Agent Event Feed** event that must become an **Attention Hold**.
+_Avoid_: task started, activity ping
+
+**Attention History**:
+The short-lived recent sequence of **Attention-Producing Events** for a **Pet**.
+_Avoid_: current badge, durable audit log
+
 **Review Hold**:
 An **Attention Hold** created by a completed task that still requires the user to notice the result.
 _Avoid_: idle completion
@@ -120,6 +128,10 @@ _Avoid_: dashboard, playground page
 An individual desktop overlay window that hosts one visible **Pet**.
 _Avoid_: full-screen overlay, dashboard window
 
+**Pet Hit Region**:
+The non-transparent pet and overlay pixels of a **Pet Window** that can receive pointer input.
+_Avoid_: window rectangle, transparent margin
+
 **Simulation World**:
 The single logical space that holds every visible **Pet**'s position and computes their motion and contact, regardless of how many **Pet Windows** or monitors exist.
 _Avoid_: Pet Surface, monitor, screen
@@ -156,9 +168,21 @@ _Avoid_: open terminal, open context
 The secondary-click menu for commands and settings related to a **Pet**.
 _Avoid_: left-click panel
 
+**Pet Overlay Menu**:
+The secondary-click menu for presentation controls on a specific **Pet Overlay Action**.
+_Avoid_: Pet Context Menu
+
 **Pet Overlay Action**:
 A clickable UI affordance attached to a **Pet**, such as a speech bubble or attention badge.
 _Avoid_: pet body click
+
+**Attention Overlay**:
+A **Pet Overlay Action** that represents an active **Attention Hold**.
+_Avoid_: speech bubble, emotion bubble
+
+**Acknowledge Feedback**:
+A short personality-aware reaction shown after the user acknowledges an **Attention Hold**.
+_Avoid_: persistent state, archive
 
 **Instruction File**:
 The optional per-pet `AGENTS.md` that defines working instructions for the bound **Agent Source** when present.
@@ -174,8 +198,27 @@ _Avoid_: prompt, system prompt
 - A **Terminal Channel** belongs to exactly one **Working Directory**.
 - A **Terminal Channel** is optional and is not required for a **Pet** to express hook events.
 - An **Agent Event Feed** belongs to exactly one **Working Directory**.
-- **Attention Hold** is created by `waiting`, `failed`, and `completed` events from the **Agent Event Feed**.
+- **Attention Hold** is created by **Attention-Producing Events**.
+- `task.waiting`, `attention.requested`, `task.failed`, and `task.completed` are **Attention-Producing Events**.
+- `task.started` is not an **Attention-Producing Event**.
+- A **Pet** displays the latest **Attention-Producing Event** as its current **Attention Hold**.
+- **Attention History** belongs to a **Pet** but is not durable long-term data.
+- In the MVP, **Attention History** is session-local recent context and is not persisted across app restarts.
+- In the MVP, **Attention History** keeps up to five recent events per **Pet**.
+- Replaced **Attention-Producing Events** remain available through **Attention History**.
+- **Attention History** is accessed through the **Pet Context Menu** or **Management Surface**, not stacked on the **Pet Surface**.
+- Acknowledging **Attention Hold** does not remove events from **Attention History**.
 - **Attention Hold** remains until the user acknowledges it through **Direct Manipulation** or a **Pet Overlay Action**.
+- **Direct Manipulation** acknowledges **Attention Hold** when it starts on the **Pet** body.
+- Clicking an **Attention Overlay** acknowledges its **Attention Hold**.
+- Clicking non-attention overlays changes presentation only and does not acknowledge **Attention Hold**.
+- Acknowledging **Attention Hold** releases the hold and may start **Acknowledge Feedback**.
+- **Acknowledge Feedback** may vary by event kind, **Pet Profile**, and current presentation state.
+- **Acknowledge Feedback** is owned by the **Simulation World**, not by the **Pet Window** presentation layer alone.
+- **Acknowledge Feedback** is caused by `user-interaction` behavior priority.
+- A new **Attention-Producing Event** interrupts **Acknowledge Feedback** and creates a new **Attention Hold**.
+- Minimizing a **Pet Overlay Action** changes presentation only and does not acknowledge **Attention Hold**.
+- A minimized **Pet Overlay Action** keeps a visible compact indicator; its exact UI is undecided.
 - A completed task creates a **Review Hold** instead of automatically returning to idle.
 - A **Terminal Channel** may be owned by the pets-driven app or by an external terminal.
 - An **External Terminal Channel** becomes active only through **Attach**.
@@ -203,10 +246,16 @@ _Avoid_: prompt, system prompt
 - A **Pet Profile** is selected from the **Personality Catalog** and can be adjusted by the user.
 - **Skill-Assisted Personality Setup** may suggest **Personality Catalog** settings but does not decide them for the service.
 - **Pet Archive** preserves the **Registered Working Directory**, **Pet Profile**, **Pet Asset** reference, and **Launch Configuration**.
+- **Pet Archive** may discard **Attention History**.
 - **Pet Visibility** does not change **Pet Archive**, **Terminal Channel**, or **Agent Source** state.
 - Visible **Pets** live in individual **Pet Windows** on the **Pet Surface**, while setup and settings live on the **Management Surface**.
 - A **Pet Window** belongs to exactly one visible **Pet**.
-- A **Pet Window** is sized to its **Pet** so the **Pet** body is the interactive area while the surrounding desktop stays interactive.
+- A **Pet Window** only receives pointer input through its **Pet Hit Region**.
+- A **Pet Hit Region** includes visible **Pet Overlay Action** pixels as well as the **Pet** body.
+- Transparent pixels in a **Pet Window** pass through to the desktop behind it.
+- **Direct Manipulation** starts only from the **Pet** body portion of the **Pet Hit Region**, not from **Pet Overlay Action** pixels.
+- Secondary-click on the **Pet** body opens the **Pet Context Menu**.
+- Secondary-click on a **Pet Overlay Action** opens the **Pet Overlay Menu** for presentation controls such as minimize.
 - A **Pet Window** grows only while a **Pet Overlay Action** is shown and otherwise stays sized to its **Pet**.
 - There is exactly one **Simulation World** shared by all visible **Pets**.
 - The **Simulation World** runs in exactly one **Simulation Host**, which publishes each **Pet World Position**; a **Pet Window** renders its **Pet** from those positions and does not run its own simulation.
