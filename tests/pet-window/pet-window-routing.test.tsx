@@ -1,7 +1,15 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PetsDrivenApp } from "@/app/pets-driven-app";
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import {
+  PET_WINDOW_HOST_LABEL,
+  PET_WINDOW_INPUT_EVENT,
+  PET_WINDOW_POSITION_EVENT,
+  PET_WINDOW_PRESENTATION_EVENT,
+} from "@/pet-window/pet-window-messages";
+
+type TauriEventHandler = (event: { payload: unknown }) => void;
 
 const tauriWindowMocks = vi.hoisted(() => ({
   currentMonitor: vi.fn(),
@@ -10,15 +18,26 @@ const tauriWindowMocks = vi.hoisted(() => ({
   startDragging: vi.fn(),
   setIgnoreCursorEvents: vi.fn(),
 }));
+const tauriEventMocks = vi.hoisted(() => ({
+  emitTo: vi.fn(),
+  listen: vi.fn(),
+  listeners: new Map<string, TauriEventHandler>(),
+}));
 
 vi.mock("@tauri-apps/api/core", () => ({
   isTauri: vi.fn(() => true),
   invoke: vi.fn(),
 }));
 
+vi.mock("@tauri-apps/api/event", () => ({
+  emitTo: tauriEventMocks.emitTo,
+  listen: tauriEventMocks.listen,
+}));
+
 vi.mock("@tauri-apps/api/window", () => ({
   currentMonitor: tauriWindowMocks.currentMonitor,
   getCurrentWindow: vi.fn(() => ({
+    label: "pet-window-playground-1",
     outerPosition: tauriWindowMocks.outerPosition,
     setPosition: tauriWindowMocks.setPosition,
     startDragging: tauriWindowMocks.startDragging,
@@ -59,6 +78,12 @@ describe("pet window product route", () => {
     tauriWindowMocks.setPosition.mockResolvedValue(undefined);
     tauriWindowMocks.startDragging.mockReset();
     tauriWindowMocks.setIgnoreCursorEvents.mockReset();
+    tauriEventMocks.emitTo.mockReset();
+    tauriEventMocks.listeners.clear();
+    tauriEventMocks.listen.mockImplementation((eventName, handler) => {
+      tauriEventMocks.listeners.set(eventName, handler as TauriEventHandler);
+      return Promise.resolve(() => tauriEventMocks.listeners.delete(eventName));
+    });
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       clearRect: vi.fn(),
       drawImage: vi.fn(),
@@ -215,10 +240,56 @@ describe("pet window product route", () => {
         button: 0,
         clientX: 96,
         clientY: 112,
+        screenX: 196,
+        screenY: 212,
       }),
     );
 
     expect(tauriWindowMocks.startDragging).toHaveBeenCalled();
+    expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+      PET_WINDOW_HOST_LABEL,
+      PET_WINDOW_INPUT_EVENT,
+      expect.objectContaining({
+        kind: "body.pointer.down",
+        petId: "pet-a",
+        windowLabel: "pet-window-playground-1",
+        localPoint: { x: 96, y: 112 },
+        screenPoint: { x: 196, y: 212 },
+      }),
+    );
+  });
+
+  it("applies fresh Pet Window position updates and drops stale ones", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_POSITION_EVENT)).toBe(true);
+    });
+
+    const handlePosition = tauriEventMocks.listeners.get(PET_WINDOW_POSITION_EVENT)!;
+
+    act(() => {
+      handlePosition({ payload: { sequence: 2, x: 333.4, y: 444.2 } });
+    });
+
+    expect(tauriWindowMocks.setPosition).toHaveBeenLastCalledWith({
+      x: 333,
+      y: 444,
+    });
+
+    const appliedCallCount = tauriWindowMocks.setPosition.mock.calls.length;
+
+    act(() => {
+      handlePosition({ payload: { sequence: 1, x: 111, y: 222 } });
+    });
+
+    expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(appliedCallCount);
   });
 
   it("routes overlay clicks without starting Pet Window dragging", async () => {
@@ -260,5 +331,48 @@ describe("pet window product route", () => {
 
     expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
     expect(await screen.findByText("Overlay action")).toBeInTheDocument();
+  });
+
+  it("treats the overlay region as transparent when presentation has no overlay", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_PRESENTATION_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_PRESENTATION_EVENT)?.({
+        payload: {
+          sequence: 1,
+          intent: { kind: "idle" },
+          overlay: null,
+        },
+      });
+    });
+
+    const canvas = screen.getByLabelText("Pet Window pet-a");
+
+    fireEvent(
+      canvas,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 96,
+        clientY: 20,
+      }),
+    );
+
+    expect(tauriEventMocks.emitTo).not.toHaveBeenCalledWith(
+      PET_WINDOW_HOST_LABEL,
+      PET_WINDOW_INPUT_EVENT,
+      expect.objectContaining({ kind: "overlay.click" }),
+    );
+    expect(tauriWindowMocks.setIgnoreCursorEvents).toHaveBeenCalledWith(true);
   });
 });

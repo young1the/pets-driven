@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
+import { emitTo, listen } from "@tauri-apps/api/event";
 import {
   currentMonitor,
   getCurrentWindow,
@@ -13,7 +14,19 @@ import { loadAtlasImage } from "@/pets/assets/atlas-loader";
 import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
 import { drawPetSpriteCanvas } from "@/pets/rendering/pet-sprite-canvas";
 import { resolvePetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
+import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
+import {
+  isFreshPetWindowMessage,
+  PET_WINDOW_HOST_LABEL,
+  PET_WINDOW_INPUT_EVENT,
+  PET_WINDOW_POSITION_EVENT,
+  PET_WINDOW_PRESENTATION_EVENT,
+  type PetWindowInputKind,
+  type PetWindowOverlay,
+  type PetWindowPositionUpdate,
+  type PetWindowPresentationUpdate,
+} from "@/pet-window/pet-window-messages";
 import type { PetWindowHitLayout } from "@/pet-window/pet-window-types";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 
@@ -22,6 +35,10 @@ type PetWindowViewProps = {
 };
 
 type PetWindowPointerStart = "body" | "overlay" | "transparent";
+type PetWindowPresentation = {
+  intent: PetSpriteIntent;
+  overlay: PetWindowOverlay | null;
+};
 
 const PET_WINDOW_LAYOUT: PetWindowHitLayout = {
   width: PET_CELL_SIZE.width,
@@ -98,15 +115,41 @@ function movementDirectionForWindow(index: number) {
   return index % 2 === 0 ? -1 : 1;
 }
 
+function defaultPresentation(index: number): PetWindowPresentation {
+  return {
+    intent: {
+      kind: "travel",
+      direction: movementDirectionForWindow(index) >= 0 ? "right" : "left",
+    },
+    overlay: { kind: "status", label: "!" },
+  };
+}
+
+function hitLayoutForPresentation(
+  presentation: PetWindowPresentation,
+): PetWindowHitLayout {
+  return {
+    ...PET_WINDOW_LAYOUT,
+    overlay: presentation.overlay ? PET_WINDOW_LAYOUT.overlay : null,
+  };
+}
+
 export function PetWindowView({ pet }: PetWindowViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const autonomousDirectionRef = useRef(
     movementDirectionForWindow(pet.windowIndex),
   );
   const dragPauseUntilRef = useRef(0);
+  const inputSequenceRef = useRef(0);
+  const positionSequenceRef = useRef(0);
+  const presentationSequenceRef = useRef(0);
+  const isPositionDrivenRef = useRef(false);
   const pointerStartRef = useRef<PetWindowPointerStart | null>(null);
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
     null,
+  );
+  const [presentation, setPresentation] = useState<PetWindowPresentation>(() =>
+    defaultPresentation(pet.windowIndex),
   );
 
   useEffect(() => {
@@ -114,6 +157,63 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
     return () => {
       document.documentElement.classList.remove("pet-window-document");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let unlistenPosition: (() => void) | undefined;
+    let unlistenPresentation: (() => void) | undefined;
+    const currentWindow = getCurrentWindow();
+
+    void listen<PetWindowPositionUpdate>(PET_WINDOW_POSITION_EVENT, (event) => {
+      const update = event.payload;
+
+      if (
+        !isFreshPetWindowMessage(positionSequenceRef.current, update.sequence)
+      ) {
+        return;
+      }
+
+      positionSequenceRef.current = update.sequence;
+      isPositionDrivenRef.current = true;
+      void currentWindow.setPosition(
+        new PhysicalPosition(Math.round(update.x), Math.round(update.y)),
+      );
+    }).then((unlisten) => {
+      unlistenPosition = unlisten;
+    });
+
+    void listen<PetWindowPresentationUpdate>(
+      PET_WINDOW_PRESENTATION_EVENT,
+      (event) => {
+        const update = event.payload;
+
+        if (
+          !isFreshPetWindowMessage(
+            presentationSequenceRef.current,
+            update.sequence,
+          )
+        ) {
+          return;
+        }
+
+        presentationSequenceRef.current = update.sequence;
+        setPresentation({
+          intent: update.intent,
+          overlay: update.overlay,
+        });
+      },
+    ).then((unlisten) => {
+      unlistenPresentation = unlisten;
+    });
+
+    return () => {
+      unlistenPosition?.();
+      unlistenPresentation?.();
     };
   }, []);
 
@@ -137,10 +237,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           }
 
           const frame = resolvePetSpriteFrame({
-            intent: {
-              kind: "travel",
-              direction: autonomousDirectionRef.current >= 0 ? "right" : "left",
-            },
+            intent: presentation.intent,
             elapsedMs,
             size: PET_CELL_SIZE,
           });
@@ -154,24 +251,26 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
               y: PET_CELL_SIZE.height / 2,
             },
           );
-          context.fillStyle = "#ffffff";
-          context.fillRect(
-            PET_WINDOW_LAYOUT.overlay?.x ?? 0,
-            PET_WINDOW_LAYOUT.overlay?.y ?? 0,
-            PET_WINDOW_LAYOUT.overlay?.width ?? 0,
-            PET_WINDOW_LAYOUT.overlay?.height ?? 0,
-          );
-          context.strokeStyle = "#2563eb";
-          context.strokeRect(
-            PET_WINDOW_LAYOUT.overlay?.x ?? 0,
-            PET_WINDOW_LAYOUT.overlay?.y ?? 0,
-            PET_WINDOW_LAYOUT.overlay?.width ?? 0,
-            PET_WINDOW_LAYOUT.overlay?.height ?? 0,
-          );
-          context.fillStyle = "#172033";
-          context.textAlign = "center";
-          context.font = "bold 16px Inter, Arial, sans-serif";
-          context.fillText("!", 96, 32);
+          if (presentation.overlay) {
+            context.fillStyle = "#ffffff";
+            context.fillRect(
+              PET_WINDOW_LAYOUT.overlay?.x ?? 0,
+              PET_WINDOW_LAYOUT.overlay?.y ?? 0,
+              PET_WINDOW_LAYOUT.overlay?.width ?? 0,
+              PET_WINDOW_LAYOUT.overlay?.height ?? 0,
+            );
+            context.strokeStyle = "#2563eb";
+            context.strokeRect(
+              PET_WINDOW_LAYOUT.overlay?.x ?? 0,
+              PET_WINDOW_LAYOUT.overlay?.y ?? 0,
+              PET_WINDOW_LAYOUT.overlay?.width ?? 0,
+              PET_WINDOW_LAYOUT.overlay?.height ?? 0,
+            );
+            context.fillStyle = "#172033";
+            context.textAlign = "center";
+            context.font = "bold 16px Inter, Arial, sans-serif";
+            context.fillText(presentation.overlay.label, 96, 32);
+          }
           animationFrame = window.requestAnimationFrame(draw);
         };
 
@@ -184,7 +283,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         window.cancelAnimationFrame(animationFrame);
       }
     };
-  }, [pet.assetId]);
+  }, [pet.assetId, presentation]);
 
   useEffect(() => {
     if (!isTauri()) {
@@ -196,7 +295,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     let isMoving = false;
 
     const intervalId = window.setInterval(() => {
-      if (Date.now() < dragPauseUntilRef.current || isMoving) {
+      if (
+        isPositionDrivenRef.current ||
+        Date.now() < dragPauseUntilRef.current ||
+        isMoving
+      ) {
         previousTime = performance.now();
         return;
       }
@@ -249,6 +352,38 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     return () => window.clearInterval(intervalId);
   }, [pet.windowIndex]);
 
+  function emitPetWindowInput(
+    kind: PetWindowInputKind,
+    event: React.PointerEvent<HTMLCanvasElement>,
+  ) {
+    if (!isTauri()) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    const localPoint = canvasPointFromEvent(canvas, event);
+    inputSequenceRef.current += 1;
+
+    void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
+      sequence: inputSequenceRef.current,
+      petId: pet.petId,
+      windowLabel: getCurrentWindow().label,
+      kind,
+      localPoint,
+      screenPoint: {
+        x: event.screenX,
+        y: event.screenY,
+      },
+      button: event.button,
+      at: Date.now(),
+    });
+  }
+
   function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
 
@@ -257,7 +392,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     }
 
     const hit = classifyPetWindowPoint(
-      PET_WINDOW_LAYOUT,
+      hitLayoutForPresentation(presentation),
       canvasPointFromEvent(canvas, event),
     );
 
@@ -276,7 +411,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     }
 
     const hit = classifyPetWindowPoint(
-      PET_WINDOW_LAYOUT,
+      hitLayoutForPresentation(presentation),
       canvasPointFromEvent(canvas, event),
     );
     pointerStartRef.current = hit.kind;
@@ -284,6 +419,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     if (hit.kind === "body") {
       setInteractionStatus("Direct manipulation");
       dragPauseUntilRef.current = Date.now() + 1200;
+      emitPetWindowInput("body.pointer.down", event);
       void setNativeCursorPassthrough(false);
       void startNativeWindowDrag();
       return;
@@ -309,13 +445,18 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     }
 
     const hit = classifyPetWindowPoint(
-      PET_WINDOW_LAYOUT,
+      hitLayoutForPresentation(presentation),
       canvasPointFromEvent(canvas, event),
     );
 
     if (pointerStart === "overlay" && hit.kind === "overlay") {
       setInteractionStatus("Overlay action");
+      emitPetWindowInput("overlay.click", event);
       return;
+    }
+
+    if (pointerStart === "body") {
+      emitPetWindowInput("body.pointer.up", event);
     }
 
     void setNativeCursorPassthrough(hit.kind === "transparent");

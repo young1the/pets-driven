@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   animationStateFromSpriteIntent,
+  facingFromSpriteIntent,
   type PetSpriteIntent,
 } from "@/pets/rendering/pet-sprite-intent";
 import { resolvePetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
@@ -13,6 +14,17 @@ describe("pet sprite rendering", () => {
     expect(animationStateFromSpriteIntent({ kind: "travel", direction: "right" })).toBe("running-right");
     expect(animationStateFromSpriteIntent({ kind: "travel", direction: "left" })).toBe("running-left");
     expect(animationStateFromSpriteIntent({ kind: "working" })).toBe("running");
+  });
+
+  it("keeps sprite facing inside semantic intent when present", () => {
+    expect(facingFromSpriteIntent({ kind: "travel", direction: "right" })).toBe("right");
+    expect(facingFromSpriteIntent({ kind: "jumping", facing: "right" })).toBe("right");
+
+    expect(resolvePetSpriteFrame({
+      intent: { kind: "jumping", facing: "right" },
+      elapsedMs: 0,
+      size: { width: 32, height: 38 },
+    }).mirror).toBe(true);
   });
 
   it("maps direct status intents to matching hatch-pet atlas states", () => {
