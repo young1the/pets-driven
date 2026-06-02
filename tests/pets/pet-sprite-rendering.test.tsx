@@ -3,6 +3,7 @@ import {
   animationStateFromSpriteIntent,
   type PetSpriteIntent,
 } from "@/pets/rendering/pet-sprite-intent";
+import { resolvePetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
 
 describe("pet sprite rendering", () => {
   it("maps semantic travel and working intents to hatch-pet atlas states", () => {
@@ -29,5 +30,71 @@ describe("pet sprite rendering", () => {
       "waiting",
       "review",
     ]);
+  });
+
+  it("resolves semantic intent to source rectangle and draw size", () => {
+    expect(resolvePetSpriteFrame({
+      intent: { kind: "travel", direction: "right" },
+      elapsedMs: 0,
+      size: { width: 32, height: 38 },
+    })).toMatchObject({
+      animationState: "running-right",
+      frameIndex: 0,
+      rowIndex: 1,
+      source: { x: 0, y: 208, width: 192, height: 208 },
+      drawSize: { width: 32, height: 38 },
+      mirror: false,
+    });
+  });
+
+  it("defaults the animation-state input variant to idle", () => {
+    expect(resolvePetSpriteFrame({
+      elapsedMs: 0,
+      size: { width: 32, height: 38 },
+    })).toMatchObject({
+      animationState: "idle",
+      frameIndex: 0,
+      rowIndex: 0,
+      source: { x: 0, y: 0, width: 192, height: 208 },
+      drawSize: { width: 32, height: 38 },
+    });
+  });
+
+  it("scales draw size without changing atlas source size", () => {
+    expect(resolvePetSpriteFrame({
+      animationState: "waiting",
+      elapsedMs: 320,
+      size: { width: 40, height: 50 },
+      scale: 1.12,
+    })).toMatchObject({
+      animationState: "waiting",
+      frameIndex: 2,
+      rowIndex: 6,
+      source: { x: 384, y: 1248, width: 192, height: 208 },
+      drawSize: { width: 44.8, height: 56 },
+    });
+  });
+
+  it("mirrors only single-direction states when facing right", () => {
+    expect(resolvePetSpriteFrame({
+      animationState: "jumping",
+      elapsedMs: 0,
+      facing: "right",
+      size: { width: 32, height: 38 },
+    }).mirror).toBe(true);
+
+    expect(resolvePetSpriteFrame({
+      animationState: "running-right",
+      elapsedMs: 0,
+      facing: "right",
+      size: { width: 32, height: 38 },
+    }).mirror).toBe(false);
+
+    expect(resolvePetSpriteFrame({
+      intent: { kind: "working" },
+      elapsedMs: 0,
+      facing: "right",
+      size: { width: 32, height: 38 },
+    }).mirror).toBe(false);
   });
 });
