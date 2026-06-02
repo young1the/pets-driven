@@ -7,6 +7,7 @@ import {
 } from "@/pets/assets/pet-atlas";
 import {
   animationStateFromSpriteIntent,
+  facingFromSpriteIntent,
   type PetSpriteIntent,
 } from "@/pets/rendering/pet-sprite-intent";
 
@@ -57,6 +58,8 @@ export function resolvePetSpriteFrame(
     input.intent
       ? animationStateFromSpriteIntent(input.intent)
       : input.animationState ?? "idle";
+  const facing =
+    input.facing ?? (input.intent ? facingFromSpriteIntent(input.intent) : undefined);
   const atlasFrame = getAtlasFrame(animationState, input.elapsedMs);
   const scale = input.scale ?? 1;
 
@@ -74,7 +77,7 @@ export function resolvePetSpriteFrame(
       width: normalizeSpriteDimension(input.size.width * scale),
       height: normalizeSpriteDimension(input.size.height * scale),
     },
-    mirror: shouldMirrorSprite(animationState, input.facing),
+    mirror: shouldMirrorSprite(animationState, facing),
   };
 }
 
