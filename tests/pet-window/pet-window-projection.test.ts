@@ -112,4 +112,15 @@ describe("pet window projection", () => {
       },
     });
   });
+
+  it("maps playground x coordinates across the full desktop projection width", () => {
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshotFixture(),
+      { x: 100, y: 200, width: 1920, height: 540 },
+      12,
+    );
+
+    expect(projection.position.x).toBe(1204);
+    expect(projection.position.y).toBe(596);
+  });
 });
