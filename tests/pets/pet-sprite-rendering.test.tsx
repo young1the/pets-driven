@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import {
   animationStateFromSpriteIntent,
   type PetSpriteIntent,
 } from "@/pets/rendering/pet-sprite-intent";
 import { resolvePetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
 import { drawPetSpriteCanvas, type AssetCatalog } from "@/pets/rendering/pet-sprite-canvas";
+import { PetSpriteHtml } from "@/pets/rendering/pet-sprite-html";
 
 describe("pet sprite rendering", () => {
   it("maps semantic travel and working intents to hatch-pet atlas states", () => {
@@ -154,5 +156,34 @@ describe("pet sprite rendering", () => {
 
     expect(() => drawPetSpriteCanvas(canvasContext, image, frame, { x: 100, y: 80 })).toThrow("bad image");
     expect(context.restore).toHaveBeenCalledOnce();
+  });
+
+  it("renders a resolved frame as clipped HTML", () => {
+    const frame = resolvePetSpriteFrame({
+      animationState: "waiting",
+      elapsedMs: 320,
+      facing: "right",
+      size: { width: 32, height: 38 },
+    });
+
+    render(
+      <PetSpriteHtml
+        alt="Waiting pet"
+        frame={frame}
+        imageUrl="/fallback-pets/patamon/spritesheet.webp"
+      />,
+    );
+
+    const root = screen.getByLabelText("Waiting pet");
+
+    expect(root).toHaveStyle({
+      width: "32px",
+      height: "38px",
+      overflow: "hidden",
+      backgroundImage: "url(/fallback-pets/patamon/spritesheet.webp)",
+      backgroundPosition: "-64px -228px",
+      backgroundSize: "256px 342px",
+      transform: "scaleX(-1)",
+    });
   });
 });
