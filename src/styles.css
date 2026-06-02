@@ -11,6 +11,14 @@ body {
   background: #f5f7fb;
 }
 
+html.pet-window-document,
+html.pet-window-document body {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
 button {
   font: inherit;
 }
@@ -43,6 +51,13 @@ button {
   color: #526074;
 }
 
+.app-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .app-header button,
 .app-back-button {
   min-height: 40px;
@@ -52,6 +67,45 @@ button {
   background: #172033;
   color: #ffffff;
   cursor: pointer;
+}
+
+.app-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #f0b8b8;
+  border-radius: 8px;
+  background: #fff5f5;
+  color: #9f1d1d;
+}
+
+.pet-window-surface {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.pet-window-canvas {
+  width: 192px;
+  height: 208px;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.pet-window-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .app-summary {
