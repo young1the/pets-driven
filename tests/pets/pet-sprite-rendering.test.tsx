@@ -133,4 +133,24 @@ describe("pet sprite rendering", () => {
     );
     expect(context.restore).toHaveBeenCalledAfter(context.drawImage);
   });
+
+  it("restores canvas state when mirrored drawing throws", () => {
+    const context = {
+      drawImage: vi.fn(() => { throw new Error("bad image"); }),
+      restore: vi.fn(),
+      save: vi.fn(),
+      scale: vi.fn(),
+      translate: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const image = {} as HTMLImageElement;
+    const frame = resolvePetSpriteFrame({
+      animationState: "jumping",
+      elapsedMs: 0,
+      facing: "right",
+      size: { width: 32, height: 38 },
+    });
+
+    expect(() => drawPetSpriteCanvas(context, image, frame, { x: 100, y: 80 })).toThrow("bad image");
+    expect(context.restore).toHaveBeenCalledOnce();
+  });
 });
