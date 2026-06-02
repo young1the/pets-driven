@@ -128,10 +128,8 @@ export function PetsDrivenApp() {
         return;
       }
 
-      const scale = Math.min(
-        bounds.width / snapshot.width,
-        bounds.height / snapshot.height,
-      );
+      const scaleX = bounds.width / snapshot.width;
+      const scaleY = bounds.height / snapshot.height;
       fixtureScenarioRef.current.world.pushEvent({
         kind: "pointer",
         type: input.kind.replace("body.", "") as
@@ -141,8 +139,8 @@ export function PetsDrivenApp() {
         pointerId: input.pointerId,
         at: fixtureScenarioRef.current.clock.now(),
         position: {
-          x: (input.screenPoint.x - bounds.x) / scale,
-          y: (input.screenPoint.y - bounds.y) / scale,
+          x: (input.screenPoint.x - bounds.x) / scaleX,
+          y: (input.screenPoint.y - bounds.y) / scaleY,
         },
         button: input.button ?? 0,
       });
