@@ -1,8 +1,16 @@
 use std::{env, fs, path::PathBuf};
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
-const PET_WINDOW_PLAYGROUND_MAX_WINDOWS: u8 = 5;
-const PET_WINDOW_PLAYGROUND_PET_IDS: [&str; 5] = ["pet-a", "pet-b", "pet-c", "pet-d", "pet-e"];
+const PET_WINDOW_PLAYGROUND_MAX_WINDOWS: u8 = 7;
+const PET_WINDOW_PLAYGROUND_FIXTURES: [(&str, &str); 7] = [
+    ("pet-a", "agumon"),
+    ("pet-b", "gabumon"),
+    ("pet-c", "gomamon"),
+    ("pet-d", "palmon"),
+    ("pet-e", "patamon"),
+    ("pet-f", "piyomon"),
+    ("pet-g", "tentomon"),
+];
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,16 +66,24 @@ fn pet_window_playground_label(index: u8) -> String {
 }
 
 fn pet_window_playground_pet_id(index: u8) -> &'static str {
-    PET_WINDOW_PLAYGROUND_PET_IDS
+    PET_WINDOW_PLAYGROUND_FIXTURES
         .get(usize::from(index.saturating_sub(1)))
-        .copied()
+        .map(|fixture| fixture.0)
         .unwrap_or("pet-a")
+}
+
+fn pet_window_playground_asset_id(index: u8) -> &'static str {
+    PET_WINDOW_PLAYGROUND_FIXTURES
+        .get(usize::from(index.saturating_sub(1)))
+        .map(|fixture| fixture.1)
+        .unwrap_or("agumon")
 }
 
 fn pet_window_playground_url(index: u8) -> String {
     format!(
-        "index.html?surface=pet-window&petId={}&assetId=patamon&windowIndex={index}",
+        "index.html?surface=pet-window&petId={}&assetId={}&windowIndex={index}",
         pet_window_playground_pet_id(index),
+        pet_window_playground_asset_id(index),
     )
 }
 
@@ -192,11 +208,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pet_window_playground_count_defaults_to_one_and_clamps_to_five() {
+    fn pet_window_playground_count_defaults_to_one_and_clamps_to_fixture_count() {
         assert_eq!(pet_window_playground_count(None), 1);
         assert_eq!(pet_window_playground_count(Some(0)), 1);
         assert_eq!(pet_window_playground_count(Some(3)), 3);
-        assert_eq!(pet_window_playground_count(Some(9)), 5);
+        assert_eq!(pet_window_playground_count(Some(9)), 7);
     }
 
     #[test]
@@ -211,7 +227,11 @@ mod tests {
     fn pet_window_playground_url_routes_to_pet_window_surface() {
         assert_eq!(
             pet_window_playground_url(2),
-            "index.html?surface=pet-window&petId=pet-b&assetId=patamon&windowIndex=2"
+            "index.html?surface=pet-window&petId=pet-b&assetId=gabumon&windowIndex=2"
+        );
+        assert_eq!(
+            pet_window_playground_url(7),
+            "index.html?surface=pet-window&petId=pet-g&assetId=tentomon&windowIndex=7"
         );
     }
 }
