@@ -10,7 +10,7 @@ import { PetStatusList } from "./pet-status-list";
 import { PLAYGROUND_TEXT } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
 import { loadPlaygroundPetAssetCatalog } from "@/pets/assets/codex-pet-fixtures";
-import type { AssetCatalog } from "./canvas-renderer";
+import type { AssetCatalog } from "@/pets/rendering/pet-sprite-canvas";
 
 type Snapshot = ReturnType<
   ReturnType<typeof createDemoScenario>["world"]["snapshot"]
