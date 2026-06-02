@@ -143,10 +143,10 @@ export function PetsDrivenApp() {
           <button
             type="button"
             onClick={() =>
-              void invokePetWindowCommand("open_pet_window_playground", 5)
+              void invokePetWindowCommand("open_pet_window_playground", 7)
             }
           >
-            Open 5 pet windows
+            Open fixture pet windows
           </button>
           <button
             type="button"

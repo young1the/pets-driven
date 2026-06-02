@@ -105,7 +105,9 @@ describe("pet window product route", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
     fireEvent.click(screen.getByRole("button", { name: "Open 3 pet windows" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open 5 pet windows" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open fixture pet windows" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Close pet windows" }));
 
     expect(invokeMock).toHaveBeenCalledWith("open_pet_window_playground", {
@@ -115,7 +117,7 @@ describe("pet window product route", () => {
       count: 3,
     });
     expect(invokeMock).toHaveBeenCalledWith("open_pet_window_playground", {
-      count: 5,
+      count: 7,
     });
     expect(invokeMock).toHaveBeenCalledWith("close_pet_window_playground");
   });
