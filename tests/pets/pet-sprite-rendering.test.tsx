@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   animationStateFromSpriteIntent,
   type PetSpriteIntent,
 } from "@/pets/rendering/pet-sprite-intent";
 import { resolvePetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
+import { drawPetSpriteCanvas, type AssetCatalog } from "@/pets/rendering/pet-sprite-canvas";
 
 describe("pet sprite rendering", () => {
   it("maps semantic travel and working intents to hatch-pet atlas states", () => {
@@ -96,5 +97,40 @@ describe("pet sprite rendering", () => {
       facing: "right",
       size: { width: 32, height: 38 },
     }).mirror).toBe(false);
+  });
+
+  it("draws resolved frames on canvas and applies mirror around center", () => {
+    const context = {
+      drawImage: vi.fn(),
+      restore: vi.fn(),
+      save: vi.fn(),
+      scale: vi.fn(),
+      translate: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const image = {} as HTMLImageElement;
+    const frame = resolvePetSpriteFrame({
+      animationState: "jumping",
+      elapsedMs: 0,
+      facing: "right",
+      size: { width: 32, height: 38 },
+    });
+
+    drawPetSpriteCanvas(context, image, frame, { x: 100, y: 80 });
+
+    expect(context.save).toHaveBeenCalledBefore(context.scale);
+    expect(context.translate).toHaveBeenCalledWith(100, 80);
+    expect(context.scale).toHaveBeenCalledWith(-1, 1);
+    expect(context.drawImage).toHaveBeenCalledWith(
+      image,
+      0,
+      832,
+      192,
+      208,
+      -16,
+      -19,
+      32,
+      38,
+    );
+    expect(context.restore).toHaveBeenCalledAfter(context.drawImage);
   });
 });
