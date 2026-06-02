@@ -63,6 +63,9 @@ export const PLAYGROUND_PET_ASSET_BY_ENTITY_ID = {
   "pet-f": "piyomon",
   "pet-g": "tentomon",
 } as const;
+export const PLAYGROUND_PET_ENTITY_IDS = Object.keys(
+  PLAYGROUND_PET_ASSET_BY_ENTITY_ID,
+) as PlaygroundPetEntityId[];
 
 export type PlaygroundPetEntityId =
   keyof typeof PLAYGROUND_PET_ASSET_BY_ENTITY_ID;
