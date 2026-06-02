@@ -94,7 +94,7 @@ async function loadCodexPetSpritesheetBytes(assetId: string) {
   return new Uint8Array(response).buffer;
 }
 
-async function loadCodexPetImage(
+export async function loadCodexPetImage(
   assetId: string,
   loadImage: (url: string) => Promise<HTMLImageElement>,
 ) {

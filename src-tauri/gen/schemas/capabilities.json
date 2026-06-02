@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Default permissions for the Pets Driven window.","local":true,"windows":["main"],"permissions":["core:default"]}}
+{"default":{"identifier":"default","description":"Default permissions for the Pets Driven window.","local":true,"windows":["main","pet-window-playground-*"],"permissions":["core:default","core:window:allow-current-monitor","core:window:allow-outer-position","core:window:allow-set-position","core:window:allow-set-ignore-cursor-events","core:window:allow-start-dragging"]}}

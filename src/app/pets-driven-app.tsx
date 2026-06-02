@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { CODEX_PET_ASSETS } from "@/pets/assets/codex-pet-fixtures";
+import { PetWindowView } from "@/pet-window/pet-window-view";
+import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
 
 type CodexPetPackage = {
@@ -11,6 +13,28 @@ type CodexPetPackage = {
 };
 
 type ViewMode = "home" | "playground";
+
+function formatCommandError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+function petWindowRouteParams(): PetWindowRouteParams | null {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("surface") !== "pet-window") {
+    return null;
+  }
+
+  return {
+    petId: params.get("petId") || "pet-a",
+    assetId: params.get("assetId") || "patamon",
+    windowIndex: Number(params.get("windowIndex") || "1"),
+  };
+}
 
 async function loadCodexPetPackages(): Promise<CodexPetPackage[]> {
   if (isTauri()) {
@@ -26,11 +50,13 @@ async function loadCodexPetPackages(): Promise<CodexPetPackage[]> {
 }
 
 export function PetsDrivenApp() {
+  const petWindowPet = petWindowRouteParams();
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [pets, setPets] = useState<CodexPetPackage[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
+  const [petWindowError, setPetWindowError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -54,6 +80,10 @@ export function PetsDrivenApp() {
     };
   }, []);
 
+  if (petWindowPet) {
+    return <PetWindowView pet={petWindowPet} />;
+  }
+
   if (viewMode === "playground") {
     return (
       <div className="app-playground-view">
@@ -69,6 +99,20 @@ export function PetsDrivenApp() {
     );
   }
 
+  async function invokePetWindowCommand(command: string, count?: number) {
+    setPetWindowError(null);
+
+    try {
+      if (count === undefined) {
+        await invoke(command);
+      } else {
+        await invoke(command, { count });
+      }
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -76,10 +120,48 @@ export function PetsDrivenApp() {
           <h1>Pets Driven</h1>
           <p>Codex pet runtime</p>
         </div>
-        <button type="button" onClick={() => setViewMode("playground")}>
-          Open playground
-        </button>
+        <div className="app-header-actions">
+          <button type="button" onClick={() => setViewMode("playground")}>
+            Open playground
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              void invokePetWindowCommand("open_pet_window_playground", 1)
+            }
+          >
+            Open pet window
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              void invokePetWindowCommand("open_pet_window_playground", 3)
+            }
+          >
+            Open 3 pet windows
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              void invokePetWindowCommand("open_pet_window_playground", 5)
+            }
+          >
+            Open 5 pet windows
+          </button>
+          <button
+            type="button"
+            onClick={() => void invokePetWindowCommand("close_pet_window_playground")}
+          >
+            Close pet windows
+          </button>
+        </div>
       </header>
+
+      {petWindowError ? (
+        <p className="app-error" role="status">
+          {petWindowError}
+        </p>
+      ) : null}
 
       <section className="app-summary" aria-label="Runtime summary">
         <div>
