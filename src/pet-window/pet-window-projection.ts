@@ -1,0 +1,106 @@
+import type {
+  BodySnapshot,
+  PetSnapshot,
+  WorldSnapshot,
+} from "@/core/world-snapshot";
+import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
+import type {
+  PetWindowOverlay,
+  PetWindowPositionUpdate,
+  PetWindowPresentationUpdate,
+} from "@/pet-window/pet-window-messages";
+import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
+
+export type PetWindowProjection = {
+  petId: string;
+  position: PetWindowPositionUpdate;
+  presentation: PetWindowPresentationUpdate;
+};
+
+export type PetWindowProjectionBounds = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export function projectWorldSnapshotToPetWindows(
+  snapshot: WorldSnapshot,
+  bounds: PetWindowProjectionBounds,
+  sequence: number,
+): PetWindowProjection[] {
+  const scaleX = bounds.width / snapshot.width;
+  const scaleY = bounds.height / snapshot.height;
+  const scale = Math.min(scaleX, scaleY);
+
+  return snapshot.pets.flatMap((pet) => {
+    const body = snapshot.bodies.find((candidate) => candidate.id === pet.id);
+
+    if (!body) {
+      return [];
+    }
+
+    return [
+      {
+        petId: pet.id,
+        position: {
+          sequence,
+          x: bounds.x + body.x * scale - PET_CELL_SIZE.width / 2,
+          y: bounds.y + body.y * scale - PET_CELL_SIZE.height / 2,
+          width: PET_CELL_SIZE.width,
+          height: PET_CELL_SIZE.height,
+        },
+        presentation: {
+          sequence,
+          intent: spriteIntentFromBody(body),
+          overlay: overlayFromPet(pet),
+        },
+      },
+    ];
+  });
+}
+
+export function spriteIntentFromBody(body: BodySnapshot): PetSpriteIntent {
+  switch (body.animationState) {
+    case "running-right":
+      return { kind: "travel", direction: "right" };
+    case "running-left":
+      return { kind: "travel", direction: "left" };
+    case "running":
+      return { kind: "working", facing: body.spriteFacing };
+    case "waving":
+    case "jumping":
+    case "failed":
+    case "waiting":
+    case "review":
+      return { kind: body.animationState, facing: body.spriteFacing };
+    case "idle":
+    default:
+      return { kind: "idle", facing: body.spriteFacing };
+  }
+}
+
+export function overlayFromPet(pet: PetSnapshot): PetWindowOverlay | null {
+  if (pet.heldAgentState) {
+    return {
+      kind: "attention",
+      label: pet.heldAgentState.label,
+    };
+  }
+
+  if (pet.speech) {
+    return {
+      kind: "speech",
+      label: pet.speech,
+    };
+  }
+
+  if (pet.visualCue) {
+    return {
+      kind: "status",
+      label: pet.visualCue.icon,
+    };
+  }
+
+  return null;
+}

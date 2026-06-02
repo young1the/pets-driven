@@ -1,7 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isTauri, invoke } from "@tauri-apps/api/core";
-import { CODEX_PET_ASSETS } from "@/pets/assets/codex-pet-fixtures";
+import { emitTo, listen } from "@tauri-apps/api/event";
+import { currentMonitor } from "@tauri-apps/api/window";
+import { createDemoScenario } from "@/core/scenario-fixtures";
+import {
+  CODEX_PET_ASSETS,
+  PLAYGROUND_PET_ENTITY_IDS,
+} from "@/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
+import {
+  PET_WINDOW_INPUT_EVENT,
+  PET_WINDOW_POSITION_EVENT,
+  PET_WINDOW_PRESENTATION_EVENT,
+  type PetWindowInputEvent,
+} from "@/pet-window/pet-window-messages";
+import { projectWorldSnapshotToPetWindows } from "@/pet-window/pet-window-projection";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
 
@@ -13,6 +26,8 @@ type CodexPetPackage = {
 };
 
 type ViewMode = "home" | "playground";
+const DESKTOP_FIXTURE_HOST_TICK_MS = 33;
+const DESKTOP_FIXTURE_STEP_MS = 16;
 
 function formatCommandError(error: unknown) {
   if (error instanceof Error) {
@@ -49,9 +64,26 @@ async function loadCodexPetPackages(): Promise<CodexPetPackage[]> {
   }));
 }
 
+function petWindowPlaygroundLabelForPetId(petId: string) {
+  const index = PLAYGROUND_PET_ENTITY_IDS.indexOf(
+    petId as (typeof PLAYGROUND_PET_ENTITY_IDS)[number],
+  );
+
+  return index >= 0 ? `pet-window-playground-${index + 1}` : null;
+}
+
 export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
+  const fixtureScenarioRef = useRef(createDemoScenario());
+  const fixtureHostSequenceRef = useRef(0);
+  const fixtureHostBoundsRef = useRef<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("home");
+  const [desktopFixtureWindowCount, setDesktopFixtureWindowCount] = useState(0);
   const [pets, setPets] = useState<CodexPetPackage[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -80,6 +112,119 @@ export function PetsDrivenApp() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+
+    void listen<PetWindowInputEvent>(PET_WINDOW_INPUT_EVENT, (event) => {
+      const input = event.payload;
+      const bounds = fixtureHostBoundsRef.current;
+      const snapshot = fixtureScenarioRef.current.world.snapshot();
+
+      if (!bounds || !input.kind.startsWith("body.pointer.")) {
+        return;
+      }
+
+      const scale = Math.min(
+        bounds.width / snapshot.width,
+        bounds.height / snapshot.height,
+      );
+      fixtureScenarioRef.current.world.pushEvent({
+        kind: "pointer",
+        type: input.kind.replace("body.", "") as
+          | "pointer.down"
+          | "pointer.move"
+          | "pointer.up",
+        pointerId: input.pointerId,
+        at: fixtureScenarioRef.current.clock.now(),
+        position: {
+          x: (input.screenPoint.x - bounds.x) / scale,
+          y: (input.screenPoint.y - bounds.y) / scale,
+        },
+        button: input.button ?? 0,
+      });
+    }).then((stop) => {
+      unlisten = stop;
+    });
+
+    return () => unlisten?.();
+  }, []);
+
+  useEffect(() => {
+    if (!isTauri() || desktopFixtureWindowCount <= 0) {
+      return;
+    }
+
+    let isActive = true;
+    let isBroadcasting = false;
+
+    void currentMonitor().then((monitor) => {
+      if (!isActive || !monitor) {
+        return;
+      }
+
+      fixtureHostBoundsRef.current = {
+        x: monitor.workArea.position.x,
+        y: monitor.workArea.position.y,
+        width: monitor.workArea.size.width,
+        height: monitor.workArea.size.height,
+      };
+    });
+
+    const intervalId = window.setInterval(() => {
+      if (isBroadcasting) {
+        return;
+      }
+
+      const bounds = fixtureHostBoundsRef.current;
+
+      if (!bounds) {
+        return;
+      }
+
+      isBroadcasting = true;
+
+      fixtureScenarioRef.current.clock.advanceBy(DESKTOP_FIXTURE_STEP_MS);
+      fixtureScenarioRef.current.world.step(DESKTOP_FIXTURE_STEP_MS);
+      fixtureHostSequenceRef.current += 1;
+
+      const projections = projectWorldSnapshotToPetWindows(
+        fixtureScenarioRef.current.world.snapshot(),
+        bounds,
+        fixtureHostSequenceRef.current,
+      ).slice(0, desktopFixtureWindowCount);
+
+      void Promise.all(
+        projections.map((projection) => {
+          const label = petWindowPlaygroundLabelForPetId(projection.petId);
+
+          if (!label) {
+            return Promise.resolve();
+          }
+
+          return Promise.all([
+            emitTo(label, PET_WINDOW_POSITION_EVENT, projection.position),
+            emitTo(
+              label,
+              PET_WINDOW_PRESENTATION_EVENT,
+              projection.presentation,
+            ),
+          ]);
+        }),
+      ).finally(() => {
+        isBroadcasting = false;
+      });
+    }, DESKTOP_FIXTURE_HOST_TICK_MS);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [desktopFixtureWindowCount]);
+
   if (petWindowPet) {
     return <PetWindowView pet={petWindowPet} />;
   }
@@ -107,6 +252,12 @@ export function PetsDrivenApp() {
         await invoke(command);
       } else {
         await invoke(command, { count });
+      }
+
+      if (command === "open_pet_window_playground") {
+        setDesktopFixtureWindowCount(count ?? 1);
+      } else if (command === "close_pet_window_playground") {
+        setDesktopFixtureWindowCount(0);
       }
     } catch (error) {
       setPetWindowError(formatCommandError(error));

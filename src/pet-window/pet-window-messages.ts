@@ -36,6 +36,7 @@ export type PetWindowInputEvent = {
   sequence: number;
   petId: string;
   windowLabel: string;
+  pointerId: number;
   kind: PetWindowInputKind;
   localPoint: { x: number; y: number };
   screenPoint: { x: number; y: number };

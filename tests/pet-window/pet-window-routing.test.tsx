@@ -147,6 +147,35 @@ describe("pet window product route", () => {
     expect(invokeMock).toHaveBeenCalledWith("close_pet_window_playground");
   });
 
+  it("broadcasts playground fixture snapshots to opened Pet Windows", async () => {
+    render(<PetsDrivenApp />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open fixture pet windows" }),
+    );
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-playground-1",
+        PET_WINDOW_POSITION_EVENT,
+        expect.objectContaining({
+          sequence: expect.any(Number),
+          x: expect.any(Number),
+          y: expect.any(Number),
+        }),
+      );
+    });
+
+    expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+      "pet-window-playground-1",
+      PET_WINDOW_PRESENTATION_EVENT,
+      expect.objectContaining({
+        sequence: expect.any(Number),
+        intent: expect.any(Object),
+      }),
+    );
+  });
+
   it("shows Pet Window command failures in the management surface", async () => {
     invokeMock.mockImplementation(async (command) => {
       if (command === "list_codex_pet_packages") {
@@ -290,6 +319,82 @@ describe("pet window product route", () => {
     });
 
     expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(appliedCallCount);
+  });
+
+  it("forwards host-driven body drag input instead of starting native window dragging", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_POSITION_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_POSITION_EVENT)?.({
+        payload: { sequence: 1, x: 333, y: 444 },
+      });
+    });
+
+    tauriWindowMocks.startDragging.mockReset();
+    tauriEventMocks.emitTo.mockReset();
+
+    const canvas = screen.getByLabelText("Pet Window pet-a");
+
+    fireEvent(
+      canvas,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 96,
+        clientY: 112,
+        screenX: 196,
+        screenY: 212,
+      }),
+    );
+    fireEvent(
+      canvas,
+      new MouseEvent("pointermove", {
+        bubbles: true,
+        button: 0,
+        clientX: 106,
+        clientY: 122,
+        screenX: 206,
+        screenY: 222,
+      }),
+    );
+    fireEvent(
+      canvas,
+      new MouseEvent("pointerup", {
+        bubbles: true,
+        button: 0,
+        clientX: 116,
+        clientY: 132,
+        screenX: 216,
+        screenY: 232,
+      }),
+    );
+
+    expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
+    expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+      PET_WINDOW_HOST_LABEL,
+      PET_WINDOW_INPUT_EVENT,
+      expect.objectContaining({ kind: "body.pointer.down" }),
+    );
+    expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+      PET_WINDOW_HOST_LABEL,
+      PET_WINDOW_INPUT_EVENT,
+      expect.objectContaining({ kind: "body.pointer.move" }),
+    );
+    expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+      PET_WINDOW_HOST_LABEL,
+      PET_WINDOW_INPUT_EVENT,
+      expect.objectContaining({ kind: "body.pointer.up" }),
+    );
   });
 
   it("routes overlay clicks without starting Pet Window dragging", async () => {

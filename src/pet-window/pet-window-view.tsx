@@ -373,6 +373,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       sequence: inputSequenceRef.current,
       petId: pet.petId,
       windowLabel: getCurrentWindow().label,
+      pointerId: event.pointerId,
       kind,
       localPoint,
       screenPoint: {
@@ -395,6 +396,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       hitLayoutForPresentation(presentation),
       canvasPointFromEvent(canvas, event),
     );
+
+    if (pointerStartRef.current === "body" && isPositionDrivenRef.current) {
+      emitPetWindowInput("body.pointer.move", event);
+      return;
+    }
 
     void setNativeCursorPassthrough(hit.kind === "transparent");
   }
@@ -421,7 +427,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       dragPauseUntilRef.current = Date.now() + 1200;
       emitPetWindowInput("body.pointer.down", event);
       void setNativeCursorPassthrough(false);
-      void startNativeWindowDrag();
+      if (isPositionDrivenRef.current) {
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+      } else {
+        void startNativeWindowDrag();
+      }
       return;
     }
 
@@ -457,6 +467,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
     if (pointerStart === "body") {
       emitPetWindowInput("body.pointer.up", event);
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
     }
 
     void setNativeCursorPassthrough(hit.kind === "transparent");
