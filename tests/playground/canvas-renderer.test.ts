@@ -126,16 +126,16 @@ describe("canvas renderer", () => {
       0,
       192,
       208,
-      100 - (40 * 1.12) / 2,
-      120 - (50 * 1.12) / 2,
-      40 * 1.12,
-      50 * 1.12,
+      expect.closeTo(77.6),
+      expect.closeTo(92),
+      expect.closeTo(44.8),
+      expect.closeTo(56),
     );
     expect(context.strokeRect).toHaveBeenCalledWith(
-      100 - (40 * 1.12) / 2 - 4,
-      120 - (50 * 1.12) / 2 - 4,
-      40 * 1.12 + 8,
-      50 * 1.12 + 8,
+      expect.closeTo(73.6),
+      expect.closeTo(88),
+      expect.closeTo(52.8),
+      expect.closeTo(64),
     );
   });
 
