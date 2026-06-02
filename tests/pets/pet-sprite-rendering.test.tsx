@@ -106,7 +106,8 @@ describe("pet sprite rendering", () => {
       save: vi.fn(),
       scale: vi.fn(),
       translate: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
+    };
+    const canvasContext = context as unknown as CanvasRenderingContext2D;
     const image = {} as HTMLImageElement;
     const frame = resolvePetSpriteFrame({
       animationState: "jumping",
@@ -115,7 +116,7 @@ describe("pet sprite rendering", () => {
       size: { width: 32, height: 38 },
     });
 
-    drawPetSpriteCanvas(context, image, frame, { x: 100, y: 80 });
+    drawPetSpriteCanvas(canvasContext, image, frame, { x: 100, y: 80 });
 
     expect(context.save).toHaveBeenCalledBefore(context.scale);
     expect(context.translate).toHaveBeenCalledWith(100, 80);
@@ -141,7 +142,8 @@ describe("pet sprite rendering", () => {
       save: vi.fn(),
       scale: vi.fn(),
       translate: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
+    };
+    const canvasContext = context as unknown as CanvasRenderingContext2D;
     const image = {} as HTMLImageElement;
     const frame = resolvePetSpriteFrame({
       animationState: "jumping",
@@ -150,7 +152,7 @@ describe("pet sprite rendering", () => {
       size: { width: 32, height: 38 },
     });
 
-    expect(() => drawPetSpriteCanvas(context, image, frame, { x: 100, y: 80 })).toThrow("bad image");
+    expect(() => drawPetSpriteCanvas(canvasContext, image, frame, { x: 100, y: 80 })).toThrow("bad image");
     expect(context.restore).toHaveBeenCalledOnce();
   });
 });
