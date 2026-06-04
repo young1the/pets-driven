@@ -574,6 +574,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
               : "Pet Overlay Menu"
           }
           className="pet-window-menu"
+          data-testid={
+            activeMenu.kind === "body"
+              ? "pet-context-menu"
+              : "pet-overlay-menu"
+          }
           role="menu"
           style={menuStyle(activeMenu)}
         >

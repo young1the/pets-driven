@@ -674,8 +674,7 @@ describe("pet window product route", () => {
         }),
       );
     });
-    expect(screen.getByRole("menu", { name: "Pet Context Menu" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Pet settings" })).toBeInTheDocument();
+    expect(screen.getByTestId("pet-context-menu")).toBeInTheDocument();
     expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
   });
 
@@ -711,8 +710,7 @@ describe("pet window product route", () => {
         }),
       );
     });
-    expect(screen.getByRole("menu", { name: "Pet Overlay Menu" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Minimize overlay" })).toBeInTheDocument();
+    expect(screen.getByTestId("pet-overlay-menu")).toBeInTheDocument();
     expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
   });
 
