@@ -16,6 +16,7 @@ const tauriWindowMocks = vi.hoisted(() => ({
   currentMonitor: vi.fn(),
   outerPosition: vi.fn(),
   setPosition: vi.fn(),
+  show: vi.fn(),
   startDragging: vi.fn(),
   setIgnoreCursorEvents: vi.fn(),
 }));
@@ -42,6 +43,7 @@ vi.mock("@tauri-apps/api/window", () => ({
     label: "pet-window-playground-1",
     outerPosition: tauriWindowMocks.outerPosition,
     setPosition: tauriWindowMocks.setPosition,
+    show: tauriWindowMocks.show,
     startDragging: tauriWindowMocks.startDragging,
     setIgnoreCursorEvents: tauriWindowMocks.setIgnoreCursorEvents,
   })),
@@ -79,6 +81,7 @@ describe("pet window product route", () => {
     tauriWindowMocks.cursorPosition.mockResolvedValue({ x: 392, y: 424 });
     tauriWindowMocks.outerPosition.mockResolvedValue({ x: 120, y: 120 });
     tauriWindowMocks.setPosition.mockResolvedValue(undefined);
+    tauriWindowMocks.show.mockResolvedValue(undefined);
     tauriWindowMocks.startDragging.mockReset();
     tauriWindowMocks.setIgnoreCursorEvents.mockReset();
     tauriEventMocks.emitTo.mockReset();
@@ -320,6 +323,9 @@ describe("pet window product route", () => {
       x: 333,
       y: 444,
     });
+    await waitFor(() => {
+      expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
+    });
 
     const appliedCallCount = tauriWindowMocks.setPosition.mock.calls.length;
 
@@ -330,6 +336,7 @@ describe("pet window product route", () => {
     });
 
     expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(appliedCallCount);
+    expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
   });
 
   it("does not re-apply Pet Window positions when rounded coordinates are unchanged", async () => {
@@ -361,6 +368,9 @@ describe("pet window product route", () => {
       x: 333,
       y: 444,
     });
+    await waitFor(() => {
+      expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("ignores position updates for other pets before checking freshness", async () => {
@@ -391,6 +401,48 @@ describe("pet window product route", () => {
     expect(tauriWindowMocks.setPosition).toHaveBeenLastCalledWith({
       x: 500,
       y: 600,
+    });
+    await waitFor(() => {
+      expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("keeps a Pet Window hidden until its own first position update is applied", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-b&assetId=gabumon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_POSITION_EVENT)).toBe(true);
+    });
+
+    const handlePosition = tauriEventMocks.listeners.get(PET_WINDOW_POSITION_EVENT)!;
+
+    act(() => {
+      handlePosition({
+        payload: { sequence: 1, petId: "pet-a", x: 100, y: 200 },
+      });
+    });
+
+    expect(tauriWindowMocks.setPosition).not.toHaveBeenCalled();
+    expect(tauriWindowMocks.show).not.toHaveBeenCalled();
+
+    act(() => {
+      handlePosition({
+        payload: { sequence: 1, petId: "pet-b", x: 500.7, y: 600.1 },
+      });
+    });
+
+    expect(tauriWindowMocks.setPosition).toHaveBeenCalledWith({
+      x: 501,
+      y: 600,
+    });
+    await waitFor(() => {
+      expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
     });
   });
 
