@@ -99,6 +99,36 @@ button {
   -webkit-user-drag: none;
 }
 
+.pet-window-menu {
+  position: absolute;
+  z-index: 2;
+  min-width: 128px;
+  padding: 4px;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
+}
+
+.pet-window-menu button {
+  width: 100%;
+  display: block;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #172033;
+  font: 12px Inter, Arial, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pet-window-menu button:hover,
+.pet-window-menu button:focus-visible {
+  outline: none;
+  background: #e8f0ff;
+}
+
 .pet-window-status {
   position: absolute;
   width: 1px;

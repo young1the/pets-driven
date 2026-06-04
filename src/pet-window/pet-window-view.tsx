@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
@@ -36,6 +36,10 @@ type PetWindowViewProps = {
 };
 
 type PetWindowPointerStart = "body" | "overlay" | "transparent";
+type PetWindowMenu = {
+  kind: "body" | "overlay";
+  localPoint: { x: number; y: number };
+};
 type PetWindowPresentation = {
   intent: PetSpriteIntent;
   overlay: PetWindowOverlay | null;
@@ -49,7 +53,7 @@ let restoreCursorEventsTimer: number | null = null;
 
 function canvasPointFromEvent(
   canvas: HTMLCanvasElement,
-  event: React.PointerEvent<HTMLCanvasElement>,
+  event: React.MouseEvent<HTMLCanvasElement>,
 ) {
   const rect = canvas.getBoundingClientRect();
   const nativeEvent = event.nativeEvent as PointerEvent & {
@@ -110,6 +114,12 @@ function movementDirectionForWindow(index: number) {
   return index % 2 === 0 ? -1 : 1;
 }
 
+function pointerIdFromEvent(event: React.MouseEvent<HTMLCanvasElement>) {
+  const pointerEvent = event as React.PointerEvent<HTMLCanvasElement>;
+
+  return Number.isFinite(pointerEvent.pointerId) ? pointerEvent.pointerId : 0;
+}
+
 function defaultPresentation(index: number): PetWindowPresentation {
   return {
     intent: {
@@ -144,6 +154,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
     null,
   );
+  const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
   const [presentation, setPresentation] = useState<PetWindowPresentation>(() =>
     defaultPresentation(pet.windowIndex),
   );
@@ -377,7 +388,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
   function emitPetWindowInput(
     kind: PetWindowInputKind,
-    event: React.PointerEvent<HTMLCanvasElement>,
+    event: React.MouseEvent<HTMLCanvasElement>,
   ) {
     if (!isTauri()) {
       return;
@@ -400,7 +411,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           sequence,
           petId: pet.petId,
           windowLabel: getCurrentWindow().label,
-          pointerId: event.pointerId,
+          pointerId: pointerIdFromEvent(event),
           kind,
           localPoint,
           screenPoint,
@@ -486,16 +497,59 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
     if (pointerStart === "overlay" && hit.kind === "overlay") {
       setInteractionStatus("Overlay action");
+      setActiveMenu(null);
       emitPetWindowInput("overlay.click", event);
       return;
     }
 
     if (pointerStart === "body") {
+      setActiveMenu(null);
       emitPetWindowInput("body.pointer.up", event);
       event.currentTarget.releasePointerCapture?.(event.pointerId);
     }
 
     void setNativeCursorPassthrough(hit.kind === "transparent");
+  }
+
+  function handleContextMenu(event: React.MouseEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    const hit = classifyPetWindowPoint(
+      hitLayoutForPresentation(presentation),
+      canvasPointFromEvent(canvas, event),
+    );
+
+    if (hit.kind === "transparent") {
+      setActiveMenu(null);
+      void setNativeCursorPassthrough(true);
+      return;
+    }
+
+    event.preventDefault();
+    pointerStartRef.current = null;
+    void setNativeCursorPassthrough(false);
+
+    if (hit.kind === "body") {
+      setInteractionStatus("Pet context menu");
+      setActiveMenu({ kind: "body", localPoint: canvasPointFromEvent(canvas, event) });
+      emitPetWindowInput("body.contextmenu", event);
+      return;
+    }
+
+    setInteractionStatus("Overlay context menu");
+    setActiveMenu({ kind: "overlay", localPoint: canvasPointFromEvent(canvas, event) });
+    emitPetWindowInput("overlay.contextmenu", event);
+  }
+
+  function menuStyle(menu: PetWindowMenu): CSSProperties {
+    return {
+      left: `${Math.min(Math.max(menu.localPoint.x, 8), PET_WINDOW_LAYOUT.width - 136)}px`,
+      top: `${Math.min(Math.max(menu.localPoint.y, 8), PET_WINDOW_LAYOUT.height - 72)}px`,
+    };
   }
 
   return (
@@ -504,6 +558,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         aria-label={`Pet Window ${pet.petId}`}
         className="pet-window-canvas"
         height={208}
+        onContextMenu={handleContextMenu}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -511,6 +566,38 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         ref={canvasRef}
         width={192}
       />
+      {activeMenu ? (
+        <div
+          aria-label={
+            activeMenu.kind === "body"
+              ? "Pet Context Menu"
+              : "Pet Overlay Menu"
+          }
+          className="pet-window-menu"
+          role="menu"
+          style={menuStyle(activeMenu)}
+        >
+          {activeMenu.kind === "body" ? (
+            <>
+              <button role="menuitem" type="button">
+                Pet settings
+              </button>
+              <button role="menuitem" type="button">
+                Attention history
+              </button>
+            </>
+          ) : (
+            <>
+              <button role="menuitem" type="button">
+                Minimize overlay
+              </button>
+              <button role="menuitem" type="button">
+                Hide for now
+              </button>
+            </>
+          )}
+        </div>
+      ) : null}
       {interactionStatus ? (
         <span className="pet-window-status" role="status">
           {interactionStatus}
