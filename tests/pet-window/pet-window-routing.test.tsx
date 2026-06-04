@@ -260,6 +260,45 @@ describe("pet window product route", () => {
     });
   });
 
+  it("routes Claude hook ingress by working directory instead of provider session id", async () => {
+    render(<PetsDrivenApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-playground-1",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({ petId: "pet-a" }),
+      );
+    });
+
+    tauriEventMocks.emitTo.mockClear();
+
+    act(() => {
+      tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
+        payload: {
+          hook_event_name: "PermissionRequest",
+          session_id: "f9b89878-f7be-453b-90cb-ffd626765d25",
+          cwd: "D:\\cms\\tool-api\\src\\main\\resources\\static\\js\\template\\test",
+          message: "Allow Edit?",
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-playground-1",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          petId: "pet-a",
+          overlay: { kind: "attention", label: "WAIT" },
+        }),
+      );
+    });
+  });
+
   it("shows Claude hook ingress status and sends a test event from the UI", async () => {
     render(<PetsDrivenApp />);
 
