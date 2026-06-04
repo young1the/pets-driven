@@ -141,6 +141,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const positionSequenceRef = useRef(0);
   const presentationSequenceRef = useRef(0);
   const appliedPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const hasShownAfterFirstPositionRef = useRef(false);
   const isPositionDrivenRef = useRef(false);
   const pointerStartRef = useRef<PetWindowPointerStart | null>(null);
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
@@ -187,19 +188,35 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         x: Math.round(update.x),
         y: Math.round(update.y),
       };
+      const shouldShowWindow = !hasShownAfterFirstPositionRef.current;
 
       if (
         appliedPositionRef.current &&
         appliedPositionRef.current.x === nextPosition.x &&
         appliedPositionRef.current.y === nextPosition.y
       ) {
+        if (shouldShowWindow) {
+          hasShownAfterFirstPositionRef.current = true;
+          void currentWindow.show();
+        }
+
         return;
       }
 
       appliedPositionRef.current = nextPosition;
-      void currentWindow.setPosition(
-        new PhysicalPosition(nextPosition.x, nextPosition.y),
-      );
+      if (shouldShowWindow) {
+        hasShownAfterFirstPositionRef.current = true;
+      }
+
+      void currentWindow
+        .setPosition(new PhysicalPosition(nextPosition.x, nextPosition.y))
+        .then(() => {
+          if (shouldShowWindow) {
+            return currentWindow.show();
+          }
+
+          return undefined;
+        });
     }).then((unlisten) => {
       unlistenPosition = unlisten;
     });

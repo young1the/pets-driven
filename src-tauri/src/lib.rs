@@ -180,6 +180,7 @@ async fn open_pet_window_playground(app: tauri::AppHandle, count: Option<u8>) ->
         .skip_taskbar(true)
         .resizable(false)
         .shadow(false)
+        .visible(false)
         .focused(false)
         .build()
         .map_err(|error| format!("Could not create {label}: {error}"))?;
