@@ -8,6 +8,13 @@ import {
   type ClaudeHookIngressStatus,
 } from "@/adapters/agent-events/claude-hook-ingress";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
+import {
+  createEmptyPetsDrivenState,
+  parsePetsDrivenState,
+  resolveRegisteredWorkingDirectoryForCwd,
+  withDesktopFixtureWorkingDirectories,
+  type PetsDrivenStateV1,
+} from "@/app-state/pets-driven-state";
 import { createDemoScenario } from "@/core/scenario-fixtures";
 import {
   CODEX_PET_ASSETS,
@@ -93,14 +100,29 @@ function desktopFixturePetBodySize(bounds: {
   };
 }
 
-function routeClaudeHookPayloadToDesktopFixture(payload: unknown): unknown {
+function routeClaudeHookPayloadToRegisteredWorkingDirectory(
+  payload: unknown,
+  state: PetsDrivenStateV1,
+): unknown | null {
   if (!payload || typeof payload !== "object") {
     return payload;
   }
 
+  const cwd = (payload as { cwd?: unknown }).cwd;
+
+  if (typeof cwd !== "string" || cwd.trim().length === 0) {
+    return payload;
+  }
+
+  const workingDirectory = resolveRegisteredWorkingDirectoryForCwd(state, cwd);
+
+  if (!workingDirectory) {
+    return null;
+  }
+
   return {
     ...payload,
-    sourceId: "agent-a",
+    sourceId: workingDirectory.agentSourceId,
   };
 }
 
@@ -116,6 +138,9 @@ export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
+  const petsDrivenStateRef = useRef(
+    withDesktopFixtureWorkingDirectories(createEmptyPetsDrivenState()),
+  );
   const fixtureHostBoundsRef = useRef<{
     x: number;
     y: number;
@@ -235,17 +260,51 @@ export function PetsDrivenApp() {
       return;
     }
 
+    let isMounted = true;
+
+    void invoke<unknown>("read_pets_driven_state")
+      .then((state) => {
+        if (!isMounted) {
+          return;
+        }
+
+        petsDrivenStateRef.current = withDesktopFixtureWorkingDirectories(
+          parsePetsDrivenState(state),
+        );
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setPetWindowError(formatCommandError(error));
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
     let unlisten: (() => void) | undefined;
 
     void listen<unknown>(CLAUDE_HOOK_INGRESS_EVENT, (event) => {
       try {
-        const agentEvent = createAgentEventFromClaudeHook(
-          routeClaudeHookPayloadToDesktopFixture(event.payload),
-          {
-            defaultSourceId: "agent-a",
-            now: fixtureScenarioRef.current.clock.now(),
-          },
+        const routedPayload = routeClaudeHookPayloadToRegisteredWorkingDirectory(
+          event.payload,
+          petsDrivenStateRef.current,
         );
+
+        if (!routedPayload) {
+          return;
+        }
+
+        const agentEvent = createAgentEventFromClaudeHook(routedPayload, {
+          defaultSourceId: "agent-a",
+          now: fixtureScenarioRef.current.clock.now(),
+        });
 
         fixtureScenarioRef.current.world.pushEvent(toWorldEvent(agentEvent));
       } catch (error) {
