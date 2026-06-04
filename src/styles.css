@@ -164,6 +164,30 @@ button {
   font-size: 1.2rem;
 }
 
+.app-summary code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+  color: #344055;
+}
+
+.app-summary button {
+  justify-self: start;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #bcc7d8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+}
+
+.app-summary small {
+  overflow-wrap: anywhere;
+  color: #9f1d1d;
+  font-size: 0.8rem;
+}
+
 .app-pets {
   display: grid;
   gap: 12px;

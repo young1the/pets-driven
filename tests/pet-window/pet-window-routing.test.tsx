@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PetsDrivenApp } from "@/app/pets-driven-app";
+import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-ingress";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
   PET_WINDOW_FRAME_EVENT,
@@ -90,6 +91,23 @@ describe("pet window product route", () => {
     invokeMock.mockImplementation(async (command) => {
       if (command === "list_codex_pet_packages") {
         return [];
+      }
+      if (command === "get_claude_hook_ingress_status") {
+        return {
+          url: "http://127.0.0.1:43187/claude-hook",
+          state: "listening",
+          error: null,
+        };
+      }
+      if (command === "emit_test_claude_hook_ingress_event") {
+        tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
+          payload: {
+            hook_event_name: "PermissionRequest",
+            cwd: "D:\\workmanager\\pets-driven",
+            message: "Test Claude hook",
+          },
+        });
+        return undefined;
       }
 
       return undefined;
@@ -204,10 +222,86 @@ describe("pet window product route", () => {
     });
   });
 
+  it("routes Claude hook ingress events into fixture Pet Window frames", async () => {
+    render(<PetsDrivenApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-playground-1",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({ petId: "pet-a" }),
+      );
+    });
+
+    tauriEventMocks.emitTo.mockClear();
+
+    act(() => {
+      tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
+        payload: {
+          hook_event_name: "PermissionRequest",
+          cwd: "D:\\workmanager\\pets-driven",
+          message: "Allow Bash?",
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-playground-1",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          petId: "pet-a",
+          overlay: { kind: "attention", label: "WAIT" },
+        }),
+      );
+    });
+  });
+
+  it("shows Claude hook ingress status and sends a test event from the UI", async () => {
+    render(<PetsDrivenApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("claude-hook-state")).toHaveTextContent("listening");
+      expect(screen.getByTestId("claude-hook-url")).toHaveTextContent(
+        "http://127.0.0.1:43187/claude-hook",
+      );
+    });
+
+    tauriEventMocks.emitTo.mockClear();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send Claude hook test event" }),
+    );
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("emit_test_claude_hook_ingress_event");
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-playground-1",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          petId: "pet-a",
+          overlay: { kind: "attention", label: "WAIT" },
+        }),
+      );
+    });
+  });
+
   it("shows Pet Window command failures in the management surface", async () => {
     invokeMock.mockImplementation(async (command) => {
       if (command === "list_codex_pet_packages") {
         return [];
+      }
+      if (command === "get_claude_hook_ingress_status") {
+        return {
+          url: "http://127.0.0.1:43187/claude-hook",
+          state: "listening",
+          error: null,
+        };
       }
 
       throw new Error("window creation deadlocked");

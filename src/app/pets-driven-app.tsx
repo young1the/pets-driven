@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { currentMonitor } from "@tauri-apps/api/window";
+import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
+import {
+  CLAUDE_HOOK_INGRESS_EVENT,
+  type ClaudeHookIngressStatus,
+} from "@/adapters/agent-events/claude-hook-ingress";
+import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { createDemoScenario } from "@/core/scenario-fixtures";
 import {
   CODEX_PET_ASSETS,
@@ -29,6 +35,7 @@ type ViewMode = "home" | "playground";
 const DESKTOP_FIXTURE_HOST_TICK_MS = 33;
 const DESKTOP_FIXTURE_STEP_MS = 16;
 const DESKTOP_FIXTURE_WORLD_SIZE = { width: 960, height: 540 };
+const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
 
 function formatCommandError(error: unknown) {
   if (error instanceof Error) {
@@ -86,6 +93,14 @@ function desktopFixturePetBodySize(bounds: {
   };
 }
 
+function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
+  return {
+    url: "",
+    state: isTauri() ? "pending" : "error",
+    error: isTauri() ? null : "Claude hook ingress is only available in Tauri.",
+  };
+}
+
 export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
@@ -103,6 +118,8 @@ export function PetsDrivenApp() {
     "loading",
   );
   const [petWindowError, setPetWindowError] = useState<string | null>(null);
+  const [claudeHookIngressStatus, setClaudeHookIngressStatus] =
+    useState<ClaudeHookIngressStatus>(defaultClaudeHookIngressStatus);
 
   useEffect(() => {
     let isMounted = true;
@@ -123,6 +140,43 @@ export function PetsDrivenApp() {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadClaudeHookIngressStatus = () => {
+      void invoke<ClaudeHookIngressStatus>("get_claude_hook_ingress_status")
+        .then((nextStatus) => {
+          if (isMounted) {
+            setClaudeHookIngressStatus(nextStatus);
+          }
+        })
+        .catch((error) => {
+          if (isMounted) {
+            setClaudeHookIngressStatus({
+              url: "",
+              state: "error",
+              error: formatCommandError(error),
+            });
+          }
+        });
+    };
+
+    loadClaudeHookIngressStatus();
+    const intervalId = window.setInterval(
+      loadClaudeHookIngressStatus,
+      CLAUDE_HOOK_STATUS_REFRESH_MS,
+    );
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
     };
   }, []);
 
@@ -158,6 +212,31 @@ export function PetsDrivenApp() {
         },
         button: input.button ?? 0,
       });
+    }).then((stop) => {
+      unlisten = stop;
+    });
+
+    return () => unlisten?.();
+  }, []);
+
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+
+    void listen<unknown>(CLAUDE_HOOK_INGRESS_EVENT, (event) => {
+      try {
+        const agentEvent = createAgentEventFromClaudeHook(event.payload, {
+          defaultSourceId: "agent-a",
+          now: fixtureScenarioRef.current.clock.now(),
+        });
+
+        fixtureScenarioRef.current.world.pushEvent(toWorldEvent(agentEvent));
+      } catch (error) {
+        setPetWindowError(formatCommandError(error));
+      }
     }).then((stop) => {
       unlisten = stop;
     });
@@ -273,6 +352,16 @@ export function PetsDrivenApp() {
     }
   }
 
+  async function emitClaudeHookTestEvent() {
+    setPetWindowError(null);
+
+    try {
+      await invoke("emit_test_claude_hook_ingress_event");
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -331,6 +420,25 @@ export function PetsDrivenApp() {
         <div>
           <span>Source</span>
           <strong>{isTauri() ? "Tauri" : "Browser"}</strong>
+        </div>
+        <div className="app-summary-runtime">
+          <span>Claude hook</span>
+          <strong data-testid="claude-hook-state">
+            {claudeHookIngressStatus.state}
+          </strong>
+          <code data-testid="claude-hook-url">
+            {claudeHookIngressStatus.url || "unavailable"}
+          </code>
+          <button
+            type="button"
+            aria-label="Send Claude hook test event"
+            onClick={() => void emitClaudeHookTestEvent()}
+          >
+            Test event
+          </button>
+          {claudeHookIngressStatus.error ? (
+            <small>{claudeHookIngressStatus.error}</small>
+          ) : null}
         </div>
       </section>
 
