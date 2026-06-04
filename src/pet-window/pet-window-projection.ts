@@ -44,6 +44,7 @@ export function projectWorldSnapshotToPetWindows(
         petId: pet.id,
         position: {
           sequence,
+          petId: pet.id,
           x: bounds.x + body.x * scaleX - PET_CELL_SIZE.width / 2,
           y: bounds.y + body.y * scaleY - PET_CELL_SIZE.height / 2,
           width: PET_CELL_SIZE.width,
@@ -51,6 +52,7 @@ export function projectWorldSnapshotToPetWindows(
         },
         presentation: {
           sequence,
+          petId: pet.id,
           intent: spriteIntentFromBody(body),
           overlay: overlayFromPet(pet),
         },

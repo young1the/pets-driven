@@ -12,6 +12,7 @@ export type PetWindowOverlay = {
 
 export type PetWindowPositionUpdate = {
   sequence: number;
+  petId: string;
   x: number;
   y: number;
   width?: number;
@@ -20,6 +21,7 @@ export type PetWindowPositionUpdate = {
 
 export type PetWindowPresentationUpdate = {
   sequence: number;
+  petId: string;
   intent: PetSpriteIntent;
   overlay: PetWindowOverlay | null;
 };
@@ -49,4 +51,14 @@ export function isFreshPetWindowMessage(
   nextSequence: number,
 ) {
   return nextSequence > lastSequence;
+}
+
+export function isSamePetWindowPresentation(
+  previous: Pick<PetWindowPresentationUpdate, "intent" | "overlay">,
+  next: Pick<PetWindowPresentationUpdate, "intent" | "overlay">,
+) {
+  return (
+    JSON.stringify(previous.intent) === JSON.stringify(next.intent) &&
+    JSON.stringify(previous.overlay) === JSON.stringify(next.overlay)
+  );
 }

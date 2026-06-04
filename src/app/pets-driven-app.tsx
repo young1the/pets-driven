@@ -9,11 +9,14 @@ import {
 } from "@/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
 import {
+  isSamePetWindowPresentation,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_POSITION_EVENT,
   PET_WINDOW_PRESENTATION_EVENT,
   type PetWindowInputEvent,
+  type PetWindowPresentationUpdate,
 } from "@/pet-window/pet-window-messages";
+import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import { projectWorldSnapshotToPetWindows } from "@/pet-window/pet-window-projection";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
@@ -28,6 +31,7 @@ type CodexPetPackage = {
 type ViewMode = "home" | "playground";
 const DESKTOP_FIXTURE_HOST_TICK_MS = 33;
 const DESKTOP_FIXTURE_STEP_MS = 16;
+const DESKTOP_FIXTURE_WORLD_SIZE = { width: 960, height: 540 };
 
 function formatCommandError(error: unknown) {
   if (error instanceof Error) {
@@ -72,10 +76,26 @@ function petWindowPlaygroundLabelForPetId(petId: string) {
   return index >= 0 ? `pet-window-playground-${index + 1}` : null;
 }
 
+function desktopFixturePetBodySize(bounds: {
+  width: number;
+  height: number;
+}) {
+  const scaleX = bounds.width / DESKTOP_FIXTURE_WORLD_SIZE.width;
+  const scaleY = bounds.height / DESKTOP_FIXTURE_WORLD_SIZE.height;
+
+  return {
+    width: PET_WINDOW_LAYOUT.body.width / scaleX,
+    height: PET_WINDOW_LAYOUT.body.height / scaleY,
+  };
+}
+
 export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
+  const fixturePresentationCacheRef = useRef(
+    new Map<string, PetWindowPresentationUpdate>(),
+  );
   const fixtureHostBoundsRef = useRef<{
     x: number;
     y: number;
@@ -170,6 +190,11 @@ export function PetsDrivenApp() {
         width: monitor.workArea.size.width,
         height: monitor.workArea.size.height,
       };
+      fixtureScenarioRef.current = createDemoScenario({
+        petBodySize: desktopFixturePetBodySize(fixtureHostBoundsRef.current),
+      });
+      fixturePresentationCacheRef.current.clear();
+      fixtureHostSequenceRef.current = 0;
     });
 
     const intervalId = window.setInterval(() => {
@@ -196,21 +221,39 @@ export function PetsDrivenApp() {
       ).slice(0, desktopFixtureWindowCount);
 
       void Promise.all(
-        projections.map((projection) => {
+        projections.flatMap((projection) => {
           const label = petWindowPlaygroundLabelForPetId(projection.petId);
 
           if (!label) {
-            return Promise.resolve();
+            return [];
           }
 
-          return Promise.all([
+          const events = [
             emitTo(label, PET_WINDOW_POSITION_EVENT, projection.position),
-            emitTo(
-              label,
-              PET_WINDOW_PRESENTATION_EVENT,
+          ];
+          const previousPresentation =
+            fixturePresentationCacheRef.current.get(projection.petId);
+          if (
+            !previousPresentation ||
+            !isSamePetWindowPresentation(
+              previousPresentation,
               projection.presentation,
-            ),
-          ]);
+            )
+          ) {
+            fixturePresentationCacheRef.current.set(
+              projection.petId,
+              projection.presentation,
+            );
+            events.push(
+              emitTo(
+                label,
+                PET_WINDOW_PRESENTATION_EVENT,
+                projection.presentation,
+              ),
+            );
+          }
+
+          return events;
         }),
       ).finally(() => {
         isBroadcasting = false;
@@ -255,6 +298,7 @@ export function PetsDrivenApp() {
       if (command === "open_pet_window_playground") {
         setDesktopFixtureWindowCount(count ?? 1);
       } else if (command === "close_pet_window_playground") {
+        fixturePresentationCacheRef.current.clear();
         setDesktopFixtureWindowCount(0);
       }
     } catch (error) {
