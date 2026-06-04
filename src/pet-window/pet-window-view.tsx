@@ -20,14 +20,12 @@ import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import {
   isFreshPetWindowMessage,
+  PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
-  PET_WINDOW_POSITION_EVENT,
-  PET_WINDOW_PRESENTATION_EVENT,
   type PetWindowInputKind,
+  type PetWindowFrame,
   type PetWindowOverlay,
-  type PetWindowPositionUpdate,
-  type PetWindowPresentationUpdate,
   isSamePetWindowPresentation,
 } from "@/pet-window/pet-window-messages";
 import type { PetWindowHitLayout } from "@/pet-window/pet-window-types";
@@ -138,8 +136,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   );
   const dragPauseUntilRef = useRef(0);
   const inputSequenceRef = useRef(0);
-  const positionSequenceRef = useRef(0);
-  const presentationSequenceRef = useRef(0);
+  const frameSequenceRef = useRef(0);
   const appliedPositionRef = useRef<{ x: number; y: number } | null>(null);
   const hasShownAfterFirstPositionRef = useRef(false);
   const isPositionDrivenRef = useRef(false);
@@ -165,28 +162,45 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       return;
     }
 
-    let unlistenPosition: (() => void) | undefined;
-    let unlistenPresentation: (() => void) | undefined;
+    let unlistenFrame: (() => void) | undefined;
     const currentWindow = getCurrentWindow();
 
-    void listen<PetWindowPositionUpdate>(PET_WINDOW_POSITION_EVENT, (event) => {
-      const update = event.payload;
+    void listen<PetWindowFrame>(PET_WINDOW_FRAME_EVENT, (event) => {
+      const frame = event.payload;
 
-      if (update.petId !== pet.petId) {
+      if (frame.petId !== pet.petId) {
         return;
       }
+
+      if (!isFreshPetWindowMessage(frameSequenceRef.current, frame.sequence)) {
+        return;
+      }
+
+      frameSequenceRef.current = frame.sequence;
+      isPositionDrivenRef.current = true;
 
       if (
-        !isFreshPetWindowMessage(positionSequenceRef.current, update.sequence)
+        !isSamePetWindowPresentation(
+          {
+            sprite: { intent: presentationRef.current.intent },
+            overlay: presentationRef.current.overlay,
+          },
+          { sprite: frame.sprite, overlay: frame.overlay },
+        )
       ) {
-        return;
+        presentationRef.current = {
+          intent: frame.sprite.intent,
+          overlay: frame.overlay,
+        };
+        setPresentation({
+          intent: frame.sprite.intent,
+          overlay: frame.overlay,
+        });
       }
 
-      positionSequenceRef.current = update.sequence;
-      isPositionDrivenRef.current = true;
       const nextPosition = {
-        x: Math.round(update.x),
-        y: Math.round(update.y),
+        x: Math.round(frame.window.x),
+        y: Math.round(frame.window.y),
       };
       const shouldShowWindow = !hasShownAfterFirstPositionRef.current;
 
@@ -218,48 +232,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           return undefined;
         });
     }).then((unlisten) => {
-      unlistenPosition = unlisten;
-    });
-
-    void listen<PetWindowPresentationUpdate>(
-      PET_WINDOW_PRESENTATION_EVENT,
-      (event) => {
-        const update = event.payload;
-
-        if (update.petId !== pet.petId) {
-          return;
-        }
-
-        if (
-          !isFreshPetWindowMessage(
-            presentationSequenceRef.current,
-            update.sequence,
-          )
-        ) {
-          return;
-        }
-
-        presentationSequenceRef.current = update.sequence;
-        if (isSamePetWindowPresentation(presentationRef.current, update)) {
-          return;
-        }
-
-        presentationRef.current = {
-          intent: update.intent,
-          overlay: update.overlay,
-        };
-        setPresentation({
-          intent: update.intent,
-          overlay: update.overlay,
-        });
-      },
-    ).then((unlisten) => {
-      unlistenPresentation = unlisten;
+      unlistenFrame = unlisten;
     });
 
     return () => {
-      unlistenPosition?.();
-      unlistenPresentation?.();
+      unlistenFrame?.();
     };
   }, []);
 

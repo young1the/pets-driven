@@ -1,32 +1,34 @@
 import { describe, expect, it } from "vitest";
 import {
+  PET_WINDOW_FRAME_EVENT,
   isFreshPetWindowMessage,
   isSamePetWindowPresentation,
   PET_WINDOW_INPUT_EVENT,
-  PET_WINDOW_POSITION_EVENT,
-  PET_WINDOW_PRESENTATION_EVENT,
-  type PetWindowPresentationUpdate,
+  type PetWindowFrame,
 } from "@/pet-window/pet-window-messages";
 
 describe("pet window message contract", () => {
   it("uses versioned event names for the Pet Window boundary", () => {
-    expect(PET_WINDOW_POSITION_EVENT).toBe("pet-window:position:v1");
-    expect(PET_WINDOW_PRESENTATION_EVENT).toBe("pet-window:presentation:v1");
+    expect(PET_WINDOW_FRAME_EVENT).toBe("pet-window:frame:v1");
     expect(PET_WINDOW_INPUT_EVENT).toBe("pet-window:input:v1");
   });
 
-  it("keeps presentation updates to routing, intent, and overlay only", () => {
-    const update: PetWindowPresentationUpdate = {
+  it("keeps Pet Window frames to routing, window, sprite, and overlay only", () => {
+    const frame: PetWindowFrame = {
+      schemaVersion: 1,
       sequence: 4,
       petId: "pet-a",
-      intent: { kind: "waiting", facing: "right" },
+      window: { x: 100, y: 200, width: 192, height: 208 },
+      sprite: { intent: { kind: "waiting", facing: "right" } },
       overlay: { kind: "attention", label: "WAIT" },
     };
 
-    expect(Object.keys(update)).toEqual([
+    expect(Object.keys(frame)).toEqual([
+      "schemaVersion",
       "sequence",
       "petId",
-      "intent",
+      "window",
+      "sprite",
       "overlay",
     ]);
   });
@@ -41,11 +43,11 @@ describe("pet window message contract", () => {
     expect(
       isSamePetWindowPresentation(
         {
-          intent: { kind: "travel", direction: "left" },
+          sprite: { intent: { kind: "travel", direction: "left" } },
           overlay: { kind: "status", label: "!" },
         },
         {
-          intent: { kind: "travel", direction: "left" },
+          sprite: { intent: { kind: "travel", direction: "left" } },
           overlay: { kind: "status", label: "!" },
         },
       ),
@@ -53,8 +55,8 @@ describe("pet window message contract", () => {
 
     expect(
       isSamePetWindowPresentation(
-        { intent: { kind: "idle" }, overlay: null },
-        { intent: { kind: "waiting" }, overlay: null },
+        { sprite: { intent: { kind: "idle" } }, overlay: null },
+        { sprite: { intent: { kind: "waiting" } }, overlay: null },
       ),
     ).toBe(false);
   });

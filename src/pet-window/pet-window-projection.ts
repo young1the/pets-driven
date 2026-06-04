@@ -5,16 +5,14 @@ import type {
 } from "@/core/world-snapshot";
 import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
 import type {
+  PetWindowFrame,
   PetWindowOverlay,
-  PetWindowPositionUpdate,
-  PetWindowPresentationUpdate,
 } from "@/pet-window/pet-window-messages";
 import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
 
 export type PetWindowProjection = {
   petId: string;
-  position: PetWindowPositionUpdate;
-  presentation: PetWindowPresentationUpdate;
+  frame: PetWindowFrame;
 };
 
 export type PetWindowProjectionBounds = {
@@ -42,18 +40,17 @@ export function projectWorldSnapshotToPetWindows(
     return [
       {
         petId: pet.id,
-        position: {
+        frame: {
+          schemaVersion: 1,
           sequence,
           petId: pet.id,
-          x: bounds.x + body.x * scaleX - PET_CELL_SIZE.width / 2,
-          y: bounds.y + body.y * scaleY - PET_CELL_SIZE.height / 2,
-          width: PET_CELL_SIZE.width,
-          height: PET_CELL_SIZE.height,
-        },
-        presentation: {
-          sequence,
-          petId: pet.id,
-          intent: spriteIntentFromBody(body),
+          window: {
+            x: bounds.x + body.x * scaleX - PET_CELL_SIZE.width / 2,
+            y: bounds.y + body.y * scaleY - PET_CELL_SIZE.height / 2,
+            width: PET_CELL_SIZE.width,
+            height: PET_CELL_SIZE.height,
+          },
+          sprite: { intent: spriteIntentFromBody(body) },
           overlay: overlayFromPet(pet),
         },
       },

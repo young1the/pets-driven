@@ -9,12 +9,9 @@ import {
 } from "@/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
 import {
-  isSamePetWindowPresentation,
+  PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_INPUT_EVENT,
-  PET_WINDOW_POSITION_EVENT,
-  PET_WINDOW_PRESENTATION_EVENT,
   type PetWindowInputEvent,
-  type PetWindowPresentationUpdate,
 } from "@/pet-window/pet-window-messages";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import { projectWorldSnapshotToPetWindows } from "@/pet-window/pet-window-projection";
@@ -93,9 +90,6 @@ export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
-  const fixturePresentationCacheRef = useRef(
-    new Map<string, PetWindowPresentationUpdate>(),
-  );
   const fixtureHostBoundsRef = useRef<{
     x: number;
     y: number;
@@ -193,7 +187,6 @@ export function PetsDrivenApp() {
       fixtureScenarioRef.current = createDemoScenario({
         petBodySize: desktopFixturePetBodySize(fixtureHostBoundsRef.current),
       });
-      fixturePresentationCacheRef.current.clear();
       fixtureHostSequenceRef.current = 0;
     });
 
@@ -228,32 +221,7 @@ export function PetsDrivenApp() {
             return [];
           }
 
-          const events = [
-            emitTo(label, PET_WINDOW_POSITION_EVENT, projection.position),
-          ];
-          const previousPresentation =
-            fixturePresentationCacheRef.current.get(projection.petId);
-          if (
-            !previousPresentation ||
-            !isSamePetWindowPresentation(
-              previousPresentation,
-              projection.presentation,
-            )
-          ) {
-            fixturePresentationCacheRef.current.set(
-              projection.petId,
-              projection.presentation,
-            );
-            events.push(
-              emitTo(
-                label,
-                PET_WINDOW_PRESENTATION_EVENT,
-                projection.presentation,
-              ),
-            );
-          }
-
-          return events;
+          return [emitTo(label, PET_WINDOW_FRAME_EVENT, projection.frame)];
         }),
       ).finally(() => {
         isBroadcasting = false;
@@ -298,7 +266,6 @@ export function PetsDrivenApp() {
       if (command === "open_pet_window_playground") {
         setDesktopFixtureWindowCount(count ?? 1);
       } else if (command === "close_pet_window_playground") {
-        fixturePresentationCacheRef.current.clear();
         setDesktopFixtureWindowCount(0);
       }
     } catch (error) {
