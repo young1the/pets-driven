@@ -628,6 +628,92 @@ describe("pet window product route", () => {
 
     expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
     expect(await screen.findByText("Overlay action")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        PET_WINDOW_HOST_LABEL,
+        PET_WINDOW_INPUT_EVENT,
+        expect.objectContaining({
+          kind: "overlay.click",
+          petId: "pet-a",
+          windowLabel: "pet-window-playground-1",
+          localPoint: { x: 96, y: 20 },
+        }),
+      );
+    });
+  });
+
+  it("routes body right-clicks to the Pet Context Menu input", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+    const canvas = screen.getByLabelText("Pet Window pet-a");
+
+    fireEvent.contextMenu(canvas, {
+      bubbles: true,
+      button: 2,
+      clientX: 96,
+      clientY: 112,
+      screenX: 196,
+      screenY: 212,
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        PET_WINDOW_HOST_LABEL,
+        PET_WINDOW_INPUT_EVENT,
+        expect.objectContaining({
+          kind: "body.contextmenu",
+          petId: "pet-a",
+          windowLabel: "pet-window-playground-1",
+          localPoint: { x: 96, y: 112 },
+          button: 2,
+        }),
+      );
+    });
+    expect(screen.getByRole("menu", { name: "Pet Context Menu" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Pet settings" })).toBeInTheDocument();
+    expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
+  });
+
+  it("routes overlay right-clicks to the Pet Overlay Menu input", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+    const canvas = screen.getByLabelText("Pet Window pet-a");
+
+    fireEvent.contextMenu(canvas, {
+      bubbles: true,
+      button: 2,
+      clientX: 96,
+      clientY: 20,
+      screenX: 196,
+      screenY: 212,
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        PET_WINDOW_HOST_LABEL,
+        PET_WINDOW_INPUT_EVENT,
+        expect.objectContaining({
+          kind: "overlay.contextmenu",
+          petId: "pet-a",
+          windowLabel: "pet-window-playground-1",
+          localPoint: { x: 96, y: 20 },
+          button: 2,
+        }),
+      );
+    });
+    expect(screen.getByRole("menu", { name: "Pet Overlay Menu" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Minimize overlay" })).toBeInTheDocument();
+    expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
   });
 
   it("treats the overlay region as transparent when presentation has no overlay", async () => {
