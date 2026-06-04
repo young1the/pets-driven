@@ -12,6 +12,7 @@ use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 const CLAUDE_HOOK_INGRESS_EVENT: &str = "claude-hook:received:v1";
 const CLAUDE_HOOK_INGRESS_PATH: &str = "/claude-hook";
 const CLAUDE_HOOK_INGRESS_PORT: u16 = 43187;
+const PETS_DRIVEN_STATE_FILE_NAME: &str = "state.v1.json";
 const PET_WINDOW_PLAYGROUND_MAX_WINDOWS: u8 = 7;
 const PET_WINDOW_PLAYGROUND_FIXTURES: [(&str, &str); 7] = [
     ("pet-a", "agumon"),
@@ -136,6 +137,22 @@ fn pet_window_playground_url(index: u8) -> String {
 
 fn claude_hook_ingress_url() -> String {
     format!("http://127.0.0.1:{CLAUDE_HOOK_INGRESS_PORT}{CLAUDE_HOOK_INGRESS_PATH}")
+}
+
+fn empty_pets_driven_state() -> serde_json::Value {
+    serde_json::json!({
+        "schemaVersion": 1,
+        "registeredWorkingDirectories": [],
+        "pets": [],
+        "petProfiles": []
+    })
+}
+
+fn pets_driven_state_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|path| path.join(PETS_DRIVEN_STATE_FILE_NAME))
+        .map_err(|error| format!("Could not resolve pets-driven app data directory: {error}"))
 }
 
 fn http_body_start(request: &[u8]) -> Option<usize> {
@@ -382,6 +399,37 @@ fn emit_test_claude_hook_ingress_event(app: tauri::AppHandle) -> Result<(), Stri
 }
 
 #[tauri::command]
+fn read_pets_driven_state(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    let state_path = pets_driven_state_path(&app)?;
+
+    if !state_path.exists() {
+        return Ok(empty_pets_driven_state());
+    }
+
+    let state_text = fs::read_to_string(&state_path)
+        .map_err(|error| format!("Could not read {}: {error}", state_path.display()))?;
+
+    serde_json::from_str(&state_text)
+        .map_err(|error| format!("Could not parse {}: {error}", state_path.display()))
+}
+
+#[tauri::command]
+fn write_pets_driven_state(app: tauri::AppHandle, state: serde_json::Value) -> Result<(), String> {
+    let state_path = pets_driven_state_path(&app)?;
+
+    if let Some(parent) = state_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|error| format!("Could not create {}: {error}", parent.display()))?;
+    }
+
+    let state_text = serde_json::to_string_pretty(&state)
+        .map_err(|error| format!("Could not serialize pets-driven state: {error}"))?;
+
+    fs::write(&state_path, state_text)
+        .map_err(|error| format!("Could not write {}: {error}", state_path.display()))
+}
+
+#[tauri::command]
 fn list_codex_pet_packages() -> Result<Vec<CodexPetPackage>, String> {
     let pets_root = codex_pets_root()?;
     let entries = fs::read_dir(&pets_root)
@@ -584,6 +632,19 @@ mod tests {
         assert_eq!(status.state, "error");
         assert_eq!(status.error, Some("address already in use".to_string()));
     }
+
+    #[test]
+    fn empty_pets_driven_state_uses_schema_version_one() {
+        assert_eq!(
+            empty_pets_driven_state(),
+            serde_json::json!({
+                "schemaVersion": 1,
+                "registeredWorkingDirectories": [],
+                "pets": [],
+                "petProfiles": []
+            })
+        );
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -603,6 +664,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_claude_hook_ingress_status,
             emit_test_claude_hook_ingress_event,
+            read_pets_driven_state,
+            write_pets_driven_state,
             list_codex_pet_packages,
             load_codex_pet_spritesheet,
             open_pet_window_playground,

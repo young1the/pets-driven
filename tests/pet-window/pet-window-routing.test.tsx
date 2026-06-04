@@ -8,6 +8,7 @@ import {
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
 } from "@/pet-window/pet-window-messages";
+import type { PetsDrivenStateV1 } from "@/app-state/pets-driven-state";
 
 type TauriEventHandler = (event: { payload: unknown }) => void;
 
@@ -83,6 +84,29 @@ vi.mock("@tauri-apps/api/window", () => ({
 
 const invokeMock = vi.mocked(invoke);
 const isTauriMock = vi.mocked(isTauri);
+const testPetsDrivenState: PetsDrivenStateV1 = {
+  schemaVersion: 1,
+  registeredWorkingDirectories: [
+    {
+      id: "wd-cms",
+      path: "D:\\cms",
+      petId: "pet-a",
+      agentSourceId: "agent-a",
+      createdAt: 1,
+      updatedAt: 1,
+    },
+    {
+      id: "wd-pets-driven",
+      path: "D:\\workmanager\\pets-driven",
+      petId: "pet-a",
+      agentSourceId: "agent-a",
+      createdAt: 2,
+      updatedAt: 2,
+    },
+  ],
+  pets: [],
+  petProfiles: [],
+};
 
 describe("pet window product route", () => {
   beforeEach(() => {
@@ -98,6 +122,9 @@ describe("pet window product route", () => {
           state: "listening",
           error: null,
         };
+      }
+      if (command === "read_pets_driven_state") {
+        return testPetsDrivenState;
       }
       if (command === "emit_test_claude_hook_ingress_event") {
         tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
@@ -299,6 +326,45 @@ describe("pet window product route", () => {
     });
   });
 
+  it("ignores Claude hook ingress from an unregistered working directory", async () => {
+    render(<PetsDrivenApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-playground-1",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({ petId: "pet-a" }),
+      );
+    });
+
+    tauriEventMocks.emitTo.mockClear();
+
+    act(() => {
+      tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
+        payload: {
+          hook_event_name: "PermissionRequest",
+          session_id: "f9b89878-f7be-453b-90cb-ffd626765d25",
+          cwd: "D:\\unregistered-project",
+          message: "Allow Edit?",
+        },
+      });
+    });
+
+    await new Promise((resolve) => window.setTimeout(resolve, 40));
+
+    expect(tauriEventMocks.emitTo).not.toHaveBeenCalledWith(
+      "pet-window-playground-1",
+      PET_WINDOW_FRAME_EVENT,
+      expect.objectContaining({
+        petId: "pet-a",
+        overlay: { kind: "attention", label: "WAIT" },
+      }),
+    );
+  });
+
   it("shows Claude hook ingress status and sends a test event from the UI", async () => {
     render(<PetsDrivenApp />);
 
@@ -341,6 +407,9 @@ describe("pet window product route", () => {
           state: "listening",
           error: null,
         };
+      }
+      if (command === "read_pets_driven_state") {
+        return testPetsDrivenState;
       }
 
       throw new Error("window creation deadlocked");
