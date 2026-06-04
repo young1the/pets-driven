@@ -93,6 +93,17 @@ function desktopFixturePetBodySize(bounds: {
   };
 }
 
+function routeClaudeHookPayloadToDesktopFixture(payload: unknown): unknown {
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    sourceId: "agent-a",
+  };
+}
+
 function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
   return {
     url: "",
@@ -228,10 +239,13 @@ export function PetsDrivenApp() {
 
     void listen<unknown>(CLAUDE_HOOK_INGRESS_EVENT, (event) => {
       try {
-        const agentEvent = createAgentEventFromClaudeHook(event.payload, {
-          defaultSourceId: "agent-a",
-          now: fixtureScenarioRef.current.clock.now(),
-        });
+        const agentEvent = createAgentEventFromClaudeHook(
+          routeClaudeHookPayloadToDesktopFixture(event.payload),
+          {
+            defaultSourceId: "agent-a",
+            now: fixtureScenarioRef.current.clock.now(),
+          },
+        );
 
         fixtureScenarioRef.current.world.pushEvent(toWorldEvent(agentEvent));
       } catch (error) {

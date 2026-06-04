@@ -227,6 +227,36 @@ fn parse_claude_hook_request(request: &[u8]) -> Result<serde_json::Value, String
     serde_json::from_str(body).map_err(|error| format!("Could not parse Claude hook JSON: {error}"))
 }
 
+fn claude_hook_payload_string_field<'a>(payload: &'a serde_json::Value, field: &str) -> &'a str {
+    payload
+        .get(field)
+        .and_then(|value| value.as_str())
+        .unwrap_or("-")
+}
+
+fn claude_hook_payload_first_string_field<'a>(
+    payload: &'a serde_json::Value,
+    fields: &[&str],
+) -> &'a str {
+    fields
+        .iter()
+        .find_map(|field| payload.get(field).and_then(|value| value.as_str()))
+        .unwrap_or("-")
+}
+
+fn claude_hook_ingress_log_line(payload: &serde_json::Value) -> String {
+    let hook_event_name = claude_hook_payload_string_field(payload, "hook_event_name");
+    let cwd = claude_hook_payload_string_field(payload, "cwd");
+    let source = claude_hook_payload_first_string_field(
+        payload,
+        &["sourceId", "source_id", "agent_id", "session_id"],
+    );
+
+    format!(
+        "[pets-driven-hook] received hook_event_name={hook_event_name} cwd={cwd} source={source}"
+    )
+}
+
 fn write_http_response(stream: &mut TcpStream, status: &str, body: &str) -> Result<(), String> {
     let response = format!(
         "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
@@ -261,21 +291,25 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
     };
 
     match parse_claude_hook_request(&request) {
-        Ok(payload) => match app.emit_to("main", CLAUDE_HOOK_INGRESS_EVENT, payload) {
-            Ok(()) => {
-                let _ = write_http_response(&mut stream, "200 OK", r#"{"ok":true}"#);
+        Ok(payload) => {
+            eprintln!("{}", claude_hook_ingress_log_line(&payload));
+
+            match app.emit_to("main", CLAUDE_HOOK_INGRESS_EVENT, payload) {
+                Ok(()) => {
+                    let _ = write_http_response(&mut stream, "200 OK", r#"{"ok":true}"#);
+                }
+                Err(error) => {
+                    let _ = write_http_response(
+                        &mut stream,
+                        "500 Internal Server Error",
+                        &format!(
+                            r#"{{"ok":false,"error":{}}}"#,
+                            serde_json::json!(error.to_string())
+                        ),
+                    );
+                }
             }
-            Err(error) => {
-                let _ = write_http_response(
-                    &mut stream,
-                    "500 Internal Server Error",
-                    &format!(
-                        r#"{{"ok":false,"error":{}}}"#,
-                        serde_json::json!(error.to_string())
-                    ),
-                );
-            }
-        },
+        }
         Err(error) => {
             let _ = write_http_response(
                 &mut stream,
@@ -509,6 +543,28 @@ mod tests {
 
         assert_eq!(parsed["hook_event_name"], "Notification");
         assert_eq!(parsed["message"], "hi");
+    }
+
+    #[test]
+    fn claude_hook_ingress_log_line_keeps_only_routing_fields() {
+        let payload = serde_json::json!({
+            "hook_event_name": "PreToolUse",
+            "cwd": "D:\\cms",
+            "session_id": "f9b89878-f7be-453b-90cb-ffd626765d25",
+            "message": "Allow Edit?",
+            "prompt": "secret user prompt",
+            "tool_input": {
+                "command": "secret command"
+            }
+        });
+        let line = claude_hook_ingress_log_line(&payload);
+
+        assert!(line.contains("hook_event_name=PreToolUse"));
+        assert!(line.contains("cwd=D:\\cms"));
+        assert!(line.contains("source=f9b89878-f7be-453b-90cb-ffd626765d25"));
+        assert!(!line.contains("Allow Edit?"));
+        assert!(!line.contains("secret user prompt"));
+        assert!(!line.contains("secret command"));
     }
 
     #[test]
