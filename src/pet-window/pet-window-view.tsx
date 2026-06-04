@@ -3,6 +3,7 @@ import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
   currentMonitor,
+  cursorPosition,
   getCurrentWindow,
   PhysicalPosition,
 } from "@tauri-apps/api/window";
@@ -16,6 +17,7 @@ import { drawPetSpriteCanvas } from "@/pets/rendering/pet-sprite-canvas";
 import { resolvePetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
 import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
+import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import {
   isFreshPetWindowMessage,
   PET_WINDOW_HOST_LABEL,
@@ -26,6 +28,7 @@ import {
   type PetWindowOverlay,
   type PetWindowPositionUpdate,
   type PetWindowPresentationUpdate,
+  isSamePetWindowPresentation,
 } from "@/pet-window/pet-window-messages";
 import type { PetWindowHitLayout } from "@/pet-window/pet-window-types";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
@@ -40,12 +43,6 @@ type PetWindowPresentation = {
   overlay: PetWindowOverlay | null;
 };
 
-const PET_WINDOW_LAYOUT: PetWindowHitLayout = {
-  width: PET_CELL_SIZE.width,
-  height: PET_CELL_SIZE.height,
-  body: { x: 18, y: 34, width: 156, height: 156 },
-  overlay: { x: 54, y: 12, width: 84, height: 28 },
-};
 const PET_WINDOW_AUTONOMOUS_TICK_MS = 50;
 const PET_WINDOW_AUTONOMOUS_SPEED_PX_PER_MS = 0.035;
 const PET_WINDOW_AUTONOMOUS_MARGIN = 24;
@@ -143,6 +140,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const inputSequenceRef = useRef(0);
   const positionSequenceRef = useRef(0);
   const presentationSequenceRef = useRef(0);
+  const appliedPositionRef = useRef<{ x: number; y: number } | null>(null);
   const isPositionDrivenRef = useRef(false);
   const pointerStartRef = useRef<PetWindowPointerStart | null>(null);
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
@@ -151,6 +149,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const [presentation, setPresentation] = useState<PetWindowPresentation>(() =>
     defaultPresentation(pet.windowIndex),
   );
+  const presentationRef = useRef<PetWindowPresentation>(presentation);
 
   useEffect(() => {
     document.documentElement.classList.add("pet-window-document");
@@ -172,6 +171,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     void listen<PetWindowPositionUpdate>(PET_WINDOW_POSITION_EVENT, (event) => {
       const update = event.payload;
 
+      if (update.petId !== pet.petId) {
+        return;
+      }
+
       if (
         !isFreshPetWindowMessage(positionSequenceRef.current, update.sequence)
       ) {
@@ -180,8 +183,22 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
       positionSequenceRef.current = update.sequence;
       isPositionDrivenRef.current = true;
+      const nextPosition = {
+        x: Math.round(update.x),
+        y: Math.round(update.y),
+      };
+
+      if (
+        appliedPositionRef.current &&
+        appliedPositionRef.current.x === nextPosition.x &&
+        appliedPositionRef.current.y === nextPosition.y
+      ) {
+        return;
+      }
+
+      appliedPositionRef.current = nextPosition;
       void currentWindow.setPosition(
-        new PhysicalPosition(Math.round(update.x), Math.round(update.y)),
+        new PhysicalPosition(nextPosition.x, nextPosition.y),
       );
     }).then((unlisten) => {
       unlistenPosition = unlisten;
@@ -191,6 +208,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       PET_WINDOW_PRESENTATION_EVENT,
       (event) => {
         const update = event.payload;
+
+        if (update.petId !== pet.petId) {
+          return;
+        }
 
         if (
           !isFreshPetWindowMessage(
@@ -202,6 +223,14 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         }
 
         presentationSequenceRef.current = update.sequence;
+        if (isSamePetWindowPresentation(presentationRef.current, update)) {
+          return;
+        }
+
+        presentationRef.current = {
+          intent: update.intent,
+          overlay: update.overlay,
+        };
         setPresentation({
           intent: update.intent,
           overlay: update.overlay,
@@ -368,21 +397,23 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
     const localPoint = canvasPointFromEvent(canvas, event);
     inputSequenceRef.current += 1;
+    const sequence = inputSequenceRef.current;
 
-    void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
-      sequence: inputSequenceRef.current,
-      petId: pet.petId,
-      windowLabel: getCurrentWindow().label,
-      pointerId: event.pointerId,
-      kind,
-      localPoint,
-      screenPoint: {
-        x: event.screenX,
-        y: event.screenY,
-      },
-      button: event.button,
-      at: Date.now(),
-    });
+    void cursorPosition()
+      .catch(() => ({ x: event.screenX, y: event.screenY }))
+      .then((screenPoint) =>
+        emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
+          sequence,
+          petId: pet.petId,
+          windowLabel: getCurrentWindow().label,
+          pointerId: event.pointerId,
+          kind,
+          localPoint,
+          screenPoint,
+          button: event.button,
+          at: Date.now(),
+        }),
+      );
   }
 
   function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {

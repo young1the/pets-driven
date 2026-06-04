@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isFreshPetWindowMessage,
+  isSamePetWindowPresentation,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_POSITION_EVENT,
   PET_WINDOW_PRESENTATION_EVENT,
@@ -14,19 +15,47 @@ describe("pet window message contract", () => {
     expect(PET_WINDOW_INPUT_EVENT).toBe("pet-window:input:v1");
   });
 
-  it("keeps presentation updates to intent and overlay only", () => {
+  it("keeps presentation updates to routing, intent, and overlay only", () => {
     const update: PetWindowPresentationUpdate = {
       sequence: 4,
+      petId: "pet-a",
       intent: { kind: "waiting", facing: "right" },
       overlay: { kind: "attention", label: "WAIT" },
     };
 
-    expect(Object.keys(update)).toEqual(["sequence", "intent", "overlay"]);
+    expect(Object.keys(update)).toEqual([
+      "sequence",
+      "petId",
+      "intent",
+      "overlay",
+    ]);
   });
 
   it("treats equal or older sequence numbers as stale", () => {
     expect(isFreshPetWindowMessage(3, 4)).toBe(true);
     expect(isFreshPetWindowMessage(4, 4)).toBe(false);
     expect(isFreshPetWindowMessage(5, 4)).toBe(false);
+  });
+
+  it("compares presentation payloads without using sequence metadata", () => {
+    expect(
+      isSamePetWindowPresentation(
+        {
+          intent: { kind: "travel", direction: "left" },
+          overlay: { kind: "status", label: "!" },
+        },
+        {
+          intent: { kind: "travel", direction: "left" },
+          overlay: { kind: "status", label: "!" },
+        },
+      ),
+    ).toBe(true);
+
+    expect(
+      isSamePetWindowPresentation(
+        { intent: { kind: "idle" }, overlay: null },
+        { intent: { kind: "waiting" }, overlay: null },
+      ),
+    ).toBe(false);
   });
 });

@@ -131,12 +131,23 @@ export function createFixturePet(input: {
 
 export function createDemoScenario(options?: {
   userAnchor?: { x: number; y: number };
+  petBodySize?: { width: number; height: number };
 }) {
   const clock = createManualClock(0);
   const width = 960;
   const height = 540;
   const groundThickness = 48;
   const boundaryThickness = groundThickness;
+  const petBodyComponents: Component[] = options?.petBodySize
+    ? [
+        {
+          type: "PhysicsBody",
+          shape: "rectangle",
+          width: options.petBodySize.width,
+          height: options.petBodySize.height,
+        },
+      ]
+    : [];
   const world = createWorld({
     width,
     height,
@@ -248,6 +259,7 @@ export function createDemoScenario(options?: {
         x: 600,
         y: 500,
         components: [
+          ...petBodyComponents,
           { type: "IdleConversation", idleAfterMs: 5_000 },
           { type: "WalkingTag" },
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
@@ -265,6 +277,7 @@ export function createDemoScenario(options?: {
         x: 840,
         y: 500,
         components: [
+          ...petBodyComponents,
           { type: "WalkingTag" },
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
           { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
@@ -281,6 +294,7 @@ export function createDemoScenario(options?: {
         x: 280,
         y: 200,
         components: [
+          ...petBodyComponents,
           { type: "WalkingTag" },
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
           { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
@@ -297,6 +311,7 @@ export function createDemoScenario(options?: {
         x: 200,
         y: 200,
         components: [
+          ...petBodyComponents,
           { type: "WalkingTag" },
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
           { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
@@ -312,6 +327,7 @@ export function createDemoScenario(options?: {
         x: 420,
         y: 500,
         components: [
+          ...petBodyComponents,
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
@@ -325,6 +341,7 @@ export function createDemoScenario(options?: {
         x: 720,
         y: 500,
         components: [
+          ...petBodyComponents,
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
@@ -338,6 +355,7 @@ export function createDemoScenario(options?: {
         x: 120,
         y: 360,
         components: [
+          ...petBodyComponents,
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },

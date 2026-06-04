@@ -336,6 +336,23 @@ describe("demo scenario", () => {
     });
   });
 
+  it("allows fixture pet physics bodies to be sized for desktop projection", () => {
+    const scenario = createDemoScenario({
+      petBodySize: { width: 78, height: 82 },
+    });
+
+    expect(scenario.world.getComponent("pet-a", "PhysicsBody")).toEqual({
+      type: "PhysicsBody",
+      shape: "rectangle",
+      width: 78,
+      height: 82,
+    });
+    expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
+      width: 78,
+      height: 82,
+    });
+  });
+
   it("creates a configurable user anchor entity", () => {
     const scenario = createDemoScenario({
       userAnchor: { x: 480, y: 500 },

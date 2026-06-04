@@ -100,6 +100,7 @@ describe("pet window projection", () => {
       petId: "pet-a",
       position: {
         sequence: 12,
+        petId: "pet-a",
         x: 604,
         y: 596,
         width: 192,
@@ -107,6 +108,7 @@ describe("pet window projection", () => {
       },
       presentation: {
         sequence: 12,
+        petId: "pet-a",
         intent: { kind: "travel", direction: "left" },
         overlay: { kind: "speech", label: "hello" },
       },
