@@ -1,7 +1,6 @@
 import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
 
-export const PET_WINDOW_POSITION_EVENT = "pet-window:position:v1";
-export const PET_WINDOW_PRESENTATION_EVENT = "pet-window:presentation:v1";
+export const PET_WINDOW_FRAME_EVENT = "pet-window:frame:v1";
 export const PET_WINDOW_INPUT_EVENT = "pet-window:input:v1";
 export const PET_WINDOW_HOST_LABEL = "main";
 
@@ -10,20 +9,24 @@ export type PetWindowOverlay = {
   label: string;
 };
 
-export type PetWindowPositionUpdate = {
+export type PetWindowFrame = {
+  schemaVersion: 1;
   sequence: number;
   petId: string;
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
+  window: PetWindowFrameWindow;
+  sprite: PetWindowFrameSprite;
+  overlay: PetWindowOverlay | null;
 };
 
-export type PetWindowPresentationUpdate = {
-  sequence: number;
-  petId: string;
+export type PetWindowFrameWindow = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type PetWindowFrameSprite = {
   intent: PetSpriteIntent;
-  overlay: PetWindowOverlay | null;
 };
 
 export type PetWindowInputKind =
@@ -54,11 +57,11 @@ export function isFreshPetWindowMessage(
 }
 
 export function isSamePetWindowPresentation(
-  previous: Pick<PetWindowPresentationUpdate, "intent" | "overlay">,
-  next: Pick<PetWindowPresentationUpdate, "intent" | "overlay">,
+  previous: Pick<PetWindowFrame, "sprite" | "overlay">,
+  next: Pick<PetWindowFrame, "sprite" | "overlay">,
 ) {
   return (
-    JSON.stringify(previous.intent) === JSON.stringify(next.intent) &&
+    JSON.stringify(previous.sprite) === JSON.stringify(next.sprite) &&
     JSON.stringify(previous.overlay) === JSON.stringify(next.overlay)
   );
 }

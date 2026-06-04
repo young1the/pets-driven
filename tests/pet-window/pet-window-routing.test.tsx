@@ -3,13 +3,35 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PetsDrivenApp } from "@/app/pets-driven-app";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
+  PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
-  PET_WINDOW_POSITION_EVENT,
-  PET_WINDOW_PRESENTATION_EVENT,
 } from "@/pet-window/pet-window-messages";
 
 type TauriEventHandler = (event: { payload: unknown }) => void;
+
+function petWindowFramePayload({
+  sequence,
+  petId,
+  x,
+  y,
+  overlay = { kind: "status", label: "!" },
+}: {
+  sequence: number;
+  petId: string;
+  x: number;
+  y: number;
+  overlay?: { kind: "attention" | "speech" | "status"; label: string } | null;
+}) {
+  return {
+    schemaVersion: 1,
+    sequence,
+    petId,
+    window: { x, y, width: 192, height: 208 },
+    sprite: { intent: { kind: "idle" } },
+    overlay,
+  };
+}
 
 const tauriWindowMocks = vi.hoisted(() => ({
   cursorPosition: vi.fn(),
@@ -163,25 +185,23 @@ describe("pet window product route", () => {
     await waitFor(() => {
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
         "pet-window-playground-1",
-        PET_WINDOW_POSITION_EVENT,
+        PET_WINDOW_FRAME_EVENT,
         expect.objectContaining({
+          schemaVersion: 1,
           sequence: expect.any(Number),
           petId: "pet-a",
-          x: expect.any(Number),
-          y: expect.any(Number),
+          window: expect.objectContaining({
+            x: expect.any(Number),
+            y: expect.any(Number),
+            width: expect.any(Number),
+            height: expect.any(Number),
+          }),
+          sprite: expect.objectContaining({
+            intent: expect.any(Object),
+          }),
         }),
       );
     });
-
-    expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
-      "pet-window-playground-1",
-      PET_WINDOW_PRESENTATION_EVENT,
-      expect.objectContaining({
-        sequence: expect.any(Number),
-        petId: "pet-a",
-        intent: expect.any(Object),
-      }),
-    );
   });
 
   it("shows Pet Window command failures in the management surface", async () => {
@@ -298,7 +318,7 @@ describe("pet window product route", () => {
     });
   });
 
-  it("applies fresh Pet Window position updates and drops stale ones", async () => {
+  it("applies fresh Pet Window frames and drops stale ones", async () => {
     window.history.replaceState(
       {},
       "",
@@ -308,14 +328,19 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_POSITION_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
     });
 
-    const handlePosition = tauriEventMocks.listeners.get(PET_WINDOW_POSITION_EVENT)!;
+    const handleFrame = tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)!;
 
     act(() => {
-      handlePosition({
-        payload: { sequence: 2, petId: "pet-a", x: 333.4, y: 444.2 },
+      handleFrame({
+        payload: petWindowFramePayload({
+          sequence: 2,
+          petId: "pet-a",
+          x: 333.4,
+          y: 444.2,
+        }),
       });
     });
 
@@ -330,8 +355,13 @@ describe("pet window product route", () => {
     const appliedCallCount = tauriWindowMocks.setPosition.mock.calls.length;
 
     act(() => {
-      handlePosition({
-        payload: { sequence: 1, petId: "pet-a", x: 111, y: 222 },
+      handleFrame({
+        payload: petWindowFramePayload({
+          sequence: 1,
+          petId: "pet-a",
+          x: 111,
+          y: 222,
+        }),
       });
     });
 
@@ -349,17 +379,27 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_POSITION_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
     });
 
-    const handlePosition = tauriEventMocks.listeners.get(PET_WINDOW_POSITION_EVENT)!;
+    const handleFrame = tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)!;
 
     act(() => {
-      handlePosition({
-        payload: { sequence: 1, petId: "pet-a", x: 333.2, y: 444.2 },
+      handleFrame({
+        payload: petWindowFramePayload({
+          sequence: 1,
+          petId: "pet-a",
+          x: 333.2,
+          y: 444.2,
+        }),
       });
-      handlePosition({
-        payload: { sequence: 2, petId: "pet-a", x: 333.4, y: 444.3 },
+      handleFrame({
+        payload: petWindowFramePayload({
+          sequence: 2,
+          petId: "pet-a",
+          x: 333.4,
+          y: 444.3,
+        }),
       });
     });
 
@@ -373,7 +413,7 @@ describe("pet window product route", () => {
     });
   });
 
-  it("ignores position updates for other pets before checking freshness", async () => {
+  it("ignores frames for other pets before checking freshness", async () => {
     window.history.replaceState(
       {},
       "",
@@ -383,17 +423,27 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_POSITION_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
     });
 
-    const handlePosition = tauriEventMocks.listeners.get(PET_WINDOW_POSITION_EVENT)!;
+    const handleFrame = tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)!;
 
     act(() => {
-      handlePosition({
-        payload: { sequence: 4, petId: "pet-a", x: 100, y: 200 },
+      handleFrame({
+        payload: petWindowFramePayload({
+          sequence: 4,
+          petId: "pet-a",
+          x: 100,
+          y: 200,
+        }),
       });
-      handlePosition({
-        payload: { sequence: 4, petId: "pet-b", x: 500, y: 600 },
+      handleFrame({
+        payload: petWindowFramePayload({
+          sequence: 4,
+          petId: "pet-b",
+          x: 500,
+          y: 600,
+        }),
       });
     });
 
@@ -417,14 +467,19 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_POSITION_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
     });
 
-    const handlePosition = tauriEventMocks.listeners.get(PET_WINDOW_POSITION_EVENT)!;
+    const handleFrame = tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)!;
 
     act(() => {
-      handlePosition({
-        payload: { sequence: 1, petId: "pet-a", x: 100, y: 200 },
+      handleFrame({
+        payload: petWindowFramePayload({
+          sequence: 1,
+          petId: "pet-a",
+          x: 100,
+          y: 200,
+        }),
       });
     });
 
@@ -432,8 +487,13 @@ describe("pet window product route", () => {
     expect(tauriWindowMocks.show).not.toHaveBeenCalled();
 
     act(() => {
-      handlePosition({
-        payload: { sequence: 1, petId: "pet-b", x: 500.7, y: 600.1 },
+      handleFrame({
+        payload: petWindowFramePayload({
+          sequence: 1,
+          petId: "pet-b",
+          x: 500.7,
+          y: 600.1,
+        }),
       });
     });
 
@@ -456,12 +516,17 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_POSITION_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
     });
 
     act(() => {
-      tauriEventMocks.listeners.get(PET_WINDOW_POSITION_EVENT)?.({
-        payload: { sequence: 1, petId: "pet-a", x: 333, y: 444 },
+      tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)?.({
+        payload: petWindowFramePayload({
+          sequence: 1,
+          petId: "pet-a",
+          x: 333,
+          y: 444,
+        }),
       });
     });
 
@@ -575,17 +640,18 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_PRESENTATION_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
     });
 
     act(() => {
-      tauriEventMocks.listeners.get(PET_WINDOW_PRESENTATION_EVENT)?.({
-        payload: {
+      tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)?.({
+        payload: petWindowFramePayload({
           sequence: 1,
           petId: "pet-a",
-          intent: { kind: "idle" },
+          x: 333,
+          y: 444,
           overlay: null,
-        },
+        }),
       });
     });
 

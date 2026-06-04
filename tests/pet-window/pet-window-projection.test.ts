@@ -89,7 +89,7 @@ describe("pet window projection", () => {
     ).toEqual({ kind: "attention", label: "WAIT" });
   });
 
-  it("projects world pet positions into desktop Pet Window updates", () => {
+  it("projects world pet state into desktop Pet Window frames", () => {
     const [projection] = projectWorldSnapshotToPetWindows(
       snapshotFixture(),
       { x: 100, y: 200, width: 960, height: 540 },
@@ -98,18 +98,17 @@ describe("pet window projection", () => {
 
     expect(projection).toEqual({
       petId: "pet-a",
-      position: {
+      frame: {
+        schemaVersion: 1,
         sequence: 12,
         petId: "pet-a",
-        x: 604,
-        y: 596,
-        width: 192,
-        height: 208,
-      },
-      presentation: {
-        sequence: 12,
-        petId: "pet-a",
-        intent: { kind: "travel", direction: "left" },
+        window: {
+          x: 604,
+          y: 596,
+          width: 192,
+          height: 208,
+        },
+        sprite: { intent: { kind: "travel", direction: "left" } },
         overlay: { kind: "speech", label: "hello" },
       },
     });
@@ -122,7 +121,7 @@ describe("pet window projection", () => {
       12,
     );
 
-    expect(projection.position.x).toBe(1204);
-    expect(projection.position.y).toBe(596);
+    expect(projection.frame.window.x).toBe(1204);
+    expect(projection.frame.window.y).toBe(596);
   });
 });
