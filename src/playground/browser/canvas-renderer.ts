@@ -18,6 +18,13 @@ export function drawWorld(
   elapsedMs = 0,
 ) {
   context.clearRect(0, 0, snapshot.width, snapshot.height);
+  const viewport = snapshot.viewport ?? { x: 0, y: 0, width: snapshot.width, height: snapshot.height };
+  const projectsVirtualDesktop = !!snapshot.viewport || !!snapshot.monitors?.length;
+  if (projectsVirtualDesktop) {
+    context.save?.();
+    context.translate?.(-viewport.x, -viewport.y);
+    drawMonitorWorkAreas(context, snapshot.monitors ?? []);
+  }
 
   for (const surface of snapshot.climbableSurfaces) {
     drawClimbableSurface(context, surface, snapshot.height);
@@ -83,6 +90,22 @@ export function drawWorld(
       context.fillStyle = "#172033";
       context.fillText(overlayText, pet.position.x, pet.position.y - 48);
     }
+  }
+
+  if (projectsVirtualDesktop) {
+    context.restore?.();
+  }
+}
+
+function drawMonitorWorkAreas(
+  context: CanvasRenderingContext2D,
+  monitors: NonNullable<WorldSnapshot["monitors"]>,
+) {
+  for (const monitor of monitors) {
+    context.fillStyle = "#eef4fb";
+    context.fillRect?.(monitor.x, monitor.y, monitor.width, monitor.height);
+    context.strokeStyle = "#9fb2ca";
+    context.strokeRect?.(monitor.x, monitor.y, monitor.width, monitor.height);
   }
 }
 

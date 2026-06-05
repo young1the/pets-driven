@@ -538,6 +538,37 @@ describe("demo scenario", () => {
     });
   });
 
+  it("can model a dual-monitor virtual desktop with negative coordinates", () => {
+    const scenario = createDemoScenario({ monitorLayout: "dual-horizontal" });
+    const snapshot = scenario.world.snapshot();
+
+    expect(snapshot.viewport).toEqual({
+      x: -640,
+      y: 0,
+      width: 1600,
+      height: 540,
+    });
+    expect(snapshot.monitors).toEqual([
+      { id: "left", x: -640, y: 0, width: 640, height: 480 },
+      { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+    ]);
+    expect(scenario.world.getComponent("left-ground", "Transform")).toEqual({
+      type: "Transform",
+      position: { x: -320, y: 504 },
+    });
+    expect(scenario.world.getComponent("primary-left-wall-0", "Transform")).toEqual({
+      type: "Transform",
+      position: { x: -24, y: 510 },
+    });
+    expect(scenario.world.getEntity("left-right-wall")).toBeUndefined();
+  });
+
+  it("does not pin the dual-monitor playground to a primary-monitor user anchor", () => {
+    const scenario = createDemoScenario({ monitorLayout: "dual-horizontal" });
+
+    expect(scenario.world.getEntity("user-anchor")).toBeUndefined();
+  });
+
   it("models climbable surfaces as contact targets", () => {
     const scenario = createDemoScenario();
 

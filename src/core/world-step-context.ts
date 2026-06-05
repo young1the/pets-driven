@@ -17,6 +17,6 @@ export type WorldStepContext = {
   events: WorldEventQueue;
   clock: ManualClock;
   random: RandomSource;
-  bounds: { width: number; height: number };
+  bounds: { x?: number; y?: number; width: number; height: number };
   forceGroups: Force[][];
 };

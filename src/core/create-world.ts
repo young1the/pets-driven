@@ -14,6 +14,10 @@ import type {
   PetAnimationState,
   PetSpriteFacing,
 } from "@/pets/assets/pet-atlas";
+import type {
+  MonitorWorkArea,
+  WorldViewport,
+} from "@/core/monitor-geometry";
 import type { WorldEvent } from "@/features/events/world-event";
 import { createWorldEventQueue } from "@/features/events/world-event-queue";
 import { runPhysicsTransformSyncSystem } from "@/features/physics/systems";
@@ -32,6 +36,8 @@ import type { ManualClock } from "@/shared/time/manual-clock";
 export type WorldDefinition = {
   width: number;
   height: number;
+  viewport?: WorldViewport;
+  monitors?: MonitorWorkArea[];
   clock: ManualClock;
   entities: EntityDeclaration[];
   random?: RandomSource;
@@ -327,7 +333,12 @@ export function createWorld(input: WorldDefinition) {
         events,
         clock: input.clock,
         random,
-        bounds: { width: input.width, height: input.height },
+        bounds: {
+          x: input.viewport?.x ?? 0,
+          y: input.viewport?.y ?? 0,
+          width: input.width,
+          height: input.height,
+        },
         forceGroups: [],
       });
     },
@@ -342,6 +353,8 @@ export function createWorld(input: WorldDefinition) {
 
       return {
         ...physicsSnapshot,
+        viewport: input.viewport,
+        monitors: input.monitors,
         bodies,
         pets: getPetSnapshots(components),
         climbableSurfaces: getClimbableSurfaceSnapshots(components),
