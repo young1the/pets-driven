@@ -1,11 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { createDemoScenario } from "@/core/scenario-fixtures";
+import {
+  createDemoScenario,
+  createJumpPlaygroundScenario,
+  deriveJumpForwardImpulse,
+} from "@/core/scenario-fixtures";
 import {
   DEFAULT_PET_CLIMB_VELOCITY,
   DEFAULT_PET_CONTROL_SPEED,
   DEFAULT_PET_JUMP_IMPULSE,
   DEFAULT_PET_WALK_FORCE,
 } from "@/pets/constants/pet-body";
+
+const playfulPersonality = {
+  type: "Personality" as const,
+  openness: 0.7,
+  conscientiousness: 0.4,
+  extraversion: 0.85,
+  agreeableness: 0.5,
+  neuroticism: 0.1,
+};
+
+const attentivePersonality = {
+  type: "Personality" as const,
+  openness: 0.3,
+  conscientiousness: 0.6,
+  extraversion: 0.8,
+  agreeableness: 0.8,
+  neuroticism: 0.2,
+};
+
+const reservedPersonality = {
+  type: "Personality" as const,
+  openness: 0.3,
+  conscientiousness: 0.5,
+  extraversion: 0.2,
+  agreeableness: 0.4,
+  neuroticism: 0.75,
+};
 
 describe("demo scenario", () => {
   it("creates multiple pets in one shared world", () => {
@@ -307,7 +338,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "JumpSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["WalkingTag", "ContactState", "CanJump", "JumpActionState"],
+      reads: ["WalkingTag", "Transform", "MotionTarget", "ContactState", "CanJump", "JumpActionState"],
       writes: ["PhysicsForce", "JumpActionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -420,6 +451,7 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-a", "CanJump")).toEqual({
       type: "CanJump",
       impulse: DEFAULT_PET_JUMP_IMPULSE,
+      forwardImpulse: deriveJumpForwardImpulse(playfulPersonality),
     });
     expect(scenario.world.getComponent("pet-a", "JumpActionState")).toBeUndefined();
     expect(scenario.world.getComponent("pet-a", "CanWallClimb")).toEqual({
@@ -441,6 +473,7 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-b", "CanJump")).toEqual({
       type: "CanJump",
       impulse: DEFAULT_PET_JUMP_IMPULSE,
+      forwardImpulse: deriveJumpForwardImpulse(attentivePersonality),
     });
     expect(scenario.world.getComponent("pet-b", "JumpActionState")).toEqual({
       type: "JumpActionState",
@@ -461,6 +494,7 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-c", "CanJump")).toEqual({
       type: "CanJump",
       impulse: DEFAULT_PET_JUMP_IMPULSE,
+      forwardImpulse: deriveJumpForwardImpulse(playfulPersonality),
     });
     expect(scenario.world.getComponent("pet-c", "CanWallClimb")).toEqual({
       type: "CanWallClimb",
@@ -480,6 +514,7 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-d", "CanJump")).toEqual({
       type: "CanJump",
       impulse: DEFAULT_PET_JUMP_IMPULSE,
+      forwardImpulse: deriveJumpForwardImpulse(reservedPersonality),
     });
     expect(scenario.world.getComponent("pet-d", "CanFly")).toBeUndefined();
     for (const id of ["pet-e", "pet-f", "pet-g"]) {
@@ -1160,5 +1195,91 @@ describe("demo scenario", () => {
     }
 
     expect(takeoffPet!.position.y - minY).toBeGreaterThan(takeoffBody!.height);
+  });
+});
+
+describe("jump playground scenario", () => {
+  it("creates multiple walking pets that are ready to jump with visible horizontal impulse ranges", () => {
+    const scenario = createJumpPlaygroundScenario();
+    const snapshot = scenario.world.snapshot();
+
+    expect(snapshot.pets.map((pet) => pet.id)).toEqual([
+      "pet-a",
+      "pet-b",
+      "pet-c",
+      "pet-d",
+      "pet-e",
+      "pet-f",
+      "pet-g",
+    ]);
+
+    for (const pet of snapshot.pets) {
+      expect(scenario.world.getComponent(pet.id, "WalkingTag")).toEqual({
+        type: "WalkingTag",
+      });
+      expect(scenario.world.getComponent(pet.id, "FlyingTag")).toBeUndefined();
+      expect(scenario.world.getComponent(pet.id, "JumpActionState")).toEqual({
+        type: "JumpActionState",
+        phase: "requested",
+        cooldownMs: 0,
+      });
+      expect(scenario.world.getComponent(pet.id, "MotionTarget")?.targetPosition).not.toBeNull();
+      expect(scenario.world.getComponent(pet.id, "CanJump")?.forwardImpulse?.min).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps each jump pet in a local horizontal lane for visual comparison", () => {
+    const scenario = createJumpPlaygroundScenario();
+
+    for (const pet of scenario.world.snapshot().pets) {
+      const target = scenario.world.getComponent(pet.id, "MotionTarget")?.targetPosition;
+      expect(target).not.toBeNull();
+      expect(Math.abs(target!.x - pet.position.x)).toBeLessThanOrEqual(80);
+    }
+  });
+
+  it("uses larger pet bodies and stronger jump impulse for visual inspection", () => {
+    const scenario = createJumpPlaygroundScenario();
+
+    for (const pet of scenario.world.snapshot().pets) {
+      expect(scenario.world.getComponent(pet.id, "PhysicsBody")).toEqual({
+        type: "PhysicsBody",
+        shape: "rectangle",
+        width: 96,
+        height: 114,
+      });
+      expect(scenario.world.getComponent(pet.id, "CanJump")?.impulse).toBeGreaterThan(
+        DEFAULT_PET_JUMP_IMPULSE,
+      );
+    }
+  });
+
+  it("lifts enlarged jump playground pets visibly off the ground", () => {
+    const scenario = createJumpPlaygroundScenario({ startJumping: false });
+
+    for (let index = 0; index < 30; index += 1) {
+      scenario.world.step(16);
+    }
+
+    const startPet = scenario.world.snapshot().pets.find((pet) => pet.id === "pet-a");
+    const startBody = scenario.world.snapshot().bodies.find((body) => body.id === "pet-a");
+    expect(startPet).toBeDefined();
+    expect(startBody).toBeDefined();
+    expect(scenario.world.getComponent("pet-a", "ContactState")?.grounded).toBe(true);
+
+    scenario.world.setComponent("pet-a", {
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
+    });
+
+    let minY = startPet!.position.y;
+    for (let index = 0; index < 90; index += 1) {
+      scenario.world.step(16);
+      const pet = scenario.world.snapshot().pets.find((entry) => entry.id === "pet-a");
+      if (pet) minY = Math.min(minY, pet.position.y);
+    }
+
+    expect(startPet!.position.y - minY).toBeGreaterThan(startBody!.height * 0.75);
   });
 });

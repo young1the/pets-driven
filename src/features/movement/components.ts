@@ -55,6 +55,10 @@ export type WandersOnArrivalComponent = {
 export type CanJumpComponent = {
   type: "CanJump";
   impulse: number;
+  forwardImpulse?: {
+    min: number;
+    max: number;
+  };
 };
 
 export type JumpActionPhase =
