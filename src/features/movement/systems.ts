@@ -352,6 +352,7 @@ export function runJumpSystem(
   components: ComponentStore,
   deltaMs: number,
   forceGroups: Force[][],
+  random: RandomSource,
 ): void {
   const forces: Force[] = [];
 
@@ -385,7 +386,21 @@ export function runJumpSystem(
       }
 
       jumpAction.phase = "rising";
-      forces.push({ id, x: 0, y: -jump.impulse });
+      const forwardImpulse = jump.forwardImpulse;
+      let x = 0;
+      if (forwardImpulse) {
+        const transform = components.getComponent(id, "Transform");
+        const motion = components.getComponent(id, "MotionTarget");
+        const target = motion?.targetPosition;
+        if (transform && target && target.x !== transform.position.x) {
+          const magnitude =
+            forwardImpulse.min +
+            random.next() * (forwardImpulse.max - forwardImpulse.min);
+          x = Math.sign(target.x - transform.position.x) * magnitude;
+        }
+      }
+
+      forces.push({ id, x, y: -jump.impulse });
     },
   );
 
@@ -630,10 +645,10 @@ export const CollisionEscapeSystem: SimulationSystem<WorldStepContext> = {
 export const JumpSystem: SimulationSystem<WorldStepContext> = {
   name: "JumpSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["WalkingTag", "ContactState", "CanJump", "JumpActionState"],
+  reads: ["WalkingTag", "Transform", "MotionTarget", "ContactState", "CanJump", "JumpActionState"],
   writes: ["PhysicsForce", "JumpActionState"],
   update(ctx) {
-    runJumpSystem(ctx.components, ctx.deltaMs, ctx.forceGroups);
+    runJumpSystem(ctx.components, ctx.deltaMs, ctx.forceGroups, ctx.random);
   },
 };
 

@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
           playground: "playground.html",
           "pet-design": "pet-design.html",
           "pet-behavior": "pet-behavior.html",
+          jumpPlayground: "jump-playground.html",
         },
       },
     },

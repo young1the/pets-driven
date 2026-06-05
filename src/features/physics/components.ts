@@ -24,6 +24,7 @@ export type PhysicsBodyComponent = {
 export type PhysicsMaterialComponent = {
   type: "PhysicsMaterial";
   friction: number;
+  frictionAir?: number;
   restitution: number;
 };
 

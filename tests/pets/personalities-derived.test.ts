@@ -3,11 +3,13 @@ import {
   createFixturePet,
   deriveMovementProfile,
   deriveIdleConversation,
+  deriveJumpForwardImpulse,
 } from "@/core/scenario-fixtures";
 import type {
   PersonalityComponent,
   MovementProfileComponent,
   IdleConversationComponent,
+  CanJumpComponent,
 } from "@/core/components";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -98,6 +100,40 @@ describe("deriveIdleConversation", () => {
   });
 });
 
+// ─── deriveJumpForwardImpulse ────────────────────────────────────────────────
+
+describe("deriveJumpForwardImpulse", () => {
+  it("uses extraversion as forward-jump energy and neuroticism as a dampener", () => {
+    const highE = deriveJumpForwardImpulse(p({ extraversion: 0.9, neuroticism: 0.1 }));
+    const lowE = deriveJumpForwardImpulse(p({ extraversion: 0.1, neuroticism: 0.1 }));
+    const highN = deriveJumpForwardImpulse(p({ extraversion: 0.5, neuroticism: 0.9 }));
+    const lowN = deriveJumpForwardImpulse(p({ extraversion: 0.5, neuroticism: 0 }));
+
+    expect(highE.min).toBeGreaterThan(lowE.min);
+    expect(highE.max).toBeGreaterThan(lowE.max);
+    expect(highN.max).toBeLessThan(lowN.max);
+  });
+
+  it("uses openness to widen the random range and conscientiousness to narrow it", () => {
+    const highO = deriveJumpForwardImpulse(p({ openness: 0.9, conscientiousness: 0.4 }));
+    const lowO = deriveJumpForwardImpulse(p({ openness: 0.1, conscientiousness: 0.4 }));
+    const highC = deriveJumpForwardImpulse(p({ openness: 0.5, conscientiousness: 0.9 }));
+    const lowC = deriveJumpForwardImpulse(p({ openness: 0.5, conscientiousness: 0.1 }));
+
+    expect(highO.max - highO.min).toBeGreaterThan(lowO.max - lowO.min);
+    expect(highC.max - highC.min).toBeLessThan(lowC.max - lowC.min);
+  });
+
+  it("always produces a usable min/max range", () => {
+    const range = deriveJumpForwardImpulse(
+      p({ openness: 0, conscientiousness: 1, extraversion: 0, neuroticism: 1 }),
+    );
+
+    expect(range.min).toBeGreaterThan(0);
+    expect(range.max).toBeGreaterThanOrEqual(range.min);
+  });
+});
+
 // ─── createFixturePet — derived component attachment ─────────────────────────
 
 describe("createFixturePet — Personality-derived components", () => {
@@ -136,6 +172,27 @@ describe("createFixturePet — Personality-derived components", () => {
     ]);
     const ic = last<IdleConversationComponent>(components, "IdleConversation");
     expect(ic!.idleAfterMs).toBe(5_000);
+  });
+
+  it("pet with CanJump gets forward impulse derived from Personality", () => {
+    const personality = p({ openness: 0.7, conscientiousness: 0.4, extraversion: 0.85, neuroticism: 0.1 });
+    const { components } = buildPet([
+      personality,
+      { type: "CanJump", impulse: 0.03 },
+    ]);
+    const jump = last<CanJumpComponent>(components, "CanJump");
+
+    expect(jump!.forwardImpulse).toEqual(deriveJumpForwardImpulse(personality));
+  });
+
+  it("explicit CanJump forward impulse wins over derivation", () => {
+    const { components } = buildPet([
+      p({ extraversion: 0.9 }),
+      { type: "CanJump", impulse: 0.03, forwardImpulse: { min: 0.001, max: 0.002 } },
+    ]);
+    const jump = last<CanJumpComponent>(components, "CanJump");
+
+    expect(jump!.forwardImpulse).toEqual({ min: 0.001, max: 0.002 });
   });
 
   it("default Personality (no override) produces mid-range speeds", () => {

@@ -349,6 +349,27 @@ button {
   background: #ffffff;
 }
 
+.jump-playground-shell {
+  max-width: 1180px;
+}
+
+.jump-playground-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+.jump-playground-stage canvas {
+  width: min(100%, 960px);
+}
+
+@media (max-width: 860px) {
+  .jump-playground-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
 .behavior-lab,
 .agent-event-panel {
   display: grid;
