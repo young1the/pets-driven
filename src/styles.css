@@ -364,8 +364,24 @@ button {
   width: min(100%, 960px);
 }
 
+.climb-playground-shell {
+  max-width: 1180px;
+}
+
+.climb-playground-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+.climb-playground-stage canvas {
+  width: min(100%, 960px);
+}
+
 @media (max-width: 860px) {
-  .jump-playground-stage {
+  .jump-playground-stage,
+  .climb-playground-stage {
     grid-template-columns: 1fr;
   }
 }

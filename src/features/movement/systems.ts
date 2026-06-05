@@ -137,7 +137,11 @@ export function runClimbAttachmentSystem(
 export function runClimbDismountSystem(
   components: ComponentStore,
   deltaMs: number,
+  forceGroups: Force[][],
+  random: RandomSource,
 ): void {
+  const forces: Force[] = [];
+
   components.forEach(
     ["MotionTarget", "ContactState"],
     (id, [motion, contact]) => {
@@ -178,6 +182,7 @@ export function runClimbDismountSystem(
       }
 
       const canJump = components.getComponent(id, "CanJump");
+      const canWallClimb = components.getComponent(id, "CanWallClimb");
       if (canJump) {
         components.setComponent(id, {
           type: "JumpActionState",
@@ -189,9 +194,17 @@ export function runClimbDismountSystem(
           phase: "airborne",
           cooldownMs: 0,
         });
+        const impulse = canWallClimb?.dismountImpulse;
+        if (impulse) {
+          const direction = random.next() < 0.5 ? -1 : 1;
+          const magnitude = impulse.min + random.next() * (impulse.max - impulse.min);
+          forces.push({ id, x: direction * magnitude, y: 0 });
+        }
       }
     },
   );
+
+  if (forces.length > 0) forceGroups.push(forces);
 }
 
 export function runLocomotionActiveStateSystem(components: ComponentStore): void {
@@ -576,10 +589,10 @@ export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbDismountSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbDismountSystem",
   dependsOn: ["ArrivalBehaviorSystem"],
-  reads: ["ClimbingTag", "MotionTarget", "ContactState", "CanWalk", "CanJump", "JumpActionState", "ClimbDismountState", "ClimbIntentState"],
-  writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState"],
+  reads: ["ClimbingTag", "MotionTarget", "ContactState", "CanWalk", "CanJump", "CanWallClimb", "JumpActionState", "ClimbDismountState", "ClimbIntentState"],
+  writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState", "PhysicsForce"],
   update(ctx) {
-    runClimbDismountSystem(ctx.components, ctx.deltaMs);
+    runClimbDismountSystem(ctx.components, ctx.deltaMs, ctx.forceGroups, ctx.random);
   },
 };
 

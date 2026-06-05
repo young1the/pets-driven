@@ -457,6 +457,101 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
   return { clock, world };
 }
 
+export const CLIMB_PLAYGROUND_PET_IDS = [
+  "pet-a",
+  "pet-b",
+  "pet-c",
+  "pet-d",
+  "pet-e",
+] as const;
+
+const CLIMB_PLAYGROUND_PETS = [
+  { id: "pet-a", sourceId: "agent-a", name: "Alice", wallId: "climb-wall-a", x: 120, startY: 448, targetY: 104, velocity: 2.0, min: 0.040, max: 0.090 },
+  { id: "pet-b", sourceId: "agent-b", name: "Bob", wallId: "climb-wall-b", x: 300, startY: 448, targetY: 136, velocity: 1.6, min: 0.030, max: 0.075 },
+  { id: "pet-c", sourceId: "agent-c", name: "Charlie", wallId: "climb-wall-c", x: 480, startY: 448, targetY: 88, velocity: 2.3, min: 0.050, max: 0.110 },
+  { id: "pet-d", sourceId: "agent-d", name: "Dana", wallId: "climb-wall-d", x: 660, startY: 448, targetY: 160, velocity: 1.3, min: 0.025, max: 0.060 },
+  { id: "pet-e", sourceId: "agent-e", name: "Eve", wallId: "climb-wall-e", x: 840, startY: 448, targetY: 112, velocity: 1.9, min: 0.045, max: 0.100 },
+] as const;
+
+export function createClimbPlaygroundScenario() {
+  const clock = createManualClock(0);
+  const monitors = resolveMonitorLayout("single");
+  const viewport = getWorldViewport(monitors);
+  const groundThickness = 48;
+  const bodySize = { width: 72, height: 86 };
+  const world = createWorld({
+    width: viewport.width,
+    height: viewport.height,
+    viewport,
+    monitors,
+    clock,
+    entities: [
+      ...createMonitorBoundaryEntities(monitors, groundThickness),
+      {
+        id: "user-interaction",
+        components: [
+          { type: "KeyboardControlTarget", entityId: null },
+          { type: "KeyboardInputState", pressedCodes: [], vector: { x: 0, y: 0 } },
+        ],
+      },
+      ...CLIMB_PLAYGROUND_PETS.map((pet) => ({
+        id: pet.wallId,
+        components: [
+          { type: "ClimbableSurface" as const },
+          { type: "Transform" as const, position: { x: pet.x, y: viewport.height / 2 } },
+        ],
+      })),
+      ...CLIMB_PLAYGROUND_PETS.map((pet) =>
+        createFixturePet({
+          id: pet.id,
+          sourceId: pet.sourceId,
+          name: pet.name,
+          x: pet.x,
+          y: pet.startY,
+          components: [
+            {
+              type: "PhysicsBody",
+              shape: "rectangle",
+              ...bodySize,
+            },
+            { type: "PhysicsMaterial", friction: 0.1, frictionAir: 0.008, restitution: 0 },
+            { type: "ClimbingTag" },
+            { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+            { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 8 },
+            {
+              type: "CanWallClimb",
+              velocity: pet.velocity,
+              dismountImpulse: { min: pet.min, max: pet.max },
+            },
+            { type: "WandersOnArrival", arrivalRadius: 16 },
+            { type: "IntentState", intent: "active" },
+            {
+              type: "ContactState",
+              grounded: false,
+              climbableSurfaceId: pet.wallId,
+              climbableSurfacePosition: { x: pet.x, y: viewport.height / 2 },
+            },
+            {
+              type: "MotionTarget",
+              targetEntityId: null,
+              targetPosition: { x: pet.x, y: pet.targetY },
+            },
+            {
+              type: "ClimbIntentState",
+              phase: "attached",
+              surfaceEntityId: pet.wallId,
+              targetY: pet.targetY,
+            },
+            { type: "Personality", openness: 0.7, conscientiousness: 0.35, extraversion: 0.8, agreeableness: 0.5, neuroticism: 0.15 },
+          ],
+        }),
+      ),
+    ],
+  });
+
+  return { clock, world };
+}
+
 function resolveMonitorLayout(layout: "single" | "dual-horizontal"): MonitorWorkArea[] {
   if (layout === "dual-horizontal") {
     return [

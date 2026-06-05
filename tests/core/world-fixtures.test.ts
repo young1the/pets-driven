@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createDemoScenario,
+  createClimbPlaygroundScenario,
   createJumpPlaygroundScenario,
   deriveJumpForwardImpulse,
 } from "@/core/scenario-fixtures";
@@ -244,11 +245,12 @@ describe("demo scenario", () => {
         "ContactState",
         "CanWalk",
         "CanJump",
+        "CanWallClimb",
         "JumpActionState",
         "ClimbDismountState",
         "ClimbIntentState",
       ],
-      writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState"],
+      writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState", "PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "LocomotionActiveStateSystem",
@@ -1281,5 +1283,33 @@ describe("jump playground scenario", () => {
     }
 
     expect(startPet!.position.y - minY).toBeGreaterThan(startBody!.height * 0.75);
+  });
+});
+
+describe("climb playground scenario", () => {
+  it("creates multiple pets attached to separate climbable surfaces", () => {
+    const scenario = createClimbPlaygroundScenario();
+    const snapshot = scenario.world.snapshot();
+
+    expect(snapshot.pets.map((pet) => pet.id)).toEqual([
+      "pet-a",
+      "pet-b",
+      "pet-c",
+      "pet-d",
+      "pet-e",
+    ]);
+    expect(snapshot.climbableSurfaces).toHaveLength(5);
+
+    for (const pet of snapshot.pets) {
+      expect(scenario.world.getComponent(pet.id, "ClimbingTag")).toEqual({
+        type: "ClimbingTag",
+      });
+      expect(scenario.world.getComponent(pet.id, "CanWallClimb")?.velocity).toBeGreaterThan(0);
+      expect(scenario.world.getComponent(pet.id, "CanWallClimb")?.dismountImpulse?.min).toBeGreaterThan(0);
+      expect(scenario.world.getComponent(pet.id, "ClimbIntentState")?.phase).toBe("attached");
+      expect(scenario.world.getComponent(pet.id, "MotionTarget")?.targetPosition?.y).toBeLessThan(
+        pet.position.y,
+      );
+    }
   });
 });
