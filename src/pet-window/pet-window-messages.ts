@@ -1,13 +1,11 @@
 import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
+import type { PetSpriteOverlay } from "@/pets/rendering/pet-sprite";
 
 export const PET_WINDOW_FRAME_EVENT = "pet-window:frame:v1";
 export const PET_WINDOW_INPUT_EVENT = "pet-window:input:v1";
 export const PET_WINDOW_HOST_LABEL = "main";
 
-export type PetWindowOverlay = {
-  kind: "attention" | "speech" | "status";
-  label: string;
-};
+export type PetWindowOverlay = PetSpriteOverlay;
 
 export type PetWindowFrame = {
   schemaVersion: 1;

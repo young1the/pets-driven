@@ -1,11 +1,13 @@
 import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
 import type { PetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
+import type { CSSProperties } from "react";
 
 type PetSpriteHtmlProps = {
   imageUrl: string;
   frame: PetSpriteFrame;
   alt: string;
   className?: string;
+  style?: CSSProperties;
 };
 
 export function PetSpriteHtml({
@@ -13,6 +15,7 @@ export function PetSpriteHtml({
   frame,
   alt,
   className,
+  style,
 }: PetSpriteHtmlProps) {
   const scaleX = frame.drawSize.width / frame.source.width;
   const scaleY = frame.drawSize.height / frame.source.height;
@@ -24,6 +27,7 @@ export function PetSpriteHtml({
       aria-label={alt}
       className={className}
       style={{
+        ...style,
         backgroundImage: `url(${imageUrl})`,
         backgroundPosition: `${-frame.source.x * scaleX}px ${-frame.source.y * scaleY}px`,
         backgroundRepeat: "no-repeat",
