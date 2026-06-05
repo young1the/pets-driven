@@ -85,6 +85,10 @@ export type CanFlyComponent = {
 export type CanWallClimbComponent = {
   type: "CanWallClimb";
   velocity: number;
+  dismountImpulse?: {
+    min: number;
+    max: number;
+  };
 };
 
 /** Marker for environmental entities that a climbing-capable pet can attach to. */
