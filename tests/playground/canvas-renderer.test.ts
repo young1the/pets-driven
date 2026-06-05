@@ -671,4 +671,38 @@ describe("canvas renderer", () => {
     expect(context.strokeRect).toHaveBeenCalledWith(108, 24, 24, 132);
     expect(context.fillText).toHaveBeenCalledWith("CLIMB SPACE", 120, 48);
   });
+
+  it("draws virtual desktop snapshots through the viewport transform", () => {
+    const context = {
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      restore: vi.fn(),
+      save: vi.fn(),
+      translate: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+
+    drawWorld(
+      context,
+      {
+        width: 1600,
+        height: 540,
+        viewport: { x: -640, y: 0, width: 1600, height: 540 },
+        monitors: [
+          { id: "left", x: -640, y: 0, width: 640, height: 480 },
+          { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+        ],
+        bodies: [],
+        pets: [],
+        climbableSurfaces: [],
+      },
+      {},
+      0,
+    );
+
+    expect(context.clearRect).toHaveBeenCalledWith(0, 0, 1600, 540);
+    expect(context.translate).toHaveBeenCalledWith(640, -0);
+    expect(context.fillRect).toHaveBeenCalledWith(-640, 0, 640, 480);
+    expect(context.fillRect).toHaveBeenCalledWith(0, 0, 960, 540);
+    expect(context.restore).toHaveBeenCalled();
+  });
 });

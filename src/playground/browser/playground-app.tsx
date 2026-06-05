@@ -19,6 +19,7 @@ type Snapshot = ReturnType<
 export function PlaygroundApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scenarioRef = useRef(createDemoScenario());
+  const [monitorLayout, setMonitorLayout] = useState<"single" | "dual-horizontal">("single");
   const [selectedPetId, setSelectedPetId] = useState("pet-a");
   const [snapshot, setSnapshot] = useState(() =>
     scenarioRef.current.world.snapshot(),
@@ -44,6 +45,15 @@ export function PlaygroundApp() {
     setFrameNumber((prev) => prev + 1);
     drawWorld(context, nextSnapshot, assets, scenarioRef.current.clock.now());
   }, [assets]);
+
+  const selectMonitorLayout = useCallback((layout: "single" | "dual-horizontal") => {
+    const scenario = createDemoScenario({ monitorLayout: layout });
+    scenarioRef.current = scenario;
+    setMonitorLayout(layout);
+    setSelectedPetId("pet-a");
+    setSnapshot(scenario.world.snapshot());
+    setFrameNumber(0);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -167,8 +177,8 @@ export function PlaygroundApp() {
     const scaleX = event.currentTarget.width / rect.width;
     const scaleY = event.currentTarget.height / rect.height;
     return {
-      x: (event.clientX - rect.left) * scaleX,
-      y: (event.clientY - rect.top) * scaleY,
+      x: (event.clientX - rect.left) * scaleX + (snapshot.viewport?.x ?? 0),
+      y: (event.clientY - rect.top) * scaleY + (snapshot.viewport?.y ?? 0),
     };
   }
 
@@ -194,16 +204,19 @@ export function PlaygroundApp() {
       <ScenarioControls
         isAnimationPlaying={isAnimationPlaying}
         frameNumber={frameNumber}
+        monitorLayout={monitorLayout}
         onToggleAnimation={() => setIsAnimationPlaying((prev) => !prev)}
         onPlayNextFrame={advanceFrame}
+        onSelectMonitorLayout={selectMonitorLayout}
       />
       <div className="playground-workspace">
         <div className="playground-stage">
           <canvas
             ref={canvasRef}
             data-testid="world-canvas"
-            width={960}
-            height={540}
+            width={snapshot.width}
+            height={snapshot.height}
+            style={{ aspectRatio: `${snapshot.width} / ${snapshot.height}` }}
             onPointerDown={(event) => {
               event.currentTarget.setPointerCapture?.(event.pointerId);
               pushPointerEvent(event, "pointer.down");

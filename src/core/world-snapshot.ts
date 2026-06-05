@@ -72,9 +72,26 @@ export type ClimbableSurfaceSnapshot = {
   };
 };
 
+export type MonitorWorkAreaSnapshot = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type WorldViewportSnapshot = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type WorldSnapshot = {
   width: number;
   height: number;
+  viewport?: WorldViewportSnapshot;
+  monitors?: MonitorWorkAreaSnapshot[];
   bodies: BodySnapshot[];
   pets: PetSnapshot[];
   climbableSurfaces: ClimbableSurfaceSnapshot[];

@@ -171,6 +171,27 @@ describe("PlaygroundApp", () => {
     ).toBeInTheDocument();
   });
 
+  it("can switch the playground into a dual-monitor verification scenario", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {
+        clearRect: vi.fn(),
+        fillRect: vi.fn(),
+        restore: vi.fn(),
+        save: vi.fn(),
+        translate: vi.fn(),
+      } as unknown as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Dual monitor" }));
+
+    const canvas = screen.getByTestId("world-canvas");
+    expect(canvas).toHaveAttribute("width", "1600");
+    expect(canvas).toHaveAttribute("height", "540");
+    expect(screen.getByText("Dual monitor: left + primary")).toBeInTheDocument();
+  });
+
   it("copies the selected behavior lab state to the clipboard", async () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
       {} as CanvasRenderingContext2D,

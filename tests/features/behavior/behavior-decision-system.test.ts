@@ -246,6 +246,46 @@ describe("BehaviorDecisionSystem", () => {
     expect(distanceFrom(origin, largeTarget)).toBeGreaterThan(distanceFrom(origin, normalTarget) * 1.8);
   });
 
+  it("keeps wander targets in negative virtual-desktop coordinates", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Transform", position: { x: -320, y: 500 } },
+          { type: "PhysicsBody", shape: "rectangle" as const, width: 32, height: 38 },
+          { type: "IntentState", intent: "idle" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: true, climbing: false, intent: "idle" as const },
+          },
+          {
+            type: "Personality" as const,
+            openness: 0.95,
+            conscientiousness: 0.4,
+            extraversion: 0.1,
+            agreeableness: 0.5,
+            neuroticism: 0.05,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(0),
+      createSeededRandom(1),
+      { x: -640, y: 0, width: 1600, height: 540 },
+    );
+
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("wander-far");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.targetPosition?.x).toBeLessThan(0);
+  });
+
   it("requests a jump when action-tendency dominates and no jump action is active", () => {
     // High extraversion + moderate openness; seek-user excluded (no userAnchor in Perception)
     const store = makeStore({ extraversion: 0.9, openness: 0.6, neuroticism: 0.25 });

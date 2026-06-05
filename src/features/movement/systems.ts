@@ -214,7 +214,7 @@ export function runLocomotionActiveStateSystem(components: ComponentStore): void
 export function runMotionTargetSystem(
   components: ComponentStore,
   random: RandomSource,
-  bounds: { width: number; height: number },
+  bounds: { x?: number; y?: number; width: number; height: number },
 ): void {
   components.forEach(["IntentState", "MotionTarget"], (_id, [intent, motion]) => {
     if (intent.intent === "active" && motion.targetEntityId) {
@@ -266,9 +266,13 @@ export function runMotionTargetSystem(
     if (!motion.targetPosition) {
       motion.targetEntityId = null;
       const margin = 48;
+      const minX = (bounds.x ?? 0) + margin;
+      const minY = (bounds.y ?? 0) + margin;
+      const maxX = (bounds.x ?? 0) + bounds.width - margin;
+      const maxY = (bounds.y ?? 0) + bounds.height - margin;
       motion.targetPosition = {
-        x: margin + (bounds.width - margin * 2) * random.next(),
-        y: margin + (bounds.height - margin * 2) * random.next(),
+        x: minX + (maxX - minX) * random.next(),
+        y: minY + (maxY - minY) * random.next(),
       };
     }
   });

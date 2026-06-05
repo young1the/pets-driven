@@ -14,6 +14,11 @@ import {
 import { DEFAULT_PET_SPEECH } from "@/pets/constants/pet-speech";
 import { createManualClock } from "@/shared/time/manual-clock";
 import { createWorld } from "@/core/create-world";
+import {
+  createMonitorBoundaryEntities,
+  getWorldViewport,
+  type MonitorWorkArea,
+} from "@/core/monitor-geometry";
 
 // ─── Personality derivation helpers (exported for testing) ───────────────────
 
@@ -130,14 +135,20 @@ export function createFixturePet(input: {
 }
 
 export function createDemoScenario(options?: {
-  userAnchor?: { x: number; y: number };
+  userAnchor?: { x: number; y: number } | null;
   petBodySize?: { width: number; height: number };
+  monitorLayout?: "single" | "dual-horizontal";
 }) {
+  const monitorLayout = options?.monitorLayout ?? "single";
   const clock = createManualClock(0);
-  const width = 960;
-  const height = 540;
+  const monitors = resolveMonitorLayout(monitorLayout);
+  const viewport = getWorldViewport(monitors);
+  const width = viewport.width;
+  const height = viewport.height;
   const groundThickness = 48;
-  const boundaryThickness = groundThickness;
+  const userAnchor = options?.userAnchor === undefined
+    ? defaultUserAnchorForLayout(monitorLayout)
+    : options.userAnchor;
   const petBodyComponents: Component[] = options?.petBodySize
     ? [
         {
@@ -151,86 +162,25 @@ export function createDemoScenario(options?: {
   const world = createWorld({
     width,
     height,
+    viewport,
+    monitors,
     clock,
     entities: [
-      {
-        id: "monitor-ground",
-        components: [
-          { type: "Ground" },
-          {
-            type: "Transform",
-            position: { x: width / 2, y: height + groundThickness / 2 },
-          },
-          {
-            type: "PhysicsBody",
-            shape: "rectangle",
-            width,
-            height: groundThickness,
-          },
-          { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
-        ],
-      },
-      {
-        id: "monitor-left-wall",
-        components: [
-          { type: "Ground" },
-          {
-            type: "Transform",
-            position: { x: -boundaryThickness / 2, y: height / 2 },
-          },
-          {
-            type: "PhysicsBody",
-            shape: "rectangle",
-            width: boundaryThickness,
-            height,
-          },
-          { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
-        ],
-      },
-      {
-        id: "monitor-right-wall",
-        components: [
-          { type: "Ground" },
-          {
-            type: "Transform",
-            position: { x: width + boundaryThickness / 2, y: height / 2 },
-          },
-          {
-            type: "PhysicsBody",
-            shape: "rectangle",
-            width: boundaryThickness,
-            height,
-          },
-          { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
-        ],
-      },
-      {
-        id: "monitor-ceiling",
-        components: [
-          { type: "Ground" },
-          {
-            type: "Transform",
-            position: { x: width / 2, y: -boundaryThickness / 2 },
-          },
-          {
-            type: "PhysicsBody",
-            shape: "rectangle",
-            width,
-            height: boundaryThickness,
-          },
-          { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
-        ],
-      },
-      {
-        id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          {
-            type: "Transform",
-            position: options?.userAnchor ?? { x: 480, y: 500 },
-          },
-        ],
-      },
+      ...createMonitorBoundaryEntities(monitors, groundThickness),
+      ...(userAnchor
+        ? [
+            {
+              id: "user-anchor",
+              components: [
+                { type: "UserAnchor" as const },
+                {
+                  type: "Transform" as const,
+                  position: userAnchor,
+                },
+              ],
+            },
+          ]
+        : []),
       {
         id: "user-interaction",
         components: [
@@ -366,4 +316,22 @@ export function createDemoScenario(options?: {
   });
 
   return { clock, world };
+}
+
+function resolveMonitorLayout(layout: "single" | "dual-horizontal"): MonitorWorkArea[] {
+  if (layout === "dual-horizontal") {
+    return [
+      { id: "left", x: -640, y: 0, width: 640, height: 480 },
+      { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+    ];
+  }
+
+  return [{ id: "monitor", x: 0, y: 0, width: 960, height: 540 }];
+}
+
+function defaultUserAnchorForLayout(
+  layout: "single" | "dual-horizontal",
+): { x: number; y: number } | null {
+  if (layout === "dual-horizontal") return null;
+  return { x: 480, y: 500 };
 }

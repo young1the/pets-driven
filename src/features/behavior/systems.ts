@@ -250,7 +250,7 @@ export function runAgentEventHoldSystem(
 // Priority 3: Collision avoidance (entity overlap).
 export function runCollisionBehaviorSystem(
   components: ComponentStore,
-  bounds: { width: number; height: number },
+  bounds: { x?: number; y?: number; width: number; height: number },
   clock: Clock,
 ): void {
   const now = clock.now();
@@ -791,13 +791,17 @@ export function wanderRadius(
 function pickWanderPosition(
   petX: number,
   petY: number,
-  bounds: { width: number; height: number },
+  bounds: { x?: number; y?: number; width: number; height: number },
   random: RandomSource,
   range: "near" | "far",
   personality?: PersonalityComponent,
   bodyWidth = DEFAULT_WANDER_BODY_WIDTH,
 ): { x: number; y: number } {
   const margin = 48;
+  const minX = (bounds.x ?? 0) + margin;
+  const minY = (bounds.y ?? 0) + margin;
+  const maxX = (bounds.x ?? 0) + bounds.width - margin;
+  const maxY = (bounds.y ?? 0) + bounds.height - margin;
   const angle = random.next() * Math.PI * 2;
   const [minR, maxR] = personality
     ? wanderRadius(personality, range, bodyWidth)
@@ -806,8 +810,8 @@ function pickWanderPosition(
       : [200, 400];
   const radius = minR + random.next() * (maxR - minR);
   return {
-    x: clamp(petX + Math.cos(angle) * radius, margin, bounds.width - margin),
-    y: clamp(petY + Math.sin(angle) * radius, margin, bounds.height - margin),
+    x: clamp(petX + Math.cos(angle) * radius, minX, maxX),
+    y: clamp(petY + Math.sin(angle) * radius, minY, maxY),
   };
 }
 
@@ -841,7 +845,7 @@ export function runBehaviorDecisionSystem(
   components: ComponentStore,
   clock: Clock,
   random: RandomSource,
-  bounds: { width: number; height: number },
+  bounds: { x?: number; y?: number; width: number; height: number },
 ): void {
   const now = clock.now();
 
@@ -912,8 +916,8 @@ export function runBehaviorDecisionSystem(
           (components.getComponent(id, "ContactState")?.grounded ?? true);
 
         const fleeTarget = {
-          x: clamp(petX + movementAway.x * reactionDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(petY + movementAway.y * reactionDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clampToBoundsX(petX + movementAway.x * reactionDistance, bounds, COLLISION_TARGET_MARGIN),
+          y: clampToBoundsY(petY + movementAway.y * reactionDistance, bounds, COLLISION_TARGET_MARGIN),
         };
         // engageTarget sits 80 px from the other pet on SELF's side — close
         // enough to "engage" but not so close that the pet walks straight
@@ -922,12 +926,12 @@ export function runBehaviorDecisionSystem(
         // `otherPos - away * D` placed the target on the FAR side, causing pets
         // to walk through each other and immediately re-collide (cluster bug).
         const engageTarget = {
-          x: clamp(otherPos.x + movementAway.x * engageStopDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(otherPos.y + movementAway.y * engageStopDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clampToBoundsX(otherPos.x + movementAway.x * engageStopDistance, bounds, COLLISION_TARGET_MARGIN),
+          y: clampToBoundsY(otherPos.y + movementAway.y * engageStopDistance, bounds, COLLISION_TARGET_MARGIN),
         };
         const avoidTarget = {
-          x: clamp(petX + side.x * reactionDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(petY + side.y * reactionDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clampToBoundsX(petX + side.x * reactionDistance, bounds, COLLISION_TARGET_MARGIN),
+          y: clampToBoundsY(petY + side.y * reactionDistance, bounds, COLLISION_TARGET_MARGIN),
         };
         const reactiveCandidates: Candidate[] = [
           { kind: "collision-flee",    score: scoreCollisionFlee(personality),    build: () => ({ targetPosition: fleeTarget }) },
@@ -1074,8 +1078,8 @@ export function runBehaviorDecisionSystem(
         const fleeLen = Math.hypot(fleeDirX, fleeDirY) || 1;
         const fleeDistance = petWidth(components, id) * PET_FLEE_WIDTH_MULTIPLIER;
         const fleePos = {
-          x: clamp(petX + (fleeDirX / fleeLen) * fleeDistance, COLLISION_TARGET_MARGIN, bounds.width - COLLISION_TARGET_MARGIN),
-          y: clamp(petY + (fleeDirY / fleeLen) * fleeDistance, COLLISION_TARGET_MARGIN, bounds.height - COLLISION_TARGET_MARGIN),
+          x: clampToBoundsX(petX + (fleeDirX / fleeLen) * fleeDistance, bounds, COLLISION_TARGET_MARGIN),
+          y: clampToBoundsY(petY + (fleeDirY / fleeLen) * fleeDistance, bounds, COLLISION_TARGET_MARGIN),
         };
         pushCandidate(candidates, components, id, now, {
           kind: "flee-from-pet",
@@ -1217,6 +1221,26 @@ function normalize(v: Vector): Vector {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function clampToBoundsX(
+  value: number,
+  bounds: { x?: number; width: number },
+  margin: number,
+) {
+  const min = (bounds.x ?? 0) + margin;
+  const max = (bounds.x ?? 0) + bounds.width - margin;
+  return clamp(value, min, max);
+}
+
+function clampToBoundsY(
+  value: number,
+  bounds: { y?: number; height: number },
+  margin: number,
+) {
+  const min = (bounds.y ?? 0) + margin;
+  const max = (bounds.y ?? 0) + bounds.height - margin;
+  return clamp(value, min, max);
 }
 
 function petWidth(components: ComponentStore, id: string): number {
