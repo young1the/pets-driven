@@ -9,15 +9,13 @@ import {
 } from "@tauri-apps/api/window";
 import {
   FALLBACK_CODEX_PET_SPRITESHEET_URL,
-  loadCodexPetImage,
 } from "@/pets/assets/codex-pet-fixtures";
-import { loadAtlasImage } from "@/pets/assets/atlas-loader";
 import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
-import { drawPetSpriteCanvas } from "@/pets/rendering/pet-sprite-canvas";
-import { resolvePetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
+import { PetSprite } from "@/pets/rendering/pet-sprite";
 import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
+import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import {
   isFreshPetWindowMessage,
   PET_WINDOW_FRAME_EVENT,
@@ -51,15 +49,25 @@ const PET_WINDOW_AUTONOMOUS_MARGIN = 24;
 
 let restoreCursorEventsTimer: number | null = null;
 
-function canvasPointFromEvent(
-  canvas: HTMLCanvasElement,
-  event: React.MouseEvent<HTMLCanvasElement>,
+function surfacePointFromEvent(
+  element: HTMLElement,
+  event: React.MouseEvent<HTMLElement>,
 ) {
-  const rect = canvas.getBoundingClientRect();
+  const rect = element.getBoundingClientRect();
   const nativeEvent = event.nativeEvent as PointerEvent & {
     offsetX?: number;
     offsetY?: number;
   };
+
+  if (rect.width > 0 && rect.height > 0) {
+    const scaleX = PET_WINDOW_LAYOUT.width / rect.width;
+    const scaleY = PET_WINDOW_LAYOUT.height / rect.height;
+
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY,
+    };
+  }
 
   if (
     Number.isFinite(nativeEvent.offsetX) &&
@@ -71,12 +79,9 @@ function canvasPointFromEvent(
     };
   }
 
-  const scaleX = PET_WINDOW_LAYOUT.width / rect.width;
-  const scaleY = PET_WINDOW_LAYOUT.height / rect.height;
-
   return {
-    x: (event.clientX - rect.left) * scaleX,
-    y: (event.clientY - rect.top) * scaleY,
+    x: 0,
+    y: 0,
   };
 }
 
@@ -114,8 +119,8 @@ function movementDirectionForWindow(index: number) {
   return index % 2 === 0 ? -1 : 1;
 }
 
-function pointerIdFromEvent(event: React.MouseEvent<HTMLCanvasElement>) {
-  const pointerEvent = event as React.PointerEvent<HTMLCanvasElement>;
+function pointerIdFromEvent(event: React.MouseEvent<HTMLElement>) {
+  const pointerEvent = event as React.PointerEvent<HTMLElement>;
 
   return Number.isFinite(pointerEvent.pointerId) ? pointerEvent.pointerId : 0;
 }
@@ -140,7 +145,7 @@ function hitLayoutForPresentation(
 }
 
 export function PetWindowView({ pet }: PetWindowViewProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const surfaceRef = useRef<HTMLElement | null>(null);
   const autonomousDirectionRef = useRef(
     movementDirectionForWindow(pet.windowIndex),
   );
@@ -155,6 +160,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     null,
   );
   const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [spritesheetUrl, setSpritesheetUrl] = useState(
+    FALLBACK_CODEX_PET_SPRITESHEET_URL,
+  );
   const [presentation, setPresentation] = useState<PetWindowPresentation>(() =>
     defaultPresentation(pet.windowIndex),
   );
@@ -252,64 +261,44 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   }, []);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d");
+    let isActive = true;
+    let dispose = () => {};
 
-    if (!canvas || !context) {
-      return;
-    }
+    void loadPetWindowSpritesheetUrl(pet.assetId)
+      .catch(() => ({
+        url: FALLBACK_CODEX_PET_SPRITESHEET_URL,
+        dispose: () => {},
+      }))
+      .then((spritesheet) => {
+        if (!isActive) {
+          spritesheet.dispose();
+          return;
+        }
 
+        dispose = spritesheet.dispose;
+        setSpritesheetUrl(spritesheet.url);
+      });
+
+    return () => {
+      isActive = false;
+      dispose();
+    };
+  }, [pet.assetId]);
+
+  useEffect(() => {
     let isActive = true;
     let animationFrame = 0;
 
-    void loadCodexPetImage(pet.assetId, loadAtlasImage)
-      .catch(() => loadAtlasImage(FALLBACK_CODEX_PET_SPRITESHEET_URL))
-      .then((image) => {
-        const draw = (elapsedMs: number) => {
-          if (!isActive) {
-            return;
-          }
+    const tick = (nextElapsedMs: number) => {
+      if (!isActive) {
+        return;
+      }
 
-          const frame = resolvePetSpriteFrame({
-            intent: presentation.intent,
-            elapsedMs,
-            size: PET_CELL_SIZE,
-          });
-          context.clearRect(0, 0, PET_CELL_SIZE.width, PET_CELL_SIZE.height);
-          drawPetSpriteCanvas(
-            context,
-            image,
-            frame,
-            {
-              x: PET_CELL_SIZE.width / 2,
-              y: PET_CELL_SIZE.height / 2,
-            },
-          );
-          if (presentation.overlay) {
-            context.fillStyle = "#ffffff";
-            context.fillRect(
-              PET_WINDOW_LAYOUT.overlay?.x ?? 0,
-              PET_WINDOW_LAYOUT.overlay?.y ?? 0,
-              PET_WINDOW_LAYOUT.overlay?.width ?? 0,
-              PET_WINDOW_LAYOUT.overlay?.height ?? 0,
-            );
-            context.strokeStyle = "#2563eb";
-            context.strokeRect(
-              PET_WINDOW_LAYOUT.overlay?.x ?? 0,
-              PET_WINDOW_LAYOUT.overlay?.y ?? 0,
-              PET_WINDOW_LAYOUT.overlay?.width ?? 0,
-              PET_WINDOW_LAYOUT.overlay?.height ?? 0,
-            );
-            context.fillStyle = "#172033";
-            context.textAlign = "center";
-            context.font = "bold 16px Inter, Arial, sans-serif";
-            context.fillText(presentation.overlay.label, 96, 32);
-          }
-          animationFrame = window.requestAnimationFrame(draw);
-        };
+      setElapsedMs(nextElapsedMs);
+      animationFrame = window.requestAnimationFrame(tick);
+    };
 
-        animationFrame = window.requestAnimationFrame(draw);
-      });
+    animationFrame = window.requestAnimationFrame(tick);
 
     return () => {
       isActive = false;
@@ -317,7 +306,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         window.cancelAnimationFrame(animationFrame);
       }
     };
-  }, [pet.assetId, presentation]);
+  }, []);
 
   useEffect(() => {
     if (!isTauri()) {
@@ -388,19 +377,19 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
   function emitPetWindowInput(
     kind: PetWindowInputKind,
-    event: React.MouseEvent<HTMLCanvasElement>,
+    event: React.MouseEvent<HTMLElement>,
   ) {
     if (!isTauri()) {
       return;
     }
 
-    const canvas = canvasRef.current;
+    const surface = surfaceRef.current;
 
-    if (!canvas) {
+    if (!surface) {
       return;
     }
 
-    const localPoint = canvasPointFromEvent(canvas, event);
+    const localPoint = surfacePointFromEvent(surface, event);
     inputSequenceRef.current += 1;
     const sequence = inputSequenceRef.current;
 
@@ -421,16 +410,16 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       );
   }
 
-  function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
-    const canvas = canvasRef.current;
+  function handlePointerMove(event: React.PointerEvent<HTMLElement>) {
+    const surface = surfaceRef.current;
 
-    if (!canvas) {
+    if (!surface) {
       return;
     }
 
     const hit = classifyPetWindowPoint(
       hitLayoutForPresentation(presentation),
-      canvasPointFromEvent(canvas, event),
+      surfacePointFromEvent(surface, event),
     );
 
     if (pointerStartRef.current === "body" && isPositionDrivenRef.current) {
@@ -441,20 +430,20 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     void setNativeCursorPassthrough(hit.kind === "transparent");
   }
 
-  function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+  function handlePointerDown(event: React.PointerEvent<HTMLElement>) {
     if (event.button !== 0) {
       return;
     }
 
-    const canvas = canvasRef.current;
+    const surface = surfaceRef.current;
 
-    if (!canvas) {
+    if (!surface) {
       return;
     }
 
     const hit = classifyPetWindowPoint(
       hitLayoutForPresentation(presentation),
-      canvasPointFromEvent(canvas, event),
+      surfacePointFromEvent(surface, event),
     );
     pointerStartRef.current = hit.kind;
 
@@ -480,19 +469,19 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     void setNativeCursorPassthrough(true);
   }
 
-  function handlePointerUp(event: React.PointerEvent<HTMLCanvasElement>) {
-    const canvas = canvasRef.current;
+  function handlePointerUp(event: React.PointerEvent<HTMLElement>) {
+    const surface = surfaceRef.current;
     const pointerStart = pointerStartRef.current;
 
     pointerStartRef.current = null;
 
-    if (!canvas) {
+    if (!surface) {
       return;
     }
 
     const hit = classifyPetWindowPoint(
       hitLayoutForPresentation(presentation),
-      canvasPointFromEvent(canvas, event),
+      surfacePointFromEvent(surface, event),
     );
 
     if (pointerStart === "overlay" && hit.kind === "overlay") {
@@ -511,16 +500,16 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     void setNativeCursorPassthrough(hit.kind === "transparent");
   }
 
-  function handleContextMenu(event: React.MouseEvent<HTMLCanvasElement>) {
-    const canvas = canvasRef.current;
+  function handleContextMenu(event: React.MouseEvent<HTMLElement>) {
+    const surface = surfaceRef.current;
 
-    if (!canvas) {
+    if (!surface) {
       return;
     }
 
     const hit = classifyPetWindowPoint(
       hitLayoutForPresentation(presentation),
-      canvasPointFromEvent(canvas, event),
+      surfacePointFromEvent(surface, event),
     );
 
     if (hit.kind === "transparent") {
@@ -535,13 +524,13 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
     if (hit.kind === "body") {
       setInteractionStatus("Pet context menu");
-      setActiveMenu({ kind: "body", localPoint: canvasPointFromEvent(canvas, event) });
+      setActiveMenu({ kind: "body", localPoint: surfacePointFromEvent(surface, event) });
       emitPetWindowInput("body.contextmenu", event);
       return;
     }
 
     setInteractionStatus("Overlay context menu");
-    setActiveMenu({ kind: "overlay", localPoint: canvasPointFromEvent(canvas, event) });
+    setActiveMenu({ kind: "overlay", localPoint: surfacePointFromEvent(surface, event) });
     emitPetWindowInput("overlay.contextmenu", event);
   }
 
@@ -553,18 +542,23 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   }
 
   return (
-    <main className="pet-window-surface">
-      <canvas
-        aria-label={`Pet Window ${pet.petId}`}
-        className="pet-window-canvas"
-        height={208}
-        onContextMenu={handleContextMenu}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={() => void setNativeCursorPassthrough(true)}
-        ref={canvasRef}
-        width={192}
+    <main
+      aria-label={`Pet Window ${pet.petId}`}
+      className="pet-window-surface"
+      onContextMenu={handleContextMenu}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={() => void setNativeCursorPassthrough(true)}
+      ref={surfaceRef}
+    >
+      <PetSprite
+        alt={`Pet Sprite ${pet.petId}`}
+        elapsedMs={elapsedMs}
+        imageUrl={spritesheetUrl}
+        intent={presentation.intent}
+        overlay={presentation.overlay}
+        size={PET_CELL_SIZE}
       />
       {activeMenu ? (
         <div

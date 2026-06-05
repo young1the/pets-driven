@@ -91,14 +91,6 @@ button {
   user-select: none;
 }
 
-.pet-window-canvas {
-  width: 192px;
-  height: 208px;
-  display: block;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
 .pet-window-menu {
   position: absolute;
   z-index: 2;

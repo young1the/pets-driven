@@ -77,45 +77,11 @@ export function getCodexPetSpritesheetUrl(assetId: string) {
   return `/codex-pets/${assetId}/spritesheet.webp`;
 }
 
-async function isTauriRuntime() {
-  const { isTauri } = await import("@tauri-apps/api/core");
-
-  return isTauri();
-}
-
-async function loadCodexPetSpritesheetBytes(assetId: string) {
-  const { invoke } = await import("@tauri-apps/api/core");
-  const response = await invoke<ArrayBuffer | Uint8Array | number[]>(
-    "load_codex_pet_spritesheet",
-    { assetId },
-  );
-
-  if (response instanceof ArrayBuffer) {
-    return response;
-  }
-
-  return new Uint8Array(response).buffer;
-}
-
 export async function loadCodexPetImage(
   assetId: string,
   loadImage: (url: string) => Promise<HTMLImageElement>,
 ) {
-  if (!(await isTauriRuntime())) {
-    return await loadImage(getCodexPetSpritesheetUrl(assetId));
-  }
-
-  const bytes = await loadCodexPetSpritesheetBytes(assetId);
-  const objectUrl = URL.createObjectURL(
-    new Blob([bytes], { type: "image/webp" }),
-  );
-
-  try {
-    return await loadImage(objectUrl);
-  } catch (error) {
-    URL.revokeObjectURL(objectUrl);
-    throw error;
-  }
+  return await loadImage(getCodexPetSpritesheetUrl(assetId));
 }
 
 export async function loadPlaygroundPetAssetCatalog(

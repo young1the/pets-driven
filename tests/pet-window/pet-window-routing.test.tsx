@@ -161,7 +161,7 @@ describe("pet window product route", () => {
       clearRect: vi.fn(),
       drawImage: vi.fn(),
     } as unknown as CanvasRenderingContext2D);
-    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue(
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
       {
         left: 0,
         top: 0,
@@ -196,6 +196,20 @@ describe("pet window product route", () => {
     expect(
       screen.queryByRole("heading", { name: "Pets Driven" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("renders the shared HTML sprite instead of a Pet Window canvas", () => {
+    isTauriMock.mockReturnValue(false);
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    expect(screen.getByLabelText("Pet Sprite pet-a")).toBeInTheDocument();
+    expect(document.querySelector("canvas.pet-window-canvas")).not.toBeInTheDocument();
   });
 
   it("opens and closes playground Pet Windows from the management surface", () => {

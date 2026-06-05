@@ -8,6 +8,7 @@ import {
 import { resolvePetSpriteFrame } from "@/pets/rendering/pet-sprite-frame";
 import { drawPetSpriteCanvas, type AssetCatalog } from "@/pets/rendering/pet-sprite-canvas";
 import { PetSpriteHtml } from "@/pets/rendering/pet-sprite-html";
+import { PetSprite } from "@/pets/rendering/pet-sprite";
 
 describe("pet sprite rendering", () => {
   it("maps semantic travel and working intents to hatch-pet atlas states", () => {
@@ -197,5 +198,31 @@ describe("pet sprite rendering", () => {
       backgroundSize: "256px 342px",
       transform: "scaleX(-1)",
     });
+  });
+
+  it("renders a props-driven pet sprite with overlay from the pets package", () => {
+    render(
+      <PetSprite
+        alt="Promo pet"
+        elapsedMs={320}
+        imageUrl="/fallback-pets/patamon/spritesheet.webp"
+        intent={{ kind: "waiting", facing: "right" }}
+        overlay={{ kind: "attention", label: "WAIT" }}
+        size={{ width: 96, height: 104 }}
+      />,
+    );
+
+    const sprite = screen.getByLabelText("Promo pet");
+    const overlay = screen.getByLabelText("Pet attention overlay");
+
+    expect(sprite).toHaveStyle({
+      width: "96px",
+      height: "104px",
+      backgroundImage: "url(/fallback-pets/patamon/spritesheet.webp)",
+      backgroundPosition: "-192px -624px",
+      backgroundSize: "768px 936px",
+      transform: "scaleX(-1)",
+    });
+    expect(overlay).toHaveTextContent("WAIT");
   });
 });
