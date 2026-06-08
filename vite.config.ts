@@ -41,6 +41,8 @@ export default defineConfig(({ mode }) => {
         input: {
           main: "index.html",
           playground: "playground.html",
+          "pet-design": "pet-design.html",
+          "pet-behavior": "pet-behavior.html",
         },
       },
     },

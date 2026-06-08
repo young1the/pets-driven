@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tauri dev",
     "dev:playground": "vite --open /playground.html",
+    "dev:pet-design": "vite --open /pet-design.html",
+    "dev:pet-behavior": "vite --open /pet-behavior.html",
     "dev:tauri": "vite --mode tauri",
     "build": "tauri build",
     "build:playground": "tsc -p tsconfig.app.json && vite build",
