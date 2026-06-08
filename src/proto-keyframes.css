@@ -1,0 +1,21 @@
+/* Shared keyframes for prototype pages. */
+
+@keyframes proto-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(1.06); }
+}
+
+@keyframes proto-bounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-4px); }
+}
+
+@keyframes proto-float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-6px); }
+}
+
+@keyframes proto-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
