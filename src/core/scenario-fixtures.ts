@@ -184,6 +184,7 @@ export function createDemoScenario(options?: {
   monitorLayout?: "single" | "dual-horizontal";
 }) {
   const monitorLayout = options?.monitorLayout ?? "single";
+  const isDualMonitor = monitorLayout === "dual-horizontal";
   const clock = createManualClock(0);
   const monitors = resolveMonitorLayout(monitorLayout);
   const viewport = getWorldViewport(monitors);
@@ -243,7 +244,10 @@ export function createDemoScenario(options?: {
         id: "climb-wall",
         components: [
           { type: "ClimbableSurface" },
-          { type: "Transform", position: { x: 280, y: 200 } },
+          {
+            type: "Transform",
+            position: isDualMonitor ? { x: 24, y: 420 } : { x: 280, y: 200 },
+          },
         ],
       },
       createFixturePet({
@@ -268,13 +272,28 @@ export function createDemoScenario(options?: {
         id: "pet-b",
         sourceId: "agent-b",
         name: "Bob",
-        x: 840,
-        y: 500,
+        x: isDualMonitor ? 80 : 840,
+        y: isDualMonitor ? 521 : 500,
         components: [
           ...petBodyComponents,
           { type: "WalkingTag" },
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
-          { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
+          isDualMonitor
+            ? {
+                type: "CanJump",
+                impulse: DEFAULT_PET_JUMP_IMPULSE * 1.8,
+                forwardImpulse: { min: 0.030, max: 0.030 },
+              }
+            : { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
+          ...(isDualMonitor
+            ? [
+                {
+                  type: "MotionTarget" as const,
+                  targetEntityId: null,
+                  targetPosition: { x: -360, y: 456 },
+                },
+              ]
+            : []),
           { type: "JumpActionState", phase: "requested", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // attentive: high extraversion + agreeableness
@@ -285,15 +304,44 @@ export function createDemoScenario(options?: {
         id: "pet-c",
         sourceId: "agent-c",
         name: "Charlie",
-        x: 280,
-        y: 200,
+        x: isDualMonitor ? 24 : 280,
+        y: isDualMonitor ? 420 : 200,
         components: [
           ...petBodyComponents,
           { type: "WalkingTag" },
+          ...(isDualMonitor ? [{ type: "ClimbingTag" as const }] : []),
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
           { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
-          { type: "CanWallClimb", velocity: DEFAULT_PET_CLIMB_VELOCITY },
+          isDualMonitor
+            ? {
+                type: "CanWallClimb",
+                velocity: DEFAULT_PET_CLIMB_VELOCITY * 4,
+                dismountImpulse: { min: -0.024, max: -0.024 },
+              }
+            : { type: "CanWallClimb", velocity: DEFAULT_PET_CLIMB_VELOCITY },
           { type: "WandersOnArrival", arrivalRadius: 16 },
+          ...(isDualMonitor
+            ? [
+                { type: "IntentState" as const, intent: "active" as const },
+                {
+                  type: "ContactState" as const,
+                  grounded: false,
+                  climbableSurfaceId: "climb-wall",
+                  climbableSurfacePosition: { x: 24, y: 420 },
+                },
+                {
+                  type: "MotionTarget" as const,
+                  targetEntityId: null,
+                  targetPosition: { x: 24, y: 80 },
+                },
+                {
+                  type: "ClimbIntentState" as const,
+                  phase: "attached" as const,
+                  surfaceEntityId: "climb-wall",
+                  targetY: 80,
+                },
+              ]
+            : []),
           // playful + climb tendency: high openness + extraversion
           { type: "Personality", openness: 0.7, conscientiousness: 0.4, extraversion: 0.85, agreeableness: 0.5, neuroticism: 0.1 },
         ],
@@ -373,13 +421,13 @@ export const JUMP_PLAYGROUND_PET_IDS = [
 ] as const;
 
 const JUMP_PLAYGROUND_PETS = [
-  { id: "pet-a", sourceId: "agent-a", name: "Alice", x: 96, leftX: 64, rightX: 144, min: 0.060, max: 0.140 },
-  { id: "pet-b", sourceId: "agent-b", name: "Bob", x: 220, leftX: 180, rightX: 260, min: 0.040, max: 0.110 },
-  { id: "pet-c", sourceId: "agent-c", name: "Charlie", x: 344, leftX: 304, rightX: 384, min: 0.080, max: 0.170 },
-  { id: "pet-d", sourceId: "agent-d", name: "Dana", x: 480, leftX: 440, rightX: 520, min: 0.030, max: 0.085 },
-  { id: "pet-e", sourceId: "agent-e", name: "Eve", x: 604, leftX: 564, rightX: 644, min: 0.070, max: 0.150 },
-  { id: "pet-f", sourceId: "agent-f", name: "Finn", x: 728, leftX: 688, rightX: 768, min: 0.050, max: 0.120 },
-  { id: "pet-g", sourceId: "agent-g", name: "Gwen", x: 852, leftX: 812, rightX: 892, min: 0.090, max: 0.190 },
+  { id: "pet-a", sourceId: "agent-a", name: "Alice", wallId: "jump-wall-a", x: 200, leftX: 160, rightX: 240, wallX: 32, wallTargetX: 128, wallHeight: 72, impulseMultiplier: 18, min: 0.130, max: 0.130 },
+  { id: "pet-b", sourceId: "agent-b", name: "Bob", x: 340, leftX: 300, rightX: 380, min: 0.040, max: 0.110 },
+  { id: "pet-c", sourceId: "agent-c", name: "Charlie", x: 460, leftX: 420, rightX: 500, min: 0.080, max: 0.170 },
+  { id: "pet-d", sourceId: "agent-d", name: "Dana", x: 580, leftX: 540, rightX: 620, min: 0.030, max: 0.085 },
+  { id: "pet-e", sourceId: "agent-e", name: "Eve", x: 700, leftX: 660, rightX: 740, min: 0.070, max: 0.150 },
+  { id: "pet-f", sourceId: "agent-f", name: "Finn", x: 820, leftX: 780, rightX: 860, min: 0.050, max: 0.120 },
+  { id: "pet-g", sourceId: "agent-g", name: "Gwen", x: 920, leftX: 880, rightX: 936, min: 0.090, max: 0.190 },
 ] as const;
 
 export function nextJumpPlaygroundTarget(
@@ -390,11 +438,32 @@ export function nextJumpPlaygroundTarget(
   const pet = JUMP_PLAYGROUND_PETS.find((entry) => entry.id === petId);
   if (!pet) return { x: currentX, y: currentY };
 
+  if ("wallX" in pet) {
+    const wallTopY = jumpPlaygroundWallTopY(pet.wallHeight);
+    const wallCenterTargetY = wallTopY - JUMP_PLAYGROUND_BODY_SIZE.height / 2;
+    if (
+      Math.abs(currentX - pet.wallTargetX) > 16 ||
+      Math.abs(currentY - wallCenterTargetY) > 16
+    ) {
+      return {
+        x: pet.wallTargetX,
+        y: wallCenterTargetY,
+      };
+    }
+  }
+
   const midpoint = (pet.leftX + pet.rightX) / 2;
   return {
     x: currentX <= midpoint ? pet.rightX : pet.leftX,
     y: currentY,
   };
+}
+
+const JUMP_PLAYGROUND_BODY_SIZE = { width: 96, height: 114 } as const;
+const JUMP_PLAYGROUND_WALL_WIDTH = 192;
+
+function jumpPlaygroundWallTopY(height: number) {
+  return 540 - height;
 }
 
 export function createJumpPlaygroundScenario(options?: { startJumping?: boolean }) {
@@ -403,7 +472,6 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
   const viewport = getWorldViewport(monitors);
   const groundThickness = 48;
   const y = viewport.height - 64;
-  const bodySize = { width: 96, height: 114 };
   const world = createWorld({
     width: viewport.width,
     height: viewport.height,
@@ -419,6 +487,20 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
           { type: "KeyboardInputState", pressedCodes: [], vector: { x: 0, y: 0 } },
         ],
       },
+      ...JUMP_PLAYGROUND_PETS.filter((pet) => "wallId" in pet).map((pet) => ({
+        id: pet.wallId,
+        components: [
+          { type: "Ground" as const },
+          { type: "Transform" as const, position: { x: pet.wallX, y: viewport.height - pet.wallHeight / 2 } },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: JUMP_PLAYGROUND_WALL_WIDTH,
+            height: pet.wallHeight,
+          },
+          { type: "PhysicsMaterial" as const, friction: 0.8, restitution: 0 },
+        ],
+      })),
       ...JUMP_PLAYGROUND_PETS.map((pet) =>
         createFixturePet({
           id: pet.id,
@@ -430,7 +512,7 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
             {
               type: "PhysicsBody",
               shape: "rectangle",
-              ...bodySize,
+              ...JUMP_PLAYGROUND_BODY_SIZE,
             },
             { type: "PhysicsMaterial", friction: 0.1, frictionAir: 0.008, restitution: 0 },
             { type: "WalkingTag" },
@@ -441,7 +523,7 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
             },
             {
               type: "CanJump",
-              impulse: DEFAULT_PET_JUMP_IMPULSE * 14,
+              impulse: DEFAULT_PET_JUMP_IMPULSE * ("impulseMultiplier" in pet ? pet.impulseMultiplier : 14),
               forwardImpulse: { min: pet.min, max: pet.max },
             },
             ...(options?.startJumping === false

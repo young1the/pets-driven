@@ -93,6 +93,27 @@ describe("climb dismount system", () => {
     expect(forces.flat()).toContainEqual({ id: "pet-a", x: -0.004, y: 0 });
   });
 
+  it("uses signed dismount impulse ranges as direct horizontal force", () => {
+    let index = 0;
+    const randomValues = [0.25, 0.5];
+    const random: RandomSource = {
+      next: () => randomValues[index++] ?? 0,
+    };
+    const store = makeCompletedClimber([
+      { type: "CanJump" as const, impulse: 0.009 },
+      {
+        type: "CanWallClimb" as const,
+        velocity: 1.1,
+        dismountImpulse: { min: -0.006, max: -0.002 },
+      },
+    ]);
+    const forces: Force[][] = [];
+
+    runClimbDismountSystem(store, 16, forces, random);
+
+    expect(forces.flat()).toContainEqual({ id: "pet-a", x: -0.005, y: 0 });
+  });
+
   it("removes dismount state after landing cooldown completes", () => {
     const store = createComponentStore([{
       id: "pet-a",
