@@ -1,0 +1,7 @@
+/* Entry stylesheet for the main window (dashboard + in-app playground
+   view + pet-window surface, which all render from main.tsx). */
+
+@import "./base.css";
+@import "./app.css";
+@import "./playground.css";
+@import "./pet-window.css";
