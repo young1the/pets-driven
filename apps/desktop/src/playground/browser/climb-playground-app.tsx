@@ -1,3 +1,4 @@
+import { Button } from "@pets-driven/design-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClimbPlaygroundScenario } from "@/core/scenario-fixtures";
 import { drawWorld } from "./canvas-renderer";
@@ -72,11 +73,11 @@ export function ClimbPlaygroundApp() {
         <h1>Climb playground</h1>
       </header>
       <section className="scenario-controls">
-        <button type="button" onClick={() => setIsAnimationPlaying((prev) => !prev)}>
+        <Button size="sm" onClick={() => setIsAnimationPlaying((prev) => !prev)}>
           {isAnimationPlaying ? "Pause animation" : "Resume animation"}
-        </button>
-        <button type="button" onClick={advanceFrame}>Play next frame</button>
-        <button type="button" onClick={resetScenario}>Reset climbs</button>
+        </Button>
+        <Button size="sm" variant="neutral" onClick={advanceFrame}>Play next frame</Button>
+        <Button size="sm" variant="ghost" onClick={resetScenario}>Reset climbs</Button>
         <p>Frame: {frameNumber}</p>
       </section>
       <div className="climb-playground-stage">

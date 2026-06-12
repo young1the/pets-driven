@@ -1,3 +1,4 @@
+import { Button } from "@pets-driven/design-system";
 import type { AgentEvent } from "@/adapters/agent-events/agent-event";
 import type { ClaudeHookEventName } from "@/adapters/agent-events/claude-hook-adapter";
 import { PLAYGROUND_TEXT } from "./playground-text";
@@ -31,13 +32,14 @@ export function AgentEventPanel({
       </div>
       <div className="agent-event-panel__actions">
         {SAMPLE_HOOKS.map((sample) => (
-          <button
+          <Button
             key={sample.hookEventName}
-            type="button"
             onClick={() => onSendSampleHook(sample.hookEventName)}
+            size="sm"
+            variant="neutral"
           >
             {sample.label}
-          </button>
+          </Button>
         ))}
       </div>
       {error ? <p className="agent-event-panel__error">{error}</p> : null}

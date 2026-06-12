@@ -1,3 +1,4 @@
+import { Button } from "@pets-driven/design-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createJumpPlaygroundScenario,
@@ -91,11 +92,11 @@ export function JumpPlaygroundApp() {
         <h1>Jump playground</h1>
       </header>
       <section className="scenario-controls">
-        <button type="button" onClick={() => setIsAnimationPlaying((prev) => !prev)}>
+        <Button size="sm" onClick={() => setIsAnimationPlaying((prev) => !prev)}>
           {isAnimationPlaying ? "Pause animation" : "Resume animation"}
-        </button>
-        <button type="button" onClick={advanceFrame}>Play next frame</button>
-        <button type="button" onClick={resetScenario}>Reset jumps</button>
+        </Button>
+        <Button size="sm" variant="neutral" onClick={advanceFrame}>Play next frame</Button>
+        <Button size="sm" variant="ghost" onClick={resetScenario}>Reset jumps</Button>
         <p>Frame: {frameNumber}</p>
       </section>
       <div className="jump-playground-stage">

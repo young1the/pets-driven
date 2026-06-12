@@ -3,6 +3,7 @@ import type {
   ComponentType,
 } from "@/core/components";
 import type { PetSnapshot } from "@/core/world-snapshot";
+import { Button } from "@pets-driven/design-system";
 import { useMemo, useState } from "react";
 import { PLAYGROUND_TEXT } from "./playground-text";
 
@@ -94,18 +95,19 @@ export function BehaviorLab({
       <div className="behavior-lab__header">
         <h2>{PLAYGROUND_TEXT.behaviorLabTitle}</h2>
         <div className="behavior-lab__header-actions">
-          <button type="button" onClick={copyStateToClipboard}>
+          <Button onClick={copyStateToClipboard} size="sm" variant="neutral">
             {PLAYGROUND_TEXT.copyStateToClipboard}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             aria-expanded={isStateListVisible}
             onClick={() => setIsStateListVisible((visible) => !visible)}
+            size="sm"
+            variant="neutral"
           >
             {isStateListVisible
               ? PLAYGROUND_TEXT.hideComponentStateList
               : PLAYGROUND_TEXT.showComponentStateList}
-          </button>
+          </Button>
         </div>
       </div>
       {copyStatus !== "idle" && (
@@ -119,14 +121,15 @@ export function BehaviorLab({
         <span>{PLAYGROUND_TEXT.selectedPetLabel}</span>
         <div>
           {pets.map((pet) => (
-            <button
-              key={pet.id}
-              type="button"
+            <Button
               aria-pressed={pet.id === selectedPet.id}
+              key={pet.id}
               onClick={() => onSelectPet(pet.id)}
+              size="sm"
+              variant="neutral"
             >
               {pet.name}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
