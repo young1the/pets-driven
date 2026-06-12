@@ -1,0 +1,4 @@
+/* Entry stylesheet for the standalone browser playgrounds. */
+
+@import "./base.css";
+@import "./playground.css";

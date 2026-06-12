@@ -1,0 +1,6 @@
+@import "@pets-driven/design-system/styles.css";
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+}

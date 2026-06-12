@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Badge, Button, Card } from "@pets-driven/design-system";
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { currentMonitor } from "@tauri-apps/api/window";
@@ -393,13 +394,14 @@ export function PetsDrivenApp() {
   if (viewMode === "playground") {
     return (
       <div className="app-playground-view">
-        <button
+        <Button
           className="app-back-button"
-          type="button"
           onClick={() => setViewMode("home")}
+          size="sm"
+          variant="neutral"
         >
           Back
-        </button>
+        </Button>
         <PlaygroundApp />
       </div>
     );
@@ -443,39 +445,45 @@ export function PetsDrivenApp() {
           <p>Codex pet runtime</p>
         </div>
         <div className="app-header-actions">
-          <button type="button" onClick={() => setViewMode("playground")}>
+          <Button onClick={() => setViewMode("playground")} size="sm">
             Open playground
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             onClick={() =>
               void invokePetWindowCommand("open_pet_window_playground", 1)
             }
+            size="sm"
+            variant="accent"
           >
             Open pet window
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             onClick={() =>
               void invokePetWindowCommand("open_pet_window_playground", 3)
             }
+            size="sm"
+            variant="neutral"
           >
             Open 3 pet windows
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             onClick={() =>
               void invokePetWindowCommand("open_pet_window_playground", 7)
             }
+            size="sm"
+            variant="neutral"
           >
             Open fixture pet windows
-          </button>
-          <button
-            type="button"
-            onClick={() => void invokePetWindowCommand("close_pet_window_playground")}
+          </Button>
+          <Button
+            onClick={() =>
+              void invokePetWindowCommand("close_pet_window_playground")
+            }
+            size="sm"
+            variant="ghost"
           >
             Close pet windows
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -486,15 +494,15 @@ export function PetsDrivenApp() {
       ) : null}
 
       <section className="app-summary" aria-label="Runtime summary">
-        <div>
+        <Card padding="sm">
           <span>Packages</span>
           <strong>{pets.length}</strong>
-        </div>
-        <div>
+        </Card>
+        <Card padding="sm">
           <span>Source</span>
           <strong>{isTauri() ? "Tauri" : "Browser"}</strong>
-        </div>
-        <div className="app-summary-runtime">
+        </Card>
+        <Card className="app-summary-runtime" padding="sm">
           <span>Claude hook</span>
           <strong data-testid="claude-hook-state">
             {claudeHookIngressStatus.state}
@@ -502,23 +510,35 @@ export function PetsDrivenApp() {
           <code data-testid="claude-hook-url">
             {claudeHookIngressStatus.url || "unavailable"}
           </code>
-          <button
-            type="button"
+          <Button
             aria-label="Send Claude hook test event"
             onClick={() => void emitClaudeHookTestEvent()}
+            size="sm"
+            variant="neutral"
           >
             Test event
-          </button>
+          </Button>
           {claudeHookIngressStatus.error ? (
             <small>{claudeHookIngressStatus.error}</small>
           ) : null}
-        </div>
+        </Card>
       </section>
 
       <section className="app-pets" aria-labelledby="pet-packages-title">
         <div className="app-section-header">
           <h2 id="pet-packages-title">Pet packages</h2>
-          <span>{status}</span>
+          <Badge
+            dot
+            tone={
+              status === "ready"
+                ? "success"
+                : status === "loading"
+                  ? "info"
+                  : "danger"
+            }
+          >
+            {status}
+          </Badge>
         </div>
         <ul>
           {pets.map((pet) => (
