@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { PetEmote, PetStatusCapsule } from "@pets-driven/design-system";
 import {
   type PetAnimationState,
   type PetSpriteFacing,
@@ -9,6 +10,7 @@ import {
 } from "@/pets/rendering/pet-sprite-frame";
 import { PetSpriteHtml } from "@/pets/rendering/pet-sprite-html";
 import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
+import { presentPetStatus } from "@/pets/rendering/pet-status-presentation";
 
 export type PetSpriteOverlay = {
   kind: "attention" | "speech" | "status";
@@ -51,6 +53,11 @@ const PET_SPRITE_OVERLAY_RECT = {
   height: 28,
 };
 
+const PET_SPRITE_EMOTE_OFFSET = {
+  top: 8,
+  right: 14,
+};
+
 export function PetSprite({
   alt,
   className,
@@ -72,6 +79,8 @@ export function PetSprite({
     scale,
     size,
   });
+  const status = presentPetStatus(frameInput.intent, overlay);
+  const drawScale = frame.drawSize.width / frame.source.width;
 
   return (
     <span
@@ -91,29 +100,56 @@ export function PetSprite({
         imageUrl={imageUrl}
         style={spriteStyle}
       />
-      {overlay ? (
+      {overlay && status.showCapsule ? (
         <span
           aria-label={`Pet ${overlay.kind} overlay`}
           className={overlayClassName}
           style={{
-            background: "#ffffff",
-            border: "1px solid #2563eb",
             boxSizing: "border-box",
-            color: "#172033",
-            font: "bold 16px Inter, Arial, sans-serif",
+            display: "block",
             height: `${scaleOverlayValue(PET_SPRITE_OVERLAY_RECT.height, frame)}px`,
             left: `${scaleOverlayValue(PET_SPRITE_OVERLAY_RECT.x, frame)}px`,
-            lineHeight: `${scaleOverlayValue(PET_SPRITE_OVERLAY_RECT.height, frame) - 2}px`,
             pointerEvents: "none",
             position: "absolute",
-            textAlign: "center",
             top: `${scaleOverlayValue(PET_SPRITE_OVERLAY_RECT.y, frame)}px`,
             width: `${scaleOverlayValue(PET_SPRITE_OVERLAY_RECT.width, frame)}px`,
             zIndex: 1,
             ...overlayStyle,
           }}
         >
-          {overlay.label}
+          <span
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              transform: `scale(${drawScale})`,
+              transformOrigin: "top center",
+              width: `${PET_SPRITE_OVERLAY_RECT.width}px`,
+              marginLeft: `${(scaleOverlayValue(PET_SPRITE_OVERLAY_RECT.width, frame) - PET_SPRITE_OVERLAY_RECT.width) / 2}px`,
+            }}
+          >
+            <PetStatusCapsule
+              label={status.label ?? undefined}
+              mood={status.mood}
+              size="sm"
+              style={{ maxWidth: `${PET_SPRITE_OVERLAY_RECT.width}px` }}
+            />
+          </span>
+        </span>
+      ) : null}
+      {status.emote !== "none" ? (
+        <span
+          aria-hidden="true"
+          style={{
+            pointerEvents: "none",
+            position: "absolute",
+            right: `${scaleOverlayValue(PET_SPRITE_EMOTE_OFFSET.right, frame)}px`,
+            top: `${scaleOverlayValue(PET_SPRITE_EMOTE_OFFSET.top, frame)}px`,
+            transform: `scale(${drawScale})`,
+            transformOrigin: "top right",
+            zIndex: 2,
+          }}
+        >
+          <PetEmote kind={status.emote} size="sm" />
         </span>
       ) : null}
     </span>
