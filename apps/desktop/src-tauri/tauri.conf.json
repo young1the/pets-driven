@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "com.petsdriven.desktop",
   "build": {
-    "beforeDevCommand": "npm run dev:tauri",
-    "beforeBuildCommand": "npm run build:playground",
+    "beforeDevCommand": "pnpm run dev:tauri",
+    "beforeBuildCommand": "pnpm run build:playground",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../dist"
   },

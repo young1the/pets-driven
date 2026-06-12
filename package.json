@@ -1,45 +1,24 @@
 {
-  "name": "pets-driven",
+  "name": "pets-driven-monorepo",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
+  "packageManager": "pnpm@10.25.0",
   "scripts": {
-    "dev": "tauri dev",
-    "dev:playground": "vite --open /playground.html",
-    "dev:pet-design": "vite --open /pet-design.html",
-    "dev:pet-behavior": "vite --open /pet-behavior.html",
-    "dev:jump-playground": "vite --open /jump-playground.html",
-    "dev:climb-playground": "vite --open /climb-playground.html",
-    "dev:tauri": "vite --mode tauri",
-    "build": "tauri build",
-    "build:playground": "tsc -p tsconfig.app.json && vite build",
-    "build:tauri": "tauri build",
-    "typecheck": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "tauri": "tauri"
+    "dev": "pnpm --filter pets-driven dev",
+    "dev:playground": "pnpm --filter pets-driven dev:playground",
+    "dev:pet-design": "pnpm --filter pets-driven dev:pet-design",
+    "dev:pet-behavior": "pnpm --filter pets-driven dev:pet-behavior",
+    "dev:jump-playground": "pnpm --filter pets-driven dev:jump-playground",
+    "dev:climb-playground": "pnpm --filter pets-driven dev:climb-playground",
+    "build": "pnpm --filter pets-driven build",
+    "build:playground": "pnpm --filter pets-driven build:playground",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter pets-driven test:e2e",
+    "tauri": "pnpm --filter pets-driven tauri"
   },
-  "dependencies": {
-    "@tauri-apps/api": "^2.11.0",
-    "@tauri-apps/plugin-opener": "^2.5.4",
-    "matter-js": "^0.20.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.52.0",
-    "@tauri-apps/cli": "^2.11.2",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@types/matter-js": "^0.19.8",
-    "@types/node": "^25.8.0",
-    "@types/react": "^18.3.23",
-    "@types/react-dom": "^18.3.7",
-    "@vitejs/plugin-react": "^4.4.1",
-    "jsdom": "^26.1.0",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.5",
-    "vitest": "^3.1.3"
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
