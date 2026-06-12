@@ -27,6 +27,14 @@
   font-size: var(--text-sm);
 }
 
+/* Toggle buttons (selected state for layout/pet selectors). */
+.playground-shell .pd-btn--neutral[aria-pressed="true"],
+.behavior-lab .pd-btn--neutral[aria-pressed="true"] {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--blossom-700);
+}
+
 .playground-workspace {
   display: grid;
   grid-template-columns: minmax(0, 960px) minmax(280px, 360px);

@@ -1,3 +1,4 @@
+import { mint, semantic } from "@pets-driven/design-system/tokens";
 import type {
   BodySnapshot,
   ClimbableSurfaceSnapshot,
@@ -33,22 +34,22 @@ export function drawClimbableSurface(
   );
   const markerX = surface.position.x - CLIMBABLE_SURFACE_MARKER_WIDTH / 2;
 
-  context.fillStyle = "rgba(22, 163, 74, 0.26)";
+  context.fillStyle = `${mint[500]}42`;
   context.fillRect(
     markerX,
     CLIMBABLE_SURFACE_MARKER_TOP,
     CLIMBABLE_SURFACE_MARKER_WIDTH,
     markerHeight,
   );
-  context.strokeStyle = "#15803d";
+  context.strokeStyle = mint[600];
   context.strokeRect(
     markerX,
     CLIMBABLE_SURFACE_MARKER_TOP,
     CLIMBABLE_SURFACE_MARKER_WIDTH,
     markerHeight,
   );
-  context.fillStyle = "#14532d";
-  context.font = "bold 18px Inter, Arial, sans-serif";
+  context.fillStyle = mint[700];
+  context.font = "800 18px Nunito, system-ui, sans-serif";
   context.textAlign = "center";
   context.fillText(
     CLIMBABLE_SURFACE_LABEL,
@@ -64,7 +65,7 @@ export function drawGroundContact(
 ) {
   context.beginPath();
   context.ellipse(x, y + 7, 12, 4, 0, 0, Math.PI * 2);
-  context.fillStyle = "rgba(22, 163, 74, 0.4)";
+  context.fillStyle = `${mint[500]}66`;
   context.fill();
 }
 
@@ -79,7 +80,7 @@ export function drawMotionTargetMarker(
   context.lineTo(x + half, y + half);
   context.moveTo(x + half, y - half);
   context.lineTo(x - half, y + half);
-  context.strokeStyle = "#f59e0b";
+  context.strokeStyle = semantic.warning;
   context.lineWidth = 2;
   context.stroke();
 }

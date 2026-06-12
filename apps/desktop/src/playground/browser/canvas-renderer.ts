@@ -1,3 +1,4 @@
+import { ink, paper, semantic } from "@pets-driven/design-system/tokens";
 import type { WorldSnapshot } from "@/core/world-snapshot";
 import {
   drawPetSpriteCanvas,
@@ -70,10 +71,10 @@ export function drawWorld(
     const overlayText = formatPetOverlayText(pet.visualCue?.icon, pet.speech);
 
     context.textAlign = "center";
-    context.fillStyle = "#172033";
-    context.font = "12px Inter, Arial, sans-serif";
+    context.fillStyle = ink[950];
+    context.font = "700 12px Nunito, system-ui, sans-serif";
     context.fillText(pet.name, pet.position.x, pet.position.y - 32);
-    context.fillStyle = "#526074";
+    context.fillStyle = ink[600];
     context.fillText(
       pet.action && pet.action !== "none"
         ? `${pet.intent} / ${pet.locomotion} / ${pet.action}`
@@ -83,11 +84,11 @@ export function drawWorld(
     );
 
     if (overlayText) {
-      context.fillStyle = "#ffffff";
+      context.fillStyle = paper;
       context.fillRect(pet.position.x - 54, pet.position.y - 64, 108, 20);
-      context.strokeStyle = "#ccd5e0";
+      context.strokeStyle = ink[200];
       context.strokeRect(pet.position.x - 54, pet.position.y - 64, 108, 20);
-      context.fillStyle = "#172033";
+      context.fillStyle = ink[950];
       context.fillText(overlayText, pet.position.x, pet.position.y - 48);
     }
   }
@@ -102,9 +103,9 @@ function drawMonitorWorkAreas(
   monitors: NonNullable<WorldSnapshot["monitors"]>,
 ) {
   for (const monitor of monitors) {
-    context.fillStyle = "#eef4fb";
+    context.fillStyle = ink[50];
     context.fillRect?.(monitor.x, monitor.y, monitor.width, monitor.height);
-    context.strokeStyle = "#9fb2ca";
+    context.strokeStyle = ink[300];
     context.strokeRect?.(monitor.x, monitor.y, monitor.width, monitor.height);
   }
 }
@@ -131,9 +132,9 @@ function drawHeldAgentState(
   if (!heldState) return;
 
   const colors = {
-    waiting: "#f59e0b",
-    failed: "#dc2626",
-    completed: "#16a34a",
+    waiting: semantic.warning,
+    failed: semantic.danger,
+    completed: semantic.success,
   } as const;
   const color = colors[heldState.kind];
 
@@ -147,12 +148,12 @@ function drawHeldAgentState(
     height + 14,
   );
 
-  context.font = "bold 11px Inter, Arial, sans-serif";
+  context.font = "800 11px Nunito, system-ui, sans-serif";
   context.textAlign = "center";
   const badgeWidth = 46;
   const badgeX = x - badgeWidth / 2;
   const badgeY = y - height / 2 - 28;
-  context.fillStyle = "#ffffff";
+  context.fillStyle = paper;
   context.fillRect(badgeX, badgeY, badgeWidth, 18);
   context.strokeStyle = color;
   context.strokeRect(badgeX, badgeY, badgeWidth, 18);
@@ -176,7 +177,7 @@ function drawInteractionOutline(
   const isActive = interaction.selected || interaction.controlled || interaction.dragged;
   context.save?.();
   context.lineWidth = isActive ? 3 : 1.5;
-  context.strokeStyle = isActive ? "#2563eb" : "#94a3b8";
+  context.strokeStyle = isActive ? semantic.info : ink[400];
   context.strokeRect(
     x - width / 2 - 4,
     y - height / 2 - 4,
