@@ -39,6 +39,56 @@ const reservedPersonality = {
   neuroticism: 0.75,
 };
 
+function monitorOf(position: { x: number; y: number }) {
+  if (position.x < 0 && position.y <= 480) return "left";
+  if (position.x >= 0) return "primary";
+  return "gap";
+}
+
+function runUntilPetReachesLeftMonitor(
+  scenario: ReturnType<typeof createDemoScenario>,
+  petId: string,
+  maxFrames: number,
+) {
+  let minX = Infinity;
+  let maxY = -Infinity;
+  for (let frame = 1; frame <= maxFrames; frame += 1) {
+    scenario.clock.advanceBy(16);
+    scenario.world.step(16);
+    const pet = scenario.world.snapshot().pets.find((entry) => entry.id === petId);
+    if (pet) {
+      minX = Math.min(minX, pet.position.x);
+      maxY = Math.max(maxY, pet.position.y);
+    }
+    if (pet && monitorOf(pet.position) === "left") {
+      return { frame, pet, minX, maxY };
+    }
+  }
+
+  return null;
+}
+
+function runPetPath(
+  scenario: ReturnType<typeof createDemoScenario>,
+  petId: string,
+  maxFrames: number,
+) {
+  let minX = Infinity;
+  let maxY = -Infinity;
+
+  for (let frame = 1; frame <= maxFrames; frame += 1) {
+    scenario.clock.advanceBy(16);
+    scenario.world.step(16);
+    const pet = scenario.world.snapshot().pets.find((entry) => entry.id === petId);
+    if (pet) {
+      minX = Math.min(minX, pet.position.x);
+      maxY = Math.max(maxY, pet.position.y);
+    }
+  }
+
+  return { minX, maxY };
+}
+
 describe("demo scenario", () => {
   it("creates multiple pets in one shared world", () => {
     const scenario = createDemoScenario();
@@ -604,6 +654,32 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario({ monitorLayout: "dual-horizontal" });
 
     expect(scenario.world.getEntity("user-anchor")).toBeUndefined();
+  });
+
+  it("lets a non-flying jump pet enter the left monitor in the dual-monitor playground", () => {
+    const scenario = createDemoScenario({ monitorLayout: "dual-horizontal" });
+
+    expect(scenario.world.getComponent("pet-b", "CanFly")).toBeUndefined();
+
+    const crossing = runUntilPetReachesLeftMonitor(scenario, "pet-b", 600);
+
+    expect(crossing).not.toBeNull();
+    expect(crossing?.frame).toBeGreaterThanOrEqual(12);
+    expect(crossing?.pet.action).toMatch(/^jump-|airborne$/);
+    expect(crossing?.pet.position.x).toBeGreaterThan(-160);
+  });
+
+  it("lets a non-flying climb pet enter the left monitor after a high climb in the dual-monitor playground", () => {
+    const scenario = createDemoScenario({ monitorLayout: "dual-horizontal" });
+
+    expect(scenario.world.getComponent("pet-c", "CanFly")).toBeUndefined();
+
+    const crossing = runUntilPetReachesLeftMonitor(scenario, "pet-c", 1_200);
+
+    expect(crossing).not.toBeNull();
+    expect(crossing?.pet.action).toBe("climb-dismounting");
+    expect(crossing?.pet.position.x).toBeGreaterThan(-160);
+    expect(runPetPath(scenario, "pet-c", 240).minX).toBeGreaterThan(-560);
   });
 
   it("models climbable surfaces as contact targets", () => {
@@ -1230,13 +1306,35 @@ describe("jump playground scenario", () => {
     }
   });
 
+  it("adds raised floor walls as landing targets for jump inspection", () => {
+    const scenario = createJumpPlaygroundScenario();
+    const snapshot = scenario.world.snapshot();
+    const wallBodies = snapshot.bodies.filter((body) =>
+      body.id.startsWith("jump-wall-"),
+    );
+
+    expect(wallBodies).toHaveLength(1);
+    for (const wall of wallBodies) {
+      expect(wall.isStatic).toBe(true);
+      expect(scenario.world.getComponent(wall.id, "Ground")).toEqual({
+        type: "Ground",
+      });
+      expect(wall.height).toBeGreaterThan(48);
+    }
+  });
+
   it("keeps each jump pet in a local horizontal lane for visual comparison", () => {
     const scenario = createJumpPlaygroundScenario();
 
     for (const pet of scenario.world.snapshot().pets) {
       const target = scenario.world.getComponent(pet.id, "MotionTarget")?.targetPosition;
       expect(target).not.toBeNull();
-      expect(Math.abs(target!.x - pet.position.x)).toBeLessThanOrEqual(80);
+      expect(Math.abs(target!.x - pet.position.x)).toBeLessThanOrEqual(
+        pet.id === "pet-a" ? 160 : 80,
+      );
+      if (pet.id === "pet-a") {
+        expect(target!.y).toBeLessThan(pet.position.y);
+      }
     }
   });
 
@@ -1283,6 +1381,42 @@ describe("jump playground scenario", () => {
     }
 
     expect(startPet!.position.y - minY).toBeGreaterThan(startBody!.height * 0.75);
+  });
+
+  it("lets a jump playground pet land on top of a raised floor wall", () => {
+    const scenario = createJumpPlaygroundScenario({ startJumping: false });
+    const wall = scenario.world.snapshot().bodies.find((body) => body.id === "jump-wall-a");
+
+    expect(wall).toBeDefined();
+
+    for (let index = 0; index < 30; index += 1) {
+      scenario.world.step(16);
+    }
+
+    const target = scenario.world.getComponent("pet-a", "MotionTarget")?.targetPosition;
+    expect(target).toBeDefined();
+
+    scenario.world.setComponent("pet-a", {
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
+    });
+
+    let landedOnWall = false;
+    for (let index = 0; index < 180; index += 1) {
+      scenario.world.step(16);
+      const pet = scenario.world.snapshot().pets.find((entry) => entry.id === "pet-a");
+      if (
+        pet?.contact.grounded &&
+        Math.abs(pet.position.x - target!.x) <= 24 &&
+        Math.abs(pet.position.y - target!.y) <= 12
+      ) {
+        landedOnWall = true;
+        break;
+      }
+    }
+
+    expect(landedOnWall).toBe(true);
   });
 });
 

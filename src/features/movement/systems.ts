@@ -196,9 +196,15 @@ export function runClimbDismountSystem(
         });
         const impulse = canWallClimb?.dismountImpulse;
         if (impulse) {
-          const direction = random.next() < 0.5 ? -1 : 1;
-          const magnitude = impulse.min + random.next() * (impulse.max - impulse.min);
-          forces.push({ id, x: direction * magnitude, y: 0 });
+          const min = Math.min(impulse.min, impulse.max);
+          const max = Math.max(impulse.min, impulse.max);
+          if (min < 0 || max < 0) {
+            forces.push({ id, x: min + random.next() * (max - min), y: 0 });
+          } else {
+            const direction = random.next() < 0.5 ? -1 : 1;
+            const magnitude = min + random.next() * (max - min);
+            forces.push({ id, x: direction * magnitude, y: 0 });
+          }
         }
       }
     },
