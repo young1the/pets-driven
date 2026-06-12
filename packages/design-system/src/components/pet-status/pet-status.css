@@ -1,0 +1,170 @@
+/* Desktop-pet status primitives: status capsule, corner emote, speech
+   bubble. Art-agnostic — the consumer positions these around its own
+   sprite. Accent flows through the --comp-accent custom property. */
+
+/* ---- Status capsule (no dialogue, no tail) ---- */
+.pd-capsule {
+  --comp-accent: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  font-family: var(--font-body);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px 5px 10px;
+  box-sizing: border-box;
+}
+.pd-capsule__dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--comp-accent); }
+.pd-capsule__label {
+  font-weight: 800;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--comp-accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pd-capsule__face { font-size: 15px; line-height: 1; flex: none; }
+.pd-capsule--sm { padding: 4px 10px 4px 9px; gap: 6px; }
+.pd-capsule--sm .pd-capsule__dot { width: 7px; height: 7px; }
+.pd-capsule--sm .pd-capsule__label { font-size: 10px; }
+.pd-capsule--sm .pd-capsule__face { font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) {
+  .pd-capsule--live .pd-capsule__dot { animation: pd-pulse-dot 1.6s var(--ease-out) infinite; }
+}
+@keyframes pd-pulse-dot {
+  0% { box-shadow: 0 0 0 0 var(--comp-accent); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ---- Corner emote (consumer positions the root) ---- */
+.pd-emote {
+  --comp-accent: var(--color-primary);
+  position: relative;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+}
+.pd-emote svg { width: 28px; height: 28px; }
+.pd-emote--sm { width: 34px; height: 34px; }
+.pd-emote--sm svg { width: 22px; height: 22px; }
+
+.pd-emote__heart { position: absolute; right: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .pd-emote__heart { animation: pd-heart-float 2.4s var(--ease-out) infinite; }
+  .pd-emote__heart--2 { animation-delay: 0.8s; right: 18px; top: 6px; }
+  .pd-emote__heart--3 { animation-delay: 1.6s; right: 10px; top: -2px; }
+}
+@keyframes pd-heart-float {
+  0% { opacity: 0; transform: translateY(8px) scale(0.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-22px) scale(1); }
+}
+
+.pd-emote__z { position: absolute; font-family: var(--font-display); font-weight: 700; color: var(--sky-400); }
+.pd-emote__z--1 { font-size: 14px; right: 18px; top: 18px; }
+.pd-emote__z--2 { font-size: 18px; right: 8px; top: 6px; }
+.pd-emote__z--3 { font-size: 24px; right: -4px; top: -10px; }
+@media (prefers-reduced-motion: no-preference) {
+  .pd-emote__z { animation: pd-zzz 2.6s var(--ease-in-out) infinite; }
+  .pd-emote__z--2 { animation-delay: 0.5s; }
+  .pd-emote__z--3 { animation-delay: 1s; }
+}
+@keyframes pd-zzz {
+  0% { opacity: 0; transform: translate(-4px, 6px); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(6px, -10px); }
+}
+
+.pd-emote__spark { position: absolute; }
+.pd-emote__spark--1 { right: 2px; top: 6px; }
+.pd-emote__spark--2 { right: 22px; top: -4px; width: 14px; }
+@media (prefers-reduced-motion: no-preference) {
+  .pd-emote__spark { animation: pd-sparkle 1.5s var(--ease-in-out) infinite; }
+  .pd-emote__spark--2 { animation-delay: 0.5s; }
+}
+
+.pd-emote__bubblet {
+  position: absolute;
+  right: 0;
+  top: 0;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--comp-accent);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pd-emote__bubblet { animation: pd-bob 1.4s var(--ease-in-out) infinite; }
+}
+
+/* ---- Speech bubble (work status + mood + dialogue) ---- */
+.pd-bubble {
+  --comp-accent: var(--color-primary);
+  position: relative;
+  width: max-content;
+  min-width: 150px;
+  max-width: 240px;
+  font-family: var(--font-body);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-lg);
+  padding: 9px 13px 11px;
+  box-sizing: border-box;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pd-bubble--animate-in { animation: pd-pop-in var(--dur-slow) var(--ease-spring) both; }
+}
+.pd-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 16px;
+  height: 16px;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  transform: translateX(-50%) rotate(45deg);
+  border-bottom-right-radius: 4px;
+}
+.pd-bubble__statusrow { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.pd-bubble__work {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--comp-accent);
+  white-space: nowrap;
+}
+.pd-bubble__work .pd-bubble__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--comp-accent);
+  box-shadow: 0 0 0 0 var(--comp-accent);
+}
+.pd-bubble__mood { margin-left: auto; font-size: 16px; line-height: 1; }
+.pd-bubble__msg { font-size: 13.5px; line-height: 1.4; color: var(--text-body); }
+.pd-bubble__msg b { color: var(--text-strong); }
+@media (prefers-reduced-motion: no-preference) {
+  .pd-bubble--live .pd-bubble__dot { animation: pd-pulse-dot 1.6s var(--ease-out) infinite; }
+}

@@ -1,0 +1,44 @@
+/* Checkbox — a soft rounded checkbox with a springy check-in animation. */
+
+.pd-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--text-body);
+  user-select: none;
+}
+.pd-check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.pd-check__box {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 7px;
+  background: var(--surface-card);
+  border: 2px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-spring);
+}
+.pd-check__box svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-spring);
+}
+.pd-check:hover .pd-check__box { border-color: var(--color-primary); }
+.pd-check input:checked + .pd-check__box { background: var(--color-primary); border-color: var(--color-primary); }
+.pd-check input:checked + .pd-check__box svg { opacity: 1; transform: scale(1); }
+.pd-check input:active + .pd-check__box { transform: scale(0.88); }
+.pd-check input:focus-visible + .pd-check__box { box-shadow: var(--ring-focus); }
+.pd-check--disabled { opacity: 0.5; cursor: not-allowed; }

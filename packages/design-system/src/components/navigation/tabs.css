@@ -1,0 +1,45 @@
+/* Tabs — a soft pill tab bar. */
+
+.pd-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-soft);
+}
+.pd-tabs--block { display: flex; width: 100%; }
+.pd-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+.pd-tab:hover { color: var(--text-strong); }
+.pd-tab svg { width: 16px; height: 16px; }
+.pd-tab--active { color: var(--color-primary); background: var(--surface-card); box-shadow: var(--shadow-sm); }
+.pd-tab:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.pd-tab__badge {
+  font-size: var(--text-3xs);
+  font-weight: 800;
+  background: var(--color-primary-soft);
+  color: var(--blossom-700);
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+}
+.pd-tab--active .pd-tab__badge { background: var(--color-primary); color: #fff; }

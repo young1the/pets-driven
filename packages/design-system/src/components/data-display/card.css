@@ -1,0 +1,33 @@
+/* Card — the soft surface container: rounded, hairline border, puffy shadow. */
+
+.pd-card2 {
+  background: var(--surface-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+.pd-card2--pad-sm { padding: var(--space-4); }
+.pd-card2--pad-md { padding: var(--space-6); }
+.pd-card2--pad-lg { padding: var(--space-7); }
+.pd-card2--pad-none { padding: 0; }
+.pd-card2--interactive { cursor: pointer; }
+.pd-card2--interactive:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.pd-card2--interactive:active { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.pd-card2--lavender { background: var(--lavender-50); border-color: var(--lavender-100); }
+.pd-card2--teal { background: var(--teal-50); border-color: var(--teal-100); }
+.pd-card2--mint { background: var(--mint-50); border-color: var(--mint-100); }
+.pd-card2--blossom { background: var(--blossom-50); border-color: var(--blossom-100); }
+.pd-card2--raised { box-shadow: var(--shadow-lg); }
+.pd-card2--flat { box-shadow: none; }
+.pd-card2__header {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lg);
+  color: var(--text-strong);
+  margin-bottom: var(--space-2);
+}
+.pd-card2__sub { color: var(--text-muted); font-size: var(--text-sm); margin-bottom: var(--space-4); }

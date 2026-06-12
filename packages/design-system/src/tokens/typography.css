@@ -1,0 +1,54 @@
+/* ============================================================
+   Pets-Driven — Typography tokens
+   ============================================================ */
+
+:root {
+  /* Families */
+  --font-display: 'Fredoka', 'Trebuchet MS', system-ui, sans-serif;
+  --font-body:    'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-extra:    800;
+
+  /* Fluid-ish type scale (rem). Display uses Fredoka. */
+  --text-3xs: 0.6875rem; /* 11 — micro labels */
+  --text-2xs: 0.75rem;   /* 12 */
+  --text-xs:  0.8125rem;  /* 13 */
+  --text-sm:  0.875rem;   /* 14 */
+  --text-base:1rem;       /* 16 — body default */
+  --text-md:  1.125rem;   /* 18 */
+  --text-lg:  1.375rem;   /* 22 */
+  --text-xl:  1.75rem;    /* 28 */
+  --text-2xl: 2.25rem;    /* 36 */
+  --text-3xl: 3rem;       /* 48 */
+  --text-4xl: 3.75rem;    /* 60 */
+  --text-5xl: 4.75rem;    /* 76 — hero */
+
+  /* Line heights */
+  --leading-tight:   1.1;
+  --leading-snug:    1.25;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-snug:   -0.01em;
+  --tracking-normal: 0em;
+  --tracking-wide:   0.02em;
+  --tracking-caps:   0.08em; /* uppercase eyebrows */
+
+  /* Semantic roles */
+  --type-hero:    var(--weight-semibold) var(--text-5xl)/var(--leading-tight) var(--font-display);
+  --type-display: var(--weight-semibold) var(--text-3xl)/var(--leading-tight) var(--font-display);
+  --type-title:   var(--weight-semibold) var(--text-xl)/var(--leading-snug) var(--font-display);
+  --type-heading: var(--weight-bold) var(--text-lg)/var(--leading-snug) var(--font-body);
+  --type-body:    var(--weight-regular) var(--text-base)/var(--leading-normal) var(--font-body);
+  --type-label:   var(--weight-bold) var(--text-sm)/var(--leading-snug) var(--font-body);
+  --type-caption: var(--weight-semibold) var(--text-2xs)/var(--leading-snug) var(--font-body);
+  --type-code:    var(--weight-regular) var(--text-sm)/var(--leading-relaxed) var(--font-mono);
+}

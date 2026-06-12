@@ -1,0 +1,36 @@
+/* Tag — a chip for filters/labels. Optional remove ×. */
+
+.pd-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  color: var(--text-body);
+  padding: 6px 12px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+.pd-tag--clickable { cursor: pointer; }
+.pd-tag--clickable:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+.pd-tag--selected { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+.pd-tag__dot { width: 8px; height: 8px; border-radius: 50%; }
+.pd-tag__x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-subtle);
+  margin-right: -3px;
+}
+.pd-tag__x:hover { background: var(--ink-150); color: var(--text-strong); }
+.pd-tag--selected .pd-tag__x:hover { background: rgba(255, 255, 255, 0.25); color: #fff; }
+.pd-tag__x svg { width: 11px; height: 11px; }

@@ -1,0 +1,15 @@
+/* ============================================================
+   Pets-Driven — Radius tokens
+   Generous, rounded, toy-like. Everything is soft.
+   ============================================================ */
+
+:root {
+  --radius-xs:   6px;
+  --radius-sm:   10px;
+  --radius-md:   14px;   /* default control radius */
+  --radius-lg:   20px;   /* cards */
+  --radius-xl:   28px;   /* large cards / panels */
+  --radius-2xl:  36px;   /* hero surfaces */
+  --radius-pill: 999px;  /* buttons, chips, avatars */
+  --radius-blob: 42% 58% 60% 40% / 55% 45% 55% 45%; /* organic pet-blob */
+}

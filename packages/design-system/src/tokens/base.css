@@ -1,0 +1,66 @@
+/* ============================================================
+   Pets-Driven — Base layer
+   Light reset + base element styling + a few helpers.
+   Tokens are defined in tokens/*.css (imported before this).
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font: var(--type-body);
+  color: var(--text-body);
+  background: var(--surface-app);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-snug);
+}
+
+p { margin: 0; text-wrap: pretty; }
+
+a { color: var(--text-link); text-decoration: none; }
+a:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
+
+code, pre, kbd { font-family: var(--font-mono); }
+
+button { font-family: inherit; }
+
+::selection { background: var(--lavender-200); color: var(--ink-900); }
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Eyebrow / overline ---- */
+.pd-eyebrow {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-primary);
+}
+
+/* ---- Soft dotted background texture (decorative) ---- */
+.pd-dots {
+  background-image: radial-gradient(var(--ink-200) 1.4px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+/* ---- Generic surface card ---- */
+.pd-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-soft);
+}

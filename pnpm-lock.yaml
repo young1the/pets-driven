@@ -10,6 +10,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@pets-driven/design-system':
+        specifier: workspace:*
+        version: link:../../packages/design-system
       '@tauri-apps/api':
         specifier: ^2.11.0
         version: 2.11.0
@@ -62,6 +65,34 @@ importers:
       vite:
         specifier: ^6.3.5
         version: 6.4.3(@types/node@25.9.3)
+      vitest:
+        specifier: ^3.1.3
+        version: 3.2.6(@types/node@25.9.3)(jsdom@26.1.0)
+
+  packages/design-system:
+    dependencies:
+      '@fontsource/fredoka':
+        specifier: ^5.2.5
+        version: 5.2.10
+      '@fontsource/jetbrains-mono':
+        specifier: ^5.2.5
+        version: 5.2.8
+      '@fontsource/nunito':
+        specifier: ^5.2.5
+        version: 5.2.7
+    devDependencies:
+      '@types/node':
+        specifier: ^25.8.0
+        version: 25.9.3
+      '@types/react':
+        specifier: ^18.3.23
+        version: 18.3.31
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
       vitest:
         specifier: ^3.1.3
         version: 3.2.6(@types/node@25.9.3)(jsdom@26.1.0)
@@ -344,6 +375,15 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource/fredoka@5.2.10':
+    resolution: {integrity: sha512-DyzPCmTf0PkBbAu+gNvnPzfD/dYIXlyp+Zcb76jEQyt/vmRKGZgkH8FFF9W2sICDaA5p+GLk1XGFjWh5PPX+lg==}
+
+  '@fontsource/jetbrains-mono@5.2.8':
+    resolution: {integrity: sha512-6w8/SG4kqvIMu7xd7wt6x3idn1Qux3p9N62s6G3rfldOUYHpWcc2FKrqf+Vo44jRvqWj2oAtTHrZXEP23oSKwQ==}
+
+  '@fontsource/nunito@5.2.7':
+    resolution: {integrity: sha512-pmtBq0H9ex9nk+RtJYEJOD9pag393iHETnl/PVKleF4i06cd0ttngK5ZCTgYb5eOqR3Xdlrjtev8m7bmgYprew==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1399,6 +1439,12 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.12':
     optional: true
+
+  '@fontsource/fredoka@5.2.10': {}
+
+  '@fontsource/jetbrains-mono@5.2.8': {}
+
+  '@fontsource/nunito@5.2.7': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

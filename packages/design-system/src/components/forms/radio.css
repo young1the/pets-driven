@@ -1,0 +1,42 @@
+/* Radio — a soft circular radio button. Use inside a shared `name` group. */
+
+.pd-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--text-body);
+  user-select: none;
+}
+.pd-radio input { position: absolute; opacity: 0; width: 0; height: 0; }
+.pd-radio__dot {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface-card);
+  border: 2px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-spring);
+}
+.pd-radio__dot::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: scale(0);
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.pd-radio:hover .pd-radio__dot { border-color: var(--color-primary); }
+.pd-radio input:checked + .pd-radio__dot { border-color: var(--color-primary); }
+.pd-radio input:checked + .pd-radio__dot::after { transform: scale(1); }
+.pd-radio input:active + .pd-radio__dot { transform: scale(0.88); }
+.pd-radio input:focus-visible + .pd-radio__dot { box-shadow: var(--ring-focus); }
+.pd-radio--disabled { opacity: 0.5; cursor: not-allowed; }
