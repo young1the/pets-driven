@@ -1,0 +1,32 @@
+/* Select — a styled native <select> with a soft chevron and label support. */
+
+.pd-select-field { display: flex; flex-direction: column; gap: 6px; font-family: var(--font-body); }
+.pd-select-field__label { font-weight: 700; font-size: var(--text-sm); color: var(--text-strong); }
+.pd-select-wrap { position: relative; display: flex; align-items: center; }
+.pd-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-strong);
+  height: var(--control-md);
+  padding: 0 40px 0 14px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-inset);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+.pd-select:hover { border-color: var(--border-strong); }
+.pd-select:focus { outline: none; border-color: var(--border-focus); box-shadow: var(--ring-focus); }
+.pd-select[disabled] { opacity: 0.6; cursor: not-allowed; background: var(--surface-sunken); }
+.pd-select-wrap__chev { position: absolute; right: 14px; pointer-events: none; color: var(--text-muted); display: flex; }
+.pd-select-wrap__chev svg { width: 18px; height: 18px; }
+.pd-select--lg { height: var(--control-lg); border-radius: var(--radius-lg); }
+.pd-select--sm { height: var(--control-sm); font-size: var(--text-sm); }

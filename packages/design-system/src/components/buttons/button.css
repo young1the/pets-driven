@@ -1,0 +1,53 @@
+/* Button — the tactile, chunky, pressable Pets-Driven button.
+   Signature "toy lip" (solid bottom edge) compresses on press. */
+
+.pd-btn {
+  --lip: var(--lip-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  line-height: 1;
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  color: #fff;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--lip);
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+}
+.pd-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.pd-btn:active { transform: translateY(4px); box-shadow: 0 0 0 var(--blossom-700); filter: brightness(0.98); }
+.pd-btn:focus-visible { outline: none; box-shadow: var(--lip), var(--ring-focus); }
+
+/* sizes */
+.pd-btn--sm { height: var(--control-sm); padding: 0 16px; font-size: var(--text-sm); }
+.pd-btn--md { height: var(--control-md); padding: 0 22px; font-size: var(--text-base); }
+.pd-btn--lg { height: var(--control-lg); padding: 0 28px; font-size: var(--text-md); }
+
+/* variants */
+.pd-btn--primary { background: var(--color-primary); --lip: var(--lip-primary); }
+.pd-btn--primary:active { background: var(--color-primary-press); }
+.pd-btn--accent { background: var(--color-accent); --lip: var(--lip-accent); }
+.pd-btn--accent:active { background: var(--teal-600); box-shadow: 0 0 0 var(--teal-700); }
+.pd-btn--mint { background: var(--color-success); --lip: var(--lip-mint); }
+.pd-btn--mint:active { background: var(--mint-700); box-shadow: 0 0 0 var(--mint-700); }
+.pd-btn--neutral { background: #fff; color: var(--text-strong); --lip: var(--lip-neutral); border: 1px solid var(--border-default); }
+.pd-btn--neutral:hover { background: var(--ink-50); }
+.pd-btn--neutral:active { box-shadow: 0 0 0 var(--ink-200); }
+.pd-btn--ghost { background: transparent; color: var(--color-primary); box-shadow: none; }
+.pd-btn--ghost:hover { background: var(--color-primary-soft); filter: none; transform: none; }
+.pd-btn--ghost:active { background: var(--blossom-200); transform: scale(0.97); box-shadow: none; }
+
+.pd-btn[disabled] { opacity: 0.5; cursor: not-allowed; box-shadow: none; filter: none; transform: none; pointer-events: none; }
+.pd-btn--block { width: 100%; }
+.pd-btn__spin { width: 1em; height: 1em; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: pd-spin 0.7s linear infinite; }
+@keyframes pd-spin { to { transform: rotate(360deg); } }

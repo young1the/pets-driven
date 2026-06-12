@@ -1,0 +1,13 @@
+/* ============================================================
+   Pets-Driven Design System — global CSS entry point.
+   @import lines only; consumers link this one file.
+   ============================================================ */
+
+@import "./tokens/fonts.css";
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/radius.css";
+@import "./tokens/shadows.css";
+@import "./tokens/motion.css";
+@import "./tokens/base.css";

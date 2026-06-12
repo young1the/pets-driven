@@ -1,0 +1,41 @@
+/* Tooltip — a small soft tooltip on hover/focus. */
+
+.pd-tip { position: relative; display: inline-flex; }
+.pd-tip__pop {
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--ink-900);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-2xs);
+  line-height: 1.3;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  max-width: 240px;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-spring);
+}
+.pd-tip__pop::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--ink-900);
+  transform: rotate(45deg);
+}
+.pd-tip:hover .pd-tip__pop,
+.pd-tip:focus-within .pd-tip__pop { opacity: 1; }
+/* top */
+.pd-tip__pop--top { bottom: calc(100% + 9px); left: 50%; transform: translate(-50%, 4px); }
+.pd-tip:hover .pd-tip__pop--top { transform: translate(-50%, 0); }
+.pd-tip__pop--top::after { bottom: -4px; left: 50%; margin-left: -4px; }
+/* bottom */
+.pd-tip__pop--bottom { top: calc(100% + 9px); left: 50%; transform: translate(-50%, -4px); }
+.pd-tip:hover .pd-tip__pop--bottom { transform: translate(-50%, 0); }
+.pd-tip__pop--bottom::after { top: -4px; left: 50%; margin-left: -4px; }

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pets-Driven mark">
+  <rect x="6" y="6" width="88" height="88" rx="26" fill="#F95E9E"></rect>
+  <rect x="6" y="6" width="88" height="88" rx="26" fill="url(#g)" opacity="0.0"></rect>
+  
+  <ellipse cx="50" cy="62" rx="17" ry="14" fill="#fff"></ellipse>
+  
+  <ellipse cx="30" cy="48" rx="7" ry="9" fill="#fff"></ellipse>
+  <ellipse cx="43" cy="38" rx="7" ry="9.5" fill="#fff"></ellipse>
+  <ellipse cx="57" cy="38" rx="7" ry="9.5" fill="#fff"></ellipse>
+  <ellipse cx="70" cy="48" rx="7" ry="9" fill="#fff"></ellipse>
+  
+  <path d="M50 66 C47 61 41 62 41 67 C41 71 50 75 50 75 C50 75 59 71 59 67 C59 62 53 61 50 66 Z" fill="#16B8A6"></path>
+</svg>

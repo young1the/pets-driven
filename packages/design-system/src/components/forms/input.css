@@ -1,0 +1,36 @@
+/* Input — a soft, gently sunken text field with optional leading icon,
+   label, hint and error states. */
+
+.pd-field { display: flex; flex-direction: column; gap: 6px; font-family: var(--font-body); }
+.pd-field__label { font-weight: 700; font-size: var(--text-sm); color: var(--text-strong); }
+.pd-field__req { color: var(--color-accent); margin-left: 2px; }
+.pd-inputwrap { position: relative; display: flex; align-items: center; }
+.pd-inputwrap__icon { position: absolute; left: 14px; display: flex; color: var(--text-subtle); pointer-events: none; }
+.pd-inputwrap__icon svg { width: 18px; height: 18px; }
+.pd-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--text-strong);
+  height: var(--control-md);
+  padding: 0 14px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-inset);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+.pd-input::placeholder { color: var(--text-subtle); }
+.pd-input--hasicon { padding-left: 40px; }
+.pd-input:hover { border-color: var(--border-strong); }
+.pd-input:focus { outline: none; border-color: var(--border-focus); box-shadow: var(--ring-focus); }
+.pd-input--lg { height: var(--control-lg); font-size: var(--text-md); border-radius: var(--radius-lg); }
+.pd-input--sm { height: var(--control-sm); font-size: var(--text-sm); }
+.pd-field--error .pd-input { border-color: var(--color-danger); }
+.pd-field--error .pd-input:focus { box-shadow: 0 0 0 4px var(--color-danger-soft); }
+.pd-input[disabled] { opacity: 0.6; cursor: not-allowed; background: var(--surface-sunken); }
+.pd-field__hint { font-size: var(--text-xs); color: var(--text-muted); }
+.pd-field--error .pd-field__hint { color: var(--color-danger); font-weight: 600; }

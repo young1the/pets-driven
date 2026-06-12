@@ -1,0 +1,53 @@
+/* ============================================================
+   Pets-Driven — Motion tokens
+   Gentle and springy. Entrances bounce a little (pets are alive!).
+   Hovers lift, presses squish. Respect reduced-motion downstream.
+   ============================================================ */
+
+:root {
+  /* Durations */
+  --dur-instant: 80ms;  /* @kind other */
+  --dur-fast:    140ms; /* @kind other */
+  --dur-base:    220ms; /* @kind other */
+  --dur-slow:    360ms; /* @kind other */
+  --dur-slower:  560ms; /* @kind other */
+
+  /* Easings */
+  --ease-out:    cubic-bezier(0.22, 0.61, 0.36, 1);  /* @kind other */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);     /* @kind other */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);  /* @kind other */ /* overshoot / bounce */
+  --ease-squish: cubic-bezier(0.5, 1.8, 0.5, 0.9);   /* @kind other */ /* extra bouncy */
+
+  /* Common transitions */
+  --transition-control: transform var(--dur-fast) var(--ease-spring),
+                        box-shadow var(--dur-fast) var(--ease-out),
+                        background-color var(--dur-fast) var(--ease-out);
+}
+
+/* ---- Reusable keyframes ---- */
+@keyframes pd-pop-in {
+  0%   { opacity: 0; transform: scale(0.85) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes pd-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes pd-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-5deg); }
+  75%      { transform: rotate(5deg); }
+}
+@keyframes pd-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  96%           { transform: scaleY(0.1); }
+}
+@keyframes pd-sparkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+@keyframes pd-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 var(--color-primary-ring); }
+  70%  { box-shadow: 0 0 0 10px rgba(188, 171, 245, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(188, 171, 245, 0); }
+}
