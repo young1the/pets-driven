@@ -319,6 +319,19 @@ export function createWorld(input: WorldDefinition) {
     setComponent(id: string, component: Component) {
       components.setComponent(id, component);
     },
+    setPhysicsPosition(id: string, position: Partial<{ x: number; y: number }>) {
+      physics.setPosition(id, position);
+      const transform = components.getComponent(id, "Transform");
+      if (transform) {
+        transform.position = {
+          x: position.x ?? transform.position.x,
+          y: position.y ?? transform.position.y,
+        };
+      }
+    },
+    setPhysicsVelocity(id: string, velocity: Partial<{ x: number; y: number }>) {
+      physics.setVelocity(id, velocity);
+    },
     removeComponent(id: string, type: ComponentType) {
       components.removeComponent(id, type);
     },

@@ -1,9 +1,29 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
 import { PLAYGROUND_TEXT } from "@/playground/browser/playground-text";
 
 describe("PlaygroundApp", () => {
+  beforeEach(() => {
+    resetPlaygroundHash();
+  });
+
+  function resetPlaygroundHash() {
+    window.history.replaceState(null, "", "/");
+  }
+
+  function renderPlayground() {
+    resetPlaygroundHash();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+    render(<PlaygroundApp />);
+  }
+
+  function selectView(name: string) {
+    fireEvent.click(screen.getByRole("tab", { name }));
+  }
+
   function petStatusList() {
     const heading = screen.getByRole("heading", {
       name: PLAYGROUND_TEXT.petStatusTitle,
@@ -14,11 +34,7 @@ describe("PlaygroundApp", () => {
   }
 
   it("renders the simulation canvas shell", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {} as CanvasRenderingContext2D,
-    );
-
-    render(<PlaygroundApp />);
+    renderPlayground();
 
     expect(
       screen.getByRole("heading", { name: PLAYGROUND_TEXT.title }),
@@ -27,6 +43,63 @@ describe("PlaygroundApp", () => {
     expect(
       screen.getByRole("heading", { name: PLAYGROUND_TEXT.behaviorLabTitle }),
     ).toBeInTheDocument();
+  });
+
+  it("renders simulation playgrounds from the unified grouped tab shell", () => {
+    renderPlayground();
+
+    expect(screen.getByRole("tablist", { name: "Simulation playgrounds" })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: "Prototype playgrounds" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Demo" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("tab", { name: "Design" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Behavior" })).not.toBeInTheDocument();
+
+    selectView("Jump");
+    expect(screen.getByRole("heading", { name: "Jump playground" })).toBeInTheDocument();
+    expect(screen.getByTestId("jump-world-canvas")).toBeInTheDocument();
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText("Gwen")).toBeInTheDocument();
+
+    selectView("Climb");
+    expect(screen.getByRole("heading", { name: "Climb playground" })).toBeInTheDocument();
+    expect(screen.getByTestId("climb-world-canvas")).toBeInTheDocument();
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText("Eve")).toBeInTheDocument();
+
+    selectView("Decision");
+    expect(screen.getByRole("heading", { name: "Decision system" })).toBeInTheDocument();
+    expect(screen.getByTestId("decision-showcase-stage")).toBeInTheDocument();
+  });
+
+  it("defaults removed prototype hashes to demo and updates the hash when tabs change", () => {
+    window.history.replaceState(null, "", "/playground.html#behavior");
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    render(<PlaygroundApp />);
+
+    expect(screen.getByRole("tab", { name: "Demo" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
+
+    selectView("Climb");
+
+    expect(window.location.hash).toBe("#climb");
+    expect(screen.getByRole("tab", { name: "Climb" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("remounts playground views when switching tabs", () => {
+    renderPlayground();
+
+    selectView("Jump");
+    fireEvent.click(screen.getByRole("button", { name: "Pause animation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Play next frame" }));
+    expect(screen.getByText("Frame: 1")).toBeInTheDocument();
+
+    selectView("Climb");
+    selectView("Jump");
+
+    expect(screen.getByText("Frame: 0")).toBeInTheDocument();
   });
 
   it("forwards pointer events from the canvas to the world", () => {
@@ -215,6 +288,52 @@ describe("PlaygroundApp", () => {
     expect(
       await screen.findByText(PLAYGROUND_TEXT.copyStateCopied),
     ).toBeInTheDocument();
+  });
+
+  it("runs the decision showcase with agent and collision stimuli", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      {} as CanvasRenderingContext2D,
+    );
+
+    renderPlayground();
+    selectView("Decision");
+
+    fireEvent.click(screen.getByRole("button", { name: "Task failed" }));
+
+    expect(screen.getAllByText("agent-event").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("failed").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Autonomous roll" }));
+
+    const stage = within(screen.getByTestId("decision-showcase-stage"));
+    expect(stage.getByText("Softmax roll")).toBeInTheDocument();
+    expect(stage.getByText("Random roll")).toBeInTheDocument();
+    expect(stage.getByText("Personality")).toBeInTheDocument();
+    for (const axis of ["O", "C", "E", "A", "N"]) {
+      expect(stage.getByText(axis)).toBeInTheDocument();
+    }
+    expect(screen.getAllByText("Probability").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("decision-roll-marker")).toBeInTheDocument();
+    expect(screen.getByTestId("decision-softmax-roll")).toHaveTextContent("winner");
+
+    fireEvent.click(screen.getByRole("button", { name: "Collision" }));
+
+    expect(screen.getAllByText("collision").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("deliberating").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("decision-showcase-stage")).toHaveAttribute(
+      "data-motion",
+      "collision",
+    );
+    expect(screen.getByTestId("decision-collider-sprite")).toBeInTheDocument();
+    expect(screen.getByTestId("decision-impact-effect")).toBeInTheDocument();
+
+    const firstMotionSequence = screen
+      .getByTestId("decision-showcase-stage")
+      .getAttribute("data-motion-sequence");
+    fireEvent.click(screen.getByRole("button", { name: "Collision" }));
+    expect(
+      screen.getByTestId("decision-showcase-stage").getAttribute("data-motion-sequence"),
+    ).not.toBe(firstMotionSequence);
   });
 
   it("shows selected pet behavior state for behavior experiments", () => {
