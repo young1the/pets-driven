@@ -728,6 +728,34 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
     }
   });
 
+  it("stores the softmax roll trace on the emitted decision token", () => {
+    const store = makeThreeCandidateStore();
+
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(0),
+      { next: () => 0.35 },
+      BOUNDS,
+    );
+
+    const trace = store.getComponent("pet", "BehaviorDecisionToken")?.selectionTrace;
+
+    expect(trace?.temperature).toBeCloseTo(0.4);
+    expect(trace?.randomRoll).toBeCloseTo(0.35);
+    expect(trace?.selectedKind).toBe("wander-far");
+    expect(trace?.candidates.map((candidate) => candidate.kind)).toEqual([
+      "wander-near",
+      "wander-far",
+      "idle-stay",
+    ]);
+    expect(
+      trace?.candidates.reduce((sum, candidate) => sum + candidate.probability, 0),
+    ).toBeCloseTo(1);
+    expect(
+      trace?.candidates.find((candidate) => candidate.kind === "wander-far")?.selected,
+    ).toBe(true);
+  });
+
   it("high-neuroticism pets show more uniform distribution than low-neuroticism", () => {
     const SAMPLES = 1000;
 

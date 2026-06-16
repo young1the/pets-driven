@@ -78,10 +78,28 @@ export type BehaviorDecisionTokenComponent = {
   kind: BehaviorDecisionKind;
   decidedAt: number;
   consumed: boolean;
+  selectionTrace?: BehaviorDecisionSelectionTrace;
   targetPosition?: { x: number; y: number };
   targetEntityId?: string;
   climbSurfaceId?: string;
   climbTargetY?: number;
+};
+
+export type BehaviorDecisionSelectionCandidate = {
+  kind: BehaviorDecisionKind;
+  score: number;
+  weight: number;
+  probability: number;
+  cumulativeProbability: number;
+  selected: boolean;
+};
+
+export type BehaviorDecisionSelectionTrace = {
+  temperature: number;
+  randomRoll: number;
+  totalWeight: number;
+  selectedKind: BehaviorDecisionKind;
+  candidates: BehaviorDecisionSelectionCandidate[];
 };
 
 /** Numeric priority — lower value wins. */

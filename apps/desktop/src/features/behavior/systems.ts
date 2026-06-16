@@ -8,6 +8,7 @@ import type { RandomSource } from "@/shared/random/seeded-random";
 import {
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionKind,
+  type BehaviorDecisionSelectionTrace,
   type BehaviorDecisionSource,
   type BehaviorDecisionTokenComponent,
   type PendingReactionComponent,
@@ -649,7 +650,7 @@ function softmaxSample(
   candidates: Candidate[],
   neuroticism: number,
   random: RandomSource,
-): Candidate {
+): { winner: Candidate; trace: BehaviorDecisionSelectionTrace } {
   const T = T_BASE * (1 + ALPHA_T * neuroticism);
   // Subtract max before exp() to prevent overflow when future phases add
   // high-magnitude scores (approach-pet, flee, collision response, etc.).
@@ -658,17 +659,41 @@ function softmaxSample(
     if (candidate.score > maxScore) maxScore = candidate.score;
   }
 
-  let total = 0;
-  for (const candidate of candidates) {
-    total += Math.exp((candidate.score - maxScore) / T);
+  const weights = candidates.map((candidate) => Math.exp((candidate.score - maxScore) / T));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+
+  const randomRoll = random.next();
+  let r = randomRoll * total;
+  let winner = candidates[candidates.length - 1];
+  for (const [index, candidate] of candidates.entries()) {
+    r -= weights[index];
+    if (r <= 0) {
+      winner = candidate;
+      break;
+    }
   }
 
-  let r = random.next() * total;
-  for (const candidate of candidates) {
-    r -= Math.exp((candidate.score - maxScore) / T);
-    if (r <= 0) return candidate;
-  }
-  return candidates[candidates.length - 1]; // floating-point safety
+  let cumulativeProbability = 0;
+  const trace: BehaviorDecisionSelectionTrace = {
+    temperature: T,
+    randomRoll,
+    totalWeight: total,
+    selectedKind: winner.kind,
+    candidates: candidates.map((candidate, index) => {
+      const probability = weights[index] / total;
+      cumulativeProbability += probability;
+      return {
+        kind: candidate.kind,
+        score: candidate.score,
+        weight: weights[index],
+        probability,
+        cumulativeProbability,
+        selected: candidate.kind === winner.kind,
+      };
+    }),
+  };
+
+  return { winner, trace };
 }
 
 // ── BehaviorDecisionSystem helpers ────────────────────────────────────────
@@ -976,12 +1001,18 @@ export function runBehaviorDecisionSystem(
           }),
         });
 
-        const reactionWinner = softmaxSample(reactiveCandidates, personality.neuroticism, random);
+        const reactionSelection = softmaxSample(
+          reactiveCandidates,
+          personality.neuroticism,
+          random,
+        );
+        const reactionWinner = reactionSelection.winner;
         components.setComponent(id, {
           type: "BehaviorDecisionToken",
           kind: reactionWinner.kind,
           decidedAt: now,
           consumed: false,
+          selectionTrace: reactionSelection.trace,
           ...reactionWinner.build(),
         });
         claim(components, id, "autonomous", now, reactionWinner.kind);
@@ -1097,12 +1128,14 @@ export function runBehaviorDecisionSystem(
       if (candidates.length === 0) return;
       // Softmax sampling: temperature scales with neuroticism.
       // High N → higher T → flatter distribution → more erratic behaviour.
-      const winner = softmaxSample(candidates, personality.neuroticism, random);
+      const selection = softmaxSample(candidates, personality.neuroticism, random);
+      const winner = selection.winner;
       components.setComponent(id, {
         type: "BehaviorDecisionToken",
         kind: winner.kind,
         decidedAt: now,
         consumed: false,
+        selectionTrace: selection.trace,
         ...winner.build(),
       });
       claim(components, id, "autonomous", now, winner.kind);

@@ -5,7 +5,10 @@ import { createAgentEvent, type AgentEvent } from "@/adapters/agent-events/agent
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { AgentEventPanel } from "./agent-event-panel";
 import { BehaviorLab } from "./behavior-lab";
+import { ClimbPlaygroundApp } from "./climb-playground-app";
+import { DecisionShowcaseApp } from "./decision-showcase-app";
 import { drawWorld } from "./canvas-renderer";
+import { JumpPlaygroundApp } from "./jump-playground-app";
 import { PetStatusList } from "./pet-status-list";
 import { PLAYGROUND_TEXT } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
@@ -16,7 +19,101 @@ type Snapshot = ReturnType<
   ReturnType<typeof createDemoScenario>["world"]["snapshot"]
 >;
 
+type PlaygroundViewId = "demo" | "jump" | "climb" | "decision";
+type PlaygroundViewGroup = "Simulation";
+
+type PlaygroundView = {
+  id: PlaygroundViewId;
+  group: PlaygroundViewGroup;
+  label: string;
+  Component: () => JSX.Element | null;
+};
+
+const PLAYGROUND_VIEWS: PlaygroundView[] = [
+  { id: "demo", group: "Simulation", label: "Demo", Component: DemoPlaygroundView },
+  { id: "jump", group: "Simulation", label: "Jump", Component: JumpPlaygroundApp },
+  { id: "climb", group: "Simulation", label: "Climb", Component: ClimbPlaygroundApp },
+  { id: "decision", group: "Simulation", label: "Decision", Component: DecisionShowcaseApp },
+];
+
+const PLAYGROUND_GROUPS: PlaygroundViewGroup[] = ["Simulation"];
+
+function getViewFromHash(): PlaygroundViewId {
+  const hash = window.location.hash.replace(/^#/, "");
+  return isPlaygroundViewId(hash) ? hash : "demo";
+}
+
+function isPlaygroundViewId(value: string): value is PlaygroundViewId {
+  return PLAYGROUND_VIEWS.some((view) => view.id === value);
+}
+
 export function PlaygroundApp() {
+  const [activeViewId, setActiveViewId] = useState<PlaygroundViewId>(() =>
+    getViewFromHash(),
+  );
+  const activeView =
+    PLAYGROUND_VIEWS.find((view) => view.id === activeViewId) ?? PLAYGROUND_VIEWS[0];
+  const ActiveView = activeView.Component;
+
+  useEffect(() => {
+    const handleHashChange = () => setActiveViewId(getViewFromHash());
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  function selectView(viewId: PlaygroundViewId) {
+    setActiveViewId(viewId);
+    const nextHash = `#${viewId}`;
+    if (window.location.hash !== nextHash) {
+      window.location.hash = viewId;
+    }
+  }
+
+  return (
+    <main className="playground-shell playground-hub">
+      <header className="playground-hub__header">
+        <h1>{PLAYGROUND_TEXT.title}</h1>
+      </header>
+      <nav className="playground-hub__nav" aria-label="Playground views">
+        {PLAYGROUND_GROUPS.map((group) => (
+          <div
+            key={group}
+            className="playground-hub__group"
+            role="tablist"
+            aria-label={`${group} playgrounds`}
+          >
+            <span className="playground-hub__group-label">{group}</span>
+            <div className="playground-hub__tabs">
+              {PLAYGROUND_VIEWS.filter((view) => view.group === group).map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={view.id === activeViewId}
+                  aria-controls={`playground-view-${view.id}`}
+                  className="playground-hub__tab"
+                  onClick={() => selectView(view.id)}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+      <div
+        id={`playground-view-${activeView.id}`}
+        className="playground-hub__view"
+        role="tabpanel"
+        aria-label={activeView.label}
+      >
+        <ActiveView key={activeView.id} />
+      </div>
+    </main>
+  );
+}
+
+export function DemoPlaygroundView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scenarioRef = useRef(createDemoScenario());
   const [monitorLayout, setMonitorLayout] = useState<"single" | "dual-horizontal">("single");
@@ -197,10 +294,7 @@ export function PlaygroundApp() {
   }
 
   return (
-    <main className="playground-shell">
-      <header>
-        <h1>{PLAYGROUND_TEXT.title}</h1>
-      </header>
+    <section className="playground-demo-view">
       <ScenarioControls
         isAnimationPlaying={isAnimationPlaying}
         frameNumber={frameNumber}
@@ -246,6 +340,6 @@ export function PlaygroundApp() {
           />
         </aside>
       </div>
-    </main>
+    </section>
   );
 }
