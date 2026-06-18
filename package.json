@@ -5,10 +5,7 @@
   "scripts": {
     "dev": "pnpm --filter pets-driven dev",
     "dev:playground": "pnpm --filter pets-driven dev:playground",
-    "dev:pet-design": "pnpm --filter pets-driven dev:pet-design",
-    "dev:pet-behavior": "pnpm --filter pets-driven dev:pet-behavior",
-    "dev:jump-playground": "pnpm --filter pets-driven dev:jump-playground",
-    "dev:climb-playground": "pnpm --filter pets-driven dev:climb-playground",
+    "dev:design": "pnpm --filter @pets-driven/design-system dev",
     "build": "pnpm --filter pets-driven build",
     "build:playground": "pnpm --filter pets-driven build:playground",
     "typecheck": "pnpm -r typecheck",

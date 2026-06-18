@@ -1,0 +1,77 @@
+body {
+  margin: 0;
+  background: var(--surface-app);
+  color: var(--text-body);
+  font-family: var(--font-body);
+}
+
+.gx-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 40px 100px;
+}
+.gx-h1 {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 34px;
+  color: var(--text-strong);
+}
+.gx-sub {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+}
+
+.gx-section {
+  margin-top: 44px;
+}
+.gx-section > h2 {
+  margin: 0 0 18px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-soft);
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--text-strong);
+}
+
+.gx-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  align-items: flex-start;
+}
+.gx-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gx-label {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+.gx-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Slides render at 1280×720; scale to 0.4 → 512×288 thumbnails. */
+.gx-slide {
+  width: 512px;
+  height: 288px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-md);
+}
+.gx-slide > * {
+  transform: scale(0.4);
+  transform-origin: top left;
+}
