@@ -27,7 +27,10 @@ export {
 export { Dialog, type DialogProps } from "./components/feedback/dialog";
 export { Toast, type ToastProps } from "./components/feedback/toast";
 export { Tooltip, type TooltipProps } from "./components/feedback/tooltip";
-export { ChatBubble, type ChatBubbleProps } from "./components/chat/chat-bubble";
+export {
+  ChatBubble,
+  type ChatBubbleProps,
+} from "./components/chat/chat-bubble";
 export {
   PET_MOODS,
   type PetEmoteKind,
@@ -37,8 +40,37 @@ export {
   PetStatusCapsule,
   type PetStatusCapsuleProps,
 } from "./components/pet-status/pet-status-capsule";
-export { PetEmote, type PetEmoteProps } from "./components/pet-status/pet-emote";
+export {
+  PetEmote,
+  type PetEmoteProps,
+} from "./components/pet-status/pet-emote";
 export {
   PetSpeechBubble,
   type PetSpeechBubbleProps,
 } from "./components/pet-status/pet-speech-bubble";
+export {
+  TitleSlide,
+  SlideHighlight,
+  type TitleSlideProps,
+} from "./components/slides/title-slide";
+export {
+  SectionSlide,
+  type SectionSlideProps,
+} from "./components/slides/section-slide";
+export {
+  ContentSlide,
+  type ContentSlideProps,
+  type ContentSlidePoint,
+} from "./components/slides/content-slide";
+export {
+  ComparisonSlide,
+  type ComparisonSlideProps,
+} from "./components/slides/comparison-slide";
+export {
+  BigQuoteSlide,
+  type BigQuoteSlideProps,
+} from "./components/slides/big-quote-slide";
+export {
+  ClosingSlide,
+  type ClosingSlideProps,
+} from "./components/slides/closing-slide";
