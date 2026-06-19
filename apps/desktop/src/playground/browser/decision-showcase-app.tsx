@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Badge, Button } from "@pets-driven/design-system";
-import { createDemoScenario } from "@/core/scenario-fixtures";
-import { PetSprite } from "@/pets/rendering/pet-sprite";
-import { presentBehaviorDecisionToken } from "@/pets/rendering/behavior-token-presentation";
-import type { PetAnimationState } from "@/pets/assets/pet-atlas";
-import type { PetSnapshot } from "@/core/world-snapshot";
+import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { presentBehaviorDecisionToken } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import type {
   BehaviorDecisionKind,
   PersonalityComponent,
-} from "@/features/behavior/components";
+} from "@pets-driven/pet-engine/features/behavior/components";
 import {
   applyCollisionDecisionStimulus,
   createAgentDecisionStimulus,

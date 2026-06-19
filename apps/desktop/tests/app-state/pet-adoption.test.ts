@@ -9,7 +9,7 @@ import {
   createEmptyPetsDrivenState,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
-import { createPlayfulPersonality } from "@/pets/personalities/factories";
+import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 
 function adopt(state: PetsDrivenState, id: string, assetId = "patamon") {
   return adoptPet(state, {

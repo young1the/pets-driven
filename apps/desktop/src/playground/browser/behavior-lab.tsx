@@ -1,8 +1,8 @@
 import type {
   ComponentOf,
   ComponentType,
-} from "@/core/components";
-import type { PetSnapshot } from "@/core/world-snapshot";
+} from "@pets-driven/pet-engine/core/components";
+import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import { Button } from "@pets-driven/design-system";
 import { useMemo, useState } from "react";
 import { PLAYGROUND_TEXT } from "./playground-text";

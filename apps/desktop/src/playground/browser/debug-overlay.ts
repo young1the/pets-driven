@@ -2,7 +2,7 @@ import { mint, semantic } from "@pets-driven/design-system/tokens";
 import type {
   BodySnapshot,
   ClimbableSurfaceSnapshot,
-} from "@/core/world-snapshot";
+} from "@pets-driven/pet-engine/core/world-snapshot";
 
 const CLIMBABLE_SURFACE_LABEL = "CLIMB SPACE";
 const CLIMBABLE_SURFACE_MARKER_WIDTH = 24;

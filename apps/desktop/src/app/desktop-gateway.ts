@@ -5,7 +5,7 @@ import {
   parsePetsDrivenState,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
-import { CODEX_PET_ASSETS } from "@/pets/assets/codex-pet-fixtures";
+import { CODEX_PET_ASSETS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 
 export type CodexPetPackage = {
   id: string;

@@ -1,4 +1,4 @@
-import type { AgentWorldEvent } from "@/features/events/world-event";
+import type { AgentWorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
 import type { AgentEvent } from "./agent-event";
 
 export function toWorldEvent(event: AgentEvent): AgentWorldEvent {
