@@ -396,6 +396,22 @@ describe("BehaviorDecisionSystem", () => {
     expect(store.getComponent("pet", "BehaviorDecisionState")?.source).toBe("agent-event");
   });
 
+  it("does not emit autonomous tokens while an agent state is held", () => {
+    const store = makeStore();
+    store.setComponent("pet", {
+      type: "HeldAgentState",
+      kind: "waiting",
+      sourceEventType: "task.waiting",
+      summary: "Needs approval",
+      since: 0,
+    });
+
+    runBehaviorDecisionSystem(store, createManualClock(12_000), createSeededRandom(1), BOUNDS);
+
+    expect(store.getComponent("pet", "BehaviorDecisionToken")).toBeUndefined();
+    expect(store.getComponent("pet", "BehaviorDecisionState")).toBeUndefined();
+  });
+
   it("is deterministic for the same seed", () => {
     const a = makeStore();
     const b = makeStore();

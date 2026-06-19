@@ -300,32 +300,97 @@ describe("PlaygroundApp", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Task failed" }));
 
-    expect(screen.getAllByText("agent-event").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("failed").length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText(/Pet .* overlay/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("decision-agent-pulse")).not.toBeInTheDocument();
+    expect(screen.getByTestId("decision-pet-stage")).toHaveAttribute(
+      "data-pet-animation-state",
+      "failed",
+    );
+    expect(screen.queryByTestId("decision-selection-slot")).not.toBeInTheDocument();
+    for (const label of [
+      "Stimulus",
+      "Priority claim",
+      "Decision token",
+      "Planning result",
+      "Presentation",
+      "Decision trace",
+    ]) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "Needs input" }));
+    expect(screen.getByTestId("decision-pet-stage")).toHaveAttribute(
+      "data-pet-animation-state",
+      "waiting",
+    );
+    expect(screen.queryByTestId("decision-selection-slot")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Task completed" }));
+    expect(screen.getByTestId("decision-pet-stage")).toHaveAttribute(
+      "data-pet-animation-state",
+      "review",
+    );
+    expect(screen.queryByTestId("decision-selection-slot")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Collision" }));
+    expect(screen.getByTestId("decision-selection-reel")).toHaveAttribute(
+      "data-stop-kind",
+      expect.stringMatching(/^collision-/),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Autonomous roll" }));
 
     const stage = within(screen.getByTestId("decision-showcase-stage"));
-    expect(stage.getByText("Softmax roll")).toBeInTheDocument();
-    expect(stage.getByText("Random roll")).toBeInTheDocument();
-    expect(stage.getByText("Personality")).toBeInTheDocument();
+    expect(stage.getByText(/Alice · /)).toBeInTheDocument();
+    expect(stage.queryByText("Softmax roll")).not.toBeInTheDocument();
+    expect(stage.queryByText("Random roll")).not.toBeInTheDocument();
+    expect(stage.queryByText("Personality")).not.toBeInTheDocument();
     for (const axis of ["O", "C", "E", "A", "N"]) {
-      expect(stage.getByText(axis)).toBeInTheDocument();
+      expect(stage.queryByText(axis)).not.toBeInTheDocument();
     }
-    expect(screen.getAllByText("Probability").length).toBeGreaterThan(0);
-    expect(screen.getByTestId("decision-roll-marker")).toBeInTheDocument();
-    expect(screen.getByTestId("decision-softmax-roll")).toHaveTextContent("winner");
+    expect(screen.queryByTestId("decision-roll-marker")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("decision-softmax-roll")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("decision-selection-overlay")).not.toBeInTheDocument();
+    const petStage = screen.getByTestId("decision-pet-stage");
+    expect(within(petStage).queryByTestId("decision-selection-slot")).not.toBeInTheDocument();
+    const slot = screen.getByTestId("decision-selection-slot");
+    expect(slot).toHaveAttribute("data-mode", "slot-machine");
+    expect(slot).toHaveAttribute("data-motion-sequence");
+    expect(slot).not.toHaveAttribute("data-prototype-variant");
+    expect(screen.getByTestId("decision-showcase-stage")).not.toHaveAttribute(
+      "data-prototype-variant",
+    );
+    expect(screen.queryByLabelText("Decision HUD prototype variants")).not.toBeInTheDocument();
+    expect(slot).not.toHaveTextContent("winner");
+    const reel = screen.getByTestId("decision-selection-reel");
+    expect(reel).toHaveAttribute("data-animation", "infinite-to-stop");
+    expect(reel).toHaveAttribute("data-spin-profile", "exponential");
+    expect(reel).toHaveAttribute("data-spin-ms", "3200");
+    expect(reel).toHaveAttribute("data-stop-ms", "1400");
+    expect(reel).toHaveAttribute("data-spin-phase", "preview");
+    expect(reel).toHaveAttribute("data-stop-kind");
+    const reelItems = within(slot).getAllByTestId("decision-selection-reel-item");
+    expect(reelItems.length).toBeGreaterThan(1);
+    expect(reelItems[0]).toHaveAttribute("data-slot-index", "0");
+    expect(slot.querySelectorAll('[data-reel-copy="true"]').length).toBeGreaterThan(0);
+    expect(slot.querySelector('[data-slot-stop="center"]')).toBeInTheDocument();
+    expect(slot.querySelector('[data-selected="true"]')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Collision" }));
 
-    expect(screen.getAllByText("collision").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("deliberating").length).toBeGreaterThan(0);
     expect(screen.getByTestId("decision-showcase-stage")).toHaveAttribute(
       "data-motion",
       "collision",
     );
     expect(screen.getByTestId("decision-collider-sprite")).toBeInTheDocument();
     expect(screen.getByTestId("decision-impact-effect")).toBeInTheDocument();
+    expect(screen.getByTestId("decision-selection-slot")).toBeInTheDocument();
+    expect(screen.getByTestId("decision-selection-reel")).toHaveAttribute(
+      "data-stop-kind",
+      expect.stringMatching(/^collision-/),
+    );
+    expect(screen.queryByText("pet collision")).not.toBeInTheDocument();
+    expect(screen.queryByText("deliberating")).not.toBeInTheDocument();
 
     const firstMotionSequence = screen
       .getByTestId("decision-showcase-stage")

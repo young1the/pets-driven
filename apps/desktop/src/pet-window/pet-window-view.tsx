@@ -12,6 +12,7 @@ import {
 } from "@/pets/assets/codex-pet-fixtures";
 import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
 import { PetSprite } from "@/pets/rendering/pet-sprite";
+import type { BehaviorTokenPresentation } from "@/pets/rendering/behavior-token-presentation";
 import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
@@ -39,6 +40,7 @@ type PetWindowMenu = {
   localPoint: { x: number; y: number };
 };
 type PetWindowPresentation = {
+  decisionEmote: BehaviorTokenPresentation | null;
   intent: PetSpriteIntent;
   overlay: PetWindowOverlay | null;
 };
@@ -127,6 +129,7 @@ function pointerIdFromEvent(event: React.MouseEvent<HTMLElement>) {
 
 function defaultPresentation(index: number): PetWindowPresentation {
   return {
+    decisionEmote: null,
     intent: {
       kind: "travel",
       direction: movementDirectionForWindow(index) >= 0 ? "right" : "left",
@@ -202,17 +205,22 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       if (
         !isSamePetWindowPresentation(
           {
-            sprite: { intent: presentationRef.current.intent },
+            sprite: {
+              decisionEmote: presentationRef.current.decisionEmote,
+              intent: presentationRef.current.intent,
+            },
             overlay: presentationRef.current.overlay,
           },
           { sprite: frame.sprite, overlay: frame.overlay },
         )
       ) {
         presentationRef.current = {
+          decisionEmote: frame.sprite.decisionEmote ?? null,
           intent: frame.sprite.intent,
           overlay: frame.overlay,
         };
         setPresentation({
+          decisionEmote: frame.sprite.decisionEmote ?? null,
           intent: frame.sprite.intent,
           overlay: frame.overlay,
         });
@@ -554,6 +562,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     >
       <PetSprite
         alt={`Pet Sprite ${pet.petId}`}
+        decisionEmote={presentation.decisionEmote}
         elapsedMs={elapsedMs}
         imageUrl={spritesheetUrl}
         intent={presentation.intent}

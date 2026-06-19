@@ -158,6 +158,94 @@
   min-height: 100vh;
 }
 
+/* ---- Onboarding (pet adoption) ---- */
+
+.onboarding-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  box-sizing: border-box;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 760px;
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+}
+
+.onboarding-card h1 {
+  font-size: var(--text-2xl);
+}
+
+.onboarding-card > p {
+  color: var(--text-muted);
+  max-width: 52ch;
+}
+
+.onboarding-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.onboarding-pet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.onboarding-pet-card {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+
+.onboarding-pet-card__stage {
+  display: flex;
+  justify-content: center;
+  min-height: 104px;
+}
+
+.onboarding-pet-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.onboarding-pet-card__meta strong {
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+
+.onboarding-pet-card p,
+.onboarding-personality-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.onboarding-personalities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.onboarding-personality-card {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+
 .app-back-button {
   position: fixed;
   z-index: 10;

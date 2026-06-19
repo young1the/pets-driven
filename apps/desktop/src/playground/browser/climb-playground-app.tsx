@@ -68,7 +68,7 @@ export function ClimbPlaygroundApp() {
   }, [advanceFrame, isAnimationPlaying]);
 
   return (
-    <main className="playground-shell climb-playground-shell">
+    <section className="climb-playground-shell">
       <header>
         <h1>Climb playground</h1>
       </header>
@@ -90,6 +90,6 @@ export function ClimbPlaygroundApp() {
         />
         <PetStatusList pets={snapshot.pets} />
       </div>
-    </main>
+    </section>
   );
 }

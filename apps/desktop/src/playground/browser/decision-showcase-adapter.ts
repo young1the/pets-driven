@@ -1,5 +1,9 @@
 import type { ComponentOf, ComponentType } from "@/core/components";
 import type { PetSnapshot } from "@/core/world-snapshot";
+import type {
+  BehaviorDecisionKind,
+  BehaviorDecisionSelectionCandidate,
+} from "@/features/behavior/components";
 import type { AgentWorldEvent } from "@/features/events/world-event";
 
 export type DecisionStimulus = {
@@ -24,14 +28,11 @@ export type DecisionPipelineExplanation = {
 export type DecisionSelectionExplanation = {
   temperature: number;
   randomRoll: number;
-  selectedKind: string;
-  candidates: {
-    kind: string;
-    score: number;
-    probability: number;
-    cumulativeProbability: number;
-    selected: boolean;
-  }[];
+  selectedKind: BehaviorDecisionKind;
+  candidates: Pick<
+    BehaviorDecisionSelectionCandidate,
+    "kind" | "score" | "probability" | "cumulativeProbability" | "selected"
+  >[];
 };
 
 type ComponentReader = <TType extends ComponentType>(
@@ -82,13 +83,18 @@ export function applyCollisionDecisionStimulus(input: {
     getComponent: ComponentReader;
     setComponent(
       id: string,
-      component: ComponentOf<"Transform"> | ComponentOf<"PetCollision">,
+      component:
+        | ComponentOf<"BehaviorDecisionState">
+        | ComponentOf<"PendingReaction">
+        | ComponentOf<"Transform">
+        | ComponentOf<"PetCollision">,
     ): void;
     setPhysicsPosition(id: string, position: Partial<{ x: number; y: number }>): void;
     setPhysicsVelocity(id: string, velocity: Partial<{ x: number; y: number }>): void;
   };
   petId: string;
   colliderPetId: string;
+  now: number;
 }): StimulusResult {
   const petTransform = input.world.getComponent(input.petId, "Transform");
   const petBody = input.world.getComponent(input.petId, "PhysicsBody");
@@ -120,8 +126,28 @@ export function applyCollisionDecisionStimulus(input: {
     type: "PetCollision",
     otherEntityId: input.colliderPetId,
     otherPosition: overlap,
-    startedAt: 0,
-    lastSeenAt: 0,
+    startedAt: input.now,
+    lastSeenAt: input.now,
+  });
+  const reactsAt = input.now;
+  input.world.setComponent(input.petId, {
+    type: "PendingReaction",
+    source: "collision",
+    triggeredAt: input.now,
+    reactsAt,
+    context: {
+      otherEntityId: input.colliderPetId,
+      otherPosition: overlap,
+    },
+  });
+  input.world.setComponent(input.petId, {
+    type: "BehaviorDecisionState",
+    source: "collision",
+    decidedAt: input.now,
+    expiresAt: reactsAt,
+    reason: "entity overlap",
+    lastAutonomousReason: null,
+    lastAutonomousAt: null,
   });
 
   return {

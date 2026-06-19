@@ -204,6 +204,7 @@ describe("pet sprite rendering", () => {
     render(
       <PetSprite
         alt="Promo pet"
+        decisionEmote={{ emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" }}
         elapsedMs={320}
         imageUrl="/fallback-pets/patamon/spritesheet.webp"
         intent={{ kind: "waiting", facing: "right" }}
@@ -214,6 +215,7 @@ describe("pet sprite rendering", () => {
 
     const sprite = screen.getByLabelText("Promo pet");
     const overlay = screen.getByLabelText("Pet attention overlay");
+    const decisionEmote = screen.getByLabelText("Decision token Jump request");
 
     expect(sprite).toHaveStyle({
       width: "96px",
@@ -224,5 +226,6 @@ describe("pet sprite rendering", () => {
       transform: "scaleX(-1)",
     });
     expect(overlay).toHaveTextContent("WAIT");
+    expect(decisionEmote.querySelector(".pd-emote")).not.toBeNull();
   });
 });

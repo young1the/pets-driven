@@ -35,21 +35,26 @@ describe("decision showcase adapter", () => {
     });
   });
 
-  it("moves a collider through the real physics collision path", () => {
+  it("injects a collider into the collision reaction path", () => {
     const scenario = createDemoScenario();
 
     const result = applyCollisionDecisionStimulus({
       colliderPetId: "pet-b",
+      now: 80,
       petId: "pet-a",
       world: scenario.world,
     });
 
     expect(result.ok).toBe(true);
 
-    scenario.clock.advanceBy(16);
-    scenario.world.step(16);
-
-    expect(scenario.world.getComponent("pet-a", "PendingReaction")).toBeDefined();
+    expect(scenario.world.getComponent("pet-a", "PendingReaction")).toMatchObject({
+      source: "collision",
+      triggeredAt: 80,
+      reactsAt: 80,
+      context: {
+        otherEntityId: "pet-b",
+      },
+    });
     expect(scenario.world.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
   });
 

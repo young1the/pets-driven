@@ -903,6 +903,8 @@ export function runBehaviorDecisionSystem(
       const existingClaim = components.getComponent(id, "BehaviorDecisionState");
       if (existingClaim && existingClaim.expiresAt > now) return;
 
+      if (components.getComponent(id, "HeldAgentState")) return;
+
       // If the pet is already committed to approaching a climb surface, don't
       // emit a new autonomous decision — that would change intent and allow
       // MotionTargetSystem (seek) to overwrite ClimbApproachSystem's target.
@@ -1348,6 +1350,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "Transform",
     "Personality",
     "BehaviorDecisionState",
+    "HeldAgentState",
     "ClimbIntentState",
     "ClimbingTag",
     "Perception",

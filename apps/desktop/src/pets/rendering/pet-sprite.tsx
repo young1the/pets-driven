@@ -11,6 +11,8 @@ import {
 import { PetSpriteHtml } from "@/pets/rendering/pet-sprite-html";
 import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
 import { presentPetStatus } from "@/pets/rendering/pet-status-presentation";
+import type { BehaviorTokenPresentation } from "@/pets/rendering/behavior-token-presentation";
+import { BehaviorTokenEmote } from "@/pets/rendering/behavior-token-emote";
 
 export type PetSpriteOverlay = {
   kind: "attention" | "speech" | "status";
@@ -20,6 +22,7 @@ export type PetSpriteOverlay = {
 type PetSpriteBaseProps = {
   alt: string;
   className?: string;
+  decisionEmote?: BehaviorTokenPresentation | null;
   elapsedMs: number;
   imageUrl: string;
   overlay?: PetSpriteOverlay | null;
@@ -61,6 +64,7 @@ const PET_SPRITE_EMOTE_OFFSET = {
 export function PetSprite({
   alt,
   className,
+  decisionEmote,
   elapsedMs,
   imageUrl,
   overlay,
@@ -150,6 +154,21 @@ export function PetSprite({
           }}
         >
           <PetEmote kind={status.emote} size="sm" />
+        </span>
+      ) : null}
+      {decisionEmote ? (
+        <span
+          style={{
+            pointerEvents: "none",
+            position: "absolute",
+            right: `${scaleOverlayValue(PET_SPRITE_EMOTE_OFFSET.right, frame)}px`,
+            top: `${scaleOverlayValue(PET_SPRITE_EMOTE_OFFSET.top, frame)}px`,
+            transform: `scale(${drawScale})`,
+            transformOrigin: "top right",
+            zIndex: 3,
+          }}
+        >
+          <BehaviorTokenEmote presentation={decisionEmote} />
         </span>
       ) : null}
     </span>

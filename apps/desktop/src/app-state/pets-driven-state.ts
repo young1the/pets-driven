@@ -11,84 +11,132 @@ export type RegisteredWorkingDirectory = {
 
 export type PetRecord = {
   id: string;
-  workingDirectoryId: string;
+  /** Back-pointer to the linked working directory; null until an agent is connected. */
+  workingDirectoryId: string | null;
   assetId: string;
   profileId: string;
+  /** User-given pet name from onboarding. */
+  name: string;
+  /** Adoption time in epoch ms; 0 for records migrated from v1. */
+  adoptedAt: number;
   archived: boolean;
   visible: boolean;
+};
+
+type PetRecordV1 = Omit<PetRecord, "workingDirectoryId" | "name" | "adoptedAt"> & {
+  workingDirectoryId: string;
 };
 
 export type PetsDrivenStateV1 = {
   schemaVersion: 1;
   registeredWorkingDirectories: RegisteredWorkingDirectory[];
+  pets: PetRecordV1[];
+  petProfiles: PetProfile[];
+};
+
+export type PetsDrivenStateV2 = {
+  schemaVersion: 2;
+  registeredWorkingDirectories: RegisteredWorkingDirectory[];
   pets: PetRecord[];
   petProfiles: PetProfile[];
 };
 
-export function createEmptyPetsDrivenState(): PetsDrivenStateV1 {
+/** Canonical state alias — always the latest schema. */
+export type PetsDrivenState = PetsDrivenStateV2;
+
+export function createEmptyPetsDrivenState(): PetsDrivenState {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     registeredWorkingDirectories: [],
     pets: [],
     petProfiles: [],
   };
 }
 
-export function parsePetsDrivenState(value: unknown): PetsDrivenStateV1 {
-  if (!value || typeof value !== "object") {
-    return createEmptyPetsDrivenState();
+function defaultPetNameFromAssetId(assetId: string): string {
+  if (!assetId) {
+    return "Pet";
   }
 
-  const candidate = value as Partial<PetsDrivenStateV1>;
+  return assetId.charAt(0).toUpperCase() + assetId.slice(1);
+}
 
-  if (candidate.schemaVersion !== 1) {
-    return createEmptyPetsDrivenState();
-  }
+function migratePetsDrivenStateV1ToV2(
+  candidate: Partial<PetsDrivenStateV1>,
+): PetsDrivenState {
+  const pets = Array.isArray(candidate.pets) ? candidate.pets : [];
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     registeredWorkingDirectories: Array.isArray(
       candidate.registeredWorkingDirectories,
     )
       ? candidate.registeredWorkingDirectories
       : [],
-    pets: Array.isArray(candidate.pets) ? candidate.pets : [],
+    pets: pets.map((pet) => ({
+      ...pet,
+      workingDirectoryId: pet.workingDirectoryId || null,
+      name: defaultPetNameFromAssetId(pet.assetId),
+      adoptedAt: 0,
+    })),
     petProfiles: Array.isArray(candidate.petProfiles)
       ? candidate.petProfiles
       : [],
   };
 }
 
-export function withDesktopFixtureWorkingDirectories(
-  state: PetsDrivenStateV1,
-): PetsDrivenStateV1 {
-  if (state.registeredWorkingDirectories.length > 0) {
+/**
+ * Recompute pet → directory back-pointers from the directory registry,
+ * which is the source of truth for routing. Directories whose petId has
+ * no pet record (e.g. dev fixtures) are left alone.
+ */
+function repairPetDirectoryLinks(state: PetsDrivenState): PetsDrivenState {
+  if (state.pets.length === 0) {
     return state;
   }
 
-  // Temporary desktop fixture seed until the Management Surface can register
-  // real Working Directories into persisted state.
   return {
     ...state,
-    registeredWorkingDirectories: [
-      {
-        id: "wd-fixture-cms",
-        path: "D:\\cms",
-        petId: "pet-a",
-        agentSourceId: "agent-a",
-        createdAt: 0,
-        updatedAt: 0,
-      },
-      {
-        id: "wd-fixture-pets-driven",
-        path: "D:\\workmanager\\pets-driven",
-        petId: "pet-a",
-        agentSourceId: "agent-a",
-        createdAt: 0,
-        updatedAt: 0,
-      },
-    ],
+    pets: state.pets.map((pet) => {
+      const linkedDirectory = state.registeredWorkingDirectories.find(
+        (workingDirectory) => workingDirectory.petId === pet.id,
+      );
+      const workingDirectoryId = linkedDirectory ? linkedDirectory.id : null;
+
+      return pet.workingDirectoryId === workingDirectoryId
+        ? pet
+        : { ...pet, workingDirectoryId };
+    }),
   };
+}
+
+export function parsePetsDrivenState(value: unknown): PetsDrivenState {
+  if (!value || typeof value !== "object") {
+    return createEmptyPetsDrivenState();
+  }
+
+  const candidate = value as Partial<PetsDrivenStateV1 | PetsDrivenStateV2>;
+
+  if (candidate.schemaVersion === 1) {
+    return repairPetDirectoryLinks(
+      migratePetsDrivenStateV1ToV2(candidate as Partial<PetsDrivenStateV1>),
+    );
+  }
+
+  if (candidate.schemaVersion !== 2) {
+    return createEmptyPetsDrivenState();
+  }
+
+  const v2 = candidate as Partial<PetsDrivenStateV2>;
+
+  return repairPetDirectoryLinks({
+    schemaVersion: 2,
+    registeredWorkingDirectories: Array.isArray(v2.registeredWorkingDirectories)
+      ? v2.registeredWorkingDirectories
+      : [],
+    pets: Array.isArray(v2.pets) ? v2.pets : [],
+    petProfiles: Array.isArray(v2.petProfiles) ? v2.petProfiles : [],
+  });
 }
 
 export function normalizeWorkingDirectoryPath(path: string): string {
@@ -139,7 +187,7 @@ function isSameOrAncestorPath(ancestorPath: string, childPath: string): boolean 
 }
 
 export function resolveRegisteredWorkingDirectoryForCwd(
-  state: PetsDrivenStateV1,
+  state: PetsDrivenState,
   cwd: string,
 ): RegisteredWorkingDirectory | null {
   const normalizedCwd = comparableWorkingDirectoryPath(cwd);

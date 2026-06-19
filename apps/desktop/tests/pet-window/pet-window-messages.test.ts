@@ -13,13 +13,16 @@ describe("pet window message contract", () => {
     expect(PET_WINDOW_INPUT_EVENT).toBe("pet-window:input:v1");
   });
 
-  it("keeps Pet Window frames to routing, window, sprite, and overlay only", () => {
+  it("keeps Pet Window frames to routing, window, sprite presentation, and overlay only", () => {
     const frame: PetWindowFrame = {
       schemaVersion: 1,
       sequence: 4,
       petId: "pet-a",
       window: { x: 100, y: 200, width: 192, height: 208 },
-      sprite: { intent: { kind: "waiting", facing: "right" } },
+      sprite: {
+        decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
+        intent: { kind: "waiting", facing: "right" },
+      },
       overlay: { kind: "attention", label: "WAIT" },
     };
 
@@ -43,11 +46,17 @@ describe("pet window message contract", () => {
     expect(
       isSamePetWindowPresentation(
         {
-          sprite: { intent: { kind: "travel", direction: "left" } },
+          sprite: {
+            decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
+            intent: { kind: "travel", direction: "left" },
+          },
           overlay: { kind: "status", label: "!" },
         },
         {
-          sprite: { intent: { kind: "travel", direction: "left" } },
+          sprite: {
+            decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
+            intent: { kind: "travel", direction: "left" },
+          },
           overlay: { kind: "status", label: "!" },
         },
       ),
@@ -55,8 +64,21 @@ describe("pet window message contract", () => {
 
     expect(
       isSamePetWindowPresentation(
-        { sprite: { intent: { kind: "idle" } }, overlay: null },
-        { sprite: { intent: { kind: "waiting" } }, overlay: null },
+        { sprite: { decisionEmote: null, intent: { kind: "idle" } }, overlay: null },
+        { sprite: { decisionEmote: null, intent: { kind: "waiting" } }, overlay: null },
+      ),
+    ).toBe(false);
+
+    expect(
+      isSamePetWindowPresentation(
+        { sprite: { decisionEmote: null, intent: { kind: "idle" } }, overlay: null },
+        {
+          sprite: {
+            decisionEmote: { emote: "heart", label: "Approaching pet", mood: "love", tone: "affection" },
+            intent: { kind: "idle" },
+          },
+          overlay: null,
+        },
       ),
     ).toBe(false);
   });

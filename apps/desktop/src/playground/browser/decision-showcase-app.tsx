@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Badge, Button } from "@pets-driven/design-system";
 import { createDemoScenario } from "@/core/scenario-fixtures";
 import { PetSprite } from "@/pets/rendering/pet-sprite";
+import { presentBehaviorDecisionToken } from "@/pets/rendering/behavior-token-presentation";
 import type { PetAnimationState } from "@/pets/assets/pet-atlas";
 import type { PetSnapshot } from "@/core/world-snapshot";
+import type {
+  BehaviorDecisionKind,
+  PersonalityComponent,
+} from "@/features/behavior/components";
 import {
   applyCollisionDecisionStimulus,
   createAgentDecisionStimulus,
   explainDecisionPipeline,
+  type DecisionSelectionExplanation,
   type DecisionStimulus,
 } from "./decision-showcase-adapter";
 
@@ -18,23 +24,30 @@ const SPRITE_URL = "/fallback-pets/patamon/spritesheet.webp";
 const SPRITE_SIZE = { width: 192, height: 208 };
 const VISUAL_TICK_MS = 120;
 const MOTION_RESET_MS = 980;
-
-type DecisionTraceEntry = {
-  stimulus: string;
-  source: string;
-  decision: string;
-  intent: string;
-};
+const PROBABILITY_COUNT_MS = 720;
+const PROBABILITY_REVEAL_DELAY_MS = 240;
+const SLOT_CARD_WIDTH = 172;
+const SLOT_REEL_GAP = 6;
+const SLOT_REEL_COPY_SETS = 6;
+const SLOT_REEL_ORIGINAL_SET_INDEX = 4;
+const SLOT_REEL_PREVIEW_MS = 1800;
+const SLOT_REEL_SPIN_MS = 3200;
+const SLOT_REEL_STOP_MS = 1400;
+const SLOT_REEL_SPIN_DISTANCE_PX = 1520;
+const SLOT_REEL_SPIN_EXPONENT = 3.2;
+const SLOT_REEL_SETTLED_HOLD_MS = 1100;
+const MAX_SELECTION_ADVANCE_FRAMES = 420;
 
 type ShowcaseMotion = "idle" | "agent" | "collision";
 
-const PERSONALITY_AXES = [
-  { key: "openness", label: "O" },
-  { key: "conscientiousness", label: "C" },
-  { key: "extraversion", label: "E" },
-  { key: "agreeableness", label: "A" },
-  { key: "neuroticism", label: "N" },
-] as const;
+type SelectionCandidateView = DecisionSelectionExplanation["candidates"][number];
+
+type DecisionSelectionPrototypeProps = {
+  motionSequence: number;
+  onSelectionSettled: (kind: BehaviorDecisionKind | null) => void;
+  probabilityProgress: number;
+  selection: DecisionSelectionExplanation;
+};
 
 const AGENT_STIMULI = [
   { type: "task.started", label: "Task started", summary: "Work started" },
@@ -50,12 +63,15 @@ export function DecisionShowcaseApp() {
   );
   const [elapsedMs, setElapsedMs] = useState(0);
   const [lastStimulus, setLastStimulus] = useState<DecisionStimulus | null>(null);
-  const [trace, setTrace] = useState<DecisionTraceEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [visualTick, setVisualTick] = useState(0);
   const [stageMotion, setStageMotion] = useState<ShowcaseMotion>("idle");
   const [motionSequence, setMotionSequence] = useState(0);
+  const [probabilityProgress, setProbabilityProgress] = useState(1);
+  const [settledDecisionKind, setSettledDecisionKind] = useState<BehaviorDecisionKind | null>(null);
+  const [hideSettledSelectionReel, setHideSettledSelectionReel] = useState(false);
   const motionResetRef = useRef<number | null>(null);
+  const selectionHideRef = useRef<number | null>(null);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -72,6 +88,9 @@ export function DecisionShowcaseApp() {
       if (motionResetRef.current !== null) {
         window.clearTimeout(motionResetRef.current);
       }
+      if (selectionHideRef.current !== null) {
+        window.clearTimeout(selectionHideRef.current);
+      }
     },
     [],
   );
@@ -81,6 +100,7 @@ export function DecisionShowcaseApp() {
   const personality = selectedPet
     ? scenarioRef.current.world.getComponent(selectedPet.id, "Personality")
     : undefined;
+  const personalitySummary = summarizePersonality(personality);
   const explanation = useMemo(
     () =>
       selectedPet
@@ -94,6 +114,66 @@ export function DecisionShowcaseApp() {
     [elapsedMs, lastStimulus, selectedPet],
   );
   const visualElapsedMs = elapsedMs + visualTick * VISUAL_TICK_MS;
+  const petAnimationState = animationStateForPet(selectedPet, settledDecisionKind);
+  const petDecisionEmote = presentBehaviorDecisionToken(settledDecisionKind);
+  const shouldShowSelectionReel = Boolean(explanation.selection && !hideSettledSelectionReel);
+
+  const handleSelectionSettled = useCallback((kind: BehaviorDecisionKind | null) => {
+    setSettledDecisionKind(kind);
+    if (selectionHideRef.current !== null) {
+      window.clearTimeout(selectionHideRef.current);
+    }
+    selectionHideRef.current = window.setTimeout(() => {
+      setHideSettledSelectionReel(true);
+    }, SLOT_REEL_SETTLED_HOLD_MS);
+  }, []);
+
+  useEffect(() => {
+    if (!explanation.selection) {
+      setProbabilityProgress(1);
+      setSettledDecisionKind(null);
+      setHideSettledSelectionReel(false);
+      if (selectionHideRef.current !== null) {
+        window.clearTimeout(selectionHideRef.current);
+        selectionHideRef.current = null;
+      }
+      return;
+    }
+
+    setProbabilityProgress(0);
+    setSettledDecisionKind(null);
+    setHideSettledSelectionReel(false);
+    if (selectionHideRef.current !== null) {
+      window.clearTimeout(selectionHideRef.current);
+      selectionHideRef.current = null;
+    }
+    let animationFrameId = 0;
+    const timeoutId = window.setTimeout(() => {
+      const startedAt = Date.now();
+
+      function updateProgress() {
+        const elapsed = Date.now() - startedAt;
+        const progress = Math.min(1, elapsed / PROBABILITY_COUNT_MS);
+        setProbabilityProgress(progress);
+        if (progress < 1) {
+          animationFrameId = window.requestAnimationFrame(updateProgress);
+        }
+      }
+
+      updateProgress();
+    }, PROBABILITY_REVEAL_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [
+    explanation.selection?.randomRoll,
+    explanation.selection?.selectedKind,
+    motionSequence,
+  ]);
 
   function advanceFrame(count = 1) {
     for (let index = 0; index < count; index += 1) {
@@ -104,30 +184,78 @@ export function DecisionShowcaseApp() {
     setSnapshot(scenarioRef.current.world.snapshot());
   }
 
-  function recordTrace(stimulus: DecisionStimulus) {
-    const pet =
-      scenarioRef.current.world.snapshot().pets.find((entry) => entry.id === PRIMARY_PET_ID) ??
-      selectedPet;
-    const decision = scenarioRef.current.world.getComponent(
-      PRIMARY_PET_ID,
-      "BehaviorDecisionState",
-    );
-    const token = scenarioRef.current.world.getComponent(
-      PRIMARY_PET_ID,
-      "BehaviorDecisionToken",
-    );
-    const intent = scenarioRef.current.world.getComponent(PRIMARY_PET_ID, "IntentState");
-    setTrace((current) =>
-      [
-        {
-          stimulus: stimulus.label,
-          source: decision?.source ?? pet?.pendingReaction?.source ?? "none",
-          decision: pet?.pendingReaction ? "deliberating" : (token?.kind ?? "none"),
-          intent: intent?.intent ?? pet?.intent ?? "none",
-        },
-        ...current,
-      ].slice(0, 6),
-    );
+  function advanceUntilSelection(maxFrames = MAX_SELECTION_ADVANCE_FRAMES) {
+    let frames = 0;
+    while (frames < maxFrames) {
+      const token = scenarioRef.current.world.getComponent(
+        PRIMARY_PET_ID,
+        "BehaviorDecisionToken",
+      );
+      if (token?.selectionTrace) break;
+      scenarioRef.current.clock.advanceBy(STEP_MS);
+      scenarioRef.current.world.step(STEP_MS);
+      frames += 1;
+    }
+    setElapsedMs((current) => current + STEP_MS * frames);
+    setSnapshot(scenarioRef.current.world.snapshot());
+  }
+
+  function resetPetDecisionReadiness(options: { clearPresentation?: boolean } = {}) {
+    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "BehaviorDecisionState");
+    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "BehaviorDecisionToken");
+    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "PendingReaction");
+    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "PetCollision");
+    scenarioRef.current.world.removeComponent(COLLIDER_PET_ID, "PetCollision");
+    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "AirborneTag");
+    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "ClimbingTag");
+    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "ClimbIntentState");
+    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "JumpActionState");
+    if (options.clearPresentation) {
+      scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "HeldAgentState");
+      const speech = scenarioRef.current.world.getComponent(PRIMARY_PET_ID, "SpeechState");
+      if (speech) {
+        speech.speech = null;
+        speech.expiresAt = null;
+      }
+    }
+    scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
+      type: "IntentState",
+      intent: "idle",
+    });
+    scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    resetColliderPosition();
+  }
+
+  function settleFreshInjection(options: { clearPresentation?: boolean } = {}) {
+    resetPetDecisionReadiness(options);
+    advanceFrame();
+    resetPetDecisionReadiness(options);
+  }
+
+  function resetColliderPosition() {
+    const petTransform = scenarioRef.current.world.getComponent(PRIMARY_PET_ID, "Transform");
+    const colliderTransform = scenarioRef.current.world.getComponent(COLLIDER_PET_ID, "Transform");
+    if (!petTransform || !colliderTransform) return;
+
+    const position = {
+      x: petTransform.position.x + 260,
+      y: petTransform.position.y,
+    };
+    scenarioRef.current.world.setPhysicsVelocity(COLLIDER_PET_ID, { x: 0, y: 0 });
+    scenarioRef.current.world.setPhysicsPosition(COLLIDER_PET_ID, position);
+    scenarioRef.current.world.setComponent(COLLIDER_PET_ID, {
+      type: "Transform",
+      position,
+    });
+  }
+
+  function runStimulusDecisionSelection() {
+    settleFreshInjection();
+    advanceFrame();
   }
 
   function playStageMotion(motion: ShowcaseMotion) {
@@ -144,6 +272,7 @@ export function DecisionShowcaseApp() {
   }
 
   function handleAgentStimulus(type: (typeof AGENT_STIMULI)[number]["type"], summary: string) {
+    resetPetDecisionReadiness();
     const result = createAgentDecisionStimulus({
       getComponent: scenarioRef.current.world.getComponent,
       now: scenarioRef.current.clock.now(),
@@ -161,13 +290,13 @@ export function DecisionShowcaseApp() {
     setLastStimulus(result.stimulus);
     playStageMotion("agent");
     advanceFrame();
-    recordTrace(result.stimulus);
   }
 
   function handleCollisionStimulus() {
-    expireActiveClaim();
+    settleFreshInjection({ clearPresentation: true });
     const result = applyCollisionDecisionStimulus({
       colliderPetId: COLLIDER_PET_ID,
+      now: scenarioRef.current.clock.now(),
       petId: PRIMARY_PET_ID,
       world: scenarioRef.current.world,
     });
@@ -180,23 +309,11 @@ export function DecisionShowcaseApp() {
     setLastStimulus(result.stimulus);
     playStageMotion("collision");
     advanceFrame();
-    recordTrace(result.stimulus);
+    advanceUntilSelection();
   }
 
   function handleAutonomousStimulus() {
-    expireActiveClaim();
-    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "BehaviorDecisionState");
-    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "BehaviorDecisionToken");
-    scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "PendingReaction");
-    scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
-      type: "IntentState",
-      intent: "idle",
-    });
-    scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: null,
-    });
+    settleFreshInjection({ clearPresentation: true });
 
     const stimulus: DecisionStimulus = {
       channel: "autonomous",
@@ -208,19 +325,6 @@ export function DecisionShowcaseApp() {
     setLastStimulus(stimulus);
     playStageMotion("agent");
     advanceFrame();
-    recordTrace(stimulus);
-  }
-
-  function expireActiveClaim() {
-    const decision = scenarioRef.current.world.getComponent(
-      PRIMARY_PET_ID,
-      "BehaviorDecisionState",
-    );
-    const now = scenarioRef.current.clock.now();
-    if (!decision || decision.expiresAt <= now) return;
-
-    const frames = Math.ceil((decision.expiresAt - now + STEP_MS) / STEP_MS);
-    advanceFrame(frames);
   }
 
   if (!selectedPet) {
@@ -252,24 +356,22 @@ export function DecisionShowcaseApp() {
         >
           <div className="decision-showcase__stage-topline">
             <span>Status screen</span>
-            <strong>{selectedPet.name}</strong>
+            <strong>
+              {selectedPet.name} · {personalitySummary}
+            </strong>
           </div>
-          <div className="decision-showcase__pet">
-            {stageMotion === "agent" ? (
-              <span
-                aria-hidden="true"
-                className="decision-showcase__agent-pulse"
-                data-testid="decision-agent-pulse"
-                key={`agent-pulse-${motionSequence}`}
-              />
-            ) : null}
+          <div
+            className="decision-showcase__pet"
+            data-pet-animation-state={petAnimationState}
+            data-testid="decision-pet-stage"
+          >
             <PetSprite
               alt={`${selectedPet.name} sprite`}
-              animationState={animationStateForPet(selectedPet)}
+              decisionEmote={petDecisionEmote}
+              animationState={petAnimationState}
               className="decision-showcase__live-sprite"
               elapsedMs={visualElapsedMs}
               imageUrl={SPRITE_URL}
-              overlay={overlayForPet(selectedPet)}
               scale={0.88}
               size={SPRITE_SIZE}
             />
@@ -298,63 +400,19 @@ export function DecisionShowcaseApp() {
               </>
             ) : null}
           </div>
-          <section className="decision-showcase__personality">
-            <h2>Personality</h2>
-            <dl>
-              {PERSONALITY_AXES.map((axis) => (
-                <div key={axis.key}>
-                  <dt>{axis.label}</dt>
-                  <dd>{formatPersonalityAxis(personality?.[axis.key] ?? 0)}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-          {explanation.selection ? (
-            <section
-              className="decision-showcase__stage-softmax"
-              data-testid="decision-softmax-roll"
-            >
-              <header>
-                <h2>Softmax roll</h2>
-                <dl>
-                  <div>
-                    <dt>Random roll</dt>
-                    <dd>{formatPercent(explanation.selection.randomRoll)}</dd>
-                  </div>
-                  <div>
-                    <dt>T</dt>
-                    <dd>{formatNumber(explanation.selection.temperature)}</dd>
-                  </div>
-                </dl>
-              </header>
-              <div
-                aria-label={`Random roll ${formatPercent(explanation.selection.randomRoll)}`}
-                className="decision-showcase__roll-rail"
-              >
-                <span
-                  data-testid="decision-roll-marker"
-                  style={{ left: formatPercent(explanation.selection.randomRoll) }}
-                />
-              </div>
-              <div className="decision-showcase__stage-softmax-list">
-                {explanation.selection.candidates.map((candidate) => (
-                  <article
-                    className="decision-showcase__stage-softmax-row"
-                    data-selected={candidate.selected}
-                    key={candidate.kind}
-                  >
-                    <strong>{candidate.kind}</strong>
-                    <span>Probability</span>
-                    <div className="decision-showcase__stage-softmax-bar">
-                      <i style={{ width: formatPercent(candidate.probability) }} />
-                    </div>
-                    <span>{formatPercent(candidate.probability)}</span>
-                    {candidate.selected ? <em>winner</em> : null}
-                  </article>
-                ))}
-              </div>
-            </section>
-          ) : null}
+          <div
+            className="decision-showcase__selection-reserve"
+            data-active={shouldShowSelectionReel ? "true" : "false"}
+          >
+            {explanation.selection && shouldShowSelectionReel ? (
+              <DecisionSelectionPrototype
+                motionSequence={motionSequence}
+                onSelectionSettled={handleSelectionSettled}
+                probabilityProgress={probabilityProgress}
+                selection={explanation.selection}
+              />
+            ) : null}
+          </div>
           <dl className="decision-showcase__stats">
             <div>
               <dt>Intent</dt>
@@ -401,44 +459,206 @@ export function DecisionShowcaseApp() {
             </div>
           </div>
 
-          <div className="decision-showcase__pipeline">
-            {explanation.steps.map((step) => (
-              <article
-                className="decision-showcase__step"
-                data-status={step.status}
-                key={step.id}
-              >
-                <span>{step.title}</span>
-                <strong>{step.value}</strong>
-                <p>{step.detail}</p>
-              </article>
-            ))}
-          </div>
-
-          <section className="decision-showcase__trace">
-            <h2>Decision trace</h2>
-            {trace.length === 0 ? (
-              <p>No stimulus yet.</p>
-            ) : (
-              <ul>
-                {trace.map((entry, index) => (
-                  <li key={`${entry.stimulus}-${index}`}>
-                    <span>{entry.stimulus}</span>
-                    <span>{entry.source}</span>
-                    <span>{entry.decision}</span>
-                    <span>{entry.intent}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </section>
       </div>
     </section>
   );
 }
 
-function animationStateForPet(pet: PetSnapshot): PetAnimationState {
+function DecisionSelectionPrototype({
+  motionSequence,
+  onSelectionSettled,
+  probabilityProgress,
+  selection,
+}: DecisionSelectionPrototypeProps) {
+  const candidates = selectionSlotCandidates(selection);
+  const reelCandidates = Array.from({ length: SLOT_REEL_COPY_SETS }, () => candidates).flat();
+  const selectedIndex = Math.max(
+    0,
+    candidates.findIndex((candidate) => candidate.selected),
+  );
+  const selectedCandidate = candidates[selectedIndex];
+  const reelMotion = useSelectionReelMotion({
+    itemCount: candidates.length,
+    motionSequence,
+    selectedIndex,
+  });
+  const trackStyle = {
+    transform: `translateX(${-reelMotion.offset}px)`,
+  } as CSSProperties;
+
+  useEffect(() => {
+    if (reelMotion.phase !== "settled") return;
+    onSelectionSettled(selection.selectedKind);
+  }, [onSelectionSettled, reelMotion.phase, selection.selectedKind]);
+
+  return (
+    <div
+      className="decision-showcase__selection-slot"
+      data-mode="slot-machine"
+      data-motion-sequence={motionSequence}
+      data-testid="decision-selection-slot"
+      key={`selection-${motionSequence}`}
+    >
+      <div
+        className="decision-showcase__selection-reel"
+        data-animation="infinite-to-stop"
+        data-probability-ready={probabilityProgress >= 1 ? "true" : "false"}
+        data-spin-ms={SLOT_REEL_SPIN_MS}
+        data-spin-phase={reelMotion.phase}
+        data-spin-profile="exponential"
+        data-stop-ms={SLOT_REEL_STOP_MS}
+        data-stop-kind={selectedCandidate?.kind ?? ""}
+        data-testid="decision-selection-reel"
+      >
+        <div className="decision-showcase__selection-track" style={trackStyle}>
+          {reelCandidates.map((candidate, index) => {
+            const setIndex = Math.floor(index / candidates.length);
+            const itemIndex = index % candidates.length;
+            const isCopy = setIndex !== SLOT_REEL_ORIGINAL_SET_INDEX;
+            return (
+              <SelectionReelItem
+                candidate={candidate}
+                index={index}
+                isCopy={isCopy}
+                key={`${candidate.kind}-${setIndex}-${itemIndex}`}
+                probabilityProgress={probabilityProgress}
+                revealSelection={reelMotion.phase === "settled"}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useSelectionReelMotion({
+  itemCount,
+  motionSequence,
+  selectedIndex,
+}: {
+  itemCount: number;
+  motionSequence: number;
+  selectedIndex: number;
+}) {
+  const stepWidth = SLOT_CARD_WIDTH + SLOT_REEL_GAP;
+  const cycleWidth = itemCount * stepWidth;
+  const baseOffset =
+    cycleWidth * (SLOT_REEL_ORIGINAL_SET_INDEX - 2) + selectedIndex * stepWidth;
+  const selectedOffset = cycleWidth * SLOT_REEL_ORIGINAL_SET_INDEX + selectedIndex * stepWidth;
+  const [motion, setMotion] = useState({
+    offset: baseOffset,
+    phase: "preview" as "preview" | "spinning" | "stopping" | "settled",
+  });
+
+  useEffect(() => {
+    let animationFrameId = 0;
+    let startedAt: number | null = null;
+    const stopStartOffset = baseOffset + SLOT_REEL_SPIN_DISTANCE_PX;
+    const stopDistance = selectedOffset - stopStartOffset;
+
+    function update(timestamp: number) {
+      startedAt ??= timestamp;
+      const elapsed = timestamp - startedAt;
+
+      if (elapsed < SLOT_REEL_PREVIEW_MS) {
+        setMotion({
+          offset: baseOffset,
+          phase: "preview",
+        });
+        animationFrameId = window.requestAnimationFrame(update);
+        return;
+      }
+
+      const spinElapsed = elapsed - SLOT_REEL_PREVIEW_MS;
+      if (spinElapsed < SLOT_REEL_SPIN_MS) {
+        const progress = spinElapsed / SLOT_REEL_SPIN_MS;
+        setMotion({
+          offset: baseOffset + SLOT_REEL_SPIN_DISTANCE_PX * exponentialSpinProgress(progress),
+          phase: "spinning",
+        });
+        animationFrameId = window.requestAnimationFrame(update);
+        return;
+      }
+
+      const stopElapsed = Math.min(SLOT_REEL_STOP_MS, spinElapsed - SLOT_REEL_SPIN_MS);
+      const progress = stopElapsed / SLOT_REEL_STOP_MS;
+      const easedProgress = 1 - (1 - progress) ** 3;
+      const offset = stopStartOffset + stopDistance * easedProgress;
+      setMotion({
+        offset,
+        phase: progress >= 1 ? "settled" : "stopping",
+      });
+
+      if (progress < 1) {
+        animationFrameId = window.requestAnimationFrame(update);
+      }
+    }
+
+    setMotion({
+      offset: baseOffset,
+      phase: "preview",
+    });
+    animationFrameId = window.requestAnimationFrame(update);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [baseOffset, motionSequence, selectedOffset]);
+
+  return motion;
+}
+
+function exponentialSpinProgress(progress: number) {
+  const boundedProgress = Math.max(0, Math.min(1, progress));
+  const scale = Math.exp(SLOT_REEL_SPIN_EXPONENT) - 1;
+  return (Math.exp(SLOT_REEL_SPIN_EXPONENT * boundedProgress) - 1) / scale;
+}
+
+function SelectionReelItem({
+  candidate,
+  index,
+  isCopy,
+  probabilityProgress,
+  revealSelection,
+}: {
+  candidate: SelectionCandidateView;
+  index: number;
+  isCopy: boolean;
+  probabilityProgress: number;
+  revealSelection: boolean;
+}) {
+  const isSelectedStop = candidate.selected && !isCopy;
+  const isSelectionVisible = isSelectedStop && revealSelection;
+  const pingDelay = 42 * (index % 5);
+
+  return (
+    <article
+      className="decision-showcase__selection-reel-item"
+      data-reel-copy={isCopy ? "true" : undefined}
+      data-selected={isSelectionVisible ? "true" : "false"}
+      data-slot-index={index}
+      data-slot-stop={isSelectedStop ? "center" : undefined}
+      data-testid="decision-selection-reel-item"
+      style={
+        {
+          "--slot-ping-delay": `${pingDelay}ms`,
+        } as CSSProperties
+      }
+    >
+      <strong>{candidate.kind}</strong>
+      <span>{formatPercent(candidate.probability * probabilityProgress)}</span>
+    </article>
+  );
+}
+
+function animationStateForPet(
+  pet: PetSnapshot,
+  settledDecisionKind: BehaviorDecisionKind | null,
+): PetAnimationState {
+  const decisionAnimation = animationStateForDecisionKind(settledDecisionKind);
+  if (decisionAnimation) return decisionAnimation;
   if (pet.pendingReaction) return "waiting";
   if (pet.heldAgentState?.kind === "failed") return "failed";
   if (pet.heldAgentState?.kind === "waiting") return "waiting";
@@ -448,28 +668,62 @@ function animationStateForPet(pet: PetSnapshot): PetAnimationState {
   return "idle";
 }
 
-function overlayForPet(pet: PetSnapshot) {
-  if (pet.pendingReaction) {
-    return { kind: "attention" as const, label: "Collision" };
+function animationStateForDecisionKind(
+  kind: BehaviorDecisionKind | null,
+): PetAnimationState | null {
+  switch (kind) {
+    case "request-jump":
+    case "collision-jump":
+      return "jumping";
+    case "request-climb":
+      return "running";
+    case "wander-near":
+    case "wander-far":
+    case "seek-user":
+    case "approach-pet":
+    case "collision-engage":
+    case "collision-avoid":
+      return "running-right";
+    case "flee-from-pet":
+    case "collision-flee":
+      return "running-left";
+    case "idle-stay":
+    case "collision-stay":
+    case "collision-unfazed":
+      return "idle";
+    default:
+      return null;
   }
-  if (pet.heldAgentState?.kind === "failed") {
-    return { kind: "status" as const, label: "Failed" };
-  }
-  if (pet.heldAgentState?.kind === "waiting") {
-    return { kind: "attention" as const, label: "Waiting" };
-  }
-  if (pet.heldAgentState?.kind === "completed") {
-    return { kind: "status" as const, label: "Done" };
-  }
-  return null;
 }
 
-function formatNumber(value: number) {
-  return value.toFixed(3);
+function summarizePersonality(personality: PersonalityComponent | undefined) {
+  if (!personality) return "Unknown temperament";
+  if (personality.extraversion >= 0.75 && personality.openness >= 0.6) {
+    return "Curious extrovert";
+  }
+  if (personality.neuroticism >= 0.65 && personality.extraversion <= 0.35) {
+    return "Reserved";
+  }
+  if (personality.agreeableness >= 0.7 && personality.extraversion >= 0.55) {
+    return "Sociable";
+  }
+  if (personality.conscientiousness >= 0.65) return "Steady";
+  if (personality.openness >= 0.65) return "Curious";
+  if (personality.neuroticism >= 0.65) return "Cautious";
+  if (personality.extraversion >= 0.65) return "Outgoing";
+  return "Balanced";
 }
 
-function formatPersonalityAxis(value: number) {
-  return Math.round(value * 100);
+function selectionSlotCandidates(selection: DecisionSelectionExplanation) {
+  const ranked = [...selection.candidates].sort(
+    (left, right) => right.probability - left.probability,
+  );
+  const visible = ranked.slice(0, 5);
+  const selected = selection.candidates.find((candidate) => candidate.selected);
+  if (selected && !visible.some((candidate) => candidate.kind === selected.kind)) {
+    visible[visible.length - 1] = selected;
+  }
+  return visible;
 }
 
 function formatPercent(value: number) {
