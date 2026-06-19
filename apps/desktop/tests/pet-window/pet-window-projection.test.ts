@@ -36,7 +36,11 @@ function snapshotFixture(): WorldSnapshot {
         position: { x: 600, y: 500 },
         contact: { grounded: true, climbableSurfaceId: null },
         motionTarget: null,
-        decision: null,
+        decision: {
+          source: "autonomous",
+          reason: "request-jump",
+          decidedAt: 10,
+        },
         pendingReaction: null,
       },
     ],
@@ -108,7 +112,10 @@ describe("pet window projection", () => {
           width: 192,
           height: 208,
         },
-        sprite: { intent: { kind: "travel", direction: "left" } },
+        sprite: {
+          decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
+          intent: { kind: "travel", direction: "left" },
+        },
         overlay: { kind: "speech", label: "hello" },
       },
     });

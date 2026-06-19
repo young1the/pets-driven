@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   createEmptyPetsDrivenState,
   resolveRegisteredWorkingDirectoryForCwd,
-  type PetsDrivenStateV1,
+  type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
 
 describe("working directory registry", () => {
   it("starts with an empty persisted state shape", () => {
     expect(createEmptyPetsDrivenState()).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
@@ -16,8 +16,8 @@ describe("working directory registry", () => {
   });
 
   it("resolves a hook cwd to the longest registered working directory ancestor", () => {
-    const state: PetsDrivenStateV1 = {
-      schemaVersion: 1,
+    const state: PetsDrivenState = {
+      schemaVersion: 2,
       registeredWorkingDirectories: [
         {
           id: "wd-cms",
@@ -49,7 +49,7 @@ describe("working directory registry", () => {
   });
 
   it("does not match sibling directories with the same prefix", () => {
-    const state: PetsDrivenStateV1 = {
+    const state: PetsDrivenState = {
       ...createEmptyPetsDrivenState(),
       registeredWorkingDirectories: [
         {

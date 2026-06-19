@@ -1,8 +1,12 @@
 import type { PetPersonality } from "@/pets/personalities/factories";
 
+export type PetPersonalityId = "playful" | "attentive" | "reserved";
+
 export type PetProfile = {
   id: string;
   petAssetId: string;
+  /** Which preset the personality came from; lets management re-pick later. */
+  personalityId?: PetPersonalityId;
   personality: PetPersonality;
 };
 

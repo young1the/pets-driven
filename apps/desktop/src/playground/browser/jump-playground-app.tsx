@@ -87,7 +87,7 @@ export function JumpPlaygroundApp() {
   }, [advanceFrame, isAnimationPlaying]);
 
   return (
-    <main className="playground-shell jump-playground-shell">
+    <section className="jump-playground-shell">
       <header>
         <h1>Jump playground</h1>
       </header>
@@ -109,7 +109,7 @@ export function JumpPlaygroundApp() {
         />
         <PetStatusList pets={snapshot.pets} />
       </div>
-    </main>
+    </section>
   );
 }
 

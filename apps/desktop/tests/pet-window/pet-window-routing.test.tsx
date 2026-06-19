@@ -8,7 +8,8 @@ import {
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
 } from "@/pet-window/pet-window-messages";
-import type { PetsDrivenStateV1 } from "@/app-state/pets-driven-state";
+import type { PetsDrivenState } from "@/app-state/pets-driven-state";
+import { createPlayfulPersonality } from "@/pets/personalities/factories";
 
 type TauriEventHandler = (event: { payload: unknown }) => void;
 
@@ -84,8 +85,8 @@ vi.mock("@tauri-apps/api/window", () => ({
 
 const invokeMock = vi.mocked(invoke);
 const isTauriMock = vi.mocked(isTauri);
-const testPetsDrivenState: PetsDrivenStateV1 = {
-  schemaVersion: 1,
+const testPetsDrivenState: PetsDrivenState = {
+  schemaVersion: 2,
   registeredWorkingDirectories: [
     {
       id: "wd-cms",
@@ -104,8 +105,26 @@ const testPetsDrivenState: PetsDrivenStateV1 = {
       updatedAt: 2,
     },
   ],
-  pets: [],
-  petProfiles: [],
+  pets: [
+    {
+      id: "pet-a",
+      workingDirectoryId: "wd-cms",
+      assetId: "patamon",
+      profileId: "profile-pet-a",
+      name: "Otto",
+      adoptedAt: 1,
+      archived: false,
+      visible: true,
+    },
+  ],
+  petProfiles: [
+    {
+      id: "profile-pet-a",
+      petAssetId: "patamon",
+      personalityId: "playful",
+      personality: createPlayfulPersonality(),
+    },
+  ],
 };
 
 describe("pet window product route", () => {

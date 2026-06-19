@@ -135,6 +135,14 @@ fn pet_window_playground_url(index: u8) -> String {
     )
 }
 
+fn pet_window_label(pet_id: &str) -> String {
+    format!("pet-window-{pet_id}")
+}
+
+fn pet_window_url(pet_id: &str, asset_id: &str) -> String {
+    format!("index.html?surface=pet-window&petId={pet_id}&assetId={asset_id}&windowIndex=1")
+}
+
 fn claude_hook_ingress_url() -> String {
     format!("http://127.0.0.1:{CLAUDE_HOOK_INGRESS_PORT}{CLAUDE_HOOK_INGRESS_PATH}")
 }
@@ -533,6 +541,47 @@ async fn open_pet_window_playground(
 }
 
 #[tauri::command]
+async fn open_pet_window(
+    app: tauri::AppHandle,
+    pet_id: String,
+    asset_id: String,
+) -> Result<(), String> {
+    validate_asset_id(&pet_id).map_err(|_| "Invalid pet id".to_string())?;
+    validate_asset_id(&asset_id)?;
+
+    let label = pet_window_label(&pet_id);
+
+    if let Some(window) = app.get_webview_window(&label) {
+        return window
+            .show()
+            .map_err(|error| format!("Could not show {label}: {error}"));
+    }
+
+    // Adopted pet windows have no host frame loop driving a deferred
+    // show(), so they must be created visible.
+    WebviewWindowBuilder::new(
+        &app,
+        label.clone(),
+        WebviewUrl::App(pet_window_url(&pet_id, &asset_id).into()),
+    )
+    .title("Pet Window")
+    .inner_size(192.0, 208.0)
+    .position(120.0, 120.0)
+    .decorations(false)
+    .transparent(true)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .resizable(false)
+    .shadow(false)
+    .visible(true)
+    .focused(false)
+    .build()
+    .map_err(|error| format!("Could not create {label}: {error}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn close_pet_window_playground(app: tauri::AppHandle) -> Result<(), String> {
     for index in 1..=PET_WINDOW_PLAYGROUND_MAX_WINDOWS {
         let label = pet_window_playground_label(index);
@@ -573,6 +622,22 @@ mod tests {
         assert_eq!(
             pet_window_playground_url(7),
             "index.html?surface=pet-window&petId=pet-g&assetId=tentomon&windowIndex=7"
+        );
+    }
+
+    #[test]
+    fn pet_window_label_uses_pet_id() {
+        assert_eq!(
+            pet_window_label("3f2c8a10-aaaa-bbbb-cccc-1234567890ab"),
+            "pet-window-3f2c8a10-aaaa-bbbb-cccc-1234567890ab"
+        );
+    }
+
+    #[test]
+    fn pet_window_url_routes_to_pet_window_surface() {
+        assert_eq!(
+            pet_window_url("pet-123", "patamon"),
+            "index.html?surface=pet-window&petId=pet-123&assetId=patamon&windowIndex=1"
         );
     }
 
@@ -668,6 +733,7 @@ pub fn run() {
             write_pets_driven_state,
             list_codex_pet_packages,
             load_codex_pet_spritesheet,
+            open_pet_window,
             open_pet_window_playground,
             close_pet_window_playground
         ])

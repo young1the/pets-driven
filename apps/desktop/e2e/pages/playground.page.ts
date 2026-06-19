@@ -18,6 +18,10 @@ export class PlaygroundPage {
     ).toBeVisible();
   }
 
+  async selectPlaygroundView(name: "Demo" | "Jump" | "Climb") {
+    await this.page.getByRole("tab", { name, exact: true }).click();
+  }
+
   async sendStartedEvent() {
     await this.page
       .getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent })

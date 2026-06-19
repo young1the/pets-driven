@@ -9,18 +9,20 @@ import {
   type ClaudeHookIngressStatus,
 } from "@/adapters/agent-events/claude-hook-ingress";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
+import { useAppNavigation } from "@/app/app-navigation";
+import {
+  desktopGateway,
+  type CodexPetPackage,
+} from "@/app/desktop-gateway";
+import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
+import { withDesktopFixtureWorkingDirectories } from "@/app-state/dev-fixtures";
 import {
   createEmptyPetsDrivenState,
-  parsePetsDrivenState,
   resolveRegisteredWorkingDirectoryForCwd,
-  withDesktopFixtureWorkingDirectories,
-  type PetsDrivenStateV1,
+  type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
 import { createDemoScenario } from "@/core/scenario-fixtures";
-import {
-  CODEX_PET_ASSETS,
-  PLAYGROUND_PET_ENTITY_IDS,
-} from "@/pets/assets/codex-pet-fixtures";
+import { PLAYGROUND_PET_ENTITY_IDS } from "@/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
 import {
   PET_WINDOW_FRAME_EVENT,
@@ -32,14 +34,6 @@ import { projectWorldSnapshotToPetWindows } from "@/pet-window/pet-window-projec
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
 
-type CodexPetPackage = {
-  id: string;
-  displayName: string;
-  description: string;
-  spritesheetPath: string;
-};
-
-type ViewMode = "home" | "playground";
 const DESKTOP_FIXTURE_HOST_TICK_MS = 33;
 const DESKTOP_FIXTURE_STEP_MS = 16;
 const DESKTOP_FIXTURE_WORLD_SIZE = { width: 960, height: 540 };
@@ -67,19 +61,6 @@ function petWindowRouteParams(): PetWindowRouteParams | null {
   };
 }
 
-async function loadCodexPetPackages(): Promise<CodexPetPackage[]> {
-  if (isTauri()) {
-    return await invoke<CodexPetPackage[]>("list_codex_pet_packages");
-  }
-
-  return CODEX_PET_ASSETS.map((asset) => ({
-    id: asset.id,
-    displayName: asset.displayName,
-    description: asset.description,
-    spritesheetPath: asset.spritesheetPath,
-  }));
-}
-
 function petWindowPlaygroundLabelForPetId(petId: string) {
   const index = PLAYGROUND_PET_ENTITY_IDS.indexOf(
     petId as (typeof PLAYGROUND_PET_ENTITY_IDS)[number],
@@ -101,9 +82,15 @@ function desktopFixturePetBodySize(bounds: {
   };
 }
 
+function createInitialPetsDrivenState(): PetsDrivenState {
+  return import.meta.env.DEV
+    ? withDesktopFixtureWorkingDirectories(createEmptyPetsDrivenState())
+    : createEmptyPetsDrivenState();
+}
+
 function routeClaudeHookPayloadToRegisteredWorkingDirectory(
   payload: unknown,
-  state: PetsDrivenStateV1,
+  state: PetsDrivenState,
 ): unknown | null {
   if (!payload || typeof payload !== "object") {
     return payload;
@@ -139,16 +126,17 @@ export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
-  const petsDrivenStateRef = useRef(
-    withDesktopFixtureWorkingDirectories(createEmptyPetsDrivenState()),
-  );
+  const petsDrivenStateRef = useRef(createInitialPetsDrivenState());
   const fixtureHostBoundsRef = useRef<{
     x: number;
     y: number;
     width: number;
     height: number;
   } | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("home");
+  const { view, navigate } = useAppNavigation();
+  const [petsDrivenState, setPetsDrivenState] = useState<PetsDrivenState>(
+    petsDrivenStateRef.current,
+  );
   const [desktopFixtureWindowCount, setDesktopFixtureWindowCount] = useState(0);
   const [pets, setPets] = useState<CodexPetPackage[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
@@ -158,10 +146,16 @@ export function PetsDrivenApp() {
   const [claudeHookIngressStatus, setClaudeHookIngressStatus] =
     useState<ClaudeHookIngressStatus>(defaultClaudeHookIngressStatus);
 
+  function applyPetsDrivenState(next: PetsDrivenState) {
+    petsDrivenStateRef.current = next;
+    setPetsDrivenState(next);
+  }
+
   useEffect(() => {
     let isMounted = true;
 
-    loadCodexPetPackages()
+    desktopGateway
+      .listPetPackages()
       .then((packages) => {
         if (isMounted) {
           setPets(packages);
@@ -257,21 +251,24 @@ export function PetsDrivenApp() {
   }, []);
 
   useEffect(() => {
-    if (!isTauri()) {
+    if (petWindowPet) {
       return;
     }
 
     let isMounted = true;
 
-    void invoke<unknown>("read_pets_driven_state")
+    void desktopGateway
+      .readPetsDrivenState()
       .then((state) => {
         if (!isMounted) {
           return;
         }
 
-        petsDrivenStateRef.current = withDesktopFixtureWorkingDirectories(
-          parsePetsDrivenState(state),
-        );
+        applyPetsDrivenState(state);
+
+        if (state.pets.length === 0) {
+          navigate("onboarding");
+        }
       })
       .catch((error) => {
         if (isMounted) {
@@ -391,12 +388,12 @@ export function PetsDrivenApp() {
     return <PetWindowView pet={petWindowPet} />;
   }
 
-  if (viewMode === "playground") {
+  if (view === "playground") {
     return (
       <div className="app-playground-view">
         <Button
           className="app-back-button"
-          onClick={() => setViewMode("home")}
+          onClick={() => navigate("home")}
           size="sm"
           variant="neutral"
         >
@@ -404,6 +401,32 @@ export function PetsDrivenApp() {
         </Button>
         <PlaygroundApp />
       </div>
+    );
+  }
+
+  if (view === "onboarding") {
+    return (
+      <OnboardingFlow
+        onDone={() => navigate("home")}
+        onStateChange={applyPetsDrivenState}
+        state={petsDrivenState}
+      />
+    );
+  }
+
+  if (view === "pets" || view === "connect") {
+    return (
+      <main className="app-shell">
+        <Card padding="lg">
+          <h1>{view === "pets" ? "Your pets" : "Connect an agent"}</h1>
+          <p>
+            <Badge tone="info">Coming soon</Badge>
+          </p>
+          <Button onClick={() => navigate("home")} size="sm" variant="neutral">
+            Back
+          </Button>
+        </Card>
+      </main>
     );
   }
 
@@ -445,7 +468,14 @@ export function PetsDrivenApp() {
           <p>Codex pet runtime</p>
         </div>
         <div className="app-header-actions">
-          <Button onClick={() => setViewMode("playground")} size="sm">
+          <Button onClick={() => navigate("onboarding")} size="sm">
+            Adopt a pet
+          </Button>
+          <Button
+            onClick={() => navigate("playground")}
+            size="sm"
+            variant="neutral"
+          >
             Open playground
           </Button>
           <Button
