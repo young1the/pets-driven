@@ -9,7 +9,7 @@ import {
   PET_WINDOW_INPUT_EVENT,
 } from "@/pet-window/pet-window-messages";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
-import { createPlayfulPersonality } from "@/pets/personalities/factories";
+import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 
 type TauriEventHandler = (event: { payload: unknown }) => void;
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   FALLBACK_CODEX_PET_SPRITESHEET_URL,
-} from "@/pets/assets/codex-pet-fixtures";
+} from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 
 /** Resolve a pet asset's spritesheet URL, disposing object URLs on unmount. */

@@ -1,10 +1,10 @@
 import { Button } from "@pets-driven/design-system";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createClimbPlaygroundScenario } from "@/core/scenario-fixtures";
+import { createClimbPlaygroundScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import { drawWorld } from "./canvas-renderer";
 import { PetStatusList } from "./pet-status-list";
-import { loadPlaygroundPetAssetCatalog } from "@/pets/assets/codex-pet-fixtures";
-import type { AssetCatalog } from "@/pets/rendering/pet-sprite-canvas";
+import { loadPlaygroundPetAssetCatalog } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
 
 type ClimbScenario = ReturnType<typeof createClimbPlaygroundScenario>;
 

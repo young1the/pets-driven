@@ -1,10 +1,10 @@
-import type { ComponentOf, ComponentType } from "@/core/components";
-import type { PetSnapshot } from "@/core/world-snapshot";
+import type { ComponentOf, ComponentType } from "@pets-driven/pet-engine/core/components";
+import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import type {
   BehaviorDecisionKind,
   BehaviorDecisionSelectionCandidate,
-} from "@/features/behavior/components";
-import type { AgentWorldEvent } from "@/features/events/world-event";
+} from "@pets-driven/pet-engine/features/behavior/components";
+import type { AgentWorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
 
 export type DecisionStimulus = {
   channel: "agent" | "autonomous" | "collision";

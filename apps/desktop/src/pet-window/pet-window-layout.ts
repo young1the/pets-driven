@@ -1,4 +1,4 @@
-import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
+import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetWindowHitLayout } from "@/pet-window/pet-window-types";
 
 export const PET_WINDOW_LAYOUT: PetWindowHitLayout = {

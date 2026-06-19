@@ -3,8 +3,8 @@ import type {
   PetsDrivenState,
   RegisteredWorkingDirectory,
 } from "@/app-state/pets-driven-state";
-import type { PetPersonality } from "@/pets/personalities/factories";
-import type { PetPersonalityId } from "@/pets/profiles/pet-profile";
+import type { PetPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 export type AdoptPetInput = {
   id: string;

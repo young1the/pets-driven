@@ -21,8 +21,8 @@ import {
   resolveRegisteredWorkingDirectoryForCwd,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
-import { createDemoScenario } from "@/core/scenario-fixtures";
-import { PLAYGROUND_PET_ENTITY_IDS } from "@/pets/assets/codex-pet-fixtures";
+import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
 import {
   PET_WINDOW_FRAME_EVENT,

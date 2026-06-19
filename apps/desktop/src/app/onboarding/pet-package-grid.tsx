@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Badge, Card } from "@pets-driven/design-system";
 import type { CodexPetPackage } from "@/app/desktop-gateway";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
-import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
-import { PetSprite } from "@/pets/rendering/pet-sprite";
+import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 
 type PetPackageGridProps = {
   packages: CodexPetPackage[];

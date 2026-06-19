@@ -4,11 +4,11 @@ import {
   createJumpPlaygroundScenario,
   JUMP_PLAYGROUND_PET_IDS,
   nextJumpPlaygroundTarget,
-} from "@/core/scenario-fixtures";
+} from "@pets-driven/pet-engine/core/scenario-fixtures";
 import { drawWorld } from "./canvas-renderer";
 import { PetStatusList } from "./pet-status-list";
-import { loadPlaygroundPetAssetCatalog } from "@/pets/assets/codex-pet-fixtures";
-import type { AssetCatalog } from "@/pets/rendering/pet-sprite-canvas";
+import { loadPlaygroundPetAssetCatalog } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
 
 type JumpScenario = ReturnType<typeof createJumpPlaygroundScenario>;
 type JumpWorld = JumpScenario["world"];

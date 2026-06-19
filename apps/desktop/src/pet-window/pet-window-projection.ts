@@ -2,14 +2,14 @@ import type {
   BodySnapshot,
   PetSnapshot,
   WorldSnapshot,
-} from "@/core/world-snapshot";
-import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
+} from "@pets-driven/pet-engine/core/world-snapshot";
+import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type {
   PetWindowFrame,
   PetWindowOverlay,
 } from "@/pet-window/pet-window-messages";
-import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
-import { presentBehaviorDecisionToken } from "@/pets/rendering/behavior-token-presentation";
+import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
+import { presentBehaviorDecisionToken } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 
 export type PetWindowProjection = {
   petId: string;

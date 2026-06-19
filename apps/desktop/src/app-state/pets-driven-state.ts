@@ -1,4 +1,4 @@
-import type { PetProfile } from "@/pets/profiles/pet-profile";
+import type { PetProfile } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 export type RegisteredWorkingDirectory = {
   id: string;

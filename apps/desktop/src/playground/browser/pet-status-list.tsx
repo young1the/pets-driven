@@ -1,4 +1,4 @@
-import type { PetSnapshot } from "@/core/world-snapshot";
+import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import { PLAYGROUND_TEXT } from "./playground-text";
 
 type PetStatusListProps = {

@@ -9,11 +9,11 @@ import {
 } from "@tauri-apps/api/window";
 import {
   FALLBACK_CODEX_PET_SPRITESHEET_URL,
-} from "@/pets/assets/codex-pet-fixtures";
-import { PET_CELL_SIZE } from "@/pets/assets/pet-atlas";
-import { PetSprite } from "@/pets/rendering/pet-sprite";
-import type { BehaviorTokenPresentation } from "@/pets/rendering/behavior-token-presentation";
-import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
+} from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";

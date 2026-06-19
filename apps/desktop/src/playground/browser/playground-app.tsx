@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createDemoScenario } from "@/core/scenario-fixtures";
+import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import { createAgentEventFromClaudeHook, type ClaudeHookEventName } from "@/adapters/agent-events/claude-hook-adapter";
 import { createAgentEvent, type AgentEvent } from "@/adapters/agent-events/agent-event";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
@@ -12,8 +12,8 @@ import { JumpPlaygroundApp } from "./jump-playground-app";
 import { PetStatusList } from "./pet-status-list";
 import { PLAYGROUND_TEXT } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
-import { loadPlaygroundPetAssetCatalog } from "@/pets/assets/codex-pet-fixtures";
-import type { AssetCatalog } from "@/pets/rendering/pet-sprite-canvas";
+import { loadPlaygroundPetAssetCatalog } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
 
 type Snapshot = ReturnType<
   ReturnType<typeof createDemoScenario>["world"]["snapshot"]

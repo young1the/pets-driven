@@ -1,6 +1,6 @@
-import type { PetSpriteIntent } from "@/pets/rendering/pet-sprite-intent";
-import type { PetSpriteOverlay } from "@/pets/rendering/pet-sprite";
-import type { BehaviorTokenPresentation } from "@/pets/rendering/behavior-token-presentation";
+import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
+import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 
 export const PET_WINDOW_FRAME_EVENT = "pet-window:frame:v1";
 export const PET_WINDOW_INPUT_EVENT = "pet-window:input:v1";

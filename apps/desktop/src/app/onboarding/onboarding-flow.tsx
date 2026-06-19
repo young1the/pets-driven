@@ -12,7 +12,7 @@ import {
 import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
 import { adoptPet } from "@/app-state/pet-adoption";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
-import type { PetPersonalityId } from "@/pets/profiles/pet-profile";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 const PET_NAME_MAX_LENGTH = 24;
 

@@ -3,8 +3,8 @@ import {
   createPlayfulPersonality,
   createReservedPersonality,
   type PersonalityFactory,
-} from "@/pets/personalities/factories";
-import type { PetPersonalityId } from "@/pets/profiles/pet-profile";
+} from "@pets-driven/pet-engine/pets/personalities/factories";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 export type PersonalityOption = {
   id: PetPersonalityId;
