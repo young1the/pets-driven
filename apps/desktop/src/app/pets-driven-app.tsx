@@ -167,6 +167,7 @@ export function PetsDrivenApp() {
     .map((pet) => `${pet.id}:${pet.assetId}`)
     .sort()
     .join(",");
+  const adoptedPets = petsDrivenState.pets.filter((pet) => !pet.archived);
 
   useEffect(() => {
     let isMounted = true;
@@ -771,6 +772,42 @@ export function PetsDrivenApp() {
             <small>{claudeHookIngressStatus.error}</small>
           ) : null}
         </Card>
+      </section>
+
+      <section className="app-pets" aria-labelledby="adopted-pets-title">
+        <div className="app-section-header">
+          <h2 id="adopted-pets-title">Your pets</h2>
+          <Badge dot tone="info">
+            {adoptedPets.length}
+          </Badge>
+        </div>
+        <ul>
+          {adoptedPets.map((pet) => {
+            const directory =
+              petsDrivenState.registeredWorkingDirectories.find(
+                (candidate) => candidate.petId === pet.id,
+              ) ?? null;
+
+            return (
+              <li key={pet.id}>
+                <div className="app-pet-card__head">
+                  <strong>{pet.name}</strong>
+                  <Badge dot tone={directory ? "success" : "warning"}>
+                    {directory ? "Watching" : "No folder"}
+                  </Badge>
+                </div>
+                <p>{directory ? directory.path : "No folder linked yet"}</p>
+                <span>{pet.assetId}</span>
+              </li>
+            );
+          })}
+          {adoptedPets.length === 0 ? (
+            <li>
+              <strong>No pets yet</strong>
+              <p>Adopt a pet to point it at a project folder.</p>
+            </li>
+          ) : null}
+        </ul>
       </section>
 
       <section className="app-pets" aria-labelledby="pet-packages-title">
