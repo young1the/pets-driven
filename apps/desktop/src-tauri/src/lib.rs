@@ -391,10 +391,15 @@ fn get_claude_hook_ingress_status(
 }
 
 #[tauri::command]
-fn emit_test_claude_hook_ingress_event(app: tauri::AppHandle) -> Result<(), String> {
-    let cwd = env::current_dir()
-        .map(|path| path.display().to_string())
-        .unwrap_or_else(|_| String::new());
+fn emit_test_claude_hook_ingress_event(
+    app: tauri::AppHandle,
+    cwd: Option<String>,
+) -> Result<(), String> {
+    let cwd = cwd.unwrap_or_else(|| {
+        env::current_dir()
+            .map(|path| path.display().to_string())
+            .unwrap_or_else(|_| String::new())
+    });
     let payload = serde_json::json!({
         "hook_event_name": "PermissionRequest",
         "sourceId": "agent-a",

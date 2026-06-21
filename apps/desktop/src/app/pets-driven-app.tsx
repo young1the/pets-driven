@@ -323,12 +323,25 @@ export function PetsDrivenApp() {
           return;
         }
 
-        const agentEvent = createAgentEventFromClaudeHook(routedPayload, {
-          defaultSourceId: "agent-a",
-          now: fixtureScenarioRef.current.clock.now(),
-        });
+        // Fan the event into every live world. Only the pet whose
+        // AgentBinding.sourceId matches reacts; the others ignore it. Each
+        // world stamps the event with its own clock since they advance
+        // independently.
+        for (const scenario of [
+          fixtureScenarioRef.current,
+          adoptedScenarioRef.current,
+        ]) {
+          if (!scenario) {
+            continue;
+          }
 
-        fixtureScenarioRef.current.world.pushEvent(toWorldEvent(agentEvent));
+          const agentEvent = createAgentEventFromClaudeHook(routedPayload, {
+            defaultSourceId: "agent-a",
+            now: scenario.clock.now(),
+          });
+
+          scenario.world.pushEvent(toWorldEvent(agentEvent));
+        }
       } catch (error) {
         setPetWindowError(formatCommandError(error));
       }
@@ -579,6 +592,33 @@ export function PetsDrivenApp() {
     }
   }
 
+  // Fire a real hook event at the first adopted pet's folder so the full
+  // ingress → routing → adopted world path can be verified visually.
+  async function pokeFirstPet() {
+    setPetWindowError(null);
+
+    const directory =
+      petsDrivenStateRef.current.registeredWorkingDirectories.find(
+        (candidate) =>
+          petsDrivenStateRef.current.pets.some(
+            (pet) => pet.id === candidate.petId && !pet.archived && pet.visible,
+          ),
+      );
+
+    if (!directory) {
+      setPetWindowError("No adopted pet with a folder to poke.");
+      return;
+    }
+
+    try {
+      await invoke("emit_test_claude_hook_ingress_event", {
+        cwd: directory.path,
+      });
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
   async function resetPets() {
     setPetWindowError(null);
 
@@ -718,6 +758,14 @@ export function PetsDrivenApp() {
             variant="neutral"
           >
             Test event
+          </Button>
+          <Button
+            aria-label="Poke the first adopted pet"
+            onClick={() => void pokeFirstPet()}
+            size="sm"
+            variant="accent"
+          >
+            Poke pet
           </Button>
           {claudeHookIngressStatus.error ? (
             <small>{claudeHookIngressStatus.error}</small>
