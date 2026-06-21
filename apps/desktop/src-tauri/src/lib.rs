@@ -596,6 +596,19 @@ async fn close_pet_window_playground(app: tauri::AppHandle) -> Result<(), String
     Ok(())
 }
 
+#[tauri::command]
+async fn close_all_pet_windows(app: tauri::AppHandle) -> Result<(), String> {
+    for (label, window) in app.webview_windows() {
+        if label.starts_with("pet-window-") {
+            window
+                .destroy()
+                .map_err(|error| format!("Could not close {label}: {error}"))?;
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -716,6 +729,7 @@ mod tests {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let claude_hook_ingress_status =
                 Arc::new(Mutex::new(ClaudeHookIngressStatus::pending()));
@@ -735,7 +749,8 @@ pub fn run() {
             load_codex_pet_spritesheet,
             open_pet_window,
             open_pet_window_playground,
-            close_pet_window_playground
+            close_pet_window_playground,
+            close_all_pet_windows
         ])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");

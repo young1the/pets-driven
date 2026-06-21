@@ -1,4 +1,5 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import { withDesktopFixtureWorkingDirectories } from "@/app-state/dev-fixtures";
 import {
   createEmptyPetsDrivenState,
@@ -24,6 +25,8 @@ export type DesktopGateway = {
   writePetsDrivenState(state: PetsDrivenState): Promise<void>;
   listPetPackages(): Promise<CodexPetPackage[]>;
   openPetWindow(petId: string, assetId: string): Promise<void>;
+  /** Open the OS folder picker; null when cancelled or outside Tauri. */
+  pickDirectory(): Promise<string | null>;
 };
 
 function withDevFixtures(state: PetsDrivenState): PetsDrivenState {
@@ -70,5 +73,15 @@ export const desktopGateway: DesktopGateway = {
     }
 
     await invoke("open_pet_window", { petId, assetId });
+  },
+
+  async pickDirectory() {
+    if (!isTauri()) {
+      return null;
+    }
+
+    const selection = await open({ directory: true, multiple: false });
+
+    return typeof selection === "string" ? selection : null;
   },
 };

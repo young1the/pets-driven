@@ -1,7 +1,8 @@
-import type {
-  PetRecord,
-  PetsDrivenState,
-  RegisteredWorkingDirectory,
+import {
+  normalizeWorkingDirectoryPath,
+  type PetRecord,
+  type PetsDrivenState,
+  type RegisteredWorkingDirectory,
 } from "@/app-state/pets-driven-state";
 import type { PetPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
@@ -87,6 +88,75 @@ export function linkPetToWorkingDirectory(
 
       return pet;
     }),
+  };
+}
+
+export type RegisterWorkingDirectoryInput = {
+  petId: string;
+  path: string;
+  /** Id + agent source used only when a new directory is created. */
+  workingDirectoryId: string;
+  agentSourceId: string;
+  now: number;
+};
+
+export type RegisterWorkingDirectoryResult =
+  | { status: "linked"; state: PetsDrivenState; workingDirectoryId: string }
+  | { status: "occupied"; ownerPetId: string };
+
+function comparablePath(path: string): string {
+  return normalizeWorkingDirectoryPath(path).toLowerCase();
+}
+
+/**
+ * Register (or reuse) a working directory for a pet — the Pet Birth moment.
+ * Enforces 1 pet : 1 folder: a directory already held by a *different*
+ * existing pet is reported as `occupied` instead of being stolen here.
+ */
+export function registerWorkingDirectory(
+  state: PetsDrivenState,
+  input: RegisterWorkingDirectoryInput,
+): RegisterWorkingDirectoryResult {
+  const normalizedPath = normalizeWorkingDirectoryPath(input.path);
+  const existing = state.registeredWorkingDirectories.find(
+    (workingDirectory) =>
+      comparablePath(workingDirectory.path) === comparablePath(normalizedPath),
+  );
+
+  if (existing && existing.petId !== input.petId) {
+    const owner = state.pets.find((pet) => pet.id === existing.petId);
+
+    if (owner) {
+      return { status: "occupied", ownerPetId: owner.id };
+    }
+  }
+
+  const workingDirectoryId = existing ? existing.id : input.workingDirectoryId;
+  const withDirectory: PetsDrivenState = existing
+    ? state
+    : {
+        ...state,
+        registeredWorkingDirectories: [
+          ...state.registeredWorkingDirectories,
+          {
+            id: workingDirectoryId,
+            path: normalizedPath,
+            petId: input.petId,
+            agentSourceId: input.agentSourceId,
+            createdAt: input.now,
+            updatedAt: input.now,
+          },
+        ],
+      };
+
+  return {
+    status: "linked",
+    state: linkPetToWorkingDirectory(
+      withDirectory,
+      input.petId,
+      workingDirectoryId,
+    ),
+    workingDirectoryId,
   };
 }
 
