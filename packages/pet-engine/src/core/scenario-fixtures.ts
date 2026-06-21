@@ -61,7 +61,11 @@ export function deriveIdleConversation(
 export function deriveJumpForwardImpulse(
   p: PersonalityComponent,
 ): NonNullable<CanJumpComponent["forwardImpulse"]> {
-  const energy = clamp(0.6 + p.extraversion * 0.55 - p.neuroticism * 0.25, 0.25, 1.25);
+  const energy = clamp(
+    0.6 + p.extraversion * 0.55 - p.neuroticism * 0.25,
+    0.25,
+    1.25,
+  );
   const variance = clamp(
     0.85 + p.openness * 0.45 - p.conscientiousness * 0.2 - p.neuroticism * 0.1,
     0.6,
@@ -104,46 +108,46 @@ export function createFixturePet(input: {
   };
 
   const allComponents: Component[] = [
-      { type: "PetIdentity" as const, name: input.name },
-      { type: "AgentBinding" as const, sourceId: input.sourceId },
-      // MovementProfile is NOT hardcoded here — derived from Personality below.
-      { type: "IntentState" as const, intent: "idle" as const },
-      {
-        type: "MotionTarget" as const,
-        targetEntityId: null,
-        targetPosition: null,
-      },
-      {
-        type: "ContactState" as const,
-        grounded: false,
-        climbableSurfaceId: null,
-        climbableSurfacePosition: null,
-      },
-      { type: "ActivityState" as const, lastActiveAt: 0 },
-      {
-        type: "CompletionBehavior" as const,
-        intentAfterCompletion: "idle" as const,
-      },
-      { type: "SpeechState" as const, speech: null, expiresAt: null },
-      { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
-      { type: "Transform" as const, position: { x: input.x, y: input.y } },
-      {
-        type: "PhysicsBody" as const,
-        shape: "rectangle" as const,
-        ...DEFAULT_PET_BODY_SIZE,
-      },
-      { type: "CanDrag" as const },
-      { type: "CanControl" as const, speed: DEFAULT_PET_CONTROL_SPEED },
-      {
-        type: "Perception" as const,
-        userAnchor: null,
-        nearbyPets: [],
-        nearbyClimbables: [],
-        self: { grounded: false, climbing: false, intent: "idle" as const },
-      },
-      // Default personality — per-pet entries in input.components override this.
-      defaultPersonality,
-      ...input.components,
+    { type: "PetIdentity" as const, name: input.name },
+    { type: "AgentBinding" as const, sourceId: input.sourceId },
+    // MovementProfile is NOT hardcoded here — derived from Personality below.
+    { type: "IntentState" as const, intent: "idle" as const },
+    {
+      type: "MotionTarget" as const,
+      targetEntityId: null,
+      targetPosition: null,
+    },
+    {
+      type: "ContactState" as const,
+      grounded: false,
+      climbableSurfaceId: null,
+      climbableSurfacePosition: null,
+    },
+    { type: "ActivityState" as const, lastActiveAt: 0 },
+    {
+      type: "CompletionBehavior" as const,
+      intentAfterCompletion: "idle" as const,
+    },
+    { type: "SpeechState" as const, speech: null, expiresAt: null },
+    { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
+    { type: "Transform" as const, position: { x: input.x, y: input.y } },
+    {
+      type: "PhysicsBody" as const,
+      shape: "rectangle" as const,
+      ...DEFAULT_PET_BODY_SIZE,
+    },
+    { type: "CanDrag" as const },
+    { type: "CanControl" as const, speed: DEFAULT_PET_CONTROL_SPEED },
+    {
+      type: "Perception" as const,
+      userAnchor: null,
+      nearbyPets: [],
+      nearbyClimbables: [],
+      self: { grounded: false, climbing: false, intent: "idle" as const },
+    },
+    // Default personality — per-pet entries in input.components override this.
+    defaultPersonality,
+    ...input.components,
   ];
 
   // Post-processing: derive MovementProfile and IdleConversation from the
@@ -153,8 +157,12 @@ export function createFixturePet(input: {
     .reverse()
     .find((c): c is PersonalityComponent => c.type === "Personality");
 
-  const hasMovementProfile = allComponents.some((c) => c.type === "MovementProfile");
-  const hasIdleConversation = allComponents.some((c) => c.type === "IdleConversation");
+  const hasMovementProfile = allComponents.some(
+    (c) => c.type === "MovementProfile",
+  );
+  const hasIdleConversation = allComponents.some(
+    (c) => c.type === "IdleConversation",
+  );
 
   if (!hasMovementProfile && effectivePersonality) {
     allComponents.push(deriveMovementProfile(effectivePersonality));
@@ -166,7 +174,10 @@ export function createFixturePet(input: {
     const forwardImpulse = deriveJumpForwardImpulse(effectivePersonality);
     for (let index = 0; index < allComponents.length; index += 1) {
       const component = allComponents[index];
-      if (component.type === "CanJump" && component.forwardImpulse === undefined) {
+      if (
+        component.type === "CanJump" &&
+        component.forwardImpulse === undefined
+      ) {
         allComponents[index] = {
           ...component,
           forwardImpulse,
@@ -191,9 +202,10 @@ export function createDemoScenario(options?: {
   const width = viewport.width;
   const height = viewport.height;
   const groundThickness = 48;
-  const userAnchor = options?.userAnchor === undefined
-    ? defaultUserAnchorForLayout(monitorLayout)
-    : options.userAnchor;
+  const userAnchor =
+    options?.userAnchor === undefined
+      ? defaultUserAnchorForLayout(monitorLayout)
+      : options.userAnchor;
   const petBodyComponents: Component[] = options?.petBodySize
     ? [
         {
@@ -230,7 +242,11 @@ export function createDemoScenario(options?: {
         id: "user-interaction",
         components: [
           { type: "KeyboardControlTarget", entityId: null },
-          { type: "KeyboardInputState", pressedCodes: [], vector: { x: 0, y: 0 } },
+          {
+            type: "KeyboardInputState",
+            pressedCodes: [],
+            vector: { x: 0, y: 0 },
+          },
         ],
       },
       {
@@ -265,7 +281,14 @@ export function createDemoScenario(options?: {
           { type: "CanWallClimb", velocity: DEFAULT_PET_CLIMB_VELOCITY },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // playful: high openness + extraversion, low neuroticism
-          { type: "Personality", openness: 0.7, conscientiousness: 0.4, extraversion: 0.85, agreeableness: 0.5, neuroticism: 0.1 },
+          {
+            type: "Personality",
+            openness: 0.7,
+            conscientiousness: 0.4,
+            extraversion: 0.85,
+            agreeableness: 0.5,
+            neuroticism: 0.1,
+          },
         ],
       }),
       createFixturePet({
@@ -282,7 +305,7 @@ export function createDemoScenario(options?: {
             ? {
                 type: "CanJump",
                 impulse: DEFAULT_PET_JUMP_IMPULSE * 1.8,
-                forwardImpulse: { min: 0.030, max: 0.030 },
+                forwardImpulse: { min: 0.03, max: 0.03 },
               }
             : { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
           ...(isDualMonitor
@@ -297,7 +320,14 @@ export function createDemoScenario(options?: {
           { type: "JumpActionState", phase: "requested", cooldownMs: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // attentive: high extraversion + agreeableness
-          { type: "Personality", openness: 0.3, conscientiousness: 0.6, extraversion: 0.8, agreeableness: 0.8, neuroticism: 0.2 },
+          {
+            type: "Personality",
+            openness: 0.3,
+            conscientiousness: 0.6,
+            extraversion: 0.8,
+            agreeableness: 0.8,
+            neuroticism: 0.2,
+          },
         ],
       }),
       createFixturePet({
@@ -343,7 +373,14 @@ export function createDemoScenario(options?: {
               ]
             : []),
           // playful + climb tendency: high openness + extraversion
-          { type: "Personality", openness: 0.7, conscientiousness: 0.4, extraversion: 0.85, agreeableness: 0.5, neuroticism: 0.1 },
+          {
+            type: "Personality",
+            openness: 0.7,
+            conscientiousness: 0.4,
+            extraversion: 0.85,
+            agreeableness: 0.5,
+            neuroticism: 0.1,
+          },
         ],
       }),
       createFixturePet({
@@ -359,7 +396,14 @@ export function createDemoScenario(options?: {
           { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           // reserved: high neuroticism, low extraversion
-          { type: "Personality", openness: 0.3, conscientiousness: 0.5, extraversion: 0.2, agreeableness: 0.4, neuroticism: 0.75 },
+          {
+            type: "Personality",
+            openness: 0.3,
+            conscientiousness: 0.5,
+            extraversion: 0.2,
+            agreeableness: 0.4,
+            neuroticism: 0.75,
+          },
         ],
       }),
       createFixturePet({
@@ -373,7 +417,14 @@ export function createDemoScenario(options?: {
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
-          { type: "Personality", openness: 0.6, conscientiousness: 0.5, extraversion: 0.6, agreeableness: 0.7, neuroticism: 0.2 },
+          {
+            type: "Personality",
+            openness: 0.6,
+            conscientiousness: 0.5,
+            extraversion: 0.6,
+            agreeableness: 0.7,
+            neuroticism: 0.2,
+          },
         ],
       }),
       createFixturePet({
@@ -387,7 +438,14 @@ export function createDemoScenario(options?: {
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
-          { type: "Personality", openness: 0.4, conscientiousness: 0.7, extraversion: 0.5, agreeableness: 0.6, neuroticism: 0.25 },
+          {
+            type: "Personality",
+            openness: 0.4,
+            conscientiousness: 0.7,
+            extraversion: 0.5,
+            agreeableness: 0.6,
+            neuroticism: 0.25,
+          },
         ],
       }),
       createFixturePet({
@@ -401,9 +459,89 @@ export function createDemoScenario(options?: {
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
-          { type: "Personality", openness: 0.55, conscientiousness: 0.45, extraversion: 0.65, agreeableness: 0.55, neuroticism: 0.2 },
+          {
+            type: "Personality",
+            openness: 0.55,
+            conscientiousness: 0.45,
+            extraversion: 0.65,
+            agreeableness: 0.55,
+            neuroticism: 0.2,
+          },
         ],
       }),
+    ],
+  });
+
+  return { clock, world };
+}
+
+/**
+ * Build a live world seeded with the user's actual adopted pets so they walk,
+ * jump and wander on the screen floor exactly like the demo playground pets.
+ * Unlike createDemoScenario the roster is dynamic — one grounded walker per
+ * adopted pet, evenly spaced, with movement derived from its personality.
+ */
+export function createAdoptedPetsScenario(
+  pets: ReadonlyArray<{
+    id: string;
+    name: string;
+    sourceId: string;
+    personality?: PersonalityComponent;
+  }>,
+  options?: { petBodySize?: { width: number; height: number } },
+) {
+  const clock = createManualClock(0);
+  const monitors = resolveMonitorLayout("single");
+  const viewport = getWorldViewport(monitors);
+  const groundThickness = 48;
+  const floorY = viewport.height - 40;
+  const spacing = viewport.width / (pets.length + 1);
+  const petBodyComponents: Component[] = options?.petBodySize
+    ? [
+        {
+          type: "PhysicsBody",
+          shape: "rectangle",
+          width: options.petBodySize.width,
+          height: options.petBodySize.height,
+        },
+      ]
+    : [];
+  const world = createWorld({
+    width: viewport.width,
+    height: viewport.height,
+    viewport,
+    monitors,
+    clock,
+    entities: [
+      ...createMonitorBoundaryEntities(monitors, groundThickness),
+      {
+        id: "user-interaction",
+        components: [
+          { type: "KeyboardControlTarget", entityId: null },
+          {
+            type: "KeyboardInputState",
+            pressedCodes: [],
+            vector: { x: 0, y: 0 },
+          },
+        ],
+      },
+      ...pets.map((pet, index) =>
+        createFixturePet({
+          id: pet.id,
+          sourceId: pet.sourceId,
+          name: pet.name,
+          x: spacing * (index + 1),
+          y: floorY,
+          components: [
+            ...petBodyComponents,
+            { type: "WalkingTag" },
+            { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+            { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE },
+            { type: "WandersOnArrival", arrivalRadius: 16 },
+            ...(pet.personality ? [pet.personality] : []),
+          ],
+        }),
+      ),
     ],
   });
 
@@ -421,13 +559,81 @@ export const JUMP_PLAYGROUND_PET_IDS = [
 ] as const;
 
 const JUMP_PLAYGROUND_PETS = [
-  { id: "pet-a", sourceId: "agent-a", name: "Alice", wallId: "jump-wall-a", x: 200, leftX: 160, rightX: 240, wallX: 32, wallTargetX: 128, wallHeight: 72, impulseMultiplier: 18, min: 0.130, max: 0.130 },
-  { id: "pet-b", sourceId: "agent-b", name: "Bob", x: 340, leftX: 300, rightX: 380, min: 0.040, max: 0.110 },
-  { id: "pet-c", sourceId: "agent-c", name: "Charlie", x: 460, leftX: 420, rightX: 500, min: 0.080, max: 0.170 },
-  { id: "pet-d", sourceId: "agent-d", name: "Dana", x: 580, leftX: 540, rightX: 620, min: 0.030, max: 0.085 },
-  { id: "pet-e", sourceId: "agent-e", name: "Eve", x: 700, leftX: 660, rightX: 740, min: 0.070, max: 0.150 },
-  { id: "pet-f", sourceId: "agent-f", name: "Finn", x: 820, leftX: 780, rightX: 860, min: 0.050, max: 0.120 },
-  { id: "pet-g", sourceId: "agent-g", name: "Gwen", x: 920, leftX: 880, rightX: 936, min: 0.090, max: 0.190 },
+  {
+    id: "pet-a",
+    sourceId: "agent-a",
+    name: "Alice",
+    wallId: "jump-wall-a",
+    x: 200,
+    leftX: 160,
+    rightX: 240,
+    wallX: 32,
+    wallTargetX: 128,
+    wallHeight: 72,
+    impulseMultiplier: 18,
+    min: 0.13,
+    max: 0.13,
+  },
+  {
+    id: "pet-b",
+    sourceId: "agent-b",
+    name: "Bob",
+    x: 340,
+    leftX: 300,
+    rightX: 380,
+    min: 0.04,
+    max: 0.11,
+  },
+  {
+    id: "pet-c",
+    sourceId: "agent-c",
+    name: "Charlie",
+    x: 460,
+    leftX: 420,
+    rightX: 500,
+    min: 0.08,
+    max: 0.17,
+  },
+  {
+    id: "pet-d",
+    sourceId: "agent-d",
+    name: "Dana",
+    x: 580,
+    leftX: 540,
+    rightX: 620,
+    min: 0.03,
+    max: 0.085,
+  },
+  {
+    id: "pet-e",
+    sourceId: "agent-e",
+    name: "Eve",
+    x: 700,
+    leftX: 660,
+    rightX: 740,
+    min: 0.07,
+    max: 0.15,
+  },
+  {
+    id: "pet-f",
+    sourceId: "agent-f",
+    name: "Finn",
+    x: 820,
+    leftX: 780,
+    rightX: 860,
+    min: 0.05,
+    max: 0.12,
+  },
+  {
+    id: "pet-g",
+    sourceId: "agent-g",
+    name: "Gwen",
+    x: 920,
+    leftX: 880,
+    rightX: 936,
+    min: 0.09,
+    max: 0.19,
+  },
 ] as const;
 
 export function nextJumpPlaygroundTarget(
@@ -466,7 +672,9 @@ function jumpPlaygroundWallTopY(height: number) {
   return 540 - height;
 }
 
-export function createJumpPlaygroundScenario(options?: { startJumping?: boolean }) {
+export function createJumpPlaygroundScenario(options?: {
+  startJumping?: boolean;
+}) {
   const clock = createManualClock(0);
   const monitors = resolveMonitorLayout("single");
   const viewport = getWorldViewport(monitors);
@@ -484,14 +692,21 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
         id: "user-interaction",
         components: [
           { type: "KeyboardControlTarget", entityId: null },
-          { type: "KeyboardInputState", pressedCodes: [], vector: { x: 0, y: 0 } },
+          {
+            type: "KeyboardInputState",
+            pressedCodes: [],
+            vector: { x: 0, y: 0 },
+          },
         ],
       },
       ...JUMP_PLAYGROUND_PETS.filter((pet) => "wallId" in pet).map((pet) => ({
         id: pet.wallId,
         components: [
           { type: "Ground" as const },
-          { type: "Transform" as const, position: { x: pet.wallX, y: viewport.height - pet.wallHeight / 2 } },
+          {
+            type: "Transform" as const,
+            position: { x: pet.wallX, y: viewport.height - pet.wallHeight / 2 },
+          },
           {
             type: "PhysicsBody" as const,
             shape: "rectangle" as const,
@@ -514,7 +729,12 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
               shape: "rectangle",
               ...JUMP_PLAYGROUND_BODY_SIZE,
             },
-            { type: "PhysicsMaterial", friction: 0.1, frictionAir: 0.008, restitution: 0 },
+            {
+              type: "PhysicsMaterial",
+              friction: 0.1,
+              frictionAir: 0.008,
+              restitution: 0,
+            },
             { type: "WalkingTag" },
             {
               type: "MotionTarget",
@@ -523,13 +743,28 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
             },
             {
               type: "CanJump",
-              impulse: DEFAULT_PET_JUMP_IMPULSE * ("impulseMultiplier" in pet ? pet.impulseMultiplier : 14),
+              impulse:
+                DEFAULT_PET_JUMP_IMPULSE *
+                ("impulseMultiplier" in pet ? pet.impulseMultiplier : 14),
               forwardImpulse: { min: pet.min, max: pet.max },
             },
             ...(options?.startJumping === false
               ? []
-              : [{ type: "JumpActionState" as const, phase: "requested" as const, cooldownMs: 0 }]),
-            { type: "Personality", openness: 0.7, conscientiousness: 0.35, extraversion: 0.85, agreeableness: 0.5, neuroticism: 0.1 },
+              : [
+                  {
+                    type: "JumpActionState" as const,
+                    phase: "requested" as const,
+                    cooldownMs: 0,
+                  },
+                ]),
+            {
+              type: "Personality",
+              openness: 0.7,
+              conscientiousness: 0.35,
+              extraversion: 0.85,
+              agreeableness: 0.5,
+              neuroticism: 0.1,
+            },
           ],
         }),
       ),
@@ -548,11 +783,66 @@ export const CLIMB_PLAYGROUND_PET_IDS = [
 ] as const;
 
 const CLIMB_PLAYGROUND_PETS = [
-  { id: "pet-a", sourceId: "agent-a", name: "Alice", wallId: "climb-wall-a", x: 120, startY: 448, targetY: 104, velocity: 2.0, min: 0.040, max: 0.090 },
-  { id: "pet-b", sourceId: "agent-b", name: "Bob", wallId: "climb-wall-b", x: 300, startY: 448, targetY: 136, velocity: 1.6, min: 0.030, max: 0.075 },
-  { id: "pet-c", sourceId: "agent-c", name: "Charlie", wallId: "climb-wall-c", x: 480, startY: 448, targetY: 88, velocity: 2.3, min: 0.050, max: 0.110 },
-  { id: "pet-d", sourceId: "agent-d", name: "Dana", wallId: "climb-wall-d", x: 660, startY: 448, targetY: 160, velocity: 1.3, min: 0.025, max: 0.060 },
-  { id: "pet-e", sourceId: "agent-e", name: "Eve", wallId: "climb-wall-e", x: 840, startY: 448, targetY: 112, velocity: 1.9, min: 0.045, max: 0.100 },
+  {
+    id: "pet-a",
+    sourceId: "agent-a",
+    name: "Alice",
+    wallId: "climb-wall-a",
+    x: 120,
+    startY: 448,
+    targetY: 104,
+    velocity: 2.0,
+    min: 0.04,
+    max: 0.09,
+  },
+  {
+    id: "pet-b",
+    sourceId: "agent-b",
+    name: "Bob",
+    wallId: "climb-wall-b",
+    x: 300,
+    startY: 448,
+    targetY: 136,
+    velocity: 1.6,
+    min: 0.03,
+    max: 0.075,
+  },
+  {
+    id: "pet-c",
+    sourceId: "agent-c",
+    name: "Charlie",
+    wallId: "climb-wall-c",
+    x: 480,
+    startY: 448,
+    targetY: 88,
+    velocity: 2.3,
+    min: 0.05,
+    max: 0.11,
+  },
+  {
+    id: "pet-d",
+    sourceId: "agent-d",
+    name: "Dana",
+    wallId: "climb-wall-d",
+    x: 660,
+    startY: 448,
+    targetY: 160,
+    velocity: 1.3,
+    min: 0.025,
+    max: 0.06,
+  },
+  {
+    id: "pet-e",
+    sourceId: "agent-e",
+    name: "Eve",
+    wallId: "climb-wall-e",
+    x: 840,
+    startY: 448,
+    targetY: 112,
+    velocity: 1.9,
+    min: 0.045,
+    max: 0.1,
+  },
 ] as const;
 
 export function createClimbPlaygroundScenario() {
@@ -573,14 +863,21 @@ export function createClimbPlaygroundScenario() {
         id: "user-interaction",
         components: [
           { type: "KeyboardControlTarget", entityId: null },
-          { type: "KeyboardInputState", pressedCodes: [], vector: { x: 0, y: 0 } },
+          {
+            type: "KeyboardInputState",
+            pressedCodes: [],
+            vector: { x: 0, y: 0 },
+          },
         ],
       },
       ...CLIMB_PLAYGROUND_PETS.map((pet) => ({
         id: pet.wallId,
         components: [
           { type: "ClimbableSurface" as const },
-          { type: "Transform" as const, position: { x: pet.x, y: viewport.height / 2 } },
+          {
+            type: "Transform" as const,
+            position: { x: pet.x, y: viewport.height / 2 },
+          },
         ],
       })),
       ...CLIMB_PLAYGROUND_PETS.map((pet) =>
@@ -596,7 +893,12 @@ export function createClimbPlaygroundScenario() {
               shape: "rectangle",
               ...bodySize,
             },
-            { type: "PhysicsMaterial", friction: 0.1, frictionAir: 0.008, restitution: 0 },
+            {
+              type: "PhysicsMaterial",
+              friction: 0.1,
+              frictionAir: 0.008,
+              restitution: 0,
+            },
             { type: "ClimbingTag" },
             { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
             { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 8 },
@@ -624,7 +926,14 @@ export function createClimbPlaygroundScenario() {
               surfaceEntityId: pet.wallId,
               targetY: pet.targetY,
             },
-            { type: "Personality", openness: 0.7, conscientiousness: 0.35, extraversion: 0.8, agreeableness: 0.5, neuroticism: 0.15 },
+            {
+              type: "Personality",
+              openness: 0.7,
+              conscientiousness: 0.35,
+              extraversion: 0.8,
+              agreeableness: 0.5,
+              neuroticism: 0.15,
+            },
           ],
         }),
       ),
@@ -634,7 +943,9 @@ export function createClimbPlaygroundScenario() {
   return { clock, world };
 }
 
-function resolveMonitorLayout(layout: "single" | "dual-horizontal"): MonitorWorkArea[] {
+function resolveMonitorLayout(
+  layout: "single" | "dual-horizontal",
+): MonitorWorkArea[] {
   if (layout === "dual-horizontal") {
     return [
       { id: "left", x: -640, y: 0, width: 640, height: 480 },

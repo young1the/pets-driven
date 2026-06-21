@@ -4,6 +4,7 @@ import {
   getPetForWorkingDirectory,
   getWorkingDirectoryForPet,
   linkPetToWorkingDirectory,
+  registerWorkingDirectory,
 } from "@/app-state/pet-adoption";
 import {
   createEmptyPetsDrivenState,
@@ -88,10 +89,12 @@ describe("linkPetToWorkingDirectory", () => {
 
     const stolen = linkPetToWorkingDirectory(state, "pet-2", "wd-1");
 
-    expect(stolen.pets.find((pet) => pet.id === "pet-1")?.workingDirectoryId)
-      .toBeNull();
-    expect(stolen.pets.find((pet) => pet.id === "pet-2")?.workingDirectoryId)
-      .toBe("wd-1");
+    expect(
+      stolen.pets.find((pet) => pet.id === "pet-1")?.workingDirectoryId,
+    ).toBeNull();
+    expect(
+      stolen.pets.find((pet) => pet.id === "pet-2")?.workingDirectoryId,
+    ).toBe("wd-1");
     expect(getPetForWorkingDirectory(stolen, "wd-1")?.id).toBe("pet-2");
   });
 
@@ -114,5 +117,53 @@ describe("linkPetToWorkingDirectory", () => {
 
     expect(linkPetToWorkingDirectory(state, "pet-1", "wd-missing")).toBe(state);
     expect(linkPetToWorkingDirectory(state, "pet-missing", "wd-1")).toBe(state);
+  });
+});
+
+describe("registerWorkingDirectory", () => {
+  function register(state: PetsDrivenState, petId: string, path: string) {
+    return registerWorkingDirectory(state, {
+      petId,
+      path,
+      workingDirectoryId: `wd-${petId}`,
+      agentSourceId: `agent-${petId}`,
+      now: 99,
+    });
+  }
+
+  it("creates a directory at the normalized path and links the pet", () => {
+    const state = adopt(createEmptyPetsDrivenState(), "pet-1");
+
+    const result = register(state, "pet-1", "D:/projects/app/");
+
+    expect(result.status).toBe("linked");
+    if (result.status !== "linked") return;
+    const directory = result.state.registeredWorkingDirectories[0];
+    expect(directory.path).toBe("D:\\projects\\app");
+    expect(directory.petId).toBe("pet-1");
+    expect(result.state.pets[0].workingDirectoryId).toBe(directory.id);
+  });
+
+  it("reports occupied when another existing pet already holds the folder", () => {
+    let state = adopt(createEmptyPetsDrivenState(), "pet-1");
+    state = adopt(state, "pet-2");
+    const held = register(state, "pet-1", "D:\\code\\shared");
+    if (held.status === "linked") state = held.state;
+
+    const result = register(state, "pet-2", "d:/code/shared");
+
+    expect(result).toEqual({ status: "occupied", ownerPetId: "pet-1" });
+  });
+
+  it("relinks the same pet to its existing folder without duplicating it", () => {
+    let state = adopt(createEmptyPetsDrivenState(), "pet-1");
+    const first = register(state, "pet-1", "D:\\code\\app");
+    if (first.status === "linked") state = first.state;
+
+    const result = register(state, "pet-1", "D:\\code\\app");
+
+    expect(result.status).toBe("linked");
+    if (result.status !== "linked") return;
+    expect(result.state.registeredWorkingDirectories).toHaveLength(1);
   });
 });

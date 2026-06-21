@@ -15,8 +15,10 @@ describe("pet window tauri capability", () => {
     ),
   ) as TauriCapability;
 
-  it("covers dynamic Pet Window labels", () => {
-    expect(capability.windows).toContain("pet-window-playground-*");
+  it("covers dynamic Pet Window labels (playground + adopted pets)", () => {
+    // "pet-window-*" matches both pet-window-playground-N and the per-pet
+    // adopted windows labelled pet-window-<uuid>.
+    expect(capability.windows).toContain("pet-window-*");
   });
 
   it("allows the native window APIs used by Pet Windows", () => {
@@ -26,9 +28,7 @@ describe("pet window tauri capability", () => {
     expect(capability.permissions).toContain(
       "core:window:allow-outer-position",
     );
-    expect(capability.permissions).toContain(
-      "core:window:allow-set-position",
-    );
+    expect(capability.permissions).toContain("core:window:allow-set-position");
     expect(capability.permissions).toContain(
       "core:window:allow-set-ignore-cursor-events",
     );

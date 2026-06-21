@@ -10,10 +10,7 @@ import {
 } from "@/adapters/agent-events/claude-hook-ingress";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
-import {
-  desktopGateway,
-  type CodexPetPackage,
-} from "@/app/desktop-gateway";
+import { desktopGateway, type CodexPetPackage } from "@/app/desktop-gateway";
 import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
 import { withDesktopFixtureWorkingDirectories } from "@/app-state/dev-fixtures";
 import {
@@ -21,7 +18,11 @@ import {
   resolveRegisteredWorkingDirectoryForCwd,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
-import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import {
+  createAdoptedPetsScenario,
+  createDemoScenario,
+} from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
 import {
@@ -69,10 +70,7 @@ function petWindowPlaygroundLabelForPetId(petId: string) {
   return index >= 0 ? `pet-window-playground-${index + 1}` : null;
 }
 
-function desktopFixturePetBodySize(bounds: {
-  width: number;
-  height: number;
-}) {
+function desktopFixturePetBodySize(bounds: { width: number; height: number }) {
   const scaleX = bounds.width / DESKTOP_FIXTURE_WORLD_SIZE.width;
   const scaleY = bounds.height / DESKTOP_FIXTURE_WORLD_SIZE.height;
 
@@ -133,6 +131,17 @@ export function PetsDrivenApp() {
     width: number;
     height: number;
   } | null>(null);
+  const adoptedScenarioRef = useRef<ReturnType<
+    typeof createAdoptedPetsScenario
+  > | null>(null);
+  const adoptedPetIdsRef = useRef<Set<string>>(new Set());
+  const adoptedHostSequenceRef = useRef(0);
+  const adoptedHostBoundsRef = useRef<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const { view, navigate } = useAppNavigation();
   const [petsDrivenState, setPetsDrivenState] = useState<PetsDrivenState>(
     petsDrivenStateRef.current,
@@ -150,6 +159,14 @@ export function PetsDrivenApp() {
     petsDrivenStateRef.current = next;
     setPetsDrivenState(next);
   }
+
+  // Stable signature of the visible pet roster; the adopted-pet host rebuilds
+  // its world whenever this changes.
+  const adoptedSimKey = petsDrivenState.pets
+    .filter((pet) => !pet.archived && pet.visible)
+    .map((pet) => `${pet.id}:${pet.assetId}`)
+    .sort()
+    .join(",");
 
   useEffect(() => {
     let isMounted = true;
@@ -220,23 +237,29 @@ export function PetsDrivenApp() {
 
     void listen<PetWindowInputEvent>(PET_WINDOW_INPUT_EVENT, (event) => {
       const input = event.payload;
-      const bounds = fixtureHostBoundsRef.current;
-      const snapshot = fixtureScenarioRef.current.world.snapshot();
+      const isAdopted = adoptedPetIdsRef.current.has(input.petId);
+      const scenario = isAdopted
+        ? adoptedScenarioRef.current
+        : fixtureScenarioRef.current;
+      const bounds = isAdopted
+        ? adoptedHostBoundsRef.current
+        : fixtureHostBoundsRef.current;
 
-      if (!bounds || !input.kind.startsWith("body.pointer.")) {
+      if (!scenario || !bounds || !input.kind.startsWith("body.pointer.")) {
         return;
       }
 
+      const snapshot = scenario.world.snapshot();
       const scaleX = bounds.width / snapshot.width;
       const scaleY = bounds.height / snapshot.height;
-      fixtureScenarioRef.current.world.pushEvent({
+      scenario.world.pushEvent({
         kind: "pointer",
         type: input.kind.replace("body.", "") as
           | "pointer.down"
           | "pointer.move"
           | "pointer.up",
         pointerId: input.pointerId,
-        at: fixtureScenarioRef.current.clock.now(),
+        at: scenario.clock.now(),
         position: {
           x: (input.screenPoint.x - bounds.x) / scaleX,
           y: (input.screenPoint.y - bounds.y) / scaleY,
@@ -290,10 +313,11 @@ export function PetsDrivenApp() {
 
     void listen<unknown>(CLAUDE_HOOK_INGRESS_EVENT, (event) => {
       try {
-        const routedPayload = routeClaudeHookPayloadToRegisteredWorkingDirectory(
-          event.payload,
-          petsDrivenStateRef.current,
-        );
+        const routedPayload =
+          routeClaudeHookPayloadToRegisteredWorkingDirectory(
+            event.payload,
+            petsDrivenStateRef.current,
+          );
 
         if (!routedPayload) {
           return;
@@ -384,6 +408,101 @@ export function PetsDrivenApp() {
     };
   }, [desktopFixtureWindowCount]);
 
+  // Drive the user's adopted pets the same way the fixture host drives the
+  // playground: one shared simulation world, projected onto each pet's overlay
+  // window. Rebuilds whenever the visible roster changes.
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    const simInputs = selectAdoptedPetSimInputs(petsDrivenStateRef.current);
+
+    if (simInputs.length === 0) {
+      adoptedScenarioRef.current = null;
+      adoptedPetIdsRef.current = new Set();
+      return;
+    }
+
+    let isActive = true;
+    let isBroadcasting = false;
+
+    // Each visible pet needs its overlay window before frames can land.
+    for (const pet of simInputs) {
+      const record = petsDrivenStateRef.current.pets.find(
+        (candidate) => candidate.id === pet.id,
+      );
+
+      if (record) {
+        void desktopGateway
+          .openPetWindow(record.id, record.assetId)
+          .catch(() => {});
+      }
+    }
+
+    void currentMonitor().then((monitor) => {
+      if (!isActive || !monitor) {
+        return;
+      }
+
+      const bounds = {
+        x: monitor.workArea.position.x,
+        y: monitor.workArea.position.y,
+        width: monitor.workArea.size.width,
+        height: monitor.workArea.size.height,
+      };
+      adoptedHostBoundsRef.current = bounds;
+      adoptedScenarioRef.current = createAdoptedPetsScenario(simInputs, {
+        petBodySize: desktopFixturePetBodySize(bounds),
+      });
+      adoptedPetIdsRef.current = new Set(simInputs.map((pet) => pet.id));
+      adoptedHostSequenceRef.current = 0;
+    });
+
+    const intervalId = window.setInterval(() => {
+      if (isBroadcasting) {
+        return;
+      }
+
+      const scenario = adoptedScenarioRef.current;
+      const bounds = adoptedHostBoundsRef.current;
+
+      if (!scenario || !bounds) {
+        return;
+      }
+
+      isBroadcasting = true;
+
+      scenario.clock.advanceBy(DESKTOP_FIXTURE_STEP_MS);
+      scenario.world.step(DESKTOP_FIXTURE_STEP_MS);
+      adoptedHostSequenceRef.current += 1;
+
+      const projections = projectWorldSnapshotToPetWindows(
+        scenario.world.snapshot(),
+        bounds,
+        adoptedHostSequenceRef.current,
+      );
+
+      void Promise.all(
+        projections.map((projection) =>
+          emitTo(
+            `pet-window-${projection.petId}`,
+            PET_WINDOW_FRAME_EVENT,
+            projection.frame,
+          ),
+        ),
+      ).finally(() => {
+        isBroadcasting = false;
+      });
+    }, DESKTOP_FIXTURE_HOST_TICK_MS);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adoptedSimKey]);
+
   if (petWindowPet) {
     return <PetWindowView pet={petWindowPet} />;
   }
@@ -460,6 +579,49 @@ export function PetsDrivenApp() {
     }
   }
 
+  async function resetPets() {
+    setPetWindowError(null);
+
+    const empty = createEmptyPetsDrivenState();
+
+    try {
+      await invoke("close_all_pet_windows");
+      await desktopGateway.writePetsDrivenState(empty);
+      applyPetsDrivenState(empty);
+      navigate("onboarding");
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
+  async function closeAllPets() {
+    setPetWindowError(null);
+
+    try {
+      await invoke("close_all_pet_windows");
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
+  async function showAllPets() {
+    setPetWindowError(null);
+
+    const visiblePets = petsDrivenStateRef.current.pets.filter(
+      (pet) => !pet.archived && pet.visible,
+    );
+
+    try {
+      await Promise.all(
+        visiblePets.map((pet) =>
+          desktopGateway.openPetWindow(pet.id, pet.assetId),
+        ),
+      );
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -470,6 +632,15 @@ export function PetsDrivenApp() {
         <div className="app-header-actions">
           <Button onClick={() => navigate("onboarding")} size="sm">
             Adopt a pet
+          </Button>
+          <Button onClick={() => void resetPets()} size="sm" variant="ghost">
+            Reset pets
+          </Button>
+          <Button onClick={() => void showAllPets()} size="sm" variant="accent">
+            Show all pets
+          </Button>
+          <Button onClick={() => void closeAllPets()} size="sm" variant="ghost">
+            Close all pets
           </Button>
           <Button
             onClick={() => navigate("playground")}
