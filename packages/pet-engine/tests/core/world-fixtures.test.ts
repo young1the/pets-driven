@@ -1648,6 +1648,44 @@ describe("adopted pets scenario", () => {
     );
   });
 
+  it("starts adopted pets inside the monitor work area they occupy", () => {
+    const monitors = [
+      { id: "left", x: -640, y: 0, width: 640, height: 480 },
+      { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+    ];
+    const scenario = createAdoptedPetsScenario(pets, { monitors });
+
+    for (const pet of scenario.world.snapshot().pets) {
+      const monitor = monitors.find(
+        (candidate) =>
+          pet.position.x >= candidate.x &&
+          pet.position.x <= candidate.x + candidate.width,
+      );
+
+      expect(monitor, `${pet.id} is horizontally inside a monitor`).toBeDefined();
+      expect(pet.position.y).toBeGreaterThanOrEqual(monitor!.y);
+      expect(pet.position.y).toBeLessThanOrEqual(monitor!.y + monitor!.height);
+    }
+  });
+
+  it("starts the first adopted pet on the monitor containing the desktop origin", () => {
+    const scenario = createAdoptedPetsScenario(pets, {
+      monitors: [
+        { id: "left", x: -640, y: 0, width: 640, height: 480 },
+        { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+      ],
+    });
+
+    const firstPet = scenario.world
+      .snapshot()
+      .pets.find((pet) => pet.id === "pet-uuid-1");
+
+    expect(firstPet?.position.x).toBeGreaterThanOrEqual(0);
+    expect(firstPet?.position.x).toBeLessThanOrEqual(960);
+    expect(firstPet?.position.y).toBeGreaterThanOrEqual(0);
+    expect(firstPet?.position.y).toBeLessThanOrEqual(540);
+  });
+
   it("keeps simulated adopted pets on screen across many frames", () => {
     const scenario = createAdoptedPetsScenario(pets);
 
