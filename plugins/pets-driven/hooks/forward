@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Forward Claude Code hook events to the pets-driven desktop app.
+#
+# Modes:
+#   forward                read hook JSON from stdin, POST it unchanged
+#   forward attach         synthesize a Notification ping for $PWD
+#   forward --self-check   assert the synthesized attach body, then exit
+#
+# ponytail: the ingress URL is coupled to CLAUDE_HOOK_INGRESS_PORT (43187)
+# and CLAUDE_HOOK_INGRESS_PATH (/claude-hook) in
+# apps/desktop/src-tauri/src/lib.rs -- change both sides if the port moves.
+
+INGRESS_URL="http://127.0.0.1:43187/claude-hook"
+
+post() {
+  # -s silent, -m 2 caps the wait so a stopped app never blocks the agent.
+  curl -s -m 2 -X POST "$INGRESS_URL" \
+    -H "Content-Type: application/json" --data-binary "$1" >/dev/null 2>&1
+}
+
+json_escape() {
+  # Escape backslashes and double quotes so a path embeds safely in JSON.
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+attach_body() {
+  printf '{"hook_event_name":"Notification","cwd":"%s","message":"Agent attached"}' \
+    "$(json_escape "$PWD")"
+}
+
+self_check() {
+  local out
+  out="$(attach_body)"
+  case "$out" in
+    *'"hook_event_name":"Notification"'*) ;;
+    *) echo "FAIL: missing hook_event_name in: $out" >&2; exit 1 ;;
+  esac
+  case "$out" in
+    *"$(json_escape "$PWD")"*) ;;
+    *) echo "FAIL: cwd not embedded in: $out" >&2; exit 1 ;;
+  esac
+  echo "self-check passed"
+  exit 0
+}
+
+case "$1" in
+  --self-check) self_check ;;
+  attach) post "$(attach_body)" ;;
+  *) post "$(cat)" ;;
+esac
+
+exit 0
