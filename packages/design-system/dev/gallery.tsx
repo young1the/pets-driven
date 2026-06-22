@@ -14,7 +14,6 @@ import {
   Input,
   PetEmote,
   PetSpeechBubble,
-  PetStatusCapsule,
   Radio,
   SectionSlide,
   Select,
@@ -234,12 +233,6 @@ export function Gallery() {
       </Section>
 
       <Section title="Pet status">
-        <Cell label="Status capsule">
-          <PetStatusCapsule mood="working" />
-          <PetStatusCapsule mood="happy" />
-          <PetStatusCapsule mood="sleepy" />
-          <PetStatusCapsule mood="confused" />
-        </Cell>
         <Cell label="Emote">
           <PetEmote kind="heart" />
           <PetEmote kind="sparkle" />
