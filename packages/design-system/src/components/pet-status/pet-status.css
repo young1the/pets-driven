@@ -2,46 +2,6 @@
    bubble. Art-agnostic — the consumer positions these around its own
    sprite. Accent flows through the --comp-accent custom property. */
 
-/* ---- Status capsule (no dialogue, no tail) ---- */
-.pd-capsule {
-  --comp-accent: var(--color-primary);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  font-family: var(--font-body);
-  background: var(--surface-card);
-  border: 1px solid var(--border-default);
-  box-shadow: var(--shadow-md);
-  border-radius: var(--radius-pill);
-  padding: 5px 12px 5px 10px;
-  box-sizing: border-box;
-}
-.pd-capsule__dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--comp-accent); }
-.pd-capsule__label {
-  font-weight: 800;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--comp-accent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.pd-capsule__face { font-size: 15px; line-height: 1; flex: none; }
-.pd-capsule--sm { padding: 4px 10px 4px 9px; gap: 6px; }
-.pd-capsule--sm .pd-capsule__dot { width: 7px; height: 7px; }
-.pd-capsule--sm .pd-capsule__label { font-size: 10px; }
-.pd-capsule--sm .pd-capsule__face { font-size: 13px; }
-@media (prefers-reduced-motion: no-preference) {
-  .pd-capsule--live .pd-capsule__dot { animation: pd-pulse-dot 1.6s var(--ease-out) infinite; }
-}
-@keyframes pd-pulse-dot {
-  0% { box-shadow: 0 0 0 0 var(--comp-accent); }
-  70% { box-shadow: 0 0 0 6px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-
 /* ---- Corner emote (consumer positions the root) ---- */
 .pd-emote {
   --comp-accent: var(--color-primary);
@@ -147,7 +107,6 @@
 .pd-bubble__work {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   font-weight: 800;
   font-size: 10.5px;
   text-transform: uppercase;
@@ -155,16 +114,6 @@
   color: var(--comp-accent);
   white-space: nowrap;
 }
-.pd-bubble__work .pd-bubble__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--comp-accent);
-  box-shadow: 0 0 0 0 var(--comp-accent);
-}
 .pd-bubble__mood { margin-left: auto; font-size: 16px; line-height: 1; }
 .pd-bubble__msg { font-size: 13.5px; line-height: 1.4; color: var(--text-body); }
 .pd-bubble__msg b { color: var(--text-strong); }
-@media (prefers-reduced-motion: no-preference) {
-  .pd-bubble--live .pd-bubble__dot { animation: pd-pulse-dot 1.6s var(--ease-out) infinite; }
-}

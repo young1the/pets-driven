@@ -4,6 +4,7 @@ import type {
   WorldSnapshot,
 } from "@pets-driven/pet-engine/core/world-snapshot";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { PET_WINDOW_BUBBLE_OVERHEAD } from "@/pet-window/pet-window-layout";
 import type {
   PetWindowFrame,
   PetWindowOverlay,
@@ -27,6 +28,7 @@ export function projectWorldSnapshotToPetWindows(
   snapshot: WorldSnapshot,
   bounds: PetWindowProjectionBounds,
   sequence: number,
+  scaleByPetId?: Record<string, number>,
 ): PetWindowProjection[] {
   const scaleX = bounds.width / snapshot.width;
   const scaleY = bounds.height / snapshot.height;
@@ -38,6 +40,10 @@ export function projectWorldSnapshotToPetWindows(
       return [];
     }
 
+    const petScale = scaleByPetId?.[pet.id] ?? 1;
+    const windowWidth = PET_CELL_SIZE.width * petScale;
+    const windowHeight = PET_CELL_SIZE.height * petScale;
+
     return [
       {
         petId: pet.id,
@@ -46,10 +52,10 @@ export function projectWorldSnapshotToPetWindows(
           sequence,
           petId: pet.id,
           window: {
-            x: bounds.x + body.x * scaleX - PET_CELL_SIZE.width / 2,
-            y: bounds.y + body.y * scaleY - PET_CELL_SIZE.height / 2,
-            width: PET_CELL_SIZE.width,
-            height: PET_CELL_SIZE.height,
+            x: bounds.x + body.x * scaleX - windowWidth / 2,
+            y: bounds.y + body.y * scaleY - windowHeight / 2 - PET_WINDOW_BUBBLE_OVERHEAD,
+            width: windowWidth,
+            height: windowHeight + PET_WINDOW_BUBBLE_OVERHEAD,
           },
           sprite: {
             decisionEmote: presentBehaviorDecisionToken(pet.decision?.reason),

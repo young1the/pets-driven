@@ -3,9 +3,8 @@ import { PET_MOODS, type PetMood } from "./pet-mood";
 import "./pet-status.css";
 
 /**
- * The desktop pet's speech bubble: work status (pulsing dot + label) +
+ * The desktop pet's speech bubble: work status label +
  * mood face + a line of dialogue, with a tail pointing down at the sprite.
- * Use instead of PetStatusCapsule once pet dialogue is wired up.
  */
 export interface PetSpeechBubbleProps extends HTMLAttributes<HTMLDivElement> {
   /** Mood drives accent color and face. @default "working" */
@@ -16,8 +15,6 @@ export interface PetSpeechBubbleProps extends HTMLAttributes<HTMLDivElement> {
   message?: ReactNode;
   /** Show the mood face emoji. @default true */
   showFace?: boolean;
-  /** Pulse the status dot. @default true */
-  live?: boolean;
   /** Play the pop-in entrance. @default false */
   animateIn?: boolean;
 }
@@ -27,7 +24,6 @@ export function PetSpeechBubble({
   work,
   message,
   showFace = true,
-  live = true,
   animateIn = false,
   className = "",
   style,
@@ -36,7 +32,6 @@ export function PetSpeechBubble({
   const spec = PET_MOODS[mood] ?? PET_MOODS.working;
   const cls = [
     "pd-bubble",
-    live ? "pd-bubble--live" : "",
     animateIn ? "pd-bubble--animate-in" : "",
     className,
   ]
@@ -51,7 +46,6 @@ export function PetSpeechBubble({
     >
       <div className="pd-bubble__statusrow">
         <span className="pd-bubble__work">
-          <span className="pd-bubble__dot" />
           {work ?? spec.defaultLabel}
         </span>
         {showFace && (

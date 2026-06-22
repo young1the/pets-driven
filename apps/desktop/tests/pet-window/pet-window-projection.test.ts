@@ -108,9 +108,9 @@ describe("pet window projection", () => {
         petId: "pet-a",
         window: {
           x: 604,
-          y: 596,
+          y: 536,
           width: 192,
-          height: 208,
+          height: 268,
         },
         sprite: {
           decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
@@ -129,6 +129,6 @@ describe("pet window projection", () => {
     );
 
     expect(projection.frame.window.x).toBe(1204);
-    expect(projection.frame.window.y).toBe(596);
+    expect(projection.frame.window.y).toBe(536);
   });
 });

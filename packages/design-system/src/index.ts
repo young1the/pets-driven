@@ -37,10 +37,6 @@ export {
   type PetMood,
 } from "./components/pet-status/pet-mood";
 export {
-  PetStatusCapsule,
-  type PetStatusCapsuleProps,
-} from "./components/pet-status/pet-status-capsule";
-export {
   PetEmote,
   type PetEmoteProps,
 } from "./components/pet-status/pet-emote";

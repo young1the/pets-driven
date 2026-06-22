@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { PetEmote, PetStatusCapsule } from "@pets-driven/design-system";
+import { PetEmote, PetSpeechBubble } from "@pets-driven/design-system";
 import {
   type PetAnimationState,
   type PetSpriteFacing,
@@ -50,10 +50,10 @@ type PetSpriteAnimationProps = PetSpriteBaseProps & {
 export type PetSpriteProps = PetSpriteIntentProps | PetSpriteAnimationProps;
 
 const PET_SPRITE_OVERLAY_RECT = {
-  x: 54,
-  y: 12,
-  width: 84,
-  height: 28,
+  x: 16,
+  y: -52,
+  width: 160,
+  height: 52,
 };
 
 const PET_SPRITE_EMOTE_OFFSET = {
@@ -131,12 +131,11 @@ export function PetSprite({
               marginLeft: `${(scaleOverlayValue(PET_SPRITE_OVERLAY_RECT.width, frame) - PET_SPRITE_OVERLAY_RECT.width) / 2}px`,
             }}
           >
-            <PetStatusCapsule
-              label={status.label ?? undefined}
+            {/* <PetSpeechBubble
               mood={status.mood}
-              size="sm"
+              work={status.label ?? undefined}
               style={{ maxWidth: `${PET_SPRITE_OVERLAY_RECT.width}px` }}
-            />
+            /> */}
           </span>
         </span>
       ) : null}

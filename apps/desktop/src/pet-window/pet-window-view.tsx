@@ -2,9 +2,9 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
-  currentMonitor,
   cursorPosition,
   getCurrentWindow,
+  LogicalSize,
   PhysicalPosition,
 } from "@tauri-apps/api/window";
 import {
@@ -15,7 +15,7 @@ import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
-import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
+import { PET_WINDOW_BUBBLE_OVERHEAD, PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import {
   isFreshPetWindowMessage,
@@ -44,10 +44,6 @@ type PetWindowPresentation = {
   intent: PetSpriteIntent;
   overlay: PetWindowOverlay | null;
 };
-
-const PET_WINDOW_AUTONOMOUS_TICK_MS = 50;
-const PET_WINDOW_AUTONOMOUS_SPEED_PX_PER_MS = 0.035;
-const PET_WINDOW_AUTONOMOUS_MARGIN = 24;
 
 let restoreCursorEventsTimer: number | null = null;
 
@@ -149,13 +145,11 @@ function hitLayoutForPresentation(
 
 export function PetWindowView({ pet }: PetWindowViewProps) {
   const surfaceRef = useRef<HTMLElement | null>(null);
-  const autonomousDirectionRef = useRef(
-    movementDirectionForWindow(pet.windowIndex),
-  );
   const dragPauseUntilRef = useRef(0);
   const inputSequenceRef = useRef(0);
   const frameSequenceRef = useRef(0);
   const appliedPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const appliedSizeRef = useRef<{ width: number; height: number } | null>(null);
   const hasShownAfterFirstPositionRef = useRef(false);
   const isPositionDrivenRef = useRef(false);
   const pointerStartRef = useRef<PetWindowPointerStart | null>(null);
@@ -164,6 +158,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   );
   const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [spriteScale, setSpriteScale] = useState(1);
   const [spritesheetUrl, setSpritesheetUrl] = useState(
     FALLBACK_CODEX_PET_SPRITESHEET_URL,
   );
@@ -224,6 +219,17 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           intent: frame.sprite.intent,
           overlay: frame.overlay,
         });
+      }
+
+      const nextSize = { width: frame.window.width, height: frame.window.height };
+      if (
+        !appliedSizeRef.current ||
+        appliedSizeRef.current.width !== nextSize.width ||
+        appliedSizeRef.current.height !== nextSize.height
+      ) {
+        appliedSizeRef.current = nextSize;
+        void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
+        setSpriteScale(nextSize.width / PET_CELL_SIZE.width);
       }
 
       const nextPosition = {
@@ -315,73 +321,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
-    const currentWindow = getCurrentWindow();
-    let previousTime = performance.now();
-    let isMoving = false;
-
-    const intervalId = window.setInterval(() => {
-      if (
-        isPositionDrivenRef.current ||
-        Date.now() < dragPauseUntilRef.current ||
-        isMoving
-      ) {
-        previousTime = performance.now();
-        return;
-      }
-
-      isMoving = true;
-
-      void Promise.all([currentWindow.outerPosition(), currentMonitor()])
-        .then(([position, monitor]) => {
-          if (!monitor) {
-            return;
-          }
-
-          const now = performance.now();
-          const elapsedMs = Math.min(now - previousTime, 100);
-          previousTime = now;
-
-          const minX = monitor.workArea.position.x + PET_WINDOW_AUTONOMOUS_MARGIN;
-          const maxX =
-            monitor.workArea.position.x +
-            monitor.workArea.size.width -
-            PET_WINDOW_LAYOUT.width -
-            PET_WINDOW_AUTONOMOUS_MARGIN;
-          let direction = autonomousDirectionRef.current;
-          let nextX =
-            position.x +
-            direction * PET_WINDOW_AUTONOMOUS_SPEED_PX_PER_MS * elapsedMs;
-
-          if (nextX <= minX) {
-            nextX = minX;
-            direction = 1;
-          } else if (nextX >= maxX) {
-            nextX = maxX;
-            direction = -1;
-          }
-
-          autonomousDirectionRef.current = direction;
-
-          return currentWindow.setPosition(
-            new PhysicalPosition(Math.round(nextX), position.y),
-          );
-        })
-        .catch(() => {
-          previousTime = performance.now();
-        })
-        .finally(() => {
-          isMoving = false;
-        });
-    }, PET_WINDOW_AUTONOMOUS_TICK_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [pet.windowIndex]);
 
   function emitPetWindowInput(
     kind: PetWindowInputKind,
@@ -568,6 +507,8 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         intent={presentation.intent}
         overlay={presentation.overlay}
         size={PET_CELL_SIZE}
+        scale={spriteScale}
+        style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD }}
       />
       {activeMenu ? (
         <div
