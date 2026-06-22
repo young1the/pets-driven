@@ -114,13 +114,11 @@ port change updates both sides.
 
 ## Verification
 
-The non-trivial logic is the `forward` script's two modes. It carries one
-runnable bash self-check (`forward --self-check`): start a throwaway local
-listener (`python -m http.server` one-liner or `nc`), run `forward attach`
-against it, and assert the captured POST body
-contains `"hook_event_name":"Notification"` and the current `cwd`. If neither
-`python` nor `nc` is available, the check prints a skip notice and exits 0. No
-test framework, no fixtures.
+The non-trivial logic is the `forward` script's JSON synthesis. It carries one
+runnable bash self-check (`forward --self-check`) that asserts the synthesized
+attach body contains `"hook_event_name":"Notification"` and the escaped current
+`cwd`, exiting non-zero on failure. This covers the real logic (JSON shape and
+path escaping) with no network listener and no test framework.
 
 Manual end-to-end check, documented in the README: with the desktop app
 running and a pet adopted on the current folder, run `/pets-driven:attach` and
