@@ -1,0 +1,5 @@
+# Hook scripts are executed by bash; the polyglot wrapper is parsed by both
+# cmd and bash. Both must keep LF endings on every checkout, or CRLF breaks
+# the shebang and the heredoc.
+pets-driven/hooks/forward text eol=lf
+pets-driven/hooks/run-hook.cmd text eol=lf
