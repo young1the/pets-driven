@@ -13,9 +13,10 @@ export type PetWindowHitLayout = {
   height: number;
   body: PetWindowRect;
   overlay?: PetWindowRect | null;
+  resize?: PetWindowRect | null;
 };
 
-export type PetWindowHitKind = "body" | "overlay" | "transparent";
+export type PetWindowHitKind = "body" | "overlay" | "resize" | "transparent";
 
 export type PetWindowHitResult = {
   kind: PetWindowHitKind;

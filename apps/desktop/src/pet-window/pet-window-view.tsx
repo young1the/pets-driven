@@ -2,16 +2,16 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
-  cursorPosition,
   getCurrentWindow,
   LogicalSize,
-  PhysicalPosition,
+  LogicalPosition,
 } from "@tauri-apps/api/window";
 import {
   FALLBACK_CODEX_PET_SPRITESHEET_URL,
 } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { IconButton } from "@pets-driven/design-system";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
@@ -22,9 +22,11 @@ import {
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
+  PET_WINDOW_RESIZE_EVENT,
   type PetWindowInputKind,
   type PetWindowFrame,
   type PetWindowOverlay,
+  type PetWindowResizeEvent,
   isSamePetWindowPresentation,
 } from "@/pet-window/pet-window-messages";
 import type { PetWindowHitLayout } from "@/pet-window/pet-window-types";
@@ -34,7 +36,7 @@ type PetWindowViewProps = {
   pet: PetWindowRouteParams;
 };
 
-type PetWindowPointerStart = "body" | "overlay" | "transparent";
+type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
 type PetWindowMenu = {
   kind: "body" | "overlay";
   localPoint: { x: number; y: number };
@@ -58,12 +60,16 @@ function surfacePointFromEvent(
   };
 
   if (rect.width > 0 && rect.height > 0) {
-    const scaleX = PET_WINDOW_LAYOUT.width / rect.width;
-    const scaleY = PET_WINDOW_LAYOUT.height / rect.height;
+    const drawScale = rect.width / PET_CELL_SIZE.width;
+    const localX = event.clientX - rect.left;
+    const localY = event.clientY - rect.top;
 
     return {
-      x: (event.clientX - rect.left) * scaleX,
-      y: (event.clientY - rect.top) * scaleY,
+      x: localX / drawScale,
+      y:
+        localY <= PET_WINDOW_BUBBLE_OVERHEAD
+          ? localY
+          : PET_WINDOW_BUBBLE_OVERHEAD + (localY - PET_WINDOW_BUBBLE_OVERHEAD) / drawScale,
     };
   }
 
@@ -81,6 +87,17 @@ function surfacePointFromEvent(
     x: 0,
     y: 0,
   };
+}
+
+function petWindowSizeForScale(scale: number) {
+  return {
+    width: PET_CELL_SIZE.width * scale,
+    height: PET_CELL_SIZE.height * scale + PET_WINDOW_BUBBLE_OVERHEAD,
+  };
+}
+
+function clampPetWindowScale(scale: number) {
+  return Math.max(0.5, Math.min(4, scale));
 }
 
 async function setNativeCursorPassthrough(ignoreCursorEvents: boolean) {
@@ -145,11 +162,14 @@ function hitLayoutForPresentation(
 
 export function PetWindowView({ pet }: PetWindowViewProps) {
   const surfaceRef = useRef<HTMLElement | null>(null);
+  const visualFrameRef = useRef<HTMLSpanElement | null>(null);
   const dragPauseUntilRef = useRef(0);
   const inputSequenceRef = useRef(0);
   const frameSequenceRef = useRef(0);
   const appliedPositionRef = useRef<{ x: number; y: number } | null>(null);
   const appliedSizeRef = useRef<{ width: number; height: number } | null>(null);
+  const resizeStartRef = useRef<{ screenX: number; screenY: number; scale: number } | null>(null);
+  const isResizingRef = useRef(false);
   const hasShownAfterFirstPositionRef = useRef(false);
   const isPositionDrivenRef = useRef(false);
   const pointerStartRef = useRef<PetWindowPointerStart | null>(null);
@@ -191,6 +211,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       }
 
       if (!isFreshPetWindowMessage(frameSequenceRef.current, frame.sequence)) {
+        return;
+      }
+
+      if (isResizingRef.current) {
+        frameSequenceRef.current = frame.sequence;
         return;
       }
 
@@ -257,7 +282,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       }
 
       void currentWindow
-        .setPosition(new PhysicalPosition(nextPosition.x, nextPosition.y))
+        .setPosition(new LogicalPosition(nextPosition.x, nextPosition.y))
         .then(() => {
           if (shouldShowWindow) {
             return currentWindow.show();
@@ -330,7 +355,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       return;
     }
 
-    const surface = surfaceRef.current;
+    const surface = visualFrameRef.current;
 
     if (!surface) {
       return;
@@ -340,25 +365,21 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     inputSequenceRef.current += 1;
     const sequence = inputSequenceRef.current;
 
-    void cursorPosition()
-      .catch(() => ({ x: event.screenX, y: event.screenY }))
-      .then((screenPoint) =>
-        emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
-          sequence,
-          petId: pet.petId,
-          windowLabel: getCurrentWindow().label,
-          pointerId: pointerIdFromEvent(event),
-          kind,
-          localPoint,
-          screenPoint,
-          button: event.button,
-          at: Date.now(),
-        }),
-      );
+    void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
+      sequence,
+      petId: pet.petId,
+      windowLabel: getCurrentWindow().label,
+      pointerId: pointerIdFromEvent(event),
+      kind,
+      localPoint,
+      screenPoint: { x: event.screenX, y: event.screenY },
+      button: event.button,
+      at: Date.now(),
+    });
   }
 
   function handlePointerMove(event: React.PointerEvent<HTMLElement>) {
-    const surface = surfaceRef.current;
+    const surface = visualFrameRef.current;
 
     if (!surface) {
       return;
@@ -368,6 +389,16 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       hitLayoutForPresentation(presentation),
       surfacePointFromEvent(surface, event),
     );
+
+    if (pointerStartRef.current === "resize" && resizeStartRef.current) {
+      const delta = (event.screenX - resizeStartRef.current.screenX + event.screenY - resizeStartRef.current.screenY) / 2;
+      const newScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
+      const nextSize = petWindowSizeForScale(newScale);
+      appliedSizeRef.current = nextSize;
+      setSpriteScale(newScale);
+      void getCurrentWindow().setSize(new LogicalSize(nextSize.width, nextSize.height));
+      return;
+    }
 
     if (pointerStartRef.current === "body" && isPositionDrivenRef.current) {
       emitPetWindowInput("body.pointer.move", event);
@@ -382,7 +413,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       return;
     }
 
-    const surface = surfaceRef.current;
+    const surface = visualFrameRef.current;
 
     if (!surface) {
       return;
@@ -407,6 +438,15 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       return;
     }
 
+    if (hit.kind === "resize") {
+      isResizingRef.current = true;
+      resizeStartRef.current = { screenX: event.screenX, screenY: event.screenY, scale: spriteScale };
+      pointerStartRef.current = "resize";
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      void setNativeCursorPassthrough(false);
+      return;
+    }
+
     if (hit.kind === "overlay") {
       setInteractionStatus("Overlay armed");
       void setNativeCursorPassthrough(false);
@@ -417,7 +457,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   }
 
   function handlePointerUp(event: React.PointerEvent<HTMLElement>) {
-    const surface = surfaceRef.current;
+    const surface = visualFrameRef.current;
     const pointerStart = pointerStartRef.current;
 
     pointerStartRef.current = null;
@@ -438,6 +478,20 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       return;
     }
 
+    if (pointerStart === "resize" && resizeStartRef.current) {
+      const delta = (event.screenX - resizeStartRef.current.screenX + event.screenY - resizeStartRef.current.screenY) / 2;
+      const finalScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
+      appliedSizeRef.current = petWindowSizeForScale(finalScale);
+      isResizingRef.current = false;
+      resizeStartRef.current = null;
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+      void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_RESIZE_EVENT, {
+        petId: pet.petId,
+        scale: finalScale,
+      } satisfies PetWindowResizeEvent);
+      return;
+    }
+
     if (pointerStart === "body") {
       setActiveMenu(null);
       emitPetWindowInput("body.pointer.up", event);
@@ -448,7 +502,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   }
 
   function handleContextMenu(event: React.MouseEvent<HTMLElement>) {
-    const surface = surfaceRef.current;
+    const surface = visualFrameRef.current;
 
     if (!surface) {
       return;
@@ -499,17 +553,34 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       onPointerLeave={() => void setNativeCursorPassthrough(true)}
       ref={surfaceRef}
     >
-      <PetSprite
-        alt={`Pet Sprite ${pet.petId}`}
-        decisionEmote={presentation.decisionEmote}
-        elapsedMs={elapsedMs}
-        imageUrl={spritesheetUrl}
-        intent={presentation.intent}
-        overlay={presentation.overlay}
-        size={PET_CELL_SIZE}
-        scale={spriteScale}
-        style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD }}
-      />
+      <span
+        className="pet-window-visual-frame"
+        ref={visualFrameRef}
+        style={{
+          height: `${PET_CELL_SIZE.height * spriteScale + PET_WINDOW_BUBBLE_OVERHEAD}px`,
+          width: `${PET_CELL_SIZE.width * spriteScale}px`,
+        }}
+      >
+        <PetSprite
+          alt={`Pet Sprite ${pet.petId}`}
+          decisionEmote={presentation.decisionEmote}
+          elapsedMs={elapsedMs}
+          imageUrl={spritesheetUrl}
+          intent={presentation.intent}
+          overlay={presentation.overlay}
+          size={PET_CELL_SIZE}
+          scale={spriteScale}
+          style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD }}
+        />
+        <IconButton
+          className="pet-window-resize-button"
+          label="Resize pet"
+          size="sm"
+          variant="soft"
+        >
+          <span aria-hidden="true" className="pet-window-resize-button__mark" />
+        </IconButton>
+      </span>
       {activeMenu ? (
         <div
           aria-label={

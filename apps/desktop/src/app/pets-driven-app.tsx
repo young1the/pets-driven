@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Badge, Button, Card } from "@pets-driven/design-system";
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
-import { currentMonitor } from "@tauri-apps/api/window";
+import {
+  availableMonitors,
+  currentMonitor,
+  type Monitor,
+} from "@tauri-apps/api/window";
 import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
 import {
   CLAUDE_HOOK_INGRESS_EVENT,
@@ -22,13 +26,19 @@ import {
   createAdoptedPetsScenario,
   createDemoScenario,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import {
+  getWorldViewport,
+  type MonitorWorkArea,
+} from "@pets-driven/pet-engine/core/monitor-geometry";
 import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
 import {
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_INPUT_EVENT,
+  PET_WINDOW_RESIZE_EVENT,
   type PetWindowInputEvent,
+  type PetWindowResizeEvent,
 } from "@/pet-window/pet-window-messages";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import { projectWorldSnapshotToPetWindows } from "@/pet-window/pet-window-projection";
@@ -70,14 +80,49 @@ function petWindowPlaygroundLabelForPetId(petId: string) {
   return index >= 0 ? `pet-window-playground-${index + 1}` : null;
 }
 
-function desktopFixturePetBodySize(bounds: { width: number; height: number }) {
+function desktopFixturePetBodySize(
+  bounds: { width: number; height: number },
+  scale = 1,
+) {
   const scaleX = bounds.width / DESKTOP_FIXTURE_WORLD_SIZE.width;
   const scaleY = bounds.height / DESKTOP_FIXTURE_WORLD_SIZE.height;
 
   return {
-    width: PET_WINDOW_LAYOUT.body.width / scaleX,
-    height: PET_WINDOW_LAYOUT.body.height / scaleY,
+    width: (PET_WINDOW_LAYOUT.body.width * scale) / scaleX,
+    height: (PET_WINDOW_LAYOUT.body.height * scale) / scaleY,
   };
+}
+
+function monitorToWorkArea(monitor: Monitor, index: number): MonitorWorkArea {
+  const dpi = monitor.scaleFactor;
+
+  return {
+    id: monitor.name ?? `monitor-${index + 1}`,
+    x: monitor.workArea.position.x / dpi,
+    y: monitor.workArea.position.y / dpi,
+    width: monitor.workArea.size.width / dpi,
+    height: monitor.workArea.size.height / dpi,
+  };
+}
+
+function projectionBoundsForMonitors(monitors: MonitorWorkArea[]) {
+  return getWorldViewport(monitors);
+}
+
+async function loadDesktopMonitorWorkAreas(): Promise<MonitorWorkArea[]> {
+  try {
+    const monitors = await availableMonitors();
+
+    if (monitors.length > 0) {
+      return monitors.map(monitorToWorkArea);
+    }
+  } catch {
+    // Fall back to the current monitor below.
+  }
+
+  const monitor = await currentMonitor();
+
+  return monitor ? [monitorToWorkArea(monitor, 0)] : [];
 }
 
 function createInitialPetsDrivenState(): PetsDrivenState {
@@ -136,6 +181,7 @@ export function PetsDrivenApp() {
   > | null>(null);
   const adoptedPetIdsRef = useRef<Set<string>>(new Set());
   const adoptedHostSequenceRef = useRef(0);
+  const adoptedScaleByPetIdRef = useRef<Record<string, number>>({});
   const adoptedHostBoundsRef = useRef<{
     x: number;
     y: number;
@@ -275,6 +321,30 @@ export function PetsDrivenApp() {
   }, []);
 
   useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+
+    void listen<PetWindowResizeEvent>(PET_WINDOW_RESIZE_EVENT, (event) => {
+      const { petId, scale } = event.payload;
+      adoptedScaleByPetIdRef.current = { ...adoptedScaleByPetIdRef.current, [petId]: scale };
+      const current = petsDrivenStateRef.current;
+      const next: typeof current = {
+        ...current,
+        pets: current.pets.map((p) => (p.id === petId ? { ...p, scale } : p)),
+      };
+      applyPetsDrivenState(next);
+      void desktopGateway.writePetsDrivenState(next);
+    }).then((stop) => {
+      unlisten = stop;
+    });
+
+    return () => unlisten?.();
+  }, []);
+
+  useEffect(() => {
     if (petWindowPet) {
       return;
     }
@@ -366,11 +436,12 @@ export function PetsDrivenApp() {
         return;
       }
 
+      const fixtureDpi = monitor.scaleFactor;
       fixtureHostBoundsRef.current = {
-        x: monitor.workArea.position.x,
-        y: monitor.workArea.position.y,
-        width: monitor.workArea.size.width,
-        height: monitor.workArea.size.height,
+        x: monitor.workArea.position.x / fixtureDpi,
+        y: monitor.workArea.position.y / fixtureDpi,
+        width: monitor.workArea.size.width / fixtureDpi,
+        height: monitor.workArea.size.height / fixtureDpi,
       };
       fixtureScenarioRef.current = createDemoScenario({
         petBodySize: desktopFixturePetBodySize(fixtureHostBoundsRef.current),
@@ -449,28 +520,34 @@ export function PetsDrivenApp() {
 
       if (record) {
         void desktopGateway
-          .openPetWindow(record.id, record.assetId)
+          .openAdoptedPetWindow(record.id, record.assetId)
           .catch(() => {});
       }
     }
 
-    void currentMonitor().then((monitor) => {
-      if (!isActive || !monitor) {
+    void loadDesktopMonitorWorkAreas().then((monitors) => {
+      if (!isActive || monitors.length === 0) {
         return;
       }
 
-      const bounds = {
-        x: monitor.workArea.position.x,
-        y: monitor.workArea.position.y,
-        width: monitor.workArea.size.width,
-        height: monitor.workArea.size.height,
-      };
+      const bounds = projectionBoundsForMonitors(monitors);
       adoptedHostBoundsRef.current = bounds;
+      const petRecords = petsDrivenStateRef.current.pets;
+      const petBodySizeByPetId: Record<string, { width: number; height: number }> = {};
+      const scaleByPetId: Record<string, number> = {};
+      for (const pet of simInputs) {
+        const record = petRecords.find((r) => r.id === pet.id);
+        const scale = record?.scale ?? 1;
+        scaleByPetId[pet.id] = scale;
+        petBodySizeByPetId[pet.id] = desktopFixturePetBodySize(bounds, scale);
+      }
       adoptedScenarioRef.current = createAdoptedPetsScenario(simInputs, {
-        petBodySize: desktopFixturePetBodySize(bounds),
+        petBodySizeByPetId,
+        monitors,
       });
       adoptedPetIdsRef.current = new Set(simInputs.map((pet) => pet.id));
       adoptedHostSequenceRef.current = 0;
+      adoptedScaleByPetIdRef.current = scaleByPetId;
     });
 
     const intervalId = window.setInterval(() => {
@@ -495,6 +572,7 @@ export function PetsDrivenApp() {
         scenario.world.snapshot(),
         bounds,
         adoptedHostSequenceRef.current,
+        adoptedScaleByPetIdRef.current,
       );
 
       void Promise.all(
@@ -635,17 +713,7 @@ export function PetsDrivenApp() {
     }
   }
 
-  async function closeAllPets() {
-    setPetWindowError(null);
-
-    try {
-      await invoke("close_all_pet_windows");
-    } catch (error) {
-      setPetWindowError(formatCommandError(error));
-    }
-  }
-
-  async function showAllPets() {
+  async function openAllPets() {
     setPetWindowError(null);
 
     const visiblePets = petsDrivenStateRef.current.pets.filter(
@@ -654,10 +722,18 @@ export function PetsDrivenApp() {
 
     try {
       await Promise.all(
-        visiblePets.map((pet) =>
-          desktopGateway.openPetWindow(pet.id, pet.assetId),
-        ),
+        visiblePets.map((pet) => desktopGateway.openAdoptedPetWindow(pet.id, pet.assetId)),
       );
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
+  async function closeAllPets() {
+    setPetWindowError(null);
+
+    try {
+      await invoke("close_all_pet_windows");
     } catch (error) {
       setPetWindowError(formatCommandError(error));
     }
@@ -677,7 +753,7 @@ export function PetsDrivenApp() {
           <Button onClick={() => void resetPets()} size="sm" variant="ghost">
             Reset pets
           </Button>
-          <Button onClick={() => void showAllPets()} size="sm" variant="accent">
+          <Button onClick={() => void openAllPets()} size="sm" variant="accent">
             Show all pets
           </Button>
           <Button onClick={() => void closeAllPets()} size="sm" variant="ghost">

@@ -131,4 +131,31 @@ describe("pet window projection", () => {
     expect(projection.frame.window.x).toBe(1204);
     expect(projection.frame.window.y).toBe(536);
   });
+
+  it("projects negative virtual-desktop coordinates relative to the world viewport", () => {
+    const [projection] = projectWorldSnapshotToPetWindows(
+      {
+        ...snapshotFixture(),
+        width: 1600,
+        height: 540,
+        viewport: { x: -640, y: 0, width: 1600, height: 540 },
+        monitors: [
+          { id: "left", x: -640, y: 0, width: 640, height: 480 },
+          { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+        ],
+        bodies: [
+          {
+            ...snapshotFixture().bodies[0],
+            x: -320,
+            y: 440,
+          },
+        ],
+      },
+      { x: -640, y: 0, width: 1600, height: 540 },
+      12,
+    );
+
+    expect(projection.frame.window.x).toBe(-416);
+    expect(projection.frame.window.y).toBe(276);
+  });
 });
