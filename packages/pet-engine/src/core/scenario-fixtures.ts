@@ -496,10 +496,9 @@ export function createAdoptedPetsScenario(
 ) {
   const clock = createManualClock(0);
   const monitors = options?.monitors ?? resolveMonitorLayout("single");
+  const initialPlacementMonitors = orderMonitorsForInitialPlacement(monitors);
   const viewport = getWorldViewport(monitors);
   const groundThickness = 48;
-  const floorY = viewport.y + viewport.height - 40;
-  const spacing = viewport.width / (pets.length + 1);
   const world = createWorld({
     width: viewport.width,
     height: viewport.height,
@@ -520,6 +519,11 @@ export function createAdoptedPetsScenario(
         ],
       },
       ...pets.map((pet, index) => {
+        const placement = initialPlacementForPet(
+          initialPlacementMonitors,
+          index,
+          pets.length,
+        );
         const bodySize =
           options?.petBodySizeByPetId?.[pet.id] ?? options?.petBodySize;
         const bodyComponents: Component[] = bodySize
@@ -529,8 +533,8 @@ export function createAdoptedPetsScenario(
           id: pet.id,
           sourceId: pet.sourceId,
           name: pet.name,
-          x: viewport.x + spacing * (index + 1),
-          y: floorY,
+          x: placement.x,
+          y: placement.y,
           components: [
             ...bodyComponents,
             { type: "WalkingTag" },
@@ -953,6 +957,50 @@ function resolveMonitorLayout(
   }
 
   return [{ id: "monitor", x: 0, y: 0, width: 960, height: 540 }];
+}
+
+function orderMonitorsForInitialPlacement(
+  monitors: MonitorWorkArea[],
+): MonitorWorkArea[] {
+  return [...monitors].sort(
+    (a, b) => monitorOriginDistance(a) - monitorOriginDistance(b),
+  );
+}
+
+function monitorOriginDistance(monitor: MonitorWorkArea): number {
+  if (containsDesktopOrigin(monitor)) {
+    return -1;
+  }
+
+  const nearestX = clamp(0, monitor.x, monitor.x + monitor.width);
+  const nearestY = clamp(0, monitor.y, monitor.y + monitor.height);
+
+  return Math.hypot(nearestX, nearestY);
+}
+
+function containsDesktopOrigin(monitor: MonitorWorkArea): boolean {
+  return (
+    monitor.x <= 0 &&
+    0 < monitor.x + monitor.width &&
+    monitor.y <= 0 &&
+    0 < monitor.y + monitor.height
+  );
+}
+
+function initialPlacementForPet(
+  monitors: MonitorWorkArea[],
+  index: number,
+  totalPets: number,
+) {
+  const monitorIndex = index % monitors.length;
+  const monitor = monitors[monitorIndex];
+  const slotIndex = Math.floor(index / monitors.length);
+  const slotsOnMonitor = Math.ceil((totalPets - monitorIndex) / monitors.length);
+
+  return {
+    x: monitor.x + (monitor.width * (slotIndex + 1)) / (slotsOnMonitor + 1),
+    y: monitor.y + monitor.height - 40,
+  };
 }
 
 function defaultUserAnchorForLayout(
