@@ -1,0 +1,15 @@
+{
+  "name": "pets-driven",
+  "description": "Local marketplace for the pets-driven agent bridge plugin.",
+  "owner": {
+    "name": "pets-driven"
+  },
+  "plugins": [
+    {
+      "name": "pets-driven",
+      "description": "Forward Claude Code lifecycle events to the pets-driven desktop companion.",
+      "version": "0.1.0",
+      "source": "./pets-driven"
+    }
+  ]
+}
