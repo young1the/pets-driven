@@ -32,6 +32,12 @@ export function projectWorldSnapshotToPetWindows(
 ): PetWindowProjection[] {
   const scaleX = bounds.width / snapshot.width;
   const scaleY = bounds.height / snapshot.height;
+  const viewport = snapshot.viewport ?? {
+    x: 0,
+    y: 0,
+    width: snapshot.width,
+    height: snapshot.height,
+  };
 
   return snapshot.pets.flatMap((pet) => {
     const body = snapshot.bodies.find((candidate) => candidate.id === pet.id);
@@ -52,8 +58,12 @@ export function projectWorldSnapshotToPetWindows(
           sequence,
           petId: pet.id,
           window: {
-            x: bounds.x + body.x * scaleX - windowWidth / 2,
-            y: bounds.y + body.y * scaleY - windowHeight / 2 - PET_WINDOW_BUBBLE_OVERHEAD,
+            x: bounds.x + (body.x - viewport.x) * scaleX - windowWidth / 2,
+            y:
+              bounds.y +
+              (body.y - viewport.y) * scaleY -
+              windowHeight / 2 -
+              PET_WINDOW_BUBBLE_OVERHEAD,
             width: windowWidth,
             height: windowHeight + PET_WINDOW_BUBBLE_OVERHEAD,
           },

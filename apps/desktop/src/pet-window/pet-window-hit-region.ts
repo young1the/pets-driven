@@ -18,6 +18,13 @@ export function classifyPetWindowPoint(
   layout: PetWindowHitLayout,
   point: PetWindowPoint,
 ): PetWindowHitResult {
+  if (layout.resize && containsPoint(layout.resize, point)) {
+    return {
+      kind: "resize",
+      startsDirectManipulation: true,
+    };
+  }
+
   if (layout.overlay && containsPoint(layout.overlay, point)) {
     return {
       kind: "overlay",

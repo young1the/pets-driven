@@ -21,6 +21,7 @@ export type PetRecord = {
   adoptedAt: number;
   archived: boolean;
   visible: boolean;
+  scale?: number;
 };
 
 type PetRecordV1 = Omit<PetRecord, "workingDirectoryId" | "name" | "adoptedAt"> & {

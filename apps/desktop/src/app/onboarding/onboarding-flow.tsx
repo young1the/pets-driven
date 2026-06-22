@@ -280,7 +280,6 @@ export function OnboardingFlow({
       setConnectState("waiting");
       setConnectLater(false);
       setStep("connect");
-      await gateway.openPetWindow(petId, assetId);
     } catch (error) {
       setAdoptionError(error instanceof Error ? error.message : String(error));
     }

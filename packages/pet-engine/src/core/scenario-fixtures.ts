@@ -488,24 +488,18 @@ export function createAdoptedPetsScenario(
     sourceId: string;
     personality?: PersonalityComponent;
   }>,
-  options?: { petBodySize?: { width: number; height: number } },
+  options?: {
+    petBodySize?: { width: number; height: number };
+    petBodySizeByPetId?: Record<string, { width: number; height: number }>;
+    monitors?: MonitorWorkArea[];
+  },
 ) {
   const clock = createManualClock(0);
-  const monitors = resolveMonitorLayout("single");
+  const monitors = options?.monitors ?? resolveMonitorLayout("single");
   const viewport = getWorldViewport(monitors);
   const groundThickness = 48;
-  const floorY = viewport.height - 40;
+  const floorY = viewport.y + viewport.height - 40;
   const spacing = viewport.width / (pets.length + 1);
-  const petBodyComponents: Component[] = options?.petBodySize
-    ? [
-        {
-          type: "PhysicsBody",
-          shape: "rectangle",
-          width: options.petBodySize.width,
-          height: options.petBodySize.height,
-        },
-      ]
-    : [];
   const world = createWorld({
     width: viewport.width,
     height: viewport.height,
@@ -525,23 +519,28 @@ export function createAdoptedPetsScenario(
           },
         ],
       },
-      ...pets.map((pet, index) =>
-        createFixturePet({
+      ...pets.map((pet, index) => {
+        const bodySize =
+          options?.petBodySizeByPetId?.[pet.id] ?? options?.petBodySize;
+        const bodyComponents: Component[] = bodySize
+          ? [{ type: "PhysicsBody", shape: "rectangle", width: bodySize.width, height: bodySize.height }]
+          : [];
+        return createFixturePet({
           id: pet.id,
           sourceId: pet.sourceId,
           name: pet.name,
-          x: spacing * (index + 1),
+          x: viewport.x + spacing * (index + 1),
           y: floorY,
           components: [
-            ...petBodyComponents,
+            ...bodyComponents,
             { type: "WalkingTag" },
             { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
             { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE },
             { type: "WandersOnArrival", arrivalRadius: 16 },
             ...(pet.personality ? [pet.personality] : []),
           ],
-        }),
-      ),
+        });
+      }),
     ],
   });
 

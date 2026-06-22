@@ -361,6 +361,7 @@ describe("demo scenario", () => {
         "Transform",
         "Personality",
         "BehaviorDecisionState",
+        "HeldAgentState",
         "ClimbIntentState",
         "ClimbingTag",
         "Perception",
@@ -1605,6 +1606,46 @@ describe("adopted pets scenario", () => {
       width: 78,
       height: 82,
     });
+  });
+
+  it("uses desktop monitor work areas when creating adopted pet grounds", () => {
+    const scenario = createAdoptedPetsScenario(pets, {
+      monitors: [
+        { id: "left", x: -640, y: 0, width: 640, height: 480 },
+        { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+      ],
+    });
+
+    expect(scenario.world.snapshot().viewport).toEqual({
+      x: -640,
+      y: 0,
+      width: 1600,
+      height: 540,
+    });
+    expect(scenario.world.snapshot().monitors).toEqual([
+      { id: "left", x: -640, y: 0, width: 640, height: 480 },
+      { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+    ]);
+    expect(scenario.world.snapshot().bodies).toContainEqual(
+      expect.objectContaining({
+        id: "left-ground",
+        isStatic: true,
+        x: -320,
+        y: 504,
+        width: 640,
+        height: 48,
+      }),
+    );
+    expect(scenario.world.snapshot().bodies).toContainEqual(
+      expect.objectContaining({
+        id: "primary-ground",
+        isStatic: true,
+        x: 480,
+        y: 564,
+        width: 960,
+        height: 48,
+      }),
+    );
   });
 
   it("keeps simulated adopted pets on screen across many frames", () => {

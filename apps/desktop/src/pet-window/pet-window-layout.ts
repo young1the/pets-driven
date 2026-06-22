@@ -4,7 +4,7 @@ import type { PetWindowHitLayout } from "@/pet-window/pet-window-types";
 /** Transparent space above the sprite reserved for the speech bubble. */
 export const PET_WINDOW_BUBBLE_OVERHEAD = 60;
 
-export const PET_WINDOW_RESIZE_HANDLE_SIZE = 28;
+export const PET_WINDOW_RESIZE_HANDLE_SIZE = 32;
 
 export const PET_WINDOW_LAYOUT: PetWindowHitLayout = {
   width: PET_CELL_SIZE.width,
