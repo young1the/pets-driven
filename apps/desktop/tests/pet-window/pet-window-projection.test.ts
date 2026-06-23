@@ -108,12 +108,17 @@ describe("pet window projection", () => {
         petId: "pet-a",
         window: {
           x: 604,
-          y: 536,
+          y: 520,
           width: 192,
           height: 268,
         },
         sprite: {
-          decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
+          decisionEmote: {
+            emote: "sparkle",
+            label: "Jump request",
+            mood: "excited",
+            tone: "spark",
+          },
           intent: { kind: "travel", direction: "left" },
         },
         overlay: { kind: "speech", label: "hello" },
@@ -129,7 +134,7 @@ describe("pet window projection", () => {
     );
 
     expect(projection.frame.window.x).toBe(1204);
-    expect(projection.frame.window.y).toBe(536);
+    expect(projection.frame.window.y).toBe(520);
   });
 
   it("projects negative virtual-desktop coordinates relative to the world viewport", () => {
@@ -156,6 +161,6 @@ describe("pet window projection", () => {
     );
 
     expect(projection.frame.window.x).toBe(-416);
-    expect(projection.frame.window.y).toBe(276);
+    expect(projection.frame.window.y).toBe(260);
   });
 });

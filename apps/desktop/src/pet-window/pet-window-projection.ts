@@ -4,7 +4,22 @@ import type {
   WorldSnapshot,
 } from "@pets-driven/pet-engine/core/world-snapshot";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import { PET_WINDOW_BUBBLE_OVERHEAD } from "@/pet-window/pet-window-layout";
+import {
+  PET_WINDOW_BUBBLE_OVERHEAD,
+  PET_WINDOW_LAYOUT,
+} from "@/pet-window/pet-window-layout";
+
+// The visible pet fills the body rect, which sits below the sprite cell's
+// vertical centre. Anchor that rect onto the physics body so the pet's feet
+// meet the floor instead of sinking the extra cell margin behind the taskbar.
+// The art's feet sit a little above the body rect's bottom, so lift by twice
+// the rect offset to land them on the floor.
+const PET_WINDOW_BODY_ANCHOR_OFFSET =
+  (PET_WINDOW_LAYOUT.body.y -
+    PET_WINDOW_BUBBLE_OVERHEAD +
+    PET_WINDOW_LAYOUT.body.height / 2 -
+    PET_CELL_SIZE.height / 2) *
+  2;
 import type {
   PetWindowFrame,
   PetWindowOverlay,
@@ -63,7 +78,8 @@ export function projectWorldSnapshotToPetWindows(
               bounds.y +
               (body.y - viewport.y) * scaleY -
               windowHeight / 2 -
-              PET_WINDOW_BUBBLE_OVERHEAD,
+              PET_WINDOW_BUBBLE_OVERHEAD -
+              PET_WINDOW_BODY_ANCHOR_OFFSET * petScale,
             width: windowWidth,
             height: windowHeight + PET_WINDOW_BUBBLE_OVERHEAD,
           },
