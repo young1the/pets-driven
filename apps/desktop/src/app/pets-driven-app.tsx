@@ -750,11 +750,16 @@ export function PetsDrivenApp() {
 
   // Push the pet's current binding (title or null) to its window so its badge,
   // menu, and bubble stay in sync with what the host actually holds.
-  function emitBindingState(petId: string, windowLabel: string) {
+  function emitBindingState(
+    petId: string,
+    windowLabel: string,
+    isLoading = false,
+  ) {
     const binding = windowBindingsRef.current.get(petId) ?? null;
     void emitTo(windowLabel, PET_WINDOW_BINDING_EVENT, {
       petId,
       title: binding ? binding.title : null,
+      isLoading,
     } satisfies PetWindowBindingEvent);
   }
 
@@ -792,16 +797,21 @@ export function PetsDrivenApp() {
   async function startSessionForPet(petId: string, windowLabel: string) {
     const cwd = cwdForPet(petId);
     if (!cwd) {
+      emitBindingState(petId, windowLabel);
       return;
     }
+    emitBindingState(petId, windowLabel, true);
     try {
       const launched = await invoke<ForeignWindow | null>("start_session", {
         cwd,
       });
       if (launched) {
         setBinding(petId, windowLabel, launched);
+      } else {
+        emitBindingState(petId, windowLabel);
       }
     } catch (error) {
+      emitBindingState(petId, windowLabel);
       setPetWindowError(formatCommandError(error));
     }
   }

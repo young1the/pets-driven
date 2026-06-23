@@ -43,6 +43,10 @@ type PetWindowMenu = {
   kind: "body" | "overlay";
   localPoint: { x: number; y: number };
 };
+type PetWindowBindingState = {
+  title: string | null;
+  isLoading: boolean;
+};
 type PetWindowPresentation = {
   decisionEmote: BehaviorTokenPresentation | null;
   intent: PetSpriteIntent;
@@ -184,9 +188,14 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     null,
   );
   const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
-  // Title of the window this pet is bound to (null = unbound), pushed by the
-  // host. bindBubble is a transient confirmation shown when it changes.
-  const [bindingTitle, setBindingTitle] = useState<string | null>(null);
+  // Binding state is pushed by the host. bindBubble is a transient confirmation
+  // shown when the state changes.
+  const [bindingState, setBindingState] = useState<PetWindowBindingState>({
+    title: null,
+    isLoading: false,
+  });
+  const bindingTitle = bindingState.title;
+  const isBindingLoading = bindingState.isLoading;
   const [bindBubble, setBindBubble] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(1);
@@ -322,8 +331,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           return;
         }
         const title = event.payload.title;
-        setBindingTitle(title);
-        setBindBubble(title ? `🔗 Bound: ${title}` : "Unbound");
+        const isLoading = event.payload.isLoading === true;
+        setBindingState({ title, isLoading });
+        setBindBubble(
+          isLoading ? "Connecting..." : title ? `🔗 Bound: ${title}` : "Unbound",
+        );
       },
     );
 
@@ -437,6 +449,17 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       screenPoint: { x: 0, y: 0 },
       at: Date.now(),
     });
+  }
+
+  function requestBindingState() {
+    setBindingState((current) => ({ ...current, isLoading: true }));
+    emitPetWindowSignal("menu.request-binding");
+  }
+
+  function requestStartSession() {
+    setBindingState((current) => ({ ...current, isLoading: true }));
+    setBindBubble("Connecting...");
+    emitPetWindowSignal("menu.start-session");
   }
 
   function handlePointerMove(event: React.PointerEvent<HTMLElement>) {
@@ -618,7 +641,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       setActiveMenu({ kind: "body", localPoint: surfacePointFromEvent(surface, event) });
       emitPetWindowInput("body.contextmenu", event);
       // Ask the host for the current binding so the menu reflects live state.
-      emitPetWindowSignal("menu.request-binding");
+      requestBindingState();
       return;
     }
 
@@ -679,13 +702,15 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         >
           <span aria-hidden="true" className="pet-window-resize-button__mark" />
         </IconButton>
-        {bindingTitle ? (
+        {bindingTitle || isBindingLoading ? (
           <span
             className="pet-window-bind-badge"
-            title={`Bound: ${bindingTitle}`}
-            aria-label={`Bound: ${bindingTitle}`}
+            title={isBindingLoading ? "Connecting" : `Bound: ${bindingTitle}`}
+            aria-label={
+              isBindingLoading ? "Connecting" : `Bound: ${bindingTitle}`
+            }
           >
-            🔗
+            {isBindingLoading ? "..." : "🔗"}
           </span>
         ) : null}
         {bindBubble ? (
@@ -717,9 +742,13 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           {activeMenu.kind === "body" ? (
             <>
               <span className="pet-window-menu__status" aria-live="polite">
-                {bindingTitle ? `🔗 ${bindingTitle}` : "Not connected"}
+                {isBindingLoading
+                  ? "Checking connection..."
+                  : bindingTitle
+                    ? `🔗 ${bindingTitle}`
+                    : "Not connected"}
               </span>
-              {bindingTitle ? (
+              {bindingTitle && !isBindingLoading ? (
                 <>
                   <button
                     role="menuitem"
@@ -748,7 +777,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
                 type="button"
                 onClick={() => {
                   setActiveMenu(null);
-                  emitPetWindowSignal("menu.start-session");
+                  requestStartSession();
                 }}
               >
                 Start new session
