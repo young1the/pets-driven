@@ -54,3 +54,45 @@ export const createReservedPersonality: PersonalityFactory = () => ({
   agreeableness: 0.4,
   neuroticism: 0.75,
 });
+
+/** Very high openness — investigates new space while staying moderately social. */
+export const createCuriousPersonality: PersonalityFactory = () => ({
+  idleForce: 0.0007,
+  activeForce: 0.0013,
+  seekForce: 0.0015,
+  idleConversationMs: 14000,
+  completionIntent: "seek",
+  openness: 0.9,
+  conscientiousness: 0.35,
+  extraversion: 0.55,
+  agreeableness: 0.6,
+  neuroticism: 0.25,
+});
+
+/** High conscientiousness, low neuroticism — steady, calm, and deliberate. */
+export const createSteadyPersonality: PersonalityFactory = () => ({
+  idleForce: 0.00045,
+  activeForce: 0.0009,
+  seekForce: 0.0012,
+  idleConversationMs: 18000,
+  completionIntent: "idle",
+  openness: 0.45,
+  conscientiousness: 0.85,
+  extraversion: 0.45,
+  agreeableness: 0.7,
+  neuroticism: 0.15,
+});
+
+/** High openness + extraversion, low neuroticism — approaches boldly. */
+export const createBoldPersonality: PersonalityFactory = () => ({
+  idleForce: 0.0009,
+  activeForce: 0.0018,
+  seekForce: 0.0022,
+  idleConversationMs: 8000,
+  completionIntent: "seek",
+  openness: 0.8,
+  conscientiousness: 0.45,
+  extraversion: 0.9,
+  agreeableness: 0.55,
+  neuroticism: 0.12,
+});
