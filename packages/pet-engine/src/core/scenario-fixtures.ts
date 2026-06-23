@@ -519,13 +519,14 @@ export function createAdoptedPetsScenario(
         ],
       },
       ...pets.map((pet, index) => {
+        const bodySize =
+          options?.petBodySizeByPetId?.[pet.id] ?? options?.petBodySize;
         const placement = initialPlacementForPet(
           initialPlacementMonitors,
           index,
           pets.length,
+          bodySize?.height ?? DEFAULT_PET_BODY_SIZE.height,
         );
-        const bodySize =
-          options?.petBodySizeByPetId?.[pet.id] ?? options?.petBodySize;
         const bodyComponents: Component[] = bodySize
           ? [{ type: "PhysicsBody", shape: "rectangle", width: bodySize.width, height: bodySize.height }]
           : [];
@@ -991,6 +992,7 @@ function initialPlacementForPet(
   monitors: MonitorWorkArea[],
   index: number,
   totalPets: number,
+  bodyHeight: number,
 ) {
   const monitorIndex = index % monitors.length;
   const monitor = monitors[monitorIndex];
@@ -999,7 +1001,7 @@ function initialPlacementForPet(
 
   return {
     x: monitor.x + (monitor.width * (slotIndex + 1)) / (slotsOnMonitor + 1),
-    y: monitor.y + monitor.height - 40,
+    y: monitor.y + monitor.height - bodyHeight / 2,
   };
 }
 
