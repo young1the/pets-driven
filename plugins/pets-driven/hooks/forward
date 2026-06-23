@@ -2,10 +2,13 @@
 # Forward Claude Code hook events to the pets-driven desktop app.
 #
 # Modes:
-#   forward                read hook JSON from stdin, POST it unchanged
-#   forward attach         synthesize a Notification ping for $PWD
-#   forward hatch '<json>' POST a create request, print the response, propagate failure
-#   forward --self-check   assert the synthesized attach body, then exit
+#   forward                          read hook JSON from stdin, POST it unchanged
+#   forward attach                   synthesize a Notification ping for $PWD
+#   forward hatch ASSET NAME PRESET [CWD]
+#                                    POST a create request (this script builds the
+#                                    JSON so paths are escaped safely), print the
+#                                    response, propagate failure
+#   forward --self-check             assert the synthesized bodies, then exit
 #
 # ponytail: the ingress URLs are coupled to CLAUDE_HOOK_INGRESS_PORT (43187)
 # and the ingress paths in apps/desktop/src-tauri/src/claude_hook_ingress.rs
@@ -30,6 +33,23 @@ attach_body() {
     "$(json_escape "$PWD")"
 }
 
+# Convert a path to a real Windows path (D:\...) when cygpath is available, so
+# the desktop app can open it as a terminal working directory. Falls back to the
+# raw value off-Windows.
+to_windows_path() {
+  cygpath -w "$1" 2>/dev/null || printf '%s' "$1"
+}
+
+hatch_body() {
+  local cwd
+  cwd="$(to_windows_path "${4:-$PWD}")"
+  printf '{"cwd":"%s","assetId":"%s","name":"%s","personalityId":"%s"}' \
+    "$(json_escape "$cwd")" \
+    "$(json_escape "$1")" \
+    "$(json_escape "$2")" \
+    "$(json_escape "$3")"
+}
+
 self_check() {
   local out
   out="$(attach_body)"
@@ -41,6 +61,16 @@ self_check() {
     *"$(json_escape "$PWD")"*) ;;
     *) echo "FAIL: cwd not embedded in: $out" >&2; exit 1 ;;
   esac
+
+  # A Windows path's backslashes must be escaped so the request JSON does not
+  # inject control characters (a raw "\r" parses to a carriage return).
+  local hatch
+  hatch="$(hatch_body "agumon" "Rex" "playful" 'C:\a\b')"
+  case "$hatch" in
+    *'\\a\\b'*) ;;
+    *) echo "FAIL: hatch path not escaped: $hatch" >&2; exit 1 ;;
+  esac
+
   echo "self-check passed"
   exit 0
 }
@@ -51,8 +81,10 @@ case "$1" in
   hatch)
     # Authoritative create: show the response and propagate connection failure
     # so the agent can report "app not running" vs. a rejection (e.g. occupied).
+    # JSON is built here from plain args so the agent never has to escape a path.
+    shift
     curl -sS -m 5 -X POST "$HATCH_URL" \
-      -H "Content-Type: application/json" --data-binary "$2"
+      -H "Content-Type: application/json" --data-binary "$(hatch_body "$@")"
     exit $?
     ;;
   *) post "$(cat)" ;;
