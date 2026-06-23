@@ -31,3 +31,14 @@ With the app running and a pet adopted on the current folder, run:
 ```
 
 The pet should enter its attention state.
+
+## Create a pet from the CLI
+
+With the app running, hatch a new pet for the current folder:
+
+```
+/pets-driven:hatch
+```
+
+The agent walks you through choosing an installed asset, a personality preset,
+and a name, then asks the backend to create the pet. It appears on your desktop.

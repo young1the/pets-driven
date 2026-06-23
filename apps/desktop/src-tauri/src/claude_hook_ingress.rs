@@ -12,6 +12,8 @@ use tauri::Emitter;
 const CLAUDE_HOOK_INGRESS_EVENT: &str = "claude-hook:received:v1";
 const CLAUDE_HOOK_INGRESS_PATH: &str = "/claude-hook";
 const CLAUDE_HOOK_INGRESS_PORT: u16 = 43187;
+const PETS_DRIVEN_HATCH_PATH: &str = "/pets-driven/hatch";
+const PETS_DRIVEN_STATE_CHANGED_EVENT: &str = "pets-driven:state-changed";
 
 pub(crate) type ClaudeHookIngressStatusHandle = Arc<Mutex<ClaudeHookIngressStatus>>;
 
@@ -121,30 +123,77 @@ fn read_http_request(stream: &mut TcpStream) -> Result<Vec<u8>, String> {
     Ok(request)
 }
 
-fn parse_claude_hook_request(request: &[u8]) -> Result<serde_json::Value, String> {
+fn parse_http_request(request: &[u8]) -> Result<(String, serde_json::Value), String> {
     let body_start =
-        http_body_start(request).ok_or_else(|| "Malformed Claude hook HTTP request".to_string())?;
+        http_body_start(request).ok_or_else(|| "Malformed ingress HTTP request".to_string())?;
     let headers = std::str::from_utf8(&request[..body_start - 4])
         .map_err(|error| format!("Invalid UTF-8 request headers: {error}"))?;
     let body = std::str::from_utf8(&request[body_start..])
-        .map_err(|error| format!("Invalid UTF-8 Claude hook body: {error}"))?;
+        .map_err(|error| format!("Invalid UTF-8 ingress body: {error}"))?;
     let mut lines = headers.lines();
     let request_line = lines
         .next()
-        .ok_or_else(|| "Missing Claude hook HTTP request line".to_string())?;
+        .ok_or_else(|| "Missing ingress HTTP request line".to_string())?;
     let mut parts = request_line.split_whitespace();
     let method = parts.next().unwrap_or_default();
     let path = parts.next().unwrap_or_default();
 
     if method != "POST" {
-        return Err("Claude hook ingress only accepts POST".to_string());
+        return Err("Ingress only accepts POST".to_string());
     }
 
-    if path != CLAUDE_HOOK_INGRESS_PATH {
-        return Err("Claude hook ingress path not found".to_string());
-    }
+    let payload = serde_json::from_str(body)
+        .map_err(|error| format!("Could not parse ingress JSON: {error}"))?;
 
-    serde_json::from_str(body).map_err(|error| format!("Could not parse Claude hook JSON: {error}"))
+    Ok((path.to_string(), payload))
+}
+
+fn hatch_input_field(payload: &serde_json::Value, field: &str) -> Result<String, String> {
+    payload
+        .get(field)
+        .and_then(|value| value.as_str())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| format!("Hatch request is missing required field: {field}"))
+}
+
+fn hatch_input_from_payload(
+    payload: &serde_json::Value,
+) -> Result<crate::state_store::HatchInput, String> {
+    Ok(crate::state_store::HatchInput {
+        cwd: hatch_input_field(payload, "cwd")?,
+        asset_id: hatch_input_field(payload, "assetId")?,
+        name: hatch_input_field(payload, "name")?,
+        personality_id: hatch_input_field(payload, "personalityId")?,
+    })
+}
+
+fn handle_hatch_request(app: &tauri::AppHandle, payload: &serde_json::Value, stream: &mut TcpStream) {
+    let input = match hatch_input_from_payload(payload) {
+        Ok(input) => input,
+        Err(error) => {
+            let _ = write_http_response(
+                stream,
+                "400 Bad Request",
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+            return;
+        }
+    };
+
+    match crate::state_store::hatch_pet(app, input) {
+        Ok(_) => {
+            let _ = app.emit_to("main", PETS_DRIVEN_STATE_CHANGED_EVENT, ());
+            let _ = write_http_response(stream, "200 OK", r#"{"ok":true}"#);
+        }
+        Err(error) => {
+            let _ = write_http_response(
+                stream,
+                "409 Conflict",
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+        }
+    }
 }
 
 fn claude_hook_payload_string_field<'a>(payload: &'a serde_json::Value, field: &str) -> &'a str {
@@ -210,26 +259,38 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
         }
     };
 
-    match parse_claude_hook_request(&request) {
-        Ok(payload) => {
-            eprintln!("{}", claude_hook_ingress_log_line(&payload));
+    match parse_http_request(&request) {
+        Ok((path, payload)) => match path.as_str() {
+            CLAUDE_HOOK_INGRESS_PATH => {
+                eprintln!("{}", claude_hook_ingress_log_line(&payload));
 
-            match app.emit_to("main", CLAUDE_HOOK_INGRESS_EVENT, payload) {
-                Ok(()) => {
-                    let _ = write_http_response(&mut stream, "200 OK", r#"{"ok":true}"#);
-                }
-                Err(error) => {
-                    let _ = write_http_response(
-                        &mut stream,
-                        "500 Internal Server Error",
-                        &format!(
-                            r#"{{"ok":false,"error":{}}}"#,
-                            serde_json::json!(error.to_string())
-                        ),
-                    );
+                match app.emit_to("main", CLAUDE_HOOK_INGRESS_EVENT, payload) {
+                    Ok(()) => {
+                        let _ = write_http_response(&mut stream, "200 OK", r#"{"ok":true}"#);
+                    }
+                    Err(error) => {
+                        let _ = write_http_response(
+                            &mut stream,
+                            "500 Internal Server Error",
+                            &format!(
+                                r#"{{"ok":false,"error":{}}}"#,
+                                serde_json::json!(error.to_string())
+                            ),
+                        );
+                    }
                 }
             }
-        }
+            PETS_DRIVEN_HATCH_PATH => {
+                handle_hatch_request(&app, &payload, &mut stream);
+            }
+            _ => {
+                let _ = write_http_response(
+                    &mut stream,
+                    "404 Not Found",
+                    r#"{"ok":false,"error":"Unknown ingress path"}"#,
+                );
+            }
+        },
         Err(error) => {
             let _ = write_http_response(
                 &mut stream,
@@ -324,10 +385,32 @@ mod tests {
     #[test]
     fn claude_hook_ingress_parses_post_json_body() {
         let request = b"POST /claude-hook HTTP/1.1\r\nContent-Length: 45\r\n\r\n{\"hook_event_name\":\"Notification\",\"message\":\"hi\"}";
-        let parsed = parse_claude_hook_request(request).expect("request should parse");
+        let (path, parsed) = parse_http_request(request).expect("request should parse");
 
+        assert_eq!(path, "/claude-hook");
         assert_eq!(parsed["hook_event_name"], "Notification");
         assert_eq!(parsed["message"], "hi");
+    }
+
+    #[test]
+    fn hatch_ingress_parses_path_and_body() {
+        let body = r#"{"cwd":"D:/proj","assetId":"agumon","name":"Rex","personalityId":"playful"}"#;
+        let request =
+            format!("POST /pets-driven/hatch HTTP/1.1\r\nContent-Length: {}\r\n\r\n{body}", body.len());
+        let (path, parsed) = parse_http_request(request.as_bytes()).expect("request should parse");
+
+        assert_eq!(path, "/pets-driven/hatch");
+        let input = hatch_input_from_payload(&parsed).expect("payload should map to hatch input");
+        assert_eq!(input.cwd, "D:/proj");
+        assert_eq!(input.asset_id, "agumon");
+        assert_eq!(input.name, "Rex");
+        assert_eq!(input.personality_id, "playful");
+    }
+
+    #[test]
+    fn hatch_input_requires_all_fields() {
+        let payload = serde_json::json!({ "cwd": "D:/proj", "assetId": "agumon" });
+        assert!(hatch_input_from_payload(&payload).is_err());
     }
 
     #[test]
