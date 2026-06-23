@@ -4,13 +4,15 @@
 # Modes:
 #   forward                read hook JSON from stdin, POST it unchanged
 #   forward attach         synthesize a Notification ping for $PWD
+#   forward hatch '<json>' POST a create request, print the response, propagate failure
 #   forward --self-check   assert the synthesized attach body, then exit
 #
-# ponytail: the ingress URL is coupled to CLAUDE_HOOK_INGRESS_PORT (43187)
-# and CLAUDE_HOOK_INGRESS_PATH (/claude-hook) in
-# apps/desktop/src-tauri/src/lib.rs -- change both sides if the port moves.
+# ponytail: the ingress URLs are coupled to CLAUDE_HOOK_INGRESS_PORT (43187)
+# and the ingress paths in apps/desktop/src-tauri/src/claude_hook_ingress.rs
+# -- change both sides if the port or paths move.
 
 INGRESS_URL="http://127.0.0.1:43187/claude-hook"
+HATCH_URL="http://127.0.0.1:43187/pets-driven/hatch"
 
 post() {
   # -s silent, -m 2 caps the wait so a stopped app never blocks the agent.
@@ -46,6 +48,13 @@ self_check() {
 case "$1" in
   --self-check) self_check ;;
   attach) post "$(attach_body)" ;;
+  hatch)
+    # Authoritative create: show the response and propagate connection failure
+    # so the agent can report "app not running" vs. a rejection (e.g. occupied).
+    curl -sS -m 5 -X POST "$HATCH_URL" \
+      -H "Content-Type: application/json" --data-binary "$2"
+    exit $?
+    ;;
   *) post "$(cat)" ;;
 esac
 

@@ -12,6 +12,7 @@ import {
   CLAUDE_HOOK_INGRESS_EVENT,
   type ClaudeHookIngressStatus,
 } from "@/adapters/agent-events/claude-hook-ingress";
+import { PETS_DRIVEN_STATE_CHANGED_EVENT } from "@/adapters/agent-events/hatch-ingress";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
 import { desktopGateway, type CodexPetPackage } from "@/app/desktop-gateway";
@@ -459,6 +460,31 @@ export function PetsDrivenApp() {
       } catch (error) {
         setPetWindowError(formatCommandError(error));
       }
+    }).then((stop) => {
+      unlisten = stop;
+    });
+
+    return () => unlisten?.();
+  }, []);
+
+  // The backend owns the hatch write; when it signals a state change, reload
+  // the persisted state so the new pet's window opens and it joins the sim.
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+
+    void listen(PETS_DRIVEN_STATE_CHANGED_EVENT, () => {
+      void desktopGateway
+        .readPetsDrivenState()
+        .then((state) => {
+          applyPetsDrivenState(state);
+        })
+        .catch((error) => {
+          setPetWindowError(formatCommandError(error));
+        });
     }).then((stop) => {
       unlisten = stop;
     });
