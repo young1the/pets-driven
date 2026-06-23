@@ -32,13 +32,17 @@ Do the steps in order, one prompt at a time, and stop if the user cancels.
 
 4. **Ask for a name** for the pet.
 
-5. **Create the pet.** Build a compact JSON object and send it:
+5. **Create the pet.** Pass the collected values as plain, shell-quoted
+   arguments — do **not** hand-write JSON, and do **not** escape the path
+   yourself. The script builds the request and escapes the path safely:
 
    ```bash
-   "${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" forward hatch '{"cwd":"<cwd>","assetId":"<assetId>","name":"<name>","personalityId":"<personalityId>"}'
+   "${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" forward hatch "<assetId>" "<name>" "<personalityId>"
    ```
 
-   Substitute the collected values. Keep the JSON on one line.
+   This uses the current folder. To target a different folder, append it as a
+   final argument: `... "<personalityId>" "<that folder>"`. Quote each value;
+   the script handles Windows backslashes for you.
 
 6. **Report the result** from the command output:
    - `{"ok":true}` → the pet was created; tell the user to look at their desktop.

@@ -91,6 +91,7 @@ struct HatchIds {
 #[derive(Debug, PartialEq)]
 pub(crate) enum HatchError {
     UnknownPersonality,
+    InvalidCwd,
     Occupied { owner_pet_id: String },
 }
 
@@ -170,6 +171,13 @@ fn apply_hatch(
 ) -> Result<serde_json::Value, HatchError> {
     let personality =
         personality_preset(&input.personality_id).ok_or(HatchError::UnknownPersonality)?;
+
+    // Guard against a corrupted path: a control character (e.g. a CR injected by
+    // an unescaped backslash in the request JSON) would store a folder that can
+    // never be opened or matched. Reject it rather than persist garbage.
+    if input.cwd.trim().is_empty() || input.cwd.contains(['\r', '\n', '\t']) {
+        return Err(HatchError::InvalidCwd);
+    }
 
     let target = comparable_path(&input.cwd);
     if let Some(directories) = state
@@ -261,6 +269,9 @@ fn new_id(prefix: &str) -> String {
 fn hatch_error_message(error: HatchError) -> String {
     match error {
         HatchError::UnknownPersonality => "Unknown personality preset".to_string(),
+        HatchError::InvalidCwd => {
+            "Working directory path is empty or contains control characters".to_string()
+        }
         HatchError::Occupied { owner_pet_id } => {
             format!("Working directory already has pet {owner_pet_id}")
         }
@@ -394,6 +405,24 @@ mod tests {
                 owner_pet_id: "pet-1".to_string()
             }
         );
+    }
+
+    #[test]
+    fn apply_hatch_rejects_cwd_with_control_characters() {
+        let error = apply_hatch(
+            &empty_pets_driven_state(),
+            &HatchInput {
+                cwd: "D:\realtime".to_string(),
+                asset_id: "agumon".to_string(),
+                name: "Rex".to_string(),
+                personality_id: "playful".to_string(),
+            },
+            &sample_ids(),
+            1,
+        )
+        .expect_err("a carriage return in the path should be rejected");
+
+        assert_eq!(error, HatchError::InvalidCwd);
     }
 
     #[test]
