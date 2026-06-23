@@ -8,7 +8,7 @@ Do the steps in order, one prompt at a time, and stop if the user cancels.
 
 1. **Confirm the folder.** Default to the current working directory. Show it and
    ask whether to use it or a different existing path. This becomes the pet's
-   watched folder (`cwd`).
+   home folder (`cwd`).
 
 2. **List installed assets.** Read the installed pet packages:
 
