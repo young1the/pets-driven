@@ -54,7 +54,9 @@ export function presentPetStatus(
   const base = presentationFromIntent(intent);
 
   if (!overlay) {
-    return { ...base, showCapsule: false };
+    // Always surface the intent-driven state so the bubble is a persistent
+    // status indicator, not just an overlay carrier.
+    return { ...base, showCapsule: true };
   }
 
   if (overlay.kind === "attention") {

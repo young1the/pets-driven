@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
 
 describe("presentPetStatus", () => {
-  it("hides the capsule when the host sent no overlay", () => {
+  it("shows the capsule with intent state even without an overlay", () => {
     const presentation = presentPetStatus({ kind: "working" }, null);
 
-    expect(presentation.showCapsule).toBe(false);
+    expect(presentation.showCapsule).toBe(true);
     expect(presentation.mood).toBe("working");
   });
 
