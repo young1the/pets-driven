@@ -1608,6 +1608,20 @@ describe("adopted pets scenario", () => {
     });
   });
 
+  it("places adopted pet bodies on top of the monitor floor", () => {
+    const scenario = createAdoptedPetsScenario(pets, {
+      petBodySize: { width: 78, height: 120 },
+      monitors: [{ id: "primary", x: 0, y: 0, width: 960, height: 540 }],
+    });
+
+    const body = scenario.world
+      .snapshot()
+      .bodies.find((entry) => entry.id === "pet-uuid-1");
+
+    expect(body).toBeDefined();
+    expect(body!.y + body!.height / 2).toBe(540);
+  });
+
   it("uses desktop monitor work areas when creating adopted pet grounds", () => {
     const scenario = createAdoptedPetsScenario(pets, {
       monitors: [
@@ -1701,6 +1715,37 @@ describe("adopted pets scenario", () => {
       expect(body.x).toBeLessThanOrEqual(snapshot.width);
       expect(body.y).toBeLessThanOrEqual(snapshot.height);
     }
+  });
+
+  it("syncs PetCollision when a dragged adopted pet overlaps another adopted pet", () => {
+    const scenario = createAdoptedPetsScenario(pets, {
+      petBodySize: { width: 80, height: 100 },
+      monitors: [{ id: "primary", x: 0, y: 0, width: 960, height: 540 }],
+    });
+    const target = scenario.world.getComponent("pet-uuid-2", "Transform");
+
+    expect(target).toBeDefined();
+
+    scenario.world.setComponent("user-interaction", {
+      type: "DragInteraction",
+      pointerId: 1,
+      entityId: "pet-uuid-1",
+      phase: "dragging",
+      grabOffset: { x: 0, y: 0 },
+      pointerPosition: { ...target!.position },
+      startedAt: 0,
+      samples: [],
+    });
+
+    scenario.world.step(16);
+    scenario.world.step(16);
+
+    expect(scenario.world.getComponent("pet-uuid-1", "PetCollision")).toMatchObject({
+      otherEntityId: "pet-uuid-2",
+    });
+    expect(scenario.world.getComponent("pet-uuid-2", "PetCollision")).toMatchObject({
+      otherEntityId: "pet-uuid-1",
+    });
   });
 });
 

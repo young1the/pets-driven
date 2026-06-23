@@ -178,6 +178,7 @@ const testPetsDrivenState: PetsDrivenState = {
       personality: createPlayfulPersonality(),
     },
   ],
+  sessionCommand: "claude",
 };
 
 describe("pet window product route", () => {
@@ -429,15 +430,52 @@ describe("pet window product route", () => {
       );
     });
 
-    const petAFrame = tauriEventMocks.emitTo.mock.calls.find(
-      ([label, eventName, payload]) =>
-        label === "pet-window-pet-a" &&
-        eventName === PET_WINDOW_FRAME_EVENT &&
-        (payload as { petId?: string }).petId === "pet-a",
-    )?.[2] as { window: { x: number } } | undefined;
+    const petFrameFor = (petId: string) =>
+      tauriEventMocks.emitTo.mock.calls.find(
+        ([label, eventName, payload]) =>
+          label === `pet-window-${petId}` &&
+          eventName === PET_WINDOW_FRAME_EVENT &&
+          (payload as { petId?: string }).petId === petId,
+      )?.[2] as { window: { x: number; width: number } } | undefined;
+    const petAFrame = petFrameFor("pet-a");
+    const petBFrame = petFrameFor("pet-b");
 
-    expect(petAFrame?.window.x).toBeLessThan(0);
-    expect(petAFrame?.window.x).toBeGreaterThan(-640);
+    expect(petAFrame?.window.x).toBeGreaterThanOrEqual(0);
+    expect(
+      (petAFrame?.window.x ?? 0) + (petAFrame?.window.width ?? 0),
+    ).toBeLessThanOrEqual(960);
+    expect(petBFrame?.window.x).toBeLessThan(0);
+    expect(petBFrame?.window.x).toBeGreaterThanOrEqual(-640);
+  });
+
+  it("resets the adopted pet simulation from the main screen", async () => {
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          sequence: expect.any(Number),
+          petId: "pet-a",
+        }),
+      );
+    });
+
+    tauriEventMocks.emitTo.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset simulation" }));
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          sequence: 1,
+          petId: "pet-a",
+        }),
+      );
+    });
   });
 
   it("routes Claude hook ingress events into fixture Pet Window frames", async () => {
@@ -1094,6 +1132,57 @@ describe("pet window product route", () => {
         expect.objectContaining({ kind: "body.pointer.up" }),
       );
     });
+  });
+
+  it("keeps cursor events active when a host-driven body drag leaves the moving window", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)?.({
+        payload: petWindowFramePayload({
+          sequence: 1,
+          petId: "pet-a",
+          x: 333,
+          y: 444,
+        }),
+      });
+    });
+
+    tauriWindowMocks.setIgnoreCursorEvents.mockReset();
+
+    const canvas = screen.getByLabelText("Pet Window pet-a");
+
+    fireEvent(
+      canvas,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 96,
+        clientY: 112,
+        screenX: 196,
+        screenY: 212,
+      }),
+    );
+    fireEvent.pointerLeave(canvas, {
+      button: 0,
+      clientX: 106,
+      clientY: 122,
+      screenX: 206,
+      screenY: 222,
+    });
+
+    expect(tauriWindowMocks.setIgnoreCursorEvents).toHaveBeenCalledWith(false);
+    expect(tauriWindowMocks.setIgnoreCursorEvents).not.toHaveBeenCalledWith(true);
   });
 
   it("renders the resize affordance as a small design-system icon button", () => {
