@@ -93,6 +93,17 @@ function desktopFixturePetBodySize(
   };
 }
 
+// Adopted pets run in a world sized to the real work area, so their projection
+// is 1:1 — the physics body must equal the sprite's body rect directly, not be
+// divided by the fixture world scale (which left pets half-sunk behind the
+// taskbar).
+function adoptedPetBodySize(scale = 1) {
+  return {
+    width: PET_WINDOW_LAYOUT.body.width * scale,
+    height: PET_WINDOW_LAYOUT.body.height * scale,
+  };
+}
+
 function monitorToWorkArea(monitor: Monitor, index: number): MonitorWorkArea {
   const dpi = monitor.scaleFactor;
 
@@ -539,7 +550,7 @@ export function PetsDrivenApp() {
         const record = petRecords.find((r) => r.id === pet.id);
         const scale = record?.scale ?? 1;
         scaleByPetId[pet.id] = scale;
-        petBodySizeByPetId[pet.id] = desktopFixturePetBodySize(bounds, scale);
+        petBodySizeByPetId[pet.id] = adoptedPetBodySize(scale);
       }
       adoptedScenarioRef.current = createAdoptedPetsScenario(simInputs, {
         petBodySizeByPetId,
