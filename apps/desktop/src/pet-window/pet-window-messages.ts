@@ -5,7 +5,14 @@ import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/ren
 export const PET_WINDOW_FRAME_EVENT = "pet-window:frame:v1";
 export const PET_WINDOW_RESIZE_EVENT = "pet-window:resize:v1";
 export const PET_WINDOW_INPUT_EVENT = "pet-window:input:v1";
+// Host -> pet window: the title of the window this pet is bound to, or null.
+export const PET_WINDOW_BINDING_EVENT = "pet-window:binding:v1";
 export const PET_WINDOW_HOST_LABEL = "main";
+
+export type PetWindowBindingEvent = {
+  petId: string;
+  title: string | null;
+};
 
 export type PetWindowOverlay = PetSpriteOverlay;
 
@@ -39,6 +46,10 @@ export type PetWindowInputKind =
   | "body.pointer.down"
   | "body.pointer.move"
   | "body.pointer.up"
+  | "body.focus"
+  | "menu.start-session"
+  | "menu.unbind"
+  | "menu.request-binding"
   | "overlay.click"
   | "body.contextmenu"
   | "overlay.contextmenu";

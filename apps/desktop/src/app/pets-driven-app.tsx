@@ -34,14 +34,19 @@ import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
 import {
+  PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
+  type PetWindowBindingEvent,
   type PetWindowInputEvent,
   type PetWindowResizeEvent,
 } from "@/pet-window/pet-window-messages";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
-import { projectWorldSnapshotToPetWindows } from "@/pet-window/pet-window-projection";
+import {
+  projectScreenPointToWorld,
+  projectWorldSnapshotToPetWindows,
+} from "@/pet-window/pet-window-projection";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
 
@@ -49,6 +54,9 @@ const DESKTOP_FIXTURE_HOST_TICK_MS = 33;
 const DESKTOP_FIXTURE_STEP_MS = 16;
 const DESKTOP_FIXTURE_WORLD_SIZE = { width: 960, height: 540 };
 const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
+
+// A foreign OS window a pet is bound to. Mirrors the Rust `ForeignWindow`.
+type ForeignWindow = { hwnd: number; title: string };
 
 function formatCommandError(error: unknown) {
   if (error instanceof Error) {
@@ -191,6 +199,9 @@ export function PetsDrivenApp() {
     typeof createAdoptedPetsScenario
   > | null>(null);
   const adoptedPetIdsRef = useRef<Set<string>>(new Set());
+  // petId -> the window this pet is bound to. In-memory only; HWNDs go stale
+  // across restarts, so a dead focus just clears the binding.
+  const windowBindingsRef = useRef<Map<string, ForeignWindow>>(new Map());
   const adoptedHostSequenceRef = useRef(0);
   const adoptedScaleByPetIdRef = useRef<Record<string, number>>({});
   const adoptedHostBoundsRef = useRef<{
@@ -204,6 +215,7 @@ export function PetsDrivenApp() {
     petsDrivenStateRef.current,
   );
   const [desktopFixtureWindowCount, setDesktopFixtureWindowCount] = useState(0);
+  const [adoptedSimulationResetKey, setAdoptedSimulationResetKey] = useState(0);
   const [pets, setPets] = useState<CodexPetPackage[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -291,44 +303,64 @@ export function PetsDrivenApp() {
       return;
     }
 
-    let unlisten: (() => void) | undefined;
+    // Chain the unlisten off the promise so React StrictMode's mount/cleanup/
+    // remount can't leak a duplicate listener (which double-fired every event).
+    const listenPromise = listen<PetWindowInputEvent>(
+      PET_WINDOW_INPUT_EVENT,
+      (event) => {
+        const input = event.payload;
 
-    void listen<PetWindowInputEvent>(PET_WINDOW_INPUT_EVENT, (event) => {
-      const input = event.payload;
-      const isAdopted = adoptedPetIdsRef.current.has(input.petId);
-      const scenario = isAdopted
-        ? adoptedScenarioRef.current
-        : fixtureScenarioRef.current;
-      const bounds = isAdopted
-        ? adoptedHostBoundsRef.current
-        : fixtureHostBoundsRef.current;
+        if (input.kind === "body.focus") {
+          void focusBoundWindow(input.petId, input.windowLabel);
+          return;
+        }
+        if (input.kind === "menu.start-session") {
+          void startSessionForPet(input.petId, input.windowLabel);
+          return;
+        }
+        if (input.kind === "menu.unbind") {
+          unbindPet(input.petId, input.windowLabel);
+          return;
+        }
+        if (input.kind === "menu.request-binding") {
+          emitBindingState(input.petId, input.windowLabel);
+          return;
+        }
 
-      if (!scenario || !bounds || !input.kind.startsWith("body.pointer.")) {
-        return;
-      }
+        const isAdopted = adoptedPetIdsRef.current.has(input.petId);
+        const scenario = isAdopted
+          ? adoptedScenarioRef.current
+          : fixtureScenarioRef.current;
+        const bounds = isAdopted
+          ? adoptedHostBoundsRef.current
+          : fixtureHostBoundsRef.current;
 
-      const snapshot = scenario.world.snapshot();
-      const scaleX = bounds.width / snapshot.width;
-      const scaleY = bounds.height / snapshot.height;
-      scenario.world.pushEvent({
-        kind: "pointer",
-        type: input.kind.replace("body.", "") as
-          | "pointer.down"
-          | "pointer.move"
-          | "pointer.up",
-        pointerId: input.pointerId,
-        at: scenario.clock.now(),
-        position: {
-          x: (input.screenPoint.x - bounds.x) / scaleX,
-          y: (input.screenPoint.y - bounds.y) / scaleY,
-        },
-        button: input.button ?? 0,
-      });
-    }).then((stop) => {
-      unlisten = stop;
-    });
+        if (!scenario || !bounds || !input.kind.startsWith("body.pointer.")) {
+          return;
+        }
 
-    return () => unlisten?.();
+        const snapshot = scenario.world.snapshot();
+        scenario.world.pushEvent({
+          kind: "pointer",
+          type: input.kind.replace("body.", "") as
+            | "pointer.down"
+            | "pointer.move"
+            | "pointer.up",
+          pointerId: input.pointerId,
+          at: scenario.clock.now(),
+          position: projectScreenPointToWorld(
+            snapshot,
+            bounds,
+            input.screenPoint,
+          ),
+          button: input.button ?? 0,
+        });
+      },
+    );
+
+    return () => {
+      void listenPromise.then((stop) => stop());
+    };
   }, []);
 
   useEffect(() => {
@@ -604,7 +636,7 @@ export function PetsDrivenApp() {
       window.clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adoptedSimKey]);
+  }, [adoptedSimKey, adoptedSimulationResetKey]);
 
   if (petWindowPet) {
     return <PetWindowView pet={petWindowPet} />;
@@ -682,6 +714,76 @@ export function PetsDrivenApp() {
     }
   }
 
+  function cwdForPet(petId: string): string | null {
+    const directory =
+      petsDrivenStateRef.current.registeredWorkingDirectories.find(
+        (candidate) => candidate.petId === petId,
+      );
+    return directory ? directory.path : null;
+  }
+
+  // Push the pet's current binding (title or null) to its window so its badge,
+  // menu, and bubble stay in sync with what the host actually holds.
+  function emitBindingState(petId: string, windowLabel: string) {
+    const binding = windowBindingsRef.current.get(petId) ?? null;
+    void emitTo(windowLabel, PET_WINDOW_BINDING_EVENT, {
+      petId,
+      title: binding ? binding.title : null,
+    } satisfies PetWindowBindingEvent);
+  }
+
+  function setBinding(
+    petId: string,
+    windowLabel: string,
+    window: ForeignWindow | null,
+  ) {
+    if (window) {
+      windowBindingsRef.current.set(petId, window);
+    } else {
+      windowBindingsRef.current.delete(petId);
+    }
+    emitBindingState(petId, windowLabel);
+  }
+
+  // Double-click: focus the bound window. A dead binding is cleared so the UI
+  // stops claiming a window that's gone.
+  async function focusBoundWindow(petId: string, windowLabel: string) {
+    const binding = windowBindingsRef.current.get(petId);
+    if (!binding) {
+      return;
+    }
+    try {
+      if (await invoke<boolean>("focus_window", { hwnd: binding.hwnd })) {
+        return;
+      }
+    } catch {
+      // Window vanished.
+    }
+    setBinding(petId, windowLabel, null);
+  }
+
+  // Start a session and auto-bind to the window it launches.
+  async function startSessionForPet(petId: string, windowLabel: string) {
+    const cwd = cwdForPet(petId);
+    if (!cwd) {
+      return;
+    }
+    try {
+      const launched = await invoke<ForeignWindow | null>("start_session", {
+        cwd,
+      });
+      if (launched) {
+        setBinding(petId, windowLabel, launched);
+      }
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
+  function unbindPet(petId: string, windowLabel: string) {
+    setBinding(petId, windowLabel, null);
+  }
+
   // Fire a real hook event at the first adopted pet's folder so the full
   // ingress → routing → adopted world path can be verified visually.
   async function pokeFirstPet() {
@@ -750,6 +852,11 @@ export function PetsDrivenApp() {
     }
   }
 
+  function resetAdoptedSimulation() {
+    setPetWindowError(null);
+    setAdoptedSimulationResetKey((key) => key + 1);
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -763,6 +870,13 @@ export function PetsDrivenApp() {
           </Button>
           <Button onClick={() => void resetPets()} size="sm" variant="ghost">
             Reset pets
+          </Button>
+          <Button
+            onClick={resetAdoptedSimulation}
+            size="sm"
+            variant="neutral"
+          >
+            Reset simulation
           </Button>
           <Button onClick={() => void openAllPets()} size="sm" variant="accent">
             Show all pets
