@@ -134,6 +134,42 @@ fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
             "agreeableness": 0.4,
             "neuroticism": 0.75
         })),
+        "curious" => Some(serde_json::json!({
+            "idleForce": 0.0007,
+            "activeForce": 0.0013,
+            "seekForce": 0.0015,
+            "idleConversationMs": 14000,
+            "completionIntent": "seek",
+            "openness": 0.9,
+            "conscientiousness": 0.35,
+            "extraversion": 0.55,
+            "agreeableness": 0.6,
+            "neuroticism": 0.25
+        })),
+        "steady" => Some(serde_json::json!({
+            "idleForce": 0.00045,
+            "activeForce": 0.0009,
+            "seekForce": 0.0012,
+            "idleConversationMs": 18000,
+            "completionIntent": "idle",
+            "openness": 0.45,
+            "conscientiousness": 0.85,
+            "extraversion": 0.45,
+            "agreeableness": 0.7,
+            "neuroticism": 0.15
+        })),
+        "bold" => Some(serde_json::json!({
+            "idleForce": 0.0009,
+            "activeForce": 0.0018,
+            "seekForce": 0.0022,
+            "idleConversationMs": 8000,
+            "completionIntent": "seek",
+            "openness": 0.8,
+            "conscientiousness": 0.45,
+            "extraversion": 0.9,
+            "agreeableness": 0.55,
+            "neuroticism": 0.12
+        })),
         _ => None,
     }
 }
@@ -441,6 +477,24 @@ mod tests {
         .expect_err("unknown personality should be rejected");
 
         assert_eq!(error, HatchError::UnknownPersonality);
+    }
+
+    #[test]
+    fn apply_hatch_accepts_curious_personality() {
+        let input = HatchInput {
+            cwd: "D:/proj".to_string(),
+            asset_id: "agumon".to_string(),
+            name: "Rex".to_string(),
+            personality_id: "curious".to_string(),
+        };
+
+        let next = apply_hatch(&empty_pets_driven_state(), &input, &sample_ids(), 1000)
+            .expect("curious personality should be accepted");
+
+        let profile = &next["petProfiles"][0];
+        assert_eq!(profile["personalityId"], "curious");
+        assert_eq!(profile["personality"]["openness"], 0.9);
+        assert_eq!(profile["personality"]["extraversion"], 0.55);
     }
 
     #[test]

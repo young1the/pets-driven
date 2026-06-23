@@ -3,6 +3,9 @@ import {
   createPlayfulPersonality,
   createAttentivePersonality,
   createReservedPersonality,
+  createCuriousPersonality,
+  createSteadyPersonality,
+  createBoldPersonality,
 } from "@pets-driven/pet-engine/pets/personalities/factories";
 
 describe("personality factories — OCEAN axes", () => {
@@ -32,8 +35,39 @@ describe("personality factories — OCEAN axes", () => {
     expect(p.agreeableness).toBe(0.4);
   });
 
+  it("curious has very high openness and moderate sociability", () => {
+    const p = createCuriousPersonality();
+    expect(p.openness).toBe(0.9);
+    expect(p.extraversion).toBe(0.55);
+    expect(p.conscientiousness).toBe(0.35);
+    expect(p.neuroticism).toBe(0.25);
+  });
+
+  it("steady has high conscientiousness and low neuroticism", () => {
+    const p = createSteadyPersonality();
+    expect(p.conscientiousness).toBe(0.85);
+    expect(p.neuroticism).toBe(0.15);
+    expect(p.extraversion).toBe(0.45);
+    expect(p.completionIntent).toBe("idle");
+  });
+
+  it("bold has high openness and extraversion with low neuroticism", () => {
+    const p = createBoldPersonality();
+    expect(p.openness).toBe(0.8);
+    expect(p.extraversion).toBe(0.9);
+    expect(p.neuroticism).toBe(0.12);
+    expect(p.completionIntent).toBe("seek");
+  });
+
   it("all factories return all five OCEAN axes as numbers", () => {
-    for (const factory of [createPlayfulPersonality, createAttentivePersonality, createReservedPersonality]) {
+    for (const factory of [
+      createPlayfulPersonality,
+      createAttentivePersonality,
+      createReservedPersonality,
+      createCuriousPersonality,
+      createSteadyPersonality,
+      createBoldPersonality,
+    ]) {
       const p = factory();
       expect(typeof p.openness).toBe("number");
       expect(typeof p.conscientiousness).toBe("number");

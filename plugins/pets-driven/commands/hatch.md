@@ -27,6 +27,9 @@ Do the steps in order, one prompt at a time, and stop if the user cancels.
    - `playful` — high openness + extraversion; explores and engages freely.
    - `attentive` — high extraversion + agreeableness; seeks the user readily.
    - `reserved` — high neuroticism, low extraversion; cautious, stays close.
+   - `curious` — very high openness; investigates new space with moderate sociability.
+   - `steady` — high conscientiousness and low neuroticism; calm and deliberate.
+   - `bold` — high openness + extraversion, low neuroticism; approaches readily.
 
    The chosen id is `personalityId`.
 

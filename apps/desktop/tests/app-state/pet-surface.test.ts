@@ -10,7 +10,7 @@ function stateWithPet(overrides: {
   id: string;
   archived?: boolean;
   visible?: boolean;
-  personalityId?: "playful" | "attentive" | "reserved";
+  personalityId?: "playful" | "attentive" | "reserved" | "curious" | "steady" | "bold";
   agentSourceId?: string;
 }): PetsDrivenState {
   const base = createEmptyPetsDrivenState();
@@ -81,6 +81,22 @@ describe("selectAdoptedPetSimInputs", () => {
     const state = stateWithPet({ id: "pet-1" });
 
     expect(selectAdoptedPetSimInputs(state)[0].sourceId).toBe("pet-1");
+  });
+
+  it("maps the curious personality preset to its OCEAN component", () => {
+    const state = stateWithPet({
+      id: "pet-1",
+      personalityId: "curious",
+    });
+
+    expect(selectAdoptedPetSimInputs(state)[0].personality).toEqual({
+      type: "Personality",
+      openness: 0.9,
+      conscientiousness: 0.35,
+      extraversion: 0.55,
+      agreeableness: 0.6,
+      neuroticism: 0.25,
+    });
   });
 
   it("excludes archived and hidden pets", () => {

@@ -1,6 +1,12 @@
 import type { PetPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 
-export type PetPersonalityId = "playful" | "attentive" | "reserved";
+export type PetPersonalityId =
+  | "playful"
+  | "attentive"
+  | "reserved"
+  | "curious"
+  | "steady"
+  | "bold";
 
 export type PetProfile = {
   id: string;
