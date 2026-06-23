@@ -373,7 +373,10 @@ export function PetsDrivenApp() {
 
     void listen<PetWindowResizeEvent>(PET_WINDOW_RESIZE_EVENT, (event) => {
       const { petId, scale } = event.payload;
-      adoptedScaleByPetIdRef.current = { ...adoptedScaleByPetIdRef.current, [petId]: scale };
+      adoptedScaleByPetIdRef.current = {
+        ...adoptedScaleByPetIdRef.current,
+        [petId]: scale,
+      };
       const current = petsDrivenStateRef.current;
       const next: typeof current = {
         ...current,
@@ -602,7 +605,10 @@ export function PetsDrivenApp() {
       const bounds = projectionBoundsForMonitors(monitors);
       adoptedHostBoundsRef.current = bounds;
       const petRecords = petsDrivenStateRef.current.pets;
-      const petBodySizeByPetId: Record<string, { width: number; height: number }> = {};
+      const petBodySizeByPetId: Record<
+        string,
+        { width: number; height: number }
+      > = {};
       const scaleByPetId: Record<string, number> = {};
       for (const pet of simInputs) {
         const record = petRecords.find((r) => r.id === pet.id);
@@ -804,6 +810,7 @@ export function PetsDrivenApp() {
     try {
       const launched = await invoke<ForeignWindow | null>("start_session", {
         cwd,
+        command: petsDrivenStateRef.current.sessionCommand,
       });
       if (launched) {
         setBinding(petId, windowLabel, launched);
@@ -871,7 +878,9 @@ export function PetsDrivenApp() {
 
     try {
       await Promise.all(
-        visiblePets.map((pet) => desktopGateway.openAdoptedPetWindow(pet.id, pet.assetId)),
+        visiblePets.map((pet) =>
+          desktopGateway.openAdoptedPetWindow(pet.id, pet.assetId),
+        ),
       );
     } catch (error) {
       setPetWindowError(formatCommandError(error));
@@ -893,6 +902,12 @@ export function PetsDrivenApp() {
     setAdoptedSimulationResetKey((key) => key + 1);
   }
 
+  function updateSessionCommand(command: string) {
+    const next = { ...petsDrivenStateRef.current, sessionCommand: command };
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -907,11 +922,7 @@ export function PetsDrivenApp() {
           <Button onClick={() => void resetPets()} size="sm" variant="ghost">
             Reset pets
           </Button>
-          <Button
-            onClick={resetAdoptedSimulation}
-            size="sm"
-            variant="neutral"
-          >
+          <Button onClick={resetAdoptedSimulation} size="sm" variant="neutral">
             Reset simulation
           </Button>
           <Button onClick={() => void openAllPets()} size="sm" variant="accent">
@@ -1008,6 +1019,15 @@ export function PetsDrivenApp() {
           {claudeHookIngressStatus.error ? (
             <small>{claudeHookIngressStatus.error}</small>
           ) : null}
+        </Card>
+        <Card padding="sm">
+          <span>Session command</span>
+          <input
+            aria-label="Session command"
+            data-testid="session-command"
+            value={petsDrivenState.sessionCommand}
+            onChange={(event) => updateSessionCommand(event.target.value)}
+          />
         </Card>
       </section>
 

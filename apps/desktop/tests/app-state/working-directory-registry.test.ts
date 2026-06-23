@@ -12,6 +12,7 @@ describe("working directory registry", () => {
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
+      sessionCommand: "cmd /k claude",
     });
   });
 
@@ -38,6 +39,7 @@ describe("working directory registry", () => {
       ],
       pets: [],
       petProfiles: [],
+      sessionCommand: "cmd /k claude",
     };
 
     expect(

@@ -10,6 +10,46 @@ pub(crate) struct ForeignWindow {
     title: String,
 }
 
+/// Default "Start new session" launch line. Mirrors the TS DEFAULT_SESSION_COMMAND.
+#[cfg(any(target_os = "windows", test))]
+const DEFAULT_SESSION_COMMAND: &str = "cmd /k claude";
+
+/// Split a launch line into program + args, keeping double-quoted segments
+/// (e.g. a shell path with spaces, or an inner `-lc "a b"`) together and
+/// stripping the surrounding quotes. Backslashes are kept verbatim so Windows
+/// paths survive.
+#[cfg(any(target_os = "windows", test))]
+fn split_command_line(line: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut has_token = false;
+
+    for ch in line.chars() {
+        match ch {
+            '"' => {
+                in_quotes = !in_quotes;
+                has_token = true;
+            }
+            c if c.is_whitespace() && !in_quotes => {
+                if has_token {
+                    tokens.push(std::mem::take(&mut current));
+                    has_token = false;
+                }
+            }
+            c => {
+                current.push(c);
+                has_token = true;
+            }
+        }
+    }
+    if has_token {
+        tokens.push(current);
+    }
+
+    tokens
+}
+
 /// Poll the foreground window until a foreign (not our process), visible,
 /// non-minimised window other than `baseline` appears, or we time out. This is
 /// the shared primitive for both auto-bind-after-launch and connect-mode.
@@ -93,24 +133,34 @@ pub(crate) fn focus_window(hwnd: i64) -> Result<bool, String> {
 /// - the terminal still opened, it just is not bound).
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub(crate) fn start_session(cwd: String) -> Result<Option<ForeignWindow>, String> {
+pub(crate) fn start_session(cwd: String, command: String) -> Result<Option<ForeignWindow>, String> {
     use std::process::Command;
     use windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 
     let baseline = unsafe { GetForegroundWindow() } as isize;
 
+    let line = match command.trim() {
+        "" => DEFAULT_SESSION_COMMAND,
+        trimmed => trimmed,
+    };
+    let mut tokens = split_command_line(line);
+    if tokens.is_empty() {
+        tokens = split_command_line(DEFAULT_SESSION_COMMAND);
+    }
+    let (program, rest) = tokens.split_first().expect("default line has a program");
+
+    // Prefer Windows Terminal's tab UI; fall back to spawning the shell directly
+    // in the pet folder. ponytail: wt treats ';' as a tab delimiter, so a command
+    // like `bash -lc "a; b"` may need the caller to escape it (`\;`).
     let spawned = Command::new("wt")
-        .args(["-d", &cwd, "cmd", "/k", "claude"])
+        .arg("-d")
+        .arg(&cwd)
+        .args(&tokens)
         .spawn()
         .is_ok()
-        || Command::new("cmd")
-            .args([
-                "/c",
-                "start",
-                "cmd",
-                "/k",
-                &format!("cd /d \"{cwd}\" && claude"),
-            ])
+        || Command::new(program)
+            .args(rest)
+            .current_dir(&cwd)
             .spawn()
             .is_ok();
 
@@ -129,6 +179,37 @@ pub(crate) fn focus_window(_hwnd: i64) -> Result<bool, String> {
 
 #[cfg(not(target_os = "windows"))]
 #[tauri::command]
-pub(crate) fn start_session(_cwd: String) -> Result<Option<ForeignWindow>, String> {
+pub(crate) fn start_session(
+    _cwd: String,
+    _command: String,
+) -> Result<Option<ForeignWindow>, String> {
     Err("start_session is only implemented on Windows".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::split_command_line;
+
+    #[test]
+    fn splits_bare_tokens() {
+        assert_eq!(split_command_line("cmd /k claude"), ["cmd", "/k", "claude"]);
+    }
+
+    #[test]
+    fn keeps_quoted_path_and_inner_command_as_single_tokens() {
+        assert_eq!(
+            split_command_line(r#""C:\Program Files\Git\bin\bash.exe" -lc "claude; exec bash""#),
+            [
+                r"C:\Program Files\Git\bin\bash.exe",
+                "-lc",
+                "claude; exec bash",
+            ]
+        );
+    }
+
+    #[test]
+    fn ignores_surrounding_whitespace() {
+        assert_eq!(split_command_line("   claude   "), ["claude"]);
+        assert!(split_command_line("   ").is_empty());
+    }
 }

@@ -44,6 +44,7 @@ describe("parsePetsDrivenState", () => {
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
+      sessionCommand: "cmd /k claude",
     });
   });
 

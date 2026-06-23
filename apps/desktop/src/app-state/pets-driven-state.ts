@@ -1,5 +1,12 @@
 import type { PetProfile } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
+/**
+ * Full launch line run when a pet starts a new session. The leading token is
+ * the shell/executable, so users can swap `cmd` for e.g. Git bash:
+ * `"C:\\Program Files\\Git\\bin\\bash.exe" -lc "claude; exec bash"`.
+ */
+export const DEFAULT_SESSION_COMMAND = "cmd /k claude";
+
 export type RegisteredWorkingDirectory = {
   id: string;
   path: string;
@@ -24,7 +31,10 @@ export type PetRecord = {
   scale?: number;
 };
 
-type PetRecordV1 = Omit<PetRecord, "workingDirectoryId" | "name" | "adoptedAt"> & {
+type PetRecordV1 = Omit<
+  PetRecord,
+  "workingDirectoryId" | "name" | "adoptedAt"
+> & {
   workingDirectoryId: string;
 };
 
@@ -40,6 +50,8 @@ export type PetsDrivenStateV2 = {
   registeredWorkingDirectories: RegisteredWorkingDirectory[];
   pets: PetRecord[];
   petProfiles: PetProfile[];
+  /** App-wide launch line for "Start new session". See DEFAULT_SESSION_COMMAND. */
+  sessionCommand: string;
 };
 
 /** Canonical state alias — always the latest schema. */
@@ -51,6 +63,7 @@ export function createEmptyPetsDrivenState(): PetsDrivenState {
     registeredWorkingDirectories: [],
     pets: [],
     petProfiles: [],
+    sessionCommand: DEFAULT_SESSION_COMMAND,
   };
 }
 
@@ -83,6 +96,7 @@ function migratePetsDrivenStateV1ToV2(
     petProfiles: Array.isArray(candidate.petProfiles)
       ? candidate.petProfiles
       : [],
+    sessionCommand: DEFAULT_SESSION_COMMAND,
   };
 }
 
@@ -137,6 +151,10 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
       : [],
     pets: Array.isArray(v2.pets) ? v2.pets : [],
     petProfiles: Array.isArray(v2.petProfiles) ? v2.petProfiles : [],
+    sessionCommand:
+      typeof v2.sessionCommand === "string" && v2.sessionCommand.trim()
+        ? v2.sessionCommand
+        : DEFAULT_SESSION_COMMAND,
   });
 }
 
@@ -166,7 +184,9 @@ export function normalizeWorkingDirectoryPath(path: string): string {
   }
 
   const [firstPart, ...restParts] = normalizedParts;
-  const root = /^[a-z]:$/i.test(firstPart) ? firstPart.toUpperCase() : firstPart;
+  const root = /^[a-z]:$/i.test(firstPart)
+    ? firstPart.toUpperCase()
+    : firstPart;
 
   return [root, ...restParts].join(separator);
 }
@@ -175,7 +195,10 @@ function comparableWorkingDirectoryPath(path: string): string {
   return normalizeWorkingDirectoryPath(path).toLowerCase();
 }
 
-function isSameOrAncestorPath(ancestorPath: string, childPath: string): boolean {
+function isSameOrAncestorPath(
+  ancestorPath: string,
+  childPath: string,
+): boolean {
   if (!ancestorPath || !childPath) {
     return false;
   }
