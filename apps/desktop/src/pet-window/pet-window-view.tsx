@@ -19,10 +19,12 @@ import { PET_WINDOW_BUBBLE_OVERHEAD, PET_WINDOW_LAYOUT } from "@/pet-window/pet-
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import {
   isFreshPetWindowMessage,
+  PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
+  type PetWindowBindingEvent,
   type PetWindowInputKind,
   type PetWindowFrame,
   type PetWindowOverlay,
@@ -173,10 +175,19 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const hasShownAfterFirstPositionRef = useRef(false);
   const isPositionDrivenRef = useRef(false);
   const pointerStartRef = useRef<PetWindowPointerStart | null>(null);
+  // bodyDownRef tracks the press origin so we can tell a tap from a drag;
+  // lastTapAtRef turns two quick taps into a double-click that focuses the
+  // bound window.
+  const bodyDownRef = useRef<{ screenX: number; screenY: number } | null>(null);
+  const lastTapAtRef = useRef(0);
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
     null,
   );
   const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
+  // Title of the window this pet is bound to (null = unbound), pushed by the
+  // host. bindBubble is a transient confirmation shown when it changes.
+  const [bindingTitle, setBindingTitle] = useState<string | null>(null);
+  const [bindBubble, setBindBubble] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(1);
   const [spritesheetUrl, setSpritesheetUrl] = useState(
@@ -300,6 +311,37 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   }, []);
 
   useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    const bindingPromise = listen<PetWindowBindingEvent>(
+      PET_WINDOW_BINDING_EVENT,
+      (event) => {
+        if (event.payload.petId !== pet.petId) {
+          return;
+        }
+        const title = event.payload.title;
+        setBindingTitle(title);
+        setBindBubble(title ? `🔗 Bound: ${title}` : "Unbound");
+      },
+    );
+
+    return () => {
+      void bindingPromise.then((unlisten) => unlisten());
+    };
+  }, [pet.petId]);
+
+  // Auto-dismiss the transient bind confirmation bubble.
+  useEffect(() => {
+    if (!bindBubble) {
+      return;
+    }
+    const timer = window.setTimeout(() => setBindBubble(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [bindBubble]);
+
+  useEffect(() => {
     let isActive = true;
     let dispose = () => {};
 
@@ -378,10 +420,36 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     });
   }
 
+  // Coordinate-free signal to the host for window focus/bind/start actions.
+  function emitPetWindowSignal(kind: PetWindowInputKind) {
+    if (!isTauri()) {
+      return;
+    }
+
+    inputSequenceRef.current += 1;
+    void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
+      sequence: inputSequenceRef.current,
+      petId: pet.petId,
+      windowLabel: getCurrentWindow().label,
+      pointerId: 0,
+      kind,
+      localPoint: { x: 0, y: 0 },
+      screenPoint: { x: 0, y: 0 },
+      at: Date.now(),
+    });
+  }
+
   function handlePointerMove(event: React.PointerEvent<HTMLElement>) {
     const surface = visualFrameRef.current;
 
     if (!surface) {
+      return;
+    }
+
+    // While a menu is open keep the window solid so its buttons stay clickable
+    // (passthrough mode would let clicks fall through to whatever is behind).
+    if (activeMenu) {
+      void setNativeCursorPassthrough(false);
       return;
     }
 
@@ -426,6 +494,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     pointerStartRef.current = hit.kind;
 
     if (hit.kind === "body") {
+      bodyDownRef.current = { screenX: event.screenX, screenY: event.screenY };
       setInteractionStatus("Direct manipulation");
       dragPauseUntilRef.current = Date.now() + 1200;
       emitPetWindowInput("body.pointer.down", event);
@@ -496,6 +565,27 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       setActiveMenu(null);
       emitPetWindowInput("body.pointer.up", event);
       event.currentTarget.releasePointerCapture?.(event.pointerId);
+
+      // A press that barely moved is a tap; two quick taps = double-click ->
+      // focus the bound window. ponytail: only fires in position-driven mode;
+      // native-drag pets hand the gesture to the OS so there is no tap.
+      const down = bodyDownRef.current;
+      bodyDownRef.current = null;
+      if (down) {
+        const moved = Math.hypot(
+          event.screenX - down.screenX,
+          event.screenY - down.screenY,
+        );
+        if (moved < 6) {
+          const now = Date.now();
+          if (now - lastTapAtRef.current < 400) {
+            lastTapAtRef.current = 0;
+            emitPetWindowSignal("body.focus");
+          } else {
+            lastTapAtRef.current = now;
+          }
+        }
+      }
     }
 
     void setNativeCursorPassthrough(hit.kind === "transparent");
@@ -527,6 +617,8 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       setInteractionStatus("Pet context menu");
       setActiveMenu({ kind: "body", localPoint: surfacePointFromEvent(surface, event) });
       emitPetWindowInput("body.contextmenu", event);
+      // Ask the host for the current binding so the menu reflects live state.
+      emitPetWindowSignal("menu.request-binding");
       return;
     }
 
@@ -550,7 +642,14 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerLeave={() => void setNativeCursorPassthrough(true)}
+      onPointerLeave={() => {
+        if (pointerStartRef.current === "body" || pointerStartRef.current === "resize") {
+          void setNativeCursorPassthrough(false);
+          return;
+        }
+
+        void setNativeCursorPassthrough(true);
+      }}
       ref={surfaceRef}
     >
       <span
@@ -580,6 +679,20 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         >
           <span aria-hidden="true" className="pet-window-resize-button__mark" />
         </IconButton>
+        {bindingTitle ? (
+          <span
+            className="pet-window-bind-badge"
+            title={`Bound: ${bindingTitle}`}
+            aria-label={`Bound: ${bindingTitle}`}
+          >
+            🔗
+          </span>
+        ) : null}
+        {bindBubble ? (
+          <span className="pet-window-bind-bubble" role="status">
+            {bindBubble}
+          </span>
+        ) : null}
       </span>
       {activeMenu ? (
         <div
@@ -596,14 +709,49 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           }
           role="menu"
           style={menuStyle(activeMenu)}
+          // Keep clicks inside the menu from reaching the surface's pointer
+          // handlers, which would start a window drag and swallow the click.
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
         >
           {activeMenu.kind === "body" ? (
             <>
-              <button role="menuitem" type="button">
-                Pet settings
-              </button>
-              <button role="menuitem" type="button">
-                Attention history
+              <span className="pet-window-menu__status" aria-live="polite">
+                {bindingTitle ? `🔗 ${bindingTitle}` : "Not connected"}
+              </span>
+              {bindingTitle ? (
+                <>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => {
+                      setActiveMenu(null);
+                      emitPetWindowSignal("body.focus");
+                    }}
+                  >
+                    Open session window
+                  </button>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => {
+                      setActiveMenu(null);
+                      emitPetWindowSignal("menu.unbind");
+                    }}
+                  >
+                    Unbind window
+                  </button>
+                </>
+              ) : null}
+              <button
+                role="menuitem"
+                type="button"
+                onClick={() => {
+                  setActiveMenu(null);
+                  emitPetWindowSignal("menu.start-session");
+                }}
+              >
+                Start new session
               </button>
             </>
           ) : (

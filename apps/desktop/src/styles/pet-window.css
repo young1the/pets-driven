@@ -58,6 +58,49 @@ html.pet-window-document body {
   color: var(--blossom-700);
 }
 
+.pet-window-menu__status {
+  display: block;
+  padding: 5px 10px 7px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.pet-window-bind-badge {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 1;
+  font-size: 12px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.35));
+  pointer-events: none;
+}
+
+.pet-window-bind-bubble {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  z-index: 3;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-md);
+  color: var(--text-body);
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .pet-window-visual-frame {
   position: relative;
   display: inline-block;
