@@ -5,6 +5,7 @@ import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-i
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
   PET_WINDOW_FRAME_EVENT,
+  PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
@@ -582,6 +583,120 @@ describe("pet window product route", () => {
           petId: "pet-a",
           overlay: { kind: "attention", label: "WAIT" },
         }),
+      );
+    });
+  });
+
+  it("shows Pet Window binding requests as loading until the host replies", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(true);
+    });
+
+    const surface = screen.getByLabelText("Pet Window pet-a");
+
+    fireEvent.contextMenu(surface, {
+      bubbles: true,
+      button: 2,
+      clientX: 96,
+      clientY: 112,
+    });
+
+    expect(screen.getByText("Checking connection...")).toBeInTheDocument();
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_BINDING_EVENT)?.({
+        payload: {
+          petId: "pet-a",
+          title: "Windows Terminal",
+        },
+      });
+    });
+
+    expect(screen.getByText("🔗 Windows Terminal")).toBeInTheDocument();
+  });
+
+  it("publishes a loading binding state while starting a terminal channel", async () => {
+    let resolveStartSession:
+      | ((window: { hwnd: number; title: string }) => void)
+      | undefined;
+
+    invokeMock.mockImplementation(async (command) => {
+      if (command === "list_codex_pet_packages") {
+        return [];
+      }
+      if (command === "get_claude_hook_ingress_status") {
+        return {
+          url: "http://127.0.0.1:43187/claude-hook",
+          state: "listening",
+          error: null,
+        };
+      }
+      if (command === "read_pets_driven_state") {
+        return testPetsDrivenState;
+      }
+      if (command === "start_session") {
+        return new Promise((resolve) => {
+          resolveStartSession = resolve;
+        });
+      }
+
+      return undefined;
+    });
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "menu.start-session",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_BINDING_EVENT,
+        {
+          petId: "pet-a",
+          title: null,
+          isLoading: true,
+        },
+      );
+    });
+
+    act(() => {
+      resolveStartSession?.({ hwnd: 123, title: "Windows Terminal" });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_BINDING_EVENT,
+        {
+          petId: "pet-a",
+          title: "Windows Terminal",
+          isLoading: false,
+        },
       );
     });
   });

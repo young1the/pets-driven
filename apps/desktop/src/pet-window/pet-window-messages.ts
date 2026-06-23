@@ -12,6 +12,7 @@ export const PET_WINDOW_HOST_LABEL = "main";
 export type PetWindowBindingEvent = {
   petId: string;
   title: string | null;
+  isLoading?: boolean;
 };
 
 export type PetWindowOverlay = PetSpriteOverlay;
