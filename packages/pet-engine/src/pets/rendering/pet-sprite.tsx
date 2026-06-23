@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { PetEmote, PetSpeechBubble } from "@pets-driven/design-system";
+import { PetSpeechBubble } from "@pets-driven/design-system";
 import {
   type PetAnimationState,
   type PetSpriteFacing,
@@ -104,9 +104,9 @@ export function PetSprite({
         imageUrl={imageUrl}
         style={spriteStyle}
       />
-      {overlay && status.showCapsule ? (
+      {status.showCapsule ? (
         <span
-          aria-label={`Pet ${overlay.kind} overlay`}
+          aria-label={`Pet ${overlay?.kind ?? "status"} overlay`}
           className={overlayClassName}
           style={{
             boxSizing: "border-box",
@@ -131,28 +131,12 @@ export function PetSprite({
               marginLeft: `${(scaleOverlayValue(PET_SPRITE_OVERLAY_RECT.width, frame) - PET_SPRITE_OVERLAY_RECT.width) / 2}px`,
             }}
           >
-            {/* <PetSpeechBubble
+            <PetSpeechBubble
               mood={status.mood}
               work={status.label ?? undefined}
               style={{ maxWidth: `${PET_SPRITE_OVERLAY_RECT.width}px` }}
-            /> */}
+            />
           </span>
-        </span>
-      ) : null}
-      {status.emote !== "none" ? (
-        <span
-          aria-hidden="true"
-          style={{
-            pointerEvents: "none",
-            position: "absolute",
-            right: `${scaleOverlayValue(PET_SPRITE_EMOTE_OFFSET.right, frame)}px`,
-            top: `${scaleOverlayValue(PET_SPRITE_EMOTE_OFFSET.top, frame)}px`,
-            transform: `scale(${drawScale})`,
-            transformOrigin: "top right",
-            zIndex: 2,
-          }}
-        >
-          <PetEmote kind={status.emote} size="sm" />
         </span>
       ) : null}
       {decisionEmote ? (

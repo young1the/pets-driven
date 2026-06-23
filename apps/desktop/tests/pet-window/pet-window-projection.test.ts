@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import {
   overlayFromPet,
+  projectScreenPointToWorld,
   projectWorldSnapshotToPetWindows,
   spriteIntentFromBody,
 } from "@/pet-window/pet-window-projection";
@@ -113,15 +114,10 @@ describe("pet window projection", () => {
           height: 268,
         },
         sprite: {
-          decisionEmote: {
-            emote: "sparkle",
-            label: "Jump request",
-            mood: "excited",
-            tone: "spark",
-          },
+          decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
           intent: { kind: "travel", direction: "left" },
         },
-        overlay: { kind: "speech", label: "hello" },
+        overlay: null,
       },
     });
   });
@@ -162,5 +158,20 @@ describe("pet window projection", () => {
 
     expect(projection.frame.window.x).toBe(-416);
     expect(projection.frame.window.y).toBe(260);
+  });
+
+  it("maps desktop screen points back into viewport-relative world coordinates", () => {
+    expect(
+      projectScreenPointToWorld(
+        {
+          ...snapshotFixture(),
+          width: 1600,
+          height: 540,
+          viewport: { x: -640, y: 0, width: 1600, height: 540 },
+        },
+        { x: -640, y: 0, width: 1600, height: 540 },
+        { x: -320, y: 440 },
+      ),
+    ).toEqual({ x: -320, y: 440 });
   });
 });

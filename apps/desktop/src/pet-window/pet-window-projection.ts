@@ -94,6 +94,26 @@ export function projectWorldSnapshotToPetWindows(
   });
 }
 
+export function projectScreenPointToWorld(
+  snapshot: WorldSnapshot,
+  bounds: PetWindowProjectionBounds,
+  screenPoint: { x: number; y: number },
+) {
+  const scaleX = bounds.width / snapshot.width;
+  const scaleY = bounds.height / snapshot.height;
+  const viewport = snapshot.viewport ?? {
+    x: 0,
+    y: 0,
+    width: snapshot.width,
+    height: snapshot.height,
+  };
+
+  return {
+    x: viewport.x + (screenPoint.x - bounds.x) / scaleX,
+    y: viewport.y + (screenPoint.y - bounds.y) / scaleY,
+  };
+}
+
 export function spriteIntentFromBody(body: BodySnapshot): PetSpriteIntent {
   switch (body.animationState) {
     case "running-right":
@@ -122,13 +142,8 @@ export function overlayFromPet(pet: PetSnapshot): PetWindowOverlay | null {
     };
   }
 
-  if (pet.speech) {
-    return {
-      kind: "speech",
-      label: pet.speech,
-    };
-  }
-
+  // Scripted speech lines aren't real status — the always-on bubble shows the
+  // intent-driven state instead, so we don't surface dialogue as an overlay.
   if (pet.visualCue) {
     return {
       kind: "status",
