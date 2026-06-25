@@ -191,9 +191,24 @@
 .pd-onb__top {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.pd-onb__wordmark-btn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.pd-onb__wordmark-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
 }
 
 .pd-onb__wordmark {
@@ -204,6 +219,29 @@
   display: flex;
   align-items: center;
   gap: 14px;
+}
+
+.pd-onb__exit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pd-color-text-muted, #888);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.pd-onb__exit:hover {
+  opacity: 1;
+  background: var(--pd-color-surface-hover, rgba(0, 0, 0, 0.06));
 }
 
 .pd-onb__dots-row {
