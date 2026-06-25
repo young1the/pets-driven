@@ -148,6 +148,24 @@ pub(crate) async fn close_all_pet_windows(app: tauri::AppHandle) -> Result<(), S
     Ok(())
 }
 
+#[tauri::command]
+pub(crate) async fn close_adopted_pet_window(
+    app: tauri::AppHandle,
+    pet_id: String,
+) -> Result<(), String> {
+    validate_asset_id(&pet_id).map_err(|_| "Invalid pet id".to_string())?;
+
+    let label = format!("pet-window-{pet_id}");
+
+    if let Some(window) = app.get_webview_window(&label) {
+        window
+            .destroy()
+            .map_err(|error| format!("Could not close {label}: {error}"))?;
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

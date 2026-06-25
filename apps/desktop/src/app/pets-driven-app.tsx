@@ -669,7 +669,10 @@ export function PetsDrivenApp() {
         const sameKeys =
           Object.keys(current).length === Object.keys(nextStatuses).length &&
           Object.keys(nextStatuses).every(
-            (id) => current[id]?.label === nextStatuses[id]?.label,
+            (id) =>
+              current[id]?.label === nextStatuses[id]?.label &&
+              current[id]?.tone === nextStatuses[id]?.tone &&
+              current[id]?.dotColor === nextStatuses[id]?.dotColor,
           );
         return sameKeys ? current : nextStatuses;
       });
@@ -949,6 +952,7 @@ export function PetsDrivenApp() {
   function recallPet(petId: string) {
     const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
     patchPet(petId, { visible: false });
+    void desktopGateway.closeAdoptedPetWindow(petId).catch(() => {});
     if (pet) {
       flashToast(`${pet.name} came home`);
     }
@@ -973,6 +977,7 @@ export function PetsDrivenApp() {
     };
     applyPetsDrivenState(next);
     void desktopGateway.writePetsDrivenState(next);
+    void invoke("close_all_pet_windows").catch(() => {});
   }
 
   function deletePet(petId: string) {

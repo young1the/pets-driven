@@ -25,6 +25,7 @@ export type DesktopGateway = {
   writePetsDrivenState(state: PetsDrivenState): Promise<void>;
   listPetPackages(): Promise<CodexPetPackage[]>;
   openAdoptedPetWindow(petId: string, assetId: string): Promise<void>;
+  closeAdoptedPetWindow(petId: string): Promise<void>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
 };
@@ -73,6 +74,14 @@ export const desktopGateway: DesktopGateway = {
     }
 
     await invoke("open_adopted_pet_window", { petId, assetId });
+  },
+
+  async closeAdoptedPetWindow(petId) {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("close_adopted_pet_window", { petId });
   },
 
   async pickDirectory() {
