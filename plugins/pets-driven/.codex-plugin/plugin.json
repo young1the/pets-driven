@@ -1,0 +1,25 @@
+{
+  "name": "pets-driven",
+  "version": "0.1.0",
+  "description": "Forward agent lifecycle events to the pets-driven desktop companion so the bound pet expresses agent work state.",
+  "author": {
+    "name": "pets-driven"
+  },
+  "keywords": ["pets-driven", "codex", "hooks", "companion", "agent-events"],
+  "skills": "./skills/",
+  "hooks": "./hooks/codex-hooks.json",
+  "interface": {
+    "displayName": "pets-driven",
+    "shortDescription": "Let pets react to Codex lifecycle events",
+    "longDescription": "pets-driven bundles Codex lifecycle hooks and shared attach/hatch workflows so pets can react to prompt, permission, and turn-completion events for the working directory Codex is using.",
+    "developerName": "pets-driven",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive"],
+    "defaultPrompt": [
+      "Connect this Codex thread to pets-driven.",
+      "Hatch a pets-driven pet for this folder."
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# Adapt Codex lifecycle hook events to the pets-driven desktop app ingress.
+#
+# Modes:
+#   forward-codex EVENT_NAME          synthesize and POST a pets-driven hook payload
+#   forward-codex --print EVENT_NAME  synthesize the payload and print it
+#   forward-codex --self-check        assert payload synthesis, then exit
+#
+# ponytail: the ingress URL is coupled to CLAUDE_HOOK_INGRESS_PORT (43187)
+# and CLAUDE_HOOK_INGRESS_PATH in apps/desktop/src-tauri/src/claude_hook_ingress.rs.
+# Keep both sides together if the local ingress moves or is renamed.
+
+INGRESS_URL="http://127.0.0.1:43187/claude-hook"
+SOURCE_ID="codex"
+
+post() {
+  # -s silent and -m 2 keep a stopped desktop app from blocking Codex turns.
+  curl -s -m 2 -X POST "$INGRESS_URL" \
+    -H "Content-Type: application/json" --data-binary "$1" >/dev/null 2>&1
+}
+
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+to_windows_path() {
+  cygpath -w "$1" 2>/dev/null || printf '%s' "$1"
+}
+
+current_cwd() {
+  to_windows_path "${PETS_DRIVEN_TEST_CWD:-$PWD}"
+}
+
+summary_for_event() {
+  case "$1" in
+    UserPromptSubmit) printf 'Codex prompt received' ;;
+    PermissionRequest) printf 'Codex needs permission' ;;
+    Stop) printf 'Codex turn completed' ;;
+    *) return 1 ;;
+  esac
+}
+
+message_for_event() {
+  case "$1" in
+    UserPromptSubmit) printf 'Codex started working' ;;
+    PermissionRequest) printf 'Codex needs permission' ;;
+    Stop) printf 'Codex turn completed' ;;
+    *) return 1 ;;
+  esac
+}
+
+codex_body() {
+  local event_name="$1"
+  local cwd="$2"
+  local summary
+  local message
+
+  summary="$(summary_for_event "$event_name")" || return 1
+  message="$(message_for_event "$event_name")" || return 1
+
+  printf '{"hook_event_name":"%s","cwd":"%s","sourceId":"%s","source_id":"%s","agent_id":"%s","summary":"%s","message":"%s"}' \
+    "$(json_escape "$event_name")" \
+    "$(json_escape "$cwd")" \
+    "$SOURCE_ID" \
+    "$SOURCE_ID" \
+    "$SOURCE_ID" \
+    "$(json_escape "$summary")" \
+    "$(json_escape "$message")"
+}
+
+print_body() {
+  local event_name="$1"
+
+  if [ -z "$event_name" ]; then
+    echo "forward-codex: missing event name" >&2
+    return 1
+  fi
+
+  codex_body "$event_name" "$(current_cwd)"
+  printf '\n'
+}
+
+self_check() {
+  local started
+  started="$(PETS_DRIVEN_TEST_CWD='C:\work\pets-driven' print_body UserPromptSubmit)"
+  case "$started" in
+    *'"hook_event_name":"UserPromptSubmit"'*) ;;
+    *) echo "FAIL: missing UserPromptSubmit in: $started" >&2; exit 1 ;;
+  esac
+  case "$started" in
+    *'"sourceId":"codex"'*) ;;
+    *) echo "FAIL: missing Codex source id in: $started" >&2; exit 1 ;;
+  esac
+  case "$started" in
+    *'C:\\work\\pets-driven'*) ;;
+    *) echo "FAIL: Windows cwd not escaped in: $started" >&2; exit 1 ;;
+  esac
+
+  local waiting
+  waiting="$(print_body PermissionRequest)"
+  case "$waiting" in
+    *'"message":"Codex needs permission"'*) ;;
+    *) echo "FAIL: PermissionRequest message missing in: $waiting" >&2; exit 1 ;;
+  esac
+
+  local completed
+  completed="$(print_body Stop)"
+  case "$completed" in
+    *'"summary":"Codex turn completed"'*) ;;
+    *) echo "FAIL: Stop summary missing in: $completed" >&2; exit 1 ;;
+  esac
+
+  echo "self-check passed"
+  exit 0
+}
+
+case "$1" in
+  --self-check)
+    self_check
+    ;;
+  --print)
+    shift
+    print_body "$1"
+    ;;
+  *)
+    event_name="${1:-UserPromptSubmit}"
+    cat >/dev/null 2>&1 || true
+    body="$(codex_body "$event_name" "$(current_cwd)")" || exit 1
+    post "$body"
+    ;;
+esac
+
+exit 0

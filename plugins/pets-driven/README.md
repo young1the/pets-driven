@@ -10,6 +10,17 @@ claude plugin marketplace add ./plugins
 claude plugin install pets-driven
 ```
 
+## Install for Codex
+
+```bash
+codex plugin marketplace add ./plugins
+codex
+/plugins
+```
+
+Choose the `pets-driven` marketplace and install `pets-driven`. Start a new
+Codex thread after installation so bundled skills and hooks are loaded.
+
 ## What it forwards
 
 | Claude hook        | Pet reaction                  |
@@ -21,6 +32,9 @@ claude plugin install pets-driven
 The pets-driven desktop app must be running; events for folders you have not
 adopted as a pet are ignored. If the app is down, forwarding fails silently and
 never blocks the agent.
+
+For Codex, the plugin forwards `UserPromptSubmit`, `PermissionRequest`, and
+`Stop` through the same pets-driven ingress.
 
 ## Verify the connection
 
