@@ -12,6 +12,11 @@ export {
 export { Checkbox, type CheckboxProps } from "./components/forms/checkbox";
 export { Radio, type RadioProps } from "./components/forms/radio";
 export { Switch, type SwitchProps } from "./components/forms/switch";
+export {
+  SegmentedControl,
+  type SegmentedControlProps,
+  type SegmentedOption,
+} from "./components/forms/segmented-control";
 export { Card, type CardProps } from "./components/data-display/card";
 export {
   Badge,
