@@ -1,4 +1,4 @@
-import { Tabs } from "@pets-driven/design-system";
+import { Button, Tabs } from "@pets-driven/design-system";
 import {
   GearIcon,
   HomeIcon,
@@ -58,6 +58,27 @@ export function MainWindow({
           onChange={(value) => onTab(value as MainWindowTab)}
           value={editPet ? "" : tab}
         />
+        {!editPet && tab === "home" && (
+          <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+            <span
+              style={{
+                whiteSpace: "nowrap",
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "var(--text-subtle)",
+                marginRight: "2px",
+              }}
+            >
+              {home.inField.length} on the desktop
+            </span>
+            <Button onClick={home.onShowAll} size="sm" variant="neutral">
+              Show all
+            </Button>
+            <Button onClick={home.onHideAll} size="sm" variant="neutral">
+              Hide all
+            </Button>
+          </div>
+        )}
       </header>
 
       {editPet ? (

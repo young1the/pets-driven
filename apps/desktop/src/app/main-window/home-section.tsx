@@ -54,8 +54,6 @@ export function HomeSection({
   onRecall,
   onEdit,
   onAddPet,
-  onShowAll,
-  onHideAll,
 }: HomeSectionProps) {
   const [hoverId, setHoverId] = useState<string | null>(null);
 
@@ -79,36 +77,6 @@ export function HomeSection({
           pointerEvents: "none",
         }}
       />
-
-      <div
-        style={{
-          position: "absolute",
-          top: "16px",
-          right: "26px",
-          zIndex: 9,
-          display: "flex",
-          alignItems: "center",
-          gap: "9px",
-        }}
-      >
-        <span
-          style={{
-            whiteSpace: "nowrap",
-            fontSize: "12px",
-            fontWeight: 700,
-            color: "var(--text-subtle)",
-            marginRight: "2px",
-          }}
-        >
-          {inField.length} on the desktop
-        </span>
-        <Button onClick={onShowAll} size="sm" variant="neutral">
-          Show all
-        </Button>
-        <Button onClick={onHideAll} size="sm" variant="neutral">
-          Hide all
-        </Button>
-      </div>
 
       <div
         style={{
