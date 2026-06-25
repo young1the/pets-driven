@@ -77,6 +77,7 @@ function PetPackageCard({
           imageUrl={spritesheetUrl}
           intent={{ kind: "idle" }}
           scale={0.5}
+          showStatusBubble={false}
           size={PET_CELL_SIZE}
         />
       </div>
