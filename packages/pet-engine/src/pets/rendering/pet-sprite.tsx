@@ -29,6 +29,7 @@ type PetSpriteBaseProps = {
   overlayClassName?: string;
   overlayStyle?: CSSProperties;
   scale?: number;
+  showStatusBubble?: boolean;
   size: PetSpriteSize;
   spriteClassName?: string;
   spriteStyle?: CSSProperties;
@@ -71,6 +72,7 @@ export function PetSprite({
   overlayClassName,
   overlayStyle,
   scale,
+  showStatusBubble = true,
   size,
   spriteClassName,
   spriteStyle,
@@ -104,7 +106,7 @@ export function PetSprite({
         imageUrl={imageUrl}
         style={spriteStyle}
       />
-      {status.showCapsule ? (
+      {status.showCapsule && showStatusBubble ? (
         <span
           aria-label={`Pet ${overlay?.kind ?? "status"} overlay`}
           className={overlayClassName}
@@ -162,5 +164,7 @@ function scaleOverlayValue(
   value: number,
   frame: ReturnType<typeof resolvePetSpriteFrame>,
 ) {
-  return Number((value * (frame.drawSize.width / frame.source.width)).toFixed(10));
+  return Number(
+    (value * (frame.drawSize.width / frame.source.width)).toFixed(10),
+  );
 }

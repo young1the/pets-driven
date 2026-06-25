@@ -120,6 +120,7 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
       imageUrl={spritesheetUrl}
       intent={{ kind: "idle" }}
       scale={scale}
+      showStatusBubble={false}
       size={PET_CELL_SIZE}
     />
   );
