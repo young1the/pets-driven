@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export type AppView = "home" | "playground" | "onboarding" | "pets" | "connect";
+export type AppView = "home" | "playground" | "onboarding";
 
 export function useAppNavigation(initial: AppView = "home") {
   const [view, setView] = useState<AppView>(initial);

@@ -195,9 +195,10 @@ export function SettingsSection({
                 marginTop: "5px",
               }}
             >
-              {hook.summary}
+              <span data-testid="claude-hook-state">{hook.summary}</span>
             </div>
             <code
+              data-testid="claude-hook-url"
               style={{
                 display: "inline-block",
                 marginTop: "8px",
