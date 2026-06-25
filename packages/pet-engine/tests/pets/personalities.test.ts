@@ -6,6 +6,10 @@ import {
   createCuriousPersonality,
   createSteadyPersonality,
   createBoldPersonality,
+  createGentlePersonality,
+  createMischievousPersonality,
+  createLazyPersonality,
+  createZenPersonality,
 } from "@pets-driven/pet-engine/pets/personalities/factories";
 
 describe("personality factories — OCEAN axes", () => {
@@ -59,6 +63,36 @@ describe("personality factories — OCEAN axes", () => {
     expect(p.completionIntent).toBe("seek");
   });
 
+  it("gentle has very high agreeableness and low neuroticism", () => {
+    const p = createGentlePersonality();
+    expect(p.agreeableness).toBe(0.9);
+    expect(p.neuroticism).toBe(0.15);
+    expect(p.extraversion).toBe(0.4);
+    expect(p.completionIntent).toBe("seek");
+  });
+
+  it("mischievous has high openness and extraversion with low conscientiousness", () => {
+    const p = createMischievousPersonality();
+    expect(p.openness).toBe(0.85);
+    expect(p.extraversion).toBe(0.8);
+    expect(p.conscientiousness).toBe(0.2);
+    expect(p.completionIntent).toBe("seek");
+  });
+
+  it("lazy has very low extraversion and conscientiousness", () => {
+    const p = createLazyPersonality();
+    expect(p.extraversion).toBe(0.15);
+    expect(p.conscientiousness).toBe(0.25);
+    expect(p.completionIntent).toBe("idle");
+  });
+
+  it("zen has very low neuroticism and balanced traits", () => {
+    const p = createZenPersonality();
+    expect(p.neuroticism).toBe(0.05);
+    expect(p.agreeableness).toBeGreaterThan(0.7);
+    expect(p.completionIntent).toBe("idle");
+  });
+
   it("all factories return all five OCEAN axes as numbers", () => {
     for (const factory of [
       createPlayfulPersonality,
@@ -67,6 +101,10 @@ describe("personality factories — OCEAN axes", () => {
       createCuriousPersonality,
       createSteadyPersonality,
       createBoldPersonality,
+      createGentlePersonality,
+      createMischievousPersonality,
+      createLazyPersonality,
+      createZenPersonality,
     ]) {
       const p = factory();
       expect(typeof p.openness).toBe("number");
