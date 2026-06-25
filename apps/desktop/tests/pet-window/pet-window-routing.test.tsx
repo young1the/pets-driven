@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PetsDrivenApp } from "@/app/pets-driven-app";
 import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-ingress";
@@ -289,16 +295,19 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     expect(screen.getByLabelText("Pet Sprite pet-a")).toBeInTheDocument();
-    expect(document.querySelector("canvas.pet-window-canvas")).not.toBeInTheDocument();
+    expect(
+      document.querySelector("canvas.pet-window-canvas"),
+    ).not.toBeInTheDocument();
   });
 
   it("opens and closes playground Pet Windows from the management surface", () => {
     render(<PetsDrivenApp />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
     fireEvent.click(screen.getByRole("button", { name: "Open 3 pet windows" }));
     fireEvent.click(
-      screen.getByRole("button", { name: "Open fixture pet windows" }),
+      screen.getByRole("button", { name: "Open fixture windows" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Close pet windows" }));
 
@@ -317,8 +326,9 @@ describe("pet window product route", () => {
   it("broadcasts playground fixture snapshots to opened Pet Windows", async () => {
     render(<PetsDrivenApp />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(
-      screen.getByRole("button", { name: "Open fixture pet windows" }),
+      screen.getByRole("button", { name: "Open fixture windows" }),
     );
 
     await waitFor(() => {
@@ -464,6 +474,7 @@ describe("pet window product route", () => {
 
     tauriEventMocks.emitTo.mockClear();
 
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Reset simulation" }));
 
     await waitFor(() => {
@@ -481,10 +492,13 @@ describe("pet window product route", () => {
   it("routes Claude hook ingress events into fixture Pet Window frames", async () => {
     render(<PetsDrivenApp />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(
+        true,
+      );
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
         "pet-window-playground-1",
         PET_WINDOW_FRAME_EVENT,
@@ -519,10 +533,13 @@ describe("pet window product route", () => {
   it("routes Claude hook ingress by working directory instead of provider session id", async () => {
     render(<PetsDrivenApp />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(
+        true,
+      );
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
         "pet-window-playground-1",
         PET_WINDOW_FRAME_EVENT,
@@ -558,10 +575,13 @@ describe("pet window product route", () => {
   it("ignores Claude hook ingress from an unregistered working directory", async () => {
     render(<PetsDrivenApp />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(
+        true,
+      );
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
         "pet-window-playground-1",
         PET_WINDOW_FRAME_EVENT,
@@ -597,10 +617,15 @@ describe("pet window product route", () => {
   it("shows Claude hook ingress status and sends a test event from the UI", async () => {
     render(<PetsDrivenApp />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
 
+    fireEvent.click(screen.getByRole("tab", { name: "Settings" }));
+
     await waitFor(() => {
-      expect(screen.getByTestId("claude-hook-state")).toHaveTextContent("listening");
+      expect(screen.getByTestId("claude-hook-state")).toHaveTextContent(
+        "listening",
+      );
       expect(screen.getByTestId("claude-hook-url")).toHaveTextContent(
         "http://127.0.0.1:43187/claude-hook",
       );
@@ -608,12 +633,13 @@ describe("pet window product route", () => {
 
     tauriEventMocks.emitTo.mockClear();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Send Claude hook test event" }),
-    );
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
+    fireEvent.click(screen.getByRole("button", { name: "Test event" }));
 
     await waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith("emit_test_claude_hook_ingress_event");
+      expect(invokeMock).toHaveBeenCalledWith(
+        "emit_test_claude_hook_ingress_event",
+      );
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
         "pet-window-playground-1",
         PET_WINDOW_FRAME_EVENT,
@@ -635,7 +661,9 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(
+        true,
+      );
     });
 
     const surface = screen.getByLabelText("Pet Window pet-a");
@@ -760,10 +788,13 @@ describe("pet window product route", () => {
 
     render(<PetsDrivenApp />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
 
     await waitFor(() => {
-      expect(screen.getByText("window creation deadlocked")).toBeInTheDocument();
+      expect(
+        screen.getByText("window creation deadlocked"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -910,7 +941,9 @@ describe("pet window product route", () => {
       });
     });
 
-    expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(appliedCallCount);
+    expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(
+      appliedCallCount,
+    );
     expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
   });
 
@@ -1182,7 +1215,9 @@ describe("pet window product route", () => {
     });
 
     expect(tauriWindowMocks.setIgnoreCursorEvents).toHaveBeenCalledWith(false);
-    expect(tauriWindowMocks.setIgnoreCursorEvents).not.toHaveBeenCalledWith(true);
+    expect(tauriWindowMocks.setIgnoreCursorEvents).not.toHaveBeenCalledWith(
+      true,
+    );
   });
 
   it("renders the resize affordance as a small design-system icon button", () => {
@@ -1213,13 +1248,15 @@ describe("pet window product route", () => {
       "/?surface=pet-window&petId=pet-a&assetId=patamon",
     );
 
-    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(function getRect(this: HTMLElement) {
-      if (this.classList.contains("pet-window-visual-frame")) {
-        return domRect({ left: 200, top: 100, width: 96, height: 164 });
-      }
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
+      function getRect(this: HTMLElement) {
+        if (this.classList.contains("pet-window-visual-frame")) {
+          return domRect({ left: 200, top: 100, width: 96, height: 164 });
+        }
 
-      return domRect({ left: 0, top: 0, width: 400, height: 400 });
-    });
+        return domRect({ left: 0, top: 0, width: 400, height: 400 });
+      },
+    );
 
     render(<PetsDrivenApp />);
 

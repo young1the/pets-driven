@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Badge, Button, Card } from "@pets-driven/design-system";
+import { Button } from "@pets-driven/design-system";
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
@@ -17,10 +17,23 @@ import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
 import { desktopGateway, type CodexPetPackage } from "@/app/desktop-gateway";
 import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
+import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
+import type { PetEditView } from "@/app/main-window/pet-edit-section";
+import type { HomePetView } from "@/app/main-window/home-section";
+import {
+  petStatusFromSnapshot,
+  type PetCardStatus,
+} from "@/app-state/pet-card-status";
+import { personalityRoleLabel } from "@/app/pet-presentation";
+import {
+  getWorkingDirectoryForPet,
+  registerWorkingDirectory,
+} from "@/app-state/pet-adoption";
 import { withDesktopFixtureWorkingDirectories } from "@/app-state/dev-fixtures";
 import {
   createEmptyPetsDrivenState,
   resolveRegisteredWorkingDirectoryForCwd,
+  type PetRecord,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
 import {
@@ -185,6 +198,22 @@ function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
   };
 }
 
+const PERSONALITY_GRADIENTS: Record<string, { from: string; to: string }> = {
+  playful: { from: "#FF7FB4", to: "#F95E9E" },
+  attentive: { from: "#5AC8E8", to: "#2F9CC4" },
+  reserved: { from: "#A28BF0", to: "#7560D8" },
+  curious: { from: "#5BD08A", to: "#2E9E63" },
+  steady: { from: "#8B7FE8", to: "#6F5FD6" },
+  bold: { from: "#FF7A5C", to: "#E04428" },
+};
+
+function petGradient(personalityId: string | undefined) {
+  return (
+    PERSONALITY_GRADIENTS[personalityId ?? "steady"] ??
+    PERSONALITY_GRADIENTS.steady
+  );
+}
+
 export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
@@ -224,10 +253,25 @@ export function PetsDrivenApp() {
   const [petWindowError, setPetWindowError] = useState<string | null>(null);
   const [claudeHookIngressStatus, setClaudeHookIngressStatus] =
     useState<ClaudeHookIngressStatus>(defaultClaudeHookIngressStatus);
+  const [mainTab, setMainTab] = useState<MainWindowTab>("home");
+  const [editPetId, setEditPetId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [petStatusById, setPetStatusById] = useState<
+    Record<string, PetCardStatus>
+  >({});
+  const toastTimerRef = useRef<number | null>(null);
 
   function applyPetsDrivenState(next: PetsDrivenState) {
     petsDrivenStateRef.current = next;
     setPetsDrivenState(next);
+  }
+
+  function flashToast(message: string) {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToast(message);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 2600);
   }
 
   // Stable signature of the visible pet roster; the adopted-pet host rebuilds
@@ -237,7 +281,6 @@ export function PetsDrivenApp() {
     .map((pet) => `${pet.id}:${pet.assetId}`)
     .sort()
     .join(",");
-  const adoptedPets = petsDrivenState.pets.filter((pet) => !pet.archived);
 
   useEffect(() => {
     let isMounted = true;
@@ -643,8 +686,23 @@ export function PetsDrivenApp() {
       scenario.world.step(DESKTOP_FIXTURE_STEP_MS);
       adoptedHostSequenceRef.current += 1;
 
+      const snapshot = scenario.world.snapshot();
+
+      const nextStatuses: Record<string, PetCardStatus> = {};
+      for (const petSnapshot of snapshot.pets) {
+        nextStatuses[petSnapshot.id] = petStatusFromSnapshot(petSnapshot);
+      }
+      setPetStatusById((current) => {
+        const sameKeys =
+          Object.keys(current).length === Object.keys(nextStatuses).length &&
+          Object.keys(nextStatuses).every(
+            (id) => current[id]?.label === nextStatuses[id]?.label,
+          );
+        return sameKeys ? current : nextStatuses;
+      });
+
       const projections = projectWorldSnapshotToPetWindows(
-        scenario.world.snapshot(),
+        snapshot,
         bounds,
         adoptedHostSequenceRef.current,
         adoptedScaleByPetIdRef.current,
@@ -697,22 +755,6 @@ export function PetsDrivenApp() {
         onStateChange={applyPetsDrivenState}
         state={petsDrivenState}
       />
-    );
-  }
-
-  if (view === "pets" || view === "connect") {
-    return (
-      <main className="app-shell">
-        <Card padding="lg">
-          <h1>{view === "pets" ? "Your pets" : "Connect an agent"}</h1>
-          <p>
-            <Badge tone="info">Coming soon</Badge>
-          </p>
-          <Button onClick={() => navigate("home")} size="sm" variant="neutral">
-            Back
-          </Button>
-        </Card>
-      </main>
     );
   }
 
@@ -908,198 +950,285 @@ export function PetsDrivenApp() {
     void desktopGateway.writePetsDrivenState(next);
   }
 
+  function patchPet(petId: string, patch: Partial<PetRecord>) {
+    const current = petsDrivenStateRef.current;
+    const next: PetsDrivenState = {
+      ...current,
+      pets: current.pets.map((pet) =>
+        pet.id === petId ? { ...pet, ...patch } : pet,
+      ),
+    };
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
+  function deployPet(petId: string) {
+    const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
+    patchPet(petId, { visible: true });
+    void desktopGateway
+      .openAdoptedPetWindow(petId, pet?.assetId ?? "")
+      .catch(() => {});
+    if (pet) {
+      flashToast(`${pet.name} is on the desktop`);
+    }
+  }
+
+  function recallPet(petId: string) {
+    const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
+    patchPet(petId, { visible: false });
+    if (pet) {
+      flashToast(`${pet.name} came home`);
+    }
+  }
+
+  function deployAllPets() {
+    for (const pet of petsDrivenStateRef.current.pets.filter(
+      (p) => !p.archived,
+    )) {
+      patchPet(pet.id, { visible: true });
+      void desktopGateway
+        .openAdoptedPetWindow(pet.id, pet.assetId)
+        .catch(() => {});
+    }
+  }
+
+  function recallAllPets() {
+    const current = petsDrivenStateRef.current;
+    const next: PetsDrivenState = {
+      ...current,
+      pets: current.pets.map((pet) => ({ ...pet, visible: false })),
+    };
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
+  function deletePet(petId: string) {
+    const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
+    if (
+      !pet ||
+      !window.confirm(`Send ${pet.name} home for good? This removes the pet.`)
+    ) {
+      return;
+    }
+    patchPet(petId, { archived: true, visible: false });
+    setEditPetId(null);
+    flashToast(`${pet.name} was removed`);
+  }
+
+  async function pickFolderForPet(petId: string) {
+    const path = await desktopGateway.pickDirectory();
+    if (!path) {
+      return;
+    }
+    const result = registerWorkingDirectory(petsDrivenStateRef.current, {
+      petId,
+      path,
+      workingDirectoryId: crypto.randomUUID(),
+      agentSourceId: crypto.randomUUID(),
+      now: Date.now(),
+    });
+    if (result.status === "occupied") {
+      flashToast("That folder already belongs to another pet");
+      return;
+    }
+    applyPetsDrivenState(result.state);
+    void desktopGateway.writePetsDrivenState(result.state);
+  }
+
+  function setSessionShell(shell: string) {
+    const command = petsDrivenStateRef.current.sessionCommand;
+    if (shell === "cmd" && !command.startsWith("cmd")) {
+      updateSessionCommand(
+        `cmd /k ${command.replace(/^bash\s+-lc\s+/, "")}`.trim(),
+      );
+    } else if (shell === "bash" && command.startsWith("cmd")) {
+      updateSessionCommand(command.replace(/^cmd\s+\/k\s+/, "").trim());
+    }
+  }
+
+  // Build the view models MainWindow needs from petsDrivenState.
+  const managedPets = petsDrivenState.pets.filter((pet) => !pet.archived);
+  const profileFor = (pet: (typeof managedPets)[number]) =>
+    petsDrivenState.petProfiles.find((profile) => profile.id === pet.profileId);
+  const statusFor = (petId: string): PetCardStatus =>
+    petStatusById[petId] ?? {
+      label: "Idle",
+      tone: "neutral",
+      dotColor: "var(--ink-300)",
+    };
+
+  const atHome: HomePetView[] = managedPets
+    .filter((pet) => !pet.visible)
+    .map((pet) => {
+      const personalityId = profileFor(pet)?.personalityId;
+      return {
+        id: pet.id,
+        name: pet.name,
+        assetId: pet.assetId,
+        role: personalityRoleLabel(personalityId),
+        status: statusFor(pet.id),
+        gradient: petGradient(personalityId),
+      };
+    });
+
+  const inField = managedPets
+    .filter((pet) => pet.visible)
+    .map((pet) => ({
+      id: pet.id,
+      name: pet.name,
+      color: petGradient(profileFor(pet)?.personalityId).from,
+    }));
+
+  const editingPet = managedPets.find((pet) => pet.id === editPetId) ?? null;
+  const editPetView: PetEditView | null = editingPet
+    ? {
+        id: editingPet.id,
+        name: editingPet.name,
+        assetId: editingPet.assetId,
+        role: personalityRoleLabel(profileFor(editingPet)?.personalityId),
+        status: statusFor(editingPet.id),
+        gradient: petGradient(profileFor(editingPet)?.personalityId),
+        folder:
+          getWorkingDirectoryForPet(petsDrivenState, editingPet.id)?.path ?? "",
+        memo: editingPet.memo ?? "",
+        deployed: editingPet.visible,
+      }
+    : null;
+
+  const previewPet = managedPets[0];
+  const previewDir = previewPet
+    ? (getWorkingDirectoryForPet(petsDrivenState, previewPet.id)?.path ??
+      "core")
+    : "core";
+  const shellPrompt = petsDrivenState.sessionCommand.startsWith("cmd")
+    ? "C:\\>"
+    : "$";
+  const detectedShell = petsDrivenState.sessionCommand.startsWith("cmd")
+    ? "cmd"
+    : "bash";
+
   return (
-    <main className="app-shell">
-      <header className="app-header">
-        <div>
-          <h1>Pets Driven</h1>
-          <p>Codex pet runtime</p>
-        </div>
-        <div className="app-header-actions">
-          <Button onClick={() => navigate("onboarding")} size="sm">
-            Adopt a pet
-          </Button>
-          <Button onClick={() => void resetPets()} size="sm" variant="ghost">
-            Reset pets
-          </Button>
-          <Button onClick={resetAdoptedSimulation} size="sm" variant="neutral">
-            Reset simulation
-          </Button>
-          <Button onClick={() => void openAllPets()} size="sm" variant="accent">
-            Show all pets
-          </Button>
-          <Button onClick={() => void closeAllPets()} size="sm" variant="ghost">
-            Close all pets
-          </Button>
-          <Button
-            onClick={() => navigate("playground")}
-            size="sm"
-            variant="neutral"
-          >
-            Open playground
-          </Button>
-          <Button
-            onClick={() =>
-              void invokePetWindowCommand("open_pet_window_playground", 1)
-            }
-            size="sm"
-            variant="accent"
-          >
-            Open pet window
-          </Button>
-          <Button
-            onClick={() =>
-              void invokePetWindowCommand("open_pet_window_playground", 3)
-            }
-            size="sm"
-            variant="neutral"
-          >
-            Open 3 pet windows
-          </Button>
-          <Button
-            onClick={() =>
-              void invokePetWindowCommand("open_pet_window_playground", 7)
-            }
-            size="sm"
-            variant="neutral"
-          >
-            Open fixture pet windows
-          </Button>
-          <Button
-            onClick={() =>
-              void invokePetWindowCommand("close_pet_window_playground")
-            }
-            size="sm"
-            variant="ghost"
-          >
-            Close pet windows
-          </Button>
-        </div>
-      </header>
-
-      {petWindowError ? (
-        <p className="app-error" role="status">
-          {petWindowError}
-        </p>
-      ) : null}
-
-      <section className="app-summary" aria-label="Runtime summary">
-        <Card padding="sm">
-          <span>Packages</span>
-          <strong>{pets.length}</strong>
-        </Card>
-        <Card padding="sm">
-          <span>Source</span>
-          <strong>{isTauri() ? "Tauri" : "Browser"}</strong>
-        </Card>
-        <Card className="app-summary-runtime" padding="sm">
-          <span>Claude hook</span>
-          <strong data-testid="claude-hook-state">
-            {claudeHookIngressStatus.state}
-          </strong>
-          <code data-testid="claude-hook-url">
-            {claudeHookIngressStatus.url || "unavailable"}
-          </code>
-          <Button
-            aria-label="Send Claude hook test event"
-            onClick={() => void emitClaudeHookTestEvent()}
-            size="sm"
-            variant="neutral"
-          >
-            Test event
-          </Button>
-          <Button
-            aria-label="Poke the first adopted pet"
-            onClick={() => void pokeFirstPet()}
-            size="sm"
-            variant="accent"
-          >
-            Poke pet
-          </Button>
-          {claudeHookIngressStatus.error ? (
-            <small>{claudeHookIngressStatus.error}</small>
-          ) : null}
-        </Card>
-        <Card padding="sm">
-          <span>Session command</span>
-          <input
-            aria-label="Session command"
-            data-testid="session-command"
-            value={petsDrivenState.sessionCommand}
-            onChange={(event) => updateSessionCommand(event.target.value)}
-          />
-        </Card>
-      </section>
-
-      <section className="app-pets" aria-labelledby="adopted-pets-title">
-        <div className="app-section-header">
-          <h2 id="adopted-pets-title">Your pets</h2>
-          <Badge dot tone="info">
-            {adoptedPets.length}
-          </Badge>
-        </div>
-        <ul>
-          {adoptedPets.map((pet) => {
-            const directory =
-              petsDrivenState.registeredWorkingDirectories.find(
-                (candidate) => candidate.petId === pet.id,
-              ) ?? null;
-
-            return (
-              <li key={pet.id}>
-                <div className="app-pet-card__head">
-                  <strong>{pet.name}</strong>
-                  <Badge dot tone={directory ? "success" : "warning"}>
-                    {directory ? "Watching" : "No folder"}
-                  </Badge>
-                </div>
-                <p>{directory ? directory.path : "No folder linked yet"}</p>
-                <span>{pet.assetId}</span>
-              </li>
-            );
-          })}
-          {adoptedPets.length === 0 ? (
-            <li>
-              <strong>No pets yet</strong>
-              <p>Adopt a pet to point it at a project folder.</p>
-            </li>
-          ) : null}
-        </ul>
-      </section>
-
-      <section className="app-pets" aria-labelledby="pet-packages-title">
-        <div className="app-section-header">
-          <h2 id="pet-packages-title">Pet packages</h2>
-          <Badge
-            dot
-            tone={
-              status === "ready"
-                ? "success"
-                : status === "loading"
-                  ? "info"
-                  : "danger"
-            }
-          >
-            {status}
-          </Badge>
-        </div>
-        <ul>
-          {pets.map((pet) => (
-            <li key={pet.id}>
-              <strong>{pet.displayName}</strong>
-              <span>{pet.id}</span>
-              <p>{pet.description}</p>
-            </li>
-          ))}
-          {pets.length === 0 && status !== "loading" ? (
-            <li>
-              <strong>No packages found</strong>
-              <span>fallback enabled</span>
-              <p>Bundled Patamon spritesheet will be used for rendering.</p>
-            </li>
-          ) : null}
-        </ul>
-      </section>
-    </main>
+    <MainWindow
+      debug={{
+        error: petWindowError,
+        groups: [
+          {
+            title: "Pets",
+            hint: "adoption & state",
+            items: [
+              { label: "Adopt a pet", onClick: () => navigate("onboarding") },
+              { label: "Reset pets", onClick: () => void resetPets() },
+              { label: "Show all pets", onClick: () => void openAllPets() },
+              { label: "Close all pets", onClick: () => void closeAllPets() },
+            ],
+          },
+          {
+            title: "Simulation",
+            hint: "world & playground",
+            items: [
+              { label: "Reset simulation", onClick: resetAdoptedSimulation },
+              {
+                label: "Open playground",
+                onClick: () => navigate("playground"),
+              },
+            ],
+          },
+          {
+            title: "Pet windows",
+            hint: "overlay fixtures",
+            items: [
+              {
+                label: "Open pet window",
+                onClick: () =>
+                  void invokePetWindowCommand("open_pet_window_playground", 1),
+              },
+              {
+                label: "Open 3 pet windows",
+                onClick: () =>
+                  void invokePetWindowCommand("open_pet_window_playground", 3),
+              },
+              {
+                label: "Open fixture windows",
+                onClick: () =>
+                  void invokePetWindowCommand("open_pet_window_playground", 7),
+              },
+              {
+                label: "Close pet windows",
+                onClick: () =>
+                  void invokePetWindowCommand("close_pet_window_playground"),
+              },
+            ],
+          },
+          {
+            title: "Claude hook",
+            hint: "ingress testing",
+            items: [
+              {
+                label: "Test event",
+                onClick: () => void emitClaudeHookTestEvent(),
+              },
+              { label: "Poke pet", onClick: () => void pokeFirstPet() },
+            ],
+          },
+        ],
+      }}
+      edit={{
+        onName: (value) => editPetId && patchPet(editPetId, { name: value }),
+        onMemo: (value) => editPetId && patchPet(editPetId, { memo: value }),
+        onPickFolder: () => editPetId && void pickFolderForPet(editPetId),
+        onToggleDeployed: () =>
+          editPetId &&
+          (editingPet?.visible ? recallPet(editPetId) : deployPet(editPetId)),
+        onDelete: () => editPetId && deletePet(editPetId),
+        onDone: () => setEditPetId(null),
+      }}
+      editPet={editPetView}
+      home={{
+        atHome,
+        inField,
+        onDeploy: deployPet,
+        onRecall: recallPet,
+        onEdit: (petId) => setEditPetId(petId),
+        onAddPet: () => navigate("onboarding"),
+        onShowAll: deployAllPets,
+        onHideAll: recallAllPets,
+      }}
+      onTab={(next) => {
+        setEditPetId(null);
+        setMainTab(next);
+      }}
+      settings={{
+        shell: detectedShell,
+        command: petsDrivenState.sessionCommand,
+        onShell: setSessionShell,
+        onCommand: updateSessionCommand,
+        confirmRun: true,
+        onToggleConfirm: () => {},
+        preview: {
+          cwd: (detectedShell === "cmd" ? "C:\\pets\\" : "~/") + previewDir,
+          prompt: shellPrompt,
+          command: petsDrivenState.sessionCommand,
+        },
+        hook: {
+          tone:
+            claudeHookIngressStatus.state === "listening"
+              ? "success"
+              : claudeHookIngressStatus.state === "pending"
+                ? "info"
+                : "danger",
+          label:
+            claudeHookIngressStatus.state === "listening"
+              ? "All connected"
+              : claudeHookIngressStatus.state === "pending"
+                ? "Connecting"
+                : "Offline",
+          summary: `Claude hook ${claudeHookIngressStatus.state}`,
+          url: claudeHookIngressStatus.url,
+        },
+        onReconnect: () => void emitClaudeHookTestEvent(),
+      }}
+      tab={mainTab}
+      toast={toast}
+    />
   );
 }
