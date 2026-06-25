@@ -15,7 +15,7 @@ import {
 import { PETS_DRIVEN_STATE_CHANGED_EVENT } from "@/adapters/agent-events/hatch-ingress";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
-import { desktopGateway, type CodexPetPackage } from "@/app/desktop-gateway";
+import { desktopGateway } from "@/app/desktop-gateway";
 import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
@@ -246,10 +246,6 @@ export function PetsDrivenApp() {
   );
   const [desktopFixtureWindowCount, setDesktopFixtureWindowCount] = useState(0);
   const [adoptedSimulationResetKey, setAdoptedSimulationResetKey] = useState(0);
-  const [pets, setPets] = useState<CodexPetPackage[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
   const [petWindowError, setPetWindowError] = useState<string | null>(null);
   const [claudeHookIngressStatus, setClaudeHookIngressStatus] =
     useState<ClaudeHookIngressStatus>(defaultClaudeHookIngressStatus);
@@ -281,29 +277,6 @@ export function PetsDrivenApp() {
     .map((pet) => `${pet.id}:${pet.assetId}`)
     .sort()
     .join(",");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    desktopGateway
-      .listPetPackages()
-      .then((packages) => {
-        if (isMounted) {
-          setPets(packages);
-          setStatus("ready");
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setPets([]);
-          setStatus("error");
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!isTauri()) {
