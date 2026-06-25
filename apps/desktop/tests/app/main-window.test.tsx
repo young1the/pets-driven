@@ -57,7 +57,9 @@ function setup(overrides = {}) {
 describe("MainWindow", () => {
   it("shows the home greeting by default", () => {
     setup();
-    expect(screen.getByText(/Good morning/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Good morning,", { exact: false }),
+    ).toBeInTheDocument();
   });
 
   it("switches tab via the nav", () => {
