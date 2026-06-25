@@ -28,6 +28,7 @@ import { personalityRoleLabel } from "@/app/pet-presentation";
 import {
   getWorkingDirectoryForPet,
   registerWorkingDirectory,
+  removePet,
 } from "@/app-state/pet-adoption";
 import { withDesktopFixtureWorkingDirectories } from "@/app-state/dev-fixtures";
 import {
@@ -988,7 +989,10 @@ export function PetsDrivenApp() {
     ) {
       return;
     }
-    patchPet(petId, { archived: true, visible: false });
+    const next = removePet(petsDrivenStateRef.current, petId);
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+    void desktopGateway.closeAdoptedPetWindow(petId).catch(() => {});
     setEditPetId(null);
     flashToast(`${pet.name} was removed`);
   }
