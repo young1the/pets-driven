@@ -34,6 +34,7 @@ pub fn run() {
             pet_windows::open_pet_window_playground,
             pet_windows::close_pet_window_playground,
             pet_windows::close_all_pet_windows,
+            pet_windows::close_adopted_pet_window,
             terminal_channel::focus_window,
             terminal_channel::start_session
         ])
