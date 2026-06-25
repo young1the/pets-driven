@@ -121,4 +121,49 @@ describe("parsePetsDrivenState", () => {
     expect(state.pets[0].workingDirectoryId).toBe("wd-1");
     expect(state.pets[1].workingDirectoryId).toBeNull();
   });
+
+  it("defaults memo to an empty string when missing", () => {
+    const state = parsePetsDrivenState({
+      schemaVersion: 2,
+      registeredWorkingDirectories: [],
+      pets: [
+        {
+          id: "pet-1",
+          workingDirectoryId: null,
+          assetId: "patamon",
+          profileId: "profile-1",
+          name: "Otto",
+          adoptedAt: 1,
+          archived: false,
+          visible: true,
+        },
+      ],
+      petProfiles: [],
+    });
+
+    expect(state.pets[0].memo).toBe("");
+  });
+
+  it("preserves an existing memo", () => {
+    const state = parsePetsDrivenState({
+      schemaVersion: 2,
+      registeredWorkingDirectories: [],
+      pets: [
+        {
+          id: "pet-1",
+          workingDirectoryId: null,
+          assetId: "patamon",
+          profileId: "profile-1",
+          name: "Otto",
+          adoptedAt: 1,
+          archived: false,
+          visible: true,
+          memo: "watch the auth flow",
+        },
+      ],
+      petProfiles: [],
+    });
+
+    expect(state.pets[0].memo).toBe("watch the auth flow");
+  });
 });
