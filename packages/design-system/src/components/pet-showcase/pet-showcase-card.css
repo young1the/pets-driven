@@ -1,0 +1,114 @@
+.pd-pet-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 30px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 26px 50px -26px rgba(70, 55, 120, 0.5);
+}
+
+.pd-pet-card--featured {
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 40px 70px -24px rgba(70, 55, 120, 0.55),
+    0 0 0 7px rgba(255, 255, 255, 0.5);
+}
+
+.pd-pet-card__wave {
+  position: absolute;
+  inset: 0;
+  opacity: 0.16;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='130'%3E%3Cg fill='none' stroke='%23fff' stroke-width='2.4'%3E%3Cpath d='M-12 22 Q35 4 72 22 T160 22'/%3E%3Cpath d='M-12 54 Q35 36 72 54 T160 54'/%3E%3Cpath d='M-12 86 Q35 68 72 86 T160 86'/%3E%3Cpath d='M-12 118 Q35 100 72 118 T160 118'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 150px 130px;
+}
+
+.pd-pet-card__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.22),
+    transparent 26%,
+    transparent 64%,
+    rgba(0, 0, 0, 0.28)
+  );
+}
+
+.pd-pet-card__edit {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  z-index: 5;
+  width: 27px;
+  height: 27px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pd-pet-card__edit:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.pd-pet-card__head {
+  position: relative;
+  z-index: 2;
+  padding: 4px 6px 12px;
+}
+
+.pd-pet-card__role {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.pd-pet-card__name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 27px;
+  line-height: 1;
+  color: #fff;
+  margin-top: 2px;
+}
+
+.pd-pet-card__portrait {
+  position: relative;
+  z-index: 2;
+}
+
+.pd-pet-card__status {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(5px);
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+}
+
+.pd-pet-card__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.pd-pet-card__status-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.01em;
+}

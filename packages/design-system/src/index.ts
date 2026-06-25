@@ -29,6 +29,11 @@ export {
   type TerminalPreviewProps,
 } from "./components/data-display/terminal-preview";
 export {
+  PetShowcaseCard,
+  type PetShowcaseCardProps,
+  type PetShowcaseCardStatus,
+} from "./components/pet-showcase/pet-showcase-card";
+export {
   Tabs,
   type TabItem,
   type TabsProps,
