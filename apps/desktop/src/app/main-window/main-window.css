@@ -1,0 +1,85 @@
+.pd-main {
+  position: relative;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--surface-app);
+  font-family: var(--font-body);
+  color: var(--text-body);
+}
+
+.pd-main__dots {
+  background-image: radial-gradient(var(--ink-200) 1.4px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+.pd-main__header {
+  position: relative;
+  z-index: 30;
+  flex: none;
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26px;
+  border-bottom: 1px solid var(--border-soft);
+  background: rgba(255, 252, 253, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.pd-main__body {
+  position: relative;
+  z-index: 6;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.pd-home {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-home__fan {
+  position: relative;
+  flex: none;
+  height: 300px;
+  z-index: 4;
+}
+
+.pd-home__fan-card {
+  position: absolute;
+  bottom: -74px;
+  width: 224px;
+  transform-origin: bottom center;
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+}
+
+.pd-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 11px 20px;
+  box-shadow: var(--shadow-xl);
+}
+
+.pd-toast__label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
