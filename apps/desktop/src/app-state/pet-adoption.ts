@@ -50,6 +50,32 @@ export function adoptPet(
 }
 
 /**
+ * Permanently remove a pet, its profile, and any working directory it holds.
+ * Other pets' directory links are left untouched. Returns the same state
+ * reference when the pet does not exist.
+ */
+export function removePet(
+  state: PetsDrivenState,
+  petId: string,
+): PetsDrivenState {
+  const target = state.pets.find((pet) => pet.id === petId);
+  if (!target) {
+    return state;
+  }
+
+  return {
+    ...state,
+    pets: state.pets.filter((pet) => pet.id !== petId),
+    petProfiles: state.petProfiles.filter(
+      (profile) => profile.id !== target.profileId,
+    ),
+    registeredWorkingDirectories: state.registeredWorkingDirectories.filter(
+      (workingDirectory) => workingDirectory.petId !== petId,
+    ),
+  };
+}
+
+/**
  * Link a pet to a working directory, enforcing 1 directory : 1 pet in both
  * directions. This is the only mutation path for links: it re-points the
  * directory's petId, clears the back-pointer of any pet previously linked
