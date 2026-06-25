@@ -1,0 +1,43 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$PLUGIN_ROOT/hooks/run-hook.cmd\" forward-codex UserPromptSubmit",
+            "commandWindows": "\"%PLUGIN_ROOT%\\hooks\\run-hook.cmd\" forward-codex UserPromptSubmit",
+            "timeout": 5,
+            "statusMessage": "Notifying pets-driven"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$PLUGIN_ROOT/hooks/run-hook.cmd\" forward-codex PermissionRequest",
+            "commandWindows": "\"%PLUGIN_ROOT%\\hooks\\run-hook.cmd\" forward-codex PermissionRequest",
+            "timeout": 5,
+            "statusMessage": "Notifying pets-driven"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$PLUGIN_ROOT/hooks/run-hook.cmd\" forward-codex Stop",
+            "commandWindows": "\"%PLUGIN_ROOT%\\hooks\\run-hook.cmd\" forward-codex Stop",
+            "timeout": 5,
+            "statusMessage": "Notifying pets-driven"
+          }
+        ]
+      }
+    ]
+  }
+}
