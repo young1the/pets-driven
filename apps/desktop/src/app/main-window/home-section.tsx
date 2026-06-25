@@ -245,7 +245,16 @@ export function HomeSection({
             <div
               className="pd-home__fan-card"
               key={pet.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Deploy ${pet.name} to the desktop`}
               onClick={() => onDeploy(pet.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onDeploy(pet.id);
+                }
+              }}
               onMouseEnter={() => setHoverId(pet.id)}
               onMouseLeave={() =>
                 setHoverId((current) => (current === pet.id ? null : current))
