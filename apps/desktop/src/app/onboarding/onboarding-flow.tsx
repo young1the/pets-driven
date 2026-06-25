@@ -125,10 +125,17 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
   );
 }
 
-function StepHeader({ step }: { step: number }) {
+function StepHeader({ step, onExit }: { step: number; onExit: () => void }) {
   return (
     <header className="pd-onb__top">
-      <img alt="Pets-Driven" className="pd-onb__wordmark" src={wordmarkUrl} />
+      <button
+        aria-label="Go to home"
+        className="pd-onb__wordmark-btn"
+        onClick={onExit}
+        type="button"
+      >
+        <img alt="Pets-Driven" className="pd-onb__wordmark" src={wordmarkUrl} />
+      </button>
       <div className="pd-onb__steps">
         <div aria-hidden className="pd-onb__dots-row">
           {Array.from({ length: TOTAL_STEPS }, (_, index) => (
@@ -142,6 +149,14 @@ function StepHeader({ step }: { step: number }) {
           Step {step} / {TOTAL_STEPS}
         </span>
       </div>
+      <button
+        aria-label="Exit onboarding"
+        className="pd-onb__exit"
+        onClick={onExit}
+        type="button"
+      >
+        ✕
+      </button>
     </header>
   );
 }
@@ -325,7 +340,7 @@ export function OnboardingFlow({
   return (
     <main aria-label="Pet onboarding" className="pd-onb">
       <div aria-hidden className="pd-onb__dots" />
-      <StepHeader step={stepIndex[step]} />
+      <StepHeader onExit={onDone} step={stepIndex[step]} />
 
       {step === "welcome" && (
         <section className="pd-onb__body pd-onb__welcome">
