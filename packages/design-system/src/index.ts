@@ -25,6 +25,10 @@ export {
 } from "./components/data-display/badge";
 export { Tag, type TagProps } from "./components/data-display/tag";
 export {
+  TerminalPreview,
+  type TerminalPreviewProps,
+} from "./components/data-display/terminal-preview";
+export {
   Tabs,
   type TabItem,
   type TabsProps,

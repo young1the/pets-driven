@@ -1,0 +1,23 @@
+.pd-terminal {
+  background: var(--term-bg);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.pd-terminal__cwd {
+  color: var(--term-muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.pd-terminal__prompt {
+  color: var(--term-prompt);
+}
+
+.pd-terminal__command {
+  color: var(--term-fg);
+}
