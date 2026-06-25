@@ -29,6 +29,8 @@ export type PetRecord = {
   archived: boolean;
   visible: boolean;
   scale?: number;
+  /** Free-form user note shown in the pet-edit screen. */
+  memo?: string;
 };
 
 type PetRecordV1 = Omit<
@@ -117,10 +119,11 @@ function repairPetDirectoryLinks(state: PetsDrivenState): PetsDrivenState {
         (workingDirectory) => workingDirectory.petId === pet.id,
       );
       const workingDirectoryId = linkedDirectory ? linkedDirectory.id : null;
+      const memo = typeof pet.memo === "string" ? pet.memo : "";
 
-      return pet.workingDirectoryId === workingDirectoryId
+      return pet.workingDirectoryId === workingDirectoryId && pet.memo === memo
         ? pet
-        : { ...pet, workingDirectoryId };
+        : { ...pet, workingDirectoryId, memo };
     }),
   };
 }
