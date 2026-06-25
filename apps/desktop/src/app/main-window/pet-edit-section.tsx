@@ -138,10 +138,11 @@ export function PetEditSection({
               />
             </label>
 
-            <label style={{ display: "block", marginTop: "18px" }}>
+            <div style={{ marginTop: "18px" }}>
               <span style={fieldLabelStyle}>Working folder</span>
               <button
                 onClick={onPickFolder}
+                aria-label="Working folder"
                 style={{
                   width: "100%",
                   display: "flex",
@@ -176,7 +177,7 @@ export function PetEditSection({
                   {pet.folder || "Choose a folder…"}
                 </span>
               </button>
-            </label>
+            </div>
 
             <label style={{ display: "block", marginTop: "18px" }}>
               <span style={fieldLabelStyle}>Note</span>
