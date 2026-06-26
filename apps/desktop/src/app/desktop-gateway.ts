@@ -52,7 +52,12 @@ export const desktopGateway: DesktopGateway = {
       return;
     }
 
-    await invoke("write_pets_driven_state", { state });
+    const storable = {
+      ...state,
+      pets: state.pets.map(({ visible: _, ...pet }) => pet),
+    };
+
+    await invoke("write_pets_driven_state", { state: storable });
   },
 
   async listPetPackages() {

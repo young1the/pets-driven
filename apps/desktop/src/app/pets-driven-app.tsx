@@ -208,11 +208,21 @@ const PERSONALITY_GRADIENTS: Record<string, { from: string; to: string }> = {
   bold: { from: "#FF7A5C", to: "#E04428" },
 };
 
-function petGradient(personalityId: string | undefined) {
-  return (
-    PERSONALITY_GRADIENTS[personalityId ?? "steady"] ??
-    PERSONALITY_GRADIENTS.steady
-  );
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+function petGradient(name: string, personalityId?: string): { from: string; to: string } {
+  const keys = Object.keys(PERSONALITY_GRADIENTS);
+  if (personalityId && personalityId in PERSONALITY_GRADIENTS) {
+    return PERSONALITY_GRADIENTS[personalityId];
+  }
+  const key = keys[hashString(name + (personalityId ?? "")) % keys.length];
+  return PERSONALITY_GRADIENTS[key];
 }
 
 export function PetsDrivenApp() {
@@ -1049,7 +1059,7 @@ export function PetsDrivenApp() {
         assetId: pet.assetId,
         role: personalityRoleLabel(personalityId),
         status: statusFor(pet.id),
-        gradient: petGradient(personalityId),
+        gradient: petGradient(pet.name, personalityId),
       };
     });
 
@@ -1058,7 +1068,7 @@ export function PetsDrivenApp() {
     .map((pet) => ({
       id: pet.id,
       name: pet.name,
-      color: petGradient(profileFor(pet)?.personalityId).from,
+      color: petGradient(pet.name, profileFor(pet)?.personalityId).from,
     }));
 
   const editingPet = managedPets.find((pet) => pet.id === editPetId) ?? null;
@@ -1069,7 +1079,7 @@ export function PetsDrivenApp() {
         assetId: editingPet.assetId,
         role: personalityRoleLabel(profileFor(editingPet)?.personalityId),
         status: statusFor(editingPet.id),
-        gradient: petGradient(profileFor(editingPet)?.personalityId),
+        gradient: petGradient(editingPet.name, profileFor(editingPet)?.personalityId),
         folder:
           getWorkingDirectoryForPet(petsDrivenState, editingPet.id)?.path ?? "",
         memo: editingPet.memo ?? "",
