@@ -7,6 +7,7 @@ import {
   type PetAvatarStatus,
   type PetName,
 } from "@pets-driven/design-system";
+import { DecisionShowcaseApp } from "./DecisionShowcase";
 
 /**
  * Pets-Driven Intro — the official homepage.
@@ -673,7 +674,7 @@ export default function Intro() {
               next action.
             </p>
           </div>
-          {/* PLACEHOLDER SLOT: real interactive component drops in here later */}
+          {/* Live behavior pipeline — the real decision simulation. */}
           <div
             data-reveal
             data-sim-slot
@@ -683,27 +684,9 @@ export default function Intro() {
               transition:
                 "opacity .7s cubic-bezier(.22,1,.36,1) .1s, transform .7s cubic-bezier(.22,1,.36,1) .1s",
               marginTop: 44,
-              position: "relative",
-              border: "2.5px dashed var(--lavender-300)",
-              borderRadius: 28,
-              minHeight: 380,
-              background: "rgba(139,127,232,.045)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 14,
             }}
           >
-            <span style={{ padding: "6px 14px", borderRadius: 999, background: "#fff", boxShadow: "inset 0 0 0 1px var(--border-soft)", fontSize: 11, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--lavender-600)" }}>
-              Component slot
-            </span>
-            <p style={{ fontFamily: "var(--font-display)", fontWeight: 500, fontSize: "clamp(20px,2.4vw,26px)", color: "var(--lavender-700)", margin: "4px 0 0" }}>
-              Behavior simulation lands here
-            </p>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--ink-500)", margin: 0 }}>
-              Placeholder — a real interactive component will be dropped in.
-            </p>
+            <DecisionShowcaseApp />
           </div>
         </div>
       </section>
