@@ -26,6 +26,7 @@ import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet
 
 const PET_NAME_MAX_LENGTH = 24;
 const TOTAL_STEPS = 6;
+const PETDEX_URL = "https://petdex.dev";
 // ponytail: the `connect` CLI is still forthcoming, so this command text is
 // guidance only. The "listening" indicator below is wired to the real Claude
 // hook ingress, so the flow detects a genuine first signal regardless.
@@ -380,14 +381,26 @@ export function OnboardingFlow({
                 packages={packages}
                 selectedAssetId={assetId}
               />
+              <div className="pd-onb__petdex-cta">
+                <span>Want more looks? Install pets from Petdex.</span>
+                <a href={PETDEX_URL} rel="noreferrer" target="_blank">
+                  Open Petdex
+                </a>
+              </div>
             </>
           ) : (
             <div className="pd-onb__empty">
               <h1 className="pd-onb__title">No pet looks installed yet.</h1>
               <p className="pd-onb__lede">
-                We couldn&apos;t find any pet packs on this machine. Fetch a
-                pack and your new friends will show up here to choose from.
+                We couldn&apos;t find any pet packs on this machine. Install one
+                from Petdex, then come back and choose it here.
               </p>
+              <div className="pd-onb__petdex-empty">
+                <code>npx petdex install boba</code>
+                <a href={PETDEX_URL} rel="noreferrer" target="_blank">
+                  Browse Petdex
+                </a>
+              </div>
               <span className="pd-onb__paw" aria-hidden>
                 🐾
               </span>
