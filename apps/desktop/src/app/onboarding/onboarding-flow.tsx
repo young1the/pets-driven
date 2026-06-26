@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@pets-driven/design-system";
 import wordmarkUrl from "@pets-driven/design-system/assets/petsdriven-wordmark.svg";
-import { isTauri } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-ingress";
 import {
   desktopGateway,
   type CodexPetPackage,
@@ -32,13 +29,7 @@ const PETDEX_URL = "https://petdex.dev";
 // hook ingress, so the flow detects a genuine first signal regardless.
 const CONNECT_COMMAND_PREFIX = "npx pets-driven connect";
 
-type OnboardingStep =
-  | "welcome"
-  | "choose"
-  | "profile"
-  | "folder"
-  | "connect"
-  | "done";
+type OnboardingStep = "welcome" | "choose" | "profile" | "folder" | "done";
 
 type BornPet = {
   id: string;
@@ -70,17 +61,6 @@ function folderName(path: string) {
   const parts = normalized.split(/[\\/]/);
 
   return parts[parts.length - 1] || normalized;
-}
-
-function isSameOrAncestorCwd(folderPath: string, cwd: string) {
-  const folder = comparablePath(folderPath);
-  const target = comparablePath(cwd);
-
-  return (
-    target === folder ||
-    target.startsWith(`${folder}\\`) ||
-    target.startsWith(`${folder}/`)
-  );
 }
 
 function useAnimationClock() {
@@ -127,7 +107,15 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
   ) : null;
 }
 
-function StepHeader({ step, onExit }: { step: number; onExit: () => void }) {
+function StepHeader({
+  step,
+  total,
+  onExit,
+}: {
+  step: number;
+  total: number;
+  onExit: () => void;
+}) {
   return (
     <header className="pd-onb__top">
       <button
@@ -140,7 +128,7 @@ function StepHeader({ step, onExit }: { step: number; onExit: () => void }) {
       </button>
       <div className="pd-onb__steps">
         <div aria-hidden className="pd-onb__dots-row">
-          {Array.from({ length: TOTAL_STEPS }, (_, index) => (
+          {Array.from({ length: total }, (_, index) => (
             <span
               className={`pd-onb__step-dot${index < step ? " pd-onb__step-dot--on" : ""}`}
               key={index}
@@ -148,7 +136,7 @@ function StepHeader({ step, onExit }: { step: number; onExit: () => void }) {
           ))}
         </div>
         <span className="pd-onb__step-label">
-          Step {step} / {TOTAL_STEPS}
+          Step {step} / {total}
         </span>
       </div>
       <button
@@ -169,7 +157,13 @@ export function OnboardingFlow({
   onDone,
   gateway = desktopGateway,
 }: OnboardingFlowProps) {
-  const [step, setStep] = useState<OnboardingStep>("welcome");
+  // Welcome is an intro shown only to first-time users; once any pet exists the
+  // flow starts at "choose". Frozen per run so the step count stays stable even
+  // after this run adopts a pet.
+  const [includeWelcome] = useState(() => state.pets.length === 0);
+  const [step, setStep] = useState<OnboardingStep>(() =>
+    state.pets.length === 0 ? "welcome" : "choose",
+  );
   const [packages, setPackages] = useState<CodexPetPackage[]>([]);
   const [assetId, setAssetId] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -180,11 +174,6 @@ export function OnboardingFlow({
   );
   const [adoptionError, setAdoptionError] = useState<string | null>(null);
   const [bornPet, setBornPet] = useState<BornPet | null>(null);
-  const [connectState, setConnectState] = useState<"waiting" | "connected">(
-    "waiting",
-  );
-  const [connectLater, setConnectLater] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -201,30 +190,6 @@ export function OnboardingFlow({
       isMounted = false;
     };
   }, [gateway]);
-
-  // Wire the connect step's "listening" indicator to the real ingress.
-  useEffect(() => {
-    if (step !== "connect" || !bornPet || !isTauri()) {
-      return;
-    }
-
-    let unlisten: (() => void) | undefined;
-
-    void listen<unknown>(CLAUDE_HOOK_INGRESS_EVENT, (event) => {
-      const cwd = (event.payload as { cwd?: unknown } | null)?.cwd;
-
-      if (
-        typeof cwd === "string" &&
-        isSameOrAncestorCwd(bornPet.folderPath, cwd)
-      ) {
-        setConnectState("connected");
-      }
-    }).then((stop) => {
-      unlisten = stop;
-    });
-
-    return () => unlisten?.();
-  }, [step, bornPet]);
 
   const selectedPackage = packages.find((pet) => pet.id === assetId) ?? null;
   const personality =
@@ -284,9 +249,18 @@ export function OnboardingFlow({
 
     setAdoptionError(null);
 
+    // The pet is born at home, not thrown straight onto the desktop — the user
+    // deploys it from the main window when they're ready.
+    const homeState: PetsDrivenState = {
+      ...result.state,
+      pets: result.state.pets.map((pet) =>
+        pet.id === petId ? { ...pet, visible: false } : pet,
+      ),
+    };
+
     try {
-      await gateway.writePetsDrivenState(result.state);
-      onStateChange(result.state);
+      await gateway.writePetsDrivenState(homeState);
+      onStateChange(homeState);
       setBornPet({
         id: petId,
         name: trimmedName,
@@ -294,27 +268,9 @@ export function OnboardingFlow({
         personalityTitle: personality.title,
         folderPath: normalizeWorkingDirectoryPath(selectedFolderPath),
       });
-      setConnectState("waiting");
-      setConnectLater(false);
-      setStep("connect");
+      setStep("done");
     } catch (error) {
       setAdoptionError(error instanceof Error ? error.message : String(error));
-    }
-  }
-
-  async function copyConnectCommand() {
-    if (!bornPet) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(
-        `${CONNECT_COMMAND_PREFIX} ${bornPet.name.toLowerCase().replace(/\s+/g, "-")}`,
-      );
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      // Clipboard may be unavailable (e.g. browser dev) — ignore silently.
     }
   }
 
@@ -324,25 +280,21 @@ export function OnboardingFlow({
     setPersonalityId("playful");
     setSelectedFolderPath(null);
     setBornPet(null);
-    setConnectState("waiting");
-    setConnectLater(false);
     setAdoptionError(null);
-    setStep("welcome");
+    // A pet exists by now, so skip the first-time welcome.
+    setStep("choose");
   }
 
-  const stepIndex: Record<OnboardingStep, number> = {
-    welcome: 1,
-    choose: 2,
-    profile: 3,
-    folder: 4,
-    connect: 5,
-    done: 6,
-  };
+  const stepOrder: OnboardingStep[] = includeWelcome
+    ? ["welcome", "choose", "profile", "folder", "done"]
+    : ["choose", "profile", "folder", "done"];
+  const totalSteps = stepOrder.length;
+  const stepNumber = stepOrder.indexOf(step) + 1;
 
   return (
     <main aria-label="Pet onboarding" className="pd-onb">
       <div aria-hidden className="pd-onb__dots" />
-      <StepHeader onExit={onDone} step={stepIndex[step]} />
+      <StepHeader onExit={onDone} step={stepNumber} total={totalSteps} />
 
       {step === "welcome" && (
         <section className="pd-onb__body pd-onb__welcome">
@@ -596,90 +548,14 @@ export function OnboardingFlow({
         </section>
       )}
 
-      {step === "connect" && bornPet && (
-        <section className="pd-onb__body pd-onb__connect">
-          <div className="pd-onb__connect-main">
-            <span className="pd-onb__eyebrow">Connect your agent</span>
-            <h1 className="pd-onb__title">
-              Wake {bornPet.name} when your agent works.
-            </h1>
-            <p className="pd-onb__lede">
-              Run this once in the folder&apos;s terminal. {bornPet.name} starts
-              reacting the moment your agent does.
-            </p>
-
-            <div className="pd-onb__term">
-              <div className="pd-onb__term-comment">
-                # run inside {folderName(bornPet.folderPath)}
-              </div>
-              <div className="pd-onb__term-row">
-                <code className="pd-onb__term-cmd">
-                  <span className="pd-onb__term-prompt">$</span>{" "}
-                  {CONNECT_COMMAND_PREFIX}{" "}
-                  {bornPet.name.toLowerCase().replace(/\s+/g, "-")}
-                </code>
-                <button
-                  className="pd-onb__copy"
-                  onClick={() => void copyConnectCommand()}
-                  type="button"
-                >
-                  {copied ? "Copied" : "Copy"}
-                </button>
-              </div>
-            </div>
-
-            {connectState === "connected" ? (
-              <div className="pd-onb__listen pd-onb__listen--ok">
-                <span className="pd-onb__listen-dot" />
-                {bornPet.name} felt your agent — you&apos;re connected.
-              </div>
-            ) : (
-              <div className="pd-onb__listen">
-                <span className="pd-onb__listen-dot pd-onb__listen-dot--pulse" />
-                Listening for your agent&apos;s first signal…
-              </div>
-            )}
-          </div>
-
-          <aside className="pd-onb__connect-art">
-            <PetPreview assetId={bornPet.assetId} scale={1.6} />
-          </aside>
-
-          <div className="pd-onb__footer">
-            <Button onClick={() => setStep("folder")} variant="ghost">
-              ← Back
-            </Button>
-            <div className="pd-onb__actions">
-              <button
-                className="pd-onb__textlink"
-                onClick={() => {
-                  setConnectLater(true);
-                  setStep("done");
-                }}
-                type="button"
-              >
-                I&apos;ll connect later
-              </button>
-              <Button onClick={() => setStep("done")} size="lg">
-                Finish setup →
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
-
       {step === "done" && bornPet && (
         <section className="pd-onb__body pd-onb__done">
           <div className="pd-onb__done-pet">
             <PetPreview assetId={bornPet.assetId} scale={1.1} />
           </div>
-          <span className="pd-onb__eyebrow">
-            {connectLater ? `${bornPet.name} is home` : "All set ✨"}
-          </span>
+          <span className="pd-onb__eyebrow">{bornPet.name} is home</span>
           <h1 className="pd-onb__title pd-onb__title--hero">
-            {connectLater
-              ? "Napping until you're ready."
-              : `${bornPet.name} is home.`}
+            Resting until you deploy.
           </h1>
 
           <div className="pd-onb__summary">
@@ -695,11 +571,7 @@ export function OnboardingFlow({
             </div>
             <div className="pd-onb__summary-row">
               <span>Reacts to</span>
-              <strong>
-                {connectLater
-                  ? "Not connected to an agent yet"
-                  : "Your coding agent — starts, finishes, gets stuck"}
-              </strong>
+              <strong>Your coding agent — starts, finishes, gets stuck</strong>
             </div>
           </div>
 
@@ -709,17 +581,10 @@ export function OnboardingFlow({
             </Button>
             <button
               className="pd-onb__textlink"
-              onClick={
-                connectLater
-                  ? () => {
-                      setConnectLater(false);
-                      setStep("connect");
-                    }
-                  : restartForAnotherPet
-              }
+              onClick={restartForAnotherPet}
               type="button"
             >
-              {connectLater ? "Connect an agent now" : "Add another pet"}
+              Add another pet
             </button>
           </div>
         </section>
