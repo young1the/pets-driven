@@ -36,6 +36,7 @@ describe("petStatusFromSnapshot", () => {
       petStatusFromSnapshot(snapshot({ status: "waiting", label: "WAIT" }))
         .label,
     ).toBe("Needs you");
+    expect(petStatusFromSnapshot(snapshot({ status: "failed", label: "FAIL" })).tone).toBe("danger");
     expect(
       petStatusFromSnapshot(snapshot({ status: "failed", label: "FAIL" }))
         .label,

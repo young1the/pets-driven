@@ -1,3 +1,5 @@
+import type { AgentTaskStatus } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+
 export type BodySnapshot = {
   id: string;
   x: number;
@@ -59,7 +61,7 @@ export type PetVisualCue = {
 };
 
 export type AgentTaskSnapshot = {
-  status: import("@pets-driven/pet-engine/features/agent/agent-task-state").AgentTaskStatus;
+  status: AgentTaskStatus;
   label: "WAIT" | "FAIL" | "DONE" | null;
   summary?: string;
 };
