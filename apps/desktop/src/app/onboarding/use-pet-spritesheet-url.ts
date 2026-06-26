@@ -5,12 +5,17 @@ import {
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 
 /** Resolve a pet asset's spritesheet URL, disposing object URLs on unmount. */
-export function usePetSpritesheetUrl(assetId: string): string {
-  const [url, setUrl] = useState(FALLBACK_CODEX_PET_SPRITESHEET_URL);
+export function usePetSpritesheetUrl(assetId: string): string | null {
+  const [spritesheet, setSpritesheet] = useState<{
+    assetId: string;
+    url: string | null;
+  }>({ assetId, url: null });
 
   useEffect(() => {
     let isActive = true;
     let dispose = () => {};
+
+    setSpritesheet({ assetId, url: null });
 
     void loadPetWindowSpritesheetUrl(assetId)
       .catch(() => ({
@@ -24,7 +29,7 @@ export function usePetSpritesheetUrl(assetId: string): string {
         }
 
         dispose = spritesheet.dispose;
-        setUrl(spritesheet.url);
+        setSpritesheet({ assetId, url: spritesheet.url });
       });
 
     return () => {
@@ -33,5 +38,5 @@ export function usePetSpritesheetUrl(assetId: string): string {
     };
   }, [assetId]);
 
-  return url;
+  return spritesheet.assetId === assetId ? spritesheet.url : null;
 }

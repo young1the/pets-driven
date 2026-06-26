@@ -199,9 +199,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const [bindBubble, setBindBubble] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(1);
-  const [spritesheetUrl, setSpritesheetUrl] = useState(
-    FALLBACK_CODEX_PET_SPRITESHEET_URL,
-  );
+  const [spritesheetUrl, setSpritesheetUrl] = useState<string | null>(null);
   const [presentation, setPresentation] = useState<PetWindowPresentation>(() =>
     defaultPresentation(pet.windowIndex),
   );
@@ -356,6 +354,8 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   useEffect(() => {
     let isActive = true;
     let dispose = () => {};
+
+    setSpritesheetUrl(null);
 
     void loadPetWindowSpritesheetUrl(pet.assetId)
       .catch(() => ({
@@ -683,17 +683,19 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           width: `${PET_CELL_SIZE.width * spriteScale}px`,
         }}
       >
-        <PetSprite
-          alt={`Pet Sprite ${pet.petId}`}
-          decisionEmote={presentation.decisionEmote}
-          elapsedMs={elapsedMs}
-          imageUrl={spritesheetUrl}
-          intent={presentation.intent}
-          overlay={presentation.overlay}
-          size={PET_CELL_SIZE}
-          scale={spriteScale}
-          style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD }}
-        />
+        {spritesheetUrl ? (
+          <PetSprite
+            alt={`Pet Sprite ${pet.petId}`}
+            decisionEmote={presentation.decisionEmote}
+            elapsedMs={elapsedMs}
+            imageUrl={spritesheetUrl}
+            intent={presentation.intent}
+            overlay={presentation.overlay}
+            size={PET_CELL_SIZE}
+            scale={spriteScale}
+            style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD }}
+          />
+        ) : null}
         <IconButton
           className="pet-window-resize-button"
           label="Resize pet"

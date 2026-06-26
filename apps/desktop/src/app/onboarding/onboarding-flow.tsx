@@ -114,7 +114,7 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
   const spritesheetUrl = usePetSpritesheetUrl(assetId);
   const elapsedMs = useAnimationClock();
 
-  return (
+  return spritesheetUrl ? (
     <PetSprite
       alt="Your pet"
       elapsedMs={elapsedMs}
@@ -124,7 +124,7 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
       showStatusBubble={false}
       size={PET_CELL_SIZE}
     />
-  );
+  ) : null;
 }
 
 function StepHeader({ step, onExit }: { step: number; onExit: () => void }) {
