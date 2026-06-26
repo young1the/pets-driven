@@ -14,7 +14,7 @@
 - No drag/gesture library — native Pointer Events only.
 - Do not modify the shared `PetShowcaseCard` design-system component; the home screen simply stops passing `onEdit` to it.
 - Drag threshold: `6` px (Euclidean distance from pointerdown origin).
-- Drop zone is a **square** dashed border (rounded corners ok), not a circle — a "field" feel.
+- Drop zone is a **rectangular** dashed border (wide 380×300 box, rounded corners ok), not a circle — a "field" feel.
 - Use existing CSS variables already present in `main-window.css` / design system (e.g. `--border-soft`, `--blossom-600`); do not invent new variable names.
 
 ---
