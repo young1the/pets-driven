@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { Button, PetShowcaseCard } from "@pets-driven/design-system";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
@@ -57,6 +57,7 @@ export function HomeSection({
   onAddPet,
 }: HomeSectionProps) {
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const n = atHome.length;
   const stepX = n <= 5 ? 150 : n <= 7 ? 124 : n <= 9 ? 104 : 88;
@@ -65,6 +66,13 @@ export function HomeSection({
 
   return (
     <div className="pd-home">
+      <div
+        ref={dropZoneRef}
+        className="pd-home__dropzone"
+        data-testid="home-dropzone"
+        aria-hidden="true"
+      />
+
       <div
         style={{
           position: "absolute",
