@@ -20,11 +20,30 @@ post() {
 }
 
 json_escape() {
-  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  printf '%s' "$value"
 }
 
 to_windows_path() {
-  cygpath -w "$1" 2>/dev/null || printf '%s' "$1"
+  local path="$1"
+
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$path" 2>/dev/null && return 0
+  fi
+
+  case "$path" in
+    /[a-zA-Z]/*)
+      local drive="${path:1:1}"
+      local rest="${path:3}"
+      rest="${rest//\//\\}"
+      printf '%s:\\%s' "${drive^^}" "$rest"
+      ;;
+    *)
+      printf '%s' "$path"
+      ;;
+  esac
 }
 
 current_cwd() {

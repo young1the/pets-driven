@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 const testDir = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = dirname(testDir);
 const hookScript = join(pluginRoot, "hooks", "forward-codex");
+const runHookCmd = join(pluginRoot, "hooks", "run-hook.cmd");
 const bashBin = findBash();
 
 function findBash() {
@@ -76,3 +77,57 @@ const windowsPathPayload = render("UserPromptSubmit", {
 });
 
 assert.equal(windowsPathPayload.cwd, "C:\\work\\pets-driven");
+
+const defaultCwdPayload = render("UserPromptSubmit");
+
+assert.match(defaultCwdPayload.cwd, /^[A-Z]:\\/i);
+
+const msysPathPayload = render("UserPromptSubmit", {
+  PATH: "C:\\Windows\\System32;C:\\Windows",
+  PETS_DRIVEN_TEST_CWD: "/d/workspaces/gabumon",
+});
+
+assert.equal(msysPathPayload.cwd, "D:\\workspaces\\gabumon");
+
+function renderWithCmdWrapper(eventName, env = {}) {
+  if (process.platform !== "win32") {
+    return render(eventName, env);
+  }
+
+  const result = spawnSync(
+    "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    ["-NoProfile", "-Command", `& '${runHookCmd}' forward-codex --print ${eventName}`],
+    {
+      cwd: pluginRoot,
+      env: { ...process.env, ...env },
+      input: "{}",
+      encoding: "utf8",
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  return JSON.parse(result.stdout);
+}
+const windowsOnlyPathPayload = renderWithCmdWrapper("UserPromptSubmit", {
+  PATH: "C:\\Windows\\System32;C:\\Windows",
+  PETS_DRIVEN_TEST_CWD: "C:\\work\\pets-driven",
+});
+
+assert.deepEqual(
+  {
+    hook_event_name: windowsOnlyPathPayload.hook_event_name,
+    cwd: windowsOnlyPathPayload.cwd,
+    summary: windowsOnlyPathPayload.summary,
+  },
+  {
+    hook_event_name: "UserPromptSubmit",
+    cwd: "C:\\work\\pets-driven",
+    summary: "Codex prompt received",
+  },
+);
+
+const wrapperCwdPayload = renderWithCmdWrapper("UserPromptSubmit", {
+  PATH: "C:\\Windows\\System32;C:\\Windows",
+});
+
+assert.match(wrapperCwdPayload.cwd, /^[A-Z]:\\/i);
