@@ -5,6 +5,7 @@ import type { AgentWorldEvent, WorldEvent } from "@pets-driven/pet-engine/featur
 import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import { statusFreezesMovement } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import {
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionKind,
@@ -261,7 +262,8 @@ export function runAgentEventHoldSystem(
   components: ComponentStore,
   physics: VelocityWriter,
 ): void {
-  components.forEach(["HeldAgentState"], (id) => {
+  components.forEach(["AgentTaskState"], (id, [task]) => {
+    if (!statusFreezesMovement(task.status)) return;
     stopPetMovement(components, physics, id);
   });
 }
@@ -921,7 +923,8 @@ export function runBehaviorDecisionSystem(
       const existingClaim = components.getComponent(id, "BehaviorDecisionState");
       if (existingClaim && existingClaim.expiresAt > now) return;
 
-      if (components.getComponent(id, "HeldAgentState")) return;
+      const agentTask = components.getComponent(id, "AgentTaskState");
+      if (agentTask && statusFreezesMovement(agentTask.status)) return;
 
       // If the pet is already committed to approaching a climb surface, don't
       // emit a new autonomous decision — that would change intent and allow

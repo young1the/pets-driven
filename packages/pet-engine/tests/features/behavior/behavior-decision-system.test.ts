@@ -403,7 +403,13 @@ describe("BehaviorDecisionSystem", () => {
       kind: "waiting",
       sourceEventType: "task.waiting",
       summary: "Needs approval",
+      heldAt: 0,
+    });
+    store.setComponent("pet", {
+      type: "AgentTaskState",
+      status: "waiting",
       since: 0,
+      summary: "Needs approval",
     });
 
     runBehaviorDecisionSystem(store, createManualClock(12_000), createSeededRandom(1), BOUNDS);
