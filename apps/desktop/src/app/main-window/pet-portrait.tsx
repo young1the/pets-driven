@@ -34,14 +34,16 @@ export function PetPortrait({
         justifyContent: "center",
       }}
     >
-      <PetSprite
-        alt={`${name} portrait`}
-        elapsedMs={0}
-        imageUrl={spritesheetUrl}
-        intent={{ kind: "idle", facing: "right" }}
-        scale={scale}
-        size={PET_CELL_SIZE}
-      />
+      {spritesheetUrl ? (
+        <PetSprite
+          alt={`${name} portrait`}
+          elapsedMs={0}
+          imageUrl={spritesheetUrl}
+          intent={{ kind: "idle", facing: "right" }}
+          scale={scale}
+          size={PET_CELL_SIZE}
+        />
+      ) : null}
     </div>
   );
 }

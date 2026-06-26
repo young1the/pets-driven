@@ -71,15 +71,17 @@ function PetPackageCard({
       }}
     >
       <div className="onboarding-pet-card__stage">
-        <PetSprite
-          alt={`${pet.displayName} preview`}
-          elapsedMs={elapsedMs}
-          imageUrl={spritesheetUrl}
-          intent={{ kind: "idle" }}
-          scale={0.5}
-          showStatusBubble={false}
-          size={PET_CELL_SIZE}
-        />
+        {spritesheetUrl ? (
+          <PetSprite
+            alt={`${pet.displayName} preview`}
+            elapsedMs={elapsedMs}
+            imageUrl={spritesheetUrl}
+            intent={{ kind: "idle" }}
+            scale={0.5}
+            showStatusBubble={false}
+            size={PET_CELL_SIZE}
+          />
+        ) : null}
       </div>
       <div className="onboarding-pet-card__meta">
         <strong>{pet.displayName}</strong>

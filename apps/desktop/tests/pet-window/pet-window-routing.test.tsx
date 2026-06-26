@@ -260,6 +260,7 @@ describe("pet window product route", () => {
         height: PET_WINDOW_LAYOUT.height,
       }),
     );
+    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -284,7 +285,7 @@ describe("pet window product route", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders the shared HTML sprite instead of a Pet Window canvas", () => {
+  it("waits for the Pet Window spritesheet before rendering the shared HTML sprite", async () => {
     isTauriMock.mockReturnValue(false);
     window.history.replaceState(
       {},
@@ -294,7 +295,13 @@ describe("pet window product route", () => {
 
     render(<PetsDrivenApp />);
 
-    expect(screen.getByLabelText("Pet Sprite pet-a")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Pet Sprite pet-a")).not.toBeInTheDocument();
+
+    const sprite = await screen.findByLabelText("Pet Sprite pet-a");
+
+    expect(sprite).toHaveStyle({
+      backgroundImage: "url(/codex-pets/patamon/spritesheet.webp)",
+    });
     expect(
       document.querySelector("canvas.pet-window-canvas"),
     ).not.toBeInTheDocument();
@@ -765,6 +772,39 @@ describe("pet window product route", () => {
         },
       );
     });
+  });
+
+  it("does not start a terminal channel when run confirmation is cancelled", async () => {
+    vi.mocked(window.confirm).mockReturnValue(false);
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "menu.start-session",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    expect(window.confirm).toHaveBeenCalledWith(
+      "Run Otto's session command in D:\\cms?",
+    );
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "start_session",
+      expect.anything(),
+    );
   });
 
   it("shows Pet Window command failures in the management surface", async () => {
