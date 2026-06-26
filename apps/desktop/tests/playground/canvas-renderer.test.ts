@@ -44,11 +44,11 @@ describe("canvas renderer", () => {
     const context = {
       clearRect: vi.fn(),
       drawImage: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
+    };
     const image = {} as HTMLImageElement;
 
     drawWorld(
-      context,
+      context as unknown as CanvasRenderingContext2D,
       {
         width: 320,
         height: 180,
@@ -242,11 +242,11 @@ describe("canvas renderer", () => {
       restore: vi.fn(),
       translate: vi.fn(),
       scale: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
+    };
     const image = {} as HTMLImageElement;
 
     drawWorld(
-      context,
+      context as unknown as CanvasRenderingContext2D,
       {
         width: 320,
         height: 180,

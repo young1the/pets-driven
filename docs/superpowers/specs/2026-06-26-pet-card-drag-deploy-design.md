@@ -50,7 +50,7 @@ The existing `onClick → onDeploy` handler is removed.
 
 ## Drop Zone
 
-- A subtle, always-visible rectangular dashed zone (a "field" — square dashed border, not a circle) centred in the hero region.
+- A subtle, always-visible rectangular dashed zone (a "field" — wide 380×300 box dashed border, not a circle) centred in the hero region.
 - Rendered behind the hero text (`Your pack` / `Good morning, Trainer!` / `Add a pet`) with `pointer-events: none` so it never intercepts clicks.
 - Measured via a `ref` + `getBoundingClientRect()` for hit-testing during drag.
 - While a card is dragging over it, the zone is emphasised (stronger border/background, slight scale) and the dragged card may show a "release to deploy" affordance.

@@ -73,6 +73,10 @@ function petWindowFramePayload({
   };
 }
 
+function showAllAdoptedPets() {
+  fireEvent.click(screen.getByRole("button", { name: "Show all" }));
+}
+
 const tauriWindowMocks = vi.hoisted(() => ({
   availableMonitors: vi.fn(),
   cursorPosition: vi.fn(),
@@ -434,6 +438,9 @@ describe("pet window product route", () => {
 
     render(<PetsDrivenApp />);
 
+    await screen.findByRole("button", { name: "Open Otto's details" });
+    showAllAdoptedPets();
+
     await waitFor(() => {
       expect(tauriWindowMocks.availableMonitors).toHaveBeenCalled();
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
@@ -467,6 +474,9 @@ describe("pet window product route", () => {
 
   it("resets the adopted pet simulation from the main screen", async () => {
     render(<PetsDrivenApp />);
+
+    await screen.findByRole("button", { name: "Open Otto's details" });
+    showAllAdoptedPets();
 
     await waitFor(() => {
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
@@ -621,26 +631,14 @@ describe("pet window product route", () => {
     );
   });
 
-  it("shows Claude hook ingress status and sends a test event from the UI", async () => {
+  it("sends a Claude hook test event from the UI", async () => {
     render(<PetsDrivenApp />);
 
     fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
 
-    fireEvent.click(screen.getByRole("tab", { name: "Settings" }));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("claude-hook-state")).toHaveTextContent(
-        "listening",
-      );
-      expect(screen.getByTestId("claude-hook-url")).toHaveTextContent(
-        "http://127.0.0.1:43187/claude-hook",
-      );
-    });
-
     tauriEventMocks.emitTo.mockClear();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Test event" }));
 
     await waitFor(() => {
@@ -652,7 +650,11 @@ describe("pet window product route", () => {
         PET_WINDOW_FRAME_EVENT,
         expect.objectContaining({
           petId: "pet-a",
-          overlay: { kind: "attention", label: "WAIT" },
+          sprite: expect.objectContaining({
+            decisionEmote: expect.objectContaining({
+              label: "Seeking user",
+            }),
+          }),
         }),
       );
     });

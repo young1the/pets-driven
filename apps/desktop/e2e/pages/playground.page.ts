@@ -23,39 +23,27 @@ export class PlaygroundPage {
   }
 
   async sendStartedEvent() {
-    await this.page
-      .getByRole("button", { name: PLAYGROUND_TEXT.sendStartedEvent })
-      .click();
+    await this.page.getByRole("button", { name: "Prompt" }).click();
   }
 
   async sendWaitingEvent() {
-    await this.page
-      .getByRole("button", { name: PLAYGROUND_TEXT.sendWaitingEvent })
-      .click();
+    await this.page.getByRole("button", { name: "Waiting" }).click();
   }
 
   async sendCompletedEvent() {
-    await this.page
-      .getByRole("button", { name: PLAYGROUND_TEXT.sendCompletedEvent })
-      .click();
+    await this.page.getByRole("button", { name: "Done" }).click();
   }
 
   async startWalkDemo() {
-    await this.page
-      .getByRole("button", { name: PLAYGROUND_TEXT.startWalkDemo })
-      .click();
+    await this.selectPlaygroundView("Demo");
   }
 
   async startJumpDemo() {
-    await this.page
-      .getByRole("button", { name: PLAYGROUND_TEXT.startJumpDemo })
-      .click();
+    await this.selectPlaygroundView("Jump");
   }
 
   async startWallClimbDemo() {
-    await this.page
-      .getByRole("button", { name: PLAYGROUND_TEXT.startWallClimbDemo })
-      .click();
+    await this.selectPlaygroundView("Climb");
   }
 
   async expectLastEventType(type: string) {

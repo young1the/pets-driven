@@ -59,6 +59,34 @@ const PERSONALITY_OCEAN: Record<
     agreeableness: 0.55,
     neuroticism: 0.12,
   },
+  gentle: {
+    openness: 0.4,
+    conscientiousness: 0.6,
+    extraversion: 0.4,
+    agreeableness: 0.9,
+    neuroticism: 0.15,
+  },
+  mischievous: {
+    openness: 0.85,
+    conscientiousness: 0.2,
+    extraversion: 0.8,
+    agreeableness: 0.4,
+    neuroticism: 0.3,
+  },
+  lazy: {
+    openness: 0.35,
+    conscientiousness: 0.25,
+    extraversion: 0.15,
+    agreeableness: 0.6,
+    neuroticism: 0.3,
+  },
+  zen: {
+    openness: 0.55,
+    conscientiousness: 0.65,
+    extraversion: 0.5,
+    agreeableness: 0.75,
+    neuroticism: 0.05,
+  },
 };
 
 function personalityComponent(

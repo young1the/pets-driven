@@ -300,7 +300,9 @@ describe("PlaygroundApp", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Task failed" }));
 
-    expect(screen.queryByLabelText(/Pet .* overlay/)).not.toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Pet status overlay")).getByText("Working"),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId("decision-agent-pulse")).not.toBeInTheDocument();
     expect(screen.getByTestId("decision-pet-stage")).toHaveAttribute(
       "data-pet-animation-state",

@@ -12,10 +12,5 @@
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter pets-driven test:e2e",
     "tauri": "pnpm --filter pets-driven tauri"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
   }
 }
