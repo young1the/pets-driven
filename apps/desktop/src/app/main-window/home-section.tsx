@@ -119,7 +119,17 @@ export function HomeSection({
           <br />
           Trainer!
         </h2>
-        <Button iconLeft={<PlusIcon />} onClick={onAddPet} size="lg">
+        <Button
+          className="pd-home__add-pet"
+          iconLeft={<PlusIcon />}
+          onClick={onAddPet}
+          size="lg"
+          style={{
+            flexShrink: 0,
+            width: "fit-content",
+            minWidth: "max-content",
+          }}
+        >
           Add a pet
         </Button>
         <span

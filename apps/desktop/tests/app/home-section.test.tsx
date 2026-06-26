@@ -34,6 +34,27 @@ describe("HomeSection", () => {
     expect(screen.getByText("Steady")).toBeInTheDocument();
   });
 
+  it("keeps the add-pet button from shrinking on narrow layouts", () => {
+    render(
+      <HomeSection
+        atHome={[pet]}
+        inField={[]}
+        onDeploy={vi.fn()}
+        onRecall={vi.fn()}
+        onEdit={vi.fn()}
+        onAddPet={vi.fn()}
+        onShowAll={vi.fn()}
+        onHideAll={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Add a pet",
+      }),
+    ).toHaveClass("pd-home__add-pet");
+  });
+
   it("deploys a pet when its card is clicked", () => {
     const onDeploy = vi.fn();
     render(
