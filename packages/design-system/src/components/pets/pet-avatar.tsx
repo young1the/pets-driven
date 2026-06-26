@@ -4,8 +4,7 @@ import "./pet-avatar.css";
 
 /**
  * PetAvatar — the brand's signature component. Renders one of the six pets in a
- * soft circular badge with an optional status ring and mood animation. The
- * sprite art is inlined as SVG, so the avatar is fully portable.
+ * soft circular badge with an optional status ring and mood animation.
  */
 
 export type PetAvatarSize = "sm" | "md" | "lg" | "xl";
@@ -69,6 +68,9 @@ export function PetAvatar({
     "--status-color": STATUS_COLOR[status],
     ...style,
   } as CSSProperties;
+  const petImage = PETS[pet] ?? PETS.cato;
+  const petImageSrc =
+    typeof petImage === "string" ? petImage : petImage.src;
 
   return (
     <span
@@ -79,7 +81,12 @@ export function PetAvatar({
       {...rest}
     >
       <span className="pd-pet__bg" style={{ background: PET_TINTS[pet] }} />
-      {PETS[pet] ?? PETS.cato}
+      <img
+        className="pd-pet__art"
+        src={petImageSrc}
+        alt=""
+        aria-hidden="true"
+      />
       {showStatus ? <span className="pd-pet__status" /> : null}
     </span>
   );
