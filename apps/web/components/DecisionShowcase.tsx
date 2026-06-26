@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Badge, Button } from "@pets-driven/design-system";
+import { Button } from "@pets-driven/design-system";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentBehaviorDecisionToken } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
@@ -439,7 +439,6 @@ export function DecisionShowcaseApp() {
           <div className="decision-showcase__stimuli">
             <header className="decision-showcase__stimuli-header">
               <h3>Inject an event</h3>
-              <Badge tone="info">Live simulation</Badge>
             </header>
             <p className="decision-showcase__stimuli-hint">
               Send the pet a signal and watch it weigh its options before
