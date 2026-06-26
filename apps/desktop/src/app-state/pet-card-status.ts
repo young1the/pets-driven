@@ -22,9 +22,9 @@ const WORKING: PetCardStatus = {
 
 /**
  * Derive a card status from the live world snapshot. A pet with no snapshot
- * (not deployed, or no running simulation) reads as Idle. The agent hook's
- * held state — the same signal the pet window surfaces — wins when present;
- * otherwise an in-world pet reads as Working.
+ * (not deployed, or no running simulation) reads as Idle. The agentTask status
+ * drives the card: working→Working, waiting/failed→Needs you, completed→Done.
+ * A deployed pet with no agentTask reads as Idle (not Working).
  */
 export function petStatusFromSnapshot(
   snapshot: PetSnapshot | undefined,
@@ -33,7 +33,9 @@ export function petStatusFromSnapshot(
     return IDLE;
   }
 
-  switch (snapshot.heldAgentState?.kind) {
+  switch (snapshot.agentTask?.status) {
+    case "working":
+      return WORKING;
     case "waiting":
       return {
         label: "Needs you",
@@ -49,6 +51,6 @@ export function petStatusFromSnapshot(
     case "completed":
       return { label: "Done", tone: "success", dotColor: "var(--mint-300)" };
     default:
-      return WORKING;
+      return IDLE;
   }
 }

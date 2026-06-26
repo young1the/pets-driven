@@ -87,7 +87,7 @@ describe("pet window projection", () => {
     expect(
       overlayFromPet({
         ...pet,
-        heldAgentState: { kind: "waiting", label: "WAIT" },
+        agentTask: { status: "waiting", label: "WAIT" },
         speech: "hello",
         visualCue: { kind: "surprised", icon: "!", label: "Surprised" },
       }),
