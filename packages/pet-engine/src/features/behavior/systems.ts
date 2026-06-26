@@ -146,22 +146,6 @@ function stopPetMovement(
   physics?.setVelocity(id, { x: 0, y: 0 });
 }
 
-function holdAgentState(
-  components: ComponentStore,
-  id: string,
-  kind: "waiting" | "failed" | "completed",
-  sourceEventType: "task.waiting" | "attention.requested" | "task.failed" | "task.completed",
-  event: { at: number; summary?: string },
-): void {
-  components.setComponent(id, {
-    type: "HeldAgentState",
-    kind,
-    sourceEventType,
-    heldAt: event.at,
-    summary: event.summary,
-  });
-}
-
 function setAgentTaskState(
   components: ComponentStore,
   id: string,
@@ -211,7 +195,6 @@ export function runAgentEventBehaviorSystem(
         if (agent.sourceId !== event.sourceId) continue;
 
         if (event.type === "task.started") {
-          components.removeComponent(id, "HeldAgentState");
           setAgentTaskState(components, id, "working", event);
           intent.intent = "active";
           setSpeech(speech, event.summary ?? speechProfile.taskStarted, now);
@@ -222,13 +205,6 @@ export function runAgentEventBehaviorSystem(
         if (event.type === "task.waiting" || event.type === "attention.requested") {
           intent.intent = "idle";
           stopPetMovement(components, physics, id);
-          holdAgentState(
-            components,
-            id,
-            "waiting",
-            event.type,
-            event,
-          );
           setAgentTaskState(components, id, "waiting", event);
           setSpeech(speech, event.summary ?? speechProfile.attentionNeeded, now);
           claim(components, id, "agent-event", now, event.type);
@@ -237,7 +213,6 @@ export function runAgentEventBehaviorSystem(
         if (event.type === "task.failed") {
           intent.intent = "idle";
           stopPetMovement(components, physics, id);
-          holdAgentState(components, id, "failed", "task.failed", event);
           setAgentTaskState(components, id, "failed", event);
           setSpeech(speech, event.summary ?? "Task failed", now);
           activity.lastActiveAt = event.at;
@@ -247,7 +222,6 @@ export function runAgentEventBehaviorSystem(
         if (event.type === "task.completed") {
           intent.intent = completionBehavior.intentAfterCompletion;
           stopPetMovement(components, physics, id);
-          holdAgentState(components, id, "completed", "task.completed", event);
           setAgentTaskState(components, id, "completed", event);
           setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);
           activity.lastActiveAt = event.at;
@@ -1333,7 +1307,7 @@ export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
 export const AgentEventHoldSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentEventHoldSystem",
   dependsOn: ["FlightSystem"],
-  reads: ["HeldAgentState"],
+  reads: ["AgentTaskState"],
   writes: ["MotionTarget", "PhysicsVelocity"],
   update(ctx) {
     runAgentEventHoldSystem(ctx.components, ctx.physics);
@@ -1371,7 +1345,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "Transform",
     "Personality",
     "BehaviorDecisionState",
-    "HeldAgentState",
+    "AgentTaskState",
     "ClimbIntentState",
     "ClimbingTag",
     "Perception",
