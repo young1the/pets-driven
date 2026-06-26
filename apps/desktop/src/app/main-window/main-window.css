@@ -138,3 +138,8 @@
   background: rgba(249, 94, 158, 0.06);
   transform: translate(-50%, -50%) scale(1.04);
 }
+
+.pd-home__fan-card--dragging {
+  transition: none;
+  cursor: grabbing;
+}

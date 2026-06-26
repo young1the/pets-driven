@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Button, PetShowcaseCard } from "@pets-driven/design-system";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
@@ -24,6 +24,8 @@ export interface HomeSectionProps {
   onShowAll: () => void;
   onHideAll: () => void;
 }
+
+const DRAG_THRESHOLD = 6;
 
 /** Order the fan so the centre pet sits in the middle, others fan outward. */
 function fanOrder<T>(pets: T[]): { pet: T; index: number; center: number }[] {
@@ -58,6 +60,93 @@ export function HomeSection({
 }: HomeSectionProps) {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ id: string; startX: number; startY: number } | null>(
+    null,
+  );
+  const [dragVisual, setDragVisual] = useState<{
+    id: string;
+    dx: number;
+    dy: number;
+    over: boolean;
+  } | null>(null);
+
+  const onEditRef = useRef(onEdit);
+  onEditRef.current = onEdit;
+  const onDeployRef = useRef(onDeploy);
+  onDeployRef.current = onDeploy;
+
+  useEffect(() => {
+    function isOverDropZone(clientX: number, clientY: number): boolean {
+      const rect = dropZoneRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return false;
+      }
+      return (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      );
+    }
+
+    function handleMove(event: PointerEvent) {
+      const active = dragRef.current;
+      if (!active) {
+        return;
+      }
+      const dx = event.clientX - active.startX;
+      const dy = event.clientY - active.startY;
+      const moved = Math.hypot(dx, dy) > DRAG_THRESHOLD;
+      setDragVisual({
+        id: active.id,
+        dx,
+        dy,
+        over: moved && isOverDropZone(event.clientX, event.clientY),
+      });
+    }
+
+    function handleUp(event: PointerEvent) {
+      const active = dragRef.current;
+      if (!active) {
+        return;
+      }
+      dragRef.current = null;
+      setDragVisual(null);
+
+      const dx = event.clientX - active.startX;
+      const dy = event.clientY - active.startY;
+      const moved = Math.hypot(dx, dy) > DRAG_THRESHOLD;
+
+      if (!moved) {
+        onEditRef.current(active.id);
+      } else if (isOverDropZone(event.clientX, event.clientY)) {
+        onDeployRef.current(active.id);
+      }
+      // else: dropped outside — clearing dragVisual springs the card back.
+    }
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, []);
+
+  function handleCardPointerDown(
+    event: React.PointerEvent<HTMLDivElement>,
+    petId: string,
+  ) {
+    if (event.button !== 0) {
+      return;
+    }
+    dragRef.current = {
+      id: petId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+    setDragVisual({ id: petId, dx: 0, dy: 0, over: false });
+  }
 
   const n = atHome.length;
   const stepX = n <= 5 ? 150 : n <= 7 ? 124 : n <= 9 ? 104 : 88;
@@ -68,7 +157,12 @@ export function HomeSection({
     <div className="pd-home">
       <div
         ref={dropZoneRef}
-        className="pd-home__dropzone"
+        className={[
+          "pd-home__dropzone",
+          dragVisual?.over ? "pd-home__dropzone--active" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         data-testid="home-dropzone"
         aria-hidden="true"
       />
@@ -220,26 +314,38 @@ export function HomeSection({
           const d = index - center;
           const ty = Math.abs(d) * 22;
           const hovered = hoverId === pet.id;
+          const dragging = dragVisual?.id === pet.id;
           const wrapStyle: CSSProperties = {
             left: `calc(50% + ${d * stepX}px)`,
-            transform: hovered
-              ? `translateX(-50%) translateY(${ty - 46}px) rotate(${d * 2}deg) scale(1.1)`
-              : `translateX(-50%) translateY(${ty}px) rotate(${d * rotX}deg)`,
-            zIndex: hovered ? 200 : 60 - Math.round(Math.abs(d) * 6),
+            transform: dragging
+              ? `translate(calc(-50% + ${dragVisual.dx}px), ${ty + dragVisual.dy}px) scale(1.06)`
+              : hovered
+                ? `translateX(-50%) translateY(${ty - 46}px) rotate(${d * 2}deg) scale(1.1)`
+                : `translateX(-50%) translateY(${ty}px) rotate(${d * rotX}deg)`,
+            zIndex: dragging
+              ? 300
+              : hovered
+                ? 200
+                : 60 - Math.round(Math.abs(d) * 6),
           };
 
           return (
             <div
-              className="pd-home__fan-card"
+              className={[
+                "pd-home__fan-card",
+                dragging ? "pd-home__fan-card--dragging" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               key={pet.id}
               role="button"
               tabIndex={0}
-              aria-label={`Deploy ${pet.name} to the desktop`}
-              onClick={() => onDeploy(pet.id)}
+              aria-label={`Open ${pet.name}'s details`}
+              onPointerDown={(event) => handleCardPointerDown(event, pet.id)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  onDeploy(pet.id);
+                  onEdit(pet.id);
                 }
               }}
               onMouseEnter={() => setHoverId(pet.id)}
@@ -253,7 +359,6 @@ export function HomeSection({
                 gradient={pet.gradient}
                 name={pet.name}
                 note={pet.note}
-                onEdit={() => onEdit(pet.id)}
                 portrait={<PetPortrait assetId={pet.assetId} name={pet.name} />}
                 role={pet.role}
                 status={{
