@@ -10,15 +10,10 @@
   border-radius: 50%;
   flex: none;
 }
-.pd-pet__bg {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-}
 .pd-pet__art {
   position: relative;
-  width: 86%;
-  height: 86%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
   pointer-events: none;
@@ -29,10 +24,6 @@
 .pd-pet--md { width: 44px; height: 44px; }
 .pd-pet--lg { width: 64px; height: 64px; }
 .pd-pet--xl { width: 96px; height: 96px; }
-
-.pd-pet--ring {
-  box-shadow: 0 0 0 3px var(--ring-color, var(--lavender-300));
-}
 
 .pd-pet__status {
   position: absolute;
@@ -51,6 +42,5 @@
   .pd-pet--working .pd-pet__art { animation: pd-bob 1.6s var(--ease-in-out) infinite; }
   .pd-pet--happy .pd-pet__art { animation: pd-wiggle 1.1s var(--ease-in-out) infinite; }
   .pd-pet--thinking .pd-pet__art { animation: pd-bob 2.6s var(--ease-in-out) infinite; }
-  .pd-pet--confused.pd-pet--ring { animation: pd-pulse-ring 1.6s var(--ease-out) infinite; }
   .pd-pet--napping .pd-pet__art { opacity: 0.8; }
 }

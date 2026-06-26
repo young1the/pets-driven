@@ -1,5 +1,5 @@
 import type { CSSProperties, HTMLAttributes } from "react";
-import { PETS, PET_RINGS, PET_TINTS, type PetName } from "./pets";
+import { PETS, type PetName } from "./pets";
 import "./pet-avatar.css";
 
 /**
@@ -57,14 +57,12 @@ export function PetAvatar({
     "pd-pet",
     `pd-pet--${size}`,
     `pd-pet--${status}`,
-    ring ? "pd-pet--ring" : "",
     className,
   ]
     .filter(Boolean)
     .join(" ");
 
   const css = {
-    "--ring-color": PET_RINGS[pet],
     "--status-color": STATUS_COLOR[status],
     ...style,
   } as CSSProperties;
@@ -80,7 +78,6 @@ export function PetAvatar({
       aria-label={label ?? `${pet} (${status})`}
       {...rest}
     >
-      <span className="pd-pet__bg" style={{ background: PET_TINTS[pet] }} />
       <img
         className="pd-pet__art"
         src={petImageSrc}

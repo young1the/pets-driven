@@ -22,7 +22,8 @@ import {
 const STEP_MS = 16;
 const PRIMARY_PET_ID = "pet-a";
 const COLLIDER_PET_ID = "pet-b";
-const SPRITE_URL = "/fallback-pets/patamon/spritesheet.webp";
+const PRIMARY_SPRITE_URL = "/codex-pets/cato/spritesheet.webp";
+const COLLIDER_SPRITE_URL = "/codex-pets/otto/spritesheet.webp";
 const SPRITE_SIZE = { width: 192, height: 208 };
 const VISUAL_TICK_MS = 120;
 const MOTION_RESET_MS = 980;
@@ -50,6 +51,29 @@ type DecisionSelectionPrototypeProps = {
   probabilityProgress: number;
   selection: DecisionSelectionExplanation;
 };
+
+// Human-friendly labels for the internal behavior decision kinds, so the
+// reel reads like plain language instead of leaking variable names.
+const DECISION_KIND_LABELS: Record<BehaviorDecisionKind, string> = {
+  "wander-near": "Wander nearby",
+  "wander-far": "Roam far",
+  "seek-user": "Come to you",
+  "request-jump": "Jump",
+  "request-climb": "Climb up",
+  "idle-stay": "Stay put",
+  "approach-pet": "Greet a friend",
+  "flee-from-pet": "Shy away",
+  "collision-flee": "Run off",
+  "collision-engage": "Say hello",
+  "collision-avoid": "Dodge",
+  "collision-jump": "Hop away",
+  "collision-stay": "Hold ground",
+  "collision-unfazed": "Shrug it off",
+};
+
+function formatDecisionKind(kind: BehaviorDecisionKind) {
+  return DECISION_KIND_LABELS[kind] ?? kind;
+}
 
 const AGENT_STIMULI = [
   { type: "task.started", label: "Task started", summary: "Work started" },
@@ -365,8 +389,9 @@ export function DecisionShowcaseApp() {
               animationState={petAnimationState}
               className="decision-showcase__live-sprite"
               elapsedMs={visualElapsedMs}
-              imageUrl={SPRITE_URL}
+              imageUrl={PRIMARY_SPRITE_URL}
               scale={0.88}
+              showStatusBubble={false}
               size={SPRITE_SIZE}
             />
             {stageMotion === "collision" ? (
@@ -380,8 +405,9 @@ export function DecisionShowcaseApp() {
                     animationState="running-left"
                     className="decision-showcase__collider-sprite"
                     elapsedMs={visualElapsedMs}
-                    imageUrl={SPRITE_URL}
+                    imageUrl={COLLIDER_SPRITE_URL}
                     scale={0.54}
+                    showStatusBubble={false}
                     size={SPRITE_SIZE}
                   />
                 </span>
@@ -407,27 +433,6 @@ export function DecisionShowcaseApp() {
               />
             ) : null}
           </div>
-          <dl className="decision-showcase__stats">
-            <div>
-              <dt>Intent</dt>
-              <dd>{selectedPet.intent}</dd>
-            </div>
-            <div>
-              <dt>Locomotion</dt>
-              <dd>{selectedPet.locomotion}</dd>
-            </div>
-            <div>
-              <dt>Speech</dt>
-              <dd>{selectedPet.speech ?? "quiet"}</dd>
-            </div>
-            <div>
-              <dt>Position</dt>
-              <dd>
-                {Math.round(selectedPet.position.x)},{" "}
-                {Math.round(selectedPet.position.y)}
-              </dd>
-            </div>
-          </dl>
         </section>
 
         <section className="decision-showcase__controls">
@@ -647,7 +652,7 @@ function SelectionReelItem({
         } as CSSProperties
       }
     >
-      <strong>{candidate.kind}</strong>
+      <strong>{formatDecisionKind(candidate.kind)}</strong>
       <span>{formatPercent(candidate.probability * probabilityProgress)}</span>
     </article>
   );
