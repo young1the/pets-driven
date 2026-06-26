@@ -1,6 +1,4 @@
 import {
-  Badge,
-  Button,
   Input,
   SegmentedControl,
   Switch,
@@ -46,8 +44,6 @@ export function SettingsSection({
   confirmRun,
   onToggleConfirm,
   preview,
-  hook,
-  onReconnect,
 }: SettingsSectionProps) {
   return (
     <div style={{ padding: "38px 24px 64px" }}>
@@ -163,60 +159,6 @@ export function SettingsSection({
           </div>
         </div>
 
-        <div
-          style={{
-            ...cardStyle,
-            display: "flex",
-            alignItems: "center",
-            gap: "20px",
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h3
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 600,
-                  fontSize: "17px",
-                  color: "var(--text-strong)",
-                  margin: 0,
-                }}
-              >
-                Claude agent hook
-              </h3>
-              <Badge dot tone={hook.tone}>
-                {hook.label}
-              </Badge>
-            </div>
-            <div
-              style={{
-                fontSize: "14px",
-                color: "var(--text-muted)",
-                marginTop: "5px",
-              }}
-            >
-              <span data-testid="claude-hook-state">{hook.summary}</span>
-            </div>
-            <code
-              data-testid="claude-hook-url"
-              style={{
-                display: "inline-block",
-                marginTop: "8px",
-                fontFamily: "var(--font-mono)",
-                fontSize: "12.5px",
-                color: "var(--term-pink)",
-                background: "var(--term-bg)",
-                padding: "5px 10px",
-                borderRadius: "9px",
-              }}
-            >
-              {hook.url || "unavailable"}
-            </code>
-          </div>
-          <Button onClick={onReconnect} variant="neutral">
-            Reconnect
-          </Button>
-        </div>
       </div>
     </div>
   );
