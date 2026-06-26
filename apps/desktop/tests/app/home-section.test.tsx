@@ -57,13 +57,133 @@ describe("HomeSection", () => {
     ).toHaveClass("pd-home__add-pet");
   });
 
-  it("deploys a pet when its card is clicked", () => {
+  it("opens the detail screen when a card is clicked without dragging", () => {
+    const onEdit = vi.fn();
     const onDeploy = vi.fn();
     render(
       <HomeSection
         atHome={[pet]}
         inField={[]}
         onDeploy={onDeploy}
+        onRecall={vi.fn()}
+        onEdit={onEdit}
+        onAddPet={vi.fn()}
+        onShowAll={vi.fn()}
+        onHideAll={vi.fn()}
+      />,
+    );
+
+    const card = screen.getByRole("button", { name: "Open Otto's details" });
+    fireEvent.pointerDown(card, {
+      button: 0,
+      clientX: 100,
+      clientY: 500,
+      pointerId: 1,
+    });
+    fireEvent.pointerUp(window, { clientX: 100, clientY: 500, pointerId: 1 });
+
+    expect(onEdit).toHaveBeenCalledWith("otto");
+    expect(onDeploy).not.toHaveBeenCalled();
+  });
+
+  it("deploys a pet when its card is dragged onto the drop zone", () => {
+    const onEdit = vi.fn();
+    const onDeploy = vi.fn();
+    render(
+      <HomeSection
+        atHome={[pet]}
+        inField={[]}
+        onDeploy={onDeploy}
+        onRecall={vi.fn()}
+        onEdit={onEdit}
+        onAddPet={vi.fn()}
+        onShowAll={vi.fn()}
+        onHideAll={vi.fn()}
+      />,
+    );
+
+    const dropzone = screen.getByTestId("home-dropzone");
+    dropzone.getBoundingClientRect = vi.fn(
+      () =>
+        ({
+          left: 200,
+          right: 600,
+          top: 100,
+          bottom: 400,
+          width: 400,
+          height: 300,
+          x: 200,
+          y: 100,
+          toJSON: () => ({}),
+        }) as DOMRect,
+    );
+
+    const card = screen.getByRole("button", { name: "Open Otto's details" });
+    fireEvent.pointerDown(card, {
+      button: 0,
+      clientX: 100,
+      clientY: 500,
+      pointerId: 1,
+    });
+    fireEvent.pointerMove(window, { clientX: 400, clientY: 250, pointerId: 1 });
+    fireEvent.pointerUp(window, { clientX: 400, clientY: 250, pointerId: 1 });
+
+    expect(onDeploy).toHaveBeenCalledWith("otto");
+    expect(onEdit).not.toHaveBeenCalled();
+  });
+
+  it("springs back without deploying when released outside the drop zone", () => {
+    const onEdit = vi.fn();
+    const onDeploy = vi.fn();
+    render(
+      <HomeSection
+        atHome={[pet]}
+        inField={[]}
+        onDeploy={onDeploy}
+        onRecall={vi.fn()}
+        onEdit={onEdit}
+        onAddPet={vi.fn()}
+        onShowAll={vi.fn()}
+        onHideAll={vi.fn()}
+      />,
+    );
+
+    const dropzone = screen.getByTestId("home-dropzone");
+    dropzone.getBoundingClientRect = vi.fn(
+      () =>
+        ({
+          left: 200,
+          right: 600,
+          top: 100,
+          bottom: 400,
+          width: 400,
+          height: 300,
+          x: 200,
+          y: 100,
+          toJSON: () => ({}),
+        }) as DOMRect,
+    );
+
+    const card = screen.getByRole("button", { name: "Open Otto's details" });
+    fireEvent.pointerDown(card, {
+      button: 0,
+      clientX: 100,
+      clientY: 500,
+      pointerId: 1,
+    });
+    fireEvent.pointerMove(window, { clientX: 120, clientY: 120, pointerId: 1 });
+    fireEvent.pointerUp(window, { clientX: 120, clientY: 120, pointerId: 1 });
+
+    expect(onDeploy).not.toHaveBeenCalled();
+    expect(onEdit).not.toHaveBeenCalled();
+  });
+
+  it("does not render the pencil edit button on cards", () => {
+    render(
+      <HomeSection
+        atHome={[pet]}
+        inField={[]}
+        onDeploy={vi.fn()}
         onRecall={vi.fn()}
         onEdit={vi.fn()}
         onAddPet={vi.fn()}
@@ -72,8 +192,9 @@ describe("HomeSection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Otto"));
-    expect(onDeploy).toHaveBeenCalledWith("otto");
+    expect(
+      screen.queryByRole("button", { name: "Edit pet" }),
+    ).not.toBeInTheDocument();
   });
 
   it("recalls a pet when its field chip is clicked", () => {
