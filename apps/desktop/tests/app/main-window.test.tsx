@@ -21,10 +21,12 @@ const edit = {
   onDone: vi.fn(),
 };
 const settings = {
-  shell: "bash",
+  launchProfile: "cmd" as const,
   command: "claude",
-  onShell: vi.fn(),
+  launchLine: "cmd /k claude",
+  onLaunchProfile: vi.fn(),
   onCommand: vi.fn(),
+  onLaunchLine: vi.fn(),
   confirmRun: true,
   onToggleConfirm: vi.fn(),
   preview: { cwd: "~/core", prompt: "$", command: "claude" },

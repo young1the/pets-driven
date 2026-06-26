@@ -180,23 +180,21 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const isPositionDrivenRef = useRef(false);
   const pointerStartRef = useRef<PetWindowPointerStart | null>(null);
   // bodyDownRef tracks the press origin so we can tell a tap from a drag;
-  // lastTapAtRef turns two quick taps into a double-click that focuses the
-  // bound window.
+  // lastTapAtRef turns two quick taps into a double-click that asks the host to
+  // focus the bound window or start a new session.
   const bodyDownRef = useRef<{ screenX: number; screenY: number } | null>(null);
   const lastTapAtRef = useRef(0);
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
     null,
   );
   const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
-  // Binding state is pushed by the host. bindBubble is a transient confirmation
-  // shown when the state changes.
+  // Binding state is pushed by the host and used by the context menu.
   const [bindingState, setBindingState] = useState<PetWindowBindingState>({
     title: null,
     isLoading: false,
   });
   const bindingTitle = bindingState.title;
   const isBindingLoading = bindingState.isLoading;
-  const [bindBubble, setBindBubble] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(1);
   const [spritesheetUrl, setSpritesheetUrl] = useState<string | null>(null);
@@ -331,9 +329,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         const title = event.payload.title;
         const isLoading = event.payload.isLoading === true;
         setBindingState({ title, isLoading });
-        setBindBubble(
-          isLoading ? "Connecting..." : title ? `🔗 Bound: ${title}` : "Unbound",
-        );
       },
     );
 
@@ -341,15 +336,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       void bindingPromise.then((unlisten) => unlisten());
     };
   }, [pet.petId]);
-
-  // Auto-dismiss the transient bind confirmation bubble.
-  useEffect(() => {
-    if (!bindBubble) {
-      return;
-    }
-    const timer = window.setTimeout(() => setBindBubble(null), 2600);
-    return () => window.clearTimeout(timer);
-  }, [bindBubble]);
 
   useEffect(() => {
     let isActive = true;
@@ -458,7 +444,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
   function requestStartSession() {
     setBindingState((current) => ({ ...current, isLoading: true }));
-    setBindBubble("Connecting...");
     emitPetWindowSignal("menu.start-session");
   }
 
@@ -589,9 +574,9 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       emitPetWindowInput("body.pointer.up", event);
       event.currentTarget.releasePointerCapture?.(event.pointerId);
 
-      // A press that barely moved is a tap; two quick taps = double-click ->
-      // focus the bound window. ponytail: only fires in position-driven mode;
-      // native-drag pets hand the gesture to the OS so there is no tap.
+      // A press that barely moved is a tap; two quick taps = double-click.
+      // This only fires in position-driven mode; native-drag pets hand the
+      // gesture to the OS so there is no tap.
       const down = bodyDownRef.current;
       bodyDownRef.current = null;
       if (down) {
@@ -704,22 +689,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         >
           <span aria-hidden="true" className="pet-window-resize-button__mark" />
         </IconButton>
-        {bindingTitle || isBindingLoading ? (
-          <span
-            className="pet-window-bind-badge"
-            title={isBindingLoading ? "Connecting" : `Bound: ${bindingTitle}`}
-            aria-label={
-              isBindingLoading ? "Connecting" : `Bound: ${bindingTitle}`
-            }
-          >
-            {isBindingLoading ? "..." : "🔗"}
-          </span>
-        ) : null}
-        {bindBubble ? (
-          <span className="pet-window-bind-bubble" role="status">
-            {bindBubble}
-          </span>
-        ) : null}
       </span>
       {activeMenu ? (
         <div

@@ -696,6 +696,168 @@ describe("pet window product route", () => {
     expect(screen.getByText("🔗 Windows Terminal")).toBeInTheDocument();
   });
 
+  it("does not render binding badges above the pet", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(
+        true,
+      );
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_BINDING_EVENT)?.({
+        payload: {
+          petId: "pet-a",
+          title: "Windows Terminal",
+        },
+      });
+    });
+
+    expect(screen.queryByLabelText("Bound: Windows Terminal")).toBeNull();
+    expect(screen.queryByText("🔗 Bound: Windows Terminal")).toBeNull();
+  });
+
+  it("starts a new terminal channel from body focus when no window is bound", async () => {
+    invokeMock.mockImplementation(async (command) => {
+      if (command === "list_codex_pet_packages") {
+        return [];
+      }
+      if (command === "get_claude_hook_ingress_status") {
+        return {
+          url: "http://127.0.0.1:43187/claude-hook",
+          state: "listening",
+          error: null,
+        };
+      }
+      if (command === "read_pets_driven_state") {
+        return testPetsDrivenState;
+      }
+      if (command === "start_session") {
+        return { hwnd: 123, title: "Windows Terminal" };
+      }
+
+      return undefined;
+    });
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "body.focus",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("start_session", {
+        cwd: "D:\\cms",
+        command: "claude",
+      });
+    });
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "focus_window",
+      expect.anything(),
+    );
+  });
+
+  it("focuses the bound terminal channel from body focus", async () => {
+    invokeMock.mockImplementation(async (command) => {
+      if (command === "list_codex_pet_packages") {
+        return [];
+      }
+      if (command === "get_claude_hook_ingress_status") {
+        return {
+          url: "http://127.0.0.1:43187/claude-hook",
+          state: "listening",
+          error: null,
+        };
+      }
+      if (command === "read_pets_driven_state") {
+        return testPetsDrivenState;
+      }
+      if (command === "start_session") {
+        return { hwnd: 456, title: "Windows Terminal" };
+      }
+      if (command === "focus_window") {
+        return true;
+      }
+
+      return undefined;
+    });
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "menu.start-session",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("start_session", {
+        cwd: "D:\\cms",
+        command: "claude",
+      });
+    });
+
+    invokeMock.mockClear();
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 2,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "body.focus",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("focus_window", { hwnd: 456 });
+    });
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "start_session",
+      expect.anything(),
+    );
+  });
+
   it("publishes a loading binding state while starting a terminal channel", async () => {
     let resolveStartSession:
       | ((window: { hwnd: number; title: string }) => void)

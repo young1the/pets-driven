@@ -54,6 +54,8 @@ export type PetsDrivenStateV2 = {
   petProfiles: PetProfile[];
   /** App-wide launch line for "Start new session". See DEFAULT_SESSION_COMMAND. */
   sessionCommand: string;
+  /** Whether pets ask before launching the session command. */
+  confirmBeforeRun?: boolean;
 };
 
 /** Canonical state alias — always the latest schema. */
@@ -66,6 +68,7 @@ export function createEmptyPetsDrivenState(): PetsDrivenState {
     pets: [],
     petProfiles: [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
+    confirmBeforeRun: true,
   };
 }
 
@@ -100,6 +103,7 @@ function migratePetsDrivenStateV1ToV2(
       ? candidate.petProfiles
       : [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
+    confirmBeforeRun: true,
   };
 }
 
@@ -161,6 +165,8 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
       typeof v2.sessionCommand === "string" && v2.sessionCommand.trim()
         ? v2.sessionCommand
         : DEFAULT_SESSION_COMMAND,
+    confirmBeforeRun:
+      typeof v2.confirmBeforeRun === "boolean" ? v2.confirmBeforeRun : true,
   });
 }
 
