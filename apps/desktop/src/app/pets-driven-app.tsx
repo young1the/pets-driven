@@ -225,6 +225,11 @@ function petGradient(name: string, personalityId?: string): { from: string; to: 
   return PERSONALITY_GRADIENTS[key];
 }
 
+function cardNote(memo: string | undefined): string {
+  const trimmed = memo?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : "No note yet";
+}
+
 export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
@@ -1057,6 +1062,7 @@ export function PetsDrivenApp() {
         id: pet.id,
         name: pet.name,
         assetId: pet.assetId,
+        note: cardNote(pet.memo),
         role: personalityRoleLabel(personalityId),
         status: statusFor(pet.id),
         gradient: petGradient(pet.name, personalityId),
