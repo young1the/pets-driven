@@ -1,0 +1,33 @@
+/* Design-system tokens, fonts, base reset, and component CSS come from the
+   workspace package. The homepage only adds its own scene animations. */
+@import "@pets-driven/design-system/styles.css";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #fffcfd;
+}
+
+img,
+svg {
+  display: block;
+}
+
+/* ---- Homepage scene animations (from the Pets-Driven Intro design) ---- */
+@keyframes pdBlink { 0%, 86%, 100% { transform: scaleY(1); } 92% { transform: scaleY(.06); } 95% { transform: scaleY(1); } }
+@keyframes pdFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+@keyframes pdJump { 0%, 100% { transform: translateY(0) scaleY(1); } 12% { transform: translateY(0) scaleY(.85); } 46% { transform: translateY(-44px) scaleY(1.05); } 80% { transform: translateY(0) scaleY(.92); } }
+@keyframes pdBobY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes pdFly { 0% { transform: translate(0,0) rotate(-6deg); } 25% { transform: translate(86px,-38px) rotate(9deg); } 50% { transform: translate(168px,-6px) rotate(-4deg); } 75% { transform: translate(84px,-50px) rotate(10deg); } 100% { transform: translate(0,0) rotate(-6deg); } }
+@keyframes pdPeek { 0%, 16% { transform: translateY(70px); } 36%, 62% { transform: translateY(0); } 82%, 100% { transform: translateY(70px); } }
+@keyframes pdScroll { 0% { transform: translateY(0); opacity: .85; } 60% { transform: translateY(9px); opacity: .15; } 100% { transform: translateY(0); opacity: .85; } }
+@keyframes pdShake { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-8deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
