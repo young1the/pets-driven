@@ -14,7 +14,7 @@ const pet = {
   },
   gradient: { from: "#8B7FE8", to: "#6F5FD6" },
   folder: "core",
-  memo: "",
+  memo: "Watch the auth queue",
   deployed: false,
 };
 
@@ -34,6 +34,12 @@ function setup(overrides = {}) {
 }
 
 describe("PetEditSection", () => {
+  it("shows the note and personality in the card preview", () => {
+    setup();
+    expect(screen.getAllByText("Watch the auth queue")).toHaveLength(2);
+    expect(screen.getByText("Steady")).toBeInTheDocument();
+  });
+
   it("edits the name", () => {
     const onName = vi.fn();
     setup({ onName });

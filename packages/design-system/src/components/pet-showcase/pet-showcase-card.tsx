@@ -7,11 +7,13 @@ export interface PetShowcaseCardStatus {
 }
 
 /**
- * A pet "trading card": a soft gradient body with a role label, name, a
- * portrait slot, and a status pill. Art-agnostic — the portrait is passed in.
- * The caller owns fan positioning; the card only renders the featured ring.
+ * A pet "trading card": a soft gradient body with note and name at the top, a
+ * portrait slot, and small personality/status overlays. Art-agnostic — the
+ * portrait is passed in. The caller owns fan positioning; the card only
+ * renders the featured ring.
  */
 export interface PetShowcaseCardProps {
+  note: string;
   role: string;
   name: string;
   status: PetShowcaseCardStatus;
@@ -24,6 +26,7 @@ export interface PetShowcaseCardProps {
 }
 
 export function PetShowcaseCard({
+  note,
   role,
   name,
   status,
@@ -76,18 +79,21 @@ export function PetShowcaseCard({
       ) : null}
 
       <div className="pd-pet-card__head">
-        <div className="pd-pet-card__role">{role}</div>
+        <div className="pd-pet-card__note">{note}</div>
         <div className="pd-pet-card__name">{name}</div>
       </div>
 
       <div className="pd-pet-card__portrait">
         {portrait}
-        <div className="pd-pet-card__status">
-          <span
-            className="pd-pet-card__status-dot"
-            style={{ background: status.dotColor }}
-          />
-          <span className="pd-pet-card__status-label">{status.label}</span>
+        <div className="pd-pet-card__footer">
+          <div className="pd-pet-card__role-chip">{role}</div>
+          <div className="pd-pet-card__status">
+            <span
+              className="pd-pet-card__status-dot"
+              style={{ background: status.dotColor }}
+            />
+            <span className="pd-pet-card__status-label">{status.label}</span>
+          </div>
         </div>
       </div>
     </div>

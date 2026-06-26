@@ -63,12 +63,15 @@
   padding: 4px 6px 12px;
 }
 
-.pd-pet-card__role {
+.pd-pet-card__note {
   font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.82);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.84);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
 }
 
 .pd-pet-card__name {
@@ -85,11 +88,31 @@
   z-index: 2;
 }
 
-.pd-pet-card__status {
+.pd-pet-card__footer {
   position: absolute;
   left: 12px;
   bottom: 12px;
   z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.pd-pet-card__role-chip {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.pd-pet-card__status {
   display: flex;
   align-items: center;
   gap: 7px;
