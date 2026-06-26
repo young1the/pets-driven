@@ -45,16 +45,6 @@ export type BehaviorDecisionStateComponent = {
   lastAutonomousAt: number | null;
 };
 
-export type HeldAgentStateKind = "waiting" | "failed" | "completed";
-
-export type HeldAgentStateComponent = {
-  type: "HeldAgentState";
-  kind: HeldAgentStateKind;
-  sourceEventType: "task.waiting" | "attention.requested" | "task.failed" | "task.completed";
-  heldAt: number;
-  summary?: string;
-};
-
 export type BehaviorDecisionKind =
   | "wander-near"
   | "wander-far"

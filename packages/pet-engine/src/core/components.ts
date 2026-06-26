@@ -17,7 +17,6 @@ export type {
   UserAnchorComponent,
   BehaviorDecisionSource,
   BehaviorDecisionStateComponent,
-  HeldAgentStateComponent,
   PersonalityComponent,
   BehaviorDecisionKind,
   BehaviorDecisionTokenComponent,
@@ -79,7 +78,7 @@ export type {
 import type { PerceptionComponent } from "@pets-driven/pet-engine/features/perception/components";
 import type { TransformComponent, PhysicsBodyComponent, PhysicsMaterialComponent, GroundComponent, PetCollisionComponent } from "@pets-driven/pet-engine/features/physics/components";
 import type { ContactStateComponent } from "@pets-driven/pet-engine/features/contact/components";
-import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, HeldAgentStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent, PendingReactionComponent } from "@pets-driven/pet-engine/features/behavior/components";
+import type { IntentStateComponent, PetIdentityComponent, UserAnchorComponent, BehaviorDecisionStateComponent, PersonalityComponent, BehaviorDecisionTokenComponent, PendingReactionComponent } from "@pets-driven/pet-engine/features/behavior/components";
 import type { AgentBindingComponent, ActivityStateComponent, CompletionBehaviorComponent, SpeechProfileComponent, SpeechStateComponent, IdleConversationComponent } from "@pets-driven/pet-engine/features/agent/components";
 import type { AgentTaskStateComponent } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import type { WalkingTagComponent, ClimbingTagComponent, FlyingTagComponent, AirborneTagComponent, MotionTargetComponent } from "@pets-driven/pet-engine/features/movement/components";
@@ -101,7 +100,6 @@ export type Component =
   | PersonalityComponent
   | AirborneTagComponent
   | BehaviorDecisionStateComponent
-  | HeldAgentStateComponent
   | CanFlyComponent
   | CanJumpComponent
   | CanWalkComponent

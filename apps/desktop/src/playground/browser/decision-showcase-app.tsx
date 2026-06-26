@@ -211,7 +211,7 @@ export function DecisionShowcaseApp() {
     scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "ClimbIntentState");
     scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "JumpActionState");
     if (options.clearPresentation) {
-      scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "HeldAgentState");
+      scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "AgentTaskState");
       const speech = scenarioRef.current.world.getComponent(PRIMARY_PET_ID, "SpeechState");
       if (speech) {
         speech.speech = null;
@@ -660,9 +660,9 @@ function animationStateForPet(
   const decisionAnimation = animationStateForDecisionKind(settledDecisionKind);
   if (decisionAnimation) return decisionAnimation;
   if (pet.pendingReaction) return "waiting";
-  if (pet.heldAgentState?.kind === "failed") return "failed";
-  if (pet.heldAgentState?.kind === "waiting") return "waiting";
-  if (pet.heldAgentState?.kind === "completed") return "review";
+  if (pet.agentTask?.status === "failed") return "failed";
+  if (pet.agentTask?.status === "waiting") return "waiting";
+  if (pet.agentTask?.status === "completed") return "review";
   if (pet.action?.startsWith("jump")) return "jumping";
   if (pet.motionTarget) return "running-right";
   return "idle";
