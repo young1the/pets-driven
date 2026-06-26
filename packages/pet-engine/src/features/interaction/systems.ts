@@ -40,11 +40,11 @@ function handlePointerEvent(
     const controlHit = hitTest(components, event.position, "CanControl");
     const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
     if (target) target.entityId = controlHit?.id ?? null;
-    if (controlHit) clearHeldAgentState(components, controlHit.id);
+    if (controlHit) clearAgentTaskState(components, controlHit.id);
 
     const dragHit = hitTest(components, event.position, "CanDrag");
     if (!dragHit) return;
-    clearHeldAgentState(components, dragHit.id);
+    clearAgentTaskState(components, dragHit.id);
 
     components.setComponent(INTERACTION_ENTITY_ID, {
       type: "DragInteraction",
@@ -88,8 +88,8 @@ function handlePointerEvent(
   }
 }
 
-function clearHeldAgentState(components: ComponentStore, id: string): void {
-  components.removeComponent(id, "HeldAgentState");
+function clearAgentTaskState(components: ComponentStore, id: string): void {
+  components.removeComponent(id, "AgentTaskState");
 }
 
 function handleKeyboardEvent(
