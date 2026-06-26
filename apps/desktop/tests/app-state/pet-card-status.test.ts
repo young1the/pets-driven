@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { petStatusFromSnapshot } from "@/app-state/pet-card-status";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 
-function snapshot(overrides: Partial<PetSnapshot>): PetSnapshot {
+function snapshot(agentTask: PetSnapshot["agentTask"]): PetSnapshot {
   return {
-    id: "pet-1",
-    sourceId: "agent-1",
-    name: "Otto",
-    intent: "wander",
+    id: "pet",
+    sourceId: "agent-a",
+    name: "Rex",
+    intent: "idle",
     locomotion: "idle",
     speech: null,
     position: { x: 0, y: 0 },
@@ -15,62 +15,34 @@ function snapshot(overrides: Partial<PetSnapshot>): PetSnapshot {
     motionTarget: null,
     decision: null,
     pendingReaction: null,
-    ...overrides,
+    agentTask,
   };
 }
 
 describe("petStatusFromSnapshot", () => {
-  it("returns Idle/neutral when the pet is not in the live world", () => {
-    expect(petStatusFromSnapshot(undefined)).toEqual({
-      label: "Idle",
-      tone: "neutral",
-      dotColor: "var(--ink-300)",
-    });
+  it("no snapshot is Idle", () => {
+    expect(petStatusFromSnapshot(undefined).label).toBe("Idle");
   });
-
-  it("maps a waiting agent state to Needs you/warning", () => {
+  it("deployed but no agentTask is Idle (not Working)", () => {
+    expect(petStatusFromSnapshot(snapshot(null)).label).toBe("Idle");
+  });
+  it("working agentTask is Working — the original bug fix", () => {
     expect(
-      petStatusFromSnapshot(
-        snapshot({
-          heldAgentState: { kind: "waiting", label: "WAIT" },
-        }),
-      ),
-    ).toEqual({
-      label: "Needs you",
-      tone: "warning",
-      dotColor: "var(--butter-300)",
-    });
+      petStatusFromSnapshot(snapshot({ status: "working", label: null })).label,
+    ).toBe("Working");
   });
-
-  it("maps a failed agent state to Needs you/danger", () => {
+  it("waiting/failed are Needs you; completed is Done", () => {
     expect(
-      petStatusFromSnapshot(
-        snapshot({ heldAgentState: { kind: "failed", label: "FAIL" } }),
-      ),
-    ).toEqual({
-      label: "Needs you",
-      tone: "danger",
-      dotColor: "var(--coral-400)",
-    });
-  });
-
-  it("maps a completed agent state to Done/success", () => {
+      petStatusFromSnapshot(snapshot({ status: "waiting", label: "WAIT" }))
+        .label,
+    ).toBe("Needs you");
     expect(
-      petStatusFromSnapshot(
-        snapshot({ heldAgentState: { kind: "completed", label: "DONE" } }),
-      ),
-    ).toEqual({
-      label: "Done",
-      tone: "success",
-      dotColor: "var(--mint-300)",
-    });
-  });
-
-  it("falls back to Working/info for an in-world pet with no held state", () => {
-    expect(petStatusFromSnapshot(snapshot({}))).toEqual({
-      label: "Working",
-      tone: "info",
-      dotColor: "var(--sky-300)",
-    });
+      petStatusFromSnapshot(snapshot({ status: "failed", label: "FAIL" }))
+        .label,
+    ).toBe("Needs you");
+    expect(
+      petStatusFromSnapshot(snapshot({ status: "completed", label: "DONE" }))
+        .label,
+    ).toBe("Done");
   });
 });

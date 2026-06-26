@@ -135,10 +135,10 @@ export function spriteIntentFromBody(body: BodySnapshot): PetSpriteIntent {
 }
 
 export function overlayFromPet(pet: PetSnapshot): PetWindowOverlay | null {
-  if (pet.heldAgentState) {
+  if (pet.agentTask && pet.agentTask.label) {
     return {
       kind: "attention",
-      label: pet.heldAgentState.label,
+      label: pet.agentTask.label,
     };
   }
 
