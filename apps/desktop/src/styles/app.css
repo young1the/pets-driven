@@ -353,6 +353,33 @@
   align-items: flex-start;
 }
 
+.pd-onb__petdex-cta,
+.pd-onb__petdex-empty {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-md);
+}
+
+.pd-onb__petdex-cta a,
+.pd-onb__petdex-empty a {
+  color: var(--text-link);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pd-onb__petdex-empty code {
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: var(--term-bg);
+  color: var(--term-fg);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
 .pd-onb__paw {
   font-size: 40px;
   opacity: 0.5;
