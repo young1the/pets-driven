@@ -6,6 +6,7 @@ const pet = {
   id: "otto",
   name: "Otto",
   assetId: "patamon",
+  note: "Watch the auth queue",
   role: "Steady",
   status: {
     label: "Idle",
@@ -31,6 +32,7 @@ describe("HomeSection", () => {
     );
 
     expect(screen.getByText("Otto")).toBeInTheDocument();
+    expect(screen.getByText("Watch the auth queue")).toBeInTheDocument();
     expect(screen.getByText("Steady")).toBeInTheDocument();
   });
 

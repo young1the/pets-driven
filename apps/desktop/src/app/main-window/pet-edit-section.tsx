@@ -60,6 +60,9 @@ export function PetEditSection({
   onDelete,
   onDone,
 }: PetEditSectionProps) {
+  const previewNote =
+    pet.memo.trim().length > 0 ? pet.memo : "No note yet";
+
   return (
     <div style={{ padding: "26px 24px 48px" }}>
       <div style={{ maxWidth: "860px", margin: "0 auto" }}>
@@ -93,6 +96,7 @@ export function PetEditSection({
                 featured
                 gradient={pet.gradient}
                 name={pet.name}
+                note={previewNote}
                 portrait={<PetPortrait assetId={pet.assetId} name={pet.name} />}
                 role={pet.role}
                 status={{

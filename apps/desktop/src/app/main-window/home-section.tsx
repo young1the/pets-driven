@@ -8,6 +8,7 @@ export type HomePetView = {
   id: string;
   name: string;
   assetId: string;
+  note: string;
   role: string;
   status: PetCardStatus;
   gradient: { from: string; to: string };
@@ -243,6 +244,7 @@ export function HomeSection({
                 featured={hovered}
                 gradient={pet.gradient}
                 name={pet.name}
+                note={pet.note}
                 onEdit={() => onEdit(pet.id)}
                 portrait={<PetPortrait assetId={pet.assetId} name={pet.name} />}
                 role={pet.role}
