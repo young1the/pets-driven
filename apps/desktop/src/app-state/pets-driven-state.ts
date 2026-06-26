@@ -94,6 +94,7 @@ function migratePetsDrivenStateV1ToV2(
       workingDirectoryId: pet.workingDirectoryId || null,
       name: defaultPetNameFromAssetId(pet.assetId),
       adoptedAt: 0,
+      visible: false,
     })),
     petProfiles: Array.isArray(candidate.petProfiles)
       ? candidate.petProfiles
@@ -152,7 +153,9 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
     registeredWorkingDirectories: Array.isArray(v2.registeredWorkingDirectories)
       ? v2.registeredWorkingDirectories
       : [],
-    pets: Array.isArray(v2.pets) ? v2.pets : [],
+    pets: Array.isArray(v2.pets)
+      ? v2.pets.map((pet) => ({ ...pet, visible: false }))
+      : [],
     petProfiles: Array.isArray(v2.petProfiles) ? v2.petProfiles : [],
     sessionCommand:
       typeof v2.sessionCommand === "string" && v2.sessionCommand.trim()
