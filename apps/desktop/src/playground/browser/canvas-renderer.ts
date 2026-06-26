@@ -49,13 +49,13 @@ export function drawWorld(
         frame,
         { x: body.x, y: body.y },
       );
-      drawHeldAgentState(context, body.x, body.y, drawWidth, drawHeight, matchingHeldState(snapshot, body.id));
+      drawAgentTaskState(context, body.x, body.y, drawWidth, drawHeight, matchingAgentTask(snapshot, body.id));
       drawInteractionOutline(context, body.x, body.y, drawWidth, drawHeight, body.interaction);
       continue;
     }
 
     drawDebugBody(context, body);
-    drawHeldAgentState(context, body.x, body.y, body.width, body.height, matchingHeldState(snapshot, body.id));
+    drawAgentTaskState(context, body.x, body.y, body.width, body.height, matchingAgentTask(snapshot, body.id));
     drawInteractionOutline(context, body.x, body.y, body.width, body.height, body.interaction);
   }
 
@@ -110,8 +110,8 @@ function drawMonitorWorkAreas(
   }
 }
 
-function matchingHeldState(snapshot: WorldSnapshot, id: string) {
-  return snapshot.pets.find((pet) => pet.id === id)?.heldAgentState ?? null;
+function matchingAgentTask(snapshot: WorldSnapshot, id: string) {
+  return snapshot.pets.find((pet) => pet.id === id)?.agentTask ?? null;
 }
 
 function formatPetOverlayText(
@@ -121,22 +121,22 @@ function formatPetOverlayText(
   return visualCueIcon ?? speech ?? null;
 }
 
-function drawHeldAgentState(
+function drawAgentTaskState(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
   width: number,
   height: number,
-  heldState: { kind: "waiting" | "failed" | "completed"; label: "WAIT" | "FAIL" | "DONE" } | null,
+  agentTask: { status: string; label: "WAIT" | "FAIL" | "DONE" | null } | null,
 ) {
-  if (!heldState) return;
+  if (!agentTask?.label) return;
 
-  const colors = {
+  const colors: Record<string, string> = {
     waiting: semantic.warning,
     failed: semantic.danger,
     completed: semantic.success,
-  } as const;
-  const color = colors[heldState.kind];
+  };
+  const color = colors[agentTask.status] ?? semantic.warning;
 
   context.save?.();
   context.lineWidth = 4;
@@ -158,7 +158,7 @@ function drawHeldAgentState(
   context.strokeStyle = color;
   context.strokeRect(badgeX, badgeY, badgeWidth, 18);
   context.fillStyle = color;
-  context.fillText(heldState.label, x, badgeY + 13);
+  context.fillText(agentTask.label, x, badgeY + 13);
   context.restore?.();
 }
 

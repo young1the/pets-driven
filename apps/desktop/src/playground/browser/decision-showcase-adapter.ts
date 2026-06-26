@@ -169,14 +169,14 @@ export function explainDecisionPipeline(input: {
   const decision = input.getComponent(input.pet.id, "BehaviorDecisionState");
   const token = input.getComponent(input.pet.id, "BehaviorDecisionToken");
   const pendingReaction = input.getComponent(input.pet.id, "PendingReaction");
-  const heldAgentState = input.getComponent(input.pet.id, "HeldAgentState");
+  const agentTask = input.getComponent(input.pet.id, "AgentTaskState");
   const intent = input.getComponent(input.pet.id, "IntentState");
   const motion = input.getComponent(input.pet.id, "MotionTarget");
   const speech = input.getComponent(input.pet.id, "SpeechState");
   const jump = input.getComponent(input.pet.id, "JumpActionState");
   const climb = input.getComponent(input.pet.id, "ClimbIntentState");
   const action = jump?.phase ?? climb?.phase ?? (motion?.targetPosition ? "move" : "none");
-  const presentationValue = heldAgentState?.kind ?? (speech?.speech ? "speech" : "quiet");
+  const presentationValue = agentTask?.status ?? (speech?.speech ? "speech" : "quiet");
 
   return {
     selection: token?.selectionTrace
@@ -231,9 +231,9 @@ export function explainDecisionPipeline(input: {
       {
         id: "presentation",
         title: "Presentation",
-        status: heldAgentState || speech?.speech || input.pet.visualCue ? "complete" : "idle",
+        status: agentTask || speech?.speech || input.pet.visualCue ? "complete" : "idle",
         value: presentationValue,
-        detail: heldAgentState?.summary ?? speech?.speech ?? input.pet.visualCue?.label ?? "No visible cue.",
+        detail: agentTask?.summary ?? speech?.speech ?? input.pet.visualCue?.label ?? "No visible cue.",
       },
     ],
   };

@@ -399,13 +399,6 @@ describe("BehaviorDecisionSystem", () => {
   it("does not emit autonomous tokens while an agent state is held", () => {
     const store = makeStore();
     store.setComponent("pet", {
-      type: "HeldAgentState",
-      kind: "waiting",
-      sourceEventType: "task.waiting",
-      summary: "Needs approval",
-      heldAt: 0,
-    });
-    store.setComponent("pet", {
       type: "AgentTaskState",
       status: "waiting",
       since: 0,

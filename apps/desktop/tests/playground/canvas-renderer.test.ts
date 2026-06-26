@@ -221,7 +221,7 @@ describe("canvas renderer", () => {
             motionTarget: null,
             decision: null,
             pendingReaction: null,
-            heldAgentState: { kind: "waiting", label: "WAIT" },
+            agentTask: { status: "waiting", label: "WAIT" },
           },
         ],
         climbableSurfaces: [],
