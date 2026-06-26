@@ -161,6 +161,20 @@ function holdAgentState(
   });
 }
 
+function setAgentTaskState(
+  components: ComponentStore,
+  id: string,
+  status: "working" | "waiting" | "completed" | "failed",
+  event: { at: number; summary?: string },
+): void {
+  components.setComponent(id, {
+    type: "AgentTaskState",
+    status,
+    since: event.at,
+    summary: event.summary,
+  });
+}
+
 export function runSpeechExpirationSystem(
   components: ComponentStore,
   clock: Clock,
@@ -197,6 +211,7 @@ export function runAgentEventBehaviorSystem(
 
         if (event.type === "task.started") {
           components.removeComponent(id, "HeldAgentState");
+          setAgentTaskState(components, id, "working", event);
           intent.intent = "active";
           setSpeech(speech, event.summary ?? speechProfile.taskStarted, now);
           activity.lastActiveAt = event.at;
@@ -213,6 +228,7 @@ export function runAgentEventBehaviorSystem(
             event.type,
             event,
           );
+          setAgentTaskState(components, id, "waiting", event);
           setSpeech(speech, event.summary ?? speechProfile.attentionNeeded, now);
           claim(components, id, "agent-event", now, event.type);
         }
@@ -221,6 +237,7 @@ export function runAgentEventBehaviorSystem(
           intent.intent = "idle";
           stopPetMovement(components, physics, id);
           holdAgentState(components, id, "failed", "task.failed", event);
+          setAgentTaskState(components, id, "failed", event);
           setSpeech(speech, event.summary ?? "Task failed", now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.failed");
@@ -230,6 +247,7 @@ export function runAgentEventBehaviorSystem(
           intent.intent = completionBehavior.intentAfterCompletion;
           stopPetMovement(components, physics, id);
           holdAgentState(components, id, "completed", "task.completed", event);
+          setAgentTaskState(components, id, "completed", event);
           setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
