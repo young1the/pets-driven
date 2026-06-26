@@ -22,6 +22,7 @@ import type { WorldEvent } from "@pets-driven/pet-engine/features/events/world-e
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import { runPhysicsTransformSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
 import type { PetVisualCue } from "@pets-driven/pet-engine/core/world-snapshot";
+import { agentTaskBadgeLabel } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import {
   describeSimulationSystems,
   runSimulationSystems,
@@ -80,7 +81,7 @@ export function createWorld(input: WorldDefinition) {
         const [identity, agent, intent, speech, transform] = entity.components;
         const contactState = componentStore.getComponent(entity.id, "ContactState");
         const decisionState = componentStore.getComponent(entity.id, "BehaviorDecisionState");
-        const heldAgentState = componentStore.getComponent(entity.id, "HeldAgentState");
+        const agentTask = componentStore.getComponent(entity.id, "AgentTaskState");
         return {
           id: entity.id,
           sourceId: agent.sourceId,
@@ -103,15 +104,11 @@ export function createWorld(input: WorldDefinition) {
             const pr = componentStore.getComponent(entity.id, "PendingReaction");
             return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
           })(),
-          heldAgentState: heldAgentState
+          agentTask: agentTask
             ? {
-                kind: heldAgentState.kind,
-                label: heldAgentState.kind === "waiting"
-                  ? "WAIT" as const
-                  : heldAgentState.kind === "failed"
-                    ? "FAIL" as const
-                    : "DONE" as const,
-                summary: heldAgentState.summary,
+                status: agentTask.status,
+                label: agentTaskBadgeLabel(agentTask.status),
+                summary: agentTask.summary,
               }
             : null,
           visualCue: getPetVisualCue(componentStore, entity.id),
@@ -221,18 +218,11 @@ export function createWorld(input: WorldDefinition) {
     }
 
     const decision = componentStore.getComponent(id, "BehaviorDecisionState");
-    const heldAgentState = componentStore.getComponent(id, "HeldAgentState");
-    if (heldAgentState?.kind === "failed") {
-      return "failed";
-    }
-
-    if (heldAgentState?.kind === "completed") {
-      return "review";
-    }
-
-    if (heldAgentState?.kind === "waiting") {
-      return "waiting";
-    }
+    const agentTask = componentStore.getComponent(id, "AgentTaskState");
+    if (agentTask?.status === "failed") return "failed";
+    if (agentTask?.status === "completed") return "review";
+    if (agentTask?.status === "waiting") return "waiting";
+    if (agentTask?.status === "working") return "running";
 
     if (decision?.reason === "task.failed") {
       return "failed";

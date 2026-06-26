@@ -361,7 +361,7 @@ describe("demo scenario", () => {
         "Transform",
         "Personality",
         "BehaviorDecisionState",
-        "HeldAgentState",
+        "AgentTaskState",
         "ClimbIntentState",
         "ClimbingTag",
         "Perception",
@@ -452,7 +452,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "AgentEventHoldSystem",
       dependsOn: ["FlightSystem"],
-      reads: ["HeldAgentState"],
+      reads: ["AgentTaskState"],
       writes: ["MotionTarget", "PhysicsVelocity"],
     });
   });
@@ -965,9 +965,9 @@ describe("demo scenario", () => {
     });
     expect(
       scenario.world.snapshot().pets.find((pet) => pet.id === "pet-a")
-        ?.heldAgentState,
+        ?.agentTask,
     ).toEqual({
-      kind: "waiting",
+      status: "waiting",
       label: "WAIT",
       summary: "Approve command",
     });
@@ -1081,9 +1081,9 @@ describe("demo scenario", () => {
     scenario.world.step(16);
 
     expect(
-      scenario.world.getComponent("pet-a", "HeldAgentState"),
+      scenario.world.getComponent("pet-a", "AgentTaskState"),
     ).toMatchObject({
-      kind: "waiting",
+      status: "waiting",
     });
     expect(
       scenario.world.snapshot().bodies.find((body) => body.id === "pet-a"),
@@ -1101,7 +1101,7 @@ describe("demo scenario", () => {
     scenario.world.step(16);
 
     expect(
-      scenario.world.getComponent("pet-a", "HeldAgentState"),
+      scenario.world.getComponent("pet-a", "AgentTaskState"),
     ).toBeUndefined();
   });
 

@@ -36,8 +36,8 @@ export type PetSnapshot = {
   decision: { source: string; reason: string; decidedAt: number } | null;
   /** Active deliberation timer, or null if no pending reaction. */
   pendingReaction: { source: string; reactsAt: number } | null;
-  /** Agent hook state held until the user interacts with this pet. */
-  heldAgentState?: HeldAgentStateSnapshot | null;
+  /** Agent task lifecycle surfaced to UI. Absent = idle. */
+  agentTask?: AgentTaskSnapshot | null;
   /** Presentation cue derived from current behavior, or null when quiet. */
   visualCue?: PetVisualCue | null;
   /** Presentation state derived from current user interaction, if any. */
@@ -58,9 +58,9 @@ export type PetVisualCue = {
   label: string;
 };
 
-export type HeldAgentStateSnapshot = {
-  kind: "waiting" | "failed" | "completed";
-  label: "WAIT" | "FAIL" | "DONE";
+export type AgentTaskSnapshot = {
+  status: import("@pets-driven/pet-engine/features/agent/agent-task-state").AgentTaskStatus;
+  label: "WAIT" | "FAIL" | "DONE" | null;
   summary?: string;
 };
 
