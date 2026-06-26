@@ -4,13 +4,19 @@ import { SettingsSection } from "@/app/main-window/settings-section";
 
 function setup(overrides = {}) {
   const props = {
-    shell: "bash",
+    launchProfile: "cmd" as const,
     command: "claude --resume",
-    onShell: vi.fn(),
+    launchLine: "cmd /k claude --resume",
+    onLaunchProfile: vi.fn(),
     onCommand: vi.fn(),
+    onLaunchLine: vi.fn(),
     confirmRun: true,
     onToggleConfirm: vi.fn(),
-    preview: { cwd: "~/core", prompt: "$", command: "claude --resume" },
+    preview: {
+      cwd: "C:\\pets\\core",
+      prompt: "C:\\>",
+      command: "cmd /k claude --resume",
+    },
     hook: {
       tone: "success" as const,
       label: "All connected",
@@ -34,11 +40,42 @@ describe("SettingsSection", () => {
     expect(onCommand).toHaveBeenCalledWith("claude");
   });
 
-  it("switches the shell", () => {
-    const onShell = vi.fn();
-    setup({ onShell });
-    fireEvent.click(screen.getByText("cmd"));
-    expect(onShell).toHaveBeenCalledWith("cmd");
+  it("switches the launch profile", () => {
+    const onLaunchProfile = vi.fn();
+    setup({ onLaunchProfile });
+    fireEvent.change(screen.getByLabelText("Shell"), {
+      target: { value: "powershell" },
+    });
+    expect(onLaunchProfile).toHaveBeenCalledWith("powershell");
+  });
+
+  it("edits the raw launch line when custom is selected", () => {
+    const onLaunchLine = vi.fn();
+    setup({
+      launchProfile: "custom",
+      launchLine: '"C:\\Tools\\Git\\bin\\bash.exe" -lc "claude; exec bash"',
+      onLaunchLine,
+      preview: {
+        cwd: "C:\\pets\\core",
+        prompt: ">",
+        command: '"C:\\Tools\\Git\\bin\\bash.exe" -lc "claude; exec bash"',
+      },
+    });
+
+    fireEvent.change(screen.getByLabelText("Launch line"), {
+      target: { value: "wt -d . powershell" },
+    });
+
+    expect(onLaunchLine).toHaveBeenCalledWith("wt -d . powershell");
+  });
+
+  it("toggles confirmation when clicking the setting text", () => {
+    const onToggleConfirm = vi.fn();
+    setup({ onToggleConfirm });
+
+    fireEvent.click(screen.getByText("Ask before running"));
+
+    expect(onToggleConfirm).toHaveBeenCalledOnce();
   });
 
   it("does not show the Claude hook card", () => {

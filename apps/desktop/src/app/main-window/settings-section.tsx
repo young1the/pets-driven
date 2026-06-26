@@ -1,16 +1,22 @@
 import {
   Input,
-  SegmentedControl,
+  Select,
   Switch,
   TerminalPreview,
   type BadgeTone,
 } from "@pets-driven/design-system";
+import {
+  LAUNCH_PROFILE_OPTIONS,
+  type LaunchProfileId,
+} from "@/app/session-launch-profile";
 
 export interface SettingsSectionProps {
-  shell: string;
+  launchProfile: LaunchProfileId;
   command: string;
-  onShell: (value: string) => void;
+  launchLine: string;
+  onLaunchProfile: (value: LaunchProfileId) => void;
   onCommand: (value: string) => void;
+  onLaunchLine: (value: string) => void;
   confirmRun: boolean;
   onToggleConfirm: () => void;
   preview: { cwd: string; prompt: string; command: string };
@@ -37,14 +43,18 @@ const cardStyle = {
 };
 
 export function SettingsSection({
-  shell,
+  launchProfile,
   command,
-  onShell,
+  launchLine,
+  onLaunchProfile,
   onCommand,
+  onLaunchLine,
   confirmRun,
   onToggleConfirm,
   preview,
 }: SettingsSectionProps) {
+  const customLaunchLine = launchProfile === "custom";
+
   return (
     <div style={{ padding: "38px 24px 64px" }}>
       <div style={{ maxWidth: "840px", margin: "0 auto" }}>
@@ -80,8 +90,8 @@ export function SettingsSection({
               lineHeight: 1.45,
             }}
           >
-            When you double-click a pet, it runs this command in its working
-            folder.
+            When you double-click a pet, it opens this terminal command in its
+            working folder.
           </p>
 
           <div
@@ -96,25 +106,61 @@ export function SettingsSection({
               }}
             >
               <div>
-                <span style={uppercaseLabel}>Shell</span>
-                <SegmentedControl
-                  onChange={onShell}
-                  options={[
-                    { value: "bash", label: "bash" },
-                    { value: "cmd", label: "cmd" },
-                  ]}
-                  value={shell}
+                <Select
+                  label="Shell"
+                  onChange={(event) =>
+                    onLaunchProfile(event.target.value as LaunchProfileId)
+                  }
+                  options={LAUNCH_PROFILE_OPTIONS}
+                  value={launchProfile}
                 />
               </div>
-              <label style={{ flex: 1, minWidth: "240px" }}>
-                <span style={uppercaseLabel}>Command</span>
+              <div style={{ flex: 1, minWidth: "280px" }}>
                 <Input
-                  onChange={(event) => onCommand(event.target.value)}
-                  placeholder="claude --resume"
-                  value={command}
+                  label={customLaunchLine ? "Launch line" : "Command"}
+                  onChange={(event) =>
+                    customLaunchLine
+                      ? onLaunchLine(event.target.value)
+                      : onCommand(event.target.value)
+                  }
+                  placeholder={
+                    customLaunchLine
+                      ? '"C:\\Program Files\\Git\\bin\\bash.exe" -lc "claude; exec bash"'
+                      : "claude --resume"
+                  }
+                  value={customLaunchLine ? launchLine : command}
                 />
-              </label>
+              </div>
             </div>
+
+            {!customLaunchLine && (
+              <details
+                style={{
+                  border: "1px solid var(--border-soft)",
+                  borderRadius: "14px",
+                  padding: "12px 14px",
+                  background: "var(--surface-sunken)",
+                }}
+              >
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    fontSize: "12.5px",
+                    fontWeight: 800,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Advanced launch line
+                </summary>
+                <div style={{ marginTop: "12px" }}>
+                  <Input
+                    label="Launch line"
+                    onChange={(event) => onLaunchLine(event.target.value)}
+                    value={launchLine}
+                  />
+                </div>
+              </details>
+            )}
 
             <div>
               <span style={uppercaseLabel}>Runs on double-click</span>
@@ -125,36 +171,23 @@ export function SettingsSection({
               />
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "12px 14px",
-                background: "var(--surface-sunken)",
-                borderRadius: "14px",
-              }}
-            >
+            <div>
               <Switch
                 checked={confirmRun}
+                className="pd-settings-confirm"
                 onChange={onToggleConfirm}
                 size="sm"
-              />
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "14px",
-                    color: "var(--text-strong)",
-                  }}
-                >
-                  Ask before running
-                </div>
-                <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
-                  Show a confirm dialog the first time each pet runs its
-                  command.
-                </div>
-              </div>
+              >
+                <span className="pd-settings-confirm__copy">
+                  <span className="pd-settings-confirm__title">
+                    Ask before running
+                  </span>
+                  <span className="pd-settings-confirm__hint">
+                    Show a confirm dialog the first time each pet runs its
+                    command.
+                  </span>
+                </span>
+              </Switch>
             </div>
           </div>
         </div>

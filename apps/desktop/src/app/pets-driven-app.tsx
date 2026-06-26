@@ -21,6 +21,14 @@ import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import type { HomePetView } from "@/app/main-window/home-section";
 import {
+  buildLaunchLine,
+  customizeLaunchLine,
+  parseLaunchLine,
+  previewCwdForLaunchProfile,
+  promptForLaunchProfile,
+  type LaunchProfileId,
+} from "@/app/session-launch-profile";
+import {
   petStatusFromSnapshot,
   type PetCardStatus,
 } from "@/app-state/pet-card-status";
@@ -250,6 +258,7 @@ export function PetsDrivenApp() {
   const windowBindingsRef = useRef<Map<string, ForeignWindow>>(new Map());
   const adoptedHostSequenceRef = useRef(0);
   const adoptedScaleByPetIdRef = useRef<Record<string, number>>({});
+  const confirmedRunPetIdsRef = useRef<Set<string>>(new Set());
   const adoptedHostBoundsRef = useRef<{
     x: number;
     y: number;
@@ -344,7 +353,7 @@ export function PetsDrivenApp() {
         const input = event.payload;
 
         if (input.kind === "body.focus") {
-          void focusBoundWindow(input.petId, input.windowLabel);
+          void focusOrStartSessionForPet(input.petId, input.windowLabel);
           return;
         }
         if (input.kind === "menu.start-session") {
@@ -816,11 +825,12 @@ export function PetsDrivenApp() {
     emitBindingState(petId, windowLabel);
   }
 
-  // Double-click: focus the bound window. A dead binding is cleared so the UI
-  // stops claiming a window that's gone.
-  async function focusBoundWindow(petId: string, windowLabel: string) {
+  // Double-click: focus the bound window, or start a new session when no live
+  // binding exists.
+  async function focusOrStartSessionForPet(petId: string, windowLabel: string) {
     const binding = windowBindingsRef.current.get(petId);
     if (!binding) {
+      await startSessionForPet(petId, windowLabel);
       return;
     }
     try {
@@ -831,6 +841,7 @@ export function PetsDrivenApp() {
       // Window vanished.
     }
     setBinding(petId, windowLabel, null);
+    await startSessionForPet(petId, windowLabel);
   }
 
   // Start a session and auto-bind to the window it launches.
@@ -839,6 +850,18 @@ export function PetsDrivenApp() {
     if (!cwd) {
       emitBindingState(petId, windowLabel);
       return;
+    }
+    if (
+      (petsDrivenStateRef.current.confirmBeforeRun ?? true) &&
+      !confirmedRunPetIdsRef.current.has(petId)
+    ) {
+      const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
+      const name = pet?.name ?? "this pet";
+      if (!window.confirm(`Run ${name}'s session command in ${cwd}?`)) {
+        emitBindingState(petId, windowLabel);
+        return;
+      }
+      confirmedRunPetIdsRef.current.add(petId);
     }
     emitBindingState(petId, windowLabel, true);
     try {
@@ -942,6 +965,15 @@ export function PetsDrivenApp() {
     void desktopGateway.writePetsDrivenState(next);
   }
 
+  function toggleConfirmBeforeRun() {
+    const next = {
+      ...petsDrivenStateRef.current,
+      confirmBeforeRun: !(petsDrivenStateRef.current.confirmBeforeRun ?? true),
+    };
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
   function patchPet(petId: string, patch: Partial<PetRecord>) {
     const current = petsDrivenStateRef.current;
     const next: PetsDrivenState = {
@@ -1032,15 +1064,24 @@ export function PetsDrivenApp() {
     void desktopGateway.writePetsDrivenState(result.state);
   }
 
-  function setSessionShell(shell: string) {
-    const command = petsDrivenStateRef.current.sessionCommand;
-    if (shell === "cmd" && !command.startsWith("cmd")) {
-      updateSessionCommand(
-        `cmd /k ${command.replace(/^bash\s+-lc\s+/, "")}`.trim(),
-      );
-    } else if (shell === "bash" && command.startsWith("cmd")) {
-      updateSessionCommand(command.replace(/^cmd\s+\/k\s+/, "").trim());
+  function setLaunchProfile(profile: LaunchProfileId) {
+    const settings = parseLaunchLine(petsDrivenStateRef.current.sessionCommand);
+    if (profile === "custom") {
+      updateSessionCommand(customizeLaunchLine(settings));
+      return;
     }
+
+    updateSessionCommand(buildLaunchLine(profile, settings.command));
+  }
+
+  function setLaunchCommand(command: string) {
+    const settings = parseLaunchLine(petsDrivenStateRef.current.sessionCommand);
+    if (settings.profile === "custom") {
+      updateSessionCommand(command);
+      return;
+    }
+
+    updateSessionCommand(buildLaunchLine(settings.profile, command));
   }
 
   // Build the view models MainWindow needs from petsDrivenState.
@@ -1098,12 +1139,7 @@ export function PetsDrivenApp() {
     ? (getWorkingDirectoryForPet(petsDrivenState, previewPet.id)?.path ??
       "core")
     : "core";
-  const shellPrompt = petsDrivenState.sessionCommand.startsWith("cmd")
-    ? "C:\\>"
-    : "$";
-  const detectedShell = petsDrivenState.sessionCommand.startsWith("cmd")
-    ? "cmd"
-    : "bash";
+  const launchSettings = parseLaunchLine(petsDrivenState.sessionCommand);
 
   return (
     <MainWindow
@@ -1196,15 +1232,17 @@ export function PetsDrivenApp() {
         setMainTab(next);
       }}
       settings={{
-        shell: detectedShell,
-        command: petsDrivenState.sessionCommand,
-        onShell: setSessionShell,
-        onCommand: updateSessionCommand,
-        confirmRun: true,
-        onToggleConfirm: () => {},
+        launchProfile: launchSettings.profile,
+        command: launchSettings.command,
+        launchLine: launchSettings.launchLine,
+        onLaunchProfile: setLaunchProfile,
+        onCommand: setLaunchCommand,
+        onLaunchLine: updateSessionCommand,
+        confirmRun: petsDrivenState.confirmBeforeRun ?? true,
+        onToggleConfirm: toggleConfirmBeforeRun,
         preview: {
-          cwd: (detectedShell === "cmd" ? "C:\\pets\\" : "~/") + previewDir,
-          prompt: shellPrompt,
+          cwd: previewCwdForLaunchProfile(launchSettings.profile, previewDir),
+          prompt: promptForLaunchProfile(launchSettings.profile),
           command: petsDrivenState.sessionCommand,
         },
         hook: {
