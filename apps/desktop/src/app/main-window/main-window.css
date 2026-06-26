@@ -112,3 +112,29 @@
   font-size: 12.5px;
   color: var(--text-muted);
 }
+
+.pd-home__dropzone {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 380px;
+  height: 300px;
+  border: 2px dashed var(--border-soft);
+  border-radius: 28px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 5;
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.pd-home__dropzone--active {
+  opacity: 1;
+  border-color: var(--blossom-600);
+  background: rgba(249, 94, 158, 0.06);
+  transform: translate(-50%, -50%) scale(1.04);
+}

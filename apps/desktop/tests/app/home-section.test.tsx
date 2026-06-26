@@ -94,4 +94,21 @@ describe("HomeSection", () => {
     fireEvent.click(screen.getByText("Mochi"));
     expect(onRecall).toHaveBeenCalledWith("mochi");
   });
+
+  it("renders the centre deploy drop zone", () => {
+    render(
+      <HomeSection
+        atHome={[pet]}
+        inField={[]}
+        onDeploy={vi.fn()}
+        onRecall={vi.fn()}
+        onEdit={vi.fn()}
+        onAddPet={vi.fn()}
+        onShowAll={vi.fn()}
+        onHideAll={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("home-dropzone")).toBeInTheDocument();
+  });
 });
