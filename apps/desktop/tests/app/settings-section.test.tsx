@@ -41,8 +41,10 @@ describe("SettingsSection", () => {
     expect(onShell).toHaveBeenCalledWith("cmd");
   });
 
-  it("shows the hook status label", () => {
+  it("does not show the Claude hook card", () => {
     setup();
-    expect(screen.getByText("All connected")).toBeInTheDocument();
+    expect(screen.queryByText("Claude agent hook")).not.toBeInTheDocument();
+    expect(screen.queryByText("All connected")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reconnect")).not.toBeInTheDocument();
   });
 });
