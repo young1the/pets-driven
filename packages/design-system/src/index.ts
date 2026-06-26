@@ -34,6 +34,18 @@ export {
   type PetShowcaseCardStatus,
 } from "./components/pet-showcase/pet-showcase-card";
 export {
+  PetAvatar,
+  type PetAvatarProps,
+  type PetAvatarSize,
+  type PetAvatarStatus,
+} from "./components/pets/pet-avatar";
+export {
+  PETS,
+  PET_TINTS,
+  PET_RINGS,
+  type PetName,
+} from "./components/pets/pets";
+export {
   Tabs,
   type TabItem,
   type TabsProps,
