@@ -321,8 +321,8 @@ export default function Intro() {
                   position: "absolute",
                   left: c.left,
                   top: c.top,
-                  width: "160px",
-                  height: "120px",
+                  width: "220px",
+                  height: "170px",
                   "--i": c.i,
                   color: c.color,
                   "--away":
@@ -352,11 +352,17 @@ export default function Intro() {
                     position: "absolute",
                     left: "50%",
                     top: "50%",
-                    transform: "translate(-50%,-50%) scale(var(--pPet,0))",
+                    transform:
+                      "translate(-50%,-50%) scale(calc(0.68 + var(--pPet,0) * 0.32))",
                     opacity: "var(--pPet,0)",
                   }}
                 >
-                  <PetAvatar pet={c.pet} size="xl" status={c.status} />
+                  <PetAvatar
+                    pet={c.pet}
+                    size="xl"
+                    status={c.status}
+                    style={{ width: 136, height: 136 }}
+                  />
                 </div>
               </div>
             ))}

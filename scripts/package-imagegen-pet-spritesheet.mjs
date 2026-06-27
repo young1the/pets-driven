@@ -132,41 +132,73 @@ async function main() {
         const height = sourceCanvas.height;
         const mask = new Uint8Array(width * height);
 
-        function isKeyPixel(red, green, blue) {
-          if (chromaKey === "magenta") {
-            return red > 170 && blue > 170 && green < 130 && red > green * 1.25 && blue > green * 1.25;
-          }
-
-          return green > 170 && red < 130 && blue < 130 && green > red * 1.25 && green > blue * 1.25;
+        function clamp(value, min, max) {
+          return Math.max(min, Math.min(max, value));
         }
 
-        function despillPixel(index, red, green, blue) {
+        function getKeyMatte(red, green, blue) {
           if (chromaKey === "magenta") {
-            if (red > green || blue > green) {
-              sourceData.data[index * 4] = Math.min(red, green * 1.18 + 24);
-              sourceData.data[index * 4 + 2] = Math.min(blue, green * 1.18 + 24);
+            const key = Math.min(red, blue);
+            const dominance = key - green;
+
+            if (key > 172 && green < 138 && dominance > 28) {
+              return 1;
             }
-            return;
+
+            return (
+              clamp((dominance - 8) / 38, 0, 1) *
+              clamp((key - 78) / 98, 0, 1) *
+              clamp((215 - green) / 135, 0, 1)
+            );
           }
 
-          if (green > red || green > blue) {
-            sourceData.data[index * 4 + 1] = Math.min(green, Math.max(red, blue) * 0.72);
+          const nonKey = Math.max(red, blue);
+          const dominance = green - nonKey;
+
+          if (green > 172 && red < 138 && blue < 138 && dominance > 28) {
+            return 1;
           }
+
+          return (
+            clamp((dominance - 8) / 38, 0, 1) *
+            clamp((green - 78) / 98, 0, 1) *
+            clamp((215 - nonKey) / 135, 0, 1)
+          );
+        }
+
+        function applyChromaMatte(data, index, red, green, blue, alpha, matte) {
+          if (chromaKey === "magenta") {
+            const cap = green + 10;
+            data[index * 4] = Math.round(red + (Math.min(red, cap) - red) * Math.min(1, matte * 1.4));
+            data[index * 4 + 2] = Math.round(blue + (Math.min(blue, cap) - blue) * Math.min(1, matte * 1.4));
+          } else {
+            const cap = Math.max(red, blue) + 10;
+            data[index * 4 + 1] = Math.round(green + (Math.min(green, cap) - green) * Math.min(1, matte * 1.4));
+          }
+
+          data[index * 4 + 3] = Math.round(alpha * (1 - matte));
         }
 
         for (let index = 0; index < width * height; index += 1) {
           const red = sourceData.data[index * 4];
           const green = sourceData.data[index * 4 + 1];
           const blue = sourceData.data[index * 4 + 2];
+          const alpha = sourceData.data[index * 4 + 3];
+          const matte = getKeyMatte(red, green, blue);
 
-          if (!isKeyPixel(red, green, blue)) {
-            mask[index] = 1;
-          } else {
+          if (matte > 0) {
+            applyChromaMatte(sourceData.data, index, red, green, blue, alpha, Math.min(1, matte * 1.65));
+          }
+
+          if (sourceData.data[index * 4 + 3] < 8) {
+            sourceData.data[index * 4] = 0;
+            sourceData.data[index * 4 + 1] = 0;
+            sourceData.data[index * 4 + 2] = 0;
             sourceData.data[index * 4 + 3] = 0;
           }
 
-          if (mask[index]) {
-            despillPixel(index, red, green, blue);
+          if (sourceData.data[index * 4 + 3] > 22) {
+            mask[index] = 1;
           }
         }
 
@@ -321,32 +353,17 @@ async function main() {
           const green = atlasData.data[index * 4 + 1];
           const blue = atlasData.data[index * 4 + 2];
           const alpha = atlasData.data[index * 4 + 3];
-          const keyDominant =
-            chromaKey === "magenta"
-              ? red > 45 &&
-                blue > 45 &&
-                red > green * 1.04 &&
-                blue > green * 1.04 &&
-                red > green + 8 &&
-                blue > green + 8
-              : green > 45 &&
-                green > red * 1.04 &&
-                green > blue * 1.04 &&
-                green > red + 8 &&
-                green > blue + 8;
-          const keyBright =
-            chromaKey === "magenta"
-              ? red > 90 && blue > 90 && green < 185
-              : green > 90 && red < 175 && blue < 175;
-          const veryTransparent = alpha < 24;
+          const matte = getKeyMatte(red, green, blue);
 
-          if (alpha < 190 || veryTransparent || keyDominant || keyBright) {
+          if (matte > 0) {
+            applyChromaMatte(atlasData.data, index, red, green, blue, alpha, Math.min(1, matte * 1.25));
+          }
+
+          if (atlasData.data[index * 4 + 3] < 8) {
+            atlasData.data[index * 4] = 0;
+            atlasData.data[index * 4 + 1] = 0;
+            atlasData.data[index * 4 + 2] = 0;
             atlasData.data[index * 4 + 3] = 0;
-          } else if (chromaKey === "green" && (green > red || green > blue)) {
-            atlasData.data[index * 4 + 1] = Math.min(green, Math.max(red, blue) * 0.72);
-          } else if (chromaKey === "magenta" && (red > green || blue > green)) {
-            atlasData.data[index * 4] = Math.min(red, green * 1.18 + 24);
-            atlasData.data[index * 4 + 2] = Math.min(blue, green * 1.18 + 24);
           }
         }
 
@@ -429,6 +446,54 @@ async function main() {
             }
           }
         }
+
+        const strokedAtlasData = new Uint8ClampedArray(atlasData.data);
+
+        for (let row = 0; row < targetRowCounts.length; row += 1) {
+          for (let column = 0; column < targetRowCounts[row]; column += 1) {
+            const cellX = column * cellWidth;
+            const cellY = row * cellHeight;
+
+            for (let y = 0; y < cellHeight; y += 1) {
+              for (let x = 0; x < cellWidth; x += 1) {
+                const atlasIndex = (cellY + y) * atlasWidth + cellX + x;
+
+                if (atlasData.data[atlasIndex * 4 + 3] !== 0) {
+                  continue;
+                }
+
+                let maxNeighborAlpha = 0;
+
+                for (let dy = -1; dy <= 1; dy += 1) {
+                  for (let dx = -1; dx <= 1; dx += 1) {
+                    if (dx === 0 && dy === 0) {
+                      continue;
+                    }
+
+                    const nextX = x + dx;
+                    const nextY = y + dy;
+
+                    if (nextX < 0 || nextY < 0 || nextX >= cellWidth || nextY >= cellHeight) {
+                      continue;
+                    }
+
+                    const neighborIndex = (cellY + nextY) * atlasWidth + cellX + nextX;
+                    maxNeighborAlpha = Math.max(maxNeighborAlpha, atlasData.data[neighborIndex * 4 + 3]);
+                  }
+                }
+
+                if (maxNeighborAlpha > 72) {
+                  strokedAtlasData[atlasIndex * 4] = 42;
+                  strokedAtlasData[atlasIndex * 4 + 1] = 24;
+                  strokedAtlasData[atlasIndex * 4 + 2] = 52;
+                  strokedAtlasData[atlasIndex * 4 + 3] = Math.min(105, Math.round(maxNeighborAlpha * 0.36));
+                }
+              }
+            }
+          }
+        }
+
+        atlasData.data.set(strokedAtlasData);
 
         atlasContext.putImageData(atlasData, 0, 0);
 
