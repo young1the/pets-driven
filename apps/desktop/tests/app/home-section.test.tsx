@@ -14,6 +14,7 @@ const pet = {
     dotColor: "var(--ink-300)",
   },
   gradient: { from: "#8B7FE8", to: "#6F5FD6" },
+  cwd: null,
 };
 
 describe("HomeSection", () => {
@@ -86,7 +87,7 @@ describe("HomeSection", () => {
     expect(onDeploy).not.toHaveBeenCalled();
   });
 
-  it("deploys a pet when its card is dragged onto the drop zone", () => {
+  it("deploys a pet when its card is dragged up past the y threshold", () => {
     const onEdit = vi.fn();
     const onDeploy = vi.fn();
     render(
@@ -102,22 +103,6 @@ describe("HomeSection", () => {
       />,
     );
 
-    const dropzone = screen.getByTestId("home-dropzone");
-    dropzone.getBoundingClientRect = vi.fn(
-      () =>
-        ({
-          left: 200,
-          right: 600,
-          top: 100,
-          bottom: 400,
-          width: 400,
-          height: 300,
-          x: 200,
-          y: 100,
-          toJSON: () => ({}),
-        }) as DOMRect,
-    );
-
     const card = screen.getByRole("button", { name: "Open Otto's details" });
     fireEvent.pointerDown(card, {
       button: 0,
@@ -125,14 +110,14 @@ describe("HomeSection", () => {
       clientY: 500,
       pointerId: 1,
     });
-    fireEvent.pointerMove(window, { clientX: 400, clientY: 250, pointerId: 1 });
-    fireEvent.pointerUp(window, { clientX: 400, clientY: 250, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 350, pointerId: 1 });
+    fireEvent.pointerUp(window, { clientX: 100, clientY: 350, pointerId: 1 });
 
     expect(onDeploy).toHaveBeenCalledWith("otto");
     expect(onEdit).not.toHaveBeenCalled();
   });
 
-  it("springs back without deploying when released outside the drop zone", () => {
+  it("springs back without deploying when not dragged far enough upward", () => {
     const onEdit = vi.fn();
     const onDeploy = vi.fn();
     render(
@@ -148,22 +133,6 @@ describe("HomeSection", () => {
       />,
     );
 
-    const dropzone = screen.getByTestId("home-dropzone");
-    dropzone.getBoundingClientRect = vi.fn(
-      () =>
-        ({
-          left: 200,
-          right: 600,
-          top: 100,
-          bottom: 400,
-          width: 400,
-          height: 300,
-          x: 200,
-          y: 100,
-          toJSON: () => ({}),
-        }) as DOMRect,
-    );
-
     const card = screen.getByRole("button", { name: "Open Otto's details" });
     fireEvent.pointerDown(card, {
       button: 0,
@@ -171,8 +140,8 @@ describe("HomeSection", () => {
       clientY: 500,
       pointerId: 1,
     });
-    fireEvent.pointerMove(window, { clientX: 120, clientY: 120, pointerId: 1 });
-    fireEvent.pointerUp(window, { clientX: 120, clientY: 120, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 450, pointerId: 1 });
+    fireEvent.pointerUp(window, { clientX: 100, clientY: 450, pointerId: 1 });
 
     expect(onDeploy).not.toHaveBeenCalled();
     expect(onEdit).not.toHaveBeenCalled();
@@ -214,22 +183,5 @@ describe("HomeSection", () => {
 
     fireEvent.click(screen.getByText("Mochi"));
     expect(onRecall).toHaveBeenCalledWith("mochi");
-  });
-
-  it("renders the centre deploy drop zone", () => {
-    render(
-      <HomeSection
-        atHome={[pet]}
-        inField={[]}
-        onDeploy={vi.fn()}
-        onRecall={vi.fn()}
-        onEdit={vi.fn()}
-        onAddPet={vi.fn()}
-        onShowAll={vi.fn()}
-        onHideAll={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByTestId("home-dropzone")).toBeInTheDocument();
   });
 });

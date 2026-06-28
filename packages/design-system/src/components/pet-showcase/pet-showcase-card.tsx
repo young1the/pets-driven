@@ -22,6 +22,8 @@ export interface PetShowcaseCardProps {
   portrait: ReactNode;
   featured?: boolean;
   onEdit?: () => void;
+  /** Working directory shown as a pill in the top-right corner. */
+  cwd?: string;
   className?: string;
 }
 
@@ -34,6 +36,7 @@ export function PetShowcaseCard({
   portrait,
   featured = false,
   onEdit,
+  cwd,
   className = "",
 }: PetShowcaseCardProps) {
   return (
@@ -51,6 +54,28 @@ export function PetShowcaseCard({
     >
       <span aria-hidden="true" className="pd-pet-card__wave" />
       <span aria-hidden="true" className="pd-pet-card__scrim" />
+
+      {cwd ? (
+        <div
+          className="pd-pet-card__cwd"
+          aria-label={`Working directory: ${cwd}`}
+        >
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="12"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2.2"
+            viewBox="0 0 24 24"
+            width="12"
+          >
+            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+          </svg>
+          {cwd}
+        </div>
+      ) : null}
 
       {onEdit ? (
         <button

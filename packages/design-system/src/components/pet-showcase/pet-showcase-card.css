@@ -36,6 +36,28 @@
   );
 }
 
+.pd-pet-card__cwd {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  max-width: 130px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .pd-pet-card__edit {
   position: absolute;
   top: 13px;
