@@ -12,6 +12,7 @@ export type HomePetView = {
   role: string;
   status: PetCardStatus;
   gradient: { from: string; to: string };
+  cwd: string | null;
 };
 
 export interface HomeSectionProps {
@@ -26,6 +27,7 @@ export interface HomeSectionProps {
 }
 
 const DRAG_THRESHOLD = 6;
+const DEPLOY_Y_THRESHOLD = 100;
 
 /** Order the fan so the centre pet sits in the middle, others fan outward. */
 function fanOrder<T>(pets: T[]): { pet: T; index: number; center: number }[] {
@@ -59,7 +61,6 @@ export function HomeSection({
   onAddPet,
 }: HomeSectionProps) {
   const [hoverId, setHoverId] = useState<string | null>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number } | null>(
     null,
   );
@@ -76,19 +77,6 @@ export function HomeSection({
   onDeployRef.current = onDeploy;
 
   useEffect(() => {
-    function isOverDropZone(clientX: number, clientY: number): boolean {
-      const rect = dropZoneRef.current?.getBoundingClientRect();
-      if (!rect) {
-        return false;
-      }
-      return (
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom
-      );
-    }
-
     function handleMove(event: PointerEvent) {
       const active = dragRef.current;
       if (!active) {
@@ -101,7 +89,7 @@ export function HomeSection({
         id: active.id,
         dx,
         dy,
-        over: moved && isOverDropZone(event.clientX, event.clientY),
+        over: moved && dy < -DEPLOY_Y_THRESHOLD,
       });
     }
 
@@ -119,10 +107,10 @@ export function HomeSection({
 
       if (!moved) {
         onEditRef.current(active.id);
-      } else if (isOverDropZone(event.clientX, event.clientY)) {
+      } else if (dy < -DEPLOY_Y_THRESHOLD) {
         onDeployRef.current(active.id);
       }
-      // else: dropped outside — clearing dragVisual springs the card back.
+      // else: not dragged far enough up — clearing dragVisual springs the card back.
     }
 
     window.addEventListener("pointermove", handleMove);
@@ -153,20 +141,16 @@ export function HomeSection({
   const rotX = n <= 6 ? 7 : n <= 9 ? 5.5 : 4.5;
   const ordered = fanOrder(atHome);
 
-  return (
-    <div className="pd-home">
-      <div
-        ref={dropZoneRef}
-        className={[
-          "pd-home__dropzone",
-          dragVisual?.over ? "pd-home__dropzone--active" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        data-testid="home-dropzone"
-        aria-hidden="true"
-      />
+  const homeClass = [
+    "pd-home",
+    dragVisual ? "pd-home--dragging" : "",
+    hoverId ? "pd-home--hovered" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
+  return (
+    <div className={homeClass}>
       <div
         style={{
           position: "absolute",
@@ -320,7 +304,7 @@ export function HomeSection({
             transform: dragging
               ? `translate(calc(-50% + ${dragVisual.dx}px), ${ty + dragVisual.dy}px) scale(1.06)`
               : hovered
-                ? `translateX(-50%) translateY(${ty - 46}px) rotate(${d * 2}deg) scale(1.1)`
+                ? `translateX(-50%) translateY(${ty - 60}px) rotate(0deg) scale(1.06)`
                 : `translateX(-50%) translateY(${ty}px) rotate(${d * rotX}deg)`,
             zIndex: dragging
               ? 300
@@ -365,6 +349,7 @@ export function HomeSection({
                   label: pet.status.label,
                   dotColor: pet.status.dotColor,
                 }}
+                cwd={pet.cwd ?? undefined}
               />
             </div>
           );

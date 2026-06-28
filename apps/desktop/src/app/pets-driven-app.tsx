@@ -224,7 +224,10 @@ function hashString(s: string): number {
   return Math.abs(h);
 }
 
-function petGradient(name: string, personalityId?: string): { from: string; to: string } {
+function petGradient(
+  name: string,
+  personalityId?: string,
+): { from: string; to: string } {
   const keys = Object.keys(PERSONALITY_GRADIENTS);
   if (personalityId && personalityId in PERSONALITY_GRADIENTS) {
     return PERSONALITY_GRADIENTS[personalityId];
@@ -385,9 +388,7 @@ export function PetsDrivenApp() {
         scenario.world.pushEvent({
           kind: "pointer",
           type: input.kind.replace("body.", "") as
-            | "pointer.down"
-            | "pointer.move"
-            | "pointer.up",
+            "pointer.down" | "pointer.move" | "pointer.up",
           pointerId: input.pointerId,
           at: scenario.clock.now(),
           position: projectScreenPointToWorld(
@@ -1099,6 +1100,11 @@ export function PetsDrivenApp() {
     .filter((pet) => !pet.visible)
     .map((pet) => {
       const personalityId = profileFor(pet)?.personalityId;
+      const dirPath =
+        getWorkingDirectoryForPet(petsDrivenState, pet.id)?.path ?? null;
+      const cwd = dirPath
+        ? (dirPath.split(/[\\/]/).filter(Boolean).at(-1) ?? dirPath)
+        : null;
       return {
         id: pet.id,
         name: pet.name,
@@ -1107,6 +1113,7 @@ export function PetsDrivenApp() {
         role: personalityRoleLabel(personalityId),
         status: statusFor(pet.id),
         gradient: petGradient(pet.name, personalityId),
+        cwd,
       };
     });
 
@@ -1126,7 +1133,10 @@ export function PetsDrivenApp() {
         assetId: editingPet.assetId,
         role: personalityRoleLabel(profileFor(editingPet)?.personalityId),
         status: statusFor(editingPet.id),
-        gradient: petGradient(editingPet.name, profileFor(editingPet)?.personalityId),
+        gradient: petGradient(
+          editingPet.name,
+          profileFor(editingPet)?.personalityId,
+        ),
         folder:
           getWorkingDirectoryForPet(petsDrivenState, editingPet.id)?.path ?? "",
         memo: editingPet.memo ?? "",
