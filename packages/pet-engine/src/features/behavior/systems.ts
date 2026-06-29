@@ -181,6 +181,17 @@ export function runSpeechExpirationSystem(
   });
 }
 
+export function runPetExpressionExpirationSystem(
+  components: ComponentStore,
+  clock: Clock,
+): void {
+  const now = clock.now();
+  components.forEach(["PetExpressionState"], (id, [expression]) => {
+    if (expression.expiresAt > now) return;
+    components.removeComponent(id, "PetExpressionState");
+  });
+}
+
 // Priority 2: Agent event reactions (task.started, task.waiting, etc.)
 export function runAgentEventBehaviorSystem(
   components: ComponentStore,
@@ -1541,9 +1552,20 @@ export const SpeechExpirationSystem: SimulationSystem<WorldStepContext> = {
   },
 };
 
+export const PetExpressionExpirationSystem: SimulationSystem<WorldStepContext> =
+  {
+    name: "PetExpressionExpirationSystem",
+    dependsOn: ["SpeechExpirationSystem"],
+    reads: ["PetExpressionState"],
+    writes: ["PetExpressionState"],
+    update(ctx) {
+      runPetExpressionExpirationSystem(ctx.components, ctx.clock);
+    },
+  };
+
 export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentEventBehaviorSystem",
-  dependsOn: ["SpeechExpirationSystem"],
+  dependsOn: ["PetExpressionExpirationSystem"],
   reads: [
     "AgentBinding",
     "IntentState",

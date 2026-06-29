@@ -20,6 +20,7 @@ import {
 } from "@pets-driven/pet-engine/features/interaction/systems";
 import {
   SpeechExpirationSystem,
+  PetExpressionExpirationSystem,
   AgentEventBehaviorSystem,
   AgentEventHoldSystem,
   CollisionBehaviorSystem,
@@ -69,6 +70,7 @@ export const SYSTEM_PHASES: Record<
   BEHAVIOR: [
     UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
     SpeechExpirationSystem, // clear expired speech before new decisions
+    PetExpressionExpirationSystem,
     AgentEventBehaviorSystem, // priority 2: external agent events
     CollisionBehaviorSystem, // priority 3: entity overlap avoidance
     WorkingBehaviorSystem, // priority 4a: working-state focus or wandering

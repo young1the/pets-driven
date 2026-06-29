@@ -1,3 +1,5 @@
+import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
+
 /** Drives AutonomousBehaviorSystem and MotionTargetSystem target selection. */
 export type PetIntent = "idle" | "active" | "seek";
 
@@ -24,10 +26,7 @@ export type UserAnchorComponent = {
  * higher-ranked source. Expires at expiresAt (clock.now() time).
  */
 export type BehaviorDecisionSource =
-  | "user-interaction"
-  | "agent-event"
-  | "collision"
-  | "autonomous";
+  "user-interaction" | "agent-event" | "collision" | "autonomous";
 
 export type BehaviorDecisionStateComponent = {
   type: "BehaviorDecisionState";
@@ -96,8 +95,8 @@ export type BehaviorDecisionSelectionTrace = {
 export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   "user-interaction": 1,
   "agent-event": 2,
-  "collision": 3,
-  "autonomous": 4,
+  collision: 3,
+  autonomous: 4,
 };
 
 // ── Phase 4: Pending Reaction ──────────────────────────────────────────────
@@ -121,6 +120,18 @@ export type PendingReactionComponent = {
     otherPosition?: { x: number; y: number };
     eventType?: string;
   };
+};
+
+export type PetExpressionSource = "collision";
+
+export type PetExpressionStateComponent = {
+  type: "PetExpressionState";
+  source: PetExpressionSource;
+  mood: PetMood;
+  emote: PetEmoteKind;
+  label: string | null;
+  startedAt: number;
+  expiresAt: number;
 };
 
 /**
