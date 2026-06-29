@@ -153,4 +153,49 @@ describe("pet animation state", () => {
       spriteFacing: "left",
     });
   });
+
+  it("shows travel animation when working pet has a motion target", () => {
+    const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
+
+    scenario.world.setComponent("pet-a", {
+      type: "AgentTaskState",
+      status: "working",
+      since: 0,
+    });
+    scenario.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 820, y: 500 },
+    });
+    expect(bodySnapshot()).toMatchObject({
+      animationState: "running-right",
+      spriteFacing: "right",
+    });
+
+    scenario.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 120, y: 500 },
+    });
+    expect(bodySnapshot()).toMatchObject({
+      animationState: "running-left",
+      spriteFacing: "left",
+    });
+  });
+
+  it("shows running animation when working pet has no motion target", () => {
+    const { scenario, animationState } = petBodyAnimationState("pet-a");
+
+    scenario.world.setComponent("pet-a", {
+      type: "AgentTaskState",
+      status: "working",
+      since: 0,
+    });
+    scenario.world.setComponent("pet-a", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: null,
+    });
+    expect(animationState()).toBe("running");
+  });
 });
