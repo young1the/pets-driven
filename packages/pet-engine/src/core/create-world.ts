@@ -7,9 +7,7 @@ import {
   type ComponentStore,
   type EntityDeclaration,
 } from "@pets-driven/pet-engine/core/component-store";
-import {
-  createMatterPhysicsWorld,
-} from "@pets-driven/pet-engine/features/physics/matter-physics-world";
+import { createMatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import type {
   PetAnimationState,
   PetSpriteFacing,
@@ -66,22 +64,47 @@ export function createWorld(input: WorldDefinition) {
           : undefined;
 
         if (components.getComponent(entity.id, "Ground")) {
-          physics.addStaticRectangle(entity.id, transform.position, size, materialOptions);
+          physics.addStaticRectangle(
+            entity.id,
+            transform.position,
+            size,
+            materialOptions,
+          );
           continue;
         }
-        physics.addRectangle(entity.id, transform.position, size, materialOptions);
+        physics.addRectangle(
+          entity.id,
+          transform.position,
+          size,
+          materialOptions,
+        );
       }
     }
   }
 
   function getPetSnapshots(componentStore: ComponentStore) {
     return componentStore
-      .query("PetIdentity", "AgentBinding", "IntentState", "SpeechState", "Transform")
+      .query(
+        "PetIdentity",
+        "AgentBinding",
+        "IntentState",
+        "SpeechState",
+        "Transform",
+      )
       .map((entity) => {
         const [identity, agent, intent, speech, transform] = entity.components;
-        const contactState = componentStore.getComponent(entity.id, "ContactState");
-        const decisionState = componentStore.getComponent(entity.id, "BehaviorDecisionState");
-        const agentTask = componentStore.getComponent(entity.id, "AgentTaskState");
+        const contactState = componentStore.getComponent(
+          entity.id,
+          "ContactState",
+        );
+        const decisionState = componentStore.getComponent(
+          entity.id,
+          "BehaviorDecisionState",
+        );
+        const agentTask = componentStore.getComponent(
+          entity.id,
+          "AgentTaskState",
+        );
         return {
           id: entity.id,
           sourceId: agent.sourceId,
@@ -96,12 +119,20 @@ export function createWorld(input: WorldDefinition) {
             climbableSurfaceId: contactState?.climbableSurfaceId ?? null,
           },
           motionTarget:
-            componentStore.getComponent(entity.id, "MotionTarget")?.targetPosition ?? null,
+            componentStore.getComponent(entity.id, "MotionTarget")
+              ?.targetPosition ?? null,
           decision: decisionState
-            ? { source: decisionState.source, reason: decisionState.reason, decidedAt: decisionState.decidedAt }
+            ? {
+                source: decisionState.source,
+                reason: decisionState.reason,
+                decidedAt: decisionState.decidedAt,
+              }
             : null,
           pendingReaction: (() => {
-            const pr = componentStore.getComponent(entity.id, "PendingReaction");
+            const pr = componentStore.getComponent(
+              entity.id,
+              "PendingReaction",
+            );
             return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
           })(),
           agentTask: agentTask
@@ -118,8 +149,14 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getInteractionSnapshot(componentStore: ComponentStore, id: string) {
-    const drag = componentStore.getComponent("user-interaction", "DragInteraction");
-    const target = componentStore.getComponent("user-interaction", "KeyboardControlTarget");
+    const drag = componentStore.getComponent(
+      "user-interaction",
+      "DragInteraction",
+    );
+    const target = componentStore.getComponent(
+      "user-interaction",
+      "KeyboardControlTarget",
+    );
     const controllable = !!componentStore.getComponent(id, "CanControl");
     const dragged = drag?.entityId === id && drag.phase === "dragging";
     const controlled = target?.entityId === id;
@@ -148,7 +185,10 @@ export function createWorld(input: WorldDefinition) {
       };
     }
 
-    const decisionState = componentStore.getComponent(id, "BehaviorDecisionState");
+    const decisionState = componentStore.getComponent(
+      id,
+      "BehaviorDecisionState",
+    );
     switch (decisionState?.reason) {
       case "approach-pet-success":
         return {
@@ -196,7 +236,10 @@ export function createWorld(input: WorldDefinition) {
 
     const climbIntent = componentStore.getComponent(id, "ClimbIntentState");
     if (climbIntent?.phase === "approaching") return "climb-approaching";
-    if (climbIntent?.phase === "attached" || componentStore.getComponent(id, "ClimbingTag")) {
+    if (
+      climbIntent?.phase === "attached" ||
+      componentStore.getComponent(id, "ClimbingTag")
+    ) {
       return "climb-attached";
     }
 
@@ -222,7 +265,6 @@ export function createWorld(input: WorldDefinition) {
     if (agentTask?.status === "failed") return "failed";
     if (agentTask?.status === "completed") return "review";
     if (agentTask?.status === "waiting") return "waiting";
-    if (agentTask?.status === "working") return "running";
 
     if (decision?.reason === "task.failed") {
       return "failed";
@@ -265,7 +307,7 @@ export function createWorld(input: WorldDefinition) {
       return "running";
     }
 
-    return "idle";
+    return agentTask?.status === "working" ? "running" : "idle";
   }
 
   function getPetSpriteFacing(
@@ -286,10 +328,12 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {
-    return componentStore.query("Transform", "ClimbableSurface").map((entity) => {
-      const [transform] = entity.components;
-      return { id: entity.id, position: transform.position };
-    });
+    return componentStore
+      .query("Transform", "ClimbableSurface")
+      .map((entity) => {
+        const [transform] = entity.components;
+        return { id: entity.id, position: transform.position };
+      });
   }
 
   return {
@@ -309,7 +353,10 @@ export function createWorld(input: WorldDefinition) {
     setComponent(id: string, component: Component) {
       components.setComponent(id, component);
     },
-    setPhysicsPosition(id: string, position: Partial<{ x: number; y: number }>) {
+    setPhysicsPosition(
+      id: string,
+      position: Partial<{ x: number; y: number }>,
+    ) {
       physics.setPosition(id, position);
       const transform = components.getComponent(id, "Transform");
       if (transform) {
@@ -319,7 +366,10 @@ export function createWorld(input: WorldDefinition) {
         };
       }
     },
-    setPhysicsVelocity(id: string, velocity: Partial<{ x: number; y: number }>) {
+    setPhysicsVelocity(
+      id: string,
+      velocity: Partial<{ x: number; y: number }>,
+    ) {
       physics.setVelocity(id, velocity);
     },
     removeComponent(id: string, type: ComponentType) {
@@ -346,7 +396,10 @@ export function createWorld(input: WorldDefinition) {
       });
     },
     snapshot() {
-      const physicsSnapshot = runPhysicsTransformSyncSystem(components, physics);
+      const physicsSnapshot = runPhysicsTransformSyncSystem(
+        components,
+        physics,
+      );
       const bodies = physicsSnapshot.bodies.map((body) => ({
         ...body,
         animationState: getPetAnimationState(components, body.id, body),
