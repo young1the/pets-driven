@@ -198,7 +198,8 @@ pub(crate) async fn open_pet_context_menu(
         .skip_taskbar(true)
         .resizable(false)
         .shadow(false)
-        .focused(true)
+        .visible(false)
+        .focused(false)
         .build()
         .map_err(|error| format!("Could not create {label}: {error}"))?;
 

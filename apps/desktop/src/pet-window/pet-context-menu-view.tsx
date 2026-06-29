@@ -66,16 +66,43 @@ export function PetContextMenuView({ petId }: PetContextMenuViewProps) {
       return;
     }
 
-    const handleBlur = () => {
-      void getCurrentWindow().close();
+    // Prevent WebView2's built-in context menu from showing inside the popup.
+    const preventContextMenu = (e: Event) => e.preventDefault();
+    window.addEventListener("contextmenu", preventContextMenu);
+
+    // Only close on blur after the window has actually received focus once.
+    // Without this guard the blur event fires during window creation before
+    // the popup is even visible, closing it immediately.
+    let hasFocused = false;
+
+    const handleFocus = () => {
+      hasFocused = true;
     };
 
+    const handleBlur = () => {
+      if (hasFocused) {
+        void getCurrentWindow().close();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
     window.addEventListener("blur", handleBlur);
 
     return () => {
+      window.removeEventListener("contextmenu", preventContextMenu);
+      window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isTauri() || !ready) {
+      return;
+    }
+
+    const win = getCurrentWindow();
+    void win.show().then(() => win.setFocus());
+  }, [ready]);
 
   useEffect(() => {
     if (!isTauri()) {
