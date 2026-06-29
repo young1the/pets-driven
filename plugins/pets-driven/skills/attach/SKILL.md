@@ -11,7 +11,7 @@ This Codex skill shares the Claude command workflow in
 Read that command file first, then follow the same user-facing workflow. When
 the command file refers to `${CLAUDE_PLUGIN_ROOT}`, use this plugin root instead:
 
-- In an installed Codex plugin hook context, use `$PLUGIN_ROOT`.
+- In an installed Codex hook context, the bundled hook config resolves the installed cache path.
 - In this repository while developing, use `plugins/pets-driven`.
 
 The verification command is:

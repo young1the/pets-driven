@@ -5,8 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$PLUGIN_ROOT/hooks/run-hook.cmd\" forward-codex UserPromptSubmit",
-            "commandWindows": "\"%PLUGIN_ROOT%\\hooks\\run-hook.cmd\" forward-codex UserPromptSubmit",
+            "command": "root=\"${PLUGIN_ROOT:-$HOME/.codex/plugins/cache/pets-driven/pets-driven/0.1.0}\"; [ -f \"$root/hooks/run-hook.cmd\" ] || exit 0; \"$root/hooks/run-hook.cmd\" forward-codex UserPromptSubmit",
+            "commandWindows": "$payload = [Console]::In.ReadToEnd(); $root = if ($env:PLUGIN_ROOT) { $env:PLUGIN_ROOT } else { Join-Path $env:USERPROFILE '.codex\\plugins\\cache\\pets-driven\\pets-driven\\0.1.0' }; $hook = Join-Path $root 'hooks\\run-hook.cmd'; if (Test-Path -LiteralPath $hook) { $payload | & $hook forward-codex UserPromptSubmit }",
             "timeout": 5,
             "statusMessage": "Notifying pets-driven"
           }
@@ -18,8 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$PLUGIN_ROOT/hooks/run-hook.cmd\" forward-codex PermissionRequest",
-            "commandWindows": "\"%PLUGIN_ROOT%\\hooks\\run-hook.cmd\" forward-codex PermissionRequest",
+            "command": "root=\"${PLUGIN_ROOT:-$HOME/.codex/plugins/cache/pets-driven/pets-driven/0.1.0}\"; [ -f \"$root/hooks/run-hook.cmd\" ] || exit 0; \"$root/hooks/run-hook.cmd\" forward-codex PermissionRequest",
+            "commandWindows": "$payload = [Console]::In.ReadToEnd(); $root = if ($env:PLUGIN_ROOT) { $env:PLUGIN_ROOT } else { Join-Path $env:USERPROFILE '.codex\\plugins\\cache\\pets-driven\\pets-driven\\0.1.0' }; $hook = Join-Path $root 'hooks\\run-hook.cmd'; if (Test-Path -LiteralPath $hook) { $payload | & $hook forward-codex PermissionRequest }",
             "timeout": 5,
             "statusMessage": "Notifying pets-driven"
           }
@@ -31,8 +31,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$PLUGIN_ROOT/hooks/run-hook.cmd\" forward-codex Stop",
-            "commandWindows": "\"%PLUGIN_ROOT%\\hooks\\run-hook.cmd\" forward-codex Stop",
+            "command": "root=\"${PLUGIN_ROOT:-$HOME/.codex/plugins/cache/pets-driven/pets-driven/0.1.0}\"; [ -f \"$root/hooks/run-hook.cmd\" ] || exit 0; \"$root/hooks/run-hook.cmd\" forward-codex Stop",
+            "commandWindows": "$payload = [Console]::In.ReadToEnd(); $root = if ($env:PLUGIN_ROOT) { $env:PLUGIN_ROOT } else { Join-Path $env:USERPROFILE '.codex\\plugins\\cache\\pets-driven\\pets-driven\\0.1.0' }; $hook = Join-Path $root 'hooks\\run-hook.cmd'; if (Test-Path -LiteralPath $hook) { $payload | & $hook forward-codex Stop }",
             "timeout": 5,
             "statusMessage": "Notifying pets-driven"
           }
