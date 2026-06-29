@@ -888,6 +888,33 @@ describe("demo scenario", () => {
     expect(snapshot.pets[0].motionTarget).toBeNull();
   });
 
+  it("exposes active pet expressions in the snapshot", () => {
+    const scenario = createDemoScenario();
+
+    scenario.world.setComponent("pet-a", {
+      type: "PetExpressionState",
+      source: "collision",
+      mood: "confused",
+      emote: "exclaim",
+      label: "!",
+      startedAt: 100,
+      expiresAt: 700,
+    });
+
+    const pet = scenario.world
+      .snapshot()
+      .pets.find((entry) => entry.id === "pet-a");
+
+    expect(pet?.expression).toEqual({
+      source: "collision",
+      mood: "confused",
+      emote: "exclaim",
+      label: "!",
+      startedAt: 100,
+      expiresAt: 700,
+    });
+  });
+
   it("derives visual cues from current pet behavior", () => {
     const scenario = createDemoScenario();
     scenario.world.setComponent("pet-a", {
