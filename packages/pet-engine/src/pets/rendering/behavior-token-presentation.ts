@@ -112,21 +112,24 @@ export function presentBehaviorDecisionToken(
 
 function toneFromExpressionMood(mood: PetExpressionMood): BehaviorTokenTone {
   switch (mood) {
+    case "working":
+      return "calm";
+    case "happy":
+      return "calm";
     case "love":
       return "affection";
-    case "confused":
-      return "alert";
-    case "thinking":
-      return "curious";
     case "excited":
       return "spark";
+    case "thinking":
+      return "curious";
     case "sleepy":
       return "calm";
-    case "working":
-    case "happy":
-    default:
-      return "calm";
+    case "confused":
+      return "alert";
   }
+
+  const exhaustiveMood: never = mood;
+  return exhaustiveMood;
 }
 
 export function presentPetExpression(

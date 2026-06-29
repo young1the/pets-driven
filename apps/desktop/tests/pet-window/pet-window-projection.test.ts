@@ -133,7 +133,7 @@ describe("pet window projection", () => {
       ...snapshot.pets[0],
       decision: {
         source: "autonomous",
-        reason: "working-wander",
+        reason: "request-jump",
         decidedAt: 100,
       },
       agentTask: { status: "working", label: null },
