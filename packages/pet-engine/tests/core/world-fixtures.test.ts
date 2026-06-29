@@ -369,6 +369,7 @@ describe("demo scenario", () => {
         "BehaviorDecisionState",
         "PendingReaction",
         "PetCollision",
+        "AgentTaskState",
         "ClimbingTag",
         "AirborneTag",
         "ClimbIntentState",
@@ -378,6 +379,7 @@ describe("demo scenario", () => {
         "BehaviorDecisionState",
         "MotionTarget",
         "IntentState",
+        "PetExpressionState",
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({

@@ -1687,6 +1687,7 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "BehaviorDecisionState",
     "PendingReaction",
     "PetCollision",
+    "AgentTaskState",
     "ClimbingTag",
     "AirborneTag",
     "ClimbIntentState",
@@ -1696,6 +1697,7 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "BehaviorDecisionState",
     "MotionTarget",
     "IntentState",
+    "PetExpressionState",
   ],
   update(ctx) {
     runCollisionBehaviorSystem(ctx.components, ctx.bounds, ctx.clock);
