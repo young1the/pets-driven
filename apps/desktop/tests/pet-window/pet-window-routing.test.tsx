@@ -506,6 +506,35 @@ describe("pet window product route", () => {
     });
   });
 
+  it("creates a copyable adopted pet diagnostics report from the Debug tab", async () => {
+    render(<PetsDrivenApp />);
+
+    await screen.findByRole("button", { name: "Open Otto's details" });
+    showAllAdoptedPets();
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          sequence: expect.any(Number),
+          petId: "pet-a",
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy pet diagnostics" }),
+    );
+
+    const report = screen.getByLabelText(
+      "Pet diagnostics report",
+    ) as HTMLTextAreaElement;
+    expect(report.value).toContain("Pets-Driven Pet Diagnostics");
+    expect(report.value).toContain("pet-a (Otto)");
+  });
+
   it("routes Claude hook ingress events into fixture Pet Window frames", async () => {
     render(<PetsDrivenApp />);
 
@@ -660,7 +689,7 @@ describe("pet window product route", () => {
     });
   });
 
-  it("shows Pet Window binding requests as loading until the host replies", async () => {
+  it("shows the pet context menu with note and close actions on right-click", () => {
     window.history.replaceState(
       {},
       "",
@@ -668,12 +697,6 @@ describe("pet window product route", () => {
     );
 
     render(<PetsDrivenApp />);
-
-    await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(
-        true,
-      );
-    });
 
     const surface = screen.getByLabelText("Pet Window pet-a");
 
@@ -684,21 +707,12 @@ describe("pet window product route", () => {
       clientY: 112,
     });
 
-    expect(screen.getByText("Checking connection...")).toBeInTheDocument();
-
-    act(() => {
-      tauriEventMocks.listeners.get(PET_WINDOW_BINDING_EVENT)?.({
-        payload: {
-          petId: "pet-a",
-          title: "Windows Terminal",
-        },
-      });
-    });
-
-    expect(screen.getByText("🔗 Windows Terminal")).toBeInTheDocument();
+    expect(screen.getByTestId("pet-context-menu")).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /노트 작성하기/ })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /닫기/ })).toBeInTheDocument();
   });
 
-  it("does not render binding badges above the pet", async () => {
+  it("opens the note popover when the note menu item is clicked", () => {
     window.history.replaceState(
       {},
       "",
@@ -707,23 +721,19 @@ describe("pet window product route", () => {
 
     render(<PetsDrivenApp />);
 
-    await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(
-        true,
-      );
+    const surface = screen.getByLabelText("Pet Window pet-a");
+
+    fireEvent.contextMenu(surface, {
+      bubbles: true,
+      button: 2,
+      clientX: 96,
+      clientY: 112,
     });
 
-    act(() => {
-      tauriEventMocks.listeners.get(PET_WINDOW_BINDING_EVENT)?.({
-        payload: {
-          petId: "pet-a",
-          title: "Windows Terminal",
-        },
-      });
-    });
+    fireEvent.click(screen.getByRole("menuitem", { name: /노트 작성하기/ }));
 
-    expect(screen.queryByLabelText("Bound: Windows Terminal")).toBeNull();
-    expect(screen.queryByText("🔗 Bound: Windows Terminal")).toBeNull();
+    expect(screen.queryByTestId("pet-context-menu")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("pet-a에게 노트")).toBeInTheDocument();
   });
 
   it("starts a new terminal channel from body focus when no window is bound", async () => {
@@ -1455,7 +1465,7 @@ describe("pet window product route", () => {
     vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
       function getRect(this: HTMLElement) {
         if (this.classList.contains("pet-window-visual-frame")) {
-          return domRect({ left: 200, top: 100, width: 96, height: 164 });
+          return domRect({ left: 200, top: 100, width: 96, height: 134 });
         }
 
         return domRect({ left: 0, top: 0, width: 400, height: 400 });
@@ -1476,7 +1486,7 @@ describe("pet window product route", () => {
           x: 333,
           y: 444,
           width: 96,
-          height: 164,
+          height: 134,
         }),
       });
     });
@@ -1492,9 +1502,9 @@ describe("pet window product route", () => {
         bubbles: true,
         button: 0,
         clientX: 290,
-        clientY: 254,
+        clientY: 224,
         screenX: 290,
-        screenY: 254,
+        screenY: 224,
       }),
     );
     fireEvent(
@@ -1503,19 +1513,231 @@ describe("pet window product route", () => {
         bubbles: true,
         button: 0,
         clientX: 330,
-        clientY: 294,
+        clientY: 264,
         screenX: 330,
-        screenY: 294,
+        screenY: 264,
       }),
     );
 
     expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
     expect(tauriWindowMocks.setSize).toHaveBeenCalledWith({
       width: 172.8,
-      height: 247.20000000000002,
+      height: 241.20000000000002,
     });
   });
 
+  it("starts resizing from the visible resize button after the Pet Window is shrunk", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
+      function getRect(this: HTMLElement) {
+        if (this.classList.contains("pet-window-visual-frame")) {
+          return domRect({ left: 200, top: 100, width: 96, height: 134 });
+        }
+
+        return domRect({ left: 0, top: 0, width: 96, height: 134 });
+      },
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)?.({
+        payload: petWindowFramePayload({
+          sequence: 1,
+          petId: "pet-a",
+          x: 333,
+          y: 444,
+          width: 96,
+          height: 134,
+        }),
+      });
+    });
+
+    tauriWindowMocks.setSize.mockClear();
+    tauriWindowMocks.startDragging.mockClear();
+    tauriEventMocks.emitTo.mockClear();
+
+    const surface = screen.getByLabelText("Pet Window pet-a");
+    const resizeButton = screen.getByRole("button", { name: "Resize pet" });
+
+    fireEvent(
+      resizeButton,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 276,
+        clientY: 244,
+        screenX: 276,
+        screenY: 244,
+      }),
+    );
+    fireEvent(
+      surface,
+      new MouseEvent("pointermove", {
+        bubbles: true,
+        button: 0,
+        clientX: 316,
+        clientY: 284,
+        screenX: 316,
+        screenY: 284,
+      }),
+    );
+
+    expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
+    expect(tauriWindowMocks.setSize).toHaveBeenCalledWith({
+      width: 172.8,
+      height: 241.20000000000002,
+    });
+    expect(tauriEventMocks.emitTo).not.toHaveBeenCalledWith(
+      PET_WINDOW_HOST_LABEL,
+      PET_WINDOW_INPUT_EVENT,
+      expect.objectContaining({ kind: "body.pointer.down" }),
+    );
+  });
+
+  it("does not resize when the current pet width is already at least 200px", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)?.({
+        payload: petWindowFramePayload({
+          sequence: 1,
+          petId: "pet-a",
+          x: 333,
+          y: 444,
+          width: 220,
+          height: 307.0833333333333,
+        }),
+      });
+    });
+
+    tauriWindowMocks.setSize.mockClear();
+    tauriEventMocks.emitTo.mockClear();
+
+    const surface = screen.getByLabelText("Pet Window pet-a");
+    const resizeButton = screen.getByRole("button", { name: "Resize pet" });
+
+    fireEvent(
+      resizeButton,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 184,
+        clientY: 252,
+        screenX: 384,
+        screenY: 452,
+      }),
+    );
+    fireEvent(
+      surface,
+      new MouseEvent("pointermove", {
+        bubbles: true,
+        button: 0,
+        clientX: 784,
+        clientY: 852,
+        screenX: 984,
+        screenY: 1052,
+      }),
+    );
+    fireEvent(
+      surface,
+      new MouseEvent("pointerup", {
+        bubbles: true,
+        button: 0,
+        clientX: 784,
+        clientY: 852,
+        screenX: 984,
+        screenY: 1052,
+      }),
+    );
+
+    expect(tauriWindowMocks.setSize).not.toHaveBeenCalled();
+    expect(tauriEventMocks.emitTo).not.toHaveBeenCalledWith(
+      PET_WINDOW_HOST_LABEL,
+      PET_WINDOW_RESIZE_EVENT,
+      expect.anything(),
+    );
+  });
+
+  it("ignores resize moves that would push the pet width to 200px or larger", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
+    });
+
+    tauriWindowMocks.setSize.mockClear();
+    tauriEventMocks.emitTo.mockClear();
+
+    const surface = screen.getByLabelText("Pet Window pet-a");
+    const resizeButton = screen.getByRole("button", { name: "Resize pet" });
+
+    fireEvent(
+      resizeButton,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 184,
+        clientY: 252,
+        screenX: 384,
+        screenY: 452,
+      }),
+    );
+    fireEvent(
+      surface,
+      new MouseEvent("pointermove", {
+        bubbles: true,
+        button: 0,
+        clientX: 234,
+        clientY: 302,
+        screenX: 434,
+        screenY: 502,
+      }),
+    );
+    fireEvent(
+      surface,
+      new MouseEvent("pointerup", {
+        bubbles: true,
+        button: 0,
+        clientX: 234,
+        clientY: 302,
+        screenX: 434,
+        screenY: 502,
+      }),
+    );
+
+    expect(tauriWindowMocks.setSize).not.toHaveBeenCalled();
+    expect(tauriEventMocks.emitTo).not.toHaveBeenCalledWith(
+      PET_WINDOW_HOST_LABEL,
+      PET_WINDOW_RESIZE_EVENT,
+      expect.anything(),
+    );
+  });
   it("ignores host frame geometry while a Pet Window resize drag is active", async () => {
     window.history.replaceState(
       {},

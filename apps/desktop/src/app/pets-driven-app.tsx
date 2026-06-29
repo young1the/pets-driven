@@ -46,9 +46,16 @@ import {
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
 import {
+  createPetDiagnosticsTracker,
+  formatPetDiagnosticsReport,
+  type PetDiagnosticsSnapshot,
+  type PetDiagnosticsTracker,
+} from "@/app-state/pet-debug-diagnostics";
+import {
   createAdoptedPetsScenario,
   createDemoScenario,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import {
   getWorldViewport,
   type MonitorWorkArea,
@@ -65,7 +72,10 @@ import {
   type PetWindowInputEvent,
   type PetWindowResizeEvent,
 } from "@/pet-window/pet-window-messages";
-import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
+import {
+  clampPetWindowScale,
+  PET_WINDOW_LAYOUT,
+} from "@/pet-window/pet-window-layout";
 import {
   projectScreenPointToWorld,
   projectWorldSnapshotToPetWindows,
@@ -73,7 +83,7 @@ import {
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
 
-const DESKTOP_FIXTURE_HOST_TICK_MS = 33;
+const DESKTOP_FIXTURE_HOST_TICK_MS = 16;
 const DESKTOP_FIXTURE_STEP_MS = 16;
 const DESKTOP_FIXTURE_WORLD_SIZE = { width: 960, height: 540 };
 const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
@@ -100,6 +110,7 @@ function petWindowRouteParams(): PetWindowRouteParams | null {
     petId: params.get("petId") || "pet-a",
     assetId: params.get("assetId") || "patamon",
     windowIndex: Number(params.get("windowIndex") || "1"),
+    name: params.get("name") ?? undefined,
   };
 }
 
@@ -129,9 +140,11 @@ function desktopFixturePetBodySize(
 // divided by the fixture world scale (which left pets half-sunk behind the
 // taskbar).
 function adoptedPetBodySize(scale = 1) {
+  const petScale = clampPetWindowScale(scale);
+
   return {
-    width: PET_WINDOW_LAYOUT.body.width * scale,
-    height: PET_WINDOW_LAYOUT.body.height * scale,
+    width: PET_WINDOW_LAYOUT.body.width * petScale,
+    height: PET_WINDOW_LAYOUT.body.height * petScale,
   };
 }
 
@@ -255,6 +268,11 @@ export function PetsDrivenApp() {
   const adoptedScenarioRef = useRef<ReturnType<
     typeof createAdoptedPetsScenario
   > | null>(null);
+  const adoptedDiagnosticsTrackerRef = useRef<PetDiagnosticsTracker>(
+    createPetDiagnosticsTracker(),
+  );
+  const adoptedDiagnosticsRef = useRef<PetDiagnosticsSnapshot | null>(null);
+  const adoptedSnapshotRef = useRef<WorldSnapshot | null>(null);
   const adoptedPetIdsRef = useRef<Set<string>>(new Set());
   // petId -> the window this pet is bound to. In-memory only; HWNDs go stale
   // across restarts, so a dead focus just clears the binding.
@@ -280,6 +298,7 @@ export function PetsDrivenApp() {
   const [mainTab, setMainTab] = useState<MainWindowTab>("home");
   const [editPetId, setEditPetId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [diagnosticReport, setDiagnosticReport] = useState<string | null>(null);
   const [petStatusById, setPetStatusById] = useState<
     Record<string, PetCardStatus>
   >({});
@@ -415,14 +434,17 @@ export function PetsDrivenApp() {
 
     void listen<PetWindowResizeEvent>(PET_WINDOW_RESIZE_EVENT, (event) => {
       const { petId, scale } = event.payload;
+      const nextScale = clampPetWindowScale(scale);
       adoptedScaleByPetIdRef.current = {
         ...adoptedScaleByPetIdRef.current,
-        [petId]: scale,
+        [petId]: nextScale,
       };
       const current = petsDrivenStateRef.current;
       const next: typeof current = {
         ...current,
-        pets: current.pets.map((p) => (p.id === petId ? { ...p, scale } : p)),
+        pets: current.pets.map((p) =>
+          p.id === petId ? { ...p, scale: nextScale } : p,
+        ),
       };
       applyPetsDrivenState(next);
       void desktopGateway.writePetsDrivenState(next);
@@ -619,6 +641,9 @@ export function PetsDrivenApp() {
 
     if (simInputs.length === 0) {
       adoptedScenarioRef.current = null;
+      adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
+      adoptedDiagnosticsRef.current = null;
+      adoptedSnapshotRef.current = null;
       adoptedPetIdsRef.current = new Set();
       return;
     }
@@ -654,7 +679,7 @@ export function PetsDrivenApp() {
       const scaleByPetId: Record<string, number> = {};
       for (const pet of simInputs) {
         const record = petRecords.find((r) => r.id === pet.id);
-        const scale = record?.scale ?? 1;
+        const scale = clampPetWindowScale(record?.scale ?? 1);
         scaleByPetId[pet.id] = scale;
         petBodySizeByPetId[pet.id] = adoptedPetBodySize(scale);
       }
@@ -665,6 +690,9 @@ export function PetsDrivenApp() {
       adoptedPetIdsRef.current = new Set(simInputs.map((pet) => pet.id));
       adoptedHostSequenceRef.current = 0;
       adoptedScaleByPetIdRef.current = scaleByPetId;
+      adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
+      adoptedDiagnosticsRef.current = null;
+      adoptedSnapshotRef.current = null;
     });
 
     const intervalId = window.setInterval(() => {
@@ -686,6 +714,14 @@ export function PetsDrivenApp() {
       adoptedHostSequenceRef.current += 1;
 
       const snapshot = scenario.world.snapshot();
+      adoptedSnapshotRef.current = snapshot;
+      adoptedDiagnosticsRef.current = adoptedDiagnosticsTrackerRef.current.record(
+        {
+          now: scenario.clock.now(),
+          sequence: adoptedHostSequenceRef.current,
+          snapshot,
+        },
+      );
 
       const nextStatuses: Record<string, PetCardStatus> = {};
       for (const petSnapshot of snapshot.pets) {
@@ -957,7 +993,33 @@ export function PetsDrivenApp() {
 
   function resetAdoptedSimulation() {
     setPetWindowError(null);
+    adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
+    adoptedDiagnosticsRef.current = null;
+    adoptedSnapshotRef.current = null;
     setAdoptedSimulationResetKey((key) => key + 1);
+  }
+
+  function copyPetDiagnostics() {
+    const snapshot = adoptedSnapshotRef.current;
+    const report = formatPetDiagnosticsReport({
+      capturedAt: new Date().toISOString(),
+      diagnostics:
+        adoptedDiagnosticsRef.current ??
+        adoptedDiagnosticsTrackerRef.current.current(),
+      reason: "manual-copy",
+      sequence: adoptedHostSequenceRef.current,
+      snapshot,
+    });
+
+    setDiagnosticReport(report);
+    void navigator.clipboard
+      ?.writeText(report)
+      .then(() => flashToast("Pet diagnostics copied"))
+      .catch(() => flashToast("Pet diagnostics ready"));
+
+    if (!navigator.clipboard) {
+      flashToast("Pet diagnostics ready");
+    }
   }
 
   function updateSessionCommand(command: string) {
@@ -1171,6 +1233,7 @@ export function PetsDrivenApp() {
             hint: "world & playground",
             items: [
               { label: "Reset simulation", onClick: resetAdoptedSimulation },
+              { label: "Copy pet diagnostics", onClick: copyPetDiagnostics },
               {
                 label: "Open playground",
                 onClick: () => navigate("playground"),
@@ -1215,6 +1278,7 @@ export function PetsDrivenApp() {
             ],
           },
         ],
+        diagnosticReport,
       }}
       edit={{
         onName: (value) => editPetId && patchPet(editPetId, { name: value }),
