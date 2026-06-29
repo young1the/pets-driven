@@ -16,7 +16,7 @@ export interface PetShowcaseCardProps {
   note: string;
   role: string;
   name: string;
-  status: PetShowcaseCardStatus;
+  status?: PetShowcaseCardStatus;
   /** Gradient stops for the card body. */
   gradient: { from: string; to: string };
   portrait: ReactNode;
@@ -112,13 +112,15 @@ export function PetShowcaseCard({
         {portrait}
         <div className="pd-pet-card__footer">
           <div className="pd-pet-card__role-chip">{role}</div>
-          <div className="pd-pet-card__status">
-            <span
-              className="pd-pet-card__status-dot"
-              style={{ background: status.dotColor }}
-            />
-            <span className="pd-pet-card__status-label">{status.label}</span>
-          </div>
+          {status ? (
+            <div className="pd-pet-card__status">
+              <span
+                className="pd-pet-card__status-dot"
+                style={{ background: status.dotColor }}
+              />
+              <span className="pd-pet-card__status-label">{status.label}</span>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

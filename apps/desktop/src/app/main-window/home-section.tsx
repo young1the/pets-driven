@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Button, PetShowcaseCard } from "@pets-driven/design-system";
-import type { PetCardStatus } from "@/app-state/pet-card-status";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 import { PlusIcon } from "@/app/main-window/main-window-icons";
 
@@ -10,7 +9,6 @@ export type HomePetView = {
   assetId: string;
   note: string;
   role: string;
-  status: PetCardStatus;
   gradient: { from: string; to: string };
   cwd: string | null;
 };
@@ -345,10 +343,6 @@ export function HomeSection({
                 note={pet.note}
                 portrait={<PetPortrait assetId={pet.assetId} name={pet.name} />}
                 role={pet.role}
-                status={{
-                  label: pet.status.label,
-                  dotColor: pet.status.dotColor,
-                }}
                 cwd={pet.cwd ?? undefined}
               />
             </div>

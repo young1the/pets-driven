@@ -8,11 +8,6 @@ const pet = {
   assetId: "patamon",
   note: "Watch the auth queue",
   role: "Steady",
-  status: {
-    label: "Idle",
-    tone: "neutral" as const,
-    dotColor: "var(--ink-300)",
-  },
   gradient: { from: "#8B7FE8", to: "#6F5FD6" },
   cwd: null,
 };

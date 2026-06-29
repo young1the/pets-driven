@@ -406,7 +406,7 @@ export function PetsDrivenApp() {
           void desktopGateway
             .openPetContextMenu(
               input.petId,
-              pet?.name ?? input.petId,
+              input.petName ?? pet?.name ?? input.petId,
               pet?.memo ?? "",
               input.screenPoint.x,
               input.screenPoint.y,
@@ -1220,7 +1220,6 @@ export function PetsDrivenApp() {
         assetId: pet.assetId,
         note: cardNote(pet.memo),
         role: personalityRoleLabel(personalityId),
-        status: statusFor(pet.id),
         gradient: petGradient(pet.name, personalityId),
         cwd,
       };
