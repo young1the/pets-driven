@@ -378,6 +378,10 @@ export function PetsDrivenApp() {
           void focusOrStartSessionForPet(input.petId, input.windowLabel);
           return;
         }
+        if (input.kind === "menu.close") {
+          void desktopGateway.closeAdoptedPetWindow(input.petId).catch(() => {});
+          return;
+        }
         if (input.kind === "menu.start-session") {
           void startSessionForPet(input.petId, input.windowLabel);
           return;
@@ -616,7 +620,14 @@ export function PetsDrivenApp() {
             return [];
           }
 
-          return [emitTo(label, PET_WINDOW_FRAME_EVENT, projection.frame)];
+          const petRecord = petsDrivenStateRef.current.pets.find(
+            (p) => p.id === projection.petId,
+          );
+          const frame = petRecord
+            ? { ...projection.frame, name: petRecord.name }
+            : projection.frame;
+
+          return [emitTo(label, PET_WINDOW_FRAME_EVENT, frame)];
         }),
       ).finally(() => {
         isBroadcasting = false;
@@ -746,14 +757,19 @@ export function PetsDrivenApp() {
         adoptedScaleByPetIdRef.current,
       );
 
+      const pets = petsDrivenStateRef.current.pets;
       void Promise.all(
-        projections.map((projection) =>
-          emitTo(
+        projections.map((projection) => {
+          const petRecord = pets.find((p) => p.id === projection.petId);
+          const frame = petRecord
+            ? { ...projection.frame, name: petRecord.name }
+            : projection.frame;
+          return emitTo(
             `pet-window-${projection.petId}`,
             PET_WINDOW_FRAME_EVENT,
-            projection.frame,
-          ),
-        ),
+            frame,
+          );
+        }),
       ).finally(() => {
         isBroadcasting = false;
       });

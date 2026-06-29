@@ -21,6 +21,7 @@ export type PetWindowFrame = {
   schemaVersion: 1;
   sequence: number;
   petId: string;
+  name?: string;
   window: PetWindowFrameWindow;
   sprite: PetWindowFrameSprite;
   overlay: PetWindowOverlay | null;
@@ -48,6 +49,7 @@ export type PetWindowInputKind =
   | "body.pointer.move"
   | "body.pointer.up"
   | "body.focus"
+  | "menu.close"
   | "menu.start-session"
   | "menu.unbind"
   | "menu.request-binding"
