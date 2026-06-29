@@ -127,6 +127,41 @@ describe("pet window projection", () => {
     });
   });
 
+  it("prefers expression emotes over behavior decision emotes", () => {
+    const snapshot = snapshotFixture();
+    snapshot.pets[0] = {
+      ...snapshot.pets[0],
+      decision: {
+        source: "autonomous",
+        reason: "working-wander",
+        decidedAt: 100,
+      },
+      agentTask: { status: "working", label: null },
+      expression: {
+        source: "collision",
+        mood: "confused",
+        emote: "exclaim",
+        label: "!",
+        startedAt: 120,
+        expiresAt: 820,
+      },
+      visualCue: null,
+    };
+
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 0, y: 0, width: 1000, height: 800 },
+      7,
+    );
+
+    expect(projection.frame.sprite.decisionEmote).toEqual({
+      emote: "exclaim",
+      label: "!",
+      mood: "confused",
+      tone: "alert",
+    });
+  });
+
   it("maps playground x coordinates across the full desktop projection width", () => {
     const [projection] = projectWorldSnapshotToPetWindows(
       snapshotFixture(),

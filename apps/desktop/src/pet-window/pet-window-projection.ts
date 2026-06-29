@@ -26,7 +26,10 @@ import type {
   PetWindowOverlay,
 } from "@/pet-window/pet-window-messages";
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
-import { presentBehaviorDecisionToken } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import {
+  presentBehaviorDecisionToken,
+  presentPetExpression,
+} from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 
 export type PetWindowProjection = {
   petId: string;
@@ -87,7 +90,9 @@ export function projectWorldSnapshotToPetWindows(
             height: windowHeight,
           },
           sprite: {
-            decisionEmote: presentBehaviorDecisionToken(pet.decision?.reason),
+            decisionEmote:
+              presentPetExpression(pet.expression) ??
+              presentBehaviorDecisionToken(pet.decision?.reason),
             intent: spriteIntentFromBody(body),
           },
           overlay: overlayFromPet(pet),

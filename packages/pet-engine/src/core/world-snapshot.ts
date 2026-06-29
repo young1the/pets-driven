@@ -1,4 +1,17 @@
 import type { AgentTaskStatus } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import type {
+  PetExpressionEmote,
+  PetExpressionMood,
+} from "@pets-driven/pet-engine/core/components";
+
+export type PetExpressionSnapshot = {
+  source: "collision";
+  mood: PetExpressionMood;
+  emote: PetExpressionEmote;
+  label: string | null;
+  startedAt: number;
+  expiresAt: number;
+};
 
 export type BodySnapshot = {
   id: string;
@@ -42,6 +55,8 @@ export type PetSnapshot = {
   agentTask?: AgentTaskSnapshot | null;
   /** Presentation cue derived from current behavior, or null when quiet. */
   visualCue?: PetVisualCue | null;
+  /** Active visual-only expression overlay, or null when quiet. */
+  expression?: PetExpressionSnapshot | null;
   /** Presentation state derived from current user interaction, if any. */
   interaction?: InteractionSnapshot;
 };

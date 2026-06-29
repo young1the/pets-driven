@@ -105,6 +105,10 @@ export function createWorld(input: WorldDefinition) {
           entity.id,
           "AgentTaskState",
         );
+        const expression = componentStore.getComponent(
+          entity.id,
+          "PetExpressionState",
+        );
         return {
           id: entity.id,
           sourceId: agent.sourceId,
@@ -143,6 +147,16 @@ export function createWorld(input: WorldDefinition) {
               }
             : null,
           visualCue: getPetVisualCue(componentStore, entity.id),
+          expression: expression
+            ? {
+                source: expression.source,
+                mood: expression.mood,
+                emote: expression.emote,
+                label: expression.label,
+                startedAt: expression.startedAt,
+                expiresAt: expression.expiresAt,
+              }
+            : null,
           interaction: getInteractionSnapshot(componentStore, entity.id),
         };
       });
