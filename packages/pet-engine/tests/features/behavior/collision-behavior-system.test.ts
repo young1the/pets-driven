@@ -15,9 +15,18 @@ function makePet(id: string, x: number, intent: "idle" | "active" | "seek") {
     id,
     components: [
       { type: "Transform" as const, position: { x, y: 500 } },
-      { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+      {
+        type: "PhysicsBody" as const,
+        shape: "rectangle" as const,
+        width: 32,
+        height: 38,
+      },
       { type: "IntentState" as const, intent },
-      { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+      {
+        type: "MotionTarget" as const,
+        targetEntityId: null,
+        targetPosition: null,
+      },
     ],
   };
 }
@@ -34,9 +43,18 @@ function makePetWithPersonality(
     id,
     components: [
       { type: "Transform" as const, position: { x, y: 500 } },
-      { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+      {
+        type: "PhysicsBody" as const,
+        shape: "rectangle" as const,
+        width: 32,
+        height: 38,
+      },
       { type: "IntentState" as const, intent },
-      { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+      {
+        type: "MotionTarget" as const,
+        targetEntityId: null,
+        targetPosition: null,
+      },
       {
         type: "Personality" as const,
         openness: 0.5,
@@ -60,7 +78,9 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
+      "collision",
+    );
   });
 
   it("clears existing MotionTarget and resets intent to idle on collision (pet truly freezes)", () => {
@@ -72,19 +92,37 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
         id: "pet-a",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "active" as const },
           // Active motion target — e.g., from approach-pet
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: { x: 110, y: 500 } },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: { x: 110, y: 500 },
+          },
         ],
       },
       {
         id: "pet-b",
         components: [
           { type: "Transform" as const, position: { x: 110, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
         ],
       },
     ]);
@@ -94,10 +132,152 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     // PendingReaction written
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
     // MotionTarget cleared so locomotion systems see no target → pet stops
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
+    expect(
+      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
+    ).toBeNull();
+    expect(
+      store.getComponent("pet-a", "MotionTarget")?.targetEntityId,
+    ).toBeNull();
     // Intent reset to idle
     expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+  });
+
+  it("working pet collision writes a visual expression and clears working wander target", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle",
+            width: 32,
+            height: 38,
+          },
+          { type: "IntentState" as const, intent: "active" },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: { x: 300, y: 500 },
+          },
+          { type: "AgentTaskState" as const, status: "working", since: 0 },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.5,
+            agreeableness: 0.2,
+            neuroticism: 0.8,
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous",
+            decidedAt: 100,
+            expiresAt: 850,
+            reason: "working-wander",
+            lastAutonomousReason: "working-wander",
+            lastAutonomousAt: 100,
+          },
+        ],
+      },
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(200));
+
+    expect(store.getComponent("pet-a", "AgentTaskState")?.status).toBe(
+      "working",
+    );
+    expect(
+      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
+    ).toBeNull();
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(
+      store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt,
+    ).toBe(200);
+    expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
+      source: "collision",
+      mood: "confused",
+      emote: "exclaim",
+      label: "!",
+      startedAt: 200,
+    });
+  });
+
+  it("working collision expression duration is derived from OCEAN and clamped", () => {
+    const irritated = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle",
+            width: 32,
+            height: 38,
+          },
+          { type: "IntentState" as const, intent: "idle" },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
+          { type: "AgentTaskState" as const, status: "working", since: 0 },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0,
+            extraversion: 1,
+            agreeableness: 0,
+            neuroticism: 1,
+          },
+        ],
+      },
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(irritated, BOUNDS, createManualClock(1000));
+
+    expect(
+      irritated.getComponent("pet-a", "PetExpressionState")?.expiresAt,
+    ).toBe(1900);
+
+    const steady = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle",
+            width: 32,
+            height: 38,
+          },
+          { type: "IntentState" as const, intent: "idle" },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
+          { type: "AgentTaskState" as const, status: "working", since: 0 },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 1,
+            extraversion: 0,
+            agreeableness: 1,
+            neuroticism: 0,
+          },
+        ],
+      },
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(steady, BOUNDS, createManualClock(1000));
+
+    expect(steady.getComponent("pet-a", "PetExpressionState")?.expiresAt).toBe(
+      1350,
+    );
   });
 
   it("does not react when entities are far apart", () => {
@@ -110,8 +290,12 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
+    expect(
+      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
+    ).toBeNull();
+    expect(
+      store.getComponent("pet-a", "BehaviorDecisionState"),
+    ).toBeUndefined();
   });
 
   it("uses Matter-derived PetCollision even when bodies no longer overlap by AABB", () => {
@@ -121,9 +305,18 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
         id: "pet-a",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "PetCollision" as const,
             otherEntityId: "pet-b",
@@ -154,9 +347,18 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
         id: "pet-a",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "seek" as const },
-          { type: "MotionTarget" as const, targetEntityId: "user-anchor", targetPosition: { x: 480, y: 500 } },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 480, y: 500 },
+          },
           {
             type: "BehaviorDecisionState" as const,
             source: "agent-event" as const,
@@ -173,8 +375,12 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("agent-event");
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBe("user-anchor");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
+      "agent-event",
+    );
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBe(
+      "user-anchor",
+    );
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
   });
 
@@ -194,8 +400,12 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     // PendingReaction and claim must be unchanged
-    expect(store.getComponent("pet-a", "PendingReaction")).toEqual(firstReaction);
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toEqual(firstDecision);
+    expect(store.getComponent("pet-a", "PendingReaction")).toEqual(
+      firstReaction,
+    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toEqual(
+      firstDecision,
+    );
   });
 
   it("does not write PendingReaction for a climbing entity", () => {
@@ -205,9 +415,18 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
         id: "pet-a",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 400 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "active" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: { x: 100, y: 280 } },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: { x: 100, y: 280 },
+          },
           { type: "ClimbingTag" as const },
         ],
       },
@@ -217,8 +436,12 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual({ x: 100, y: 280 });
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(
+      { x: 100, y: 280 },
+    );
+    expect(
+      store.getComponent("pet-a", "BehaviorDecisionState"),
+    ).toBeUndefined();
   });
 
   it("does not freeze a non-flying airborne entity during overlap", () => {
@@ -228,20 +451,38 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
         id: "pet-a",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 430 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "WalkingTag" as const },
           { type: "AirborneTag" as const },
           { type: "IntentState" as const, intent: "active" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: { x: 240, y: 430 } },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: { x: 240, y: 430 },
+          },
         ],
       },
       {
         id: "pet-b",
         components: [
           { type: "Transform" as const, position: { x: 110, y: 430 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
         ],
       },
     ]);
@@ -249,9 +490,13 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual({ x: 240, y: 430 });
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(
+      { x: 240, y: 430 },
+    );
     expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("active");
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
+    expect(
+      store.getComponent("pet-a", "BehaviorDecisionState"),
+    ).toBeUndefined();
   });
 
   it("expires the collision claim as soon as overlap ends", () => {
@@ -262,9 +507,14 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     ]);
 
     runCollisionBehaviorSystem(store, BOUNDS, clock);
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
+      "collision",
+    );
 
-    store.setComponent("pet-b", { type: "Transform", position: { x: 500, y: 500 } });
+    store.setComponent("pet-b", {
+      type: "Transform",
+      position: { x: 500, y: 500 },
+    });
     clock.advanceBy(200);
 
     runCollisionBehaviorSystem(store, BOUNDS, clock);
@@ -280,9 +530,18 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
         id: "pet-a",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "BehaviorDecisionState" as const,
             source: "agent-event" as const,
@@ -299,7 +558,9 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
+      "collision",
+    );
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
   });
 
@@ -311,9 +572,18 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
         id: "pet-a",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "active" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: fleeTarget },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: fleeTarget,
+          },
           {
             type: "BehaviorDecisionState" as const,
             source: "autonomous" as const,
@@ -331,9 +601,13 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(fleeTarget);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(
+      fleeTarget,
+    );
     expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("active");
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("collision-flee");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe(
+      "collision-flee",
+    );
   });
 
   it("restarts collision when a stale collision-flee target crosses the current collider", () => {
@@ -344,9 +618,18 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
         id: "pet-c",
         components: [
           { type: "Transform" as const, position: { x: 203, y: 521 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "active" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: staleFleeTarget },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: staleFleeTarget,
+          },
           {
             type: "BehaviorDecisionState" as const,
             source: "autonomous" as const,
@@ -371,9 +654,13 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-c", "PendingReaction")).toBeDefined();
-    expect(store.getComponent("pet-c", "MotionTarget")?.targetPosition).toBeNull();
+    expect(
+      store.getComponent("pet-c", "MotionTarget")?.targetPosition,
+    ).toBeNull();
     expect(store.getComponent("pet-c", "IntentState")?.intent).toBe("idle");
-    expect(store.getComponent("pet-c", "BehaviorDecisionState")?.source).toBe("collision");
+    expect(store.getComponent("pet-c", "BehaviorDecisionState")?.source).toBe(
+      "collision",
+    );
   });
 });
 
@@ -391,56 +678,65 @@ function makeReactionStore(
   agreeableness: number,
   otherPosition = { x: 200, y: 500 },
 ) {
-    const reactsAt = 1400; // now will be 1400 (claim expired)
-    return createComponentStore([
-      {
-        id: "pet",
-        components: [
-          { type: "Transform" as const, position: { x: 100, y: 500 } },
-          { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
-          {
-            type: "Personality" as const,
-            openness: 0.5,
-            conscientiousness: 0.4,
-            extraversion,
-            agreeableness,
-            neuroticism,
-          },
-          {
-            type: "Perception" as const,
-            userAnchor: null,
-            nearbyPets: [],
-            nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
-          },
-          {
-            type: "PendingReaction" as const,
-            source: "collision" as const,
-            triggeredAt: 1000,
-            reactsAt,
-            context: { otherEntityId: "pet-b", otherPosition },
-          },
-          {
-            // Claim already expired (expiresAt === now), so Decision can fire.
-            type: "BehaviorDecisionState" as const,
-            source: "collision" as const,
-            decidedAt: 1000,
-            expiresAt: reactsAt,
-            reason: "entity overlap",
-            lastAutonomousReason: null,
-            lastAutonomousAt: null,
-          },
-        ],
-      },
-      {
-        id: "pet-b",
-        components: [
-          { type: "Transform" as const, position: otherPosition },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
-        ],
-      },
-    ]);
+  const reactsAt = 1400; // now will be 1400 (claim expired)
+  return createComponentStore([
+    {
+      id: "pet",
+      components: [
+        { type: "Transform" as const, position: { x: 100, y: 500 } },
+        { type: "IntentState" as const, intent: "idle" as const },
+        {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: null,
+        },
+        {
+          type: "Personality" as const,
+          openness: 0.5,
+          conscientiousness: 0.4,
+          extraversion,
+          agreeableness,
+          neuroticism,
+        },
+        {
+          type: "Perception" as const,
+          userAnchor: null,
+          nearbyPets: [],
+          nearbyClimbables: [],
+          self: { grounded: false, climbing: false, intent: "idle" as const },
+        },
+        {
+          type: "PendingReaction" as const,
+          source: "collision" as const,
+          triggeredAt: 1000,
+          reactsAt,
+          context: { otherEntityId: "pet-b", otherPosition },
+        },
+        {
+          // Claim already expired (expiresAt === now), so Decision can fire.
+          type: "BehaviorDecisionState" as const,
+          source: "collision" as const,
+          decidedAt: 1000,
+          expiresAt: reactsAt,
+          reason: "entity overlap",
+          lastAutonomousReason: null,
+          lastAutonomousAt: null,
+        },
+      ],
+    },
+    {
+      id: "pet-b",
+      components: [
+        { type: "Transform" as const, position: otherPosition },
+        {
+          type: "PhysicsBody" as const,
+          shape: "rectangle" as const,
+          width: 32,
+          height: 38,
+        },
+      ],
+    },
+  ]);
 }
 
 describe("Phase 4 — collision reaction latency and personality-shaped response", () => {
@@ -468,43 +764,70 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "Personality" as const,
-            openness: 0.5, conscientiousness: 0.4,
-            extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.5,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.5,
+            agreeableness: 0.5,
+            neuroticism: 0.5,
           },
           {
             type: "Perception" as const,
-            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
           },
           {
             type: "PendingReaction" as const,
-            source: "collision" as const, triggeredAt: 1000, reactsAt,
+            source: "collision" as const,
+            triggeredAt: 1000,
+            reactsAt,
             context: { otherPosition: { x: 200, y: 500 } },
           },
           {
             type: "BehaviorDecisionState" as const,
-            source: "collision" as const, decidedAt: 1000, expiresAt: reactsAt,
-            reason: "entity overlap", lastAutonomousReason: null, lastAutonomousAt: null,
+            source: "collision" as const,
+            decidedAt: 1000,
+            expiresAt: reactsAt,
+            reason: "entity overlap",
+            lastAutonomousReason: null,
+            lastAutonomousAt: null,
           },
         ],
       },
     ]);
 
     // Tick with now = 1300 (< reactsAt 1400) — claim still active
-    runBehaviorDecisionSystem(store, createManualClock(1300), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1300),
+      createSeededRandom(1),
+      BOUNDS,
+    );
 
     expect(store.getComponent("pet", "BehaviorDecisionToken")).toBeUndefined();
     expect(store.getComponent("pet", "PendingReaction")).toBeDefined();
-    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
+    expect(
+      store.getComponent("pet", "MotionTarget")?.targetPosition,
+    ).toBeNull();
   });
 
   it("at reactsAt, Decision emits a collision-* token and removes PendingReaction", () => {
     // now = reactsAt = 1400 → claim expired → reactive pool fires
     const store = makeReactionStore(0.5, 0.5, 0.5);
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toMatch(/^collision-/);
@@ -515,8 +838,15 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
   it("high-N low-A pet selects collision-flee at reactsAt (seed 1)", () => {
     // N=0.9, A=0.1: scoreFleeFromPet = 0.2+0.9*0.7-0.1*0.5 = 0.78 (dominant)
     const store = makeReactionStore(0.5, 0.9, 0.1);
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-flee");
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
+      "collision-flee",
+    );
   });
 
   it("grounded walking pets can pick collision-jump when still trapped in contact", () => {
@@ -546,16 +876,25 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       climbableSurfacePosition: null,
     });
 
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
     runBehaviorPlanningSystem(store, createManualClock(1400));
 
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-jump");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
+      "collision-jump",
+    );
     expect(store.getComponent("pet", "JumpActionState")).toEqual({
       type: "JumpActionState",
       phase: "requested",
       cooldownMs: 0,
     });
-    expect(store.getComponent("pet", "MotionTarget")?.targetPosition?.x).toBeLessThan(100);
+    expect(
+      store.getComponent("pet", "MotionTarget")?.targetPosition?.x,
+    ).toBeLessThan(100);
   });
 
   it("collision-flee target is far enough to escape the collision area", () => {
@@ -571,7 +910,12 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       height: 38,
     });
 
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("collision-flee");
@@ -581,8 +925,15 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
   it("high-E high-A low-N pet selects collision-engage at reactsAt (seed 1)", () => {
     // E=0.9, A=0.9, N=0.1: scoreCollisionEngage = 0.2+0.9*0.5+0.9*0.5-0.1*0.4 = 1.06 (dominant)
     const store = makeReactionStore(0.9, 0.1, 0.9);
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-engage");
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
+      "collision-engage",
+    );
   });
 
   // Regression: engageTarget must sit BETWEEN self and other, not on the far
@@ -596,7 +947,12 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     // Correct engage target: other + away*80 = (200-80, 500) = (120, 500).
     // Buggy target would be (280, 500) — past the other pet.
     const store = makeReactionStore(0.9, 0.1, 0.9, { x: 200, y: 500 });
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("collision-engage");
@@ -613,7 +969,12 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     // Buggy: target = other - away*80 = (380, 500) — past the other pet,
     //   would force the pet to walk through other and re-collide forever.
     const store = makeReactionStore(0.9, 0.1, 0.9, { x: 300, y: 500 });
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("collision-engage");
@@ -628,10 +989,19 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         id: "pet",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "WalkingTag" as const },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "Personality" as const,
             openness: 0.5,
@@ -642,7 +1012,9 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
           },
           {
             type: "Perception" as const,
-            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
             self: { grounded: true, climbing: false, intent: "idle" as const },
           },
           {
@@ -650,7 +1022,10 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
             source: "collision" as const,
             triggeredAt: 1000,
             reactsAt: 1400,
-            context: { otherEntityId: "flying-pet", otherPosition: { x: 100, y: 430 } },
+            context: {
+              otherEntityId: "flying-pet",
+              otherPosition: { x: 100, y: 430 },
+            },
           },
           {
             type: "BehaviorDecisionState" as const,
@@ -665,11 +1040,18 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       },
     ]);
 
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("collision-flee");
-    expect(Math.abs((token?.targetPosition?.x ?? 100) - 100)).toBeGreaterThanOrEqual(90);
+    expect(
+      Math.abs((token?.targetPosition?.x ?? 100) - 100),
+    ).toBeGreaterThanOrEqual(90);
   });
 
   it("collision-flee Planning: MotionTarget points away from otherPosition", () => {
@@ -680,15 +1062,23 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "Perception" as const,
-            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
-            kind: "collision-flee" as const, decidedAt: 0, consumed: false,
+            kind: "collision-flee" as const,
+            decidedAt: 0,
+            consumed: false,
             targetPosition: { x: 48, y: 500 }, // pre-computed flee position
           },
         ],
@@ -700,7 +1090,9 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     const motion = store.getComponent("pet", "MotionTarget");
     expect(motion?.targetPosition).toEqual({ x: 48, y: 500 });
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(
+      true,
+    );
   });
 
   it("collision-engage Planning: MotionTarget points toward otherPosition", () => {
@@ -710,15 +1102,23 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "Perception" as const,
-            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
-            kind: "collision-engage" as const, decidedAt: 0, consumed: false,
+            kind: "collision-engage" as const,
+            decidedAt: 0,
+            consumed: false,
             targetPosition: { x: 160, y: 500 },
           },
         ],
@@ -739,15 +1139,23 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "Perception" as const,
-            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
-            kind: "collision-avoid" as const, decidedAt: 0, consumed: false,
+            kind: "collision-avoid" as const,
+            decidedAt: 0,
+            consumed: false,
             targetPosition: { x: 100, y: 404 },
           },
         ],
@@ -756,7 +1164,10 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
 
     runBehaviorPlanningSystem(store, createManualClock(0));
 
-    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({ x: 100, y: 404 });
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({
+      x: 100,
+      y: 404,
+    });
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
   });
 
@@ -767,15 +1178,23 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "Perception" as const,
-            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
-            kind: "collision-unfazed" as const, decidedAt: 0, consumed: false,
+            kind: "collision-unfazed" as const,
+            decidedAt: 0,
+            consumed: false,
             targetPosition: { x: 150, y: 480 },
           },
         ],
@@ -784,16 +1203,26 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
 
     runBehaviorPlanningSystem(store, createManualClock(0));
 
-    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({ x: 150, y: 480 });
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({
+      x: 150,
+      y: 480,
+    });
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
   });
 
   it("calm agreeable pet can select collision-stay at reactsAt", () => {
     const store = makeReactionStore(0.1, 0.1, 0.95);
 
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
 
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-stay");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
+      "collision-stay",
+    );
   });
 
   it("does not select collision-stay while the colliding bodies still overlap", () => {
@@ -802,9 +1231,18 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         id: "pet",
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "Personality" as const,
             openness: 0.5,
@@ -815,7 +1253,9 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
           },
           {
             type: "Perception" as const,
-            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
             self: { grounded: true, climbing: false, intent: "idle" as const },
           },
           {
@@ -823,7 +1263,10 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
             source: "collision" as const,
             triggeredAt: 1000,
             reactsAt: 1400,
-            context: { otherEntityId: "pet-b", otherPosition: { x: 110, y: 500 } },
+            context: {
+              otherEntityId: "pet-b",
+              otherPosition: { x: 110, y: 500 },
+            },
           },
           {
             type: "BehaviorDecisionState" as const,
@@ -840,16 +1283,32 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         id: "pet-b",
         components: [
           { type: "Transform" as const, position: { x: 110, y: 500 } },
-          { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 32,
+            height: 38,
+          },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
         ],
       },
     ]);
 
-    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    runBehaviorDecisionSystem(
+      store,
+      createManualClock(1400),
+      createSeededRandom(1),
+      BOUNDS,
+    );
 
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).not.toBe("collision-stay");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).not.toBe(
+      "collision-stay",
+    );
   });
 
   it("collision-stay Planning keeps the pet idle without a target", () => {
@@ -859,15 +1318,23 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
         components: [
           { type: "Transform" as const, position: { x: 100, y: 500 } },
           { type: "IntentState" as const, intent: "idle" as const },
-          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
           {
             type: "Perception" as const,
-            userAnchor: null, nearbyPets: [], nearbyClimbables: [],
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
             self: { grounded: false, climbing: false, intent: "idle" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
-            kind: "collision-stay" as const, decidedAt: 0, consumed: false,
+            kind: "collision-stay" as const,
+            decidedAt: 0,
+            consumed: false,
           },
         ],
       },
@@ -881,7 +1348,9 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       targetPosition: null,
     });
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("idle");
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(
+      true,
+    );
   });
 });
 
@@ -905,8 +1374,14 @@ describe("Phase 4 — reactive candidate distribution (1000 samples)", () => {
     const counts: Record<string, number> = {};
     for (let seed = 0; seed < SAMPLES; seed++) {
       const store = makeReactionStore(0.5, 0.9, 0.1); // E=0.5, N=0.9, A=0.1
-      runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(seed * 1013 + 7), BOUNDS);
-      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
+      runBehaviorDecisionSystem(
+        store,
+        createManualClock(1400),
+        createSeededRandom(seed * 1013 + 7),
+        BOUNDS,
+      );
+      const kind =
+        store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
     // Theoretical flee ≈ 477; generous band to account for sampling variance
@@ -928,8 +1403,14 @@ describe("Phase 4 — reactive candidate distribution (1000 samples)", () => {
     const counts: Record<string, number> = {};
     for (let seed = 0; seed < SAMPLES; seed++) {
       const store = makeReactionStore(0.9, 0.1, 0.9); // E=0.9, N=0.1, A=0.9
-      runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(seed * 1013 + 7), BOUNDS);
-      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
+      runBehaviorDecisionSystem(
+        store,
+        createManualClock(1400),
+        createSeededRandom(seed * 1013 + 7),
+        BOUNDS,
+      );
+      const kind =
+        store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
     // Theoretical engage ≈ 802; generous lower bound
@@ -950,8 +1431,16 @@ describe("Phase 4 — reactive outcomes are reachable", () => {
     let found = false;
     for (let seed = 0; seed < 500 && !found; seed++) {
       const store = makeReactionStore(0.2, 0.5, 0.5); // E=0.2, N=0.5, A=0.5
-      runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(seed * 1013), BOUNDS);
-      if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "collision-avoid") {
+      runBehaviorDecisionSystem(
+        store,
+        createManualClock(1400),
+        createSeededRandom(seed * 1013),
+        BOUNDS,
+      );
+      if (
+        store.getComponent("pet", "BehaviorDecisionToken")?.kind ===
+        "collision-avoid"
+      ) {
         found = true;
       }
     }
@@ -968,8 +1457,16 @@ describe("Phase 4 — reactive outcomes are reachable", () => {
     let found = false;
     for (let seed = 0; seed < 100 && !found; seed++) {
       const store = makeReactionStore(0.2, 0.0, 0.2); // E=0.2, N=0.0, A=0.2
-      runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(seed * 1013), BOUNDS);
-      if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "collision-unfazed") {
+      runBehaviorDecisionSystem(
+        store,
+        createManualClock(1400),
+        createSeededRandom(seed * 1013),
+        BOUNDS,
+      );
+      if (
+        store.getComponent("pet", "BehaviorDecisionToken")?.kind ===
+        "collision-unfazed"
+      ) {
         found = true;
       }
     }

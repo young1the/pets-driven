@@ -17,6 +17,8 @@ import {
   type BehaviorDecisionTokenComponent,
   type PendingReactionComponent,
   type PersonalityComponent,
+  type PetExpressionEmote,
+  type PetExpressionMood,
   type ReactionSource,
   type PetIntent,
 } from "./components";
@@ -439,6 +441,45 @@ export function runCollisionBehaviorSystem(
           Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
       );
     if (!collision) continue;
+    const agentTask = components.getComponent(entity.id, "AgentTaskState");
+    if (agentTask?.status === "working") {
+      const personality = components.getComponent(entity.id, "Personality");
+      if (personality) {
+        const expression = workingCollisionExpression(personality);
+        components.setComponent(entity.id, {
+          type: "PetExpressionState",
+          source: "collision",
+          ...expression,
+          startedAt: now,
+          expiresAt: now + workingCollisionExpressionDurationMs(personality),
+        });
+      }
+
+      components.setComponent(entity.id, {
+        type: "MotionTarget" as const,
+        targetEntityId: null,
+        targetPosition: null,
+      });
+      components.setComponent(entity.id, {
+        type: "IntentState" as const,
+        intent: "active",
+      });
+
+      const existing = components.getComponent(
+        entity.id,
+        "BehaviorDecisionState",
+      );
+      if (
+        existing &&
+        existing.source === "autonomous" &&
+        (existing.reason === "working-focus" ||
+          existing.reason === "working-wander")
+      ) {
+        existing.expiresAt = now;
+      }
+
+      continue;
+    }
     if (isEscapingCollisionFlee(components, entity, collision)) continue;
 
     const personality = components.getComponent(entity.id, "Personality");
@@ -545,6 +586,38 @@ function reactionLatencyMs(
 }
 
 // ── Phase 4: Collision response score functions ───────────────────────────
+
+function workingCollisionExpressionDurationMs(
+  personality: PersonalityComponent,
+): number {
+  const duration =
+    550 +
+    personality.neuroticism * 350 +
+    (1 - personality.agreeableness) * 200 +
+    personality.extraversion * 100 -
+    personality.conscientiousness * 250;
+  return Math.round(clamp(duration, 350, 900));
+}
+
+function workingCollisionExpression(personality: PersonalityComponent): {
+  mood: PetExpressionMood;
+  emote: PetExpressionEmote;
+  label: string | null;
+} {
+  if (personality.neuroticism >= 0.65 || personality.agreeableness <= 0.3) {
+    return { mood: "confused", emote: "exclaim", label: "!" };
+  }
+
+  if (personality.agreeableness >= 0.75 && personality.neuroticism <= 0.35) {
+    return { mood: "love", emote: "heart", label: null };
+  }
+
+  if (personality.conscientiousness >= 0.75 || personality.neuroticism <= 0.2) {
+    return { mood: "working", emote: "none", label: null };
+  }
+
+  return { mood: "thinking", emote: "question", label: null };
+}
 
 function scoreCollisionFlee(p: PersonalityComponent): number {
   // N → flee instinct; A → reduce (agreeable pets less likely to flee)
