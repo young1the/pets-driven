@@ -27,7 +27,7 @@ function presentationFromIntent(
 ): IntentPresentation {
   switch (intent?.kind) {
     case "travel":
-      return { mood: "working", label: "Moving", emote: "none" };
+      return { mood: "working", label: null, emote: "none" };
     case "working":
       return { mood: "working", label: null, emote: "none" };
     case "idle":

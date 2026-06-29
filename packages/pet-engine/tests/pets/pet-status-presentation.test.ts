@@ -74,6 +74,17 @@ describe("presentPetStatus", () => {
     expect(presentation.showCapsule).toBe(true);
   });
 
+  it("shows working mood without a label when traveling", () => {
+    const presentation = presentPetStatus(
+      { kind: "travel", direction: "right" },
+      null,
+    );
+
+    expect(presentation.mood).toBe("working");
+    expect(presentation.label).toBeNull();
+    expect(presentation.showCapsule).toBe(true);
+  });
+
   it("falls back to a working mood without an intent", () => {
     const presentation = presentPetStatus(undefined, {
       kind: "status",
