@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
@@ -23,8 +23,6 @@ import {
   petWindowSizeForScale,
 } from "@/pet-window/pet-window-layout";
 
-/** Extra width added to the pet window when the context menu or note panel is open. */
-const PET_WINDOW_PANEL_WIDTH = 188;
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import {
   isFreshPetWindowMessage,
@@ -46,10 +44,6 @@ type PetWindowViewProps = {
 };
 
 type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
-type PetWindowMenu = {
-  kind: "body" | "overlay";
-  localPoint: { x: number; y: number };
-};
 type PetWindowPresentation = {
   decisionEmote: BehaviorTokenPresentation | null;
   intent: PetSpriteIntent;
@@ -181,11 +175,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
     null,
   );
-  const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
-  const [showNote, setShowNote] = useState(false);
-  const [noteText, setNoteText] = useState("");
-  const isPanelOpenRef = useRef(false);
-  const [petName, setPetName] = useState(pet.name ?? pet.petId);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(1);
   const [spritesheetUrl, setSpritesheetUrl] = useState<string | null>(null);
@@ -253,10 +242,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         });
       }
 
-      if (frame.name) {
-        setPetName(frame.name);
-      }
-
       const frameScale = clampPetWindowScale(
         frame.window.width / PET_CELL_SIZE.width,
       );
@@ -268,9 +253,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       ) {
         appliedSizeRef.current = nextSize;
         setSpriteScale(frameScale);
-        if (!isPanelOpenRef.current) {
-          void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
-        }
+        void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
       }
 
       const nextPosition = {
@@ -365,25 +348,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     };
   }, []);
 
-  useEffect(() => {
-    const panelOpen = activeMenu !== null || showNote;
-    isPanelOpenRef.current = panelOpen;
-
-    if (!isTauri()) {
-      return;
-    }
-
-    const { width, height } = petWindowSizeForScale(spriteScale);
-
-    if (panelOpen) {
-      void getCurrentWindow().setSize(
-        new LogicalSize(width + PET_WINDOW_PANEL_WIDTH, height),
-      );
-    } else {
-      void getCurrentWindow().setSize(new LogicalSize(width, height));
-    }
-  }, [activeMenu, showNote, spriteScale]);
-
   function emitPetWindowInput(
     kind: PetWindowInputKind,
     event: React.MouseEvent<HTMLElement>,
@@ -438,13 +402,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     const surface = visualFrameRef.current;
 
     if (!surface) {
-      return;
-    }
-
-    // While a menu is open keep the window solid so its buttons stay clickable
-    // (passthrough mode would let clicks fall through to whatever is behind).
-    if (activeMenu) {
-      void setNativeCursorPassthrough(false);
       return;
     }
 
@@ -563,7 +520,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
     if (pointerStart === "overlay" && hit.kind === "overlay") {
       setInteractionStatus("Overlay action");
-      setActiveMenu(null);
       emitPetWindowInput("overlay.click", event);
       return;
     }
@@ -592,7 +548,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     }
 
     if (pointerStart === "body") {
-      setActiveMenu(null);
       emitPetWindowInput("body.pointer.up", event);
       event.currentTarget.releasePointerCapture?.(event.pointerId);
 
@@ -645,23 +600,12 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
     if (hit.kind === "body") {
       setInteractionStatus("Pet context menu");
-      setActiveMenu({ kind: "body", localPoint: surfacePointFromEvent(surface, event) });
       emitPetWindowInput("body.contextmenu", event);
       return;
     }
 
     setInteractionStatus("Overlay context menu");
-    setActiveMenu({ kind: "overlay", localPoint: surfacePointFromEvent(surface, event) });
     emitPetWindowInput("overlay.contextmenu", event);
-  }
-
-  function menuPanelStyle(clickY: number): CSSProperties {
-    const windowHeight = (PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD) * spriteScale;
-    const pixelY = clickY * spriteScale;
-    return {
-      left: `${PET_CELL_SIZE.width * spriteScale + 4}px`,
-      top: `${Math.min(Math.max(pixelY - 10, 8), windowHeight - 110)}px`,
-    };
   }
 
   return (
@@ -720,103 +664,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           <span aria-hidden="true" className="pet-window-resize-button__mark" />
         </IconButton>
       </span>
-      {activeMenu ? (
-        <div
-          aria-label={
-            activeMenu.kind === "body"
-              ? "Pet Context Menu"
-              : "Pet Overlay Menu"
-          }
-          className="pet-window-menu"
-          data-testid={
-            activeMenu.kind === "body"
-              ? "pet-context-menu"
-              : "pet-overlay-menu"
-          }
-          role="menu"
-          style={menuPanelStyle(activeMenu.localPoint.y)}
-          onPointerDown={(event) => event.stopPropagation()}
-          onPointerUp={(event) => event.stopPropagation()}
-        >
-          <div className="pet-window-menu__header">
-            <span className="pet-window-menu__name">{petName}</span>
-          </div>
-          <div className="pet-window-menu__divider" />
-          <button
-            className="pet-window-menu__item pet-window-menu__item--note"
-            role="menuitem"
-            type="button"
-            onClick={() => {
-              setActiveMenu(null);
-              setShowNote(true);
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-            </svg>
-            노트 작성하기
-          </button>
-          <button
-            className="pet-window-menu__item pet-window-menu__item--close"
-            role="menuitem"
-            type="button"
-            onClick={() => {
-              setActiveMenu(null);
-              emitPetWindowSignal("menu.close");
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-            닫기
-          </button>
-        </div>
-      ) : null}
-      {showNote ? (
-        <div
-          aria-label={`${petName}에게 노트`}
-          className="pet-window-note"
-          style={{
-            left: `${PET_CELL_SIZE.width * spriteScale + 4}px`,
-            top: `8px`,
-          }}
-          onPointerDown={(event) => event.stopPropagation()}
-          onPointerUp={(event) => event.stopPropagation()}
-        >
-          <div className="pet-window-note__header">{petName}에게 메모</div>
-          <textarea
-            className="pet-window-note__input"
-            placeholder="메모를 입력하세요"
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            rows={3}
-          />
-          <div className="pet-window-note__actions">
-            <button
-              className="pet-window-note__cancel"
-              type="button"
-              onClick={() => {
-                setShowNote(false);
-                setNoteText("");
-              }}
-            >
-              취소
-            </button>
-            <button
-              className="pet-window-note__save"
-              type="button"
-              onClick={() => {
-                setShowNote(false);
-                setNoteText("");
-              }}
-            >
-              저장
-            </button>
-          </div>
-        </div>
-      ) : null}
       {interactionStatus ? (
         <span className="pet-window-status" role="status">
           {interactionStatus}

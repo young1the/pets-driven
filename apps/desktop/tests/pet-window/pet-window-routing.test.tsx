@@ -15,6 +15,8 @@ import {
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
+  PET_CONTEXT_MENU_READY_EVENT,
+  PET_CONTEXT_MENU_INIT_EVENT,
 } from "@/pet-window/pet-window-messages";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
@@ -247,6 +249,7 @@ describe("pet window product route", () => {
     tauriWindowMocks.startDragging.mockReset();
     tauriWindowMocks.setIgnoreCursorEvents.mockReset();
     tauriEventMocks.emitTo.mockReset();
+    tauriEventMocks.emitTo.mockResolvedValue(undefined);
     tauriEventMocks.listeners.clear();
     tauriEventMocks.listen.mockImplementation((eventName, handler) => {
       tauriEventMocks.listeners.set(eventName, handler as TauriEventHandler);
@@ -689,51 +692,73 @@ describe("pet window product route", () => {
     });
   });
 
-  it("shows the pet context menu with note and close actions on right-click", () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
-    );
-
+  it("opens the pet context menu popup when body.contextmenu input arrives at the host", async () => {
     render(<PetsDrivenApp />);
 
-    const surface = screen.getByLabelText("Pet Window pet-a");
-
-    fireEvent.contextMenu(surface, {
-      bubbles: true,
-      button: 2,
-      clientX: 96,
-      clientY: 112,
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
     });
 
-    expect(screen.getByTestId("pet-context-menu")).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: /노트 작성하기/ })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: /닫기/ })).toBeInTheDocument();
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "body.contextmenu",
+          localPoint: { x: 96, y: 112 },
+          screenPoint: { x: 400, y: 300 },
+          button: 2,
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
+        petId: "pet-a",
+        x: 400,
+        y: 300,
+      });
+    });
   });
 
-  it("opens the note popover when the note menu item is clicked", () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
-    );
-
+  it("saves the pet memo when menu.note-save arrives from the context menu popup", async () => {
     render(<PetsDrivenApp />);
 
-    const surface = screen.getByLabelText("Pet Window pet-a");
-
-    fireEvent.contextMenu(surface, {
-      bubbles: true,
-      button: 2,
-      clientX: 96,
-      clientY: 112,
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
     });
 
-    fireEvent.click(screen.getByRole("menuitem", { name: /노트 작성하기/ }));
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-context-menu-pet-a",
+          pointerId: 0,
+          kind: "menu.note-save",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          memo: "Great work today!",
+          at: Date.now(),
+        },
+      });
+    });
 
-    expect(screen.queryByTestId("pet-context-menu")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("pet-a에게 노트")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith(
+        "write_pets_driven_state",
+        expect.objectContaining({
+          state: expect.objectContaining({
+            pets: expect.arrayContaining([
+              expect.objectContaining({ id: "pet-a", memo: "Great work today!" }),
+            ]),
+          }),
+        }),
+      );
+    });
   });
 
   it("starts a new terminal channel from body focus when no window is bound", async () => {
@@ -1900,7 +1925,6 @@ describe("pet window product route", () => {
         }),
       );
     });
-    expect(screen.getByTestId("pet-context-menu")).toBeInTheDocument();
     expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
   });
 
@@ -1936,7 +1960,6 @@ describe("pet window product route", () => {
         }),
       );
     });
-    expect(screen.getByTestId("pet-overlay-menu")).toBeInTheDocument();
     expect(tauriWindowMocks.startDragging).not.toHaveBeenCalled();
   });
 

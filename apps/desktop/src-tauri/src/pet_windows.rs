@@ -163,6 +163,45 @@ pub(crate) async fn close_adopted_pet_window(
             .map_err(|error| format!("Could not close {label}: {error}"))?;
     }
 
+    let menu_label = format!("pet-context-menu-{pet_id}");
+
+    if let Some(menu_window) = app.get_webview_window(&menu_label) {
+        menu_window.destroy().ok();
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub(crate) async fn open_pet_context_menu(
+    app: tauri::AppHandle,
+    pet_id: String,
+    x: f64,
+    y: f64,
+) -> Result<(), String> {
+    validate_asset_id(&pet_id).map_err(|_| "Invalid pet id".to_string())?;
+
+    let label = format!("pet-context-menu-{pet_id}");
+    let url = format!("index.html?surface=pet-context-menu&petId={pet_id}");
+
+    if let Some(existing) = app.get_webview_window(&label) {
+        existing.destroy().ok();
+    }
+
+    WebviewWindowBuilder::new(&app, label.clone(), WebviewUrl::App(url.into()))
+        .title("Pet Menu")
+        .inner_size(192.0, 132.0)
+        .position(x, y)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .focused(true)
+        .build()
+        .map_err(|error| format!("Could not create {label}: {error}"))?;
+
     Ok(())
 }
 
