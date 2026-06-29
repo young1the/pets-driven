@@ -1,7 +1,10 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
-import type { AgentWorldEvent, WorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
+import type {
+  AgentWorldEvent,
+  WorldEvent,
+} from "@pets-driven/pet-engine/features/events/world-event";
 import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
@@ -57,8 +60,8 @@ const PET_ENGAGE_STOP_WIDTH_MULTIPLIER = 2.5;
 const CLAIM_DURATION_MS: Record<BehaviorDecisionSource, number> = {
   "user-interaction": 2000,
   "agent-event": 5000,
-  "collision": 1000,
-  "autonomous": 500,
+  collision: 1000,
+  autonomous: 500,
 };
 
 function isClaimed(
@@ -97,13 +100,17 @@ function claim(
   // When a higher-priority (non-autonomous) source overwrites an autonomous
   // claim, carry the autonomous history forward so repeat-cooldowns survive.
   const lastAutonomousReason =
-    source === "autonomous" ? reason
-    : existing?.source === "autonomous" ? existing.reason
-    : (existing?.lastAutonomousReason ?? null);
+    source === "autonomous"
+      ? reason
+      : existing?.source === "autonomous"
+        ? existing.reason
+        : (existing?.lastAutonomousReason ?? null);
   const lastAutonomousAt =
-    source === "autonomous" ? now
-    : existing?.source === "autonomous" ? existing.decidedAt
-    : (existing?.lastAutonomousAt ?? null);
+    source === "autonomous"
+      ? now
+      : existing?.source === "autonomous"
+        ? existing.decidedAt
+        : (existing?.lastAutonomousAt ?? null);
 
   components.setComponent(id, {
     type: "BehaviorDecisionState",
@@ -182,13 +189,25 @@ export function runAgentEventBehaviorSystem(
   physics?: VelocityWriter,
 ): void {
   if (events.length === 0) return;
-  const agentEvents = events.filter((event): event is AgentWorldEvent => event.kind === "agent");
+  const agentEvents = events.filter(
+    (event): event is AgentWorldEvent => event.kind === "agent",
+  );
   if (agentEvents.length === 0) return;
   const now = clock.now();
 
   components.forEach(
-    ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
-    (id, [agent, intent, speechProfile, speech, activity, completionBehavior]) => {
+    [
+      "AgentBinding",
+      "IntentState",
+      "SpeechProfile",
+      "SpeechState",
+      "ActivityState",
+      "CompletionBehavior",
+    ],
+    (
+      id,
+      [agent, intent, speechProfile, speech, activity, completionBehavior],
+    ) => {
       if (isClaimed(components, id, "agent-event", now)) return;
 
       for (const event of agentEvents) {
@@ -202,11 +221,18 @@ export function runAgentEventBehaviorSystem(
           claim(components, id, "agent-event", now, "task.started");
         }
 
-        if (event.type === "task.waiting" || event.type === "attention.requested") {
+        if (
+          event.type === "task.waiting" ||
+          event.type === "attention.requested"
+        ) {
           intent.intent = "idle";
           stopPetMovement(components, physics, id);
           setAgentTaskState(components, id, "waiting", event);
-          setSpeech(speech, event.summary ?? speechProfile.attentionNeeded, now);
+          setSpeech(
+            speech,
+            event.summary ?? speechProfile.attentionNeeded,
+            now,
+          );
           claim(components, id, "agent-event", now, event.type);
         }
 
@@ -242,6 +268,53 @@ export function runAgentEventHoldSystem(
   });
 }
 
+export function runWorkingBehaviorSystem(
+  components: ComponentStore,
+  clock: Clock,
+  random: RandomSource,
+  bounds: { x?: number; y?: number; width: number; height: number },
+): void {
+  const now = clock.now();
+
+  components.forEach(
+    ["AgentTaskState", "Personality", "MotionTarget", "Transform"],
+    (id, [agentTask, personality, motion, transform]) => {
+      if (agentTask.status !== "working") return;
+      if (motion.targetPosition !== null || motion.targetEntityId !== null)
+        return;
+
+      const existing = components.getComponent(id, "BehaviorDecisionState");
+      if (existing && existing.expiresAt > now) return;
+
+      const distractionScore =
+        (1 - personality.conscientiousness) * 0.7 +
+        personality.extraversion * 0.3;
+
+      if (distractionScore > 0.5) {
+        const target = pickWanderPosition(
+          transform.position.x,
+          transform.position.y,
+          bounds,
+          random,
+          "near",
+          personality,
+          petWidth(components, id),
+        );
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: null,
+          targetPosition: target,
+        });
+        setPetIntent(components, id, "active");
+        claim(components, id, "autonomous", now, "working-wander", now + 750);
+        return;
+      }
+
+      claim(components, id, "autonomous", now, "working-focus", now + 1500);
+    },
+  );
+}
+
 // Priority 3: Collision avoidance (entity overlap).
 export function runCollisionBehaviorSystem(
   components: ComponentStore,
@@ -259,7 +332,10 @@ export function runCollisionBehaviorSystem(
     intent: string;
     targetX: number | null;
     targetY: number | null;
-    motion: { targetEntityId: string | null; targetPosition: { x: number; y: number } | null };
+    motion: {
+      targetEntityId: string | null;
+      targetPosition: { x: number; y: number } | null;
+    };
   };
   type CollisionCandidate = { id: string; x: number; y: number };
 
@@ -289,22 +365,35 @@ export function runCollisionBehaviorSystem(
   for (const entity of entities) {
     if (components.getComponent(entity.id, "ClimbingTag")) continue;
     if (components.getComponent(entity.id, "AirborneTag")) {
-      const existing = components.getComponent(entity.id, "BehaviorDecisionState");
+      const existing = components.getComponent(
+        entity.id,
+        "BehaviorDecisionState",
+      );
       if (existing?.source === "collision" && existing.expiresAt > now) {
         existing.expiresAt = now;
         components.removeComponent(entity.id, "PendingReaction");
       }
       continue;
     }
-    const existing = components.getComponent(entity.id, "BehaviorDecisionState");
-    if (!existing || existing.source !== "collision" || existing.expiresAt <= now) continue;
-
-    const stillOverlapping = !!components.getComponent(entity.id, "PetCollision") || entities.some(
-      (c) =>
-        c.id !== entity.id &&
-        Math.abs(c.x - entity.x) < entity.halfW + c.halfW &&
-        Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
+    const existing = components.getComponent(
+      entity.id,
+      "BehaviorDecisionState",
     );
+    if (
+      !existing ||
+      existing.source !== "collision" ||
+      existing.expiresAt <= now
+    )
+      continue;
+
+    const stillOverlapping =
+      !!components.getComponent(entity.id, "PetCollision") ||
+      entities.some(
+        (c) =>
+          c.id !== entity.id &&
+          Math.abs(c.x - entity.x) < entity.halfW + c.halfW &&
+          Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
+      );
 
     if (!stillOverlapping) {
       existing.expiresAt = now; // allow BehaviorDecisionSystem to act this frame
@@ -318,8 +407,15 @@ export function runCollisionBehaviorSystem(
     // Do not disrupt a climbing entity or one that is mid-approach to a surface.
     if (components.getComponent(entity.id, "ClimbingTag")) continue;
     if (components.getComponent(entity.id, "AirborneTag")) continue;
-    if (components.getComponent(entity.id, "ClimbIntentState")?.phase === "approaching") continue;
-    if (isClaimedBySameOrHigherPriority(components, entity.id, "collision", now)) continue;
+    if (
+      components.getComponent(entity.id, "ClimbIntentState")?.phase ===
+      "approaching"
+    )
+      continue;
+    if (
+      isClaimedBySameOrHigherPriority(components, entity.id, "collision", now)
+    )
+      continue;
     // Skip if a reaction is already pending (avoid overwriting mid-deliberation).
     if (components.getComponent(entity.id, "PendingReaction")) continue;
 
@@ -335,7 +431,9 @@ export function runCollisionBehaviorSystem(
     if (isEscapingCollisionFlee(components, entity, collision)) continue;
 
     const personality = components.getComponent(entity.id, "Personality");
-    const latency = personality ? reactionLatencyMs(personality, "collision") : 400;
+    const latency = personality
+      ? reactionLatencyMs(personality, "collision")
+      : 400;
     const reactsAt = now + latency;
 
     components.setComponent(entity.id, {
@@ -380,12 +478,16 @@ function matterPetCollisionCandidate(
   const petCollision = components.getComponent(entity.id, "PetCollision");
   if (!petCollision) return undefined;
 
-  const liveEntity = entities.find((candidate) => candidate.id === petCollision.otherEntityId);
-  return liveEntity ?? {
-    id: petCollision.otherEntityId,
-    x: petCollision.otherPosition.x,
-    y: petCollision.otherPosition.y,
-  };
+  const liveEntity = entities.find(
+    (candidate) => candidate.id === petCollision.otherEntityId,
+  );
+  return (
+    liveEntity ?? {
+      id: petCollision.otherEntityId,
+      x: petCollision.otherPosition.x,
+      y: petCollision.otherPosition.y,
+    }
+  );
 }
 
 function isEscapingCollisionFlee(
@@ -415,11 +517,18 @@ function isEscapingCollisionFlee(
   const awayX = entity.x - collision.x;
   const awayY = entity.y - collision.y;
 
-  return targetDistanceSquared > currentDistanceSquared && movementX * awayX + movementY * awayY > 0;
+  return (
+    targetDistanceSquared > currentDistanceSquared &&
+    movementX * awayX + movementY * awayY > 0
+  );
 }
 
-function reactionLatencyMs(p: PersonalityComponent, source: ReactionSource): number {
-  const baseMs = source === "collision" ? 400 : source === "agent-event" ? 250 : 200;
+function reactionLatencyMs(
+  p: PersonalityComponent,
+  source: ReactionSource,
+): number {
+  const baseMs =
+    source === "collision" ? 400 : source === "agent-event" ? 250 : 200;
   const latency = baseMs * (1 + p.neuroticism * 1.5 - p.extraversion * 0.5);
   return Math.max(0, Math.min(2000, latency));
 }
@@ -433,7 +542,9 @@ function scoreCollisionFlee(p: PersonalityComponent): number {
 
 function scoreCollisionEngage(p: PersonalityComponent): number {
   // E + A → curiosity/warmth; N → avoidance
-  return 0.2 + p.extraversion * 0.5 + p.agreeableness * 0.5 - p.neuroticism * 0.4;
+  return (
+    0.2 + p.extraversion * 0.5 + p.agreeableness * 0.5 - p.neuroticism * 0.4
+  );
 }
 
 function scoreCollisionAvoid(): number {
@@ -447,7 +558,12 @@ function scoreCollisionJump(p: PersonalityComponent): number {
 
 function scoreCollisionStay(p: PersonalityComponent): number {
   // A + calm introversion → comfortable staying close without re-approaching.
-  return 0.05 + p.agreeableness * 0.3 + (1 - p.extraversion) * 1 + (1 - p.neuroticism) * 0.1;
+  return (
+    0.05 +
+    p.agreeableness * 0.3 +
+    (1 - p.extraversion) * 1 +
+    (1 - p.neuroticism) * 0.1
+  );
 }
 
 function scoreCollisionUnfazed(p: PersonalityComponent): number {
@@ -483,7 +599,10 @@ function isHorizontalOnlyCollisionResponse(
   );
 }
 
-function fallbackHorizontalDirection(id: string, otherId: string | undefined): -1 | 1 {
+function fallbackHorizontalDirection(
+  id: string,
+  otherId: string | undefined,
+): -1 | 1 {
   if (!otherId) return -1;
   return id.localeCompare(otherId) <= 0 ? -1 : 1;
 }
@@ -503,8 +622,10 @@ function isPendingReactionStillOverlapping(
   if (!transform || !body || !otherTransform || !otherBody) return false;
 
   return (
-    Math.abs(transform.position.x - otherTransform.position.x) < body.width / 2 + otherBody.width / 2 &&
-    Math.abs(transform.position.y - otherTransform.position.y) < body.height / 2 + otherBody.height / 2
+    Math.abs(transform.position.x - otherTransform.position.x) <
+      body.width / 2 + otherBody.width / 2 &&
+    Math.abs(transform.position.y - otherTransform.position.y) <
+      body.height / 2 + otherBody.height / 2
   );
 }
 
@@ -532,16 +653,23 @@ export function runAutonomousBehaviorSystem(
 // Arrival detection (runs in UPDATE phase, after locomotion decisions).
 // Not a BEHAVIOR-phase system: it detects arrival at any target regardless of
 // which source directed the pet there.
-export function runArrivalBehaviorSystem(components: ComponentStore, clock?: Clock): void {
+export function runArrivalBehaviorSystem(
+  components: ComponentStore,
+  clock?: Clock,
+): void {
   components.forEach(
     ["IntentState", "Transform", "MotionTarget", "WandersOnArrival"],
     (id, [intent, transform, motion, wandersOnArrival]) => {
       if (motion.targetEntityId) {
         const decision = components.getComponent(id, "BehaviorDecisionState");
-        const decisionToken = components.getComponent(id, "BehaviorDecisionToken");
+        const decisionToken = components.getComponent(
+          id,
+          "BehaviorDecisionToken",
+        );
         const isApproachingPet =
           intent.intent === "active" &&
-          (decisionToken?.kind === "approach-pet" || decision?.reason === "approach-pet");
+          (decisionToken?.kind === "approach-pet" ||
+            decision?.reason === "approach-pet");
 
         if (isApproachingPet) {
           const startedAt =
@@ -550,7 +678,9 @@ export function runArrivalBehaviorSystem(components: ComponentStore, clock?: Clo
               : (decision?.decidedAt ?? 0);
           const now = clock?.now() ?? startedAt;
           const perception = components.getComponent(id, "Perception");
-          const targetPet = perception?.nearbyPets.find((pet) => pet.id === motion.targetEntityId);
+          const targetPet = perception?.nearbyPets.find(
+            (pet) => pet.id === motion.targetEntityId,
+          );
           const targetPosition = targetPet?.position ?? motion.targetPosition;
           if (targetPosition) {
             const dx = targetPosition.x - transform.position.x;
@@ -567,7 +697,8 @@ export function runArrivalBehaviorSystem(components: ComponentStore, clock?: Clo
                 decidedAt: now,
                 expiresAt: now + APPROACH_PET_SUCCESS_CUE_MS,
                 reason: "approach-pet-success",
-                lastAutonomousReason: decision?.lastAutonomousReason ?? "approach-pet",
+                lastAutonomousReason:
+                  decision?.lastAutonomousReason ?? "approach-pet",
                 lastAutonomousAt: decision?.lastAutonomousAt ?? startedAt,
               });
               components.removeComponent(id, "BehaviorDecisionToken");
@@ -653,7 +784,9 @@ function softmaxSample(
     if (candidate.score > maxScore) maxScore = candidate.score;
   }
 
-  const weights = candidates.map((candidate) => Math.exp((candidate.score - maxScore) / T));
+  const weights = candidates.map((candidate) =>
+    Math.exp((candidate.score - maxScore) / T),
+  );
   const total = weights.reduce((sum, weight) => sum + weight, 0);
 
   const randomRoll = random.next();
@@ -692,7 +825,10 @@ function softmaxSample(
 
 // ── BehaviorDecisionSystem helpers ────────────────────────────────────────
 
-type TokenFields = Omit<BehaviorDecisionTokenComponent, "type" | "decidedAt" | "consumed" | "kind">;
+type TokenFields = Omit<
+  BehaviorDecisionTokenComponent,
+  "type" | "decidedAt" | "consumed" | "kind"
+>;
 
 type Candidate = {
   kind: BehaviorDecisionKind;
@@ -707,7 +843,8 @@ function pushCandidate(
   now: number,
   candidate: Candidate,
 ): void {
-  if (isAutonomousRepeatCoolingDown(components, id, candidate.kind, now)) return;
+  if (isAutonomousRepeatCoolingDown(components, id, candidate.kind, now))
+    return;
   candidates.push(candidate);
 }
 
@@ -724,9 +861,13 @@ function isAutonomousRepeatCoolingDown(
   // (source === "autonomous") or was carried over when a higher-priority claim
   // (collision, agent-event) overwrote it.
   const lastReason =
-    decision.source === "autonomous" ? decision.reason : decision.lastAutonomousReason;
+    decision.source === "autonomous"
+      ? decision.reason
+      : decision.lastAutonomousReason;
   const lastAt =
-    decision.source === "autonomous" ? decision.decidedAt : decision.lastAutonomousAt;
+    decision.source === "autonomous"
+      ? decision.decidedAt
+      : decision.lastAutonomousAt;
 
   if (lastReason !== reason || lastAt == null) return false;
 
@@ -749,7 +890,9 @@ function scoreWanderFar(p: PersonalityComponent): number {
 
 function scoreSeekUser(p: PersonalityComponent): number {
   // E (extraversion) + A (agreeableness) → approach user; N → avoidance
-  return 0.3 + p.extraversion * 0.7 + p.agreeableness * 0.3 - p.neuroticism * 0.3;
+  return (
+    0.3 + p.extraversion * 0.7 + p.agreeableness * 0.3 - p.neuroticism * 0.3
+  );
 }
 
 function scoreJump(p: PersonalityComponent): number {
@@ -771,7 +914,9 @@ function scoreIdleStay(p: PersonalityComponent): number {
 
 function scoreApproachPet(p: PersonalityComponent): number {
   // E + A → social draw; N → reluctance
-  return 0.3 + p.extraversion * 0.7 + p.agreeableness * 0.4 - p.neuroticism * 0.3;
+  return (
+    0.3 + p.extraversion * 0.7 + p.agreeableness * 0.4 - p.neuroticism * 0.3
+  );
 }
 
 function scoreFleeFromPet(p: PersonalityComponent): number {
@@ -800,10 +945,7 @@ export function wanderRadius(
       base * 2.25 - p.neuroticism * bodyWidth * 1.25,
     ];
   } else {
-    return [
-      base * 2 + p.openness * base,
-      base * 4 + p.openness * base * 2,
-    ];
+    return [base * 2 + p.openness * base, base * 4 + p.openness * base * 2];
   }
 }
 
@@ -834,7 +976,11 @@ function pickWanderPosition(
   };
 }
 
-function setPetIntent(components: ComponentStore, id: string, intent: PetIntent): void {
+function setPetIntent(
+  components: ComponentStore,
+  id: string,
+  intent: PetIntent,
+): void {
   components.setComponent(id, { type: "IntentState", intent });
 }
 
@@ -877,7 +1023,10 @@ export function runBehaviorDecisionSystem(
       claimedSurfaces.add(otherIntent.surfaceEntityId);
       return;
     }
-    if (otherIntent.phase === "attached" && components.getComponent(otherId, "ClimbingTag")) {
+    if (
+      otherIntent.phase === "attached" &&
+      components.getComponent(otherId, "ClimbingTag")
+    ) {
       claimedSurfaces.add(otherIntent.surfaceEntityId);
     }
   });
@@ -894,7 +1043,10 @@ export function runBehaviorDecisionSystem(
       if (motion.targetEntityId !== null) return;
 
       // Block if any active claim exists (same- and higher-priority guard).
-      const existingClaim = components.getComponent(id, "BehaviorDecisionState");
+      const existingClaim = components.getComponent(
+        id,
+        "BehaviorDecisionState",
+      );
       if (existingClaim && existingClaim.expiresAt > now) return;
 
       const agentTask = components.getComponent(id, "AgentTaskState");
@@ -914,7 +1066,10 @@ export function runBehaviorDecisionSystem(
       // the normal autonomous pool.
       const pendingReaction = components.getComponent(id, "PendingReaction");
       if (pendingReaction) {
-        const otherPos = pendingReaction.context.otherPosition ?? { x: petX + 100, y: petY };
+        const otherPos = pendingReaction.context.otherPosition ?? {
+          x: petX + 100,
+          y: petY,
+        };
         const away = normalize({ x: petX - otherPos.x, y: petY - otherPos.y });
         const movementAway = constrainCollisionDirectionForLocomotion(
           components,
@@ -925,9 +1080,15 @@ export function runBehaviorDecisionSystem(
         const side = isHorizontalOnlyCollisionResponse(components, id)
           ? movementAway
           : { x: -away.y, y: away.x };
-        const reactionDistance = petWidth(components, id) * COLLISION_REACTION_WIDTH_MULTIPLIER;
-        const engageStopDistance = petWidth(components, id) * PET_ENGAGE_STOP_WIDTH_MULTIPLIER;
-        const stillOverlapping = isPendingReactionStillOverlapping(components, id, pendingReaction);
+        const reactionDistance =
+          petWidth(components, id) * COLLISION_REACTION_WIDTH_MULTIPLIER;
+        const engageStopDistance =
+          petWidth(components, id) * PET_ENGAGE_STOP_WIDTH_MULTIPLIER;
+        const stillOverlapping = isPendingReactionStillOverlapping(
+          components,
+          id,
+          pendingReaction,
+        );
         const canCollisionJump =
           stillOverlapping &&
           !!components.getComponent(id, "CanJump") &&
@@ -938,8 +1099,16 @@ export function runBehaviorDecisionSystem(
           (components.getComponent(id, "ContactState")?.grounded ?? true);
 
         const fleeTarget = {
-          x: clampToBoundsX(petX + movementAway.x * reactionDistance, bounds, COLLISION_TARGET_MARGIN),
-          y: clampToBoundsY(petY + movementAway.y * reactionDistance, bounds, COLLISION_TARGET_MARGIN),
+          x: clampToBoundsX(
+            petX + movementAway.x * reactionDistance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
+          y: clampToBoundsY(
+            petY + movementAway.y * reactionDistance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
         };
         // engageTarget sits 80 px from the other pet on SELF's side — close
         // enough to "engage" but not so close that the pet walks straight
@@ -948,17 +1117,45 @@ export function runBehaviorDecisionSystem(
         // `otherPos - away * D` placed the target on the FAR side, causing pets
         // to walk through each other and immediately re-collide (cluster bug).
         const engageTarget = {
-          x: clampToBoundsX(otherPos.x + movementAway.x * engageStopDistance, bounds, COLLISION_TARGET_MARGIN),
-          y: clampToBoundsY(otherPos.y + movementAway.y * engageStopDistance, bounds, COLLISION_TARGET_MARGIN),
+          x: clampToBoundsX(
+            otherPos.x + movementAway.x * engageStopDistance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
+          y: clampToBoundsY(
+            otherPos.y + movementAway.y * engageStopDistance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
         };
         const avoidTarget = {
-          x: clampToBoundsX(petX + side.x * reactionDistance, bounds, COLLISION_TARGET_MARGIN),
-          y: clampToBoundsY(petY + side.y * reactionDistance, bounds, COLLISION_TARGET_MARGIN),
+          x: clampToBoundsX(
+            petX + side.x * reactionDistance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
+          y: clampToBoundsY(
+            petY + side.y * reactionDistance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
         };
         const reactiveCandidates: Candidate[] = [
-          { kind: "collision-flee",    score: scoreCollisionFlee(personality),    build: () => ({ targetPosition: fleeTarget }) },
-          { kind: "collision-engage",  score: scoreCollisionEngage(personality),  build: () => ({ targetPosition: engageTarget }) },
-          { kind: "collision-avoid",   score: scoreCollisionAvoid(),              build: () => ({ targetPosition: avoidTarget }) },
+          {
+            kind: "collision-flee",
+            score: scoreCollisionFlee(personality),
+            build: () => ({ targetPosition: fleeTarget }),
+          },
+          {
+            kind: "collision-engage",
+            score: scoreCollisionEngage(personality),
+            build: () => ({ targetPosition: engageTarget }),
+          },
+          {
+            kind: "collision-avoid",
+            score: scoreCollisionAvoid(),
+            build: () => ({ targetPosition: avoidTarget }),
+          },
         ];
         if (canCollisionJump) {
           reactiveCandidates.push({
@@ -1020,9 +1217,14 @@ export function runBehaviorDecisionSystem(
       // Read world context from this pet's Perception snapshot.
       const perception = components.getComponent(id, "Perception");
       const perceptionAnchor = perception?.userAnchor;
-      const userAnchor: { id: string; x: number; y: number } | null = perceptionAnchor
-        ? { id: perceptionAnchor.id, x: perceptionAnchor.position.x, y: perceptionAnchor.position.y }
-        : null;
+      const userAnchor: { id: string; x: number; y: number } | null =
+        perceptionAnchor
+          ? {
+              id: perceptionAnchor.id,
+              x: perceptionAnchor.position.x,
+              y: perceptionAnchor.position.y,
+            }
+          : null;
 
       const isFlying = !!components.getComponent(id, "FlyingTag");
 
@@ -1031,13 +1233,33 @@ export function runBehaviorDecisionSystem(
       pushCandidate(candidates, components, id, now, {
         kind: "wander-near",
         score: scoreWanderNear(personality),
-        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "near", personality, petWidth(components, id)) }),
+        build: () => ({
+          targetPosition: pickWanderPosition(
+            petX,
+            petY,
+            bounds,
+            random,
+            "near",
+            personality,
+            petWidth(components, id),
+          ),
+        }),
       });
 
       pushCandidate(candidates, components, id, now, {
         kind: "wander-far",
         score: scoreWanderFar(personality),
-        build: () => ({ targetPosition: pickWanderPosition(petX, petY, bounds, random, "far", personality, petWidth(components, id)) }),
+        build: () => ({
+          targetPosition: pickWanderPosition(
+            petX,
+            petY,
+            bounds,
+            random,
+            "far",
+            personality,
+            petWidth(components, id),
+          ),
+        }),
       });
 
       if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
@@ -1065,12 +1287,20 @@ export function runBehaviorDecisionSystem(
       const canClimb = components.getComponent(id, "CanWallClimb");
       const climbing = components.getComponent(id, "ClimbingTag");
       const climbDismount = components.getComponent(id, "ClimbDismountState");
-      if (canClimb && !climbing && (!climbDismount || climbDismount.phase === "ready")) {
+      if (
+        canClimb &&
+        !climbing &&
+        (!climbDismount || climbDismount.phase === "ready")
+      ) {
         // Nearest climbable surface from Perception; skip if already reserved.
         const nearestClimbable = perception?.nearbyClimbables[0];
         const surface =
           nearestClimbable && !claimedSurfaces.has(nearestClimbable.id)
-            ? { id: nearestClimbable.id, x: nearestClimbable.position.x, y: nearestClimbable.position.y }
+            ? {
+                id: nearestClimbable.id,
+                x: nearestClimbable.position.x,
+                y: nearestClimbable.position.y,
+              }
             : null;
         if (surface) {
           pushCandidate(candidates, components, id, now, {
@@ -1080,7 +1310,10 @@ export function runBehaviorDecisionSystem(
               // Reserve the surface so later entities in this same pass won't
               // double-target it (build() runs before the next entity is processed).
               claimedSurfaces.add(surface.id);
-              return { climbSurfaceId: surface.id, climbTargetY: surface.y - 80 };
+              return {
+                climbSurfaceId: surface.id,
+                climbTargetY: surface.y - 80,
+              };
             },
           });
         }
@@ -1104,10 +1337,19 @@ export function runBehaviorDecisionSystem(
         const fleeDirX = petX - nearestPet.position.x;
         const fleeDirY = petY - nearestPet.position.y;
         const fleeLen = Math.hypot(fleeDirX, fleeDirY) || 1;
-        const fleeDistance = petWidth(components, id) * PET_FLEE_WIDTH_MULTIPLIER;
+        const fleeDistance =
+          petWidth(components, id) * PET_FLEE_WIDTH_MULTIPLIER;
         const fleePos = {
-          x: clampToBoundsX(petX + (fleeDirX / fleeLen) * fleeDistance, bounds, COLLISION_TARGET_MARGIN),
-          y: clampToBoundsY(petY + (fleeDirY / fleeLen) * fleeDistance, bounds, COLLISION_TARGET_MARGIN),
+          x: clampToBoundsX(
+            petX + (fleeDirX / fleeLen) * fleeDistance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
+          y: clampToBoundsY(
+            petY + (fleeDirY / fleeLen) * fleeDistance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
         };
         pushCandidate(candidates, components, id, now, {
           kind: "flee-from-pet",
@@ -1125,7 +1367,11 @@ export function runBehaviorDecisionSystem(
       if (candidates.length === 0) return;
       // Softmax sampling: temperature scales with neuroticism.
       // High N → higher T → flatter distribution → more erratic behaviour.
-      const selection = softmaxSample(candidates, personality.neuroticism, random);
+      const selection = softmaxSample(
+        candidates,
+        personality.neuroticism,
+        random,
+      );
       const winner = selection.winner;
       components.setComponent(id, {
         type: "BehaviorDecisionToken",
@@ -1216,7 +1462,10 @@ export function runBehaviorPlanningSystem(
       case "collision-jump":
       case "collision-stay":
       case "collision-unfazed":
-        if (token.kind === "collision-jump" && !components.getComponent(id, "JumpActionState")) {
+        if (
+          token.kind === "collision-jump" &&
+          !components.getComponent(id, "JumpActionState")
+        ) {
           components.setComponent(id, {
             type: "JumpActionState",
             phase: "requested",
@@ -1274,7 +1523,10 @@ function clampToBoundsY(
 }
 
 function petWidth(components: ComponentStore, id: string): number {
-  return components.getComponent(id, "PhysicsBody")?.width ?? DEFAULT_BEHAVIOR_BODY_WIDTH;
+  return (
+    components.getComponent(id, "PhysicsBody")?.width ??
+    DEFAULT_BEHAVIOR_BODY_WIDTH
+  );
 }
 
 // ── System descriptors ─────────────────────────────────────────────────────
@@ -1292,8 +1544,22 @@ export const SpeechExpirationSystem: SimulationSystem<WorldStepContext> = {
 export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentEventBehaviorSystem",
   dependsOn: ["SpeechExpirationSystem"],
-  reads: ["AgentBinding", "IntentState", "SpeechProfile", "SpeechState", "ActivityState", "CompletionBehavior"],
-  writes: ["IntentState", "SpeechState", "ActivityState", "BehaviorDecisionState", "MotionTarget", "PhysicsVelocity"],
+  reads: [
+    "AgentBinding",
+    "IntentState",
+    "SpeechProfile",
+    "SpeechState",
+    "ActivityState",
+    "CompletionBehavior",
+  ],
+  writes: [
+    "IntentState",
+    "SpeechState",
+    "ActivityState",
+    "BehaviorDecisionState",
+    "MotionTarget",
+    "PhysicsVelocity",
+  ],
   update(ctx) {
     runAgentEventBehaviorSystem(
       ctx.components,
@@ -1330,15 +1596,37 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "AirborneTag",
     "ClimbIntentState",
   ],
-  writes: ["PendingReaction", "BehaviorDecisionState", "MotionTarget", "IntentState"],
+  writes: [
+    "PendingReaction",
+    "BehaviorDecisionState",
+    "MotionTarget",
+    "IntentState",
+  ],
   update(ctx) {
     runCollisionBehaviorSystem(ctx.components, ctx.bounds, ctx.clock);
   },
 };
 
+export const WorkingBehaviorSystem: SimulationSystem<WorldStepContext> = {
+  name: "WorkingBehaviorSystem",
+  dependsOn: ["CollisionBehaviorSystem"],
+  reads: [
+    "AgentTaskState",
+    "Personality",
+    "MotionTarget",
+    "Transform",
+    "BehaviorDecisionState",
+    "PhysicsBody",
+  ],
+  writes: ["MotionTarget", "IntentState", "BehaviorDecisionState"],
+  update(ctx) {
+    runWorkingBehaviorSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+  },
+};
+
 export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
   name: "BehaviorDecisionSystem",
-  dependsOn: ["CollisionBehaviorSystem"],
+  dependsOn: ["WorkingBehaviorSystem"],
   reads: [
     "IntentState",
     "MotionTarget",
@@ -1357,13 +1645,14 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "CanWallClimb",
     "ClimbDismountState",
   ],
-  writes: [
-    "BehaviorDecisionToken",
-    "BehaviorDecisionState",
-    "PendingReaction",
-  ],
+  writes: ["BehaviorDecisionToken", "BehaviorDecisionState", "PendingReaction"],
   update(ctx) {
-    runBehaviorDecisionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+    runBehaviorDecisionSystem(
+      ctx.components,
+      ctx.clock,
+      ctx.random,
+      ctx.bounds,
+    );
   },
 };
 
@@ -1396,7 +1685,15 @@ export const AutonomousBehaviorSystem: SimulationSystem<WorldStepContext> = {
 export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "ArrivalBehaviorSystem",
   dependsOn: ["ClimbApproachSystem"],
-  reads: ["Transform", "MotionTarget", "WandersOnArrival", "IntentState", "ClimbingTag", "Perception", "ClimbIntentState"],
+  reads: [
+    "Transform",
+    "MotionTarget",
+    "WandersOnArrival",
+    "IntentState",
+    "ClimbingTag",
+    "Perception",
+    "ClimbIntentState",
+  ],
   writes: ["MotionTarget", "IntentState"],
   update(ctx) {
     runArrivalBehaviorSystem(ctx.components, ctx.clock);

@@ -23,6 +23,7 @@ import {
   AgentEventBehaviorSystem,
   AgentEventHoldSystem,
   CollisionBehaviorSystem,
+  WorkingBehaviorSystem,
   BehaviorDecisionSystem,
   AutonomousBehaviorSystem,
   BehaviorPlanningSystem,
@@ -51,9 +52,13 @@ import {
   PhysicsIntegrationSystem,
 } from "@pets-driven/pet-engine/features/physics/systems";
 
-export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
+export type PhaseName =
+  "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
 
-export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepContext>>> = {
+export const SYSTEM_PHASES: Record<
+  PhaseName,
+  Array<SimulationSystem<WorldStepContext>>
+> = {
   PRE_UPDATE: [
     PhysicsTransformSyncSystemPre,
     PetCollisionSyncSystem,
@@ -63,12 +68,13 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
 
   BEHAVIOR: [
     UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
-    SpeechExpirationSystem,        // clear expired speech before new decisions
-    AgentEventBehaviorSystem,       // priority 2: external agent events
-    CollisionBehaviorSystem,        // priority 3: entity overlap avoidance
-    BehaviorDecisionSystem,         // priority 4a: personality-weighted next behavior (emits token)
-    AutonomousBehaviorSystem,       // priority 4b: idle speech
-    BehaviorPlanningSystem,         // materializes the decision token into concrete state
+    SpeechExpirationSystem, // clear expired speech before new decisions
+    AgentEventBehaviorSystem, // priority 2: external agent events
+    CollisionBehaviorSystem, // priority 3: entity overlap avoidance
+    WorkingBehaviorSystem, // priority 4a: working-state focus or wandering
+    BehaviorDecisionSystem, // priority 4a: personality-weighted next behavior (emits token)
+    AutonomousBehaviorSystem, // priority 4b: idle speech
+    BehaviorPlanningSystem, // materializes the decision token into concrete state
   ],
 
   UPDATE: [
@@ -94,10 +100,7 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     ThrowImpulseSystem,
   ],
 
-  SIMULATE: [
-    PhysicsIntegrationSystem,
-    PhysicsTransformSyncSystemPost,
-  ],
+  SIMULATE: [PhysicsIntegrationSystem, PhysicsTransformSyncSystemPost],
 };
 
 export const PHASE_ORDER: PhaseName[] = [
@@ -109,6 +112,5 @@ export const PHASE_ORDER: PhaseName[] = [
 ];
 
 /** Flattened per-tick pipeline in execution order. Single source of truth. */
-export const STEP_SYSTEMS: Array<SimulationSystem<WorldStepContext>> = PHASE_ORDER.flatMap(
-  (phase) => SYSTEM_PHASES[phase],
-);
+export const STEP_SYSTEMS: Array<SimulationSystem<WorldStepContext>> =
+  PHASE_ORDER.flatMap((phase) => SYSTEM_PHASES[phase]);
