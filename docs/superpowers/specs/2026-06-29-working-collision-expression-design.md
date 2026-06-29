@@ -23,11 +23,17 @@ detours. The agent is still working; the collision is display flavor.
 Add a visual-only expression component:
 
 ```ts
+type PetExpressionMood =
+  "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";
+
+type PetExpressionEmote =
+  "none" | "heart" | "zzz" | "sparkle" | "question" | "exclaim";
+
 type PetExpressionStateComponent = {
   type: "PetExpressionState";
   source: "collision";
-  mood: PetMood;
-  emote: PetEmoteKind;
+  mood: PetExpressionMood;
+  emote: PetExpressionEmote;
   label: string | null;
   startedAt: number;
   expiresAt: number;
@@ -94,8 +100,10 @@ else:
   label = null
 ```
 
-This mapping intentionally reuses existing design-system moods and emotes. It
-does not require a new angry mood in the first implementation.
+These ECS primitives intentionally mirror currently supported presentation
+values without importing the design-system package into behavior or snapshot
+types. Rendering helpers may map them into design-system-compatible values.
+The first implementation does not require a new angry mood.
 
 ## Personality-Derived Duration
 

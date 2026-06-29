@@ -134,22 +134,24 @@ Expected: FAIL because `runPetExpressionExpirationSystem` and `PetExpressionStat
 
 - [ ] **Step 3: Add the component type**
 
-In `packages/pet-engine/src/features/behavior/components.ts`, add imports near the top:
-
-```ts
-import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
-```
-
-Add this type after `PendingReactionComponent`:
+In `packages/pet-engine/src/features/behavior/components.ts`, add these
+local pet-engine expression primitive types after `PendingReactionComponent`.
+Do not import design-system types into the behavior component model:
 
 ```ts
 export type PetExpressionSource = "collision";
 
+export type PetExpressionMood =
+  "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";
+
+export type PetExpressionEmote =
+  "none" | "heart" | "zzz" | "sparkle" | "question" | "exclaim";
+
 export type PetExpressionStateComponent = {
   type: "PetExpressionState";
   source: PetExpressionSource;
-  mood: PetMood;
-  emote: PetEmoteKind;
+  mood: PetExpressionMood;
+  emote: PetExpressionEmote;
   label: string | null;
   startedAt: number;
   expiresAt: number;
@@ -172,6 +174,8 @@ export type {
   ReactionSource,
   PendingReactionComponent,
   PetExpressionSource,
+  PetExpressionMood,
+  PetExpressionEmote,
   PetExpressionStateComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
 ```
@@ -471,6 +475,14 @@ Expected: FAIL because working collisions still create `PendingReaction` and do 
 
 - [ ] **Step 3: Add OCEAN expression helpers**
 
+In `packages/pet-engine/src/features/behavior/systems.ts`, update the
+`./components` type import to include:
+
+```ts
+type PetExpressionMood,
+type PetExpressionEmote,
+```
+
 In `packages/pet-engine/src/features/behavior/systems.ts`, add these helpers near collision score helpers:
 
 ```ts
@@ -487,8 +499,8 @@ function workingCollisionExpressionDurationMs(
 }
 
 function workingCollisionExpression(personality: PersonalityComponent): {
-  mood: import("@pets-driven/design-system").PetMood;
-  emote: import("@pets-driven/design-system").PetEmoteKind;
+  mood: PetExpressionMood;
+  emote: PetExpressionEmote;
   label: string | null;
 } {
   if (personality.neuroticism >= 0.65 || personality.agreeableness <= 0.3) {
@@ -680,13 +692,21 @@ Expected: FAIL because snapshots do not expose `expression` and projection does 
 
 - [ ] **Step 4: Add expression snapshot type and populate it**
 
-In `packages/pet-engine/src/core/world-snapshot.ts`, add:
+In `packages/pet-engine/src/core/world-snapshot.ts`, import local expression
+types and add:
+
+```ts
+import type {
+  PetExpressionMood,
+  PetExpressionEmote,
+} from "@pets-driven/pet-engine/core/components";
+```
 
 ```ts
 export type PetExpressionSnapshot = {
   source: "collision";
-  mood: import("@pets-driven/design-system").PetMood;
-  emote: import("@pets-driven/design-system").PetEmoteKind;
+  mood: PetExpressionMood;
+  emote: PetExpressionEmote;
   label: string | null;
   startedAt: number;
   expiresAt: number;
@@ -727,12 +747,13 @@ In `packages/pet-engine/src/pets/rendering/behavior-token-presentation.ts`, impo
 
 ```ts
 import type { PetExpressionSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import type { PetExpressionMood } from "@pets-driven/pet-engine/core/components";
 ```
 
 Add:
 
 ```ts
-function toneFromExpressionMood(mood: PetMood): BehaviorTokenTone {
+function toneFromExpressionMood(mood: PetExpressionMood): BehaviorTokenTone {
   switch (mood) {
     case "love":
       return "affection";

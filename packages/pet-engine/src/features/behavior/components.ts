@@ -1,5 +1,3 @@
-import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
-
 /** Drives AutonomousBehaviorSystem and MotionTargetSystem target selection. */
 export type PetIntent = "idle" | "active" | "seek";
 
@@ -124,11 +122,17 @@ export type PendingReactionComponent = {
 
 export type PetExpressionSource = "collision";
 
+export type PetExpressionMood =
+  "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";
+
+export type PetExpressionEmote =
+  "none" | "heart" | "zzz" | "sparkle" | "question" | "exclaim";
+
 export type PetExpressionStateComponent = {
   type: "PetExpressionState";
   source: PetExpressionSource;
-  mood: PetMood;
-  emote: PetEmoteKind;
+  mood: PetExpressionMood;
+  emote: PetExpressionEmote;
   label: string | null;
   startedAt: number;
   expiresAt: number;
