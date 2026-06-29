@@ -27,4 +27,5 @@ export type PetWindowRouteParams = {
   petId: string;
   assetId: string;
   windowIndex: number;
+  name?: string;
 };

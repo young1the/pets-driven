@@ -15,16 +15,20 @@ import { IconButton } from "@pets-driven/design-system";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
-import { PET_WINDOW_BUBBLE_OVERHEAD, PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
+import {
+  clampPetWindowScale,
+  PET_WINDOW_BUBBLE_OVERHEAD,
+  PET_WINDOW_MAX_RESIZE_WIDTH,
+  PET_WINDOW_LAYOUT,
+  petWindowSizeForScale,
+} from "@/pet-window/pet-window-layout";
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import {
   isFreshPetWindowMessage,
-  PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
-  type PetWindowBindingEvent,
   type PetWindowInputKind,
   type PetWindowFrame,
   type PetWindowOverlay,
@@ -42,10 +46,6 @@ type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
 type PetWindowMenu = {
   kind: "body" | "overlay";
   localPoint: { x: number; y: number };
-};
-type PetWindowBindingState = {
-  title: string | null;
-  isLoading: boolean;
 };
 type PetWindowPresentation = {
   decisionEmote: BehaviorTokenPresentation | null;
@@ -72,10 +72,7 @@ function surfacePointFromEvent(
 
     return {
       x: localX / drawScale,
-      y:
-        localY <= PET_WINDOW_BUBBLE_OVERHEAD
-          ? localY
-          : PET_WINDOW_BUBBLE_OVERHEAD + (localY - PET_WINDOW_BUBBLE_OVERHEAD) / drawScale,
+      y: localY / drawScale,
     };
   }
 
@@ -93,17 +90,6 @@ function surfacePointFromEvent(
     x: 0,
     y: 0,
   };
-}
-
-function petWindowSizeForScale(scale: number) {
-  return {
-    width: PET_CELL_SIZE.width * scale,
-    height: PET_CELL_SIZE.height * scale + PET_WINDOW_BUBBLE_OVERHEAD,
-  };
-}
-
-function clampPetWindowScale(scale: number) {
-  return Math.max(0.5, Math.min(4, scale));
 }
 
 async function setNativeCursorPassthrough(ignoreCursorEvents: boolean) {
@@ -146,6 +132,10 @@ function pointerIdFromEvent(event: React.MouseEvent<HTMLElement>) {
   return Number.isFinite(pointerEvent.pointerId) ? pointerEvent.pointerId : 0;
 }
 
+function canApplyResizeScale(scale: number) {
+  return PET_CELL_SIZE.width * scale < PET_WINDOW_MAX_RESIZE_WIDTH;
+}
+
 function defaultPresentation(index: number): PetWindowPresentation {
   return {
     decisionEmote: null,
@@ -175,6 +165,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const appliedPositionRef = useRef<{ x: number; y: number } | null>(null);
   const appliedSizeRef = useRef<{ width: number; height: number } | null>(null);
   const resizeStartRef = useRef<{ screenX: number; screenY: number; scale: number } | null>(null);
+  const resizeAppliedScaleRef = useRef<number | null>(null);
   const isResizingRef = useRef(false);
   const hasShownAfterFirstPositionRef = useRef(false);
   const isPositionDrivenRef = useRef(false);
@@ -188,13 +179,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     null,
   );
   const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
-  // Binding state is pushed by the host and used by the context menu.
-  const [bindingState, setBindingState] = useState<PetWindowBindingState>({
-    title: null,
-    isLoading: false,
-  });
-  const bindingTitle = bindingState.title;
-  const isBindingLoading = bindingState.isLoading;
+  const [showNote, setShowNote] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const notePositionRef = useRef<{ x: number; y: number } | null>(null);
+  const petName = pet.name ?? pet.petId;
   const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(1);
   const [spritesheetUrl, setSpritesheetUrl] = useState<string | null>(null);
@@ -262,7 +250,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         });
       }
 
-      const nextSize = { width: frame.window.width, height: frame.window.height };
+      const frameScale = clampPetWindowScale(
+        frame.window.width / PET_CELL_SIZE.width,
+      );
+      const nextSize = petWindowSizeForScale(frameScale);
       if (
         !appliedSizeRef.current ||
         appliedSizeRef.current.width !== nextSize.width ||
@@ -270,7 +261,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       ) {
         appliedSizeRef.current = nextSize;
         void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
-        setSpriteScale(nextSize.width / PET_CELL_SIZE.width);
+        setSpriteScale(frameScale);
       }
 
       const nextPosition = {
@@ -314,28 +305,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       unlistenFrame?.();
     };
   }, []);
-
-  useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
-    const bindingPromise = listen<PetWindowBindingEvent>(
-      PET_WINDOW_BINDING_EVENT,
-      (event) => {
-        if (event.payload.petId !== pet.petId) {
-          return;
-        }
-        const title = event.payload.title;
-        const isLoading = event.payload.isLoading === true;
-        setBindingState({ title, isLoading });
-      },
-    );
-
-    return () => {
-      void bindingPromise.then((unlisten) => unlisten());
-    };
-  }, [pet.petId]);
 
   useEffect(() => {
     let isActive = true;
@@ -437,16 +406,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     });
   }
 
-  function requestBindingState() {
-    setBindingState((current) => ({ ...current, isLoading: true }));
-    emitPetWindowSignal("menu.request-binding");
-  }
-
-  function requestStartSession() {
-    setBindingState((current) => ({ ...current, isLoading: true }));
-    emitPetWindowSignal("menu.start-session");
-  }
-
   function handlePointerMove(event: React.PointerEvent<HTMLElement>) {
     const surface = visualFrameRef.current;
 
@@ -469,8 +428,14 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     if (pointerStartRef.current === "resize" && resizeStartRef.current) {
       const delta = (event.screenX - resizeStartRef.current.screenX + event.screenY - resizeStartRef.current.screenY) / 2;
       const newScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
+
+      if (!canApplyResizeScale(newScale)) {
+        return;
+      }
+
       const nextSize = petWindowSizeForScale(newScale);
       appliedSizeRef.current = nextSize;
+      resizeAppliedScaleRef.current = newScale;
       setSpriteScale(newScale);
       void getCurrentWindow().setSize(new LogicalSize(nextSize.width, nextSize.height));
       return;
@@ -482,6 +447,30 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     }
 
     void setNativeCursorPassthrough(hit.kind === "transparent");
+  }
+
+  function startResize(event: React.PointerEvent<HTMLElement>) {
+    event.preventDefault();
+
+    if (!canApplyResizeScale(spriteScale)) {
+      isResizingRef.current = false;
+      resizeStartRef.current = null;
+      resizeAppliedScaleRef.current = null;
+      pointerStartRef.current = null;
+      void setNativeCursorPassthrough(false);
+      return;
+    }
+
+    isResizingRef.current = true;
+    resizeStartRef.current = {
+      screenX: event.screenX,
+      screenY: event.screenY,
+      scale: spriteScale,
+    };
+    resizeAppliedScaleRef.current = null;
+    pointerStartRef.current = "resize";
+    surfaceRef.current?.setPointerCapture?.(event.pointerId);
+    void setNativeCursorPassthrough(false);
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLElement>) {
@@ -516,11 +505,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     }
 
     if (hit.kind === "resize") {
-      isResizingRef.current = true;
-      resizeStartRef.current = { screenX: event.screenX, screenY: event.screenY, scale: spriteScale };
-      pointerStartRef.current = "resize";
-      event.currentTarget.setPointerCapture?.(event.pointerId);
-      void setNativeCursorPassthrough(false);
+      startResize(event);
       return;
     }
 
@@ -557,11 +542,20 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
     if (pointerStart === "resize" && resizeStartRef.current) {
       const delta = (event.screenX - resizeStartRef.current.screenX + event.screenY - resizeStartRef.current.screenY) / 2;
-      const finalScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
-      appliedSizeRef.current = petWindowSizeForScale(finalScale);
+      const requestedScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
+      const finalScale = canApplyResizeScale(requestedScale)
+        ? requestedScale
+        : resizeAppliedScaleRef.current;
       isResizingRef.current = false;
       resizeStartRef.current = null;
+      resizeAppliedScaleRef.current = null;
       event.currentTarget.releasePointerCapture?.(event.pointerId);
+
+      if (finalScale === null) {
+        return;
+      }
+
+      appliedSizeRef.current = petWindowSizeForScale(finalScale);
       void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_RESIZE_EVENT, {
         petId: pet.petId,
         scale: finalScale,
@@ -625,8 +619,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       setInteractionStatus("Pet context menu");
       setActiveMenu({ kind: "body", localPoint: surfacePointFromEvent(surface, event) });
       emitPetWindowInput("body.contextmenu", event);
-      // Ask the host for the current binding so the menu reflects live state.
-      requestBindingState();
       return;
     }
 
@@ -664,7 +656,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         className="pet-window-visual-frame"
         ref={visualFrameRef}
         style={{
-          height: `${PET_CELL_SIZE.height * spriteScale + PET_WINDOW_BUBBLE_OVERHEAD}px`,
+          height: `${(PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD) * spriteScale}px`,
           width: `${PET_CELL_SIZE.width * spriteScale}px`,
         }}
       >
@@ -678,12 +670,20 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
             overlay={presentation.overlay}
             size={PET_CELL_SIZE}
             scale={spriteScale}
-            style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD }}
+            style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD * spriteScale }}
           />
         ) : null}
         <IconButton
           className="pet-window-resize-button"
           label="Resize pet"
+          onPointerDown={(event) => {
+            if (event.button !== 0) {
+              return;
+            }
+
+            event.stopPropagation();
+            startResize(event);
+          }}
           size="sm"
           variant="soft"
         >
@@ -705,65 +705,93 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           }
           role="menu"
           style={menuStyle(activeMenu)}
-          // Keep clicks inside the menu from reaching the surface's pointer
-          // handlers, which would start a window drag and swallow the click.
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
         >
-          {activeMenu.kind === "body" ? (
-            <>
-              <span className="pet-window-menu__status" aria-live="polite">
-                {isBindingLoading
-                  ? "Checking connection..."
-                  : bindingTitle
-                    ? `🔗 ${bindingTitle}`
-                    : "Not connected"}
-              </span>
-              {bindingTitle && !isBindingLoading ? (
-                <>
-                  <button
-                    role="menuitem"
-                    type="button"
-                    onClick={() => {
-                      setActiveMenu(null);
-                      emitPetWindowSignal("body.focus");
-                    }}
-                  >
-                    Open session window
-                  </button>
-                  <button
-                    role="menuitem"
-                    type="button"
-                    onClick={() => {
-                      setActiveMenu(null);
-                      emitPetWindowSignal("menu.unbind");
-                    }}
-                  >
-                    Unbind window
-                  </button>
-                </>
-              ) : null}
-              <button
-                role="menuitem"
-                type="button"
-                onClick={() => {
-                  setActiveMenu(null);
-                  requestStartSession();
-                }}
-              >
-                Start new session
-              </button>
-            </>
-          ) : (
-            <>
-              <button role="menuitem" type="button">
-                Minimize overlay
-              </button>
-              <button role="menuitem" type="button">
-                Hide for now
-              </button>
-            </>
-          )}
+          <div className="pet-window-menu__header">
+            <span className="pet-window-menu__name">{petName}</span>
+          </div>
+          <div className="pet-window-menu__divider" />
+          <button
+            className="pet-window-menu__item pet-window-menu__item--note"
+            role="menuitem"
+            type="button"
+            onClick={() => {
+              notePositionRef.current = activeMenu.localPoint;
+              setActiveMenu(null);
+              setShowNote(true);
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+            노트 작성하기
+          </button>
+          <button
+            className="pet-window-menu__item pet-window-menu__item--close"
+            role="menuitem"
+            type="button"
+            onClick={() => {
+              setActiveMenu(null);
+              if (isTauri()) {
+                void getCurrentWindow().close();
+              }
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+            닫기
+          </button>
+        </div>
+      ) : null}
+      {showNote ? (
+        <div
+          aria-label={`${petName}에게 노트`}
+          className="pet-window-note"
+          style={
+            notePositionRef.current
+              ? {
+                  left: `${Math.min(Math.max(notePositionRef.current.x, 8), PET_WINDOW_LAYOUT.width - 160)}px`,
+                  top: `${Math.min(Math.max(notePositionRef.current.y, 8), PET_WINDOW_LAYOUT.height - 130)}px`,
+                }
+              : {}
+          }
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
+        >
+          <div className="pet-window-note__header">{petName}에게 메모</div>
+          <textarea
+            className="pet-window-note__input"
+            placeholder="메모를 입력하세요"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            rows={3}
+          />
+          <div className="pet-window-note__actions">
+            <button
+              className="pet-window-note__cancel"
+              type="button"
+              onClick={() => {
+                setShowNote(false);
+                setNoteText("");
+              }}
+            >
+              취소
+            </button>
+            <button
+              className="pet-window-note__save"
+              type="button"
+              onClick={() => {
+                setShowNote(false);
+                setNoteText("");
+              }}
+            >
+              저장
+            </button>
+          </div>
         </div>
       ) : null}
       {interactionStatus ? (
