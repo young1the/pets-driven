@@ -176,13 +176,13 @@ pub(crate) async fn close_adopted_pet_window(
 pub(crate) async fn open_pet_context_menu(
     app: tauri::AppHandle,
     pet_id: String,
+    url: String,
     x: f64,
     y: f64,
 ) -> Result<(), String> {
     validate_asset_id(&pet_id).map_err(|_| "Invalid pet id".to_string())?;
 
     let label = format!("pet-context-menu-{pet_id}");
-    let url = format!("index.html?surface=pet-context-menu&petId={pet_id}");
 
     if let Some(existing) = app.get_webview_window(&label) {
         existing.destroy().ok();

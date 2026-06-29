@@ -1,18 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
-import { emitTo, listen } from "@tauri-apps/api/event";
+import { emitTo } from "@tauri-apps/api/event";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import {
-  PET_CONTEXT_MENU_INIT_EVENT,
-  PET_CONTEXT_MENU_READY_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
-  type PetContextMenuInit,
   type PetWindowInputKind,
 } from "@/pet-window/pet-window-messages";
 
 type PetContextMenuViewProps = {
   petId: string;
+  petName: string;
+  note: string;
 };
 
 type MenuView = "menu" | "note";
@@ -20,11 +19,13 @@ type MenuView = "menu" | "note";
 const MENU_WINDOW_SIZE = { width: 192, height: 132 };
 const NOTE_WINDOW_SIZE = { width: 228, height: 192 };
 
-export function PetContextMenuView({ petId }: PetContextMenuViewProps) {
+export function PetContextMenuView({
+  petId,
+  petName,
+  note,
+}: PetContextMenuViewProps) {
   const [view, setView] = useState<MenuView>("menu");
-  const [petName, setPetName] = useState(petId);
-  const [noteText, setNoteText] = useState("");
-  const [ready, setReady] = useState(!isTauri());
+  const [noteText, setNoteText] = useState(note);
   const sequenceRef = useRef(0);
 
   useEffect(() => {
@@ -40,39 +41,19 @@ export function PetContextMenuView({ petId }: PetContextMenuViewProps) {
       return;
     }
 
-    let unlisten: (() => void) | undefined;
+    // Show the window (created hidden) only after React has rendered content,
+    // which prevents the white flash that occurs when the window is shown before
+    // the webview has painted its first frame.
+    const win = getCurrentWindow();
+    void win.show().then(() => win.setFocus());
 
-    void listen<PetContextMenuInit>(PET_CONTEXT_MENU_INIT_EVENT, (e) => {
-      if (e.payload.petId === petId) {
-        setPetName(e.payload.petName);
-        setNoteText(e.payload.note);
-        setReady(true);
-      }
-    }).then((fn) => {
-      unlisten = fn;
-    });
-
-    void emitTo(PET_WINDOW_HOST_LABEL, PET_CONTEXT_MENU_READY_EVENT, {
-      petId,
-    });
-
-    return () => {
-      unlisten?.();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
-    // Prevent WebView2's built-in context menu from showing inside the popup.
+    // Prevent WebView2's built-in context menu from appearing inside the popup.
     const preventContextMenu = (e: Event) => e.preventDefault();
     window.addEventListener("contextmenu", preventContextMenu);
 
     // Only close on blur after the window has actually received focus once.
     // Without this guard the blur event fires during window creation before
-    // the popup is even visible, closing it immediately.
+    // the popup is visible, closing it immediately.
     let hasFocused = false;
 
     const handleFocus = () => {
@@ -94,15 +75,6 @@ export function PetContextMenuView({ petId }: PetContextMenuViewProps) {
       window.removeEventListener("blur", handleBlur);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isTauri() || !ready) {
-      return;
-    }
-
-    const win = getCurrentWindow();
-    void win.show().then(() => win.setFocus());
-  }, [ready]);
 
   useEffect(() => {
     if (!isTauri()) {
@@ -141,18 +113,13 @@ export function PetContextMenuView({ petId }: PetContextMenuViewProps) {
     }
   }
 
-  if (!ready) {
-    return null;
-  }
-
   if (view === "note") {
     return (
       <main className="pet-context-menu-surface">
-        <div
-          aria-label={`${petId}에게 노트`}
-          className="pet-context-menu-note"
-        >
-          <div className="pet-context-menu-note__header">{petName}에게 메모</div>
+        <div aria-label={`${petId}에게 노트`} className="pet-context-menu-note">
+          <div className="pet-context-menu-note__header">
+            {petName}에게 메모
+          </div>
           <textarea
             autoFocus
             className="pet-context-menu-note__input"

@@ -8,9 +8,6 @@ export const PET_WINDOW_INPUT_EVENT = "pet-window:input:v1";
 // Host -> pet window: the title of the window this pet is bound to, or null.
 export const PET_WINDOW_BINDING_EVENT = "pet-window:binding:v1";
 export const PET_WINDOW_HOST_LABEL = "main";
-// Context menu popup signals.
-export const PET_CONTEXT_MENU_READY_EVENT = "pet-context-menu:ready:v1";
-export const PET_CONTEXT_MENU_INIT_EVENT = "pet-context-menu:init:v1";
 
 export type PetWindowBindingEvent = {
   petId: string;
@@ -72,16 +69,6 @@ export type PetWindowInputEvent = {
   button?: number;
   memo?: string;
   at: number;
-};
-
-export type PetContextMenuReadyEvent = {
-  petId: string;
-};
-
-export type PetContextMenuInit = {
-  petId: string;
-  petName: string;
-  note: string;
 };
 
 export function isFreshPetWindowMessage(
