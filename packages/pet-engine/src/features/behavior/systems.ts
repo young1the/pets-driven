@@ -50,6 +50,17 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "collision-unfazed": 500,
 };
 
+const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
+  "working-focus",
+  "working-wander",
+  "collision-flee",
+  "collision-engage",
+  "collision-avoid",
+  "collision-stay",
+  "collision-jump",
+  "collision-unfazed",
+]);
+
 // Phase 3: social interaction distances
 const PET_FLEE_WIDTH_MULTIPLIER = 6;
 const DEFAULT_WANDER_BODY_WIDTH = DEFAULT_BEHAVIOR_BODY_WIDTH;
@@ -425,12 +436,18 @@ export function runCollisionBehaviorSystem(
       "approaching"
     )
       continue;
-    if (
+    const agentTask = components.getComponent(entity.id, "AgentTaskState");
+    const isWorking = agentTask?.status === "working";
+    if (isWorking) {
+      if (isClaimed(components, entity.id, "collision", now)) continue;
+    } else if (
       isClaimedBySameOrHigherPriority(components, entity.id, "collision", now)
-    )
+    ) {
       continue;
+    }
     // Skip if a reaction is already pending (avoid overwriting mid-deliberation).
-    if (components.getComponent(entity.id, "PendingReaction")) continue;
+    if (!isWorking && components.getComponent(entity.id, "PendingReaction"))
+      continue;
 
     const collision: CollisionCandidate | undefined =
       matterPetCollisionCandidate(components, entity, entities) ??
@@ -441,8 +458,7 @@ export function runCollisionBehaviorSystem(
           Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
       );
     if (!collision) continue;
-    const agentTask = components.getComponent(entity.id, "AgentTaskState");
-    if (agentTask?.status === "working") {
+    if (isWorking) {
       const personality = components.getComponent(entity.id, "Personality");
       if (personality) {
         const expression = workingCollisionExpression(personality);
@@ -454,6 +470,7 @@ export function runCollisionBehaviorSystem(
           expiresAt: now + workingCollisionExpressionDurationMs(personality),
         });
       }
+      components.removeComponent(entity.id, "PendingReaction");
 
       components.setComponent(entity.id, {
         type: "MotionTarget" as const,
@@ -471,9 +488,11 @@ export function runCollisionBehaviorSystem(
       );
       if (
         existing &&
-        existing.source === "autonomous" &&
-        (existing.reason === "working-focus" ||
-          existing.reason === "working-wander")
+        (existing.source === "collision" ||
+          (existing.source === "autonomous" &&
+            WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS.has(
+              existing.reason,
+            )))
       ) {
         existing.expiresAt = now;
       }

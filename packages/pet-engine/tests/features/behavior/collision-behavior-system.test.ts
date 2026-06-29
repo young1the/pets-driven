@@ -204,6 +204,134 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     });
   });
 
+  it("working pet collision replaces a stale pending reaction with a visual expression", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle",
+            width: 32,
+            height: 38,
+          },
+          { type: "IntentState" as const, intent: "active" },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: { x: 300, y: 500 },
+          },
+          { type: "AgentTaskState" as const, status: "working", since: 150 },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.5,
+            agreeableness: 0.2,
+            neuroticism: 0.8,
+          },
+          {
+            type: "PendingReaction" as const,
+            source: "collision",
+            triggeredAt: 100,
+            reactsAt: 600,
+            context: {
+              otherEntityId: "pet-b",
+              otherPosition: { x: 110, y: 500 },
+            },
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "collision",
+            decidedAt: 100,
+            expiresAt: 600,
+            reason: "entity overlap",
+            lastAutonomousReason: null,
+            lastAutonomousAt: null,
+          },
+        ],
+      },
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(200));
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(
+      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
+    ).toBeNull();
+    expect(
+      store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt,
+    ).toBe(200);
+    expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
+      source: "collision",
+      mood: "confused",
+      emote: "exclaim",
+      label: "!",
+      startedAt: 200,
+    });
+  });
+
+  it("working pet collision expires autonomous collision claims after clearing motion", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          {
+            type: "PhysicsBody" as const,
+            shape: "rectangle",
+            width: 32,
+            height: 38,
+          },
+          { type: "IntentState" as const, intent: "active" },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: { x: 48, y: 500 },
+          },
+          { type: "AgentTaskState" as const, status: "working", since: 150 },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.5,
+            agreeableness: 0.2,
+            neuroticism: 0.8,
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous",
+            decidedAt: 100,
+            expiresAt: 850,
+            reason: "collision-flee",
+            lastAutonomousReason: "collision-flee",
+            lastAutonomousAt: 100,
+          },
+        ],
+      },
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(200));
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(
+      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
+    ).toBeNull();
+    expect(
+      store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt,
+    ).toBe(200);
+    expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
+      source: "collision",
+      mood: "confused",
+      emote: "exclaim",
+      label: "!",
+      startedAt: 200,
+    });
+  });
+
   it("working collision expression duration is derived from OCEAN and clamped", () => {
     const irritated = createComponentStore([
       {
