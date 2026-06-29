@@ -26,7 +26,13 @@ export type DesktopGateway = {
   listPetPackages(): Promise<CodexPetPackage[]>;
   openAdoptedPetWindow(petId: string, assetId: string): Promise<void>;
   closeAdoptedPetWindow(petId: string): Promise<void>;
-  openPetContextMenu(petId: string, x: number, y: number): Promise<void>;
+  openPetContextMenu(
+    petId: string,
+    petName: string,
+    note: string,
+    x: number,
+    y: number,
+  ): Promise<void>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
 };
@@ -90,12 +96,13 @@ export const desktopGateway: DesktopGateway = {
     await invoke("close_adopted_pet_window", { petId });
   },
 
-  async openPetContextMenu(petId, x, y) {
+  async openPetContextMenu(petId, petName, note, x, y) {
     if (!isTauri()) {
       return;
     }
 
-    await invoke("open_pet_context_menu", { petId, x, y });
+    const url = `index.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}`;
+    await invoke("open_pet_context_menu", { petId, url, x, y });
   },
 
   async pickDirectory() {

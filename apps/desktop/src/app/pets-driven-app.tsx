@@ -63,16 +63,11 @@ import {
 import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
-import { PetContextMenuView } from "@/pet-window/pet-context-menu-view";
 import {
-  PET_CONTEXT_MENU_INIT_EVENT,
-  PET_CONTEXT_MENU_READY_EVENT,
   PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
-  type PetContextMenuInit,
-  type PetContextMenuReadyEvent,
   type PetWindowBindingEvent,
   type PetWindowInputEvent,
   type PetWindowResizeEvent,
@@ -117,16 +112,6 @@ function petWindowRouteParams(): PetWindowRouteParams | null {
     windowIndex: Number(params.get("windowIndex") || "1"),
     name: params.get("name") ?? undefined,
   };
-}
-
-function petContextMenuRouteParams(): { petId: string } | null {
-  const params = new URLSearchParams(window.location.search);
-
-  if (params.get("surface") !== "pet-context-menu") {
-    return null;
-  }
-
-  return { petId: params.get("petId") || "pet-a" };
 }
 
 function petWindowPlaygroundLabelForPetId(petId: string) {
@@ -271,7 +256,6 @@ function cardNote(memo: string | undefined): string {
 
 export function PetsDrivenApp() {
   const petWindowPet = petWindowRouteParams();
-  const petContextMenu = petContextMenuRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
   const petsDrivenStateRef = useRef(createInitialPetsDrivenState());
@@ -395,7 +379,9 @@ export function PetsDrivenApp() {
           return;
         }
         if (input.kind === "menu.close") {
-          void desktopGateway.closeAdoptedPetWindow(input.petId).catch(() => {});
+          void desktopGateway
+            .closeAdoptedPetWindow(input.petId)
+            .catch(() => {});
           return;
         }
         if (input.kind === "menu.note-save") {
@@ -420,21 +406,12 @@ export function PetsDrivenApp() {
           void desktopGateway
             .openPetContextMenu(
               input.petId,
+              pet?.name ?? input.petId,
+              pet?.memo ?? "",
               input.screenPoint.x,
               input.screenPoint.y,
             )
             .catch(() => {});
-          // After the popup opens, it will emit PET_CONTEXT_MENU_READY_EVENT
-          // and we respond with the pet name and note in the listener below.
-          void emitTo(
-            `pet-context-menu-${input.petId}`,
-            PET_CONTEXT_MENU_INIT_EVENT,
-            {
-              petId: input.petId,
-              petName: pet?.name ?? input.petId,
-              note: pet?.memo ?? "",
-            } satisfies PetContextMenuInit,
-          ).catch(() => {});
           return;
         }
         if (input.kind === "menu.start-session") {
@@ -482,38 +459,6 @@ export function PetsDrivenApp() {
     return () => {
       void listenPromise.then((stop) => stop());
     };
-  }, []);
-
-  useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
-    let unlisten: (() => void) | undefined;
-
-    void listen<PetContextMenuReadyEvent>(
-      PET_CONTEXT_MENU_READY_EVENT,
-      (event) => {
-        const { petId } = event.payload;
-        const pet = petsDrivenStateRef.current.pets.find(
-          (p) => p.id === petId,
-        );
-
-        void emitTo(
-          `pet-context-menu-${petId}`,
-          PET_CONTEXT_MENU_INIT_EVENT,
-          {
-            petId,
-            petName: pet?.name ?? petId,
-            note: pet?.memo ?? "",
-          } satisfies PetContextMenuInit,
-        ).catch(() => {});
-      },
-    ).then((stop) => {
-      unlisten = stop;
-    });
-
-    return () => unlisten?.();
   }, []);
 
   useEffect(() => {
@@ -813,13 +758,12 @@ export function PetsDrivenApp() {
 
       const snapshot = scenario.world.snapshot();
       adoptedSnapshotRef.current = snapshot;
-      adoptedDiagnosticsRef.current = adoptedDiagnosticsTrackerRef.current.record(
-        {
+      adoptedDiagnosticsRef.current =
+        adoptedDiagnosticsTrackerRef.current.record({
           now: scenario.clock.now(),
           sequence: adoptedHostSequenceRef.current,
           snapshot,
-        },
-      );
+        });
 
       const nextStatuses: Record<string, PetCardStatus> = {};
       for (const petSnapshot of snapshot.pets) {
@@ -871,10 +815,6 @@ export function PetsDrivenApp() {
 
   if (petWindowPet) {
     return <PetWindowView pet={petWindowPet} />;
-  }
-
-  if (petContextMenu) {
-    return <PetContextMenuView petId={petContextMenu.petId} />;
   }
 
   if (view === "playground") {

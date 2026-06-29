@@ -15,8 +15,6 @@ import {
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
-  PET_CONTEXT_MENU_READY_EVENT,
-  PET_CONTEXT_MENU_INIT_EVENT,
 } from "@/pet-window/pet-window-messages";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
@@ -718,6 +716,7 @@ describe("pet window product route", () => {
     await waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
         petId: "pet-a",
+        url: "index.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=",
         x: 400,
         y: 300,
       });
@@ -753,7 +752,10 @@ describe("pet window product route", () => {
         expect.objectContaining({
           state: expect.objectContaining({
             pets: expect.arrayContaining([
-              expect.objectContaining({ id: "pet-a", memo: "Great work today!" }),
+              expect.objectContaining({
+                id: "pet-a",
+                memo: "Great work today!",
+              }),
             ]),
           }),
         }),
@@ -897,8 +899,7 @@ describe("pet window product route", () => {
 
   it("publishes a loading binding state while starting a terminal channel", async () => {
     let resolveStartSession:
-      | ((window: { hwnd: number; title: string }) => void)
-      | undefined;
+      ((window: { hwnd: number; title: string }) => void) | undefined;
 
     invokeMock.mockImplementation(async (command) => {
       if (command === "list_codex_pet_packages") {
