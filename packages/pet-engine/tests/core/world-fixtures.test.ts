@@ -193,6 +193,7 @@ describe("demo scenario", () => {
       "SpeechExpirationSystem",
       "AgentEventBehaviorSystem",
       "CollisionBehaviorSystem",
+      "WorkingBehaviorSystem",
       "BehaviorDecisionSystem",
       "AutonomousBehaviorSystem",
       "BehaviorPlanningSystem",
@@ -353,8 +354,21 @@ describe("demo scenario", () => {
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
-      name: "BehaviorDecisionSystem",
+      name: "WorkingBehaviorSystem",
       dependsOn: ["CollisionBehaviorSystem"],
+      reads: [
+        "AgentTaskState",
+        "Personality",
+        "MotionTarget",
+        "Transform",
+        "BehaviorDecisionState",
+        "PhysicsBody",
+      ],
+      writes: ["MotionTarget", "IntentState", "BehaviorDecisionState"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "BehaviorDecisionSystem",
+      dependsOn: ["WorkingBehaviorSystem"],
       reads: [
         "IntentState",
         "MotionTarget",
@@ -1676,7 +1690,10 @@ describe("adopted pets scenario", () => {
           pet.position.x <= candidate.x + candidate.width,
       );
 
-      expect(monitor, `${pet.id} is horizontally inside a monitor`).toBeDefined();
+      expect(
+        monitor,
+        `${pet.id} is horizontally inside a monitor`,
+      ).toBeDefined();
       expect(pet.position.y).toBeGreaterThanOrEqual(monitor!.y);
       expect(pet.position.y).toBeLessThanOrEqual(monitor!.y + monitor!.height);
     }
@@ -1740,10 +1757,14 @@ describe("adopted pets scenario", () => {
     scenario.world.step(16);
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-uuid-1", "PetCollision")).toMatchObject({
+    expect(
+      scenario.world.getComponent("pet-uuid-1", "PetCollision"),
+    ).toMatchObject({
       otherEntityId: "pet-uuid-2",
     });
-    expect(scenario.world.getComponent("pet-uuid-2", "PetCollision")).toMatchObject({
+    expect(
+      scenario.world.getComponent("pet-uuid-2", "PetCollision"),
+    ).toMatchObject({
       otherEntityId: "pet-uuid-1",
     });
   });
