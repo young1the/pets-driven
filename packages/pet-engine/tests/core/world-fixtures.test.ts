@@ -191,6 +191,7 @@ describe("demo scenario", () => {
       // BEHAVIOR
       "UserInteractionBehaviorSystem",
       "SpeechExpirationSystem",
+      "PetExpressionExpirationSystem",
       "AgentEventBehaviorSystem",
       "CollisionBehaviorSystem",
       "WorkingBehaviorSystem",
@@ -329,6 +330,32 @@ describe("demo scenario", () => {
       dependsOn: ["ClimbDismountSystem"],
       reads: ["ContactState", "WalkingTag", "ClimbingTag", "FlyingTag"],
       writes: ["AirborneTag"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "PetExpressionExpirationSystem",
+      dependsOn: ["SpeechExpirationSystem"],
+      reads: ["PetExpressionState"],
+      writes: ["PetExpressionState"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "AgentEventBehaviorSystem",
+      dependsOn: ["PetExpressionExpirationSystem"],
+      reads: [
+        "AgentBinding",
+        "IntentState",
+        "SpeechProfile",
+        "SpeechState",
+        "ActivityState",
+        "CompletionBehavior",
+      ],
+      writes: [
+        "IntentState",
+        "SpeechState",
+        "ActivityState",
+        "BehaviorDecisionState",
+        "MotionTarget",
+        "PhysicsVelocity",
+      ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "CollisionBehaviorSystem",
