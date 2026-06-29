@@ -22,6 +22,9 @@ import {
   PET_WINDOW_LAYOUT,
   petWindowSizeForScale,
 } from "@/pet-window/pet-window-layout";
+
+/** Extra width added to the pet window when the context menu or note panel is open. */
+const PET_WINDOW_PANEL_WIDTH = 188;
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import {
   isFreshPetWindowMessage,
@@ -181,8 +184,8 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const [activeMenu, setActiveMenu] = useState<PetWindowMenu | null>(null);
   const [showNote, setShowNote] = useState(false);
   const [noteText, setNoteText] = useState("");
-  const notePositionRef = useRef<{ x: number; y: number } | null>(null);
-  const petName = pet.name ?? pet.petId;
+  const isPanelOpenRef = useRef(false);
+  const [petName, setPetName] = useState(pet.name ?? pet.petId);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(1);
   const [spritesheetUrl, setSpritesheetUrl] = useState<string | null>(null);
@@ -250,6 +253,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         });
       }
 
+      if (frame.name) {
+        setPetName(frame.name);
+      }
+
       const frameScale = clampPetWindowScale(
         frame.window.width / PET_CELL_SIZE.width,
       );
@@ -260,8 +267,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         appliedSizeRef.current.height !== nextSize.height
       ) {
         appliedSizeRef.current = nextSize;
-        void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
         setSpriteScale(frameScale);
+        if (!isPanelOpenRef.current) {
+          void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
+        }
       }
 
       const nextPosition = {
@@ -355,6 +364,25 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const panelOpen = activeMenu !== null || showNote;
+    isPanelOpenRef.current = panelOpen;
+
+    if (!isTauri()) {
+      return;
+    }
+
+    const { width, height } = petWindowSizeForScale(spriteScale);
+
+    if (panelOpen) {
+      void getCurrentWindow().setSize(
+        new LogicalSize(width + PET_WINDOW_PANEL_WIDTH, height),
+      );
+    } else {
+      void getCurrentWindow().setSize(new LogicalSize(width, height));
+    }
+  }, [activeMenu, showNote, spriteScale]);
 
   function emitPetWindowInput(
     kind: PetWindowInputKind,
@@ -627,10 +655,12 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     emitPetWindowInput("overlay.contextmenu", event);
   }
 
-  function menuStyle(menu: PetWindowMenu): CSSProperties {
+  function menuPanelStyle(clickY: number): CSSProperties {
+    const windowHeight = (PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD) * spriteScale;
+    const pixelY = clickY * spriteScale;
     return {
-      left: `${Math.min(Math.max(menu.localPoint.x, 8), PET_WINDOW_LAYOUT.width - 136)}px`,
-      top: `${Math.min(Math.max(menu.localPoint.y, 8), PET_WINDOW_LAYOUT.height - 72)}px`,
+      left: `${PET_CELL_SIZE.width * spriteScale + 4}px`,
+      top: `${Math.min(Math.max(pixelY - 10, 8), windowHeight - 110)}px`,
     };
   }
 
@@ -704,7 +734,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
               : "pet-overlay-menu"
           }
           role="menu"
-          style={menuStyle(activeMenu)}
+          style={menuPanelStyle(activeMenu.localPoint.y)}
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
         >
@@ -717,7 +747,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
             role="menuitem"
             type="button"
             onClick={() => {
-              notePositionRef.current = activeMenu.localPoint;
               setActiveMenu(null);
               setShowNote(true);
             }}
@@ -734,9 +763,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
             type="button"
             onClick={() => {
               setActiveMenu(null);
-              if (isTauri()) {
-                void getCurrentWindow().close();
-              }
+              emitPetWindowSignal("menu.close");
             }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -751,14 +778,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         <div
           aria-label={`${petName}에게 노트`}
           className="pet-window-note"
-          style={
-            notePositionRef.current
-              ? {
-                  left: `${Math.min(Math.max(notePositionRef.current.x, 8), PET_WINDOW_LAYOUT.width - 160)}px`,
-                  top: `${Math.min(Math.max(notePositionRef.current.y, 8), PET_WINDOW_LAYOUT.height - 130)}px`,
-                }
-              : {}
-          }
+          style={{
+            left: `${PET_CELL_SIZE.width * spriteScale + 4}px`,
+            top: `8px`,
+          }}
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
         >

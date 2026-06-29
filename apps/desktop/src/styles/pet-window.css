@@ -15,7 +15,8 @@ html.pet-window-document body {
   width: 100vw;
   height: 100vh;
   display: grid;
-  place-items: center;
+  align-items: center;
+  justify-items: start;
   overflow: hidden;
   background: transparent;
   touch-action: none;
