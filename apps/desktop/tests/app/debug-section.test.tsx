@@ -26,4 +26,18 @@ describe("DebugSection", () => {
     render(<DebugSection error="boom" groups={[]} />);
     expect(screen.getByText("boom")).toBeInTheDocument();
   });
+
+  it("shows a copyable diagnostics report when present", () => {
+    render(
+      <DebugSection
+        diagnosticReport={"Pets-Driven Pet Diagnostics\npet-a stalled"}
+        error={null}
+        groups={[]}
+      />,
+    );
+
+    expect(screen.getByLabelText("Pet diagnostics report")).toHaveValue(
+      "Pets-Driven Pet Diagnostics\npet-a stalled",
+    );
+  });
 });
