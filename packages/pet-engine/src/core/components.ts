@@ -26,6 +26,8 @@ export type {
   ReactionSource,
   PendingReactionComponent,
   PetExpressionSource,
+  PetExpressionMood,
+  PetExpressionEmote,
   PetExpressionStateComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
 
