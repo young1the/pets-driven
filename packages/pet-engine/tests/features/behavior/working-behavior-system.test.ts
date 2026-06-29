@@ -134,6 +134,36 @@ describe("runWorkingBehaviorSystem", () => {
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
   });
 
+  it("can reselect working behavior after a working collision expression is written", () => {
+    const store = makeStore({
+      status: "working",
+      conscientiousness: 0.85,
+      extraversion: 0.45,
+      existingClaim: { source: "autonomous", expiresAt: 100 },
+    });
+    store.setComponent("pet", {
+      type: "PetExpressionState",
+      source: "collision",
+      mood: "confused",
+      emote: "exclaim",
+      label: "!",
+      startedAt: 100,
+      expiresAt: 700,
+    });
+
+    runWorkingBehaviorSystem(
+      store,
+      createManualClock(100),
+      createSeededRandom(42),
+      BOUNDS,
+    );
+
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe(
+      "working-focus",
+    );
+    expect(store.getComponent("pet", "PetExpressionState")?.label).toBe("!");
+  });
+
   it("distracted pet (low C, high E) picks a wander-near target", () => {
     const store = makeStore({
       status: "working",
