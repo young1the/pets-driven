@@ -61,6 +61,7 @@ export type PetWindowInputKind =
 export type PetWindowInputEvent = {
   sequence: number;
   petId: string;
+  petName?: string;
   windowLabel: string;
   pointerId: number;
   kind: PetWindowInputKind;

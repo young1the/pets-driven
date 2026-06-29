@@ -6,9 +6,7 @@ import {
   LogicalSize,
   LogicalPosition,
 } from "@tauri-apps/api/window";
-import {
-  FALLBACK_CODEX_PET_SPRITESHEET_URL,
-} from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import { FALLBACK_CODEX_PET_SPRITESHEET_URL } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { IconButton } from "@pets-driven/design-system";
@@ -161,7 +159,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const frameSequenceRef = useRef(0);
   const appliedPositionRef = useRef<{ x: number; y: number } | null>(null);
   const appliedSizeRef = useRef<{ width: number; height: number } | null>(null);
-  const resizeStartRef = useRef<{ screenX: number; screenY: number; scale: number } | null>(null);
+  const resizeStartRef = useRef<{
+    screenX: number;
+    screenY: number;
+    scale: number;
+  } | null>(null);
   const resizeAppliedScaleRef = useRef<number | null>(null);
   const isResizingRef = useRef(false);
   const hasShownAfterFirstPositionRef = useRef(false);
@@ -182,6 +184,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     defaultPresentation(pet.windowIndex),
   );
   const presentationRef = useRef<PetWindowPresentation>(presentation);
+  const petNameRef = useRef<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.add("pet-window-document");
@@ -217,6 +220,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
       frameSequenceRef.current = frame.sequence;
       isPositionDrivenRef.current = true;
+      if (frame.name) petNameRef.current = frame.name;
 
       if (
         !isSamePetWindowPresentation(
@@ -253,7 +257,9 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       ) {
         appliedSizeRef.current = nextSize;
         setSpriteScale(frameScale);
-        void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
+        void currentWindow.setSize(
+          new LogicalSize(nextSize.width, nextSize.height),
+        );
       }
 
       const nextPosition = {
@@ -351,6 +357,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   function emitPetWindowInput(
     kind: PetWindowInputKind,
     event: React.MouseEvent<HTMLElement>,
+    screenPointOverride?: { x: number; y: number },
   ) {
     if (!isTauri()) {
       return;
@@ -369,11 +376,15 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
       sequence,
       petId: pet.petId,
+      petName: petNameRef.current ?? undefined,
       windowLabel: getCurrentWindow().label,
       pointerId: pointerIdFromEvent(event),
       kind,
       localPoint,
-      screenPoint: { x: event.screenX, y: event.screenY },
+      screenPoint: screenPointOverride ?? {
+        x: event.screenX,
+        y: event.screenY,
+      },
       button: event.button,
       at: Date.now(),
     });
@@ -411,8 +422,15 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     );
 
     if (pointerStartRef.current === "resize" && resizeStartRef.current) {
-      const delta = (event.screenX - resizeStartRef.current.screenX + event.screenY - resizeStartRef.current.screenY) / 2;
-      const newScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
+      const delta =
+        (event.screenX -
+          resizeStartRef.current.screenX +
+          event.screenY -
+          resizeStartRef.current.screenY) /
+        2;
+      const newScale = clampPetWindowScale(
+        resizeStartRef.current.scale + delta / 100,
+      );
 
       if (!canApplyResizeScale(newScale)) {
         return;
@@ -422,7 +440,9 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       appliedSizeRef.current = nextSize;
       resizeAppliedScaleRef.current = newScale;
       setSpriteScale(newScale);
-      void getCurrentWindow().setSize(new LogicalSize(nextSize.width, nextSize.height));
+      void getCurrentWindow().setSize(
+        new LogicalSize(nextSize.width, nextSize.height),
+      );
       return;
     }
 
@@ -525,8 +545,15 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     }
 
     if (pointerStart === "resize" && resizeStartRef.current) {
-      const delta = (event.screenX - resizeStartRef.current.screenX + event.screenY - resizeStartRef.current.screenY) / 2;
-      const requestedScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
+      const delta =
+        (event.screenX -
+          resizeStartRef.current.screenX +
+          event.screenY -
+          resizeStartRef.current.screenY) /
+        2;
+      const requestedScale = clampPetWindowScale(
+        resizeStartRef.current.scale + delta / 100,
+      );
       const finalScale = canApplyResizeScale(requestedScale)
         ? requestedScale
         : resizeAppliedScaleRef.current;
@@ -597,14 +624,19 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     pointerStartRef.current = null;
     void setNativeCursorPassthrough(false);
 
+    // Pass clientX/Y (CSS pixels relative to this window's content area) rather
+    // than screenX/Y, which is unreliable across monitors in WebView2. The host
+    // resolves the physical screen position using the pet window's outer position.
+    const clientPoint = { x: event.clientX, y: event.clientY };
+
     if (hit.kind === "body") {
       setInteractionStatus("Pet context menu");
-      emitPetWindowInput("body.contextmenu", event);
+      emitPetWindowInput("body.contextmenu", event, clientPoint);
       return;
     }
 
     setInteractionStatus("Overlay context menu");
-    emitPetWindowInput("overlay.contextmenu", event);
+    emitPetWindowInput("overlay.contextmenu", event, clientPoint);
   }
 
   return (
@@ -616,7 +648,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={() => {
-        if (pointerStartRef.current === "body" || pointerStartRef.current === "resize") {
+        if (
+          pointerStartRef.current === "body" ||
+          pointerStartRef.current === "resize"
+        ) {
           void setNativeCursorPassthrough(false);
           return;
         }

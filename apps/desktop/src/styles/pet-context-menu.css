@@ -25,7 +25,6 @@ html.pet-context-menu-document body {
   border: 1px solid var(--border-soft);
   border-radius: 14px;
   background: var(--surface-card);
-  box-shadow: var(--shadow-xl);
 }
 
 .pet-context-menu-card__header {
@@ -93,7 +92,6 @@ html.pet-context-menu-document body {
   border: 1px solid var(--border-soft);
   border-radius: 16px;
   background: var(--surface-card);
-  box-shadow: var(--shadow-xl);
 }
 
 .pet-context-menu-note__header {

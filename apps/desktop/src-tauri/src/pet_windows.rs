@@ -177,8 +177,8 @@ pub(crate) async fn open_pet_context_menu(
     app: tauri::AppHandle,
     pet_id: String,
     url: String,
-    x: f64,
-    y: f64,
+    local_x: f64,
+    local_y: f64,
 ) -> Result<(), String> {
     validate_asset_id(&pet_id).map_err(|_| "Invalid pet id".to_string())?;
 
@@ -188,10 +188,46 @@ pub(crate) async fn open_pet_context_menu(
         existing.destroy().ok();
     }
 
-    WebviewWindowBuilder::new(&app, label.clone(), WebviewUrl::App(url.into()))
+    // Derive physical screen position from the pet window's outer position so the
+    // context menu lands on the correct monitor in multi-monitor setups. local_x/y
+    // are CSS pixels relative to the pet window's content area (clientX/clientY).
+    let pet_label = format!("pet-window-{pet_id}");
+    let (mut phys_x, mut phys_y) = match app.get_webview_window(&pet_label) {
+        Some(pet_win) => {
+            let scale = pet_win.scale_factor().unwrap_or(1.0);
+            match pet_win.outer_position() {
+                Ok(pos) => (
+                    pos.x + (local_x * scale) as i32,
+                    pos.y + (local_y * scale) as i32,
+                ),
+                Err(_) => (local_x as i32, local_y as i32),
+            }
+        }
+        None => (local_x as i32, local_y as i32),
+    };
+
+    // Clamp so the menu stays within the monitor that the pet window is on.
+    if let Some(pet_win) = app.get_webview_window(&pet_label) {
+        if let Ok(Some(monitor)) = pet_win.current_monitor() {
+            let scale = monitor.scale_factor();
+            let menu_w = (192.0 * scale) as i32;
+            let menu_h = (132.0 * scale) as i32;
+            let pos = monitor.position();
+            let size = monitor.size();
+            let right = pos.x + size.width as i32;
+            let bottom = pos.y + size.height as i32;
+            if phys_x + menu_w > right {
+                phys_x -= menu_w;
+            }
+            if phys_y + menu_h > bottom {
+                phys_y -= menu_h;
+            }
+        }
+    }
+
+    let win = WebviewWindowBuilder::new(&app, label.clone(), WebviewUrl::App(url.into()))
         .title("Pet Menu")
         .inner_size(192.0, 132.0)
-        .position(x, y)
         .decorations(false)
         .transparent(true)
         .always_on_top(true)
@@ -202,6 +238,11 @@ pub(crate) async fn open_pet_context_menu(
         .focused(false)
         .build()
         .map_err(|error| format!("Could not create {label}: {error}"))?;
+
+    win.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(
+        phys_x, phys_y,
+    )))
+    .map_err(|error| format!("Could not position {label}: {error}"))?;
 
     Ok(())
 }
