@@ -589,7 +589,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     );
 
     if (hit.kind === "transparent") {
-      setActiveMenu(null);
       void setNativeCursorPassthrough(true);
       return;
     }
