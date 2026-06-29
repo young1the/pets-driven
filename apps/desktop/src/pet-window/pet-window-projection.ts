@@ -5,6 +5,7 @@ import type {
 } from "@pets-driven/pet-engine/core/world-snapshot";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import {
+  clampPetWindowScale,
   PET_WINDOW_BUBBLE_OVERHEAD,
   PET_WINDOW_LAYOUT,
 } from "@/pet-window/pet-window-layout";
@@ -61,9 +62,10 @@ export function projectWorldSnapshotToPetWindows(
       return [];
     }
 
-    const petScale = scaleByPetId?.[pet.id] ?? 1;
+    const petScale = clampPetWindowScale(scaleByPetId?.[pet.id] ?? 1);
     const windowWidth = PET_CELL_SIZE.width * petScale;
-    const windowHeight = PET_CELL_SIZE.height * petScale;
+    const windowHeight =
+      (PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD) * petScale;
 
     return [
       {
@@ -79,9 +81,10 @@ export function projectWorldSnapshotToPetWindows(
               (body.y - viewport.y) * scaleY -
               windowHeight / 2 -
               PET_WINDOW_BUBBLE_OVERHEAD -
-              PET_WINDOW_BODY_ANCHOR_OFFSET * petScale,
+              PET_WINDOW_BODY_ANCHOR_OFFSET * petScale +
+              (PET_WINDOW_BUBBLE_OVERHEAD / 2) * petScale,
             width: windowWidth,
-            height: windowHeight + PET_WINDOW_BUBBLE_OVERHEAD,
+            height: windowHeight,
           },
           sprite: {
             decisionEmote: presentBehaviorDecisionToken(pet.decision?.reason),

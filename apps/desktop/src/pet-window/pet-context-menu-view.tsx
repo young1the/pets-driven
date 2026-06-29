@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
-import { emitTo } from "@tauri-apps/api/event";
+import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import {
   PET_WINDOW_HOST_LABEL,
@@ -51,28 +51,16 @@ export function PetContextMenuView({
     const preventContextMenu = (e: Event) => e.preventDefault();
     window.addEventListener("contextmenu", preventContextMenu);
 
-    // Only close on blur after the window has actually received focus once.
-    // Without this guard the blur event fires during window creation before
-    // the popup is visible, closing it immediately.
-    let hasFocused = false;
-
-    const handleFocus = () => {
-      hasFocused = true;
-    };
-
-    const handleBlur = () => {
-      if (hasFocused) {
-        void getCurrentWindow().close();
-      }
-    };
-
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("blur", handleBlur);
+    let unlisten: (() => void) | undefined;
+    void listen("tauri://blur", () => {
+      void getCurrentWindow().close();
+    }).then((fn) => {
+      unlisten = fn;
+    });
 
     return () => {
       window.removeEventListener("contextmenu", preventContextMenu);
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("blur", handleBlur);
+      unlisten?.();
     };
   }, []);
 

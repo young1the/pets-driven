@@ -717,8 +717,8 @@ describe("pet window product route", () => {
       expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
         petId: "pet-a",
         url: "index.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=",
-        x: 400,
-        y: 300,
+        localX: 400,
+        localY: 300,
       });
     });
   });

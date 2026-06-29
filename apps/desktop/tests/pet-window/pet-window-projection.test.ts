@@ -114,7 +114,12 @@ describe("pet window projection", () => {
           height: 268,
         },
         sprite: {
-          decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
+          decisionEmote: {
+            emote: "sparkle",
+            label: "Jump request",
+            mood: "excited",
+            tone: "spark",
+          },
           intent: { kind: "travel", direction: "left" },
         },
         overlay: null,
@@ -158,6 +163,18 @@ describe("pet window projection", () => {
 
     expect(projection.frame.window.x).toBe(-416);
     expect(projection.frame.window.y).toBe(260);
+  });
+
+  it("clamps oversized saved scales before projecting Pet Window frames", () => {
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshotFixture(),
+      { x: 100, y: 200, width: 960, height: 540 },
+      12,
+      { "pet-a": 4 },
+    );
+
+    expect(projection.frame.window.width).toBe(384);
+    expect(projection.frame.window.height).toBe(536);
   });
 
   it("maps desktop screen points back into viewport-relative world coordinates", () => {

@@ -102,7 +102,7 @@ export const desktopGateway: DesktopGateway = {
     }
 
     const url = `index.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}`;
-    await invoke("open_pet_context_menu", { petId, url, x, y });
+    await invoke("open_pet_context_menu", { petId, url, localX: x, localY: y });
   },
 
   async pickDirectory() {
