@@ -12,7 +12,7 @@ Read that command file first, then follow the same guided workflow one prompt at
 a time. When the command file refers to `${CLAUDE_PLUGIN_ROOT}`, use this plugin
 root instead:
 
-- In an installed Codex plugin hook context, use `$PLUGIN_ROOT`.
+- In an installed Codex hook context, the bundled hook config resolves the installed cache path.
 - In this repository while developing, use `plugins/pets-driven`.
 
 The repository comes in one of two shapes:

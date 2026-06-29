@@ -11,6 +11,7 @@ use tauri::Emitter;
 
 const CLAUDE_HOOK_INGRESS_EVENT: &str = "claude-hook:received:v1";
 const CLAUDE_HOOK_INGRESS_PATH: &str = "/claude-hook";
+const CODEX_HOOK_INGRESS_PATH: &str = "/codex-hook";
 const CLAUDE_HOOK_INGRESS_PORT: u16 = 43187;
 const PETS_DRIVEN_HATCH_PATH: &str = "/pets-driven/hatch";
 const PETS_DRIVEN_STATE_CHANGED_EVENT: &str = "pets-driven:state-changed";
@@ -58,6 +59,10 @@ pub(crate) fn create_status_handle() -> ClaudeHookIngressStatusHandle {
 
 fn claude_hook_ingress_url() -> String {
     format!("http://127.0.0.1:{CLAUDE_HOOK_INGRESS_PORT}{CLAUDE_HOOK_INGRESS_PATH}")
+}
+
+fn is_agent_hook_ingress_path(path: &str) -> bool {
+    path == CLAUDE_HOOK_INGRESS_PATH || path == CODEX_HOOK_INGRESS_PATH
 }
 
 fn http_body_start(request: &[u8]) -> Option<usize> {
@@ -261,7 +266,7 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
 
     match parse_http_request(&request) {
         Ok((path, payload)) => match path.as_str() {
-            CLAUDE_HOOK_INGRESS_PATH => {
+            path if is_agent_hook_ingress_path(path) => {
                 eprintln!("{}", claude_hook_ingress_log_line(&payload));
 
                 match app.emit_to("main", CLAUDE_HOOK_INGRESS_EVENT, payload) {
@@ -411,6 +416,13 @@ mod tests {
     fn hatch_input_requires_all_fields() {
         let payload = serde_json::json!({ "cwd": "D:/proj", "assetId": "agumon" });
         assert!(hatch_input_from_payload(&payload).is_err());
+    }
+
+    #[test]
+    fn agent_hook_ingress_accepts_claude_and_codex_paths() {
+        assert!(is_agent_hook_ingress_path("/claude-hook"));
+        assert!(is_agent_hook_ingress_path("/codex-hook"));
+        assert!(!is_agent_hook_ingress_path("/unknown"));
     }
 
     #[test]

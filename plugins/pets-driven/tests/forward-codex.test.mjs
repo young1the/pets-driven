@@ -35,6 +35,18 @@ function render(eventName, env = {}) {
   return JSON.parse(output);
 }
 
+function renderCodexInput(payload, env = {}) {
+  const result = spawnSync(bashBin, bashArgs("--print"), {
+    cwd: pluginRoot,
+    env: { ...process.env, ...env },
+    input: JSON.stringify(payload),
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  return JSON.parse(result.stdout);
+}
+
 assert.equal(existsSync(hookScript), true, "forward-codex hook script should exist");
 
 const selfCheck = spawnSync(bashBin, bashArgs("--self-check"), {
@@ -71,6 +83,21 @@ assert.deepEqual(
 
 assert.equal(render("Stop").hook_event_name, "Stop");
 assert.equal(render("Stop").summary, "Codex turn completed");
+
+assert.deepEqual(
+  renderCodexInput({
+    hook_event_name: "UserPromptSubmit",
+    cwd: "D:\\work\\pets-driven",
+    session_id: "codex-session",
+    prompt: "Build this",
+  }),
+  {
+    hook_event_name: "UserPromptSubmit",
+    cwd: "D:\\work\\pets-driven",
+    session_id: "codex-session",
+    prompt: "Build this",
+  },
+);
 
 const windowsPathPayload = render("UserPromptSubmit", {
   PETS_DRIVEN_TEST_CWD: "C:\\work\\pets-driven",
