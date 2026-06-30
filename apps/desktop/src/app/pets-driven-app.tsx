@@ -154,7 +154,10 @@ function adoptedPetBodySize(scale = 1) {
   };
 }
 
-async function loadMainWindowSpawnPoint(): Promise<{ x: number; y: number } | null> {
+async function loadMainWindowSpawnPoint(): Promise<{
+  x: number;
+  y: number;
+} | null> {
   try {
     const currentWindow = getCurrentWindow();
     const [position, size, monitor] = await Promise.all([
@@ -1135,7 +1138,6 @@ export function PetsDrivenApp() {
     applyPetsDrivenState(next);
     void desktopGateway.writePetsDrivenState(next);
   }
-
 
   function patchPet(petId: string, patch: Partial<PetRecord>) {
     const current = petsDrivenStateRef.current;
