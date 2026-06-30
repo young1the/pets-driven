@@ -51,15 +51,26 @@ export function PetContextMenuView({
     const preventContextMenu = (e: Event) => e.preventDefault();
     window.addEventListener("contextmenu", preventContextMenu);
 
+    let unlistenFocus: (() => void) | undefined;
     let unlisten: (() => void) | undefined;
-    void listen("tauri://blur", () => {
-      void getCurrentWindow().close();
+
+    // Arm the blur listener only after the window has genuinely received focus.
+    // setFocus() can fire a spurious blur before focus settles; registering early
+    // would catch that transient event and immediately hide the menu.
+    void listen("tauri://focus", () => {
+      unlistenFocus?.();
+      void listen("tauri://blur", () => {
+        void getCurrentWindow().hide();
+      }).then((fn) => {
+        unlisten = fn;
+      });
     }).then((fn) => {
-      unlisten = fn;
+      unlistenFocus = fn;
     });
 
     return () => {
       window.removeEventListener("contextmenu", preventContextMenu);
+      unlistenFocus?.();
       unlisten?.();
     };
   }, []);
@@ -97,7 +108,7 @@ export function PetContextMenuView({
 
   function closeWindow() {
     if (isTauri()) {
-      void getCurrentWindow().close();
+      void getCurrentWindow().hide();
     }
   }
 

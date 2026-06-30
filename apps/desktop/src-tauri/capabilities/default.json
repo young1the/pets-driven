@@ -11,6 +11,10 @@
     "core:window:allow-show",
     "core:window:allow-set-ignore-cursor-events",
     "core:window:allow-start-dragging",
-    "dialog:allow-open"
+    "dialog:allow-open",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://petdex.dev/**" }]
+    }
   ]
 }
