@@ -722,14 +722,6 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           width: `${PET_CELL_SIZE.width * spriteScale}px`,
         }}
       >
-        {petName !== null ? (
-          <PetHoverInfoCard
-            cwd={isBodyHovered ? cwdRef.current : null}
-            intent={presentation.intent}
-            name={petName}
-            spriteHeight={PET_CELL_SIZE.height * spriteScale}
-          />
-        ) : null}
         {spritesheetUrl ? (
           <PetSprite
             alt={`Pet Sprite ${pet.petId}`}
@@ -741,6 +733,14 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
             size={PET_CELL_SIZE}
             scale={spriteScale}
             style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD * spriteScale }}
+          />
+        ) : null}
+        {petName !== null ? (
+          <PetHoverInfoCard
+            cwd={isBodyHovered ? cwdRef.current : null}
+            intent={presentation.intent}
+            name={petName}
+            spriteHeight={PET_CELL_SIZE.height * spriteScale}
           />
         ) : null}
         <IconButton
@@ -776,7 +776,12 @@ type PetHoverInfoCardProps = {
   spriteHeight: number;
 };
 
-function PetHoverInfoCard({ name, intent, cwd, spriteHeight }: PetHoverInfoCardProps) {
+function PetHoverInfoCard({
+  name,
+  intent,
+  cwd,
+  spriteHeight,
+}: PetHoverInfoCardProps) {
   const { dotColor, labelColor, label } = hoverStatusFromIntent(intent);
 
   return (
@@ -790,7 +795,9 @@ function PetHoverInfoCard({ name, intent, cwd, spriteHeight }: PetHoverInfoCardP
         } as React.CSSProperties
       }
     >
-      <div className={`pet-window-nameplate__inner${cwd ? " pet-window-nameplate__inner--expanded" : ""}`}>
+      <div
+        className={`pet-window-nameplate__inner${cwd ? " pet-window-nameplate__inner--expanded" : ""}`}
+      >
         <div className="pet-window-nameplate__row">
           <span className="pet-window-nameplate__dot" />
           <span className="pet-window-nameplate__name">{name}</span>
