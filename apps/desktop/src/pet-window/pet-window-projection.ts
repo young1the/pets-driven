@@ -90,9 +90,9 @@ export function projectWorldSnapshotToPetWindows(
             height: windowHeight,
           },
           sprite: {
-            decisionEmote:
-              presentPetExpression(pet.expression) ??
-              presentBehaviorDecisionToken(pet.decision?.reason),
+            decisionEmote: pet.expression
+              ? presentPetExpression(pet.expression)
+              : presentBehaviorDecisionToken(pet.decision?.reason),
             intent: spriteIntentFromBody(body),
           },
           overlay: overlayFromPet(pet),
