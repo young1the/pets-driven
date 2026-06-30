@@ -258,14 +258,14 @@ function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
   };
 }
 
-const PERSONALITY_GRADIENTS: Record<string, { from: string; to: string }> = {
-  playful: { from: "#FF7FB4", to: "#F95E9E" },
-  attentive: { from: "#5AC8E8", to: "#2F9CC4" },
-  reserved: { from: "#A28BF0", to: "#7560D8" },
-  curious: { from: "#5BD08A", to: "#2E9E63" },
-  steady: { from: "#8B7FE8", to: "#6F5FD6" },
-  bold: { from: "#FF7A5C", to: "#E04428" },
-};
+const PET_GRADIENTS: { from: string; to: string }[] = [
+  { from: "#FF7FB4", to: "#F95E9E" },
+  { from: "#5AC8E8", to: "#2F9CC4" },
+  { from: "#A28BF0", to: "#7560D8" },
+  { from: "#5BD08A", to: "#2E9E63" },
+  { from: "#8B7FE8", to: "#6F5FD6" },
+  { from: "#FF7A5C", to: "#E04428" },
+];
 
 function hashString(s: string): number {
   let h = 0;
@@ -275,16 +275,8 @@ function hashString(s: string): number {
   return Math.abs(h);
 }
 
-function petGradient(
-  name: string,
-  personalityId?: string,
-): { from: string; to: string } {
-  const keys = Object.keys(PERSONALITY_GRADIENTS);
-  if (personalityId && personalityId in PERSONALITY_GRADIENTS) {
-    return PERSONALITY_GRADIENTS[personalityId];
-  }
-  const key = keys[hashString(name + (personalityId ?? "")) % keys.length];
-  return PERSONALITY_GRADIENTS[key];
+function petGradient(petId: string): { from: string; to: string } {
+  return PET_GRADIENTS[hashString(petId) % PET_GRADIENTS.length];
 }
 
 function cardNote(memo: string | undefined): string {
@@ -1273,7 +1265,7 @@ export function PetsDrivenApp() {
         assetId: pet.assetId,
         note: cardNote(pet.memo),
         role: personalityRoleLabel(personalityId),
-        gradient: petGradient(pet.name, personalityId),
+        gradient: petGradient(pet.id),
         cwd,
       };
     });
@@ -1283,7 +1275,7 @@ export function PetsDrivenApp() {
     .map((pet) => ({
       id: pet.id,
       name: pet.name,
-      color: petGradient(pet.name, profileFor(pet)?.personalityId).from,
+      color: petGradient(pet.id).from,
     }));
 
   const editingPet = managedPets.find((pet) => pet.id === editPetId) ?? null;
@@ -1294,10 +1286,7 @@ export function PetsDrivenApp() {
         assetId: editingPet.assetId,
         role: personalityRoleLabel(profileFor(editingPet)?.personalityId),
         status: statusFor(editingPet.id),
-        gradient: petGradient(
-          editingPet.name,
-          profileFor(editingPet)?.personalityId,
-        ),
+        gradient: petGradient(editingPet.id),
         folder:
           getWorkingDirectoryForPet(petsDrivenState, editingPet.id)?.path ?? "",
         memo: editingPet.memo ?? "",
