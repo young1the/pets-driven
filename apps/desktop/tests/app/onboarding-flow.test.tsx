@@ -13,6 +13,7 @@ function createGateway(
     listPetPackages: vi.fn().mockResolvedValue(packages),
     openAdoptedPetWindow: vi.fn(),
     closeAdoptedPetWindow: vi.fn(),
+    openPetContextMenu: vi.fn(),
     pickDirectory: vi.fn(),
   };
 }

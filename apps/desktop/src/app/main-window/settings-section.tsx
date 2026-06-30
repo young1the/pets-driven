@@ -17,8 +17,6 @@ export interface SettingsSectionProps {
   onLaunchProfile: (value: LaunchProfileId) => void;
   onCommand: (value: string) => void;
   onLaunchLine: (value: string) => void;
-  confirmRun: boolean;
-  onToggleConfirm: () => void;
   preview: { cwd: string; prompt: string; command: string };
   hook: { tone: BadgeTone; label: string; summary: string; url: string };
   onReconnect: () => void;
@@ -49,8 +47,6 @@ export function SettingsSection({
   onLaunchProfile,
   onCommand,
   onLaunchLine,
-  confirmRun,
-  onToggleConfirm,
   preview,
 }: SettingsSectionProps) {
   const customLaunchLine = launchProfile === "custom";
@@ -171,24 +167,6 @@ export function SettingsSection({
               />
             </div>
 
-            <div>
-              <Switch
-                checked={confirmRun}
-                className="pd-settings-confirm"
-                onChange={onToggleConfirm}
-                size="sm"
-              >
-                <span className="pd-settings-confirm__copy">
-                  <span className="pd-settings-confirm__title">
-                    Ask before running
-                  </span>
-                  <span className="pd-settings-confirm__hint">
-                    Show a confirm dialog the first time each pet runs its
-                    command.
-                  </span>
-                </span>
-              </Switch>
-            </div>
           </div>
         </div>
 

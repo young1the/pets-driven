@@ -45,7 +45,6 @@ describe("parsePetsDrivenState", () => {
       pets: [],
       petProfiles: [],
       sessionCommand: "cmd /k claude",
-      confirmBeforeRun: true,
     });
   });
 
@@ -73,30 +72,6 @@ describe("parsePetsDrivenState", () => {
     expect(parsePetsDrivenState(v2)).toEqual(v2);
   });
 
-  it("defaults missing confirmation settings to enabled", () => {
-    const state = parsePetsDrivenState({
-      schemaVersion: 2,
-      registeredWorkingDirectories: [],
-      pets: [],
-      petProfiles: [],
-      sessionCommand: "cmd /k claude",
-    });
-
-    expect(state.confirmBeforeRun).toBe(true);
-  });
-
-  it("preserves disabled run confirmation settings", () => {
-    const state = parsePetsDrivenState({
-      schemaVersion: 2,
-      registeredWorkingDirectories: [],
-      pets: [],
-      petProfiles: [],
-      sessionCommand: "cmd /k claude",
-      confirmBeforeRun: false,
-    });
-
-    expect(state.confirmBeforeRun).toBe(false);
-  });
 
   it("returns an empty v2 state for unknown payloads", () => {
     expect(parsePetsDrivenState(null)).toEqual(createEmptyPetsDrivenState());
