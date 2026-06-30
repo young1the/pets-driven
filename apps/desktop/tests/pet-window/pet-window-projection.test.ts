@@ -162,6 +162,34 @@ describe("pet window projection", () => {
     });
   });
 
+  it("suppresses behavior decision emotes for active quiet expressions", () => {
+    const snapshot = snapshotFixture();
+    snapshot.pets[0] = {
+      ...snapshot.pets[0],
+      decision: {
+        source: "autonomous",
+        reason: "request-jump",
+        decidedAt: 100,
+      },
+      expression: {
+        source: "collision",
+        mood: "working",
+        emote: "none",
+        label: null,
+        startedAt: 120,
+        expiresAt: 820,
+      },
+    };
+
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 0, y: 0, width: 1000, height: 800 },
+      7,
+    );
+
+    expect(projection.frame.sprite.decisionEmote).toBeNull();
+  });
+
   it("maps playground x coordinates across the full desktop projection width", () => {
     const [projection] = projectWorldSnapshotToPetWindows(
       snapshotFixture(),
