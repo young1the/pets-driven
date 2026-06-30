@@ -14,7 +14,10 @@ const CLAUDE_HOOK_INGRESS_PATH: &str = "/claude-hook";
 const CODEX_HOOK_INGRESS_PATH: &str = "/codex-hook";
 const CLAUDE_HOOK_INGRESS_PORT: u16 = 43187;
 const PETS_DRIVEN_HATCH_PATH: &str = "/pets-driven/hatch";
+const PETS_DRIVEN_SHOW_PATH: &str = "/pets-driven/show";
+const PETS_DRIVEN_HIDE_PATH: &str = "/pets-driven/hide";
 const PETS_DRIVEN_STATE_CHANGED_EVENT: &str = "pets-driven:state-changed";
+const PETS_DRIVEN_PET_COMMAND_EVENT: &str = "pets-driven:pet-command";
 
 pub(crate) type ClaudeHookIngressStatusHandle = Arc<Mutex<ClaudeHookIngressStatus>>;
 
@@ -187,8 +190,18 @@ fn handle_hatch_request(app: &tauri::AppHandle, payload: &serde_json::Value, str
     };
 
     match crate::state_store::hatch_pet(app, input) {
-        Ok(_) => {
+        Ok(next_state) => {
             let _ = app.emit_to("main", PETS_DRIVEN_STATE_CHANGED_EVENT, ());
+            if let Some(pet_id) = crate::state_store::find_pet_id_by_cwd(
+                &next_state,
+                hatch_input_field(payload, "cwd").unwrap_or_default().as_str(),
+            ) {
+                let _ = app.emit_to(
+                    "main",
+                    PETS_DRIVEN_PET_COMMAND_EVENT,
+                    serde_json::json!({ "action": "show", "petId": pet_id }),
+                );
+            }
             let _ = write_http_response(stream, "200 OK", r#"{"ok":true}"#);
         }
         Err(error) => {
@@ -196,6 +209,55 @@ fn handle_hatch_request(app: &tauri::AppHandle, payload: &serde_json::Value, str
                 stream,
                 "409 Conflict",
                 &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+        }
+    }
+}
+
+fn handle_show_hide_request(
+    app: &tauri::AppHandle,
+    payload: &serde_json::Value,
+    stream: &mut TcpStream,
+    action: &str,
+) {
+    let cwd = match hatch_input_field(payload, "cwd") {
+        Ok(cwd) => cwd,
+        Err(error) => {
+            let _ = write_http_response(
+                stream,
+                "400 Bad Request",
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+            return;
+        }
+    };
+
+    let state = match crate::state_store::read_state_pub(app) {
+        Ok(state) => state,
+        Err(error) => {
+            let _ = write_http_response(
+                stream,
+                "500 Internal Server Error",
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+            return;
+        }
+    };
+
+    match crate::state_store::find_pet_id_by_cwd(&state, &cwd) {
+        Some(pet_id) => {
+            let _ = app.emit_to(
+                "main",
+                PETS_DRIVEN_PET_COMMAND_EVENT,
+                serde_json::json!({ "action": action, "petId": pet_id }),
+            );
+            let _ = write_http_response(stream, "200 OK", r#"{"ok":true}"#);
+        }
+        None => {
+            let _ = write_http_response(
+                stream,
+                "404 Not Found",
+                r#"{"ok":false,"error":"No pet found for that working directory"}"#,
             );
         }
     }
@@ -287,6 +349,12 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
             }
             PETS_DRIVEN_HATCH_PATH => {
                 handle_hatch_request(&app, &payload, &mut stream);
+            }
+            PETS_DRIVEN_SHOW_PATH => {
+                handle_show_hide_request(&app, &payload, &mut stream, "show");
+            }
+            PETS_DRIVEN_HIDE_PATH => {
+                handle_show_hide_request(&app, &payload, &mut stream, "hide");
             }
             _ => {
                 let _ = write_http_response(
@@ -423,6 +491,17 @@ mod tests {
         assert!(is_agent_hook_ingress_path("/claude-hook"));
         assert!(is_agent_hook_ingress_path("/codex-hook"));
         assert!(!is_agent_hook_ingress_path("/unknown"));
+    }
+
+    #[test]
+    fn show_hide_ingress_parses_cwd_field() {
+        let body = r#"{"cwd":"D:/my-project"}"#;
+        let request =
+            format!("POST /pets-driven/show HTTP/1.1\r\nContent-Length: {}\r\n\r\n{body}", body.len());
+        let (path, parsed) = parse_http_request(request.as_bytes()).expect("should parse");
+
+        assert_eq!(path, "/pets-driven/show");
+        assert_eq!(hatch_input_field(&parsed, "cwd").unwrap(), "D:/my-project");
     }
 
     #[test]
