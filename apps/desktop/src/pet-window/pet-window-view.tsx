@@ -151,6 +151,41 @@ function hitLayoutForPresentation(
   };
 }
 
+function hoverStatusFromIntent(intent: PetSpriteIntent): {
+  dotColor: string;
+  labelColor: string;
+  label: string;
+} {
+  switch (intent.kind) {
+    case "waving":
+    case "jumping":
+      return {
+        dotColor: "var(--mint-500)",
+        labelColor: "var(--mint-700)",
+        label: "Done",
+      };
+    case "idle":
+      return {
+        dotColor: "var(--ink-400)",
+        labelColor: "var(--ink-600)",
+        label: "Resting",
+      };
+    case "waiting":
+    case "failed":
+      return {
+        dotColor: "var(--butter-500)",
+        labelColor: "var(--butter-600)",
+        label: "Needs help",
+      };
+    default:
+      return {
+        dotColor: "var(--sky-400)",
+        labelColor: "var(--sky-700)",
+        label: "Working",
+      };
+  }
+}
+
 export function PetWindowView({ pet }: PetWindowViewProps) {
   const surfaceRef = useRef<HTMLElement | null>(null);
   const visualFrameRef = useRef<HTMLSpanElement | null>(null);
@@ -174,6 +209,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   // focus the bound window or start a new session.
   const bodyDownRef = useRef<{ screenX: number; screenY: number } | null>(null);
   const lastTapAtRef = useRef(0);
+  const isBodyHoveredRef = useRef(false);
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
     null,
   );
@@ -183,8 +219,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const [presentation, setPresentation] = useState<PetWindowPresentation>(() =>
     defaultPresentation(pet.windowIndex),
   );
+  const [isBodyHovered, setIsBodyHovered] = useState(false);
   const presentationRef = useRef<PetWindowPresentation>(presentation);
   const petNameRef = useRef<string | null>(null);
+  const cwdRef = useRef<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.add("pet-window-document");
@@ -221,6 +259,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       frameSequenceRef.current = frame.sequence;
       isPositionDrivenRef.current = true;
       if (frame.name) petNameRef.current = frame.name;
+      if (frame.cwd !== undefined) cwdRef.current = frame.cwd || null;
 
       if (
         !isSamePetWindowPresentation(
@@ -451,6 +490,12 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       return;
     }
 
+    const nextBodyHovered = hit.kind === "body";
+    if (nextBodyHovered !== isBodyHoveredRef.current) {
+      isBodyHoveredRef.current = nextBodyHovered;
+      setIsBodyHovered(nextBodyHovered);
+    }
+
     void setNativeCursorPassthrough(hit.kind === "transparent");
   }
 
@@ -648,6 +693,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={() => {
+        if (isBodyHoveredRef.current) {
+          isBodyHoveredRef.current = false;
+          setIsBodyHovered(false);
+        }
+
         if (
           pointerStartRef.current === "body" ||
           pointerStartRef.current === "resize"
@@ -681,6 +731,13 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
             style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD * spriteScale }}
           />
         ) : null}
+        {isBodyHovered && petNameRef.current ? (
+          <PetHoverInfoCard
+            cwd={cwdRef.current}
+            intent={presentation.intent}
+            name={petNameRef.current}
+          />
+        ) : null}
         <IconButton
           className="pet-window-resize-button"
           label="Resize pet"
@@ -704,5 +761,36 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         </span>
       ) : null}
     </main>
+  );
+}
+
+type PetHoverInfoCardProps = {
+  name: string;
+  intent: PetSpriteIntent;
+  cwd: string | null;
+};
+
+function PetHoverInfoCard({ name, intent, cwd }: PetHoverInfoCardProps) {
+  const { dotColor, labelColor, label } = hoverStatusFromIntent(intent);
+
+  return (
+    <div
+      className="pet-window-hover-card"
+      style={
+        {
+          "--pet-window-dot-color": dotColor,
+          "--pet-window-label-color": labelColor,
+        } as React.CSSProperties
+      }
+    >
+      <div className="pet-window-hover-card__inner">
+        <div className="pet-window-hover-card__row">
+          <span className="pet-window-hover-card__dot" />
+          <span className="pet-window-hover-card__name">{name}</span>
+          <span className="pet-window-hover-card__status">{label}</span>
+        </div>
+        {cwd ? <div className="pet-window-hover-card__cwd">{cwd}</div> : null}
+      </div>
+    </div>
   );
 }
