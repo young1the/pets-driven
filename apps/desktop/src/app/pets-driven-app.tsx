@@ -379,9 +379,7 @@ export function PetsDrivenApp() {
           return;
         }
         if (input.kind === "menu.close") {
-          void desktopGateway
-            .closeAdoptedPetWindow(input.petId)
-            .catch(() => {});
+          recallPet(input.petId);
           return;
         }
         if (input.kind === "menu.note-save") {

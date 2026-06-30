@@ -151,20 +151,6 @@ export function HomeSection({
     <div className={homeClass}>
       <div
         style={{
-          position: "absolute",
-          left: "50%",
-          top: "-160px",
-          transform: "translateX(-50%)",
-          width: "1100px",
-          height: "620px",
-          background:
-            "radial-gradient(50% 50% at 50% 50%, rgba(249,94,158,0.10), rgba(139,127,232,0.07) 45%, transparent 72%)",
-          pointerEvents: "none",
-        }}
-      />
-
-      <div
-        style={{
           position: "relative",
           zIndex: 6,
           flex: 1,

@@ -184,10 +184,6 @@ pub(crate) async fn open_pet_context_menu(
 
     let label = format!("pet-context-menu-{pet_id}");
 
-    if let Some(existing) = app.get_webview_window(&label) {
-        existing.destroy().ok();
-    }
-
     // Derive physical screen position from the pet window's outer position so the
     // context menu lands on the correct monitor in multi-monitor setups. local_x/y
     // are CSS pixels relative to the pet window's content area (clientX/clientY).
@@ -225,6 +221,20 @@ pub(crate) async fn open_pet_context_menu(
         }
     }
 
+    let physical_position =
+        tauri::Position::Physical(tauri::PhysicalPosition::new(phys_x, phys_y));
+
+    // Reuse an existing hidden window rather than cold-booting a new WebView2
+    // instance — navigation within an existing process is much faster than creation.
+    if let Some(existing) = app.get_webview_window(&label) {
+        let safe_url = url.replace('\'', "%27");
+        existing
+            .eval(&format!("window.location.replace('/{safe_url}')"))
+            .ok();
+        existing.set_position(physical_position).ok();
+        return Ok(());
+    }
+
     let win = WebviewWindowBuilder::new(&app, label.clone(), WebviewUrl::App(url.into()))
         .title("Pet Menu")
         .inner_size(192.0, 132.0)
@@ -239,10 +249,8 @@ pub(crate) async fn open_pet_context_menu(
         .build()
         .map_err(|error| format!("Could not create {label}: {error}"))?;
 
-    win.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(
-        phys_x, phys_y,
-    )))
-    .map_err(|error| format!("Could not position {label}: {error}"))?;
+    win.set_position(physical_position)
+        .map_err(|error| format!("Could not position {label}: {error}"))?;
 
     Ok(())
 }
