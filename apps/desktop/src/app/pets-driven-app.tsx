@@ -5,6 +5,7 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import {
   availableMonitors,
   currentMonitor,
+  getCurrentWindow,
   type Monitor,
 } from "@tauri-apps/api/window";
 import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
@@ -12,7 +13,11 @@ import {
   CLAUDE_HOOK_INGRESS_EVENT,
   type ClaudeHookIngressStatus,
 } from "@/adapters/agent-events/claude-hook-ingress";
-import { PETS_DRIVEN_STATE_CHANGED_EVENT } from "@/adapters/agent-events/hatch-ingress";
+import {
+  PETS_DRIVEN_PET_COMMAND_EVENT,
+  PETS_DRIVEN_STATE_CHANGED_EVENT,
+  type PetCommandEvent,
+} from "@/adapters/agent-events/hatch-ingress";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
@@ -74,6 +79,7 @@ import {
 } from "@/pet-window/pet-window-messages";
 import {
   clampPetWindowScale,
+  DEFAULT_PET_WINDOW_SCALE,
   PET_WINDOW_LAYOUT,
 } from "@/pet-window/pet-window-layout";
 import {
@@ -85,7 +91,7 @@ import { PlaygroundApp } from "@/playground/browser/playground-app";
 
 const DESKTOP_FIXTURE_HOST_TICK_MS = 16;
 const DESKTOP_FIXTURE_STEP_MS = 16;
-const DESKTOP_FIXTURE_WORLD_SIZE = { width: 960, height: 540 };
+const DESKTOP_FIXTURE_WORLD_SIZE = { width: 1920, height: 1080 };
 const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
 
 // A foreign OS window a pet is bound to. Mirrors the Rust `ForeignWindow`.
@@ -124,7 +130,7 @@ function petWindowPlaygroundLabelForPetId(petId: string) {
 
 function desktopFixturePetBodySize(
   bounds: { width: number; height: number },
-  scale = 1,
+  scale = DEFAULT_PET_WINDOW_SCALE,
 ) {
   const scaleX = bounds.width / DESKTOP_FIXTURE_WORLD_SIZE.width;
   const scaleY = bounds.height / DESKTOP_FIXTURE_WORLD_SIZE.height;
@@ -146,6 +152,25 @@ function adoptedPetBodySize(scale = 1) {
     width: PET_WINDOW_LAYOUT.body.width * petScale,
     height: PET_WINDOW_LAYOUT.body.height * petScale,
   };
+}
+
+async function loadMainWindowSpawnPoint(): Promise<{ x: number; y: number } | null> {
+  try {
+    const currentWindow = getCurrentWindow();
+    const [position, size, monitor] = await Promise.all([
+      currentWindow.outerPosition(),
+      currentWindow.outerSize(),
+      currentMonitor(),
+    ]);
+    const dpi = monitor?.scaleFactor ?? 1;
+
+    return {
+      x: (position.x + size.width / 2) / dpi,
+      y: (position.y + size.height / 2) / dpi,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function monitorToWorkArea(monitor: Monitor, index: number): MonitorWorkArea {
@@ -210,6 +235,16 @@ function routeClaudeHookPayloadToRegisteredWorkingDirectory(
     ...payload,
     sourceId: workingDirectory.agentSourceId,
   };
+}
+
+function shortWorkingDir(dirPath: string): string {
+  const parts = dirPath.split(/[\\/]/).filter(Boolean);
+  if (parts.length === 0) return dirPath;
+  const last = parts[parts.length - 1];
+  if (parts.length === 1) return last;
+  const parent = parts[parts.length - 2];
+  const displayParent = /^[a-zA-Z]:$/.test(parent) ? "~" : parent;
+  return `${displayParent}/${last}`;
 }
 
 function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
@@ -378,7 +413,7 @@ export function PetsDrivenApp() {
           return;
         }
         if (input.kind === "menu.close") {
-          recallPet(input.petId);
+          hidePet(input.petId);
           return;
         }
         if (input.kind === "menu.note-save") {
@@ -592,6 +627,34 @@ export function PetsDrivenApp() {
     return () => unlisten?.();
   }, []);
 
+  // Backend-triggered show/hide: reload state first so newly hatched pets are
+  // in memory before showPet/hidePet run.
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+
+    void listen<PetCommandEvent>(PETS_DRIVEN_PET_COMMAND_EVENT, (event) => {
+      const { action, petId } = event.payload;
+      void desktopGateway
+        .readPetsDrivenState()
+        .then((state) => {
+          applyPetsDrivenState(state);
+          if (action === "show") showPet(petId);
+          if (action === "hide") hidePet(petId);
+        })
+        .catch((error) => {
+          setPetWindowError(formatCommandError(error));
+        });
+    }).then((stop) => {
+      unlisten = stop;
+    });
+
+    return () => unlisten?.();
+  }, []);
+
   useEffect(() => {
     if (!isTauri() || desktopFixtureWindowCount <= 0) {
       return;
@@ -704,7 +767,10 @@ export function PetsDrivenApp() {
       }
     }
 
-    void loadDesktopMonitorWorkAreas().then((monitors) => {
+    void Promise.all([
+      loadDesktopMonitorWorkAreas(),
+      loadMainWindowSpawnPoint(),
+    ]).then(([monitors, spawnPoint]) => {
       if (!isActive || monitors.length === 0) {
         return;
       }
@@ -719,13 +785,16 @@ export function PetsDrivenApp() {
       const scaleByPetId: Record<string, number> = {};
       for (const pet of simInputs) {
         const record = petRecords.find((r) => r.id === pet.id);
-        const scale = clampPetWindowScale(record?.scale ?? 1);
+        const scale = clampPetWindowScale(
+          record?.scale ?? DEFAULT_PET_WINDOW_SCALE,
+        );
         scaleByPetId[pet.id] = scale;
         petBodySizeByPetId[pet.id] = adoptedPetBodySize(scale);
       }
       adoptedScenarioRef.current = createAdoptedPetsScenario(simInputs, {
         petBodySizeByPetId,
         monitors,
+        spawnPoint: spawnPoint ?? undefined,
       });
       adoptedPetIdsRef.current = new Set(simInputs.map((pet) => pet.id));
       adoptedHostSequenceRef.current = 0;
@@ -786,11 +855,18 @@ export function PetsDrivenApp() {
       );
 
       const pets = petsDrivenStateRef.current.pets;
+      const dirs = petsDrivenStateRef.current.registeredWorkingDirectories;
       void Promise.all(
         projections.map((projection) => {
           const petRecord = pets.find((p) => p.id === projection.petId);
+          const dirPath =
+            dirs.find((d) => d.petId === projection.petId)?.path ?? null;
           const frame = petRecord
-            ? { ...projection.frame, name: petRecord.name }
+            ? {
+                ...projection.frame,
+                name: petRecord.name,
+                cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
+              }
             : projection.frame;
           return emitTo(
             `pet-window-${projection.petId}`,
@@ -1073,7 +1149,7 @@ export function PetsDrivenApp() {
     void desktopGateway.writePetsDrivenState(next);
   }
 
-  function deployPet(petId: string) {
+  function showPet(petId: string) {
     const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
     patchPet(petId, { visible: true });
     void desktopGateway
@@ -1084,7 +1160,7 @@ export function PetsDrivenApp() {
     }
   }
 
-  function recallPet(petId: string) {
+  function hidePet(petId: string) {
     const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
     patchPet(petId, { visible: false });
     void desktopGateway.closeAdoptedPetWindow(petId).catch(() => {});
@@ -1093,7 +1169,7 @@ export function PetsDrivenApp() {
     }
   }
 
-  function deployAllPets() {
+  function showAllPets() {
     for (const pet of petsDrivenStateRef.current.pets.filter(
       (p) => !p.archived,
     )) {
@@ -1104,7 +1180,7 @@ export function PetsDrivenApp() {
     }
   }
 
-  function recallAllPets() {
+  function hideAllPets() {
     const current = petsDrivenStateRef.current;
     const next: PetsDrivenState = {
       ...current,
@@ -1188,9 +1264,7 @@ export function PetsDrivenApp() {
       const personalityId = profileFor(pet)?.personalityId;
       const dirPath =
         getWorkingDirectoryForPet(petsDrivenState, pet.id)?.path ?? null;
-      const cwd = dirPath
-        ? (dirPath.split(/[\\/]/).filter(Boolean).at(-1) ?? dirPath)
-        : null;
+      const cwd = dirPath ? shortWorkingDir(dirPath) : null;
       return {
         id: pet.id,
         name: pet.name,
@@ -1309,7 +1383,7 @@ export function PetsDrivenApp() {
         onPickFolder: () => editPetId && void pickFolderForPet(editPetId),
         onToggleDeployed: () =>
           editPetId &&
-          (editingPet?.visible ? recallPet(editPetId) : deployPet(editPetId)),
+          (editingPet?.visible ? hidePet(editPetId) : showPet(editPetId)),
         onDelete: () => editPetId && deletePet(editPetId),
         onDone: () => setEditPetId(null),
       }}
@@ -1317,12 +1391,12 @@ export function PetsDrivenApp() {
       home={{
         atHome,
         inField,
-        onDeploy: deployPet,
-        onRecall: recallPet,
+        onDeploy: showPet,
+        onRecall: hidePet,
         onEdit: (petId) => setEditPetId(petId),
         onAddPet: () => navigate("onboarding"),
-        onShowAll: deployAllPets,
-        onHideAll: recallAllPets,
+        onShowAll: showAllPets,
+        onHideAll: hideAllPets,
       }}
       onTab={(next) => {
         setEditPetId(null);

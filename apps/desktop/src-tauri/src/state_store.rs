@@ -32,6 +32,10 @@ fn pets_driven_state_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         .map_err(|error| format!("Could not resolve pets-driven app data directory: {error}"))
 }
 
+pub(crate) fn read_state_pub(app: &tauri::AppHandle) -> Result<serde_json::Value, String> {
+    read_state(app)
+}
+
 fn read_state(app: &tauri::AppHandle) -> Result<serde_json::Value, String> {
     let state_path = pets_driven_state_path(app)?;
 
@@ -314,6 +318,25 @@ fn hatch_error_message(error: HatchError) -> String {
     }
 }
 
+/// Find the pet id whose registered working directory matches `cwd`.
+pub(crate) fn find_pet_id_by_cwd(state: &serde_json::Value, cwd: &str) -> Option<String> {
+    let target = comparable_path(cwd);
+    state
+        .get("registeredWorkingDirectories")
+        .and_then(|v| v.as_array())
+        .and_then(|dirs| {
+            dirs.iter().find(|dir| {
+                dir.get("path")
+                    .and_then(|p| p.as_str())
+                    .map(|p| comparable_path(p) == target)
+                    .unwrap_or(false)
+            })
+        })
+        .and_then(|dir| dir.get("petId"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+}
+
 /// Authoritative create path: serialise, read the state file, append the new
 /// pet, and persist. Returns the new state for the caller to broadcast.
 pub(crate) fn hatch_pet(
@@ -500,5 +523,31 @@ mod tests {
     #[test]
     fn new_id_starts_with_prefix() {
         assert!(new_id("pet").starts_with("pet-"));
+    }
+
+    #[test]
+    fn find_pet_id_by_cwd_matches_case_insensitively() {
+        let state = apply_hatch(
+            &empty_pets_driven_state(),
+            &HatchInput {
+                cwd: "D:/Proj".to_string(),
+                asset_id: "agumon".to_string(),
+                name: "Rex".to_string(),
+                personality_id: "playful".to_string(),
+            },
+            &sample_ids(),
+            1,
+        )
+        .unwrap();
+
+        assert_eq!(
+            find_pet_id_by_cwd(&state, "d:\\proj"),
+            Some("pet-1".to_string())
+        );
+    }
+
+    #[test]
+    fn find_pet_id_by_cwd_returns_none_for_unknown_path() {
+        assert_eq!(find_pet_id_by_cwd(&empty_pets_driven_state(), "D:/proj"), None);
     }
 }
