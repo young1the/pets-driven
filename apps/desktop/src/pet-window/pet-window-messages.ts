@@ -22,6 +22,7 @@ export type PetWindowFrame = {
   sequence: number;
   petId: string;
   name?: string;
+  cwd?: string;
   window: PetWindowFrameWindow;
   sprite: PetWindowFrameSprite;
   overlay: PetWindowOverlay | null;
