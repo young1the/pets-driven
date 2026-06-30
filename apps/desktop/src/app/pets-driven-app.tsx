@@ -279,7 +279,6 @@ export function PetsDrivenApp() {
   const windowBindingsRef = useRef<Map<string, ForeignWindow>>(new Map());
   const adoptedHostSequenceRef = useRef(0);
   const adoptedScaleByPetIdRef = useRef<Record<string, number>>({});
-  const confirmedRunPetIdsRef = useRef<Set<string>>(new Set());
   const adoptedHostBoundsRef = useRef<{
     x: number;
     y: number;
@@ -933,18 +932,6 @@ export function PetsDrivenApp() {
       emitBindingState(petId, windowLabel);
       return;
     }
-    if (
-      (petsDrivenStateRef.current.confirmBeforeRun ?? true) &&
-      !confirmedRunPetIdsRef.current.has(petId)
-    ) {
-      const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
-      const name = pet?.name ?? "this pet";
-      if (!window.confirm(`Run ${name}'s session command in ${cwd}?`)) {
-        emitBindingState(petId, windowLabel);
-        return;
-      }
-      confirmedRunPetIdsRef.current.add(petId);
-    }
     emitBindingState(petId, windowLabel, true);
     try {
       const launched = await invoke<ForeignWindow | null>("start_session", {
@@ -1073,14 +1060,6 @@ export function PetsDrivenApp() {
     void desktopGateway.writePetsDrivenState(next);
   }
 
-  function toggleConfirmBeforeRun() {
-    const next = {
-      ...petsDrivenStateRef.current,
-      confirmBeforeRun: !(petsDrivenStateRef.current.confirmBeforeRun ?? true),
-    };
-    applyPetsDrivenState(next);
-    void desktopGateway.writePetsDrivenState(next);
-  }
 
   function patchPet(petId: string, patch: Partial<PetRecord>) {
     const current = petsDrivenStateRef.current;
@@ -1356,8 +1335,6 @@ export function PetsDrivenApp() {
         onLaunchProfile: setLaunchProfile,
         onCommand: setLaunchCommand,
         onLaunchLine: updateSessionCommand,
-        confirmRun: petsDrivenState.confirmBeforeRun ?? true,
-        onToggleConfirm: toggleConfirmBeforeRun,
         preview: {
           cwd: previewCwdForLaunchProfile(launchSettings.profile, previewDir),
           prompt: promptForLaunchProfile(launchSettings.profile),

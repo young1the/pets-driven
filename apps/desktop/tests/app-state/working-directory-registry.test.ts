@@ -13,7 +13,6 @@ describe("working directory registry", () => {
       pets: [],
       petProfiles: [],
       sessionCommand: "cmd /k claude",
-      confirmBeforeRun: true,
     });
   });
 
