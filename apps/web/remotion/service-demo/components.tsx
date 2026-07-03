@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { staticFile } from "remotion";
 import { PetShowcaseCard, TerminalPreview } from "@pets-driven/design-system";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import {
@@ -108,10 +109,15 @@ export function DemoPetCard({
 
 export function DemoPetPortrait({ pet }: { pet: DemoPet }) {
   return (
-    <img
+    <PetSprite
       alt={`${pet.name} portrait`}
       className="pd-video-card-pet"
-      src={`/codex-pets/${pet.assetId}/spritesheet.webp`}
+      animationState="idle"
+      elapsedMs={0}
+      imageUrl={staticFile(`codex-pets/${pet.assetId}/spritesheet.webp`)}
+      scale={0.58}
+      showStatusBubble={false}
+      size={PET_CELL_SIZE}
     />
   );
 }
@@ -143,7 +149,7 @@ export function DesktopPet({
         animationState={animationState}
         elapsedMs={elapsedMs}
         facing={facing}
-        imageUrl={`/codex-pets/${pet.assetId}/spritesheet.webp`}
+        imageUrl={staticFile(`codex-pets/${pet.assetId}/spritesheet.webp`)}
         scale={scale}
         showStatusBubble={false}
         size={PET_CELL_SIZE}
