@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "agent",
-            "prompt": "A desk pet is about to start working on the request you just received. In one short, casual sentence (in the pet's voice, present tense), say what you're about to do. Then run: \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" forward summary \"UserPromptSubmit\" \"<your one sentence>\" using your Bash tool. Always finish by returning {\"ok\": true, \"reason\": \"<your one sentence>\"} even if the forward command fails.",
+            "prompt": "A desk pet is about to start working on the request you just received. In one short, casual sentence (in the pet's voice, present tense), say what you're about to do. Keep it plain, with no quotation marks (single or double), since it becomes a shell argument. Then run: \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" forward summary \"UserPromptSubmit\" \"<your one sentence>\" using your Bash tool. Always finish by returning {\"ok\": true, \"reason\": \"<your one sentence>\"} even if the forward command fails.",
             "async": true,
             "timeout": 30
           }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "agent",
-            "prompt": "A desk pet needs to show why it's currently waiting (e.g. a permission prompt or idle notification). In one short, casual sentence (in the pet's voice), say what you're waiting on. Then run: \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" forward summary \"Notification\" \"<your one sentence>\" using your Bash tool. Always finish by returning {\"ok\": true, \"reason\": \"<your one sentence>\"} even if the forward command fails.",
+            "prompt": "A desk pet needs to show why it's currently waiting (e.g. a permission prompt or idle notification). In one short, casual sentence (in the pet's voice), say what you're waiting on. Keep it plain, with no quotation marks (single or double), since it becomes a shell argument. Then run: \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" forward summary \"Notification\" \"<your one sentence>\" using your Bash tool. Always finish by returning {\"ok\": true, \"reason\": \"<your one sentence>\"} even if the forward command fails.",
             "async": true,
             "timeout": 30
           }
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "agent",
-            "prompt": "A desk pet needs to narrate what was actually just accomplished this turn. Look at the tool calls and file changes made during this turn and, in one short, casual sentence (in the pet's voice, past tense), summarize what got done. Then run: \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" forward summary \"Stop\" \"<your one sentence>\" using your Bash tool. Always finish by returning {\"ok\": true, \"reason\": \"<your one sentence>\"} even if the forward command fails.",
+            "prompt": "A desk pet needs to narrate what was actually just accomplished this turn. Look at the tool calls and file changes made during this turn and, in one short, casual sentence (in the pet's voice, past tense), summarize what got done. Keep it plain, with no quotation marks (single or double), since it becomes a shell argument. Then run: \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" forward summary \"Stop\" \"<your one sentence>\" using your Bash tool. Always finish by returning {\"ok\": true, \"reason\": \"<your one sentence>\"} even if the forward command fails.",
             "async": true,
             "timeout": 30
           }
