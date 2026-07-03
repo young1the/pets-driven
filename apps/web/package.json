@@ -7,16 +7,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "video:studio": "remotion studio remotion/index.tsx",
+    "video:compositions": "remotion compositions remotion/index.tsx",
+    "video:still": "remotion still remotion/index.tsx ServiceDemo ../../workspaces/service-demo-frame.png --frame=300",
+    "video:render": "remotion render remotion/index.tsx ServiceDemo ../../workspaces/service-demo.mp4"
   },
   "dependencies": {
     "@pets-driven/design-system": "workspace:*",
     "@pets-driven/pet-engine": "workspace:*",
     "next": "^14.2.5",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.484"
   },
   "devDependencies": {
+    "@remotion/cli": "^4.0.484",
     "@types/node": "^25.8.0",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
