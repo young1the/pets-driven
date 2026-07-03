@@ -307,6 +307,10 @@ export function PetsDrivenApp() {
   // petId -> the window this pet is bound to. In-memory only; HWNDs go stale
   // across restarts, so a dead focus just clears the binding.
   const windowBindingsRef = useRef<Map<string, ForeignWindow>>(new Map());
+  // Pets with a session launch in flight. Binding is only set after the ~3s
+  // bind poll resolves, so without this guard a second interaction during that
+  // window would spawn a duplicate terminal.
+  const launchingPetIdsRef = useRef<Set<string>>(new Set());
   const adoptedHostSequenceRef = useRef(0);
   const adoptedScaleByPetIdRef = useRef<Record<string, number>>({});
   const adoptedHostBoundsRef = useRef<{
@@ -998,11 +1002,15 @@ export function PetsDrivenApp() {
 
   // Start a session and auto-bind to the window it launches.
   async function startSessionForPet(petId: string, windowLabel: string) {
+    if (launchingPetIdsRef.current.has(petId)) {
+      return;
+    }
     const cwd = cwdForPet(petId);
     if (!cwd) {
       emitBindingState(petId, windowLabel);
       return;
     }
+    launchingPetIdsRef.current.add(petId);
     emitBindingState(petId, windowLabel, true);
     try {
       const launched = await invoke<ForeignWindow | null>("start_session", {
@@ -1017,6 +1025,8 @@ export function PetsDrivenApp() {
     } catch (error) {
       emitBindingState(petId, windowLabel);
       setPetWindowError(formatCommandError(error));
+    } finally {
+      launchingPetIdsRef.current.delete(petId);
     }
   }
 

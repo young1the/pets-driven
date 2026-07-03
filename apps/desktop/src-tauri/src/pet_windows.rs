@@ -2,6 +2,28 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 use crate::pet_assets::validate_asset_id;
 
+/// Mark a pet overlay window as non-activating. Without WS_EX_NOACTIVATE a click
+/// on the pet activates the pet window, stealing foreground from whatever the
+/// user was on — which breaks foreground-based actions on the bound terminal
+/// (double-click to minimize would never see the terminal as frontmost).
+/// `.focused(false)` only governs the creation moment, not later clicks.
+#[cfg(target_os = "windows")]
+fn set_no_activate(window: &tauri::WebviewWindow) {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
+    };
+    if let Ok(hwnd) = window.hwnd() {
+        let hwnd = hwnd.0 as *mut core::ffi::c_void;
+        unsafe {
+            let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE as isize);
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn set_no_activate(_window: &tauri::WebviewWindow) {}
+
 const PET_WINDOW_PLAYGROUND_MAX_WINDOWS: u8 = 7;
 const PET_WINDOW_PLAYGROUND_FIXTURES: [(&str, &str); 7] = [
     ("pet-a", "agumon"),
@@ -79,7 +101,8 @@ pub(crate) async fn open_pet_window_playground(
         .visible(false)
         .focused(false)
         .build()
-        .map_err(|error| format!("Could not create {label}: {error}"))?;
+        .map_err(|error| format!("Could not create {label}: {error}"))
+        .map(|window| set_no_activate(&window))?;
     }
 
     Ok(())
@@ -115,7 +138,8 @@ pub(crate) async fn open_adopted_pet_window(
         .visible(false)
         .focused(false)
         .build()
-        .map_err(|error| format!("Could not create {label}: {error}"))?;
+        .map_err(|error| format!("Could not create {label}: {error}"))
+        .map(|window| set_no_activate(&window))?;
 
     Ok(())
 }
