@@ -1,0 +1,45 @@
+@import "@pets-driven/design-system/styles.css";
+
+* {
+  box-sizing: border-box;
+}
+
+.pd-video {
+  overflow: hidden;
+  background: #fffcfd;
+  color: var(--ink-950);
+  font-family: var(--font-body);
+}
+
+.pd-video__background {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 12%, rgba(255, 224, 238, 0.8), transparent 32%),
+    radial-gradient(circle at 88% 20%, rgba(244, 241, 254, 0.95), transparent 30%),
+    radial-gradient(var(--ink-200) 1.2px, transparent 1.2px) 0 0 / 26px 26px,
+    #fffcfd;
+}
+
+.pd-video__stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 72px;
+}
+
+.pd-video__boot-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 112px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 0.95;
+}
+
+.pd-video__boot-subtitle {
+  margin: 24px 0 0;
+  color: var(--ink-600);
+  font-size: 34px;
+  font-weight: 700;
+}
