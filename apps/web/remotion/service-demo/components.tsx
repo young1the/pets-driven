@@ -35,6 +35,34 @@ export function DemoWindow({
   );
 }
 
+export function DemoAppFrame({
+  children,
+  className = "",
+  style,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <section
+      className={["pd-video-app-frame", className].filter(Boolean).join(" ")}
+      style={style}
+    >
+      <header className="pd-video-app-frame__bar">
+        <div className="pd-video-app-frame__controls" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <strong>Pets-Driven</strong>
+        <span>D:/pets-driven</span>
+      </header>
+      <div className="pd-video-app-frame__body">{children}</div>
+    </section>
+  );
+}
+
 export function Caption({
   children,
   style,
@@ -107,7 +135,6 @@ export function DemoPetCard({
       note={pet.note}
       portrait={<DemoPetPortrait pet={pet} />}
       role={pet.role}
-      status={{ label: "ready", dotColor: pet.color }}
     />
   );
 }

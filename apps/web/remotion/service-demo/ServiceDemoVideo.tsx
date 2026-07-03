@@ -1,7 +1,9 @@
+import type { CSSProperties } from "react";
 import { AbsoluteFill, interpolate, staticFile, useCurrentFrame } from "remotion";
 import {
   Callout,
   Caption,
+  DemoAppFrame,
   DemoCursor,
   DemoPetCard,
   DemoTerminal,
@@ -23,6 +25,7 @@ const pip = DEMO_PETS[2];
 export function ServiceDemoVideo() {
   const frame = useCurrentFrame();
   const contextP = progress(frame, 0, 90);
+  const appP = progress(frame, 60, 90);
   const summonP = progress(frame, 90, 240);
   const activateP = progress(frame, 330, 240);
   const terminalP = progress(frame, 570, 150);
@@ -30,7 +33,6 @@ export function ServiceDemoVideo() {
   const closingP = progress(frame, 1020, 60);
 
   const dragP = easeOutCubic(progress(frame, 120, 120));
-  const cardX = lerp(0, 420, dragP);
   const cardY = lerp(0, -300, dragP);
   const petReveal = progress(frame, 270, 45);
   const cursor = cursorPosition(frame);
@@ -53,36 +55,50 @@ export function ServiceDemoVideo() {
           <p>Your agents, visible on your desktop.</p>
         </header>
 
-        <DemoWindow className="pd-video-main-window">
-          <div className="pd-video-home">
-            <div className="pd-video-home__copy">
-              <span>Your pack</span>
-              <h2>
-                Good morning,
-                <br />
-                Trainer!
-              </h2>
-              <button type="button">Add a pet</button>
+        <DemoAppFrame
+          className="pd-video-main-frame"
+          style={
+            {
+              opacity: interpolate(appP, [0, 0.55], [0, 1], {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              }),
+              transform: `translateX(-50%) translateY(${lerp(34, 0, easeOutCubic(appP))}px)`,
+            } as CSSProperties
+          }
+        >
+          <DemoWindow className="pd-video-main-window">
+            <div className="pd-video-home">
+              <div className="pd-video-home__copy">
+                <span>Your pack</span>
+                <h2>
+                  Good morning,
+                  <br />
+                  Trainer!
+                </h2>
+                <button type="button">Add a pet</button>
+                <p>Bring a new pet into the pack and give it a job.</p>
+              </div>
+              <div className="pd-video-card-fan">
+                <div className="pd-video-card pd-video-card--left">
+                  <DemoPetCard pet={otto} />
+                </div>
+                <div
+                  className="pd-video-card pd-video-card--center"
+                  style={{
+                    transform: `translateX(-50%) translateY(${cardY}px) scale(${lerp(1, 1.06, dragP)})`,
+                    zIndex: 300,
+                  }}
+                >
+                  <DemoPetCard featured={dragP > 0.2} pet={cato} />
+                </div>
+                <div className="pd-video-card pd-video-card--right">
+                  <DemoPetCard pet={pip} />
+                </div>
+              </div>
             </div>
-            <div className="pd-video-card-fan">
-              <div className="pd-video-card pd-video-card--left">
-                <DemoPetCard pet={otto} />
-              </div>
-              <div
-                className="pd-video-card pd-video-card--center"
-                style={{
-                  transform: `translate(calc(-50% + ${cardX}px), ${cardY}px) rotate(${lerp(0, -5, dragP)}deg) scale(${lerp(1, 1.06, dragP)})`,
-                  zIndex: 20,
-                }}
-              >
-                <DemoPetCard featured={dragP > 0.2} pet={cato} />
-              </div>
-              <div className="pd-video-card pd-video-card--right">
-                <DemoPetCard pet={pip} />
-              </div>
-            </div>
-          </div>
-        </DemoWindow>
+          </DemoWindow>
+        </DemoAppFrame>
 
         <Callout
           style={{
@@ -199,10 +215,10 @@ export function ServiceDemoVideo() {
 }
 
 function cursorPosition(frame: number) {
-  if (frame < 120) return { scale: 1, x: 940, y: 828 };
+  if (frame < 120) return { scale: 1, x: 960, y: 828 };
   if (frame < 240) {
     const p = easeOutCubic(progress(frame, 120, 120));
-    return { scale: 1, x: lerp(940, 1260, p), y: lerp(828, 530, p) };
+    return { scale: 1, x: 960, y: lerp(828, 530, p) };
   }
   if (frame < 390) return { scale: 1, x: 1260, y: 650 };
   if (frame < 465) {
