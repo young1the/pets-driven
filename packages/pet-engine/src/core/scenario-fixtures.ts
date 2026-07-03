@@ -202,6 +202,7 @@ export function createDemoScenario(options?: {
   const width = viewport.width;
   const height = viewport.height;
   const groundThickness = 48;
+  const floorPetY = height - 40;
   const userAnchor =
     options?.userAnchor === undefined
       ? defaultUserAnchorForLayout(monitorLayout)
@@ -253,7 +254,7 @@ export function createDemoScenario(options?: {
         id: "alice-climb-wall",
         components: [
           { type: "ClimbableSurface" },
-          { type: "Transform", position: { x: 120, y: 500 } },
+          { type: "Transform", position: { x: 120, y: floorPetY } },
         ],
       },
       {
@@ -262,7 +263,7 @@ export function createDemoScenario(options?: {
           { type: "ClimbableSurface" },
           {
             type: "Transform",
-            position: isDualMonitor ? { x: 24, y: 420 } : { x: 280, y: 200 },
+            position: isDualMonitor ? { x: 24, y: 840 } : { x: 280, y: 200 },
           },
         ],
       },
@@ -271,7 +272,7 @@ export function createDemoScenario(options?: {
         sourceId: "agent-a",
         name: "Alice",
         x: 600,
-        y: 500,
+        y: floorPetY,
         components: [
           ...petBodyComponents,
           { type: "IdleConversation", idleAfterMs: 5_000 },
@@ -296,7 +297,7 @@ export function createDemoScenario(options?: {
         sourceId: "agent-b",
         name: "Bob",
         x: isDualMonitor ? 80 : 840,
-        y: isDualMonitor ? 521 : 500,
+        y: isDualMonitor ? 1061 : floorPetY,
         components: [
           ...petBodyComponents,
           { type: "WalkingTag" },
@@ -304,7 +305,7 @@ export function createDemoScenario(options?: {
           isDualMonitor
             ? {
                 type: "CanJump",
-                impulse: DEFAULT_PET_JUMP_IMPULSE * 1.8,
+                impulse: DEFAULT_PET_JUMP_IMPULSE * 3.6,
                 forwardImpulse: { min: 0.03, max: 0.03 },
               }
             : { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE * 1 },
@@ -313,7 +314,7 @@ export function createDemoScenario(options?: {
                 {
                   type: "MotionTarget" as const,
                   targetEntityId: null,
-                  targetPosition: { x: -360, y: 456 },
+                  targetPosition: { x: -360, y: 936 },
                 },
               ]
             : []),
@@ -335,7 +336,7 @@ export function createDemoScenario(options?: {
         sourceId: "agent-c",
         name: "Charlie",
         x: isDualMonitor ? 24 : 280,
-        y: isDualMonitor ? 420 : 200,
+        y: isDualMonitor ? 840 : 200,
         components: [
           ...petBodyComponents,
           { type: "WalkingTag" },
@@ -357,18 +358,18 @@ export function createDemoScenario(options?: {
                   type: "ContactState" as const,
                   grounded: false,
                   climbableSurfaceId: "climb-wall",
-                  climbableSurfacePosition: { x: 24, y: 420 },
+                  climbableSurfacePosition: { x: 24, y: 840 },
                 },
                 {
                   type: "MotionTarget" as const,
                   targetEntityId: null,
-                  targetPosition: { x: 24, y: 80 },
+                  targetPosition: { x: 24, y: 160 },
                 },
                 {
                   type: "ClimbIntentState" as const,
                   phase: "attached" as const,
                   surfaceEntityId: "climb-wall",
-                  targetY: 80,
+                  targetY: 160,
                 },
               ]
             : []),
@@ -411,7 +412,7 @@ export function createDemoScenario(options?: {
         sourceId: "agent-e",
         name: "Eve",
         x: 420,
-        y: 500,
+        y: floorPetY,
         components: [
           ...petBodyComponents,
           { type: "FlyingTag" },
@@ -432,7 +433,7 @@ export function createDemoScenario(options?: {
         sourceId: "agent-f",
         name: "Finn",
         x: 720,
-        y: 500,
+        y: floorPetY,
         components: [
           ...petBodyComponents,
           { type: "FlyingTag" },
@@ -492,6 +493,7 @@ export function createAdoptedPetsScenario(
     petBodySize?: { width: number; height: number };
     petBodySizeByPetId?: Record<string, { width: number; height: number }>;
     monitors?: MonitorWorkArea[];
+    spawnPoint?: { x: number; y: number };
   },
 ) {
   const clock = createManualClock(0);
@@ -527,6 +529,7 @@ export function createAdoptedPetsScenario(
           pets.length,
           bodySize?.height ?? DEFAULT_PET_BODY_SIZE.height,
         );
+        const initialPosition = options?.spawnPoint ?? placement;
         const bodyComponents: Component[] = bodySize
           ? [{ type: "PhysicsBody", shape: "rectangle", width: bodySize.width, height: bodySize.height }]
           : [];
@@ -534,8 +537,8 @@ export function createAdoptedPetsScenario(
           id: pet.id,
           sourceId: pet.sourceId,
           name: pet.name,
-          x: placement.x,
-          y: placement.y,
+          x: initialPosition.x,
+          y: initialPosition.y,
           components: [
             ...bodyComponents,
             { type: "WalkingTag" },
@@ -673,7 +676,7 @@ const JUMP_PLAYGROUND_BODY_SIZE = { width: 96, height: 114 } as const;
 const JUMP_PLAYGROUND_WALL_WIDTH = 192;
 
 function jumpPlaygroundWallTopY(height: number) {
-  return 540 - height;
+  return 1080 - height;
 }
 
 export function createJumpPlaygroundScenario(options?: {
@@ -952,12 +955,12 @@ function resolveMonitorLayout(
 ): MonitorWorkArea[] {
   if (layout === "dual-horizontal") {
     return [
-      { id: "left", x: -640, y: 0, width: 640, height: 480 },
-      { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+      { id: "left", x: -1280, y: 0, width: 1280, height: 960 },
+      { id: "primary", x: 0, y: 0, width: 1920, height: 1080 },
     ];
   }
 
-  return [{ id: "monitor", x: 0, y: 0, width: 960, height: 540 }];
+  return [{ id: "monitor", x: 0, y: 0, width: 1920, height: 1080 }];
 }
 
 function orderMonitorsForInitialPlacement(
@@ -1009,5 +1012,5 @@ function defaultUserAnchorForLayout(
   layout: "single" | "dual-horizontal",
 ): { x: number; y: number } | null {
   if (layout === "dual-horizontal") return null;
-  return { x: 480, y: 500 };
+  return { x: 480, y: 1040 };
 }

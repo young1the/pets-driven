@@ -90,6 +90,11 @@ function handlePointerEvent(
 
 function clearAgentTaskState(components: ComponentStore, id: string): void {
   components.removeComponent(id, "AgentTaskState");
+  if (
+    components.getComponent(id, "AgentChannelState")?.source === "agent-task"
+  ) {
+    components.removeComponent(id, "AgentChannelState");
+  }
 }
 
 function handleKeyboardEvent(
@@ -255,12 +260,15 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "KeyboardControlTarget",
     "KeyboardInputState",
     "DragInteraction",
+    "AgentChannelState",
   ],
   writes: [
     "KeyboardControlTarget",
     "KeyboardInputState",
     "DragInteraction",
     "BehaviorDecisionState",
+    "AgentTaskState",
+    "AgentChannelState",
   ],
   update(ctx) {
     runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock);

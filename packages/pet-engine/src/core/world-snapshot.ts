@@ -3,6 +3,10 @@ import type {
   PetExpressionEmote,
   PetExpressionMood,
 } from "@pets-driven/pet-engine/core/components";
+import type {
+  AgentChannelSource,
+  AgentChannelStatus,
+} from "@pets-driven/pet-engine/features/agent/components";
 
 export type PetExpressionSnapshot = {
   source: "collision";
@@ -11,6 +15,15 @@ export type PetExpressionSnapshot = {
   label: string | null;
   startedAt: number;
   expiresAt: number;
+};
+
+export type AgentChannelSnapshot = {
+  source: AgentChannelSource;
+  status: AgentChannelStatus;
+  label: string;
+  message: string | null;
+  updatedAt: number;
+  expiresAt: number | null;
 };
 
 export type BodySnapshot = {
@@ -53,6 +66,8 @@ export type PetSnapshot = {
   pendingReaction: { source: string; reactsAt: number } | null;
   /** Agent task lifecycle surfaced to UI. Absent = idle. */
   agentTask?: AgentTaskSnapshot | null;
+  /** Agent-owned speech bubble channel, separate from pet mood reactions. */
+  agentChannel?: AgentChannelSnapshot | null;
   /** Presentation cue derived from current behavior, or null when quiet. */
   visualCue?: PetVisualCue | null;
   /** Active visual-only expression overlay, or null when quiet. */

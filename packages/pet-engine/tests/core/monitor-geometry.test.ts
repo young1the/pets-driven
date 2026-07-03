@@ -7,20 +7,20 @@ import {
 
 describe("monitor geometry", () => {
   const singleMonitor: MonitorWorkArea[] = [
-    { id: "monitor", x: 0, y: 0, width: 960, height: 540 },
+    { id: "monitor", x: 0, y: 0, width: 1920, height: 1080 },
   ];
 
   const dualMonitor: MonitorWorkArea[] = [
-    { id: "left", x: -640, y: 0, width: 640, height: 480 },
-    { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+    { id: "left", x: -1280, y: 0, width: 1280, height: 960 },
+    { id: "primary", x: 0, y: 0, width: 1920, height: 1080 },
   ];
 
   it("computes a viewport that preserves negative virtual-desktop coordinates", () => {
     expect(getWorldViewport(dualMonitor)).toEqual({
-      x: -640,
+      x: -1280,
       y: 0,
-      width: 1600,
-      height: 540,
+      width: 3200,
+      height: 1080,
     });
   });
 
@@ -43,8 +43,8 @@ describe("monitor geometry", () => {
       id: "primary-left-wall-0",
       components: [
         { type: "Ground" },
-        { type: "Transform", position: { x: -24, y: 510 } },
-        { type: "PhysicsBody", shape: "rectangle", width: 48, height: 60 },
+        { type: "Transform", position: { x: -24, y: 1020 } },
+        { type: "PhysicsBody", shape: "rectangle", width: 48, height: 120 },
         { type: "PhysicsMaterial", friction: 0.8, restitution: 0 },
       ],
     });

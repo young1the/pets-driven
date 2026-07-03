@@ -7,6 +7,7 @@ export const PET_WINDOW_BUBBLE_OVERHEAD = 60;
 export const PET_WINDOW_RESIZE_HANDLE_SIZE = 32;
 
 export const PET_WINDOW_MIN_SCALE = 0.5;
+export const DEFAULT_PET_WINDOW_SCALE = 0.8;
 export const PET_WINDOW_MAX_SCALE = 2;
 export const DEFAULT_PET_WINDOW_SCALE = 1;
 export const PET_WINDOW_MAX_RESIZE_WIDTH = 200;

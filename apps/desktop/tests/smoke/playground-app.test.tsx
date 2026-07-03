@@ -260,8 +260,8 @@ describe("PlaygroundApp", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dual monitor" }));
 
     const canvas = screen.getByTestId("world-canvas");
-    expect(canvas).toHaveAttribute("width", "1600");
-    expect(canvas).toHaveAttribute("height", "540");
+    expect(canvas).toHaveAttribute("width", "3200");
+    expect(canvas).toHaveAttribute("height", "1080");
     expect(screen.getByText("Dual monitor: left + primary")).toBeInTheDocument();
   });
 
@@ -283,7 +283,7 @@ describe("PlaygroundApp", () => {
     expect(writeText).toHaveBeenCalledTimes(1);
     const copied = JSON.parse(writeText.mock.calls[0][0]);
     expect(copied.pet.id).toBe("pet-a");
-    expect(copied.components.Transform.position).toEqual({ x: 600, y: 500 });
+    expect(copied.components.Transform.position).toEqual({ x: 600, y: 1040 });
     expect(copied.components.MotionTarget.targetPosition).toBeNull();
     expect(
       await screen.findByText(PLAYGROUND_TEXT.copyStateCopied),

@@ -6,6 +6,7 @@ import type {
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import {
   clampPetWindowScale,
+  DEFAULT_PET_WINDOW_SCALE,
   PET_WINDOW_BUBBLE_OVERHEAD,
   PET_WINDOW_LAYOUT,
 } from "@/pet-window/pet-window-layout";
@@ -65,7 +66,9 @@ export function projectWorldSnapshotToPetWindows(
       return [];
     }
 
-    const petScale = clampPetWindowScale(scaleByPetId?.[pet.id] ?? 1);
+    const petScale = clampPetWindowScale(
+      scaleByPetId?.[pet.id] ?? DEFAULT_PET_WINDOW_SCALE,
+    );
     const windowWidth = PET_CELL_SIZE.width * petScale;
     const windowHeight =
       (PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD) * petScale;
@@ -143,19 +146,12 @@ export function spriteIntentFromBody(body: BodySnapshot): PetSpriteIntent {
 }
 
 export function overlayFromPet(pet: PetSnapshot): PetWindowOverlay | null {
-  if (pet.agentTask && pet.agentTask.label) {
+  if (pet.agentChannel) {
     return {
-      kind: "attention",
-      label: pet.agentTask.label,
-    };
-  }
-
-  // Scripted speech lines aren't real status — the always-on bubble shows the
-  // intent-driven state instead, so we don't surface dialogue as an overlay.
-  if (pet.visualCue) {
-    return {
-      kind: "status",
-      label: pet.visualCue.icon,
+      kind: "agent-channel",
+      status: pet.agentChannel.status,
+      label: pet.agentChannel.label,
+      message: pet.agentChannel.message,
     };
   }
 
