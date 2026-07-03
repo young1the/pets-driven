@@ -50,6 +50,13 @@ hatch_body() {
     "$(json_escape "$3")"
 }
 
+summary_body() {
+  printf '{"hook_event_name":"%s","cwd":"%s","summary":"%s"}' \
+    "$(json_escape "$1")" \
+    "$(json_escape "$PWD")" \
+    "$(json_escape "$2")"
+}
+
 self_check() {
   local out
   out="$(attach_body)"
@@ -71,6 +78,17 @@ self_check() {
     *) echo "FAIL: hatch path not escaped: $hatch" >&2; exit 1 ;;
   esac
 
+  local summary
+  summary="$(summary_body "Stop" 'He said "hi" and left')"
+  case "$summary" in
+    *'"hook_event_name":"Stop"'*) ;;
+    *) echo "FAIL: missing hook_event_name in: $summary" >&2; exit 1 ;;
+  esac
+  case "$summary" in
+    *'\"hi\"'*) ;;
+    *) echo "FAIL: summary text not escaped: $summary" >&2; exit 1 ;;
+  esac
+
   echo "self-check passed"
   exit 0
 }
@@ -86,6 +104,10 @@ case "$1" in
     curl -sS -m 5 -X POST "$HATCH_URL" \
       -H "Content-Type: application/json" --data-binary "$(hatch_body "$@")"
     exit $?
+    ;;
+  summary)
+    shift
+    post "$(summary_body "$@")"
     ;;
   *) post "$(cat)" ;;
 esac
