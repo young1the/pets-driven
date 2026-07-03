@@ -169,3 +169,130 @@
 .pd-video-terminal__line--success {
   color: var(--mint-300);
 }
+
+.pd-video-main-window {
+  position: absolute;
+  left: 84px;
+  top: 224px;
+  width: 960px;
+  height: 720px;
+  overflow: visible;
+}
+
+.pd-video-home {
+  position: relative;
+  height: 666px;
+  overflow: visible;
+  background-image: radial-gradient(var(--ink-200) 1.4px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+.pd-video-home__copy {
+  position: absolute;
+  left: 72px;
+  top: 86px;
+}
+
+.pd-video-home__copy span {
+  color: var(--blossom-600);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.pd-video-home__copy h2 {
+  margin: 20px 0 26px;
+  color: var(--ink-950);
+  font-family: var(--font-display);
+  font-size: 58px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.04;
+}
+
+.pd-video-home__copy button {
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--blossom-500);
+  color: white;
+  font-size: 19px;
+  font-weight: 900;
+  padding: 15px 24px;
+}
+
+.pd-video-card-fan {
+  position: absolute;
+  right: 430px;
+  bottom: 64px;
+}
+
+.pd-video-card {
+  position: absolute;
+  bottom: 0;
+  width: 224px;
+  transform-origin: bottom center;
+}
+
+.pd-video-card--left {
+  transform: translate(-170px, 34px) rotate(-8deg);
+}
+
+.pd-video-card--center {
+  left: 0;
+}
+
+.pd-video-card--right {
+  transform: translate(170px, 34px) rotate(8deg);
+}
+
+.pd-video-terminal-zone {
+  position: absolute;
+  right: 98px;
+  bottom: 92px;
+  width: 610px;
+  z-index: 50;
+}
+
+.pd-video-multi {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 253, 0.94), rgba(244, 241, 254, 0.96)),
+    radial-gradient(var(--ink-200) 1.2px, transparent 1.2px) 0 0 / 26px 26px;
+}
+
+.pd-video-multi::after {
+  content: "";
+  position: absolute;
+  left: 120px;
+  right: 120px;
+  bottom: 236px;
+  height: 2px;
+  background: rgba(112, 104, 151, 0.18);
+}
+
+.pd-video-closing {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(165deg, #ffe0ee 0%, #f4f1fe 100%);
+}
+
+.pd-video-closing h2 {
+  margin: 0 0 180px;
+  color: var(--ink-950);
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.pd-video-closing > div {
+  position: relative;
+  width: 360px;
+  height: 220px;
+}
