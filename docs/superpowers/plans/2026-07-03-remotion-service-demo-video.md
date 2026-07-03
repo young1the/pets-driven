@@ -165,7 +165,7 @@ export function ServiceDemoVideo() {
 Create `apps/web/remotion/index.tsx`:
 
 ```tsx
-import { Composition } from "remotion";
+import { Composition, registerRoot } from "remotion";
 import { ServiceDemoVideo } from "./service-demo/ServiceDemoVideo";
 import {
   VIDEO_DURATION_FRAMES,
@@ -174,7 +174,7 @@ import {
   VIDEO_WIDTH,
 } from "./service-demo/timeline";
 
-export default function RemotionRoot() {
+function RemotionRoot() {
   return (
     <Composition
       component={ServiceDemoVideo}
@@ -186,6 +186,8 @@ export default function RemotionRoot() {
     />
   );
 }
+
+registerRoot(RemotionRoot);
 ```
 
 - [ ] **Step 4: Add base video CSS**
@@ -352,15 +354,15 @@ export const MULTI_PET_PATHS: Record<string, PetMotionKeyframe[]> = {
 };
 ```
 
-- [ ] **Step 2: Verify the fixture module typechecks in isolation**
+- [ ] **Step 2: Verify the fixture module through Remotion bundling**
 
 Run:
 
 ```powershell
-corepack pnpm --filter @pets-driven/web exec tsc --noEmit --skipLibCheck remotion/service-demo/fixtures.ts
+corepack pnpm --filter @pets-driven/web video:compositions
 ```
 
-Expected: exit code `0`.
+Expected: exit code `0` and output includes `ServiceDemo`.
 
 - [ ] **Step 3: Commit fixtures**
 
@@ -1072,10 +1074,10 @@ Expected:
 Run:
 
 ```powershell
-corepack pnpm --filter @pets-driven/web exec tsc --noEmit --skipLibCheck remotion/index.tsx remotion/service-demo/ServiceDemoVideo.tsx remotion/service-demo/components.tsx remotion/service-demo/fixtures.ts remotion/service-demo/timeline.ts
+corepack pnpm --filter @pets-driven/web video:compositions
 ```
 
-Expected: exit code `0`.
+Expected: exit code `0` and output includes `ServiceDemo`.
 
 - [ ] **Step 4: Record baseline limitation**
 
@@ -1119,4 +1121,3 @@ Expected:
 - A still frame renders successfully.
 
 Report the known `@pets-driven/web typecheck` baseline if it remains blocked by existing PNG module resolution errors.
-
