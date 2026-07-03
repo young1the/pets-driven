@@ -207,14 +207,11 @@ export function DemoTerminal({
   cwd: string;
 }) {
   return (
-    <div className={["pd-video-terminal", className].filter(Boolean).join(" ")}>
-      <TerminalPreview cwd={cwd} prompt="$" command="codex --workdir D:/pets-driven" />
-      <div className="pd-video-terminal__line pd-video-terminal__line--success">
-        Terminal channel activated for Cato
-      </div>
-      <div className="pd-video-terminal__line">
-        Agent source ready in the bound working directory
-      </div>
-    </div>
+    <TerminalPreview
+      className={["pd-video-terminal", className].filter(Boolean).join(" ")}
+      cwd={cwd}
+      prompt="$"
+      command="codex --workdir D:/pets-driven"
+    />
   );
 }

@@ -14,7 +14,7 @@ import {
   DEMO_PETS,
   type PetMotionKeyframe,
 } from "./fixtures";
-import { easeInCubic, easeOutCubic, lerp, progress } from "./timeline";
+import { easeOutCubic, lerp, progress } from "./timeline";
 import "./service-demo.css";
 
 const cato = DEMO_PETS[0];
@@ -27,19 +27,24 @@ export function ServiceDemoVideo() {
   const appP = progress(frame, 60, 90);
   const summonP = progress(frame, 90, 240);
   const activateP = progress(frame, 330, 240);
-  const terminalP = progress(frame, 570, 150);
+  const terminalP = progress(frame, 390, 110);
   const multiP = progress(frame, 720, 300);
   const closingP = progress(frame, 1020, 60);
 
-  const dragP = easeOutCubic(progress(frame, 120, 105));
-  const cardY = lerp(0, -300, dragP);
-  const releaseP = progress(frame, 225, 14);
-  const petReveal = progress(frame, 238, 48);
-  const terminalWindowP = progress(frame, 570, 45);
+  const dragP = easeOutCubic(progress(frame, 112, 68));
+  const cardY = lerp(0, -314, dragP);
+  const releaseP = progress(frame, 180, 10);
+  const petReveal = progress(frame, 190, 24);
+  const desktopFadeP = progress(frame, 190, 92);
+  const terminalWindowP = progress(frame, 390, 55);
   const cursor = cursorPosition(frame);
   const summonPet = summonedPetPose(frame);
   const mainWindowOpacity =
     interpolate(appP, [0, 0.55], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }) *
+    interpolate(desktopFadeP, [0, 1], [1, 0], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     }) *
@@ -98,7 +103,7 @@ export function ServiceDemoVideo() {
                 <div
                   className="pd-video-card pd-video-card--center"
                   style={{
-                    opacity: frame >= 120 ? 0 : 1,
+                    opacity: frame >= 112 ? 0 : 1,
                     transform: "translateX(-50%)",
                     zIndex: 120,
                   }}
@@ -112,7 +117,7 @@ export function ServiceDemoVideo() {
             </div>
           </DemoWindow>
 
-          {frame >= 120 && frame < 238 ? (
+          {frame >= 112 && frame < 190 ? (
             <div
               className="pd-video-drag-card"
               style={{
@@ -127,9 +132,9 @@ export function ServiceDemoVideo() {
 
         <Callout
           style={{
-            left: 1030,
-            opacity: summonP > 0.08 && summonP < 0.82 ? 1 : 0,
-            top: 294,
+            left: 1028,
+            opacity: summonP > 0.02 && summonP < 0.46 ? 1 : 0,
+            top: 286,
           }}
         >
           Drag a pet card to summon it.
@@ -149,9 +154,9 @@ export function ServiceDemoVideo() {
 
         <Callout
           style={{
-            left: 1120,
-            opacity: activateP > 0.12 && activateP < 0.45 ? 1 : 0,
-            top: 618,
+            left: 1050,
+            opacity: activateP > 0.18 && activateP < 0.6 ? 1 : 0,
+            top: 844,
           }}
         >
           Double-click the pet.
@@ -163,7 +168,7 @@ export function ServiceDemoVideo() {
           style={
             {
               opacity:
-                interpolate(terminalP, [0, 0.28], [0, 1], {
+                interpolate(terminalP, [0, 0.36], [0, 1], {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 }) *
@@ -171,7 +176,7 @@ export function ServiceDemoVideo() {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 }),
-              transform: `translateX(-50%) translateY(${lerp(60, 0, easeOutCubic(terminalP))}px)`,
+              transform: `translateX(-50%) translateY(${lerp(24, 0, easeOutCubic(terminalP))}px)`,
             } as CSSProperties
           }
           title="Terminal"
@@ -214,31 +219,9 @@ export function ServiceDemoVideo() {
 
         <section className="pd-video-closing" style={{ opacity: closingP }}>
           <h2>Send the pack.</h2>
-          <div>
-            <DesktopPet
-              animationState="waving"
-              elapsedMs={frame * 33}
-              pet={cato}
-              scale={0.52}
-              x={0}
-              y={0}
-            />
-            <DesktopPet
-              animationState="jumping"
-              elapsedMs={frame * 33}
-              pet={otto}
-              scale={0.52}
-              x={160}
-              y={18}
-            />
-            <DesktopPet
-              animationState="review"
-              elapsedMs={frame * 33}
-              pet={pip}
-              scale={0.52}
-              x={320}
-              y={0}
-            />
+          <div className="pd-video-closing__brand">
+            <img alt="" src={staticFile("petsdriven-mark.svg")} />
+            <span>Pets-Driven</span>
           </div>
         </section>
 
@@ -249,17 +232,21 @@ export function ServiceDemoVideo() {
 }
 
 function cursorPosition(frame: number) {
-  if (frame < 120) return { scale: 1, x: 960, y: 828 };
-  if (frame < 225) {
-    const p = easeOutCubic(progress(frame, 120, 105));
+  if (frame < 112) return { scale: 1, x: 960, y: 828 };
+  if (frame < 180) {
+    const p = easeOutCubic(progress(frame, 112, 68));
     return { scale: 1, x: 960, y: lerp(828, 530, p) };
   }
-  if (frame < 390) return { scale: 1, x: 960, y: 650 };
-  if (frame < 465) {
+  if (frame < 330) return { scale: 1, x: 960, y: 884 };
+  if (frame < 375) {
     const pulse = frame % 16 < 8 ? 0.86 : 1;
-    return { scale: pulse, x: 960, y: 650 };
+    return { scale: pulse, x: 960, y: 884 };
   }
-  return { scale: 1, x: 1500, y: 880 };
+  if (frame < 390) {
+    const p = easeOutCubic(progress(frame, 375, 15));
+    return { scale: 1, x: lerp(960, 1110, p), y: lerp(884, 622, p) };
+  }
+  return { scale: 1, x: 1110, y: 622 };
 }
 
 function fallingPetPose(
@@ -268,42 +255,59 @@ function fallingPetPose(
 ): PetMotionKeyframe {
   const local = Math.max(0, frame - 720);
   const configs = {
-    cato: { drift: 0.72, facing: "right" as const, startX: 520, startY: 642 },
-    otto: { drift: -0.78, facing: "left" as const, startX: 1330, startY: 648 },
-    pip: { drift: 0.44, facing: "right" as const, startX: 910, startY: 500 },
+    cato: {
+      drift: 0.44,
+      facing: "right" as const,
+      fallDelay: 0,
+      startX: 560,
+      startY: 762,
+    },
+    otto: {
+      drift: -0.5,
+      facing: "left" as const,
+      fallDelay: 18,
+      startX: 1300,
+      startY: 774,
+    },
+    pip: {
+      drift: 0.26,
+      facing: "right" as const,
+      fallDelay: 40,
+      startX: 920,
+      startY: 680,
+    },
   };
   const config = configs[petId as keyof typeof configs];
 
-  if (local < 92) {
-    const roamP = local / 92;
+  if (local < 124) {
+    const roamP = local / 124;
     return {
       animationState: config.facing === "left" ? "running-left" : "running-right",
       facing: config.facing,
       frame,
-      x: config.startX + config.drift * local * 3.2,
-      y: config.startY + Math.sin(roamP * Math.PI * 2) * 10,
+      x: config.startX + config.drift * local * 2.6,
+      y: config.startY + Math.sin(roamP * Math.PI * 2) * 8,
     };
   }
 
-  const fallFrames = local - 92;
-  const drop = 0.065 * fallFrames * fallFrames;
+  const fallFrames = Math.max(0, local - 124 - config.fallDelay);
+  const driftBase = 124 * 2.6;
+  const drop = 0.036 * fallFrames * fallFrames;
   return {
-    animationState: "jumping",
+    animationState: "idle",
     facing: config.facing,
     frame,
-    x: config.startX + config.drift * (92 * 3.2 + fallFrames * 1.2),
+    x: config.startX + config.drift * (driftBase + fallFrames * 0.95),
     y: config.startY + drop,
   };
 }
 
 function summonedPetPose(frame: number): PetMotionKeyframe {
-  const local = Math.max(0, frame - 238);
-  const settle = easeInCubic(progress(frame, 238, 78));
   return {
-    animationState: local < 54 ? "jumping" : frame < 540 ? "waving" : "idle",
+    animationState: "idle",
     facing: "right",
     frame,
     x: 960,
-    y: lerp(612, 742, settle),
+    y: 886,
   };
 }
