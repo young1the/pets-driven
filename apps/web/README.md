@@ -35,3 +35,18 @@ pnpm --filter @pets-driven/web start     # serve the build
 The design system ships raw TSX (with co-located component CSS) from the
 workspace, so the app sets `transpilePackages: ["@pets-driven/design-system"]`
 in `next.config.mjs`.
+
+## Remotion Service Demo
+
+The service introduction video lives in `remotion/index.tsx` and exposes the
+`ServiceDemo` composition.
+
+Useful commands:
+
+- `pnpm --filter @pets-driven/web video:studio` starts Remotion Studio.
+- `pnpm --filter @pets-driven/web video:compositions` lists available
+  compositions.
+- `pnpm --filter @pets-driven/web video:still` renders a smoke-test still frame
+  to `workspaces/service-demo-frame.png`.
+- `pnpm --filter @pets-driven/web video:render` renders the demo video to
+  `workspaces/service-demo.mp4`.
