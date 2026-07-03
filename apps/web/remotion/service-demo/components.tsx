@@ -11,19 +11,24 @@ import type { DemoPet } from "./fixtures";
 export function DemoWindow({
   children,
   className = "",
-  title,
 }: {
   children: ReactNode;
   className?: string;
-  title: string;
+  title?: string;
 }) {
   return (
     <section className={["pd-video-window", className].filter(Boolean).join(" ")}>
       <header className="pd-video-window__header">
-        <span className="pd-video-window__dot pd-video-window__dot--red" />
-        <span className="pd-video-window__dot pd-video-window__dot--yellow" />
-        <span className="pd-video-window__dot pd-video-window__dot--green" />
-        <strong>{title}</strong>
+        <nav className="pd-video-window__tabs" aria-label="Demo tabs">
+          <span className="pd-video-window__tab pd-video-window__tab--active">Home</span>
+          <span className="pd-video-window__tab">Settings</span>
+          <span className="pd-video-window__tab">Debug</span>
+        </nav>
+        <div className="pd-video-window__actions">
+          <span>0 on the desktop</span>
+          <strong>Show all</strong>
+          <strong>Hide all</strong>
+        </div>
       </header>
       <div className="pd-video-window__body">{children}</div>
     </section>

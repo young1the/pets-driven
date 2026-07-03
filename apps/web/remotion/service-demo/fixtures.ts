@@ -60,18 +60,18 @@ export const TERMINAL_LINES = [
 
 export const MULTI_PET_PATHS: Record<string, PetMotionKeyframe[]> = {
   cato: [
-    { frame: 1260, x: 420, y: 650, animationState: "running-right", facing: "right" },
-    { frame: 1500, x: 780, y: 650, animationState: "running-right", facing: "right" },
-    { frame: 1740, x: 960, y: 620, animationState: "waving", facing: "right" },
+    { frame: 720, x: 420, y: 650, animationState: "running-right", facing: "right" },
+    { frame: 870, x: 780, y: 650, animationState: "running-right", facing: "right" },
+    { frame: 1020, x: 960, y: 620, animationState: "waving", facing: "right" },
   ],
   otto: [
-    { frame: 1260, x: 1320, y: 650, animationState: "running-left", facing: "left" },
-    { frame: 1500, x: 1040, y: 650, animationState: "running-left", facing: "left" },
-    { frame: 1740, x: 1160, y: 620, animationState: "jumping", facing: "left" },
+    { frame: 720, x: 1320, y: 650, animationState: "running-left", facing: "left" },
+    { frame: 870, x: 1040, y: 650, animationState: "running-left", facing: "left" },
+    { frame: 1020, x: 1160, y: 620, animationState: "jumping", facing: "left" },
   ],
   pip: [
-    { frame: 1260, x: 960, y: 460, animationState: "running-right", facing: "right" },
-    { frame: 1500, x: 1180, y: 390, animationState: "running-right", facing: "right" },
-    { frame: 1740, x: 1480, y: 500, animationState: "review", facing: "right" },
+    { frame: 720, x: 960, y: 460, animationState: "running-right", facing: "right" },
+    { frame: 870, x: 1180, y: 390, animationState: "running-right", facing: "right" },
+    { frame: 1020, x: 1480, y: 500, animationState: "review", facing: "right" },
   ],
 };
