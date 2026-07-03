@@ -178,6 +178,30 @@ function setAgentTaskState(
     since: event.at,
     summary: event.summary,
   });
+  components.setComponent(id, {
+    type: "AgentChannelState",
+    source: "agent-task",
+    status,
+    label: agentTaskChannelLabel(status),
+    message: null,
+    updatedAt: event.at,
+    expiresAt: null,
+  });
+}
+
+function agentTaskChannelLabel(
+  status: "working" | "waiting" | "completed" | "failed",
+): string {
+  switch (status) {
+    case "working":
+      return "Working";
+    case "waiting":
+      return "Waiting";
+    case "completed":
+      return "Done";
+    case "failed":
+      return "Failed";
+  }
 }
 
 export function runSpeechExpirationSystem(
@@ -1667,6 +1691,7 @@ export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "CompletionBehavior",
   ],
   writes: [
+    "AgentChannelState",
     "IntentState",
     "SpeechState",
     "ActivityState",

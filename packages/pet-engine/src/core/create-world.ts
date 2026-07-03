@@ -105,6 +105,10 @@ export function createWorld(input: WorldDefinition) {
           entity.id,
           "AgentTaskState",
         );
+        const agentChannel = componentStore.getComponent(
+          entity.id,
+          "AgentChannelState",
+        );
         const expression = componentStore.getComponent(
           entity.id,
           "PetExpressionState",
@@ -144,6 +148,16 @@ export function createWorld(input: WorldDefinition) {
                 status: agentTask.status,
                 label: agentTaskBadgeLabel(agentTask.status),
                 summary: agentTask.summary,
+              }
+            : null,
+          agentChannel: agentChannel
+            ? {
+                source: agentChannel.source,
+                status: agentChannel.status,
+                label: agentChannel.label,
+                message: agentChannel.message,
+                updatedAt: agentChannel.updatedAt,
+                expiresAt: agentChannel.expiresAt,
               }
             : null,
           visualCue: getPetVisualCue(componentStore, entity.id),

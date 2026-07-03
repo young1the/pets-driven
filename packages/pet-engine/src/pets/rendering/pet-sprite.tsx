@@ -13,11 +13,19 @@ import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import { BehaviorTokenEmote } from "@pets-driven/pet-engine/pets/rendering/behavior-token-emote";
+import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
 
-export type PetSpriteOverlay = {
-  kind: "attention" | "speech" | "status";
-  label: string;
-};
+export type PetSpriteOverlay =
+  | {
+      kind: "agent-channel";
+      status: AgentChannelStatus;
+      label: string;
+      message: string | null;
+    }
+  | {
+      kind: "attention" | "speech" | "status";
+      label: string;
+    };
 
 type PetSpriteBaseProps = {
   alt: string;
@@ -135,6 +143,7 @@ export function PetSprite({
           >
             <PetSpeechBubble
               mood={status.mood}
+              message={status.message ?? undefined}
               work={status.label ?? undefined}
               style={{ maxWidth: `${PET_SPRITE_OVERLAY_RECT.width}px` }}
             />

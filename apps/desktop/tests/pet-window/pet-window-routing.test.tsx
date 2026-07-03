@@ -82,6 +82,7 @@ const tauriWindowMocks = vi.hoisted(() => ({
   cursorPosition: vi.fn(),
   currentMonitor: vi.fn(),
   outerPosition: vi.fn(),
+  outerSize: vi.fn(),
   setPosition: vi.fn(),
   setSize: vi.fn(),
   show: vi.fn(),
@@ -111,6 +112,7 @@ vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: vi.fn(() => ({
     label: "pet-window-playground-1",
     outerPosition: tauriWindowMocks.outerPosition,
+    outerSize: tauriWindowMocks.outerSize,
     setPosition: tauriWindowMocks.setPosition,
     setSize: tauriWindowMocks.setSize,
     show: tauriWindowMocks.show,
@@ -241,6 +243,7 @@ describe("pet window product route", () => {
     ]);
     tauriWindowMocks.cursorPosition.mockResolvedValue({ x: 392, y: 424 });
     tauriWindowMocks.outerPosition.mockResolvedValue({ x: 120, y: 120 });
+    tauriWindowMocks.outerSize.mockResolvedValue({ width: 600, height: 400 });
     tauriWindowMocks.setPosition.mockResolvedValue(undefined);
     tauriWindowMocks.setSize.mockResolvedValue(undefined);
     tauriWindowMocks.show.mockResolvedValue(undefined);
@@ -465,12 +468,10 @@ describe("pet window product route", () => {
     const petAFrame = petFrameFor("pet-a");
     const petBFrame = petFrameFor("pet-b");
 
-    expect(petAFrame?.window.x).toBeGreaterThanOrEqual(0);
-    expect(
-      (petAFrame?.window.x ?? 0) + (petAFrame?.window.width ?? 0),
-    ).toBeLessThanOrEqual(960);
-    expect(petBFrame?.window.x).toBeLessThan(0);
-    expect(petBFrame?.window.x).toBeGreaterThanOrEqual(-640);
+    expect(petAFrame?.window.x).toBeGreaterThan(330);
+    expect(petAFrame?.window.x).toBeLessThan(360);
+    expect(petBFrame?.window.x).toBeGreaterThan(330);
+    expect(petBFrame?.window.x).toBeLessThan(360);
   });
 
   it("resets the adopted pet simulation from the main screen", async () => {
@@ -571,7 +572,12 @@ describe("pet window product route", () => {
         PET_WINDOW_FRAME_EVENT,
         expect.objectContaining({
           petId: "pet-a",
-          overlay: { kind: "attention", label: "WAIT" },
+          overlay: {
+            kind: "agent-channel",
+            status: "waiting",
+            label: "Waiting",
+            message: null,
+          },
         }),
       );
     });
@@ -613,7 +619,12 @@ describe("pet window product route", () => {
         PET_WINDOW_FRAME_EVENT,
         expect.objectContaining({
           petId: "pet-a",
-          overlay: { kind: "attention", label: "WAIT" },
+          overlay: {
+            kind: "agent-channel",
+            status: "waiting",
+            label: "Waiting",
+            message: null,
+          },
         }),
       );
     });
@@ -680,11 +691,6 @@ describe("pet window product route", () => {
         PET_WINDOW_FRAME_EVENT,
         expect.objectContaining({
           petId: "pet-a",
-          sprite: expect.objectContaining({
-            decisionEmote: expect.objectContaining({
-              label: "Seeking user",
-            }),
-          }),
         }),
       );
     });

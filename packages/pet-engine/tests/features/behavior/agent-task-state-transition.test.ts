@@ -45,6 +45,23 @@ describe("runAgentEventBehaviorSystem → AgentTaskState", () => {
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
   });
 
+  it("task.started publishes working status to the agent channel", () => {
+    const store = makeStore();
+    const clock = createManualClock(100);
+
+    runAgentEventBehaviorSystem(store, [agentEvent("task.started")], clock);
+
+    expect(store.getComponent("pet", "AgentChannelState")).toEqual({
+      type: "AgentChannelState",
+      source: "agent-task",
+      status: "working",
+      label: "Working",
+      message: null,
+      updatedAt: 100,
+      expiresAt: null,
+    });
+  });
+
   it("task.completed sets status completed and intent from CompletionBehavior", () => {
     const store = makeStore();
     const clock = createManualClock(100);
@@ -53,6 +70,7 @@ describe("runAgentEventBehaviorSystem → AgentTaskState", () => {
       "completed",
     );
     expect(store.getComponent("pet", "IntentState")?.intent).toBe("seek");
+    expect(store.getComponent("pet", "AgentChannelState")?.label).toBe("Done");
   });
 
   it("task.waiting sets status waiting; task.failed sets status failed", () => {
