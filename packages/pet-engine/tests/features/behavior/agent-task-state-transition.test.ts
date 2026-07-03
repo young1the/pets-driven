@@ -94,4 +94,24 @@ describe("runAgentEventBehaviorSystem → AgentTaskState", () => {
       "failed",
     );
   });
+
+  it("passes event.summary through to AgentChannelState.message", () => {
+    const store = makeStore();
+    const clock = createManualClock(100);
+    runAgentEventBehaviorSystem(
+      store,
+      [{ ...agentEvent("task.completed"), summary: "Fixed the flaky test" }],
+      clock,
+    );
+    expect(store.getComponent("pet", "AgentChannelState")?.message).toBe(
+      "Fixed the flaky test",
+    );
+  });
+
+  it("leaves AgentChannelState.message null when the event has no summary", () => {
+    const store = makeStore();
+    const clock = createManualClock(100);
+    runAgentEventBehaviorSystem(store, [agentEvent("task.started")], clock);
+    expect(store.getComponent("pet", "AgentChannelState")?.message).toBeNull();
+  });
 });
