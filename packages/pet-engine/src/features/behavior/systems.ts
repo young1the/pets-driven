@@ -183,7 +183,7 @@ function setAgentTaskState(
     source: "agent-task",
     status,
     label: agentTaskChannelLabel(status),
-    message: null,
+    message: event.summary ?? null,
     updatedAt: event.at,
     expiresAt: null,
   });
