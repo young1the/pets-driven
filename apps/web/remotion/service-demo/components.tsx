@@ -38,11 +38,15 @@ export function DemoWindow({
 export function DemoAppFrame({
   children,
   className = "",
+  meta = "D:/pets-driven",
   style,
+  title = "Pets-Driven",
 }: {
   children: ReactNode;
   className?: string;
+  meta?: string;
   style?: CSSProperties;
+  title?: string;
 }) {
   return (
     <section
@@ -55,8 +59,8 @@ export function DemoAppFrame({
           <span />
           <span />
         </div>
-        <strong>Pets-Driven</strong>
-        <span>D:/pets-driven</span>
+        <strong>{title}</strong>
+        <span>{meta}</span>
       </header>
       <div className="pd-video-app-frame__body">{children}</div>
     </section>
@@ -78,14 +82,19 @@ export function Caption({
 }
 
 export function Callout({
+  className = "",
   children,
   style,
 }: {
+  className?: string;
   children: ReactNode;
   style?: CSSProperties;
 }) {
   return (
-    <div className="pd-video-callout" style={style}>
+    <div
+      className={["pd-video-callout", className].filter(Boolean).join(" ")}
+      style={style}
+    >
       {children}
     </div>
   );
@@ -190,9 +199,15 @@ export function DesktopPet({
   );
 }
 
-export function DemoTerminal({ cwd }: { cwd: string }) {
+export function DemoTerminal({
+  className = "",
+  cwd,
+}: {
+  className?: string;
+  cwd: string;
+}) {
   return (
-    <div className="pd-video-terminal">
+    <div className={["pd-video-terminal", className].filter(Boolean).join(" ")}>
       <TerminalPreview cwd={cwd} prompt="$" command="codex --workdir D:/pets-driven" />
       <div className="pd-video-terminal__line pd-video-terminal__line--success">
         Terminal channel activated for Cato

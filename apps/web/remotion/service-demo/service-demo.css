@@ -137,6 +137,7 @@
 }
 
 .pd-video-app-frame__body {
+  position: relative;
   height: calc(100% - 44px);
 }
 
@@ -209,7 +210,9 @@
 
 .pd-video-window__body {
   position: relative;
-  min-height: 100%;
+  min-height: calc(100% - 66px);
+  height: calc(100% - 66px);
+  overflow: hidden;
 }
 
 .pd-video-caption {
@@ -311,13 +314,13 @@
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .pd-video-home {
   position: relative;
   height: 610px;
-  overflow: visible;
+  overflow: hidden;
   background-image: radial-gradient(var(--ink-200) 1.4px, transparent 1.4px);
   background-size: 22px 22px;
 }
@@ -384,6 +387,15 @@
   transform-origin: bottom center;
 }
 
+.pd-video-drag-card {
+  position: absolute;
+  left: 50%;
+  bottom: -40px;
+  z-index: 260;
+  width: 196px;
+  transform-origin: bottom center;
+}
+
 .pd-video-card--left {
   left: calc(50% - 132px);
   transform: translateX(-50%) translateY(22px) rotate(-7deg);
@@ -400,10 +412,27 @@
 
 .pd-video-terminal-zone {
   position: absolute;
-  right: 126px;
-  bottom: 82px;
-  width: 610px;
-  z-index: 50;
+  left: 50%;
+  top: 276px;
+  width: 1160px;
+  height: 720px;
+  z-index: 52;
+}
+
+.pd-video-terminal-window {
+  height: 100%;
+  border-radius: 0 0 16px 16px;
+  padding: 28px;
+  background:
+    linear-gradient(180deg, rgba(17, 17, 24, 0.98), rgba(9, 9, 14, 0.98)),
+    radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 18px 18px;
+}
+
+.pd-video-terminal-callout {
+  position: absolute;
+  left: 50%;
+  bottom: -56px;
+  transform: translateX(-50%);
 }
 
 .pd-video-multi {
@@ -411,7 +440,7 @@
   inset: 0;
   z-index: 60;
   background:
-    linear-gradient(180deg, rgba(255, 252, 253, 0.94), rgba(244, 241, 254, 0.96)),
+    linear-gradient(180deg, #fffafc, #f3eff7),
     radial-gradient(var(--ink-200) 1.2px, transparent 1.2px) 0 0 / 26px 26px;
 }
 
@@ -420,7 +449,7 @@
   position: absolute;
   left: 120px;
   right: 120px;
-  bottom: 236px;
+  bottom: 176px;
   height: 2px;
   background: rgba(112, 104, 151, 0.18);
 }
