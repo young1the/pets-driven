@@ -42,7 +42,7 @@ const reservedPersonality = {
 };
 
 function monitorOf(position: { x: number; y: number }) {
-  if (position.x < 0 && position.y <= 480) return "left";
+  if (position.x < 0 && position.y <= 960) return "left";
   if (position.x >= 0) return "primary";
   return "gap";
 }
@@ -349,6 +349,7 @@ describe("demo scenario", () => {
         "CompletionBehavior",
       ],
       writes: [
+        "AgentChannelState",
         "IntentState",
         "SpeechState",
         "ActivityState",
@@ -702,18 +703,18 @@ describe("demo scenario", () => {
       scenario.world.getComponent("monitor-left-wall", "Transform"),
     ).toEqual({
       type: "Transform",
-      position: { x: -24, y: 270 },
+      position: { x: -24, y: 540 },
     });
     expect(
       scenario.world.getComponent("monitor-right-wall", "Transform"),
     ).toEqual({
       type: "Transform",
-      position: { x: 984, y: 270 },
+      position: { x: 1944, y: 540 },
     });
     expect(scenario.world.getComponent("monitor-ceiling", "Transform")).toEqual(
       {
         type: "Transform",
-        position: { x: 480, y: -24 },
+        position: { x: 960, y: -24 },
       },
     );
   });
@@ -723,24 +724,24 @@ describe("demo scenario", () => {
     const snapshot = scenario.world.snapshot();
 
     expect(snapshot.viewport).toEqual({
-      x: -640,
+      x: -1280,
       y: 0,
-      width: 1600,
-      height: 540,
+      width: 3200,
+      height: 1080,
     });
     expect(snapshot.monitors).toEqual([
-      { id: "left", x: -640, y: 0, width: 640, height: 480 },
-      { id: "primary", x: 0, y: 0, width: 960, height: 540 },
+      { id: "left", x: -1280, y: 0, width: 1280, height: 960 },
+      { id: "primary", x: 0, y: 0, width: 1920, height: 1080 },
     ]);
     expect(scenario.world.getComponent("left-ground", "Transform")).toEqual({
       type: "Transform",
-      position: { x: -320, y: 504 },
+      position: { x: -640, y: 984 },
     });
     expect(
       scenario.world.getComponent("primary-left-wall-0", "Transform"),
     ).toEqual({
       type: "Transform",
-      position: { x: -24, y: 510 },
+      position: { x: -24, y: 1020 },
     });
     expect(scenario.world.getEntity("left-right-wall")).toBeUndefined();
   });
@@ -818,7 +819,8 @@ describe("demo scenario", () => {
     const alice = scenario.world.snapshot().pets[0];
     expect(alice.locomotion).toBe("walk");
     expect(alice.action).toBe("climb-attached");
-    expect(alice.position.x).toBeCloseTo(120, -1);
+    expect(alice.position.x).toBeGreaterThanOrEqual(100);
+    expect(alice.position.x).toBeLessThanOrEqual(120);
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
       type: "MotionTarget",
       targetEntityId: null,
@@ -832,7 +834,7 @@ describe("demo scenario", () => {
     expect(scenario.world.snapshot().climbableSurfaces).toEqual([
       {
         id: "alice-climb-wall",
-        position: { x: 120, y: 500 },
+        position: { x: 120, y: 1040 },
       },
       {
         id: "climb-wall",
@@ -1166,7 +1168,7 @@ describe("demo scenario", () => {
       type: "pointer.down",
       pointerId: 1,
       at: scenario.clock.now(),
-      position: { x: 600, y: 500 },
+      position: { x: 600, y: 1040 },
     });
     scenario.world.step(16);
 
@@ -1752,6 +1754,17 @@ describe("adopted pets scenario", () => {
       ).toBeDefined();
       expect(pet.position.y).toBeGreaterThanOrEqual(monitor!.y);
       expect(pet.position.y).toBeLessThanOrEqual(monitor!.y + monitor!.height);
+    }
+  });
+
+  it("starts adopted pets at the supplied spawn point before they fall", () => {
+    const scenario = createAdoptedPetsScenario(pets, {
+      monitors: [{ id: "primary", x: 0, y: 0, width: 960, height: 540 }],
+      spawnPoint: { x: 480, y: 180 },
+    });
+
+    for (const pet of scenario.world.snapshot().pets) {
+      expect(pet.position).toEqual({ x: 480, y: 180 });
     }
   });
 

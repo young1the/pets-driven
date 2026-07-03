@@ -14,6 +14,14 @@ describe("snapshot surfaces agentTask", () => {
     const pet = world.snapshot().pets.find((p) => p.sourceId === "agent-a");
     expect(pet?.agentTask?.status).toBe("working");
     expect(pet?.agentTask?.label).toBeNull();
+    expect(pet?.agentChannel).toEqual({
+      source: "agent-task",
+      status: "working",
+      label: "Working",
+      message: null,
+      updatedAt: 0,
+      expiresAt: null,
+    });
   });
 
   it("a completed pet has DONE badge label", () => {
@@ -28,5 +36,6 @@ describe("snapshot surfaces agentTask", () => {
     const pet = world.snapshot().pets.find((p) => p.sourceId === "agent-a");
     expect(pet?.agentTask?.status).toBe("completed");
     expect(pet?.agentTask?.label).toBe("DONE");
+    expect(pet?.agentChannel?.label).toBe("Done");
   });
 });

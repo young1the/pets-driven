@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
 
 describe("presentPetStatus", () => {
-  it("shows the capsule with intent state even without an overlay", () => {
+  it("hides the capsule when no agent channel overlay is present", () => {
     const presentation = presentPetStatus({ kind: "working" }, null);
 
-    expect(presentation.showCapsule).toBe(true);
+    expect(presentation.showCapsule).toBe(false);
     expect(presentation.mood).toBe("working");
   });
 
@@ -46,7 +46,28 @@ describe("presentPetStatus", () => {
     expect(presentation).toEqual({
       mood: "confused",
       label: "WAIT",
+      message: null,
       emote: "exclaim",
+      showCapsule: true,
+    });
+  });
+
+  it("shows agent channel status in the speech bubble", () => {
+    const presentation = presentPetStatus(
+      { kind: "idle" },
+      {
+        kind: "agent-channel",
+        status: "working",
+        label: "Working",
+        message: null,
+      },
+    );
+
+    expect(presentation).toEqual({
+      mood: "working",
+      label: "Working",
+      message: null,
+      emote: "none",
       showCapsule: true,
     });
   });
@@ -74,7 +95,7 @@ describe("presentPetStatus", () => {
     expect(presentation.showCapsule).toBe(true);
   });
 
-  it("shows working mood without a label when traveling", () => {
+  it("does not show a status capsule just because a pet is traveling", () => {
     const presentation = presentPetStatus(
       { kind: "travel", direction: "right" },
       null,
@@ -82,7 +103,7 @@ describe("presentPetStatus", () => {
 
     expect(presentation.mood).toBe("working");
     expect(presentation.label).toBeNull();
-    expect(presentation.showCapsule).toBe(true);
+    expect(presentation.showCapsule).toBe(false);
   });
 
   it("falls back to a working mood without an intent", () => {

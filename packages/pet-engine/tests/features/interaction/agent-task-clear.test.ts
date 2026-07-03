@@ -14,6 +14,15 @@ describe("user interaction clears AgentTaskState to idle", () => {
           { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
           { type: "CanControl", speed: 1.4 },
           { type: "AgentTaskState", status: "waiting", since: 0 },
+          {
+            type: "AgentChannelState",
+            source: "agent-task",
+            status: "waiting",
+            label: "Waiting",
+            message: null,
+            updatedAt: 0,
+            expiresAt: null,
+          },
         ],
       },
       {
@@ -36,6 +45,7 @@ describe("user interaction clears AgentTaskState to idle", () => {
     runUserInteractionBehaviorSystem(components, events, clock);
 
     expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
+    expect(components.getComponent("pet", "AgentChannelState")).toBeUndefined();
   });
 
   it("removes AgentTaskState when a draggable pet is pressed", () => {

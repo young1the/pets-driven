@@ -81,17 +81,43 @@ describe("pet window projection", () => {
     ).toEqual({ kind: "working", facing: "left" });
   });
 
-  it("prioritizes attention overlays over speech and visual cues", () => {
+  it("projects agent channel messages into the speech bubble", () => {
     const pet = snapshotFixture().pets[0];
 
     expect(
       overlayFromPet({
         ...pet,
         agentTask: { status: "waiting", label: "WAIT" },
+        agentChannel: {
+          source: "agent-task",
+          status: "waiting",
+          label: "Waiting",
+          message: null,
+          updatedAt: 100,
+          expiresAt: null,
+        },
         speech: "hello",
         visualCue: { kind: "surprised", icon: "!", label: "Surprised" },
       }),
-    ).toEqual({ kind: "attention", label: "WAIT" });
+    ).toEqual({
+      kind: "agent-channel",
+      status: "waiting",
+      label: "Waiting",
+      message: null,
+    });
+  });
+
+  it("does not project pet visual cues into the agent speech bubble", () => {
+    const pet = snapshotFixture().pets[0];
+
+    expect(
+      overlayFromPet({
+        ...pet,
+        agentTask: null,
+        agentChannel: null,
+        visualCue: { kind: "surprised", icon: "!", label: "Surprised" },
+      }),
+    ).toBeNull();
   });
 
   it("projects world pet state into desktop Pet Window frames", () => {
@@ -108,10 +134,10 @@ describe("pet window projection", () => {
         sequence: 12,
         petId: "pet-a",
         window: {
-          x: 604,
-          y: 520,
-          width: 192,
-          height: 268,
+          x: 623.2,
+          y: 544,
+          width: 153.60000000000002,
+          height: 214.4,
         },
         sprite: {
           decisionEmote: {
@@ -197,8 +223,8 @@ describe("pet window projection", () => {
       12,
     );
 
-    expect(projection.frame.window.x).toBe(1204);
-    expect(projection.frame.window.y).toBe(520);
+    expect(projection.frame.window.x).toBe(1223.2);
+    expect(projection.frame.window.y).toBe(544);
   });
 
   it("projects negative virtual-desktop coordinates relative to the world viewport", () => {
@@ -224,8 +250,8 @@ describe("pet window projection", () => {
       12,
     );
 
-    expect(projection.frame.window.x).toBe(-416);
-    expect(projection.frame.window.y).toBe(260);
+    expect(projection.frame.window.x).toBe(-396.8);
+    expect(projection.frame.window.y).toBe(284);
   });
 
   it("clamps oversized saved scales before projecting Pet Window frames", () => {

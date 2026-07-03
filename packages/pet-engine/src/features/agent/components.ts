@@ -18,6 +18,24 @@ export type CompletionBehaviorComponent = {
   intentAfterCompletion: CompletionIntent;
 };
 
+export type AgentChannelSource = "agent-task" | "agent-hook" | "backend";
+
+export type AgentChannelStatus =
+  | "working"
+  | "waiting"
+  | "completed"
+  | "failed";
+
+export type AgentChannelStateComponent = {
+  type: "AgentChannelState";
+  source: AgentChannelSource;
+  status: AgentChannelStatus;
+  label: string;
+  message: string | null;
+  updatedAt: number;
+  expiresAt: number | null;
+};
+
 /** Default speech lines used when an event does not provide its own summary. */
 export type SpeechProfileComponent = {
   type: "SpeechProfile";
