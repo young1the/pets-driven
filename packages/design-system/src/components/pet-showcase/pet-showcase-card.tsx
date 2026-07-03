@@ -55,53 +55,34 @@ export function PetShowcaseCard({
       <span aria-hidden="true" className="pd-pet-card__wave" />
       <span aria-hidden="true" className="pd-pet-card__scrim" />
 
-      {cwd ? (
-        <div
-          className="pd-pet-card__cwd"
-          aria-label={`Working directory: ${cwd}`}
-        >
-          <svg
-            aria-hidden="true"
-            fill="none"
-            height="12"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2.2"
-            viewBox="0 0 24 24"
-            width="12"
+      <div className="pd-pet-card__top-right">
+        <div className="pd-pet-card__role-chip">{role}</div>
+        {onEdit ? (
+          <button
+            aria-label="Edit pet"
+            className="pd-pet-card__edit"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit();
+            }}
+            type="button"
           >
-            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
-          </svg>
-          {cwd}
-        </div>
-      ) : null}
-
-      {onEdit ? (
-        <button
-          aria-label="Edit pet"
-          className="pd-pet-card__edit"
-          onClick={(event) => {
-            event.stopPropagation();
-            onEdit();
-          }}
-          type="button"
-        >
-          <svg
-            fill="none"
-            height="14"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2.2"
-            viewBox="0 0 24 24"
-            width="14"
-          >
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-          </svg>
-        </button>
-      ) : null}
+            <svg
+              fill="none"
+              height="14"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.2"
+              viewBox="0 0 24 24"
+              width="14"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </button>
+        ) : null}
+      </div>
 
       <div className="pd-pet-card__head">
         <div className="pd-pet-card__note">{note}</div>
@@ -111,7 +92,27 @@ export function PetShowcaseCard({
       <div className="pd-pet-card__portrait">
         {portrait}
         <div className="pd-pet-card__footer">
-          <div className="pd-pet-card__role-chip">{role}</div>
+          {cwd ? (
+            <div
+              className="pd-pet-card__cwd"
+              aria-label={`Working directory: ${cwd}`}
+            >
+              <svg
+                aria-hidden="true"
+                fill="none"
+                height="12"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.2"
+                viewBox="0 0 24 24"
+                width="12"
+              >
+                <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+              </svg>
+              <span className="pd-pet-card__cwd-text">{cwd}</span>
+            </div>
+          ) : null}
           {status ? (
             <div className="pd-pet-card__status">
               <span

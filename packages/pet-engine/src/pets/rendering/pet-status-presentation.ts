@@ -1,6 +1,7 @@
 import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
 import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
+import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
 
 /**
  * Pure mapping from simulation-side presentation data (sprite intent +
@@ -11,6 +12,8 @@ export type PetStatusPresentation = {
   mood: PetMood;
   /** Capsule label; null lets the mood's default label show. */
   label: string | null;
+  /** Optional agent-channel message line. */
+  message: string | null;
   emote: PetEmoteKind;
   /** The capsule only shows when the host sent an overlay. */
   showCapsule: boolean;
@@ -47,6 +50,21 @@ function presentationFromIntent(
   }
 }
 
+function presentationFromAgentStatus(
+  status: AgentChannelStatus,
+): IntentPresentation {
+  switch (status) {
+    case "working":
+      return { mood: "working", label: "Working", emote: "none" };
+    case "waiting":
+      return { mood: "confused", label: "Waiting", emote: "question" };
+    case "completed":
+      return { mood: "happy", label: "Done", emote: "sparkle" };
+    case "failed":
+      return { mood: "confused", label: "Failed", emote: "exclaim" };
+  }
+}
+
 export function presentPetStatus(
   intent: PetSpriteIntent | undefined,
   overlay: PetSpriteOverlay | null | undefined,
@@ -54,21 +72,30 @@ export function presentPetStatus(
   const base = presentationFromIntent(intent);
 
   if (!overlay) {
-    // Always surface the intent-driven state so the bubble is a persistent
-    // status indicator, not just an overlay carrier.
-    return { ...base, showCapsule: true };
+    return { ...base, message: null, showCapsule: false };
   }
 
   if (overlay.kind === "attention") {
     return {
       mood: "confused",
       label: overlay.label,
+      message: null,
       emote: "exclaim",
+      showCapsule: true,
+    };
+  }
+
+  if (overlay.kind === "agent-channel") {
+    const agentBase = presentationFromAgentStatus(overlay.status);
+    return {
+      ...agentBase,
+      label: overlay.label,
+      message: overlay.message ?? null,
       showCapsule: true,
     };
   }
 
   // "speech" and "status" overlays carry their text into the capsule and
   // keep the intent-driven mood/emote.
-  return { ...base, label: overlay.label, showCapsule: true };
+  return { ...base, label: overlay.label, message: null, showCapsule: true };
 }

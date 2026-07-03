@@ -37,34 +37,45 @@
 }
 
 .pd-pet-card__cwd {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 5;
-  max-width: 130px;
+  align-self: stretch;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   color: #fff;
   letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   display: flex;
   align-items: center;
   gap: 5px;
+  overflow: hidden;
+}
+
+.pd-pet-card__cwd-text {
+  direction: rtl;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.pd-pet-card__top-right {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .pd-pet-card__edit {
-  position: absolute;
-  top: 13px;
-  right: 13px;
-  z-index: 5;
   width: 27px;
   height: 27px;
+  flex-shrink: 0;
   border-radius: 999px;
   border: 0;
   background: rgba(0, 0, 0, 0.3);
@@ -113,6 +124,7 @@
 .pd-pet-card__footer {
   position: absolute;
   left: 12px;
+  right: 12px;
   bottom: 12px;
   z-index: 3;
   display: flex;

@@ -34,6 +34,9 @@ export type {
 export type {
   CompletionIntent,
   AgentBindingComponent,
+  AgentChannelSource,
+  AgentChannelStatus,
+  AgentChannelStateComponent,
   ActivityStateComponent,
   CompletionBehaviorComponent,
   SpeechProfileComponent,
@@ -103,6 +106,7 @@ import type {
 } from "@pets-driven/pet-engine/features/behavior/components";
 import type {
   AgentBindingComponent,
+  AgentChannelStateComponent,
   ActivityStateComponent,
   CompletionBehaviorComponent,
   SpeechProfileComponent,
@@ -144,6 +148,7 @@ import type {
 
 export type Component =
   | ActivityStateComponent
+  | AgentChannelStateComponent
   | PetExpressionStateComponent
   | PendingReactionComponent
   | BehaviorDecisionTokenComponent
