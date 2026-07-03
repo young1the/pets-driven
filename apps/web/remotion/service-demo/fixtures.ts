@@ -27,7 +27,7 @@ export const DEMO_PETS: DemoPet[] = [
     note: "curious and tidy",
     role: "frontend",
     cwd: "D:/pets-driven",
-    gradient: { from: "#FFE0EE", to: "#F4F1FE" },
+    gradient: { from: "#5BD08A", to: "#2E9E63" },
     color: "#a189ee",
   },
   {
@@ -37,7 +37,7 @@ export const DEMO_PETS: DemoPet[] = [
     note: "steady reviewer",
     role: "tests",
     cwd: "D:/pets-driven/apps/desktop",
-    gradient: { from: "#FFF3C7", to: "#DFF8EF" },
+    gradient: { from: "#8B7FE8", to: "#6F5FD6" },
     color: "#fbc24a",
   },
   {
@@ -47,7 +47,7 @@ export const DEMO_PETS: DemoPet[] = [
     note: "fast explorer",
     role: "docs",
     cwd: "D:/pets-driven/docs",
-    gradient: { from: "#DBF2FF", to: "#E9F7EF" },
+    gradient: { from: "#FF7A5C", to: "#E04428" },
     color: "#5fb2ea",
   },
 ];

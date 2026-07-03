@@ -35,6 +35,11 @@ export function easeOutCubic(value: number) {
   return 1 - (1 - bounded) ** 3;
 }
 
+export function easeInCubic(value: number) {
+  const bounded = Math.max(0, Math.min(1, value));
+  return bounded ** 3;
+}
+
 export function lerp(from: number, to: number, amount: number) {
   return from + (to - from) * amount;
 }
