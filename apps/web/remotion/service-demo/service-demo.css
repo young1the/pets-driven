@@ -6,7 +6,7 @@
 
 .pd-video {
   overflow: hidden;
-  background: #ffd6e7;
+  background: #f7e5ec;
   color: var(--ink-950);
   font-family: var(--font-body);
 }
@@ -15,8 +15,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(255, 214, 231, 0.95), rgba(255, 191, 218, 0.92)),
-    radial-gradient(rgba(123, 81, 104, 0.18) 1.2px, transparent 1.2px) 0 0 / 26px 26px;
+    linear-gradient(180deg, rgba(247, 229, 236, 0.96), rgba(240, 213, 223, 0.94)),
+    radial-gradient(rgba(123, 81, 104, 0.12) 1.2px, transparent 1.2px) 0 0 / 26px 26px;
 }
 
 .pd-video__stage {
@@ -258,8 +258,8 @@
 }
 
 .pd-video-card-pet {
-  width: 126px;
-  height: 136px;
+  width: 112px;
+  height: 122px;
   object-fit: cover;
   object-position: left top;
   image-rendering: pixelated;
@@ -380,12 +380,12 @@
 .pd-video-card {
   position: absolute;
   bottom: -40px;
-  width: 224px;
+  width: 196px;
   transform-origin: bottom center;
 }
 
 .pd-video-card--left {
-  left: calc(50% - 150px);
+  left: calc(50% - 132px);
   transform: translateX(-50%) translateY(22px) rotate(-7deg);
 }
 
@@ -394,7 +394,7 @@
 }
 
 .pd-video-card--right {
-  left: calc(50% + 150px);
+  left: calc(50% + 132px);
   transform: translateX(-50%) translateY(22px) rotate(7deg);
 }
 
