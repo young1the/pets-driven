@@ -92,15 +92,17 @@ fn poll_new_foreground_window(baseline: isize, timeout_ms: u64) -> Option<Foreig
     None
 }
 
-/// Bring a bound window to the foreground. Returns false when the window no
-/// longer exists so the caller can fall back to starting a fresh session.
+/// Toggle a bound window's foreground state. If the window is already the active
+/// foreground window it is minimized; otherwise it is restored and brought to the
+/// front. Returns false when the window no longer exists so the caller can fall
+/// back to starting a fresh session.
 #[cfg(target_os = "windows")]
 #[tauri::command]
 pub(crate) fn focus_window(hwnd: i64) -> Result<bool, String> {
     use windows_sys::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         BringWindowToTop, GetForegroundWindow, GetWindowThreadProcessId, IsIconic, IsWindow,
-        SetForegroundWindow, ShowWindow, SW_RESTORE,
+        SetForegroundWindow, ShowWindow, SW_FORCEMINIMIZE, SW_RESTORE,
     };
 
     let hwnd = hwnd as *mut core::ffi::c_void;
@@ -108,12 +110,20 @@ pub(crate) fn focus_window(hwnd: i64) -> Result<bool, String> {
         if IsWindow(hwnd) == 0 {
             return Ok(false);
         }
+        let foreground = GetForegroundWindow();
+        // Already frontmost: minimize it. SW_FORCEMINIMIZE (not SW_MINIMIZE) is
+        // required to minimize a window owned by another process/thread reliably;
+        // a plain SW_MINIMIZE is a synchronous cross-thread call the foreign
+        // message loop can ignore, which is why minimize appeared not to work.
+        if IsIconic(hwnd) == 0 && foreground as isize == hwnd as isize {
+            ShowWindow(hwnd, SW_FORCEMINIMIZE);
+            return Ok(true);
+        }
         if IsIconic(hwnd) != 0 {
             ShowWindow(hwnd, SW_RESTORE);
         }
         // AttachThreadInput dance because Windows blocks a bare
         // SetForegroundWindow from a process that is not the active one.
-        let foreground = GetForegroundWindow();
         let our_thread = GetCurrentThreadId();
         let foreground_thread = GetWindowThreadProcessId(foreground, core::ptr::null_mut());
         let target_thread = GetWindowThreadProcessId(hwnd, core::ptr::null_mut());
