@@ -1,4 +1,4 @@
-import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, interpolate, staticFile, useCurrentFrame } from "remotion";
 import {
   Callout,
   Caption,
@@ -22,37 +22,38 @@ const pip = DEMO_PETS[2];
 
 export function ServiceDemoVideo() {
   const frame = useCurrentFrame();
-  const contextP = progress(frame, 0, 150);
-  const summonP = progress(frame, 150, 390);
-  const activateP = progress(frame, 540, 420);
-  const terminalP = progress(frame, 960, 300);
-  const multiP = progress(frame, 1260, 480);
-  const closingP = progress(frame, 1740, 60);
+  const contextP = progress(frame, 0, 90);
+  const summonP = progress(frame, 90, 240);
+  const activateP = progress(frame, 330, 240);
+  const terminalP = progress(frame, 570, 150);
+  const multiP = progress(frame, 720, 300);
+  const closingP = progress(frame, 1020, 60);
 
-  const dragP = easeOutCubic(progress(frame, 210, 210));
+  const dragP = easeOutCubic(progress(frame, 120, 120));
   const cardX = lerp(0, 420, dragP);
-  const cardY = lerp(0, -360, dragP);
-  const petReveal = progress(frame, 450, 120);
+  const cardY = lerp(0, -300, dragP);
+  const petReveal = progress(frame, 270, 45);
   const cursor = cursorPosition(frame);
 
   return (
     <AbsoluteFill className="pd-video">
       <div className="pd-video__background" />
       <main className="pd-video__stage">
-        <Caption
+        <header
+          className="pd-video-brand"
           style={{
-            left: 84,
-            opacity: interpolate(contextP, [0, 0.25], [0, 1], {
+            opacity: interpolate(contextP, [0, 0.35], [0, 1], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
             }),
-            top: 78,
           }}
         >
-          Your agents, visible on your desktop.
-        </Caption>
+          <img alt="" src={staticFile("petsdriven-mark.svg")} />
+          <h1>Pets-Driven</h1>
+          <p>Your agents, visible on your desktop.</p>
+        </header>
 
-        <DemoWindow className="pd-video-main-window" title="Pets-Driven">
+        <DemoWindow className="pd-video-main-window">
           <div className="pd-video-home">
             <div className="pd-video-home__copy">
               <span>Your pack</span>
@@ -87,7 +88,7 @@ export function ServiceDemoVideo() {
           style={{
             left: 1030,
             opacity: summonP > 0.08 && summonP < 0.82 ? 1 : 0,
-            top: 260,
+            top: 294,
           }}
         >
           Drag a pet card to summon it.
@@ -95,7 +96,7 @@ export function ServiceDemoVideo() {
 
         {petReveal > 0 ? (
           <DesktopPet
-            animationState={frame < 900 ? "waving" : "idle"}
+            animationState={frame < 540 ? "waving" : "idle"}
             elapsedMs={frame * 33}
             label={activateP > 0.15 ? "Cato · D:/pets-driven" : undefined}
             pet={cato}
@@ -109,7 +110,7 @@ export function ServiceDemoVideo() {
           style={{
             left: 1120,
             opacity: activateP > 0.12 && activateP < 0.45 ? 1 : 0,
-            top: 596,
+            top: 618,
           }}
         >
           Double-click the pet.
@@ -140,7 +141,7 @@ export function ServiceDemoVideo() {
             }),
           }}
         >
-          <Caption style={{ left: 84, top: 120 }}>
+          <Caption style={{ left: 84, top: 118 }}>
             Each pet carries one working directory.
           </Caption>
           {DEMO_PETS.map((pet) => {
@@ -198,14 +199,14 @@ export function ServiceDemoVideo() {
 }
 
 function cursorPosition(frame: number) {
-  if (frame < 210) return { scale: 1, x: 820, y: 820 };
-  if (frame < 420) {
-    const p = easeOutCubic(progress(frame, 210, 210));
-    return { scale: 1, x: lerp(820, 1260, p), y: lerp(820, 478, p) };
+  if (frame < 120) return { scale: 1, x: 940, y: 828 };
+  if (frame < 240) {
+    const p = easeOutCubic(progress(frame, 120, 120));
+    return { scale: 1, x: lerp(940, 1260, p), y: lerp(828, 530, p) };
   }
-  if (frame < 660) return { scale: 1, x: 1260, y: 650 };
-  if (frame < 760) {
-    const pulse = frame % 20 < 10 ? 0.88 : 1;
+  if (frame < 390) return { scale: 1, x: 1260, y: 650 };
+  if (frame < 465) {
+    const pulse = frame % 16 < 8 ? 0.86 : 1;
     return { scale: pulse, x: 1260, y: 650 };
   }
   return { scale: 1, x: 1500, y: 880 };

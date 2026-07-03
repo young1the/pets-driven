@@ -1,7 +1,7 @@
 export const VIDEO_FPS = 30;
 export const VIDEO_WIDTH = 1920;
 export const VIDEO_HEIGHT = 1080;
-export const VIDEO_DURATION_FRAMES = 1800;
+export const VIDEO_DURATION_FRAMES = 1080;
 
 export type ServiceDemoScene =
   | "context"
@@ -18,12 +18,12 @@ export type SceneRange = {
 };
 
 export const SCENES: SceneRange[] = [
-  { id: "context", from: 0, duration: 150 },
-  { id: "summon", from: 150, duration: 390 },
-  { id: "activate", from: 540, duration: 420 },
-  { id: "terminal", from: 960, duration: 300 },
-  { id: "multi-pet", from: 1260, duration: 480 },
-  { id: "closing", from: 1740, duration: 60 },
+  { id: "context", from: 0, duration: 90 },
+  { id: "summon", from: 90, duration: 240 },
+  { id: "activate", from: 330, duration: 240 },
+  { id: "terminal", from: 570, duration: 150 },
+  { id: "multi-pet", from: 720, duration: 300 },
+  { id: "closing", from: 1020, duration: 60 },
 ];
 
 export function progress(frame: number, from: number, duration: number) {
