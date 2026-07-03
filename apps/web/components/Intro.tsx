@@ -492,6 +492,60 @@ export default function Intro() {
         </div>
       </section>
 
+      {/* ===================== DEMO — SEE IT IN ACTION ===================== */}
+      <section style={{ position: "relative", padding: "120px 6vw 130px", background: "#FFFCFD" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
+          <div
+            data-reveal
+            style={{
+              opacity: 0,
+              transform: "translateY(26px)",
+              transition:
+                "opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)",
+            }}
+          >
+            <span className="pd-eyebrow" style={{ color: "var(--teal-600)" }}>
+              Demo
+            </span>
+            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(30px,4vw,54px)", lineHeight: 1.05, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: "12px 0 0" }}>
+              See it in action.
+            </h2>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: "var(--ink-700)", maxWidth: "52ch", margin: "18px auto 0" }}>
+              Summon a pet, give it a personality, and watch the pack settle into
+              your desktop.
+            </p>
+          </div>
+          <div
+            data-reveal
+            style={{
+              opacity: 0,
+              transform: "translateY(26px)",
+              transition:
+                "opacity .7s cubic-bezier(.22,1,.36,1) .1s, transform .7s cubic-bezier(.22,1,.36,1) .1s",
+              marginTop: 44,
+              borderRadius: 28,
+              overflow: "hidden",
+              border: "1px solid var(--border-soft)",
+              boxShadow: "0 18px 44px rgba(139,127,232,.18)",
+              background: "#FFFCFD",
+            }}
+          >
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              preload="metadata"
+              poster="/service-demo-poster.png"
+              style={{ display: "block", width: "100%", height: "auto", aspectRatio: "16 / 9" }}
+            >
+              <source src="/service-demo.mp4" type="video/mp4" />
+            </video>
+          </div>
+        </div>
+      </section>
+
       {/* ===================== ACT II — PERSONALITIES ===================== */}
       <section className="scene" style={{ position: "relative" }}>
         <div
