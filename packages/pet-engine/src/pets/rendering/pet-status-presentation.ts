@@ -34,7 +34,7 @@ function presentationFromIntent(
     case "working":
       return { mood: "working", label: null, emote: "none" };
     case "idle":
-      return { mood: "sleepy", label: null, emote: "zzz" };
+      return { mood: "sleepy", label: "Idle", emote: "zzz" };
     case "waving":
       return { mood: "happy", label: null, emote: "sparkle" };
     case "jumping":

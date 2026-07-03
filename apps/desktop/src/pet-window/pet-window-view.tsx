@@ -9,7 +9,8 @@ import {
 import { FALLBACK_CODEX_PET_SPRITESHEET_URL } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import { IconButton } from "@pets-driven/design-system";
+import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
+import { IconButton, PET_MOODS } from "@pets-driven/design-system";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
@@ -151,40 +152,6 @@ function hitLayoutForPresentation(
   };
 }
 
-function hoverStatusFromIntent(intent: PetSpriteIntent): {
-  dotColor: string;
-  labelColor: string;
-  label: string;
-} {
-  switch (intent.kind) {
-    case "waving":
-    case "jumping":
-      return {
-        dotColor: "var(--mint-500)",
-        labelColor: "var(--mint-700)",
-        label: "Done",
-      };
-    case "idle":
-      return {
-        dotColor: "var(--ink-400)",
-        labelColor: "var(--ink-600)",
-        label: "Resting",
-      };
-    case "waiting":
-    case "failed":
-      return {
-        dotColor: "var(--butter-500)",
-        labelColor: "var(--butter-600)",
-        label: "Needs help",
-      };
-    default:
-      return {
-        dotColor: "var(--sky-400)",
-        labelColor: "var(--sky-700)",
-        label: "Working",
-      };
-  }
-}
 
 export function PetWindowView({ pet }: PetWindowViewProps) {
   const surfaceRef = useRef<HTMLElement | null>(null);
@@ -730,16 +697,18 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
             imageUrl={spritesheetUrl}
             intent={presentation.intent}
             overlay={presentation.overlay}
+            showStatusBubble={false}
             size={PET_CELL_SIZE}
             scale={spriteScale}
             style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD * spriteScale }}
           />
         ) : null}
         {petName !== null ? (
-          <PetHoverInfoCard
+          <PetStatusCard
             cwd={isBodyHovered ? cwdRef.current : null}
             intent={presentation.intent}
             name={petName}
+            overlay={presentation.overlay}
             spriteHeight={PET_CELL_SIZE.height * spriteScale}
           />
         ) : null}
@@ -769,42 +738,53 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   );
 }
 
-type PetHoverInfoCardProps = {
+type PetStatusCardProps = {
   name: string;
   intent: PetSpriteIntent;
+  overlay: PetWindowOverlay | null;
   cwd: string | null;
   spriteHeight: number;
 };
 
-function PetHoverInfoCard({
+function PetStatusCard({
   name,
   intent,
+  overlay,
   cwd,
   spriteHeight,
-}: PetHoverInfoCardProps) {
-  const { dotColor, labelColor, label } = hoverStatusFromIntent(intent);
+}: PetStatusCardProps) {
+  const status = presentPetStatus(intent, overlay);
+  const accent = PET_MOODS[status.mood].accent;
+  const label = status.label;
 
   return (
     <div
-      className="pet-window-nameplate"
+      className="pet-window-status-card"
       style={
         {
-          "--pet-window-dot-color": dotColor,
-          "--pet-window-label-color": labelColor,
+          "--pet-window-dot-color": accent,
+          "--pet-window-label-color": accent,
           "--sprite-h": `${spriteHeight}px`,
         } as React.CSSProperties
       }
     >
       <div
-        className={`pet-window-nameplate__inner${cwd ? " pet-window-nameplate__inner--expanded" : ""}`}
+        className={`pet-window-status-card__inner${cwd || status.message ? " pet-window-status-card__inner--expanded" : ""}`}
       >
-        <div className="pet-window-nameplate__row">
-          <span className="pet-window-nameplate__dot" />
-          <span className="pet-window-nameplate__name">{name}</span>
-          <span className="pet-window-nameplate__status">{label}</span>
+        <div className="pet-window-status-card__row">
+          <span className="pet-window-status-card__dot" />
+          <span className="pet-window-status-card__name">{name}</span>
+          {label ? (
+            <span className="pet-window-status-card__label">{label}</span>
+          ) : null}
         </div>
+        {status.message ? (
+          <div className="pet-window-status-card__message">
+            {status.message}
+          </div>
+        ) : null}
         {cwd ? (
-          <div className="pet-window-nameplate__cwd">
+          <div className="pet-window-status-card__cwd">
             <svg
               aria-hidden="true"
               fill="none"
