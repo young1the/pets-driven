@@ -43,3 +43,129 @@
   font-size: 34px;
   font-weight: 700;
 }
+
+.pd-video-window {
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 28px;
+  background: rgba(255, 252, 253, 0.92);
+  box-shadow: 0 30px 90px rgba(77, 68, 116, 0.18);
+}
+
+.pd-video-window__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 54px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-600);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.pd-video-window__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.pd-video-window__dot--red {
+  background: #ff7967;
+}
+
+.pd-video-window__dot--yellow {
+  background: #fbc24a;
+}
+
+.pd-video-window__dot--green {
+  background: #4fc894;
+}
+
+.pd-video-window__body {
+  position: relative;
+  min-height: 100%;
+}
+
+.pd-video-caption {
+  position: absolute;
+  z-index: 30;
+  max-width: 760px;
+  color: var(--ink-950);
+  font-family: var(--font-display);
+  font-size: 58px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.04;
+}
+
+.pd-video-callout {
+  position: absolute;
+  z-index: 40;
+  padding: 12px 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-lg);
+  color: var(--ink-800);
+  font-size: 22px;
+  font-weight: 850;
+}
+
+.pd-video-cursor {
+  position: absolute;
+  z-index: 80;
+  overflow: visible;
+  filter: drop-shadow(0 10px 14px rgba(24, 19, 38, 0.22));
+}
+
+.pd-video-card-pet {
+  width: 126px;
+  height: 136px;
+  object-fit: cover;
+  object-position: left top;
+  image-rendering: pixelated;
+}
+
+.pd-video-desktop-pet {
+  position: absolute;
+  z-index: 20;
+  transform: translate(-50%, -100%);
+}
+
+.pd-video-status-card {
+  position: absolute;
+  left: 50%;
+  top: -44px;
+  z-index: 5;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-md);
+  color: var(--ink-800);
+  font-size: 15px;
+  font-weight: 850;
+  padding: 8px 13px;
+}
+
+.pd-video-terminal {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--term-bg);
+  box-shadow: 0 20px 54px rgba(24, 19, 38, 0.26);
+}
+
+.pd-video-terminal__line {
+  color: var(--term-muted);
+  font-family: var(--font-mono);
+  font-size: 18px;
+}
+
+.pd-video-terminal__line--success {
+  color: var(--mint-300);
+}
