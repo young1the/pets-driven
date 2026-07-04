@@ -1,4 +1,6 @@
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import type { PetMood } from "@pets-driven/design-system";
 
 export type DemoPet = {
   id: string;
@@ -11,12 +13,20 @@ export type DemoPet = {
   color: string;
 };
 
+export type DemoPetStatus = {
+  label: string;
+  message: string | null;
+  mood: PetMood;
+};
+
 export type PetMotionKeyframe = {
   frame: number;
   x: number;
   y: number;
   animationState: PetAnimationState;
   facing?: "left" | "right";
+  decisionEmote?: BehaviorTokenPresentation | null;
+  status?: DemoPetStatus | null;
 };
 
 export const DEMO_PETS: DemoPet[] = [
