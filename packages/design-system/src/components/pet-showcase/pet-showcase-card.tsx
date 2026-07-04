@@ -119,7 +119,12 @@ export function PetShowcaseCard({
                 className="pd-pet-card__status-dot"
                 style={{ background: status.dotColor }}
               />
-              <span className="pd-pet-card__status-label">{status.label}</span>
+              <span
+                className="pd-pet-card__status-label"
+                style={{ color: status.dotColor }}
+              >
+                {status.label}
+              </span>
             </div>
           ) : null}
         </div>

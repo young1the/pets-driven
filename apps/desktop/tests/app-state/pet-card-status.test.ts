@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { petStatusFromSnapshot } from "@/app-state/pet-card-status";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 
-function snapshot(agentTask: PetSnapshot["agentTask"]): PetSnapshot {
+function snapshot(
+  agentTask: PetSnapshot["agentTask"],
+  overrides: Partial<PetSnapshot> = {},
+): PetSnapshot {
   return {
     id: "pet",
     sourceId: "agent-a",
@@ -16,6 +19,7 @@ function snapshot(agentTask: PetSnapshot["agentTask"]): PetSnapshot {
     decision: null,
     pendingReaction: null,
     agentTask,
+    ...overrides,
   };
 }
 
@@ -45,5 +49,45 @@ describe("petStatusFromSnapshot", () => {
       petStatusFromSnapshot(snapshot({ status: "completed", label: "DONE" }))
         .label,
     ).toBe("Done");
+  });
+
+  it("surfaces autonomous behavior for a working pet", () => {
+    const status = petStatusFromSnapshot(
+      snapshot(
+        { status: "working", label: null },
+        {
+          decision: { source: "autonomous", reason: "wander-near", decidedAt: 0 },
+        },
+      ),
+    );
+    expect(status.label).toBe("Exploring");
+    expect(status.dotColor).toBe("var(--sky-300)");
+  });
+
+  it("shows a behavior phrase for an idle pet seeking the user", () => {
+    expect(
+      petStatusFromSnapshot(snapshot(null, { intent: "seek" })).label,
+    ).toBe("Heading over");
+  });
+
+  it("reads the physical action first (climbing)", () => {
+    expect(
+      petStatusFromSnapshot(
+        snapshot({ status: "working", label: null }, { action: "climb-attached" }),
+      ).label,
+    ).toBe("Climbing");
+  });
+
+  it("keeps Needs you for waiting even with autonomous behavior", () => {
+    expect(
+      petStatusFromSnapshot(
+        snapshot(
+          { status: "waiting", label: "WAIT" },
+          {
+            decision: { source: "autonomous", reason: "wander-near", decidedAt: 0 },
+          },
+        ),
+      ).label,
+    ).toBe("Needs you");
   });
 });
