@@ -180,7 +180,21 @@
     "failed": "실패",
     "stuck": "막힘",
     "reviewing": "검토 중",
-    "needsYou": "도움이 필요해요"
+    "needsYou": "도움이 필요해요",
+    "exploring": "탐험 중",
+    "climbing": "등반 중",
+    "hopping": "폴짝폴짝",
+    "midAir": "공중에!",
+    "headingOver": "다가가는 중",
+    "makingFriends": "친해지는 중",
+    "foundAFriend": "친구를 만났어요",
+    "keepingDistance": "거리 두는 중",
+    "startled": "깜짝!",
+    "chasingCursor": "커서 쫓는 중",
+    "caughtCursor": "잡았다!",
+    "beingPetted": "쓰다듬 받는 중",
+    "chatting": "수다 중",
+    "onTheMove": "이동 중"
   },
   "toast": {
     "onDesktop": "{{name}}이(가) 데스크탑에 나왔어요",

@@ -184,7 +184,21 @@
     "failed": "Failed",
     "stuck": "Stuck",
     "reviewing": "Reviewing",
-    "needsYou": "Needs you"
+    "needsYou": "Needs you",
+    "exploring": "Exploring",
+    "climbing": "Climbing",
+    "hopping": "Hopping",
+    "midAir": "Mid-air",
+    "headingOver": "Heading over",
+    "makingFriends": "Making friends",
+    "foundAFriend": "Found a friend",
+    "keepingDistance": "Keeping distance",
+    "startled": "Startled",
+    "chasingCursor": "Chasing the cursor",
+    "caughtCursor": "Caught it!",
+    "beingPetted": "Being petted",
+    "chatting": "Chatting",
+    "onTheMove": "On the move"
   },
   "toast": {
     "onDesktop": "{{name}} is on the desktop",

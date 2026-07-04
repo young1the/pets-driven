@@ -1,8 +1,21 @@
 import type { BadgeTone } from "@pets-driven/design-system";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+
+/**
+ * Labels for a pet living its life autonomously (the "behavior" axis). These
+ * are exactly the engine's canonical activity keys (core/pet-activity.ts), so
+ * no mapping layer sits between the simulation and the chip.
+ */
+export type PetBehaviorLabelKey = PetActivityKind;
 
 /** Stable key for a card status label, so the UI can localize it. */
-export type PetCardStatusLabelKey = "idle" | "working" | "needsYou" | "done";
+export type PetCardStatusLabelKey =
+  | "idle"
+  | "working"
+  | "needsYou"
+  | "done"
+  | PetBehaviorLabelKey;
 
 /**
  * Status pill shown on a pet card: a label, a Badge tone, and a dot color.
@@ -13,6 +26,24 @@ export type PetCardStatus = {
   labelKey: PetCardStatusLabelKey;
   tone: BadgeTone;
   dotColor: string;
+};
+
+/** English source strings for the autonomous-behavior labels. */
+const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
+  exploring: "Exploring",
+  climbing: "Climbing",
+  hopping: "Hopping",
+  midAir: "Mid-air",
+  headingOver: "Heading over",
+  makingFriends: "Making friends",
+  foundAFriend: "Found a friend",
+  keepingDistance: "Keeping distance",
+  startled: "Startled",
+  chasingCursor: "Chasing the cursor",
+  caughtCursor: "Caught it!",
+  beingPetted: "Being petted",
+  chatting: "Chatting",
+  onTheMove: "On the move",
 };
 
 const IDLE: PetCardStatus = {
@@ -38,7 +69,11 @@ const WORKING: PetCardStatus = {
  * that work state (when it needs the user) or the pet's autonomous BEHAVIOR
  * (when it is just living its life) — so the card conveys how rich the pet's
  * behavior is, not just a flat "Working". The label text is rendered in the
- * chip color, so both read as one signal.
+ * chip color, so both read as one signal, and localizes via labelKey.
+ *
+ * The behavior label is the engine's canonical `snapshot.activity`, derived
+ * with claim-expiry checks in the simulation — this layer no longer guesses
+ * from decision/action/intent fields.
  */
 export function petStatusFromSnapshot(
   snapshot: PetSnapshot | undefined,
@@ -79,74 +114,81 @@ export function petStatusFromSnapshot(
   // Working / idle: surface the pet's autonomous behavior so the card feels
   // alive. Falls back to the plain work label when nothing notable is
   // happening, preserving the base "Working" / "Idle" contract.
-  //
-  // TODO(i18n): the behavior phrases are English source only for now. The
-  // render layer localizes via labelKey, so until each phrase gets its own
-  // PetCardStatusLabelKey + en/ko translation, localized cards show the base
-  // "working"/"idle" label. Wiring those behavior keys is the follow-up step.
-  const behavior = describePetBehavior(snapshot);
+  const behaviorKey = snapshot.activity ?? null;
   if (status === "working") {
     return {
-      label: behavior ?? WORKING.label,
-      labelKey: "working",
+      label: behaviorKey ? BEHAVIOR_LABEL[behaviorKey] : WORKING.label,
+      labelKey: behaviorKey ?? "working",
       tone: "info",
       dotColor: "var(--sky-300)",
     };
   }
   return {
-    label: behavior ?? IDLE.label,
-    labelKey: "idle",
+    label: behaviorKey ? BEHAVIOR_LABEL[behaviorKey] : IDLE.label,
+    labelKey: behaviorKey ?? "idle",
     tone: "neutral",
     dotColor: "var(--ink-300)",
   };
 }
 
 /**
- * A short, human phrase for what the pet is autonomously doing, or null when
- * it is simply standing by. Drawn from the richest available signal: the
- * physical action, then the behavior decision, then the visual cue / intent.
+ * Autonomous decisions can churn every 500ms–2s, which makes the raw
+ * per-tick status unreadable ("Exploring → Idle → Hopping" flicker). The
+ * tracker adds display hysteresis per pet:
+ *
+ *  • tone changes (agent work state) switch immediately — never delay
+ *    "Needs you" / "Done";
+ *  • a base label (Idle/Working) upgrading to a behavior label switches
+ *    immediately — reactions should feel instant;
+ *  • behavior→behavior and behavior→base changes hold the previous label
+ *    until it has been visible for `minDisplayMs`.
  */
-function describePetBehavior(snapshot: PetSnapshot): string | null {
-  const action = snapshot.action;
-  if (action?.startsWith("climb")) return "Climbing";
-  if (action?.startsWith("jump")) return "Hopping";
-  if (action === "airborne") return "Mid-air";
+const DEFAULT_MIN_DISPLAY_MS = 1_500;
 
-  switch (snapshot.decision?.reason) {
-    case "seek-user":
-      return "Heading over";
-    case "approach-pet":
-    case "collision-engage":
-      return "Making friends";
-    case "approach-pet-success":
-      return "Found a friend";
-    case "flee-from-pet":
-    case "collision-flee":
-    case "collision-avoid":
-      return "Keeping distance";
-    case "wander-near":
-    case "wander-far":
-    case "working-wander":
-      return "Exploring";
-    case "request-climb":
-      return "Climbing";
-    case "request-jump":
-    case "collision-jump":
-      return "Hopping";
-  }
+const BASE_LABEL_KEYS: ReadonlySet<PetCardStatusLabelKey> = new Set([
+  "idle",
+  "working",
+  "needsYou",
+  "done",
+]);
 
-  switch (snapshot.visualCue?.kind) {
-    case "surprised":
-      return "Startled";
-    case "affection":
-      return "Making friends";
-    case "flee":
-      return "Keeping distance";
-    case "wander":
-      return "Exploring";
-  }
+export function createPetCardStatusTracker(
+  minDisplayMs: number = DEFAULT_MIN_DISPLAY_MS,
+) {
+  const shown = new Map<string, { status: PetCardStatus; shownAt: number }>();
 
-  if (snapshot.intent === "seek") return "Heading over";
-  if (snapshot.intent === "active") return "On the move";
-  return null;
+  return {
+    track(petId: string, next: PetCardStatus, now: number): PetCardStatus {
+      const current = shown.get(petId);
+      if (!current) {
+        shown.set(petId, { status: next, shownAt: now });
+        return next;
+      }
+
+      const toneChanged = current.status.tone !== next.tone;
+      const labelChanged = current.status.labelKey !== next.labelKey;
+      if (!labelChanged && !toneChanged) {
+        return current.status;
+      }
+
+      const upgradeFromBase =
+        BASE_LABEL_KEYS.has(current.status.labelKey) &&
+        !BASE_LABEL_KEYS.has(next.labelKey);
+      const heldLongEnough = now - current.shownAt >= minDisplayMs;
+
+      if (toneChanged || upgradeFromBase || heldLongEnough) {
+        shown.set(petId, { status: next, shownAt: now });
+        return next;
+      }
+
+      return current.status;
+    },
+    forget(petId: string): void {
+      shown.delete(petId);
+    },
+  };
 }
+
+export type PetCardStatusTracker = ReturnType<
+  typeof createPetCardStatusTracker
+>;

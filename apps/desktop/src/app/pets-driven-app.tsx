@@ -38,6 +38,7 @@ import {
 } from "@/app/session-launch-profile";
 import {
   petStatusFromSnapshot,
+  createPetCardStatusTracker,
   type PetCardStatus,
 } from "@/app-state/pet-card-status";
 import { personalityRoleLabelKey } from "@/app/pet-presentation";
@@ -302,6 +303,9 @@ export function PetsDrivenApp() {
   const adoptedDiagnosticsTrackerRef = useRef<PetDiagnosticsTracker>(
     createPetDiagnosticsTracker(),
   );
+  // Display hysteresis for the card status chip — autonomous decisions churn
+  // every 500ms-2s, so raw per-tick labels are unreadable without it.
+  const adoptedStatusTrackerRef = useRef(createPetCardStatusTracker());
   const adoptedDiagnosticsRef = useRef<PetDiagnosticsSnapshot | null>(null);
   const adoptedSnapshotRef = useRef<WorldSnapshot | null>(null);
   const adoptedPetIdsRef = useRef<Set<string>>(new Set());
@@ -799,6 +803,7 @@ export function PetsDrivenApp() {
     if (simInputs.length === 0) {
       adoptedScenarioRef.current = null;
       adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
+      adoptedStatusTrackerRef.current = createPetCardStatusTracker();
       adoptedDiagnosticsRef.current = null;
       adoptedSnapshotRef.current = null;
       adoptedPetIdsRef.current = new Set();
@@ -857,6 +862,7 @@ export function PetsDrivenApp() {
       adoptedHostSequenceRef.current = 0;
       adoptedScaleByPetIdRef.current = scaleByPetId;
       adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
+      adoptedStatusTrackerRef.current = createPetCardStatusTracker();
       adoptedDiagnosticsRef.current = null;
       adoptedSnapshotRef.current = null;
     });
@@ -908,7 +914,11 @@ export function PetsDrivenApp() {
 
       const nextStatuses: Record<string, PetCardStatus> = {};
       for (const petSnapshot of snapshot.pets) {
-        nextStatuses[petSnapshot.id] = petStatusFromSnapshot(petSnapshot);
+        nextStatuses[petSnapshot.id] = adoptedStatusTrackerRef.current.track(
+          petSnapshot.id,
+          petStatusFromSnapshot(petSnapshot),
+          scenario.clock.now(),
+        );
       }
       setPetStatusById((current) => {
         const sameKeys =
