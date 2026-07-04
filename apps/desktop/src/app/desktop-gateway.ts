@@ -1,6 +1,5 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { withDesktopFixtureWorkingDirectories } from "@/app-state/dev-fixtures";
 import {
   createEmptyPetsDrivenState,
   parsePetsDrivenState,
@@ -37,21 +36,15 @@ export type DesktopGateway = {
   pickDirectory(): Promise<string | null>;
 };
 
-function withDevFixtures(state: PetsDrivenState): PetsDrivenState {
-  return import.meta.env.DEV
-    ? withDesktopFixtureWorkingDirectories(state)
-    : state;
-}
-
 export const desktopGateway: DesktopGateway = {
   async readPetsDrivenState() {
     if (!isTauri()) {
-      return withDevFixtures(createEmptyPetsDrivenState());
+      return createEmptyPetsDrivenState();
     }
 
     const raw = await invoke<unknown>("read_pets_driven_state");
 
-    return withDevFixtures(parsePetsDrivenState(raw));
+    return parsePetsDrivenState(raw);
   },
 
   async writePetsDrivenState(state) {
