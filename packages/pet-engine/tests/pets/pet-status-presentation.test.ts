@@ -117,4 +117,62 @@ describe("presentPetStatus", () => {
     expect(presentation.mood).toBe("working");
     expect(presentation.showCapsule).toBe(true);
   });
+
+  it("lets the canonical activity label ambient intents", () => {
+    const presentation = presentPetStatus(
+      { kind: "travel", direction: "right" },
+      null,
+      "chasingCursor",
+    );
+
+    expect(presentation.label).toBe("Chasing the cursor");
+    expect(presentation.labelKey).toBe("chasingCursor");
+    expect(presentation.mood).toBe("excited");
+    expect(presentation.emote).toBe("sparkle");
+  });
+
+  it("activity replaces the idle zzz presentation", () => {
+    const presentation = presentPetStatus({ kind: "idle" }, null, "beingPetted");
+
+    expect(presentation.mood).toBe("love");
+    expect(presentation.emote).toBe("heart");
+    expect(presentation.labelKey).toBe("beingPetted");
+  });
+
+  it("never lets activity override task-owned intents", () => {
+    const waiting = presentPetStatus({ kind: "waiting" }, null, "exploring");
+    expect(waiting.label).toBe("Waiting");
+    expect(waiting.mood).toBe("confused");
+
+    const failed = presentPetStatus({ kind: "failed" }, null, "exploring");
+    expect(failed.label).toBe("Stuck");
+  });
+
+  it("agent-channel overlays still own the capsule over an activity", () => {
+    const presentation = presentPetStatus(
+      { kind: "idle" },
+      {
+        kind: "agent-channel",
+        status: "working",
+        label: "Working",
+        message: null,
+      },
+      "exploring",
+    );
+
+    expect(presentation.label).toBe("Working");
+    expect(presentation.labelKey).toBe("working");
+  });
+
+  it("speech overlays keep their free text but inherit the activity mood", () => {
+    const presentation = presentPetStatus(
+      { kind: "travel", direction: "right" },
+      { kind: "speech", label: "Otto's on it…" },
+      "makingFriends",
+    );
+
+    expect(presentation.label).toBe("Otto's on it…");
+    expect(presentation.labelKey).toBeNull();
+    expect(presentation.mood).toBe("love");
+  });
 });

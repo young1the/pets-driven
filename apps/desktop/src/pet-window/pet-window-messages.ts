@@ -1,6 +1,7 @@
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 
 export const PET_WINDOW_FRAME_EVENT = "pet-window:frame:v1";
 export const PET_WINDOW_RESIZE_EVENT = "pet-window:resize:v1";
@@ -38,6 +39,8 @@ export type PetWindowFrameWindow = {
 export type PetWindowFrameSprite = {
   decisionEmote?: BehaviorTokenPresentation | null;
   intent: PetSpriteIntent;
+  /** Engine-canonical current activity, for the status capsule label. */
+  activity?: PetActivityKind | null;
 };
 
 export type PetWindowResizeEvent = {

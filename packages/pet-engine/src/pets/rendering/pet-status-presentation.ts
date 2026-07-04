@@ -2,6 +2,7 @@ import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
 import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
+import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 
 /**
  * Pure mapping from simulation-side presentation data (sprite intent +
@@ -21,7 +22,8 @@ export type PetStatusLabelKey =
   | "done"
   | "failed"
   | "stuck"
-  | "reviewing";
+  | "reviewing"
+  | PetActivityKind;
 
 export type PetStatusPresentation = {
   mood: PetMood;
@@ -86,6 +88,57 @@ function presentationFromIntent(
   }
 }
 
+/**
+ * Ambient sprite intents may hand the capsule label over to the engine's
+ * canonical activity (snapshot.activity); task-owned intents (failed/waiting/
+ * review) keep their label — a stuck pet must never read as "Exploring".
+ */
+const ACTIVITY_OVERRIDABLE_INTENTS: ReadonlySet<PetSpriteIntent["kind"]> =
+  new Set(["travel", "working", "idle", "waving", "jumping"]);
+
+/** English localization fallbacks; hosts translate via labelKey (petStatus.*). */
+const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
+  exploring: "Exploring",
+  climbing: "Climbing",
+  hopping: "Hopping",
+  midAir: "Mid-air",
+  headingOver: "Heading over",
+  makingFriends: "Making friends",
+  foundAFriend: "Found a friend",
+  keepingDistance: "Keeping distance",
+  startled: "Startled",
+  chasingCursor: "Chasing the cursor",
+  caughtCursor: "Caught it!",
+  beingPetted: "Being petted",
+  chatting: "Chatting",
+  onTheMove: "On the move",
+};
+
+function activityEntry(
+  labelKey: PetActivityKind,
+  mood: PetMood,
+  emote: PetEmoteKind,
+): IntentPresentation {
+  return { mood, label: ACTIVITY_LABEL[labelKey], labelKey, emote };
+}
+
+const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
+  exploring: activityEntry("exploring", "happy", "none"),
+  climbing: activityEntry("climbing", "excited", "none"),
+  hopping: activityEntry("hopping", "excited", "sparkle"),
+  midAir: activityEntry("midAir", "excited", "sparkle"),
+  headingOver: activityEntry("headingOver", "happy", "none"),
+  makingFriends: activityEntry("makingFriends", "love", "heart"),
+  foundAFriend: activityEntry("foundAFriend", "love", "heart"),
+  keepingDistance: activityEntry("keepingDistance", "confused", "exclaim"),
+  startled: activityEntry("startled", "confused", "exclaim"),
+  chasingCursor: activityEntry("chasingCursor", "excited", "sparkle"),
+  caughtCursor: activityEntry("caughtCursor", "excited", "sparkle"),
+  beingPetted: activityEntry("beingPetted", "love", "heart"),
+  chatting: activityEntry("chatting", "happy", "none"),
+  onTheMove: activityEntry("onTheMove", "working", "none"),
+};
+
 function presentationFromAgentStatus(
   status: AgentChannelStatus,
 ): IntentPresentation {
@@ -124,8 +177,15 @@ function presentationFromAgentStatus(
 export function presentPetStatus(
   intent: PetSpriteIntent | undefined,
   overlay: PetSpriteOverlay | null | undefined,
+  activity?: PetActivityKind | null,
 ): PetStatusPresentation {
-  const base = presentationFromIntent(intent);
+  // The canonical activity gives ambient intents a live, specific label
+  // ("Chasing the cursor" instead of a mute working capsule). Task-owned
+  // intents (failed/waiting/review) keep their label and mood.
+  const base =
+    activity && ACTIVITY_OVERRIDABLE_INTENTS.has(intent?.kind ?? "idle")
+      ? ACTIVITY_PRESENTATION[activity]
+      : presentationFromIntent(intent);
 
   if (!overlay) {
     return { ...base, message: null, showCapsule: false };

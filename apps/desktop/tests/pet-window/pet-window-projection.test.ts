@@ -147,10 +147,24 @@ describe("pet window projection", () => {
             tone: "spark",
           },
           intent: { kind: "travel", direction: "left" },
+          activity: null,
         },
         overlay: null,
       },
     });
+  });
+
+  it("passes the engine-canonical activity through to the frame sprite", () => {
+    const snapshot = snapshotFixture();
+    snapshot.pets[0] = { ...snapshot.pets[0], activity: "chasingCursor" };
+
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 0, y: 0, width: 1000, height: 800 },
+      7,
+    );
+
+    expect(projection.frame.sprite.activity).toBe("chasingCursor");
   });
 
   it("prefers expression emotes over behavior decision emotes", () => {

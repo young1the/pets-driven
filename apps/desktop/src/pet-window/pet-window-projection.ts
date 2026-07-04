@@ -97,6 +97,7 @@ export function projectWorldSnapshotToPetWindows(
               ? presentPetExpression(pet.expression)
               : presentBehaviorDecisionToken(pet.decision?.reason),
             intent: spriteIntentFromBody(body),
+            activity: pet.activity ?? null,
           },
           overlay: overlayFromPet(pet),
         },

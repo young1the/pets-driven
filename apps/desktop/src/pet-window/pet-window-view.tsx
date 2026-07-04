@@ -14,6 +14,7 @@ import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-sta
 import { IconButton, PET_MOODS } from "@pets-driven/design-system";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
+import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import {
   clampPetWindowScale,
@@ -47,6 +48,7 @@ type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
 type PetWindowPresentation = {
   decisionEmote: BehaviorTokenPresentation | null;
   intent: PetSpriteIntent;
+  activity: PetActivityKind | null;
   overlay: PetWindowOverlay | null;
 };
 
@@ -140,6 +142,7 @@ function defaultPresentation(index: number): PetWindowPresentation {
       kind: "travel",
       direction: movementDirectionForWindow(index) >= 0 ? "right" : "left",
     },
+    activity: null,
     overlay: { kind: "status", label: "!" },
   };
 }
@@ -239,6 +242,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
             sprite: {
               decisionEmote: presentationRef.current.decisionEmote,
               intent: presentationRef.current.intent,
+              activity: presentationRef.current.activity,
             },
             overlay: presentationRef.current.overlay,
           },
@@ -248,11 +252,13 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         presentationRef.current = {
           decisionEmote: frame.sprite.decisionEmote ?? null,
           intent: frame.sprite.intent,
+          activity: frame.sprite.activity ?? null,
           overlay: frame.overlay,
         };
         setPresentation({
           decisionEmote: frame.sprite.decisionEmote ?? null,
           intent: frame.sprite.intent,
+          activity: frame.sprite.activity ?? null,
           overlay: frame.overlay,
         });
       }
@@ -706,6 +712,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         ) : null}
         {petName !== null ? (
           <PetStatusCard
+            activity={presentation.activity}
             cwd={isBodyHovered ? cwdRef.current : null}
             intent={presentation.intent}
             name={petName}
@@ -742,6 +749,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 type PetStatusCardProps = {
   name: string;
   intent: PetSpriteIntent;
+  activity: PetActivityKind | null;
   overlay: PetWindowOverlay | null;
   cwd: string | null;
   spriteHeight: number;
@@ -750,12 +758,13 @@ type PetStatusCardProps = {
 function PetStatusCard({
   name,
   intent,
+  activity,
   overlay,
   cwd,
   spriteHeight,
 }: PetStatusCardProps) {
   const { t } = useTranslation("desktop");
-  const status = presentPetStatus(intent, overlay);
+  const status = presentPetStatus(intent, overlay, activity);
   const accent = PET_MOODS[status.mood].accent;
   // Static labels carry a stable key we can localize; host-supplied free text
   // (speech/attention overlays) has no key, so it shows as-is.
