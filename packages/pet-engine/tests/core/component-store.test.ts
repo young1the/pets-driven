@@ -75,6 +75,61 @@ describe("component store", () => {
     expect(store.query("CanWalk", "WalkingTag")).toEqual([]);
   });
 
+  it("spawns a new entity with components mid-simulation", () => {
+    const store = createComponentStore([]);
+
+    store.spawn("social-1", [
+      {
+        type: "SocialSession",
+        kind: "greet",
+        initiatorId: "pet-a",
+        responderId: "pet-b",
+        phase: "greet",
+        startedAt: 0,
+        endsAt: 3_000,
+        greeted: false,
+      },
+    ]);
+
+    expect(store.getEntity("social-1")).toEqual({ id: "social-1" });
+    expect(store.getComponent("social-1", "SocialSession")).toMatchObject({
+      kind: "greet",
+      initiatorId: "pet-a",
+    });
+  });
+
+  it("rejects spawning an id that already exists", () => {
+    const store = createComponentStore([
+      { id: "pet-a", components: [{ type: "WalkingTag" }] },
+    ]);
+
+    expect(() => store.spawn("pet-a", [])).toThrow(/already exists/);
+  });
+
+  it("destroys an entity and clears all of its component tables", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform", position: { x: 0, y: 0 } },
+          { type: "WalkingTag" },
+        ],
+      },
+    ]);
+
+    store.destroy("pet-a");
+
+    expect(store.getEntity("pet-a")).toBeUndefined();
+    expect(store.getComponent("pet-a", "Transform")).toBeUndefined();
+    expect(store.getComponent("pet-a", "WalkingTag")).toBeUndefined();
+    expect(store.query("Transform")).toEqual([]);
+  });
+
+  it("no-ops when destroying an unknown entity", () => {
+    const store = createComponentStore([]);
+    expect(() => store.destroy("nobody")).not.toThrow();
+  });
+
   it("reuses callback tuple storage when iterating matching entities", () => {
     const store = createComponentStore([
       {

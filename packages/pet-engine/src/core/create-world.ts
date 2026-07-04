@@ -188,8 +188,25 @@ export function createWorld(input: WorldDefinition) {
               }
             : null,
           interaction: getInteractionSnapshot(componentStore, entity.id),
+          social: getSocialSnapshot(componentStore, entity.id),
         };
       });
+  }
+
+  function getSocialSnapshot(componentStore: ComponentStore, id: string) {
+    const member = componentStore.getComponent(id, "SocialSessionMember");
+    if (!member) return null;
+    const session = componentStore.getComponent(
+      member.sessionId,
+      "SocialSession",
+    );
+    if (!session) return null;
+    return {
+      kind: session.kind,
+      phase: session.phase,
+      role: member.role,
+      partnerId: member.partnerId,
+    };
   }
 
   function getInteractionSnapshot(componentStore: ComponentStore, id: string) {
@@ -281,6 +298,31 @@ export function createWorld(input: WorldDefinition) {
           kind: "affection",
           icon: "♥",
           label: "enjoying the pets",
+        };
+      case "session-greet":
+      case "session-chat":
+        return {
+          kind: "affection",
+          icon: "♥",
+          label: "playing with a friend",
+        };
+      case "session-chase":
+        return {
+          kind: "playful",
+          icon: "✦",
+          label: "chasing a friend",
+        };
+      case "social-invite":
+        return {
+          kind: "affection",
+          icon: "♥",
+          label: "saying hello",
+        };
+      case "socialized":
+        return {
+          kind: "affection",
+          icon: "♥♥",
+          label: "made a friend",
         };
       default:
         return null;

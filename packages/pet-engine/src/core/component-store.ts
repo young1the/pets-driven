@@ -28,6 +28,20 @@ export type ComponentStore = {
   setComponent(componentOwnerId: EntityId, component: Component): void;
   removeComponent(componentOwnerId: EntityId, type: ComponentType): void;
 
+  /**
+   * Create a new entity mid-simulation and seed it with components. Throws if
+   * the id already exists. Used for transient logical entities that have no
+   * physics body (e.g. social interaction sessions), so no physics
+   * registration happens here — that is done once at world creation.
+   */
+  spawn(id: EntityId, components: Component[]): void;
+
+  /**
+   * Remove an entity and every component it owns from all tables. No-ops when
+   * the id is unknown so teardown stays idempotent.
+   */
+  destroy(id: EntityId): void;
+
   /** Array form for one-off queries and snapshot builders. */
   query<TTypes extends ComponentType[]>(
     ...types: TTypes
@@ -169,6 +183,22 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
         throw new Error(`Unknown entity: ${id}`);
       }
       getComponentTable(type).delete(id);
+    },
+    spawn(id, components) {
+      if (entitiesById.has(id)) {
+        throw new Error(`Entity already exists: ${id}`);
+      }
+      const entity = createEntity(id);
+      entitiesById.set(id, entity);
+      for (const component of components) {
+        setComponentForEntity(id, component);
+      }
+    },
+    destroy(id) {
+      if (!entitiesById.delete(id)) return;
+      for (const table of componentTables.values()) {
+        table.delete(id);
+      }
     },
     query(...types) {
       return queryArray(types);

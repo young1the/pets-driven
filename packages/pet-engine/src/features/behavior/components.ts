@@ -24,7 +24,11 @@ export type UserAnchorComponent = {
  * higher-ranked source. Expires at expiresAt (clock.now() time).
  */
 export type BehaviorDecisionSource =
-  "user-interaction" | "agent-event" | "collision" | "autonomous";
+  | "user-interaction"
+  | "agent-event"
+  | "collision"
+  | "social"
+  | "autonomous";
 
 export type BehaviorDecisionStateComponent = {
   type: "BehaviorDecisionState";
@@ -96,7 +100,10 @@ export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   "user-interaction": 1,
   "agent-event": 2,
   collision: 3,
-  autonomous: 4,
+  // A committed pet-to-pet session outranks solo autonomous wandering, but a
+  // collision, an agent event, or a user touch still interrupts it.
+  social: 4,
+  autonomous: 5,
 };
 
 // ── Phase 4: Pending Reaction ──────────────────────────────────────────────
@@ -122,7 +129,11 @@ export type PendingReactionComponent = {
   };
 };
 
-export type PetExpressionSource = "collision" | "chase-cursor" | "petting";
+export type PetExpressionSource =
+  | "collision"
+  | "chase-cursor"
+  | "petting"
+  | "social";
 
 export type PetExpressionMood =
   "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";

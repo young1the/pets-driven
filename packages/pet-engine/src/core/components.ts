@@ -92,6 +92,14 @@ export type {
   CursorStateComponent,
   CursorInputComponent,
 } from "@pets-driven/pet-engine/features/cursor/components";
+export type {
+  CanSocializeComponent,
+  SocialSessionKind,
+  SocialSessionPhase,
+  SocialInviteComponent,
+  SocialSessionComponent,
+  SocialSessionMemberComponent,
+} from "@pets-driven/pet-engine/features/social/components";
 
 import type { PerceptionComponent } from "@pets-driven/pet-engine/features/perception/components";
 import type {
@@ -159,6 +167,12 @@ import type {
   CursorStateComponent,
   CursorInputComponent,
 } from "@pets-driven/pet-engine/features/cursor/components";
+import type {
+  CanSocializeComponent,
+  SocialInviteComponent,
+  SocialSessionComponent,
+  SocialSessionMemberComponent,
+} from "@pets-driven/pet-engine/features/social/components";
 
 export type Component =
   | ActivityStateComponent
@@ -168,6 +182,10 @@ export type Component =
   | BehaviorDecisionTokenComponent
   | CanControlComponent
   | CanDragComponent
+  | CanSocializeComponent
+  | SocialInviteComponent
+  | SocialSessionComponent
+  | SocialSessionMemberComponent
   | PerceptionComponent
   | AgentBindingComponent
   | AgentTaskStateComponent

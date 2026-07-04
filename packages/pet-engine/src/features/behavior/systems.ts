@@ -132,6 +132,9 @@ const CLAIM_DURATION_MS: Record<BehaviorDecisionSource, number> = {
   "user-interaction": 2000,
   "agent-event": 5000,
   collision: 1000,
+  // SocialInteractionSystem re-claims each tick while a session runs, so this
+  // is only the fallback lifetime for a claim it stops refreshing.
+  social: 750,
   autonomous: 500,
 };
 

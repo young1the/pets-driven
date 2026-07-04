@@ -601,6 +601,7 @@ export function createAdoptedPetsScenario(
             { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE * bodyMassScale },
             canJump,
             { type: "WandersOnArrival", arrivalRadius: 16 },
+            { type: "CanSocialize" },
             ...(pet.personality ? [pet.personality] : []),
           ],
         });
