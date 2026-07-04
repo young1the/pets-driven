@@ -117,7 +117,7 @@ html.pet-window-document body {
   background: var(--surface-card);
   border: 1px solid var(--border-default);
   box-shadow: var(--shadow-lg);
-  border-radius: 999px;
+  border-radius: 18px;
   padding: 5px 11px;
   white-space: nowrap;
   transition:
