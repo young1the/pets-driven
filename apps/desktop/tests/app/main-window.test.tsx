@@ -59,8 +59,10 @@ function setup(overrides = {}) {
 describe("MainWindow", () => {
   it("shows the home greeting by default", () => {
     setup();
+    // The greeting line itself is time-of-day based and randomized, so assert
+    // on the stable trailing name that always renders alongside it.
     expect(
-      screen.getByText("Good morning,", { exact: false }),
+      screen.getByText("Trainer!", { exact: false }),
     ).toBeInTheDocument();
   });
 
@@ -78,7 +80,12 @@ describe("MainWindow", () => {
         name: "Otto",
         assetId: "patamon",
         role: "Steady",
-        status: { label: "Idle", tone: "neutral", dotColor: "var(--ink-300)" },
+        status: {
+          label: "Idle",
+          labelKey: "idle",
+          tone: "neutral",
+          dotColor: "var(--ink-300)",
+        },
         gradient: { from: "#8B7FE8", to: "#6F5FD6" },
         folder: "core",
         memo: "",

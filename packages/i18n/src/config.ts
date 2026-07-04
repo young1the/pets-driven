@@ -11,7 +11,7 @@ export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = "en";
 
 /** i18next namespaces. Split so each surface can load only what it needs. */
-export const namespaces = ["common", "landing"] as const;
+export const namespaces = ["common", "landing", "desktop"] as const;
 
 export type Namespace = (typeof namespaces)[number];
 

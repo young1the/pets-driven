@@ -23,6 +23,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "@pets-driven/design-system": "workspace:*",
+    "@pets-driven/i18n": "workspace:*",
     "@pets-driven/pet-engine": "workspace:*"
   },
   "devDependencies": {

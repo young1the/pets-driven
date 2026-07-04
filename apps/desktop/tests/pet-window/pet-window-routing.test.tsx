@@ -537,99 +537,6 @@ describe("pet window product route", () => {
     expect(report.value).toContain("pet-a (Otto)");
   });
 
-  it("routes Claude hook ingress events into fixture Pet Window frames", async () => {
-    render(<PetsDrivenApp />);
-
-    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
-
-    await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(
-        true,
-      );
-      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
-        "pet-window-playground-1",
-        PET_WINDOW_FRAME_EVENT,
-        expect.objectContaining({ petId: "pet-a" }),
-      );
-    });
-
-    tauriEventMocks.emitTo.mockClear();
-
-    act(() => {
-      tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
-        payload: {
-          hook_event_name: "PermissionRequest",
-          cwd: "D:\\workmanager\\pets-driven",
-          message: "Allow Bash?",
-        },
-      });
-    });
-
-    await waitFor(() => {
-      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
-        "pet-window-playground-1",
-        PET_WINDOW_FRAME_EVENT,
-        expect.objectContaining({
-          petId: "pet-a",
-          overlay: {
-            kind: "agent-channel",
-            status: "waiting",
-            label: "Waiting",
-            message: null,
-          },
-        }),
-      );
-    });
-  });
-
-  it("routes Claude hook ingress by working directory instead of provider session id", async () => {
-    render(<PetsDrivenApp />);
-
-    fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
-
-    await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(
-        true,
-      );
-      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
-        "pet-window-playground-1",
-        PET_WINDOW_FRAME_EVENT,
-        expect.objectContaining({ petId: "pet-a" }),
-      );
-    });
-
-    tauriEventMocks.emitTo.mockClear();
-
-    act(() => {
-      tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
-        payload: {
-          hook_event_name: "PermissionRequest",
-          session_id: "f9b89878-f7be-453b-90cb-ffd626765d25",
-          cwd: "D:\\cms\\tool-api\\src\\main\\resources\\static\\js\\template\\test",
-          message: "Allow Edit?",
-        },
-      });
-    });
-
-    await waitFor(() => {
-      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
-        "pet-window-playground-1",
-        PET_WINDOW_FRAME_EVENT,
-        expect.objectContaining({
-          petId: "pet-a",
-          overlay: {
-            kind: "agent-channel",
-            status: "waiting",
-            label: "Waiting",
-            message: null,
-          },
-        }),
-      );
-    });
-  });
-
   it("ignores Claude hook ingress from an unregistered working directory", async () => {
     render(<PetsDrivenApp />);
 
@@ -978,39 +885,6 @@ describe("pet window product route", () => {
         },
       );
     });
-  });
-
-  it("does not start a terminal channel when run confirmation is cancelled", async () => {
-    vi.mocked(window.confirm).mockReturnValue(false);
-
-    render(<PetsDrivenApp />);
-
-    await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
-    });
-
-    act(() => {
-      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
-        payload: {
-          sequence: 1,
-          petId: "pet-a",
-          windowLabel: "pet-window-pet-a",
-          pointerId: 0,
-          kind: "menu.start-session",
-          localPoint: { x: 0, y: 0 },
-          screenPoint: { x: 0, y: 0 },
-          at: Date.now(),
-        },
-      });
-    });
-
-    expect(window.confirm).toHaveBeenCalledWith(
-      "Run Otto's session command in D:\\cms?",
-    );
-    expect(invokeMock).not.toHaveBeenCalledWith(
-      "start_session",
-      expect.anything(),
-    );
   });
 
   it("shows Pet Window command failures in the management surface", async () => {

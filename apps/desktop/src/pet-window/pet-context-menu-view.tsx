@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@pets-driven/i18n";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
@@ -24,6 +25,7 @@ export function PetContextMenuView({
   petName,
   note,
 }: PetContextMenuViewProps) {
+  const { t } = useTranslation("desktop");
   const [view, setView] = useState<MenuView>("menu");
   const [noteText, setNoteText] = useState(note);
   const sequenceRef = useRef(0);
@@ -115,14 +117,17 @@ export function PetContextMenuView({
   if (view === "note") {
     return (
       <main className="pet-context-menu-surface">
-        <div aria-label={`${petId}에게 노트`} className="pet-context-menu-note">
+        <div
+          aria-label={t("contextMenu.noteAria", { name: petName })}
+          className="pet-context-menu-note"
+        >
           <div className="pet-context-menu-note__header">
-            {petName}에게 메모
+            {t("contextMenu.noteHeader", { name: petName })}
           </div>
           <textarea
             autoFocus
             className="pet-context-menu-note__input"
-            placeholder="메모를 입력하세요"
+            placeholder={t("contextMenu.notePlaceholder")}
             rows={3}
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
@@ -133,7 +138,7 @@ export function PetContextMenuView({
               type="button"
               onClick={closeWindow}
             >
-              취소
+              {t("contextMenu.cancel")}
             </button>
             <button
               className="pet-context-menu-note__save"
@@ -143,7 +148,7 @@ export function PetContextMenuView({
                 closeWindow();
               }}
             >
-              저장
+              {t("contextMenu.save")}
             </button>
           </div>
         </div>
@@ -154,7 +159,7 @@ export function PetContextMenuView({
   return (
     <main className="pet-context-menu-surface">
       <div
-        aria-label="Pet Context Menu"
+        aria-label={t("contextMenu.cardAria")}
         className="pet-context-menu-card"
         data-testid="pet-context-menu"
         role="menu"
@@ -183,7 +188,7 @@ export function PetContextMenuView({
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
-          노트 작성하기
+          {t("contextMenu.writeNote")}
         </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--close"
@@ -208,7 +213,7 @@ export function PetContextMenuView({
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />
           </svg>
-          닫기
+          {t("contextMenu.close")}
         </button>
       </div>
     </main>

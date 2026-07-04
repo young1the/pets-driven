@@ -10,8 +10,6 @@ function setup(overrides = {}) {
     onLaunchProfile: vi.fn(),
     onCommand: vi.fn(),
     onLaunchLine: vi.fn(),
-    confirmRun: true,
-    onToggleConfirm: vi.fn(),
     preview: {
       cwd: "C:\\pets\\core",
       prompt: "C:\\>",
@@ -67,15 +65,6 @@ describe("SettingsSection", () => {
     });
 
     expect(onLaunchLine).toHaveBeenCalledWith("wt -d . powershell");
-  });
-
-  it("toggles confirmation when clicking the setting text", () => {
-    const onToggleConfirm = vi.fn();
-    setup({ onToggleConfirm });
-
-    fireEvent.click(screen.getByText("Ask before running"));
-
-    expect(onToggleConfirm).toHaveBeenCalledOnce();
   });
 
   it("does not show the Claude hook card", () => {

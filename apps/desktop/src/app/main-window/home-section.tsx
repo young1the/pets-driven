@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Button, PetShowcaseCard } from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 import { PlusIcon } from "@/app/main-window/main-window-icons";
 
@@ -26,6 +27,19 @@ export interface HomeSectionProps {
 
 const DRAG_THRESHOLD = 6;
 const DEPLOY_Y_THRESHOLD = 100;
+
+/** Number of greeting variants per time-of-day period in the translations. */
+const GREETING_VARIANTS = 3;
+
+type GreetingPeriod = "morning" | "afternoon" | "evening" | "night";
+
+/** Map an hour (0-23) to a time-of-day greeting bucket. */
+function greetingPeriod(hour: number): GreetingPeriod {
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 18) return "afternoon";
+  if (hour >= 18 && hour < 22) return "evening";
+  return "night";
+}
 
 /** Order the fan so the centre pet sits in the middle, others fan outward. */
 function fanOrder<T>(pets: T[]): { pet: T; index: number; center: number }[] {
@@ -58,7 +72,23 @@ export function HomeSection({
   onEdit,
   onAddPet,
 }: HomeSectionProps) {
+  const { t } = useTranslation("desktop");
   const [hoverId, setHoverId] = useState<string | null>(null);
+  // Freeze the period and variant once on mount so the greeting stays stable
+  // across re-renders (drags, hovers), but resolve the text via `t` each render
+  // so it still follows a live language switch.
+  const [greetingPick] = useState(() => ({
+    period: greetingPeriod(new Date().getHours()),
+    index: Math.floor(Math.random() * GREETING_VARIANTS),
+  }));
+  const greetingVariants = t(`home.greetings.${greetingPick.period}`, {
+    returnObjects: true,
+  }) as unknown as string[];
+  const greeting = Array.isArray(greetingVariants)
+    ? (greetingVariants[greetingPick.index] ??
+      greetingVariants[0] ??
+      t("home.greeting"))
+    : t("home.greeting");
   const dragRef = useRef<{ id: string; startX: number; startY: number } | null>(
     null,
   );
@@ -173,7 +203,7 @@ export function HomeSection({
             marginBottom: "20px",
           }}
         >
-          Your pack
+          {t("home.eyebrow")}
         </span>
         <h2
           style={{
@@ -186,9 +216,9 @@ export function HomeSection({
             letterSpacing: "-0.015em",
           }}
         >
-          Good morning,
+          {greeting}
           <br />
-          Trainer!
+          {t("home.greetingName")}
         </h2>
         <Button
           className="pd-home__add-pet"
@@ -201,7 +231,7 @@ export function HomeSection({
             minWidth: "max-content",
           }}
         >
-          Add a pet
+          {t("home.addPet")}
         </Button>
         <span
           style={{
@@ -210,7 +240,7 @@ export function HomeSection({
             marginTop: "13px",
           }}
         >
-          Bring a new pet into the pack and give it a job.
+          {t("home.addPetHint")}
         </span>
 
         {inField.length > 0 ? (
@@ -234,7 +264,7 @@ export function HomeSection({
                 color: "var(--text-subtle)",
               }}
             >
-              In the field
+              {t("home.inField")}
             </span>
             {inField.map((pet) => (
               <button
@@ -308,7 +338,7 @@ export function HomeSection({
               key={pet.id}
               role="button"
               tabIndex={0}
-              aria-label={`Open ${pet.name}'s details`}
+              aria-label={t("home.openDetails", { name: pet.name })}
               onPointerDown={(event) => handleCardPointerDown(event, pet.id)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {

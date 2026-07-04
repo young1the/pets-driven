@@ -1,0 +1,203 @@
+{
+  "common": {
+    "noNote": "No note yet",
+    "yourPet": "Your pet",
+    "back": "Back"
+  },
+  "nav": {
+    "home": "Home",
+    "settings": "Settings",
+    "debug": "Debug",
+    "onDesktop": "{{n}} on the desktop",
+    "showAll": "Show all",
+    "hideAll": "Hide all"
+  },
+  "home": {
+    "eyebrow": "Your pack",
+    "greeting": "Hello,",
+    "greetings": {
+      "morning": ["Good morning,", "Rise and shine,", "Morning,"],
+      "afternoon": [
+        "Good afternoon,",
+        "Hope your day's going well,",
+        "Afternoon,"
+      ],
+      "evening": ["Good evening,", "Winding down for the day,", "Evening,"],
+      "night": ["Working late,", "Burning the midnight oil,", "Still up,"]
+    },
+    "greetingName": "Trainer!",
+    "addPet": "Add a pet",
+    "addPetHint": "Bring a new pet into the pack and give it a job.",
+    "inField": "In the field",
+    "openDetails": "Open {{name}}'s details"
+  },
+  "settings": {
+    "title": "Settings",
+    "doubleClickTitle": "Double-click action",
+    "doubleClickDesc": "When you double-click a pet, it opens this terminal command in its working folder.",
+    "shell": "Shell",
+    "launchLine": "Launch line",
+    "command": "Command",
+    "commandPlaceholder": "claude --resume",
+    "advancedLaunchLine": "Advanced launch line",
+    "runsOnDoubleClick": "Runs on double-click",
+    "language": "Language",
+    "languageDesc": "Choose the language for the Pets-Driven interface."
+  },
+  "launchProfile": {
+    "cmd": "Command Prompt",
+    "powershell": "PowerShell",
+    "gitBash": "Git Bash",
+    "custom": "Custom"
+  },
+  "hook": {
+    "connected": "All connected",
+    "connecting": "Connecting",
+    "offline": "Offline",
+    "summary": "Claude hook {{state}}"
+  },
+  "edit": {
+    "back": "Back to the pack",
+    "details": "Pet details",
+    "name": "Name",
+    "workingFolder": "Working folder",
+    "chooseFolder": "Choose a folder…",
+    "note": "Note",
+    "notePlaceholder": "Add a note about this pet…",
+    "showOnDesktop": "Show on desktop",
+    "showOnDesktopHint": "Keep this pet out on the desktop as a companion.",
+    "deletePet": "Delete pet",
+    "done": "Done"
+  },
+  "debug": {
+    "title": "Developer tools",
+    "devOnly": "dev only",
+    "subtitle": "Fixtures and playground actions, kept out of the everyday flow.",
+    "reportLabel": "Pet diagnostics report"
+  },
+  "onboarding": {
+    "pageAria": "Pet onboarding",
+    "goHome": "Go to home",
+    "wordmarkAlt": "Pets-Driven",
+    "exit": "Exit onboarding",
+    "step": "Step {{step}} / {{total}}",
+    "back": "← Back",
+    "welcomeEyebrow": "Welcome to Pets-Driven",
+    "welcomeTitle": "Let's bring home your first pet.",
+    "welcomeLede": "In about a minute you'll have a desktop pet that perks up whenever an agent works in your project. Pick its look, name it, and point it at a folder.",
+    "welcomeFineprint": "Takes about a minute · nothing leaves your machine",
+    "getStarted": "Get started →",
+    "chooseEyebrow": "Choose a look",
+    "chooseTitle": "Who's joining the pack?",
+    "chooseLede": "These are the looks installed on this machine — you can fetch more anytime.",
+    "petdexCta": "Want more looks? Install pets from Petdex.",
+    "openPetdex": "Open Petdex",
+    "emptyTitle": "No pet looks installed yet.",
+    "emptyLede": "We couldn't find any pet packs on this machine. Install one from Petdex, then come back and choose it here.",
+    "browsePetdex": "Browse Petdex",
+    "continue": "Continue →",
+    "profileEyebrow": "Name & personality",
+    "profileTitle": "Say hello to your pet.",
+    "petName": "Pet name",
+    "petNamePlaceholder": "Otto",
+    "personality": "Personality",
+    "looksGood": "Looks good →",
+    "folderEyebrow": "Watch folder",
+    "folderTitle": "Which folder should {{name}} watch?",
+    "folderLede": "Registering a folder is the moment your pet comes to life. One pet watches one folder.",
+    "folderOptionalHint": "Optional — you can choose or change the folder later from the pet's settings.",
+    "folderWatchedBy": "{{name}} watches this",
+    "chooseAnother": "Choose another folder…",
+    "chooseAnotherHint": "Browse your machine, or create a new one",
+    "adopt": "Adopt into this folder →",
+    "adoptNoFolder": "Adopt without a folder →",
+    "summaryWatchesNone": "No folder yet",
+    "occupiedError": "That folder is already home to {{name}}. One pet watches one folder.",
+    "anotherPet": "another pet",
+    "doneIsHome": "{{name}} is home",
+    "doneTitle": "Resting until you deploy.",
+    "summaryPet": "Pet",
+    "summaryWatches": "Watches",
+    "summaryReactsTo": "Reacts to",
+    "summaryReactsToValue": "Your coding agent — starts, finishes, gets stuck",
+    "openApp": "Open Pets-Driven →",
+    "addAnother": "Add another pet"
+  },
+  "personality": {
+    "role": "Pet",
+    "playful": {
+      "title": "Playful",
+      "blurb": "First to the party, last to nap. Explores every corner of the screen."
+    },
+    "attentive": {
+      "title": "Attentive",
+      "blurb": "Sticks close and checks in often. Loves reporting back to you."
+    },
+    "reserved": {
+      "title": "Reserved",
+      "blurb": "Quiet and careful. Prefers a cozy spot and steady work."
+    },
+    "curious": {
+      "title": "Curious",
+      "blurb": "Investigates every odd corner, then comes back with findings."
+    },
+    "steady": {
+      "title": "Steady",
+      "blurb": "Calm, consistent, and hard to rattle. Keeps the rhythm smooth."
+    },
+    "bold": {
+      "title": "Bold",
+      "blurb": "Leans into the action and checks things out up close."
+    },
+    "gentle": {
+      "title": "Gentle",
+      "blurb": "Warm and unhurried. Drifts your way and stays close without fuss."
+    },
+    "mischievous": {
+      "title": "Mischievous",
+      "blurb": "Unpredictable and impulsive. You never quite know what it'll do next."
+    },
+    "lazy": {
+      "title": "Lazy",
+      "blurb": "Barely moves. Perfectly content to just exist in one cozy spot."
+    },
+    "zen": {
+      "title": "Zen",
+      "blurb": "Unhurried and unflappable. Moves with quiet purpose, never in a rush."
+    }
+  },
+  "contextMenu": {
+    "cardAria": "Pet Context Menu",
+    "writeNote": "Write a note",
+    "close": "Close",
+    "noteAria": "Note to {{name}}",
+    "noteHeader": "Note to {{name}}",
+    "notePlaceholder": "Type a note…",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "petStatus": {
+    "idle": "Idle",
+    "working": "Working",
+    "waiting": "Waiting",
+    "done": "Done",
+    "failed": "Failed",
+    "stuck": "Stuck",
+    "reviewing": "Reviewing",
+    "needsYou": "Needs you"
+  },
+  "toast": {
+    "onDesktop": "{{name}} is on the desktop",
+    "cameHome": "{{name}} came home",
+    "removed": "{{name}} was removed",
+    "diagnosticsCopied": "Pet diagnostics copied",
+    "diagnosticsReady": "Pet diagnostics ready",
+    "folderOccupied": "That folder already belongs to another pet"
+  },
+  "confirm": {
+    "deletePet": "Send {{name}} home for good? This removes the pet."
+  },
+  "errors": {
+    "noPetToPoke": "No adopted pet with a folder to poke."
+  }
+}

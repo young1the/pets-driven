@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import wordmarkUrl from "@pets-driven/design-system/assets/petsdriven-wordmark.svg";
 import {
   desktopGateway,
@@ -8,6 +9,8 @@ import {
 } from "@/app/desktop-gateway";
 import {
   PERSONALITY_OPTIONS,
+  personalityBlurbKey,
+  personalityTitleKey,
   type PersonalityOption,
 } from "@/app/onboarding/personality-options";
 import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
@@ -35,7 +38,7 @@ type BornPet = {
   id: string;
   name: string;
   assetId: string;
-  personalityTitle: string;
+  personalityId: PetPersonalityId;
   folderPath: string;
 };
 
@@ -50,6 +53,15 @@ function isValidPetName(name: string) {
   const trimmed = name.trim();
 
   return trimmed.length > 0 && trimmed.length <= PET_NAME_MAX_LENGTH;
+}
+
+/** Pick a random personality preset so each new pet starts with a fresh one. */
+function randomPersonalityId(): PetPersonalityId {
+  if (PERSONALITY_OPTIONS.length === 0) {
+    return "playful";
+  }
+  const index = Math.floor(Math.random() * PERSONALITY_OPTIONS.length);
+  return PERSONALITY_OPTIONS[index].id;
 }
 
 function comparablePath(path: string) {
@@ -116,15 +128,20 @@ function StepHeader({
   total: number;
   onExit: () => void;
 }) {
+  const { t } = useTranslation("desktop");
   return (
     <header className="pd-onb__top">
       <button
-        aria-label="Go to home"
+        aria-label={t("onboarding.goHome")}
         className="pd-onb__wordmark-btn"
         onClick={onExit}
         type="button"
       >
-        <img alt="Pets-Driven" className="pd-onb__wordmark" src={wordmarkUrl} />
+        <img
+          alt={t("onboarding.wordmarkAlt")}
+          className="pd-onb__wordmark"
+          src={wordmarkUrl}
+        />
       </button>
       <div className="pd-onb__steps">
         <div aria-hidden className="pd-onb__dots-row">
@@ -136,11 +153,11 @@ function StepHeader({
           ))}
         </div>
         <span className="pd-onb__step-label">
-          Step {step} / {total}
+          {t("onboarding.step", { step, total })}
         </span>
       </div>
       <button
-        aria-label="Exit onboarding"
+        aria-label={t("onboarding.exit")}
         className="pd-onb__exit"
         onClick={onExit}
         type="button"
@@ -157,6 +174,7 @@ export function OnboardingFlow({
   onDone,
   gateway = desktopGateway,
 }: OnboardingFlowProps) {
+  const { t } = useTranslation("desktop");
   // Welcome is an intro shown only to first-time users; once any pet exists the
   // flow starts at "choose". Frozen per run so the step count stays stable even
   // after this run adopts a pet.
@@ -168,7 +186,7 @@ export function OnboardingFlow({
   const [assetId, setAssetId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [personalityId, setPersonalityId] =
-    useState<PetPersonalityId>("playful");
+    useState<PetPersonalityId>(randomPersonalityId);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(
     null,
   );
@@ -214,7 +232,7 @@ export function OnboardingFlow({
   }
 
   async function completeBirth() {
-    if (!assetId || !isValidPetName(name) || !selectedFolderPath) {
+    if (!assetId || !isValidPetName(name)) {
       return;
     }
 
@@ -229,22 +247,32 @@ export function OnboardingFlow({
       personality: personality.factory(),
       now: Date.now(),
     });
-    const result = registerWorkingDirectory(adopted, {
-      petId,
-      path: selectedFolderPath,
-      workingDirectoryId: crypto.randomUUID(),
-      agentSourceId: crypto.randomUUID(),
-      now: Date.now(),
-    });
 
-    if (result.status === "occupied") {
-      const owner = stateRef.current.pets.find(
-        (pet) => pet.id === result.ownerPetId,
-      );
-      setAdoptionError(
-        `That folder is already home to ${owner?.name ?? "another pet"}. One pet watches one folder.`,
-      );
-      return;
+    // The watch folder is optional: a pet can be adopted without one and given
+    // a folder later from its settings. Only register when one was chosen.
+    let nextState: PetsDrivenState = adopted;
+    if (selectedFolderPath) {
+      const result = registerWorkingDirectory(adopted, {
+        petId,
+        path: selectedFolderPath,
+        workingDirectoryId: crypto.randomUUID(),
+        agentSourceId: crypto.randomUUID(),
+        now: Date.now(),
+      });
+
+      if (result.status === "occupied") {
+        const owner = stateRef.current.pets.find(
+          (pet) => pet.id === result.ownerPetId,
+        );
+        setAdoptionError(
+          t("onboarding.occupiedError", {
+            name: owner?.name ?? t("onboarding.anotherPet"),
+          }),
+        );
+        return;
+      }
+
+      nextState = result.state;
     }
 
     setAdoptionError(null);
@@ -252,8 +280,8 @@ export function OnboardingFlow({
     // The pet is born at home, not thrown straight onto the desktop — the user
     // deploys it from the main window when they're ready.
     const homeState: PetsDrivenState = {
-      ...result.state,
-      pets: result.state.pets.map((pet) =>
+      ...nextState,
+      pets: nextState.pets.map((pet) =>
         pet.id === petId ? { ...pet, visible: false } : pet,
       ),
     };
@@ -265,8 +293,10 @@ export function OnboardingFlow({
         id: petId,
         name: trimmedName,
         assetId,
-        personalityTitle: personality.title,
-        folderPath: normalizeWorkingDirectoryPath(selectedFolderPath),
+        personalityId: personality.id,
+        folderPath: selectedFolderPath
+          ? normalizeWorkingDirectoryPath(selectedFolderPath)
+          : "",
       });
       setStep("done");
     } catch (error) {
@@ -277,7 +307,7 @@ export function OnboardingFlow({
   function restartForAnotherPet() {
     setAssetId(null);
     setName("");
-    setPersonalityId("playful");
+    setPersonalityId(randomPersonalityId());
     setSelectedFolderPath(null);
     setBornPet(null);
     setAdoptionError(null);
@@ -292,27 +322,25 @@ export function OnboardingFlow({
   const stepNumber = stepOrder.indexOf(step) + 1;
 
   return (
-    <main aria-label="Pet onboarding" className="pd-onb">
+    <main aria-label={t("onboarding.pageAria")} className="pd-onb">
       <div aria-hidden className="pd-onb__dots" />
       <StepHeader onExit={onDone} step={stepNumber} total={totalSteps} />
 
       {step === "welcome" && (
         <section className="pd-onb__body pd-onb__welcome">
-          <span className="pd-onb__eyebrow">Welcome to Pets-Driven</span>
+          <span className="pd-onb__eyebrow">
+            {t("onboarding.welcomeEyebrow")}
+          </span>
           <h1 className="pd-onb__title pd-onb__title--hero">
-            Let&apos;s bring home your first pet.
+            {t("onboarding.welcomeTitle")}
           </h1>
-          <p className="pd-onb__lede">
-            In about a minute you&apos;ll have a desktop pet that perks up
-            whenever an agent works in your project. Pick its look, name it, and
-            point it at a folder.
-          </p>
+          <p className="pd-onb__lede">{t("onboarding.welcomeLede")}</p>
           <div className="pd-onb__footer">
             <span className="pd-onb__fineprint">
-              Takes about a minute · nothing leaves your machine
+              {t("onboarding.welcomeFineprint")}
             </span>
             <Button onClick={() => setStep("choose")} size="lg">
-              Get started →
+              {t("onboarding.getStarted")}
             </Button>
           </div>
         </section>
@@ -320,37 +348,33 @@ export function OnboardingFlow({
 
       {step === "choose" && (
         <section className="pd-onb__body">
-          <span className="pd-onb__eyebrow">Choose a look</span>
+          <span className="pd-onb__eyebrow">
+            {t("onboarding.chooseEyebrow")}
+          </span>
           {packages.length > 0 ? (
             <>
-              <h1 className="pd-onb__title">Who&apos;s joining the pack?</h1>
-              <p className="pd-onb__lede">
-                These are the looks installed on this machine — you can fetch
-                more anytime.
-              </p>
+              <h1 className="pd-onb__title">{t("onboarding.chooseTitle")}</h1>
+              <p className="pd-onb__lede">{t("onboarding.chooseLede")}</p>
               <PetPackageGrid
                 onSelect={setAssetId}
                 packages={packages}
                 selectedAssetId={assetId}
               />
               <div className="pd-onb__petdex-cta">
-                <span>Want more looks? Install pets from Petdex.</span>
+                <span>{t("onboarding.petdexCta")}</span>
                 <a href={PETDEX_URL} rel="noreferrer" target="_blank">
-                  Open Petdex
+                  {t("onboarding.openPetdex")}
                 </a>
               </div>
             </>
           ) : (
             <div className="pd-onb__empty">
-              <h1 className="pd-onb__title">No pet looks installed yet.</h1>
-              <p className="pd-onb__lede">
-                We couldn&apos;t find any pet packs on this machine. Install one
-                from Petdex, then come back and choose it here.
-              </p>
+              <h1 className="pd-onb__title">{t("onboarding.emptyTitle")}</h1>
+              <p className="pd-onb__lede">{t("onboarding.emptyLede")}</p>
               <div className="pd-onb__petdex-empty">
                 <code>npx petdex install boba</code>
                 <a href={PETDEX_URL} rel="noreferrer" target="_blank">
-                  Browse Petdex
+                  {t("onboarding.browsePetdex")}
                 </a>
               </div>
               <span className="pd-onb__paw" aria-hidden>
@@ -359,11 +383,16 @@ export function OnboardingFlow({
             </div>
           )}
           <div className="pd-onb__footer">
-            <Button onClick={() => setStep("welcome")} variant="ghost">
-              ← Back
+            {/* "choose" is the first step when there's no welcome (a pet already
+                exists), so Back exits to home instead of the first-time welcome. */}
+            <Button
+              onClick={includeWelcome ? () => setStep("welcome") : onDone}
+              variant="ghost"
+            >
+              {t("onboarding.back")}
             </Button>
             <Button disabled={!assetId} onClick={goToProfile} size="lg">
-              Continue →
+              {t("onboarding.continue")}
             </Button>
           </div>
         </section>
@@ -372,11 +401,13 @@ export function OnboardingFlow({
       {step === "profile" && (
         <section className="pd-onb__body pd-onb__profile">
           <div className="pd-onb__profile-form">
-            <span className="pd-onb__eyebrow">Name &amp; personality</span>
-            <h1 className="pd-onb__title">Say hello to your pet.</h1>
+            <span className="pd-onb__eyebrow">
+              {t("onboarding.profileEyebrow")}
+            </span>
+            <h1 className="pd-onb__title">{t("onboarding.profileTitle")}</h1>
 
             <label className="pd-onb__label" htmlFor="pd-onb-name">
-              Pet name
+              {t("onboarding.petName")}
             </label>
             <div className="pd-onb__name">
               <input
@@ -384,7 +415,7 @@ export function OnboardingFlow({
                 id="pd-onb-name"
                 maxLength={PET_NAME_MAX_LENGTH}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Otto"
+                placeholder={t("onboarding.petNamePlaceholder")}
                 value={name}
               />
               <span className="pd-onb__name-count">
@@ -392,7 +423,7 @@ export function OnboardingFlow({
               </span>
             </div>
 
-            <div className="pd-onb__label">Personality</div>
+            <div className="pd-onb__label">{t("onboarding.personality")}</div>
             <div className="pd-onb__pills" role="radiogroup">
               {PERSONALITY_OPTIONS.map((option: PersonalityOption) => (
                 <button
@@ -403,11 +434,13 @@ export function OnboardingFlow({
                   role="radio"
                   type="button"
                 >
-                  {option.title}
+                  {t(personalityTitleKey(option.id))}
                 </button>
               ))}
             </div>
-            <p className="pd-onb__hint">{personality.blurb}</p>
+            <p className="pd-onb__hint">
+              {t(personalityBlurbKey(personality.id))}
+            </p>
           </div>
 
           <aside className="pd-onb__preview">
@@ -415,24 +448,24 @@ export function OnboardingFlow({
               <PetPreview assetId={selectedPackage.id} scale={1.3} />
             )}
             <div className="pd-onb__preview-name">
-              {name.trim() || "Your pet"}
+              {name.trim() || t("common.yourPet")}
             </div>
             <div className="pd-onb__preview-meta">
-              {personality.title}
+              {t(personalityTitleKey(personality.id))}
               {selectedPackage ? ` · ${selectedPackage.displayName}` : ""}
             </div>
           </aside>
 
           <div className="pd-onb__footer">
             <Button onClick={() => setStep("choose")} variant="ghost">
-              ← Back
+              {t("onboarding.back")}
             </Button>
             <Button
               disabled={!isValidPetName(name)}
               onClick={() => setStep("folder")}
               size="lg"
             >
-              Looks good →
+              {t("onboarding.looksGood")}
             </Button>
           </div>
         </section>
@@ -440,13 +473,17 @@ export function OnboardingFlow({
 
       {step === "folder" && (
         <section className="pd-onb__body">
-          <span className="pd-onb__eyebrow">Watch folder</span>
+          <span className="pd-onb__eyebrow">
+            {t("onboarding.folderEyebrow")}
+          </span>
           <h1 className="pd-onb__title">
-            Which folder should {name.trim() || "your pet"} watch?
+            {t("onboarding.folderTitle", {
+              name: name.trim() || t("common.yourPet"),
+            })}
           </h1>
-          <p className="pd-onb__lede">
-            Registering a folder is the moment your pet comes to life. One pet
-            watches one folder.
+          <p className="pd-onb__lede">{t("onboarding.folderLede")}</p>
+          <p className="pd-onb__fineprint">
+            {t("onboarding.folderOptionalHint")}
           </p>
 
           <div className="pd-onb__folders">
@@ -481,7 +518,7 @@ export function OnboardingFlow({
                   </span>
                   {occupied ? (
                     <span className="pd-onb__folder-badge">
-                      {owner?.name} watches this
+                      {t("onboarding.folderWatchedBy", { name: owner?.name })}
                     </span>
                   ) : selected ? (
                     <span className="pd-onb__folder-check" aria-hidden>
@@ -521,8 +558,8 @@ export function OnboardingFlow({
                 ＋
               </span>
               <span className="pd-onb__folder-text">
-                <b>Choose another folder…</b>
-                <small>Browse your machine, or create a new one</small>
+                <b>{t("onboarding.chooseAnother")}</b>
+                <small>{t("onboarding.chooseAnotherHint")}</small>
               </span>
             </button>
           </div>
@@ -535,14 +572,12 @@ export function OnboardingFlow({
 
           <div className="pd-onb__footer">
             <Button onClick={() => setStep("profile")} variant="ghost">
-              ← Back
+              {t("onboarding.back")}
             </Button>
-            <Button
-              disabled={!selectedFolderPath}
-              onClick={() => void completeBirth()}
-              size="lg"
-            >
-              Adopt into this folder →
+            <Button onClick={() => void completeBirth()} size="lg">
+              {selectedFolderPath
+                ? t("onboarding.adopt")
+                : t("onboarding.adoptNoFolder")}
             </Button>
           </div>
         </section>
@@ -553,38 +588,42 @@ export function OnboardingFlow({
           <div className="pd-onb__done-pet">
             <PetPreview assetId={bornPet.assetId} scale={1.1} />
           </div>
-          <span className="pd-onb__eyebrow">{bornPet.name} is home</span>
+          <span className="pd-onb__eyebrow">
+            {t("onboarding.doneIsHome", { name: bornPet.name })}
+          </span>
           <h1 className="pd-onb__title pd-onb__title--hero">
-            Resting until you deploy.
+            {t("onboarding.doneTitle")}
           </h1>
 
           <div className="pd-onb__summary">
             <div className="pd-onb__summary-row">
-              <span>Pet</span>
+              <span>{t("onboarding.summaryPet")}</span>
               <strong>
-                {bornPet.name} · {bornPet.personalityTitle}
+                {bornPet.name} · {t(personalityTitleKey(bornPet.personalityId))}
               </strong>
             </div>
             <div className="pd-onb__summary-row">
-              <span>Watches</span>
-              <strong>{bornPet.folderPath}</strong>
+              <span>{t("onboarding.summaryWatches")}</span>
+              <strong>
+                {bornPet.folderPath || t("onboarding.summaryWatchesNone")}
+              </strong>
             </div>
             <div className="pd-onb__summary-row">
-              <span>Reacts to</span>
-              <strong>Your coding agent — starts, finishes, gets stuck</strong>
+              <span>{t("onboarding.summaryReactsTo")}</span>
+              <strong>{t("onboarding.summaryReactsToValue")}</strong>
             </div>
           </div>
 
           <div className="pd-onb__done-actions">
             <Button onClick={onDone} size="lg">
-              Open Pets-Driven →
+              {t("onboarding.openApp")}
             </Button>
             <button
               className="pd-onb__textlink"
               onClick={restartForAnotherPet}
               type="button"
             >
-              Add another pet
+              {t("onboarding.addAnother")}
             </button>
           </div>
         </section>

@@ -1,21 +1,30 @@
 import type { BadgeTone } from "@pets-driven/design-system";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 
-/** Status pill shown on a pet card: a label, a Badge tone, and a dot color. */
+/** Stable key for a card status label, so the UI can localize it. */
+export type PetCardStatusLabelKey = "idle" | "working" | "needsYou" | "done";
+
+/**
+ * Status pill shown on a pet card: a label, a Badge tone, and a dot color.
+ * `label` is the English source; `labelKey` lets the render layer translate it.
+ */
 export type PetCardStatus = {
   label: string;
+  labelKey: PetCardStatusLabelKey;
   tone: BadgeTone;
   dotColor: string;
 };
 
 const IDLE: PetCardStatus = {
   label: "Idle",
+  labelKey: "idle",
   tone: "neutral",
   dotColor: "var(--ink-300)",
 };
 
 const WORKING: PetCardStatus = {
   label: "Working",
+  labelKey: "working",
   tone: "info",
   dotColor: "var(--sky-300)",
 };
@@ -39,17 +48,24 @@ export function petStatusFromSnapshot(
     case "waiting":
       return {
         label: "Needs you",
+        labelKey: "needsYou",
         tone: "warning",
         dotColor: "var(--butter-300)",
       };
     case "failed":
       return {
         label: "Needs you",
+        labelKey: "needsYou",
         tone: "danger",
         dotColor: "var(--coral-400)",
       };
     case "completed":
-      return { label: "Done", tone: "success", dotColor: "var(--mint-300)" };
+      return {
+        label: "Done",
+        labelKey: "done",
+        tone: "success",
+        dotColor: "var(--mint-300)",
+      };
     default:
       return IDLE;
   }

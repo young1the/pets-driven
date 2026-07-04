@@ -1,6 +1,13 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
+import { initI18nForTesting } from "@pets-driven/i18n/testing";
+
+// Components under test call `useTranslation` without mounting the app's
+// `DesktopLocaleProvider`, so initialize a global react-i18next instance in the
+// source locale. `useTranslation` falls back to this default instance when no
+// provider is present, resolving keys to their English source strings.
+initI18nForTesting("en");
 
 afterEach(() => {
   cleanup();

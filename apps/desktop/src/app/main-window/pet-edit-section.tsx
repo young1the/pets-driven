@@ -1,4 +1,5 @@
 import { Button, PetShowcaseCard, Switch } from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 import {
@@ -60,8 +61,9 @@ export function PetEditSection({
   onDelete,
   onDone,
 }: PetEditSectionProps) {
+  const { t } = useTranslation("desktop");
   const previewNote =
-    pet.memo.trim().length > 0 ? pet.memo : "No note yet";
+    pet.memo.trim().length > 0 ? pet.memo : t("common.noNote");
 
   return (
     <div style={{ padding: "26px 24px 48px" }}>
@@ -72,7 +74,7 @@ export function PetEditSection({
           size="sm"
           variant="neutral"
         >
-          Back to the pack
+          {t("edit.back")}
         </Button>
 
         <div
@@ -125,11 +127,11 @@ export function PetEditSection({
                 color: "var(--text-subtle)",
               }}
             >
-              Pet details
+              {t("edit.details")}
             </span>
 
             <label style={{ display: "block", marginTop: "14px" }}>
-              <span style={fieldLabelStyle}>Name</span>
+              <span style={fieldLabelStyle}>{t("edit.name")}</span>
               <input
                 onChange={(event) => onName(event.target.value)}
                 style={{
@@ -143,10 +145,10 @@ export function PetEditSection({
             </label>
 
             <div style={{ marginTop: "18px" }}>
-              <span style={fieldLabelStyle}>Working folder</span>
+              <span style={fieldLabelStyle}>{t("edit.workingFolder")}</span>
               <button
                 onClick={onPickFolder}
-                aria-label="Working folder"
+                aria-label={t("edit.workingFolder")}
                 style={{
                   width: "100%",
                   display: "flex",
@@ -178,16 +180,16 @@ export function PetEditSection({
                     flex: 1,
                   }}
                 >
-                  {pet.folder || "Choose a folder…"}
+                  {pet.folder || t("edit.chooseFolder")}
                 </span>
               </button>
             </div>
 
             <label style={{ display: "block", marginTop: "18px" }}>
-              <span style={fieldLabelStyle}>Note</span>
+              <span style={fieldLabelStyle}>{t("edit.note")}</span>
               <textarea
                 onChange={(event) => onMemo(event.target.value)}
-                placeholder="Add a note about this pet…"
+                placeholder={t("edit.notePlaceholder")}
                 rows={3}
                 style={{
                   ...textControlStyle,
@@ -224,10 +226,10 @@ export function PetEditSection({
                     color: "var(--text-strong)",
                   }}
                 >
-                  Show on desktop
+                  {t("edit.showOnDesktop")}
                 </div>
                 <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
-                  Keep this pet out on the desktop as a companion.
+                  {t("edit.showOnDesktopHint")}
                 </div>
               </div>
             </div>
@@ -260,10 +262,10 @@ export function PetEditSection({
                 type="button"
               >
                 <TrashIcon size={16} />
-                Delete pet
+                {t("edit.deletePet")}
               </button>
               <Button onClick={onDone} variant="neutral">
-                Done
+                {t("edit.done")}
               </Button>
             </div>
           </div>
