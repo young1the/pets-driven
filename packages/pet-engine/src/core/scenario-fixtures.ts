@@ -130,6 +130,14 @@ export function createFixturePet(input: {
     },
     { type: "SpeechState" as const, speech: null, expiresAt: null },
     { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
+    // Starting drive pressures: a little lonely, fully rested, mildly curious.
+    // Per-pet entries in input.components override this (last-write-wins).
+    {
+      type: "Drives" as const,
+      social: 0.3,
+      energy: 1.0,
+      curiosity: 0.2,
+    },
     { type: "Transform" as const, position: { x: input.x, y: input.y } },
     {
       type: "PhysicsBody" as const,

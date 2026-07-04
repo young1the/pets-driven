@@ -9,4 +9,5 @@ next-env.d.ts
 dev-server*.log
 .DS_Store
 .claude/settings.local.json
+.claude/worktrees/
 workspaces/

@@ -206,6 +206,7 @@ describe("demo scenario", () => {
       "LocomotionActiveStateSystem",
       "ClimbAttachmentSystem",
       "MotionTargetSystem",
+      "DriveDecaySystem",
       // POST_UPDATE
       "TaskMovementHoldSystem",
       "WalkSystem",
@@ -301,7 +302,13 @@ describe("demo scenario", () => {
         "Perception",
         "ClimbIntentState",
       ],
-      writes: ["MotionTarget", "IntentState"],
+      writes: ["MotionTarget", "IntentState", "Drives"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "DriveDecaySystem",
+      dependsOn: ["MotionTargetSystem"],
+      reads: ["Drives", "IntentState"],
+      writes: ["Drives"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ClimbDismountSystem",
@@ -408,6 +415,7 @@ describe("demo scenario", () => {
         "ContactState",
         "CanWallClimb",
         "ClimbDismountState",
+        "Drives",
       ],
       writes: [
         "BehaviorDecisionToken",
@@ -425,6 +433,7 @@ describe("demo scenario", () => {
         "JumpActionState",
         "ClimbIntentState",
         "BehaviorDecisionToken",
+        "Drives",
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({

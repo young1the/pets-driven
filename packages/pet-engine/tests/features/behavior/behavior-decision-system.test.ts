@@ -1016,3 +1016,281 @@ describe("BehaviorPlanningSystem — Phase 3 social tokens", () => {
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 });
+
+// ─── Drives-aware decisions ─────────────────────────────────────────────────
+//
+// A separate store builder (rather than editing makeStore/makeNearbyStore
+// above) so every pre-existing test in this file keeps running against the
+// exact same fixtures it always has — pets built without Drives must decide
+// exactly as before.
+
+function makeStoreWithDrives(
+  prefOverride: Partial<{
+    openness: number;
+    conscientiousness: number;
+    extraversion: number;
+    agreeableness: number;
+    neuroticism: number;
+  }> = {},
+  drivesOverride: Partial<{ social: number; energy: number; curiosity: number }> = {},
+) {
+  return createComponentStore([
+    {
+      id: "user-anchor",
+      components: [
+        { type: "UserAnchor" },
+        { type: "Transform", position: { x: 480, y: 500 } },
+      ],
+    },
+    {
+      id: "pet",
+      components: [
+        { type: "Transform", position: { x: 200, y: 200 } },
+        { type: "IntentState", intent: "idle" as const },
+        { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+        { type: "ActivityState", lastActiveAt: 0 },
+        { type: "WandersOnArrival", arrivalRadius: 16 },
+        {
+          type: "Perception" as const,
+          userAnchor: {
+            id: "user-anchor",
+            position: { x: 480, y: 500 },
+            distance: Math.hypot(280, 300),
+          },
+          nearbyPets: [],
+          nearbyClimbables: [],
+          self: { grounded: false, climbing: false, intent: "idle" as const },
+        },
+        {
+          type: "Personality" as const,
+          openness: 0.5,
+          conscientiousness: 0.4,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          neuroticism: 0.2,
+          ...prefOverride,
+        },
+        {
+          type: "Drives" as const,
+          social: 0.3,
+          energy: 1,
+          curiosity: 0.2,
+          ...drivesOverride,
+        },
+      ],
+    },
+  ]);
+}
+
+function makeNearbyStoreWithDrives(
+  drivesOverride: Partial<{ social: number; energy: number; curiosity: number }> = {},
+) {
+  return createComponentStore([
+    {
+      id: "other-pet",
+      components: [{ type: "Transform", position: { x: 350, y: 200 } }],
+    },
+    {
+      id: "pet",
+      components: [
+        { type: "Transform", position: { x: 200, y: 200 } },
+        { type: "IntentState", intent: "idle" as const },
+        { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+        { type: "WandersOnArrival", arrivalRadius: 16 },
+        {
+          type: "Perception" as const,
+          userAnchor: null,
+          nearbyPets: [{ id: "other-pet", position: { x: 350, y: 200 }, distance: 150 }],
+          nearbyClimbables: [],
+          self: { grounded: false, climbing: false, intent: "idle" as const },
+        },
+        {
+          type: "Personality" as const,
+          openness: 0.5,
+          conscientiousness: 0.4,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          neuroticism: 0.2,
+        },
+        {
+          type: "Drives" as const,
+          social: 0.3,
+          energy: 1,
+          curiosity: 0.2,
+          ...drivesOverride,
+        },
+      ],
+    },
+  ]);
+}
+
+/** Fraction of total selection weight assigned to `kind`, from the trace. */
+function selectionProbability(
+  store: ReturnType<typeof makeStoreWithDrives>,
+  kind: string,
+) {
+  const trace = store.getComponent("pet", "BehaviorDecisionToken")?.selectionTrace;
+  return trace?.candidates.find((c) => c.kind === kind)?.probability ?? 0;
+}
+
+describe("BehaviorDecisionSystem — Drives-aware scoring", () => {
+  it("a lonely pet (social near 1) is far more likely to approach a nearby pet than a satisfied one", () => {
+    const lonely = makeNearbyStoreWithDrives({ social: 0.95 });
+    runBehaviorDecisionSystem(lonely, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const lonelyProbability = selectionProbability(lonely, "approach-pet");
+
+    const satisfied = makeNearbyStoreWithDrives({ social: 0.05 });
+    runBehaviorDecisionSystem(satisfied, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const satisfiedProbability = selectionProbability(satisfied, "approach-pet");
+
+    expect(lonelyProbability).toBeGreaterThan(satisfiedProbability);
+  });
+
+  it("a lonely pet (social near 1) is far more likely to seek the user than a satisfied one", () => {
+    const lonely = makeStoreWithDrives({}, { social: 0.95 });
+    runBehaviorDecisionSystem(lonely, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const lonelyProbability = selectionProbability(lonely, "seek-user");
+
+    const satisfied = makeStoreWithDrives({}, { social: 0.05 });
+    runBehaviorDecisionSystem(satisfied, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const satisfiedProbability = selectionProbability(satisfied, "seek-user");
+
+    expect(lonelyProbability).toBeGreaterThan(satisfiedProbability);
+  });
+
+  it("a tired pet (low energy) is far more likely to idle-stay than a rested one", () => {
+    const tired = makeStoreWithDrives({}, { energy: 0.05 });
+    runBehaviorDecisionSystem(tired, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const tiredProbability = selectionProbability(tired, "idle-stay");
+
+    const rested = makeStoreWithDrives({}, { energy: 1 });
+    runBehaviorDecisionSystem(rested, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const restedProbability = selectionProbability(rested, "idle-stay");
+
+    expect(tiredProbability).toBeGreaterThan(restedProbability);
+  });
+
+  it("a bored pet (high curiosity) is far more likely to wander-far than a curious-satisfied one", () => {
+    const bored = makeStoreWithDrives({}, { curiosity: 0.95 });
+    runBehaviorDecisionSystem(bored, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const boredProbability = selectionProbability(bored, "wander-far");
+
+    const content = makeStoreWithDrives({}, { curiosity: 0.05 });
+    runBehaviorDecisionSystem(content, createManualClock(0), createSeededRandom(1), BOUNDS);
+    const contentProbability = selectionProbability(content, "wander-far");
+
+    expect(boredProbability).toBeGreaterThan(contentProbability);
+  });
+});
+
+describe("BehaviorPlanningSystem — Drives satisfaction hooks", () => {
+  it("collision-engage partially refills social", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Drives" as const, social: 0.6, energy: 1, curiosity: 0.2 },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "collision-engage" as const,
+            decidedAt: 0,
+            consumed: false,
+            targetPosition: { x: 210, y: 200 },
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "Drives")!.social).toBeLessThan(0.6);
+  });
+
+  it("wander-far reduces curiosity", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Drives" as const, social: 0.3, energy: 1, curiosity: 0.8 },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "wander-far" as const,
+            decidedAt: 0,
+            consumed: false,
+            targetPosition: { x: 400, y: 200 },
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "Drives")!.curiosity).toBeLessThan(0.8);
+  });
+
+  it("request-jump costs energy", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Drives" as const, social: 0.3, energy: 1, curiosity: 0.2 },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "request-jump" as const,
+            decidedAt: 0,
+            consumed: false,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "Drives")!.energy).toBeLessThan(1);
+  });
+
+  it("request-climb costs energy and reduces curiosity", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Drives" as const, social: 0.3, energy: 1, curiosity: 0.8 },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "request-climb" as const,
+            decidedAt: 0,
+            consumed: false,
+            climbSurfaceId: "wall-1",
+            climbTargetY: 100,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    const drives = store.getComponent("pet", "Drives")!;
+    expect(drives.energy).toBeLessThan(1);
+    expect(drives.curiosity).toBeLessThan(0.8);
+  });
+
+  it("does nothing to Drives when the entity has none (backward compatible)", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "wander-far" as const,
+            decidedAt: 0,
+            consumed: false,
+            targetPosition: { x: 400, y: 200 },
+          },
+        ],
+      },
+    ]);
+
+    expect(() => runBehaviorPlanningSystem(store, createManualClock(0))).not.toThrow();
+    expect(store.getComponent("pet", "Drives")).toBeUndefined();
+  });
+});

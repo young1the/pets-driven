@@ -223,6 +223,49 @@ describe("arrival behavior system", () => {
     expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("approach-pet-success");
   });
 
+  it("refills social substantially when approach-pet succeeds (Drives satisfaction hook)", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "IntentState", intent: "active" as const },
+          { type: "Transform", position: { x: 100, y: 100 } },
+          { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 140, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          { type: "Drives" as const, social: 0.9, energy: 1, curiosity: 0.2 },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [{ id: "pet-b", position: { x: 140, y: 100 }, distance: 40 }],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "active" as const },
+          },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "approach-pet" as const,
+            decidedAt: 1000,
+            consumed: true,
+            targetEntityId: "pet-b",
+            targetPosition: { x: 140, y: 100 },
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous" as const,
+            decidedAt: 1800,
+            expiresAt: 2300,
+            reason: "approach-pet",
+            lastAutonomousReason: "approach-pet",
+            lastAutonomousAt: 1000,
+          },
+        ],
+      },
+    ]);
+
+    runArrivalBehaviorSystem(store, createManualClock(1800));
+
+    expect(store.getComponent("pet-a", "Drives")?.social).toBeLessThan(0.5);
+  });
+
   it("abandons approach-pet after the chase time limit", () => {
     const store = createComponentStore([
       {

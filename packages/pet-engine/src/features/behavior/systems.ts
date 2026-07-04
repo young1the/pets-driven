@@ -12,6 +12,11 @@ import {
   statusFreezesMovement,
   type AgentTaskStatus,
 } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
+import {
+  clampDrive,
+  driveResponseCurve,
+} from "@pets-driven/pet-engine/features/drives/systems";
 import {
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionKind,
@@ -71,6 +76,42 @@ const WANDER_BASE_BODY_MULTIPLIER = 3;
 
 // Phase 4: collision reaction constants
 const PET_ENGAGE_STOP_WIDTH_MULTIPLIER = 2.5;
+
+// ── Drives satisfaction hooks ────────────────────────────────────────────
+// Magnitudes on the same 0..1 scale as DrivesComponent fields. "Substantial"
+// refills (catching a pet) are larger than "partial" ones (a friendly
+// collision reaction); costs are small enough that a pet needs several
+// jumps/climbs before it visibly tires.
+const APPROACH_PET_SUCCESS_SOCIAL_REFILL = 0.5;
+const COLLISION_ENGAGE_SOCIAL_REFILL = 0.15;
+const WANDER_FAR_CURIOSITY_RELIEF = 0.35;
+const CLIMB_CURIOSITY_RELIEF = 0.3;
+const JUMP_ENERGY_COST = 0.08;
+const CLIMB_ENERGY_COST = 0.12;
+
+/**
+ * Applies a drive delta in place (component objects are mutated directly, same
+ * pattern as ContactState/MotionTarget elsewhere in this file). No-ops when
+ * the entity has no Drives component — satisfaction hooks stay optional so
+ * pets without Drives are unaffected.
+ */
+function adjustDrive(
+  components: ComponentStore,
+  id: string,
+  deltas: Partial<Pick<DrivesComponent, "social" | "energy" | "curiosity">>,
+): void {
+  const drives = components.getComponent(id, "Drives");
+  if (!drives) return;
+  if (deltas.social !== undefined) {
+    drives.social = clampDrive(drives.social + deltas.social);
+  }
+  if (deltas.energy !== undefined) {
+    drives.energy = clampDrive(drives.energy + deltas.energy);
+  }
+  if (deltas.curiosity !== undefined) {
+    drives.curiosity = clampDrive(drives.curiosity + deltas.curiosity);
+  }
+}
 
 // Duration of each claim in milliseconds
 const CLAIM_DURATION_MS: Record<BehaviorDecisionSource, number> = {
@@ -843,6 +884,10 @@ export function runArrivalBehaviorSystem(
                 lastAutonomousAt: decision?.lastAutonomousAt ?? startedAt,
               });
               components.removeComponent(id, "BehaviorDecisionToken");
+              // Catching another pet is a substantial social win.
+              adjustDrive(components, id, {
+                social: -APPROACH_PET_SUCCESS_SOCIAL_REFILL,
+              });
               return;
             }
           }
@@ -1017,47 +1062,68 @@ function isAutonomousRepeatCoolingDown(
 }
 
 // ── OCEAN score functions ────────────────────────────────────────────────────
-// Each reads only PersonalityComponent axes; comments name the driving axes.
+// Each reads PersonalityComponent axes plus, where noted, an optional Drives
+// snapshot. `drives` is undefined for pets built before this feature (or in
+// tests that never attach one) — every drives-aware function must fall back
+// to its pre-Drives formula in that case so old callers see identical scores.
+// Drive contributions use driveResponseCurve (see features/drives/systems.ts)
+// so a need only meaningfully sways the decision once it crosses ~0.7-0.8.
 
 function scoreWanderNear(p: PersonalityComponent): number {
   // N (neuroticism) → wary, prefers short local moves; O (openness) → slight boost
   return 0.3 + p.openness * 0.1 + p.neuroticism * 0.4;
 }
 
-function scoreWanderFar(p: PersonalityComponent): number {
+function scoreWanderFar(p: PersonalityComponent, drives?: DrivesComponent): number {
   // O (openness) → exploration drive; N (neuroticism) → reluctance to venture far
-  return 0.3 + p.openness * 0.7 - p.neuroticism * 0.2;
+  const base = 0.3 + p.openness * 0.7 - p.neuroticism * 0.2;
+  if (!drives) return base;
+  // Curiosity (boredom) → unresolved novelty-seeking pushes toward exploring far.
+  return base + driveResponseCurve(drives.curiosity) * 0.5;
 }
 
-function scoreSeekUser(p: PersonalityComponent): number {
+function scoreSeekUser(p: PersonalityComponent, drives?: DrivesComponent): number {
   // E (extraversion) + A (agreeableness) → approach user; N → avoidance
-  return (
-    0.3 + p.extraversion * 0.7 + p.agreeableness * 0.3 - p.neuroticism * 0.3
-  );
+  const base =
+    0.3 + p.extraversion * 0.7 + p.agreeableness * 0.3 - p.neuroticism * 0.3;
+  if (!drives) return base;
+  // Social need also nudges toward the user, smaller weight than approach-pet.
+  return base + driveResponseCurve(drives.social) * 0.3;
 }
 
-function scoreJump(p: PersonalityComponent): number {
+function scoreJump(p: PersonalityComponent, drives?: DrivesComponent): number {
   // E (extraversion) → action energy; O (openness) → novelty seeking
-  return 0.2 + p.extraversion * 0.4 + p.openness * 0.3;
+  const base = 0.2 + p.extraversion * 0.4 + p.openness * 0.3;
+  if (!drives) return base;
+  // Low energy (tired) suppresses the urge to jump.
+  return base - driveResponseCurve(1 - drives.energy) * 0.5;
 }
 
-function scoreClimb(p: PersonalityComponent): number {
+function scoreClimb(p: PersonalityComponent, drives?: DrivesComponent): number {
   // O (openness) → exploration; E (extraversion) → physical energy
-  return 0.2 + p.openness * 0.6 + p.extraversion * 0.2;
+  const base = 0.2 + p.openness * 0.6 + p.extraversion * 0.2;
+  if (!drives) return base;
+  // Curiosity (boredom) → climbing resolves the need for novelty.
+  return base + driveResponseCurve(drives.curiosity) * 0.4;
 }
 
-function scoreIdleStay(p: PersonalityComponent): number {
+function scoreIdleStay(p: PersonalityComponent, drives?: DrivesComponent): number {
   // Low E → reduced need for activity; N (neuroticism) → cautious stillness
-  return 0.25 + (1 - p.extraversion) * 0.3 + p.neuroticism * 0.2;
+  const base = 0.25 + (1 - p.extraversion) * 0.3 + p.neuroticism * 0.2;
+  if (!drives) return base;
+  // Low energy (tired) → resting becomes strongly preferred.
+  return base + driveResponseCurve(1 - drives.energy) * 0.5;
 }
 
 // Phase 3 — social interaction score functions (require Perception.nearbyPets)
 
-function scoreApproachPet(p: PersonalityComponent): number {
+function scoreApproachPet(p: PersonalityComponent, drives?: DrivesComponent): number {
   // E + A → social draw; N → reluctance
-  return (
-    0.3 + p.extraversion * 0.7 + p.agreeableness * 0.4 - p.neuroticism * 0.3
-  );
+  const base =
+    0.3 + p.extraversion * 0.7 + p.agreeableness * 0.4 - p.neuroticism * 0.3;
+  if (!drives) return base;
+  // Social need (loneliness) → strongest drive pull toward another pet.
+  return base + driveResponseCurve(drives.social) * 0.6;
 }
 
 function scoreFleeFromPet(p: PersonalityComponent): number {
@@ -1203,6 +1269,10 @@ export function runBehaviorDecisionSystem(
 
       const petX = transform.position.x;
       const petY = transform.position.y;
+      // Optional — undefined for pets built before this feature. Every
+      // drives-aware score function below falls back to its original
+      // personality-only formula when this is undefined.
+      const drives = components.getComponent(id, "Drives");
 
       // Phase 4: PendingReaction present → claim just expired at reactsAt.
       // Route to the personality-shaped reactive candidate pool instead of
@@ -1391,7 +1461,7 @@ export function runBehaviorDecisionSystem(
 
       pushCandidate(candidates, components, id, now, {
         kind: "wander-far",
-        score: scoreWanderFar(personality),
+        score: scoreWanderFar(personality, drives),
         build: () => ({
           targetPosition: pickWanderPosition(
             petX,
@@ -1408,7 +1478,7 @@ export function runBehaviorDecisionSystem(
       if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
         pushCandidate(candidates, components, id, now, {
           kind: "seek-user",
-          score: scoreSeekUser(personality),
+          score: scoreSeekUser(personality, drives),
           // MotionTargetSystem (UPDATE phase) reads Perception.userAnchor and owns
           // seek positioning; Planning only needs to promote intent to "seek".
           build: () => ({}),
@@ -1421,7 +1491,7 @@ export function runBehaviorDecisionSystem(
       if (canJump && !jumpState && (!contact || contact.grounded)) {
         pushCandidate(candidates, components, id, now, {
           kind: "request-jump",
-          score: scoreJump(personality),
+          score: scoreJump(personality, drives),
           // Jump is a one-shot action; Planning reads JumpActionState directly.
           build: () => ({}),
         });
@@ -1448,7 +1518,7 @@ export function runBehaviorDecisionSystem(
         if (surface) {
           pushCandidate(candidates, components, id, now, {
             kind: "request-climb",
-            score: scoreClimb(personality),
+            score: scoreClimb(personality, drives),
             build: () => {
               // Reserve the surface so later entities in this same pass won't
               // double-target it (build() runs before the next entity is processed).
@@ -1468,7 +1538,7 @@ export function runBehaviorDecisionSystem(
         const nearestPet = nearbyPets[0];
         pushCandidate(candidates, components, id, now, {
           kind: "approach-pet",
-          score: scoreApproachPet(personality),
+          score: scoreApproachPet(personality, drives),
           // Keep the entity id so MotionTargetSystem can track the moving pet
           // until a collision reaction interrupts the approach.
           build: () => ({
@@ -1503,7 +1573,7 @@ export function runBehaviorDecisionSystem(
 
       pushCandidate(candidates, components, id, now, {
         kind: "idle-stay",
-        score: scoreIdleStay(personality),
+        score: scoreIdleStay(personality, drives),
         build: () => ({}),
       });
 
@@ -1544,6 +1614,13 @@ export function runBehaviorPlanningSystem(
     if (token.consumed) return;
     switch (token.kind) {
       case "wander-near":
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: null,
+          targetPosition: token.targetPosition!,
+        });
+        setPetIntent(components, id, "active");
+        break;
       case "wander-far":
         components.setComponent(id, {
           type: "MotionTarget",
@@ -1551,6 +1628,10 @@ export function runBehaviorPlanningSystem(
           targetPosition: token.targetPosition!,
         });
         setPetIntent(components, id, "active");
+        // Venturing far resolves some of the pet's need for novelty.
+        adjustDrive(components, id, {
+          curiosity: -WANDER_FAR_CURIOSITY_RELIEF,
+        });
         break;
       case "seek-user":
         // MotionTargetSystem (UPDATE phase) reads Perception.userAnchor and owns
@@ -1567,6 +1648,7 @@ export function runBehaviorPlanningSystem(
           });
         }
         // Jump has no arrival event, so intent stays "idle".
+        adjustDrive(components, id, { energy: -JUMP_ENERGY_COST });
         break;
       }
       case "request-climb":
@@ -1577,6 +1659,11 @@ export function runBehaviorPlanningSystem(
           targetY: token.climbTargetY!,
         });
         setPetIntent(components, id, "active");
+        // Climbing costs energy and resolves curiosity, same as wander-far.
+        adjustDrive(components, id, {
+          energy: -CLIMB_ENERGY_COST,
+          curiosity: -CLIMB_CURIOSITY_RELIEF,
+        });
         break;
       case "idle-stay":
         // Intentional no-op: intent stays idle, target stays null.
@@ -1599,8 +1686,14 @@ export function runBehaviorPlanningSystem(
         setPetIntent(components, id, "active");
         break;
       // Phase 4 — collision reactions (position pre-computed in Decision)
-      case "collision-flee":
       case "collision-engage":
+        // Engaging with the other pet is a partial, friendlier social fix
+        // than a full approach-pet-success catch.
+        adjustDrive(components, id, {
+          social: -COLLISION_ENGAGE_SOCIAL_REFILL,
+        });
+      // Intentional fallthrough into the shared collision-reaction materialization below.
+      case "collision-flee":
       case "collision-avoid":
       case "collision-jump":
       case "collision-stay":
@@ -1792,6 +1885,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "ContactState",
     "CanWallClimb",
     "ClimbDismountState",
+    "Drives",
   ],
   writes: ["BehaviorDecisionToken", "BehaviorDecisionState", "PendingReaction"],
   update(ctx) {
@@ -1814,6 +1908,7 @@ export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
     "JumpActionState",
     "ClimbIntentState",
     "BehaviorDecisionToken",
+    "Drives",
   ],
   update(ctx) {
     runBehaviorPlanningSystem(ctx.components, ctx.clock);
@@ -1842,7 +1937,7 @@ export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "Perception",
     "ClimbIntentState",
   ],
-  writes: ["MotionTarget", "IntentState"],
+  writes: ["MotionTarget", "IntentState", "Drives"],
   update(ctx) {
     runArrivalBehaviorSystem(ctx.components, ctx.clock);
   },
