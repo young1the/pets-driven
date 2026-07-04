@@ -3,11 +3,13 @@ import { AbsoluteFill, interpolate, staticFile, useCurrentFrame } from "remotion
 import {
   Callout,
   Caption,
+  ClickBurst,
   DemoAppFrame,
   DemoCursor,
   DemoPetCard,
   DemoTerminal,
   DemoWindow,
+  DesktopBackdrop,
   DesktopPet,
 } from "./components";
 import {
@@ -115,6 +117,8 @@ export function ServiceDemoVideo() {
       extrapolateRight: "clamp",
     });
   const cursor = cursorPosition(frame);
+  const clickBurst1 = progress(frame, 332, 13);
+  const clickBurst2 = progress(frame, 348, 13);
   const summonPet = summonedPetPose(frame, summonDropP);
   const showSummonedPet = petReveal > 0 && frame < SUMMON_PET_EXIT_START_FRAME + SUMMON_PET_EXIT_DURATION;
   const mainWindowOpacity =
@@ -286,6 +290,7 @@ export function ServiceDemoVideo() {
               }),
           }}
         >
+          <DesktopBackdrop />
           <Caption
             style={{
               left: "50%",
@@ -339,6 +344,13 @@ export function ServiceDemoVideo() {
             </p>
           </div>
         </section>
+
+        {clickBurst1 > 0 && clickBurst1 < 1 ? (
+          <ClickBurst progress={clickBurst1} x={966} y={968} />
+        ) : null}
+        {clickBurst2 > 0 && clickBurst2 < 1 ? (
+          <ClickBurst progress={clickBurst2} x={966} y={968} />
+        ) : null}
 
         {workSceneExitOpacity > 0 ? (
           <DemoCursor

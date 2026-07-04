@@ -67,6 +67,24 @@ export function DemoAppFrame({
   );
 }
 
+const CAPTION_SPARKLES: {
+  amp: number;
+  color: string;
+  phase: number;
+  size: number;
+  speed: number;
+  spin: number;
+  x: number;
+  y: number;
+}[] = [
+  { amp: 11, color: "var(--blossom-400)", phase: 0.4, size: 14, speed: 28, spin: 0.9, x: -150, y: 46 },
+  { amp: 13, color: "var(--lavender-400)", phase: 2.1, size: 12, speed: 33, spin: -0.7, x: 156, y: 40 },
+  { amp: 9, color: "var(--blossom-500)", phase: 3.6, size: 9, speed: 24, spin: 1.2, x: -74, y: -54 },
+  { amp: 10, color: "var(--lavender-300)", phase: 1.2, size: 11, speed: 26, spin: -1.0, x: 92, y: -50 },
+  { amp: 8, color: "var(--sky-300)", phase: 4.7, size: 8, speed: 22, spin: 0.8, x: 4, y: 60 },
+  { amp: 12, color: "var(--mint-300)", phase: 5.5, size: 8, speed: 31, spin: 1.1, x: 214, y: -12 },
+];
+
 export function Caption({
   children,
   style,
@@ -74,9 +92,32 @@ export function Caption({
   children: ReactNode;
   style?: CSSProperties;
 }) {
+  const frame = useCurrentFrame();
   return (
     <div className="pd-video-caption" style={style}>
-      {children}
+      <div className="pd-video-caption__sparkles" aria-hidden="true">
+        {CAPTION_SPARKLES.map((s, index) => {
+          const floatY = Math.sin(frame / s.speed + s.phase) * s.amp;
+          const floatX = Math.cos(frame / (s.speed * 1.3) + s.phase) * (s.amp * 0.55);
+          const rotate = frame * s.spin + s.phase * 40;
+          const twinkle = 0.5 + 0.5 * Math.sin(frame / 13 + s.phase * 2);
+          const scale = 0.82 + 0.18 * Math.sin(frame / 11 + s.phase);
+          return (
+            <span
+              className="pd-video-caption__sparkle"
+              key={index}
+              style={{
+                background: s.color,
+                height: s.size,
+                opacity: 0.35 + twinkle * 0.65,
+                transform: `translate(-50%, -50%) translate(${s.x + floatX}px, ${s.y + floatY}px) rotate(${rotate}deg) scale(${scale})`,
+                width: s.size,
+              }}
+            />
+          );
+        })}
+      </div>
+      <span className="pd-video-caption__text">{children}</span>
     </div>
   );
 }
@@ -125,6 +166,98 @@ export function DemoCursor({
         strokeWidth="2.4"
       />
     </svg>
+  );
+}
+
+export function ClickBurst({
+  progress: p,
+  x,
+  y,
+}: {
+  progress: number;
+  x: number;
+  y: number;
+}) {
+  const ease = 1 - (1 - p) ** 3;
+  const scale = 0.38 + ease * 0.98;
+  const opacity = p < 0.14 ? p / 0.14 : 1 - (p - 0.14) / 0.86;
+  const spikes = 12;
+  return (
+    <div
+      className="pd-video-click-burst"
+      style={{
+        left: x,
+        opacity: Math.max(0, opacity),
+        top: y,
+        transform: `translate(-50%, -50%) scale(${scale})`,
+      }}
+    >
+      <svg height="164" viewBox="-82 -82 164 164" width="164">
+        {Array.from({ length: spikes }).map((_, index) => {
+          const angle = (index / spikes) * Math.PI * 2;
+          const long = index % 2 === 0;
+          const inner = long ? 27 : 31;
+          const outer = long ? 66 : 52;
+          return (
+            <line
+              key={index}
+              stroke="#181326"
+              strokeLinecap="round"
+              strokeWidth={long ? 8 : 6}
+              x1={Math.cos(angle) * inner}
+              x2={Math.cos(angle) * outer}
+              y1={Math.sin(angle) * inner}
+              y2={Math.sin(angle) * outer}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+const DESKTOP_DOCK_APPS: { from: string; to: string }[] = [
+  { from: "#FF9DB6", to: "#F16A90" },
+  { from: "#FFD08A", to: "#F2A45E" },
+  { from: "#8ECAF2", to: "#5AA9E6" },
+  { from: "#8FE0BA", to: "#46B97E" },
+  { from: "#BCABF5", to: "#A189EE" },
+];
+
+export function DesktopBackdrop() {
+  return (
+    <div className="pd-video-desktop" aria-hidden="true">
+      <div className="pd-video-desktop__menubar">
+        <span className="pd-video-desktop__brand">
+          <span className="pd-video-desktop__logo" />
+          Pets-Driven
+        </span>
+        <span className="pd-video-desktop__menu">File</span>
+        <span className="pd-video-desktop__menu">View</span>
+        <span className="pd-video-desktop__menu">Pack</span>
+        <span className="pd-video-desktop__spacer" />
+        <span className="pd-video-desktop__clock">9:41</span>
+      </div>
+      <div className="pd-video-desktop__icons">
+        <div className="pd-video-desktop__icon">
+          <span className="pd-video-desktop__glyph pd-video-desktop__glyph--folder" />
+          pets-driven
+        </div>
+        <div className="pd-video-desktop__icon">
+          <span className="pd-video-desktop__glyph pd-video-desktop__glyph--doc" />
+          notes.md
+        </div>
+      </div>
+      <div className="pd-video-desktop__dock">
+        {DESKTOP_DOCK_APPS.map((app, index) => (
+          <span
+            className="pd-video-desktop__app"
+            key={index}
+            style={{ background: `linear-gradient(158deg, ${app.from}, ${app.to})` }}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
