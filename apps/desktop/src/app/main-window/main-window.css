@@ -73,7 +73,11 @@
   cursor: pointer;
 }
 
-.pd-toast {
+/* Named distinctly from the design-system's `.pd-toast` component class, which
+   is loaded app-wide via the DS barrel and sets `position: relative`. Sharing
+   the name let the DS rule override this one, dropping the toast into normal
+   flow so it drifted with the card content above it. */
+.pd-app-toast {
   position: fixed;
   left: 50%;
   bottom: 28px;
@@ -89,7 +93,7 @@
   box-shadow: var(--shadow-xl);
 }
 
-.pd-toast__label {
+.pd-app-toast__label {
   font-size: 13.5px;
   font-weight: 700;
   color: var(--text-strong);

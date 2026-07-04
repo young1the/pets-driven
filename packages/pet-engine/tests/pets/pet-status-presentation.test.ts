@@ -46,6 +46,7 @@ describe("presentPetStatus", () => {
     expect(presentation).toEqual({
       mood: "confused",
       label: "WAIT",
+      labelKey: null,
       message: null,
       emote: "exclaim",
       showCapsule: true,
@@ -66,6 +67,7 @@ describe("presentPetStatus", () => {
     expect(presentation).toEqual({
       mood: "working",
       label: "Working",
+      labelKey: "working",
       message: null,
       emote: "none",
       showCapsule: true,

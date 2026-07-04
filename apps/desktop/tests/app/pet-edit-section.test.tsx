@@ -9,6 +9,7 @@ const pet = {
   role: "Steady",
   status: {
     label: "Idle",
+    labelKey: "idle" as const,
     tone: "neutral" as const,
     dotColor: "var(--ink-300)",
   },

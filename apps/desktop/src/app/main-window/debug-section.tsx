@@ -1,4 +1,5 @@
 import { Badge, Button } from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import { WrenchIcon } from "@/app/main-window/main-window-icons";
 
 export type DebugAction = { label: string; onClick: () => void };
@@ -15,6 +16,7 @@ export function DebugSection({
   error,
   diagnosticReport,
 }: DebugSectionProps) {
+  const { t } = useTranslation("desktop");
   return (
     <div style={{ padding: "38px 24px 64px" }}>
       <div style={{ maxWidth: "840px", margin: "0 auto" }}>
@@ -35,9 +37,9 @@ export function DebugSection({
               margin: 0,
             }}
           >
-            Developer tools
+            {t("debug.title")}
           </h2>
-          <Badge tone="warning">dev only</Badge>
+          <Badge tone="warning">{t("debug.devOnly")}</Badge>
         </div>
         <p
           style={{
@@ -46,7 +48,7 @@ export function DebugSection({
             margin: "0 0 20px",
           }}
         >
-          Fixtures and playground actions, kept out of the everyday flow.
+          {t("debug.subtitle")}
         </p>
 
         {error ? (
@@ -144,7 +146,7 @@ export function DebugSection({
                   color: "var(--text-strong)",
                 }}
               >
-                Pet diagnostics report
+                {t("debug.reportLabel")}
               </label>
               <textarea
                 id="pet-diagnostics-report"

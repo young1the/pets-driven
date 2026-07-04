@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { PetsDrivenApp } from "./app/pets-driven-app";
+import { DesktopLocaleProvider } from "./app/i18n/desktop-locale";
 import { PetContextMenuView } from "./pet-window/pet-context-menu-view";
 import "./styles/main.css";
 
@@ -19,5 +20,7 @@ function resolveRoot() {
 }
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>{resolveRoot()}</React.StrictMode>,
+  <React.StrictMode>
+    <DesktopLocaleProvider>{resolveRoot()}</DesktopLocaleProvider>
+  </React.StrictMode>,
 );

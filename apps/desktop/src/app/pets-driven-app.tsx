@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
@@ -22,6 +23,7 @@ import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
+import { DesktopLanguageSwitcher } from "@/app/i18n/desktop-language-switcher";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import type { HomePetView } from "@/app/main-window/home-section";
@@ -37,7 +39,7 @@ import {
   petStatusFromSnapshot,
   type PetCardStatus,
 } from "@/app-state/pet-card-status";
-import { personalityRoleLabel } from "@/app/pet-presentation";
+import { personalityRoleLabelKey } from "@/app/pet-presentation";
 import {
   getWorkingDirectoryForPet,
   registerWorkingDirectory,
@@ -276,12 +278,13 @@ function petGradient(petId: string): { from: string; to: string } {
   return PET_GRADIENTS[hashString(petId) % PET_GRADIENTS.length];
 }
 
-function cardNote(memo: string | undefined): string {
+function cardNote(memo: string | undefined, emptyLabel: string): string {
   const trimmed = memo?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : "No note yet";
+  return trimmed && trimmed.length > 0 ? trimmed : emptyLabel;
 }
 
 export function PetsDrivenApp() {
+  const { t } = useTranslation("desktop");
   const petWindowPet = petWindowRouteParams();
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
@@ -914,7 +917,7 @@ export function PetsDrivenApp() {
           size="sm"
           variant="neutral"
         >
-          Back
+          {t("common.back")}
         </Button>
         <PlaygroundApp />
       </div>
@@ -1064,7 +1067,7 @@ export function PetsDrivenApp() {
       );
 
     if (!directory) {
-      setPetWindowError("No adopted pet with a folder to poke.");
+      setPetWindowError(t("errors.noPetToPoke"));
       return;
     }
 
@@ -1143,11 +1146,11 @@ export function PetsDrivenApp() {
     setDiagnosticReport(report);
     void navigator.clipboard
       ?.writeText(report)
-      .then(() => flashToast("Pet diagnostics copied"))
-      .catch(() => flashToast("Pet diagnostics ready"));
+      .then(() => flashToast(t("toast.diagnosticsCopied")))
+      .catch(() => flashToast(t("toast.diagnosticsReady")));
 
     if (!navigator.clipboard) {
-      flashToast("Pet diagnostics ready");
+      flashToast(t("toast.diagnosticsReady"));
     }
   }
 
@@ -1176,7 +1179,7 @@ export function PetsDrivenApp() {
       .openAdoptedPetWindow(petId, pet?.assetId ?? "")
       .catch(() => {});
     if (pet) {
-      flashToast(`${pet.name} is on the desktop`);
+      flashToast(t("toast.onDesktop", { name: pet.name }));
     }
   }
 
@@ -1185,7 +1188,7 @@ export function PetsDrivenApp() {
     patchPet(petId, { visible: false });
     void desktopGateway.closeAdoptedPetWindow(petId).catch(() => {});
     if (pet) {
-      flashToast(`${pet.name} came home`);
+      flashToast(t("toast.cameHome", { name: pet.name }));
     }
   }
 
@@ -1215,7 +1218,7 @@ export function PetsDrivenApp() {
     const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
     if (
       !pet ||
-      !window.confirm(`Send ${pet.name} home for good? This removes the pet.`)
+      !window.confirm(t("confirm.deletePet", { name: pet.name }))
     ) {
       return;
     }
@@ -1224,7 +1227,7 @@ export function PetsDrivenApp() {
     void desktopGateway.writePetsDrivenState(next);
     void desktopGateway.closeAdoptedPetWindow(petId).catch(() => {});
     setEditPetId(null);
-    flashToast(`${pet.name} was removed`);
+    flashToast(t("toast.removed", { name: pet.name }));
   }
 
   async function pickFolderForPet(petId: string) {
@@ -1240,7 +1243,7 @@ export function PetsDrivenApp() {
       now: Date.now(),
     });
     if (result.status === "occupied") {
-      flashToast("That folder already belongs to another pet");
+      flashToast(t("toast.folderOccupied"));
       return;
     }
     applyPetsDrivenState(result.state);
@@ -1274,9 +1277,12 @@ export function PetsDrivenApp() {
   const statusFor = (petId: string): PetCardStatus =>
     petStatusById[petId] ?? {
       label: "Idle",
+      labelKey: "idle",
       tone: "neutral",
       dotColor: "var(--ink-300)",
     };
+  const localizedStatusLabel = (status: PetCardStatus): string =>
+    t(`petStatus.${status.labelKey}`);
 
   const atHome: HomePetView[] = managedPets
     .filter((pet) => !pet.visible)
@@ -1289,8 +1295,8 @@ export function PetsDrivenApp() {
         id: pet.id,
         name: pet.name,
         assetId: pet.assetId,
-        note: cardNote(pet.memo),
-        role: personalityRoleLabel(personalityId),
+        note: cardNote(pet.memo, t("common.noNote")),
+        role: t(personalityRoleLabelKey(personalityId)),
         gradient: petGradient(pet.id),
         cwd,
       };
@@ -1310,8 +1316,11 @@ export function PetsDrivenApp() {
         id: editingPet.id,
         name: editingPet.name,
         assetId: editingPet.assetId,
-        role: personalityRoleLabel(profileFor(editingPet)?.personalityId),
-        status: statusFor(editingPet.id),
+        role: t(personalityRoleLabelKey(profileFor(editingPet)?.personalityId)),
+        status: {
+          ...statusFor(editingPet.id),
+          label: localizedStatusLabel(statusFor(editingPet.id)),
+        },
         gradient: petGradient(editingPet.id),
         folder:
           getWorkingDirectoryForPet(petsDrivenState, editingPet.id)?.path ?? "",
@@ -1440,14 +1449,15 @@ export function PetsDrivenApp() {
                 : "danger",
           label:
             claudeHookIngressStatus.state === "listening"
-              ? "All connected"
+              ? t("hook.connected")
               : claudeHookIngressStatus.state === "pending"
-                ? "Connecting"
-                : "Offline",
-          summary: `Claude hook ${claudeHookIngressStatus.state}`,
+                ? t("hook.connecting")
+                : t("hook.offline"),
+          summary: t("hook.summary", { state: claudeHookIngressStatus.state }),
           url: claudeHookIngressStatus.url,
         },
         onReconnect: () => void emitClaudeHookTestEvent(),
+        languageSwitcher: <DesktopLanguageSwitcher />,
       }}
       tab={mainTab}
       toast={toast}

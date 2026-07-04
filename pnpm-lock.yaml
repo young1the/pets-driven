@@ -13,6 +13,9 @@ importers:
       '@pets-driven/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@pets-driven/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@pets-driven/pet-engine':
         specifier: workspace:*
         version: link:../../packages/pet-engine

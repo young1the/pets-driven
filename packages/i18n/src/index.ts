@@ -13,7 +13,7 @@ export {
   type Namespace,
 } from "./config";
 export { I18nProvider, type I18nProviderProps } from "./provider";
-export { resources, type LandingResource } from "./resources";
+export { resources, type LandingResource, type DesktopResource } from "./resources";
 
 // Client hooks, re-exported so app code has a single import surface.
 export { useTranslation, Trans } from "react-i18next";

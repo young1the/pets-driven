@@ -10,22 +10,31 @@ export const DEFAULT_LAUNCH_COMMAND = "claude";
 
 const GIT_BASH_PROGRAM = "C:\\Program Files\\Git\\bin\\bash.exe";
 
+/**
+ * Launch profiles for the shell picker. `labelKey` points at a
+ * `launchProfile.*` entry in the desktop translation bundle so the UI can
+ * localize the label; the ids themselves stay stable.
+ */
 export const LAUNCH_PROFILE_OPTIONS: Array<{
   value: LaunchProfileId;
-  label: string;
+  labelKey: "cmd" | "powershell" | "gitBash" | "custom";
 }> = [
-  { value: "cmd", label: "Command Prompt" },
-  { value: "powershell", label: "PowerShell" },
-  { value: "git-bash", label: "Git Bash" },
-  { value: "custom", label: "Custom" },
+  { value: "cmd", labelKey: "cmd" },
+  { value: "powershell", labelKey: "powershell" },
+  { value: "git-bash", labelKey: "gitBash" },
+  { value: "custom", labelKey: "custom" },
 ];
 
+// Keep the command exactly as typed (including trailing spaces, so a user can
+// type "claude " and then append a flag) and only substitute the default when
+// it is blank. Trimming here would eat the trailing space on every keystroke,
+// making flags impossible to type since the value round-trips through here.
 function commandOrDefault(command: string): string {
-  return command.trim() || DEFAULT_LAUNCH_COMMAND;
+  return command.trim().length > 0 ? command : DEFAULT_LAUNCH_COMMAND;
 }
 
 function stripBashKeepAlive(command: string): string {
-  return command.replace(/;\s*exec\s+bash\s*$/i, "").trim();
+  return command.replace(/;\s*exec\s+bash\s*$/i, "");
 }
 
 function extractBashCommand(line: string): string | null {
@@ -77,7 +86,12 @@ export function customizeLaunchLine(settings: SessionLaunchSettings): string {
 }
 
 export function parseLaunchLine(line: string): SessionLaunchSettings {
-  const launchLine = line.trim() || buildLaunchLine("cmd", DEFAULT_LAUNCH_COMMAND);
+  // Only fall back to the default when the line is blank; keep it verbatim
+  // otherwise so a trailing space typed by the user survives the round trip.
+  const launchLine =
+    line.trim().length > 0
+      ? line
+      : buildLaunchLine("cmd", DEFAULT_LAUNCH_COMMAND);
 
   const cmdMatch = launchLine.match(/^cmd(?:\.exe)?\s+\/k\s+(.+)$/i);
   if (cmdMatch) {

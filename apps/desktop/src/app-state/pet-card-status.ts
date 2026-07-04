@@ -1,21 +1,30 @@
 import type { BadgeTone } from "@pets-driven/design-system";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 
-/** Status pill shown on a pet card: a label, a Badge tone, and a dot color. */
+/** Stable key for a card status label, so the UI can localize it. */
+export type PetCardStatusLabelKey = "idle" | "working" | "needsYou" | "done";
+
+/**
+ * Status pill shown on a pet card: a label, a Badge tone, and a dot color.
+ * `label` is the English source; `labelKey` lets the render layer translate it.
+ */
 export type PetCardStatus = {
   label: string;
+  labelKey: PetCardStatusLabelKey;
   tone: BadgeTone;
   dotColor: string;
 };
 
 const IDLE: PetCardStatus = {
   label: "Idle",
+  labelKey: "idle",
   tone: "neutral",
   dotColor: "var(--ink-300)",
 };
 
 const WORKING: PetCardStatus = {
   label: "Working",
+  labelKey: "working",
   tone: "info",
   dotColor: "var(--sky-300)",
 };
@@ -43,23 +52,53 @@ export function petStatusFromSnapshot(
   // Actionable work states own the label — they need the user, so the ambient
   // behavior takes a back seat.
   if (status === "waiting") {
-    return { label: "Needs you", tone: "warning", dotColor: "var(--butter-300)" };
+    return {
+      label: "Needs you",
+      labelKey: "needsYou",
+      tone: "warning",
+      dotColor: "var(--butter-300)",
+    };
   }
   if (status === "failed") {
-    return { label: "Needs you", tone: "danger", dotColor: "var(--coral-400)" };
+    return {
+      label: "Needs you",
+      labelKey: "needsYou",
+      tone: "danger",
+      dotColor: "var(--coral-400)",
+    };
   }
   if (status === "completed") {
-    return { label: "Done", tone: "success", dotColor: "var(--mint-300)" };
+    return {
+      label: "Done",
+      labelKey: "done",
+      tone: "success",
+      dotColor: "var(--mint-300)",
+    };
   }
 
   // Working / idle: surface the pet's autonomous behavior so the card feels
   // alive. Falls back to the plain work label when nothing notable is
   // happening, preserving the base "Working" / "Idle" contract.
+  //
+  // TODO(i18n): the behavior phrases are English source only for now. The
+  // render layer localizes via labelKey, so until each phrase gets its own
+  // PetCardStatusLabelKey + en/ko translation, localized cards show the base
+  // "working"/"idle" label. Wiring those behavior keys is the follow-up step.
   const behavior = describePetBehavior(snapshot);
   if (status === "working") {
-    return { label: behavior ?? WORKING.label, tone: "info", dotColor: "var(--sky-300)" };
+    return {
+      label: behavior ?? WORKING.label,
+      labelKey: "working",
+      tone: "info",
+      dotColor: "var(--sky-300)",
+    };
   }
-  return { label: behavior ?? IDLE.label, tone: "neutral", dotColor: "var(--ink-300)" };
+  return {
+    label: behavior ?? IDLE.label,
+    labelKey: "idle",
+    tone: "neutral",
+    dotColor: "var(--ink-300)",
+  };
 }
 
 /**

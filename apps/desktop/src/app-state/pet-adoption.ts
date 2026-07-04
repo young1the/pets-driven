@@ -97,12 +97,20 @@ export function linkPetToWorkingDirectory(
 
   return {
     ...state,
-    registeredWorkingDirectories: state.registeredWorkingDirectories.map(
-      (workingDirectory) =>
+    registeredWorkingDirectories: state.registeredWorkingDirectories
+      // A pet watches one folder, so drop any directory it used to own before
+      // pointing it at the new one — otherwise the stale entry would still be
+      // found first by `getWorkingDirectoryForPet` and the change wouldn't stick.
+      .filter(
+        (workingDirectory) =>
+          workingDirectory.id === workingDirectoryId ||
+          workingDirectory.petId !== petId,
+      )
+      .map((workingDirectory) =>
         workingDirectory.id === workingDirectoryId
           ? { ...workingDirectory, petId }
           : workingDirectory,
-    ),
+      ),
     pets: state.pets.map((pet) => {
       if (pet.id === petId) {
         return { ...pet, workingDirectoryId };

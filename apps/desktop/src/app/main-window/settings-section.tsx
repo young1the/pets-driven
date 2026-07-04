@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Input,
   Select,
@@ -5,6 +6,7 @@ import {
   TerminalPreview,
   type BadgeTone,
 } from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import {
   LAUNCH_PROFILE_OPTIONS,
   type LaunchProfileId,
@@ -20,6 +22,8 @@ export interface SettingsSectionProps {
   preview: { cwd: string; prompt: string; command: string };
   hook: { tone: BadgeTone; label: string; summary: string; url: string };
   onReconnect: () => void;
+  /** Optional language picker, injected by the app (needs the locale context). */
+  languageSwitcher?: ReactNode;
 }
 
 const uppercaseLabel = {
@@ -48,8 +52,14 @@ export function SettingsSection({
   onCommand,
   onLaunchLine,
   preview,
+  languageSwitcher,
 }: SettingsSectionProps) {
+  const { t } = useTranslation("desktop");
   const customLaunchLine = launchProfile === "custom";
+  const launchProfileOptions = LAUNCH_PROFILE_OPTIONS.map((option) => ({
+    value: option.value,
+    label: t(`launchProfile.${option.labelKey}`),
+  }));
 
   return (
     <div style={{ padding: "38px 24px 64px" }}>
@@ -63,7 +73,7 @@ export function SettingsSection({
             margin: "0 0 18px",
           }}
         >
-          Settings
+          {t("settings.title")}
         </h2>
 
         <div style={{ ...cardStyle, marginBottom: "20px" }}>
@@ -76,7 +86,7 @@ export function SettingsSection({
               margin: "0 0 5px",
             }}
           >
-            Double-click action
+            {t("settings.doubleClickTitle")}
           </h3>
           <p
             style={{
@@ -86,8 +96,7 @@ export function SettingsSection({
               lineHeight: 1.45,
             }}
           >
-            When you double-click a pet, it opens this terminal command in its
-            working folder.
+            {t("settings.doubleClickDesc")}
           </p>
 
           <div
@@ -103,17 +112,21 @@ export function SettingsSection({
             >
               <div>
                 <Select
-                  label="Shell"
+                  label={t("settings.shell")}
                   onChange={(event) =>
                     onLaunchProfile(event.target.value as LaunchProfileId)
                   }
-                  options={LAUNCH_PROFILE_OPTIONS}
+                  options={launchProfileOptions}
                   value={launchProfile}
                 />
               </div>
               <div style={{ flex: 1, minWidth: "280px" }}>
                 <Input
-                  label={customLaunchLine ? "Launch line" : "Command"}
+                  label={
+                    customLaunchLine
+                      ? t("settings.launchLine")
+                      : t("settings.command")
+                  }
                   onChange={(event) =>
                     customLaunchLine
                       ? onLaunchLine(event.target.value)
@@ -122,7 +135,7 @@ export function SettingsSection({
                   placeholder={
                     customLaunchLine
                       ? '"C:\\Program Files\\Git\\bin\\bash.exe" -lc "claude; exec bash"'
-                      : "claude --resume"
+                      : t("settings.commandPlaceholder")
                   }
                   value={customLaunchLine ? launchLine : command}
                 />
@@ -146,11 +159,11 @@ export function SettingsSection({
                     color: "var(--text-muted)",
                   }}
                 >
-                  Advanced launch line
+                  {t("settings.advancedLaunchLine")}
                 </summary>
                 <div style={{ marginTop: "12px" }}>
                   <Input
-                    label="Launch line"
+                    label={t("settings.launchLine")}
                     onChange={(event) => onLaunchLine(event.target.value)}
                     value={launchLine}
                   />
@@ -159,7 +172,7 @@ export function SettingsSection({
             )}
 
             <div>
-              <span style={uppercaseLabel}>Runs on double-click</span>
+              <span style={uppercaseLabel}>{t("settings.runsOnDoubleClick")}</span>
               <TerminalPreview
                 command={preview.command}
                 cwd={preview.cwd}
@@ -170,6 +183,32 @@ export function SettingsSection({
           </div>
         </div>
 
+        {languageSwitcher ? (
+          <div style={cardStyle}>
+            <h3
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 600,
+                fontSize: "17px",
+                color: "var(--text-strong)",
+                margin: "0 0 5px",
+              }}
+            >
+              {t("settings.language")}
+            </h3>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--text-muted)",
+                margin: "0 0 18px",
+                lineHeight: 1.45,
+              }}
+            >
+              {t("settings.languageDesc")}
+            </p>
+            <div style={{ maxWidth: "280px" }}>{languageSwitcher}</div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

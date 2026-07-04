@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@pets-driven/i18n";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
@@ -753,9 +754,14 @@ function PetStatusCard({
   cwd,
   spriteHeight,
 }: PetStatusCardProps) {
+  const { t } = useTranslation("desktop");
   const status = presentPetStatus(intent, overlay);
   const accent = PET_MOODS[status.mood].accent;
-  const label = status.label;
+  // Static labels carry a stable key we can localize; host-supplied free text
+  // (speech/attention overlays) has no key, so it shows as-is.
+  const label = status.labelKey
+    ? t(`petStatus.${status.labelKey}`)
+    : status.label;
 
   return (
     <div
