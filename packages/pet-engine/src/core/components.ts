@@ -85,6 +85,8 @@ export type {
   ThrowImpulseComponent,
 } from "@pets-driven/pet-engine/features/interaction/components";
 
+export type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
+
 import type { PerceptionComponent } from "@pets-driven/pet-engine/features/perception/components";
 import type {
   TransformComponent,
@@ -145,6 +147,7 @@ import type {
   DragInteractionComponent,
   ThrowImpulseComponent,
 } from "@pets-driven/pet-engine/features/interaction/components";
+import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 
 export type Component =
   | ActivityStateComponent
@@ -171,6 +174,7 @@ export type Component =
   | CompletionBehaviorComponent
   | ContactStateComponent
   | DragInteractionComponent
+  | DrivesComponent
   | FlyingTagComponent
   | GroundComponent
   | IdleConversationComponent

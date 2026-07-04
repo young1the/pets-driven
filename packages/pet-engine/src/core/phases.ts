@@ -32,6 +32,7 @@ import {
 } from "@pets-driven/pet-engine/features/behavior/systems";
 import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
 import { PerceptionSystem } from "@pets-driven/pet-engine/features/perception/systems";
+import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
 import {
   LocomotionModeSystem,
   ClimbApproachSystem,
@@ -87,6 +88,7 @@ export const SYSTEM_PHASES: Record<
     LocomotionActiveStateSystem,
     ClimbAttachmentSystem,
     MotionTargetSystem,
+    DriveDecaySystem, // passive drive drift; reads this tick's IntentState
   ],
 
   POST_UPDATE: [
