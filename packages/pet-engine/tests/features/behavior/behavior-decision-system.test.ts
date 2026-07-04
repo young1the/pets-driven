@@ -954,6 +954,207 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
   });
 });
 
+// ── Cursor play: chase-cursor candidate ─────────────────────────────────────
+
+describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
+  /**
+   * Pet sits close to the user-anchor (distance 20 <= USER_PROXIMITY_RADIUS
+   * of 96) so seek-user is excluded, isolating chase-cursor against only
+   * wander-near / wander-far / idle-stay.
+   */
+  function makeChaseCursorStore(
+    cursor: { position: { x: number; y: number }; distance: number; speed: number; isPlayful: boolean } | null,
+    prefOverride: Partial<{
+      openness: number;
+      conscientiousness: number;
+      extraversion: number;
+      agreeableness: number;
+      neuroticism: number;
+    }> = {},
+  ) {
+    return createComponentStore([
+      {
+        id: "user-anchor",
+        components: [
+          { type: "UserAnchor" },
+          { type: "Transform", position: { x: 220, y: 200 } },
+        ],
+      },
+      {
+        id: "pet",
+        components: [
+          { type: "Transform", position: { x: 200, y: 200 } },
+          { type: "IntentState", intent: "idle" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          {
+            type: "Perception" as const,
+            userAnchor: { id: "user-anchor", position: { x: 220, y: 200 }, distance: 20 },
+            nearbyPets: [],
+            nearbyClimbables: [],
+            cursor,
+            self: { grounded: false, climbing: false, intent: "idle" as const },
+          },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.5,
+            agreeableness: 0.5,
+            neuroticism: 0.2,
+            ...prefOverride,
+          },
+        ],
+      },
+    ]);
+  }
+
+  const playfulCursor = {
+    position: { x: 220, y: 200 },
+    distance: 20,
+    speed: 900,
+    isPlayful: true,
+  };
+
+  it("is never a candidate when Perception.cursor is null", () => {
+    let found = false;
+    for (let seed = 0; seed < 200; seed++) {
+      const store = makeChaseCursorStore(null, { extraversion: 0.95, openness: 0.9, neuroticism: 0.05 });
+      runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed), BOUNDS);
+      if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "chase-cursor") {
+        found = true;
+      }
+    }
+    expect(found).toBe(false);
+  });
+
+  it("is never a candidate when the cursor is not playful", () => {
+    let found = false;
+    for (let seed = 0; seed < 200; seed++) {
+      const store = makeChaseCursorStore(
+        { position: { x: 220, y: 200 }, distance: 20, speed: 50, isPlayful: false },
+        { extraversion: 0.95, openness: 0.9, neuroticism: 0.05 },
+      );
+      runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed), BOUNDS);
+      if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "chase-cursor") {
+        found = true;
+      }
+    }
+    expect(found).toBe(false);
+  });
+
+  it("dominates selection for a high-E high-O low-N personality when the cursor is playful", () => {
+    const SAMPLES = 200;
+    const counts: Record<string, number> = {};
+    for (let seed = 0; seed < SAMPLES; seed++) {
+      const store = makeChaseCursorStore(playfulCursor, {
+        extraversion: 1,
+        openness: 1,
+        neuroticism: 0,
+      });
+      runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed * 1013 + 7), BOUNDS);
+      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
+      counts[kind] = (counts[kind] ?? 0) + 1;
+    }
+    // scoreChaseCursor(E=1,O=1,N=0) = 1.8 vs. next-best wander-far = 1.0 —
+    // softmax gives chase-cursor >90% of the probability mass.
+    expect(counts["chase-cursor"] ?? 0).toBeGreaterThan(SAMPLES * 0.85);
+  });
+
+  it("is suppressed for a high-neuroticism personality even when the cursor is playful", () => {
+    // N=1 drags scoreChaseCursor down (0.4+0.9*0.2+0.5*0.2-0.5*1 = 0.18) below
+    // wander-near/flee-leaning candidates, so it should rarely dominate.
+    const SAMPLES = 200;
+    const counts: Record<string, number> = {};
+    for (let seed = 0; seed < SAMPLES; seed++) {
+      const store = makeChaseCursorStore(playfulCursor, {
+        extraversion: 0.2,
+        openness: 0.2,
+        neuroticism: 1,
+      });
+      runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed * 1013 + 7), BOUNDS);
+      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
+      counts[kind] = (counts[kind] ?? 0) + 1;
+    }
+    expect(counts["chase-cursor"] ?? 0).toBeLessThan(SAMPLES * 0.5);
+  });
+
+  it("targets the user-anchor entity id and its current (cursor-driven) position", () => {
+    const store = makeChaseCursorStore(playfulCursor, {
+      extraversion: 1,
+      openness: 1,
+      neuroticism: 0,
+    });
+    // Softmax-dominant chase-cursor candidate: r=0.5 safely lands inside its
+    // >90%-probability bucket regardless of push order.
+    runBehaviorDecisionSystem(store, createManualClock(0), { next: () => 0.5 }, BOUNDS);
+
+    const token = store.getComponent("pet", "BehaviorDecisionToken");
+    expect(token?.kind).toBe("chase-cursor");
+    expect(token?.targetEntityId).toBe("user-anchor");
+    expect(token?.targetPosition).toEqual({ x: 220, y: 200 });
+  });
+
+  it("materializes a chase-cursor token into MotionTarget with intent=active", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Transform", position: { x: 200, y: 200 } },
+          { type: "IntentState", intent: "idle" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "idle" as const },
+          },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "chase-cursor" as const,
+            decidedAt: 0,
+            consumed: false,
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 260, y: 210 },
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    const motion = store.getComponent("pet", "MotionTarget");
+    expect(motion?.targetEntityId).toBe("user-anchor");
+    expect(motion?.targetPosition).toEqual({ x: 260, y: 210 });
+    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
+  });
+
+  it("does not repeat chase-cursor immediately after its claim expires (cooldown)", () => {
+    const store = makeChaseCursorStore(playfulCursor, {
+      extraversion: 1,
+      openness: 1,
+      neuroticism: 0,
+    });
+    const clock = createManualClock(0);
+
+    runBehaviorDecisionSystem(store, clock, { next: () => 0.5 }, BOUNDS);
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("chase-cursor");
+
+    store.setComponent("pet", { type: "IntentState", intent: "idle" as const });
+    store.setComponent("pet", { type: "MotionTarget", targetEntityId: null, targetPosition: null });
+    store.removeComponent("pet", "BehaviorDecisionToken");
+    // Past the 500ms autonomous claim duration (so a new decision can fire)
+    // but still well under the 2_000ms chase-cursor repeat cooldown.
+    clock.advanceBy(600);
+
+    runBehaviorDecisionSystem(store, clock, { next: () => 0.5 }, BOUNDS);
+
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).not.toBe("chase-cursor");
+  });
+});
+
 describe("BehaviorPlanningSystem — Phase 3 social tokens", () => {
   function makeSocialTokenStore(
     kind: "approach-pet" | "flee-from-pet",

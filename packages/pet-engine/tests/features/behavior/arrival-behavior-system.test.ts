@@ -267,4 +267,104 @@ describe("arrival behavior system", () => {
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
     expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBeLessThanOrEqual(5101);
   });
+
+  it("marks chase-cursor successful when it catches the cursor-tracking anchor", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "IntentState", intent: "active" as const },
+          { type: "Transform", position: { x: 100, y: 100 } },
+          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 140, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          {
+            type: "Perception" as const,
+            userAnchor: { id: "user-anchor", position: { x: 140, y: 100 }, distance: 40 },
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "active" as const },
+          },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "chase-cursor" as const,
+            decidedAt: 1000,
+            consumed: true,
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 140, y: 100 },
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous" as const,
+            decidedAt: 1800,
+            expiresAt: 2300,
+            reason: "chase-cursor",
+            lastAutonomousReason: "chase-cursor",
+            lastAutonomousAt: 1000,
+          },
+        ],
+      },
+    ]);
+
+    runArrivalBehaviorSystem(store, createManualClock(1800));
+
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("chase-cursor-success");
+    expect(store.getComponent("pet-a", "PetExpressionState")).toEqual({
+      type: "PetExpressionState",
+      source: "chase-cursor",
+      mood: "excited",
+      emote: "sparkle",
+      label: null,
+      startedAt: 1800,
+      expiresAt: 2800,
+    });
+  });
+
+  it("abandons chase-cursor after the chase time limit", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "IntentState", intent: "active" as const },
+          { type: "Transform", position: { x: 100, y: 100 } },
+          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 500, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          {
+            type: "Perception" as const,
+            userAnchor: { id: "user-anchor", position: { x: 500, y: 100 }, distance: 400 },
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: false, climbing: false, intent: "active" as const },
+          },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "chase-cursor" as const,
+            decidedAt: 1000,
+            consumed: true,
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 500, y: 100 },
+          },
+          {
+            type: "BehaviorDecisionState" as const,
+            source: "autonomous" as const,
+            decidedAt: 5000,
+            expiresAt: 5500,
+            reason: "chase-cursor",
+            lastAutonomousReason: "chase-cursor",
+            lastAutonomousAt: 1000,
+          },
+        ],
+      },
+    ]);
+
+    runArrivalBehaviorSystem(store, createManualClock(5101));
+
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBeLessThanOrEqual(5101);
+    expect(store.getComponent("pet-a", "PetExpressionState")).toBeUndefined();
+  });
 });

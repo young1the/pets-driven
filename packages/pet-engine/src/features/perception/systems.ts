@@ -1,11 +1,25 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
-import type { PerceivedEntity } from "./components";
+import type {
+  CursorSample,
+  CursorStateComponent,
+} from "@pets-driven/pet-engine/features/cursor/components";
+import type { CursorPerception, PerceivedEntity } from "./components";
 
 const MAX_PERCEPTION_RANGE = 400; // px
 
-export function runPerceptionSystem(components: ComponentStore): void {
+// Laser-pointer-chase tuning: cursor must be moving fast AND close to the pet.
+const CURSOR_PLAYFUL_SPEED_PX_S = 600;
+const CURSOR_PLAYFUL_RADIUS_PX = 300;
+// Speed is smoothed over a short trailing window rather than the raw last two
+// samples, which can be noisy at high tick rates.
+const CURSOR_SPEED_MIN_WINDOW_MS = 40;
+// If no fresh sample has landed recently, treat the cursor as stationary
+// rather than replaying a stale burst of speed from old samples.
+const CURSOR_STALE_MS = 300;
+
+export function runPerceptionSystem(components: ComponentStore, now?: number): void {
   // Pass 1: collect world-wide entities once per tick
   let userAnchorEntry: { id: string; x: number; y: number } | null = null;
   components.forEach(["UserAnchor", "Transform"], (id, [, transform]) => {
@@ -13,6 +27,10 @@ export function runPerceptionSystem(components: ComponentStore): void {
       userAnchorEntry = { id, x: transform.position.x, y: transform.position.y };
     }
   });
+
+  // Singleton lookup — at most one CursorState exists (on "user-anchor").
+  const cursorEntry: CursorStateComponent | null =
+    components.components("CursorState").values().next().value ?? null;
 
   const climbables: { id: string; x: number; y: number }[] = [];
   components.forEach(["ClimbableSurface", "Transform"], (id, [, transform]) => {
@@ -24,6 +42,12 @@ export function runPerceptionSystem(components: ComponentStore): void {
     allPets.push({ id, x: transform.position.x, y: transform.position.y });
   });
 
+  const effectiveNow =
+    now ?? cursorEntry?.samples[cursorEntry.samples.length - 1]?.at ?? 0;
+  const cursorSpeed = cursorEntry?.position
+    ? computeCursorSpeed(cursorEntry.samples, effectiveNow)
+    : 0;
+
   // Pass 2: write each pet's Perception
   components.forEach(
     ["Perception", "Transform", "IntentState", "ContactState"],
@@ -34,6 +58,8 @@ export function runPerceptionSystem(components: ComponentStore): void {
       perception.userAnchor = userAnchorEntry
         ? buildEntry(userAnchorEntry.id, userAnchorEntry.x, userAnchorEntry.y, px, py)
         : null;
+
+      perception.cursor = buildCursorPerception(cursorEntry, cursorSpeed, px, py);
 
       const nearbyPets: PerceivedEntity[] = [];
       for (const pet of allPets) {
@@ -79,9 +105,47 @@ function buildEntry(
   };
 }
 
+function buildCursorPerception(
+  cursorEntry: CursorStateComponent | null,
+  cursorSpeed: number,
+  px: number,
+  py: number,
+): CursorPerception | null {
+  if (!cursorEntry?.position) return null;
+  const distance = Math.hypot(cursorEntry.position.x - px, cursorEntry.position.y - py);
+  const isPlayful =
+    cursorSpeed >= CURSOR_PLAYFUL_SPEED_PX_S && distance <= CURSOR_PLAYFUL_RADIUS_PX;
+  return {
+    position: { ...cursorEntry.position },
+    distance,
+    speed: cursorSpeed,
+    isPlayful,
+  };
+}
+
+function computeCursorSpeed(samples: CursorSample[], now: number): number {
+  if (samples.length < 2) return 0;
+  const last = samples[samples.length - 1];
+  if (now - last.at > CURSOR_STALE_MS) return 0;
+
+  let reference = samples[samples.length - 2];
+  for (let i = samples.length - 2; i >= 0; i -= 1) {
+    reference = samples[i];
+    if (last.at - reference.at >= CURSOR_SPEED_MIN_WINDOW_MS) break;
+  }
+
+  const dt = last.at - reference.at;
+  if (dt <= 0) return 0;
+  const dist = Math.hypot(
+    last.position.x - reference.position.x,
+    last.position.y - reference.position.y,
+  );
+  return (dist / dt) * 1000;
+}
+
 export const PerceptionSystem: SimulationSystem<WorldStepContext> = {
   name: "PerceptionSystem",
-  dependsOn: ["ContactSystem"],
+  dependsOn: ["CursorInputSystem"],
   reads: [
     "UserAnchor",
     "Transform",
@@ -91,9 +155,10 @@ export const PerceptionSystem: SimulationSystem<WorldStepContext> = {
     "IntentState",
     "ContactState",
     "ClimbingTag",
+    "CursorState",
   ],
   writes: ["Perception"],
   update(ctx) {
-    runPerceptionSystem(ctx.components);
+    runPerceptionSystem(ctx.components, ctx.clock.now());
   },
 };

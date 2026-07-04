@@ -32,6 +32,18 @@ const APPROACH_PET_TIMEOUT_MS = 4_000;
 const APPROACH_PET_SUCCESS_CUE_MS = 1_000;
 const SPEECH_BUBBLE_DURATION_MS = 1_500;
 
+// Cursor play — laser-pointer-style chase.
+const CHASE_CURSOR_SUCCESS_RADIUS = 48;
+const CHASE_CURSOR_TIMEOUT_MS = 4_000;
+const CHASE_CURSOR_SUCCESS_CUE_MS = 1_000;
+
+// Cursor play — petting (cursor lingers over the pet's body and oscillates).
+const PETTING_OSCILLATION_WINDOW_MS = 1_500;
+const PETTING_MIN_REVERSALS = 3;
+const PETTING_MAX_DISPLACEMENT_PX = 60;
+const PETTING_DURATION_MS = 900;
+const PETTING_BODY_PADDING = 8;
+
 const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "wander-near": 750,
   "wander-far": 750,
@@ -48,6 +60,8 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "collision-avoid": 750,
   "collision-stay": 1_500,
   "collision-unfazed": 500,
+  // Cursor play
+  "chase-cursor": 2_000,
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
@@ -227,6 +241,128 @@ export function runPetExpressionExpirationSystem(
     if (expression.expiresAt > now) return;
     components.removeComponent(id, "PetExpressionState");
   });
+}
+
+// ── Cursor play: petting detection (priority 1, alongside user-interaction) ──
+//
+// Runs right after UserInteractionBehaviorSystem so DragInteraction reflects
+// this tick's pointer events. When the cursor lingers within a pet's body
+// bounds and oscillates horizontally (stroking motion, not a swipe-through),
+// claims user-interaction with reason "petting" and shows a love reaction.
+// Skips any pet currently being dragged by the same pointer.
+
+function findCursorState(
+  components: ComponentStore,
+): { position: { x: number; y: number } | null; samples: Array<{ at: number; position: { x: number; y: number } }> } | null {
+  let found: {
+    position: { x: number; y: number } | null;
+    samples: Array<{ at: number; position: { x: number; y: number } }>;
+  } | null = null;
+  components.forEach(["CursorState"], (_id, [state]) => {
+    if (!found) found = { position: state.position, samples: state.samples };
+  });
+  return found;
+}
+
+function horizontalOscillation(
+  samples: Array<{ at: number; position: { x: number; y: number } }>,
+  now: number,
+): { reversals: number; displacement: number } {
+  const recent = samples.filter(
+    (sample) => now - sample.at <= PETTING_OSCILLATION_WINDOW_MS,
+  );
+  if (recent.length < 3) return { reversals: 0, displacement: 0 };
+
+  let reversals = 0;
+  let lastSign = 0;
+  let minX = recent[0].position.x;
+  let maxX = recent[0].position.x;
+  for (let i = 1; i < recent.length; i += 1) {
+    const dx = recent[i].position.x - recent[i - 1].position.x;
+    minX = Math.min(minX, recent[i].position.x);
+    maxX = Math.max(maxX, recent[i].position.x);
+    if (dx === 0) continue;
+    const sign = dx > 0 ? 1 : -1;
+    if (lastSign !== 0 && sign !== lastSign) reversals += 1;
+    lastSign = sign;
+  }
+  return { reversals, displacement: maxX - minX };
+}
+
+export function runPettingDetectionSystem(
+  components: ComponentStore,
+  clock: Clock,
+  physics?: VelocityWriter,
+): void {
+  const now = clock.now();
+  const cursor = findCursorState(components);
+  if (!cursor?.position) return;
+  const cursorPosition = cursor.position;
+
+  const { reversals, displacement } = horizontalOscillation(
+    cursor.samples,
+    now,
+  );
+  const isOscillating =
+    reversals >= PETTING_MIN_REVERSALS &&
+    displacement <= PETTING_MAX_DISPLACEMENT_PX;
+  if (!isOscillating) return;
+
+  const drag = components.getComponent("user-interaction", "DragInteraction");
+
+  components.forEach(
+    ["Transform", "PhysicsBody", "PetIdentity"],
+    (id, [transform, body]) => {
+      if (drag && drag.entityId === id) return;
+
+      const halfW = body.width / 2 + PETTING_BODY_PADDING;
+      const halfH = body.height / 2 + PETTING_BODY_PADDING;
+      const withinBounds =
+        Math.abs(cursorPosition.x - transform.position.x) <= halfW &&
+        Math.abs(cursorPosition.y - transform.position.y) <= halfH;
+      if (!withinBounds) return;
+
+      const existing = components.getComponent(id, "BehaviorDecisionState");
+      const alreadyPetting =
+        existing?.source === "user-interaction" &&
+        existing.reason === "petting" &&
+        existing.expiresAt > now;
+
+      if (alreadyPetting) {
+        // Extend the reaction instead of restarting it every frame so
+        // continuous petting doesn't reset the love expression's timer.
+        existing.expiresAt = now + PETTING_DURATION_MS;
+        const expression = components.getComponent(id, "PetExpressionState");
+        if (expression && expression.source === "petting") {
+          expression.expiresAt = now + PETTING_DURATION_MS;
+        }
+        return;
+      }
+
+      if (isClaimedBySameOrHigherPriority(components, id, "user-interaction", now))
+        return;
+
+      claim(
+        components,
+        id,
+        "user-interaction",
+        now,
+        "petting",
+        now + PETTING_DURATION_MS,
+      );
+      components.setComponent(id, { type: "IntentState", intent: "idle" });
+      stopPetMovement(components, physics, id);
+      components.setComponent(id, {
+        type: "PetExpressionState",
+        source: "petting",
+        mood: "love",
+        emote: "heart",
+        label: null,
+        startedAt: now,
+        expiresAt: now + PETTING_DURATION_MS,
+      });
+    },
+  );
 }
 
 // Priority 2: Agent event reactions (task.started, task.waiting, etc.)
@@ -845,6 +981,68 @@ export function runArrivalBehaviorSystem(
           return;
         }
 
+        const isChasingCursor =
+          intent.intent === "active" &&
+          (decisionToken?.kind === "chase-cursor" ||
+            decision?.reason === "chase-cursor");
+
+        if (isChasingCursor) {
+          const startedAt =
+            decisionToken?.kind === "chase-cursor"
+              ? decisionToken.decidedAt
+              : (decision?.decidedAt ?? 0);
+          const now = clock?.now() ?? startedAt;
+          const perception = components.getComponent(id, "Perception");
+          const anchor = perception?.userAnchor;
+          const targetPosition =
+            anchor && anchor.id === motion.targetEntityId
+              ? anchor.position
+              : motion.targetPosition;
+          if (targetPosition) {
+            const dx = targetPosition.x - transform.position.x;
+            const dy = targetPosition.y - transform.position.y;
+            const isFlying = !!components.getComponent(id, "FlyingTag");
+            const dist = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
+            if (dist <= CHASE_CURSOR_SUCCESS_RADIUS) {
+              motion.targetEntityId = null;
+              motion.targetPosition = null;
+              intent.intent = "idle";
+              components.setComponent(id, {
+                type: "BehaviorDecisionState",
+                source: "autonomous",
+                decidedAt: now,
+                expiresAt: now + CHASE_CURSOR_SUCCESS_CUE_MS,
+                reason: "chase-cursor-success",
+                lastAutonomousReason:
+                  decision?.lastAutonomousReason ?? "chase-cursor",
+                lastAutonomousAt: decision?.lastAutonomousAt ?? startedAt,
+              });
+              components.setComponent(id, {
+                type: "PetExpressionState",
+                source: "chase-cursor",
+                mood: "excited",
+                emote: "sparkle",
+                label: null,
+                startedAt: now,
+                expiresAt: now + CHASE_CURSOR_SUCCESS_CUE_MS,
+              });
+              components.removeComponent(id, "BehaviorDecisionToken");
+              return;
+            }
+          }
+
+          if (now - startedAt > CHASE_CURSOR_TIMEOUT_MS) {
+            motion.targetEntityId = null;
+            motion.targetPosition = null;
+            intent.intent = "idle";
+            if (decision) decision.expiresAt = now;
+            components.removeComponent(id, "BehaviorDecisionToken");
+            return;
+          }
+
+          return;
+        }
+
         if (intent.intent !== "seek") return;
         const perception = components.getComponent(id, "Perception");
         const anchor = perception?.userAnchor;
@@ -1049,6 +1247,15 @@ function scoreApproachPet(p: PersonalityComponent): number {
 function scoreFleeFromPet(p: PersonalityComponent): number {
   // N → flight instinct; A → reduces urge to flee
   return 0.1 + p.neuroticism * 0.7 - p.agreeableness * 0.4;
+}
+
+// Cursor play — laser-pointer-chase drive.
+
+function scoreChaseCursor(p: PersonalityComponent): number {
+  // E (extraversion) + O (openness) → cat-and-laser-pointer chase instinct;
+  // N (neuroticism) → suppresses the impulse. Base + weights are intentionally
+  // high so playful cursor movement reliably wins for extraverted pets.
+  return 0.4 + p.extraversion * 0.9 + p.openness * 0.5 - p.neuroticism * 0.5;
 }
 
 /**
@@ -1399,6 +1606,20 @@ export function runBehaviorDecisionSystem(
         });
       }
 
+      // Cursor play — a fast/darting cursor near this pet offers chase-cursor,
+      // independent of the seek-user proximity gate above (playful chasing can
+      // happen right next to the user, unlike the "come say hi" seek-user drive).
+      if (userAnchor && perception?.cursor?.isPlayful) {
+        pushCandidate(candidates, components, id, now, {
+          kind: "chase-cursor",
+          score: scoreChaseCursor(personality),
+          build: () => ({
+            targetEntityId: userAnchor.id,
+            targetPosition: { x: userAnchor.x, y: userAnchor.y },
+          }),
+        });
+      }
+
       const canJump = components.getComponent(id, "CanJump");
       const jumpState = components.getComponent(id, "JumpActionState");
       const contact = components.getComponent(id, "ContactState");
@@ -1582,6 +1803,16 @@ export function runBehaviorPlanningSystem(
         });
         setPetIntent(components, id, "active");
         break;
+      // Cursor play — chase the user-anchor entity, which now tracks the
+      // live cursor position (see CursorInputSystem).
+      case "chase-cursor":
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: token.targetEntityId ?? null,
+          targetPosition: token.targetPosition!,
+        });
+        setPetIntent(components, id, "active");
+        break;
       // Phase 4 — collision reactions (position pre-computed in Decision)
       case "collision-flee":
       case "collision-engage":
@@ -1678,6 +1909,30 @@ export const PetExpressionExpirationSystem: SimulationSystem<WorldStepContext> =
       runPetExpressionExpirationSystem(ctx.components, ctx.clock);
     },
   };
+
+export const PettingDetectionSystem: SimulationSystem<WorldStepContext> = {
+  name: "PettingDetectionSystem",
+  dependsOn: ["UserInteractionBehaviorSystem"],
+  reads: [
+    "CursorState",
+    "Transform",
+    "PhysicsBody",
+    "PetIdentity",
+    "DragInteraction",
+    "BehaviorDecisionState",
+    "PetExpressionState",
+  ],
+  writes: [
+    "BehaviorDecisionState",
+    "PetExpressionState",
+    "IntentState",
+    "MotionTarget",
+    "PhysicsVelocity",
+  ],
+  update(ctx) {
+    runPettingDetectionSystem(ctx.components, ctx.clock, ctx.physics);
+  },
+};
 
 export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentEventBehaviorSystem",
@@ -1835,7 +2090,7 @@ export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "Perception",
     "ClimbIntentState",
   ],
-  writes: ["MotionTarget", "IntentState"],
+  writes: ["MotionTarget", "IntentState", "PetExpressionState"],
   update(ctx) {
     runArrivalBehaviorSystem(ctx.components, ctx.clock);
   },

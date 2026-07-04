@@ -2,6 +2,7 @@ import type { AgentTaskStatus } from "@pets-driven/pet-engine/features/agent/age
 import type {
   PetExpressionEmote,
   PetExpressionMood,
+  PetExpressionSource,
 } from "@pets-driven/pet-engine/core/components";
 import type {
   AgentChannelSource,
@@ -9,7 +10,7 @@ import type {
 } from "@pets-driven/pet-engine/features/agent/components";
 
 export type PetExpressionSnapshot = {
-  source: "collision";
+  source: PetExpressionSource;
   mood: PetExpressionMood;
   emote: PetExpressionEmote;
   label: string | null;
@@ -85,7 +86,7 @@ export type InteractionSnapshot = {
 };
 
 export type PetVisualCue = {
-  kind: "affection" | "flee" | "wander" | "surprised";
+  kind: "affection" | "flee" | "wander" | "surprised" | "playful";
   icon: string;
   label: string;
 };

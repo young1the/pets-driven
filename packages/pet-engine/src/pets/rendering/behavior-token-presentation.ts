@@ -101,6 +101,12 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<
     mood: "working",
     tone: "calm",
   },
+  "chase-cursor": {
+    emote: "sparkle",
+    label: "Chasing cursor",
+    mood: "excited",
+    tone: "spark",
+  },
 };
 
 export function presentBehaviorDecisionToken(

@@ -165,6 +165,33 @@ describe("motion target system", () => {
     expect(motion?.targetPosition).toEqual({ x: 360, y: 210 });
   });
 
+  it("tracks the user-anchor entity for chase-cursor targets (cursor-driven anchor)", () => {
+    // chase-cursor sets targetEntityId to the user-anchor id; MotionTargetSystem
+    // must keep following it via Perception.userAnchor the same way it follows
+    // nearbyPets for approach-pet, since CursorInputSystem moves the anchor's
+    // Transform to the live cursor position every tick.
+    const store = createComponentStore([{
+      id: "pet-a",
+      components: [
+        { type: "IntentState", intent: "active" as const },
+        { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 300, y: 200 } },
+        {
+          type: "Perception" as const,
+          userAnchor: { id: "user-anchor", position: { x: 420, y: 260 }, distance: 120 },
+          nearbyPets: [],
+          nearbyClimbables: [],
+          self: { grounded: true, climbing: false, intent: "active" as const },
+        },
+      ],
+    }]);
+
+    runMotionTargetSystem(store, { next: () => 0.5 }, { width: 960, height: 540 });
+
+    const motion = store.getComponent("pet-a", "MotionTarget");
+    expect(motion?.targetEntityId).toBe("user-anchor");
+    expect(motion?.targetPosition).toEqual({ x: 420, y: 260 });
+  });
+
   it("projects active pet targets onto the walker lane and requests jump when target is above", () => {
     const store = createComponentStore([{
       id: "pet-a",

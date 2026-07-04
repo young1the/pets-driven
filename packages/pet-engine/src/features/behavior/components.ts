@@ -58,7 +58,9 @@ export type BehaviorDecisionKind =
   | "collision-avoid"
   | "collision-jump"
   | "collision-stay"
-  | "collision-unfazed";
+  | "collision-unfazed"
+  // Cursor play — laser-pointer-style chase triggered by Perception.cursor
+  | "chase-cursor";
 
 export type BehaviorDecisionTokenComponent = {
   type: "BehaviorDecisionToken";
@@ -120,7 +122,7 @@ export type PendingReactionComponent = {
   };
 };
 
-export type PetExpressionSource = "collision";
+export type PetExpressionSource = "collision" | "chase-cursor" | "petting";
 
 export type PetExpressionMood =
   "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";

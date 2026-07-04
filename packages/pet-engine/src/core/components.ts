@@ -85,6 +85,12 @@ export type {
   ThrowImpulseComponent,
 } from "@pets-driven/pet-engine/features/interaction/components";
 
+export type {
+  CursorSample,
+  CursorStateComponent,
+  CursorInputComponent,
+} from "@pets-driven/pet-engine/features/cursor/components";
+
 import type { PerceptionComponent } from "@pets-driven/pet-engine/features/perception/components";
 import type {
   TransformComponent,
@@ -145,6 +151,10 @@ import type {
   DragInteractionComponent,
   ThrowImpulseComponent,
 } from "@pets-driven/pet-engine/features/interaction/components";
+import type {
+  CursorStateComponent,
+  CursorInputComponent,
+} from "@pets-driven/pet-engine/features/cursor/components";
 
 export type Component =
   | ActivityStateComponent
@@ -170,6 +180,8 @@ export type Component =
   | ClimbingTagComponent
   | CompletionBehaviorComponent
   | ContactStateComponent
+  | CursorStateComponent
+  | CursorInputComponent
   | DragInteractionComponent
   | FlyingTagComponent
   | GroundComponent

@@ -187,9 +187,11 @@ describe("demo scenario", () => {
       "PhysicsTransformSyncSystemPre",
       "PetCollisionSyncSystem",
       "ContactSystem",
+      "CursorInputSystem",
       "PerceptionSystem",
       // BEHAVIOR
       "UserInteractionBehaviorSystem",
+      "PettingDetectionSystem",
       "SpeechExpirationSystem",
       "PetExpressionExpirationSystem",
       "AgentEventBehaviorSystem",
@@ -301,7 +303,7 @@ describe("demo scenario", () => {
         "Perception",
         "ClimbIntentState",
       ],
-      writes: ["MotionTarget", "IntentState"],
+      writes: ["MotionTarget", "IntentState", "PetExpressionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ClimbDismountSystem",
