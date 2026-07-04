@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentBehaviorDecisionToken } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
@@ -52,37 +53,19 @@ type DecisionSelectionPrototypeProps = {
   selection: DecisionSelectionExplanation;
 };
 
-// Human-friendly labels for the internal behavior decision kinds, so the
-// reel reads like plain language instead of leaking variable names.
-const DECISION_KIND_LABELS: Record<BehaviorDecisionKind, string> = {
-  "wander-near": "Wander nearby",
-  "wander-far": "Roam far",
-  "seek-user": "Come to you",
-  "request-jump": "Jump",
-  "request-climb": "Climb up",
-  "idle-stay": "Stay put",
-  "approach-pet": "Greet a friend",
-  "flee-from-pet": "Shy away",
-  "collision-flee": "Run off",
-  "collision-engage": "Say hello",
-  "collision-avoid": "Dodge",
-  "collision-jump": "Hop away",
-  "collision-stay": "Hold ground",
-  "collision-unfazed": "Shrug it off",
-};
-
-function formatDecisionKind(kind: BehaviorDecisionKind) {
-  return DECISION_KIND_LABELS[kind] ?? kind;
-}
+// Human-friendly labels for the internal behavior decision kinds live under
+// the `showcase.decisionKinds` i18n keys, so the reel reads like plain language
+// (in the active locale) instead of leaking variable names.
 
 const AGENT_STIMULI = [
-  { type: "task.started", label: "Task started", summary: "Work started" },
-  { type: "task.waiting", label: "Needs input", summary: "Waiting for approval" },
-  { type: "task.completed", label: "Task completed", summary: "Build completed" },
-  { type: "task.failed", label: "Task failed", summary: "Build failed" },
+  { id: "started", type: "task.started" },
+  { id: "waiting", type: "task.waiting" },
+  { id: "completed", type: "task.completed" },
+  { id: "failed", type: "task.failed" },
 ] as const;
 
 export function DecisionShowcaseApp() {
+  const { t } = useTranslation("landing");
   const scenarioRef = useRef(createDemoScenario());
   const [snapshot, setSnapshot] = useState(() =>
     scenarioRef.current.world.snapshot(),
@@ -126,7 +109,9 @@ export function DecisionShowcaseApp() {
   const personality = selectedPet
     ? scenarioRef.current.world.getComponent(selectedPet.id, "Personality")
     : undefined;
-  const personalitySummary = summarizePersonality(personality);
+  const personalitySummary = t(
+    `showcase.temperaments.${summarizePersonality(personality)}`,
+  );
   const explanation = useMemo(
     () =>
       selectedPet
@@ -373,7 +358,7 @@ export function DecisionShowcaseApp() {
           data-testid="decision-showcase-stage"
         >
           <div className="decision-showcase__stage-topline">
-            <span>Status screen</span>
+            <span>{t("showcase.statusScreen")}</span>
             <strong>
               {selectedPet.name} · {personalitySummary}
             </strong>
@@ -384,7 +369,7 @@ export function DecisionShowcaseApp() {
             data-testid="decision-pet-stage"
           >
             <PetSprite
-              alt={`${selectedPet.name} sprite`}
+              alt={t("showcase.spriteAlt", { name: selectedPet.name })}
               decisionEmote={petDecisionEmote}
               animationState={petAnimationState}
               className="decision-showcase__live-sprite"
@@ -401,7 +386,7 @@ export function DecisionShowcaseApp() {
                   key={`collider-${motionSequence}`}
                 >
                   <PetSprite
-                    alt="Bob collider sprite"
+                    alt={t("showcase.colliderAlt")}
                     animationState="running-left"
                     className="decision-showcase__collider-sprite"
                     elapsedMs={visualElapsedMs}
@@ -438,28 +423,32 @@ export function DecisionShowcaseApp() {
         <section className="decision-showcase__controls">
           <div className="decision-showcase__stimuli">
             <header className="decision-showcase__stimuli-header">
-              <h3>Inject an event</h3>
+              <h3>{t("showcase.injectEvent")}</h3>
             </header>
             <p className="decision-showcase__stimuli-hint">
-              Send the pet a signal and watch it weigh its options before
-              committing to a move.
+              {t("showcase.hint")}
             </p>
             <div className="decision-showcase__button-row">
               {AGENT_STIMULI.map((stimulus) => (
                 <Button
                   key={stimulus.type}
-                  onClick={() => handleAgentStimulus(stimulus.type, stimulus.summary)}
+                  onClick={() =>
+                    handleAgentStimulus(
+                      stimulus.type,
+                      t(`showcase.stimuli.${stimulus.id}.summary`),
+                    )
+                  }
                   size="sm"
                   variant={stimulus.type === "task.failed" ? "accent" : "neutral"}
                 >
-                  {stimulus.label}
+                  {t(`showcase.stimuli.${stimulus.id}.label`)}
                 </Button>
               ))}
               <Button onClick={handleCollisionStimulus} size="sm" variant="neutral">
-                Collision
+                {t("showcase.collision")}
               </Button>
               <Button onClick={handleAutonomousStimulus} size="sm" variant="neutral">
-                Autonomous roll
+                {t("showcase.autonomous")}
               </Button>
             </div>
           </div>
@@ -633,6 +622,7 @@ function SelectionReelItem({
   probabilityProgress: number;
   revealSelection: boolean;
 }) {
+  const { t } = useTranslation("landing");
   const isSelectedStop = candidate.selected && !isCopy;
   const isSelectionVisible = isSelectedStop && revealSelection;
   const pingDelay = 42 * (index % 5);
@@ -651,7 +641,7 @@ function SelectionReelItem({
         } as CSSProperties
       }
     >
-      <strong>{formatDecisionKind(candidate.kind)}</strong>
+      <strong>{t(`showcase.decisionKinds.${candidate.kind}`)}</strong>
       <span>{formatPercent(candidate.probability * probabilityProgress)}</span>
     </article>
   );
@@ -700,22 +690,26 @@ function animationStateForDecisionKind(
   }
 }
 
-function summarizePersonality(personality: PersonalityComponent | undefined) {
-  if (!personality) return "Unknown temperament";
+/**
+ * Classify a personality into a temperament id. The id maps to a
+ * `showcase.temperaments.*` i18n key that the caller resolves for display.
+ */
+function summarizePersonality(personality: PersonalityComponent | undefined): string {
+  if (!personality) return "unknown";
   if (personality.extraversion >= 0.75 && personality.openness >= 0.6) {
-    return "Curious extrovert";
+    return "curiousExtrovert";
   }
   if (personality.neuroticism >= 0.65 && personality.extraversion <= 0.35) {
-    return "Reserved";
+    return "reserved";
   }
   if (personality.agreeableness >= 0.7 && personality.extraversion >= 0.55) {
-    return "Sociable";
+    return "sociable";
   }
-  if (personality.conscientiousness >= 0.65) return "Steady";
-  if (personality.openness >= 0.65) return "Curious";
-  if (personality.neuroticism >= 0.65) return "Cautious";
-  if (personality.extraversion >= 0.65) return "Outgoing";
-  return "Balanced";
+  if (personality.conscientiousness >= 0.65) return "steady";
+  if (personality.openness >= 0.65) return "curious";
+  if (personality.neuroticism >= 0.65) return "cautious";
+  if (personality.extraversion >= 0.65) return "outgoing";
+  return "balanced";
 }
 
 function selectionSlotCandidates(selection: DecisionSelectionExplanation) {

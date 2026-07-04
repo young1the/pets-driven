@@ -7,6 +7,7 @@ import {
   type PetAvatarStatus,
   type PetName,
 } from "@pets-driven/design-system";
+import { Trans, useTranslation } from "@pets-driven/i18n";
 import { DecisionShowcaseApp } from "./DecisionShowcase";
 
 /**
@@ -87,6 +88,13 @@ function EyePair({ c }: { c: Creature }) {
 
 export default function Intro() {
   const rootRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("landing");
+
+  // The hatch animation builds terminal lines inside a long-lived effect. Keep
+  // the latest `t` in a ref so those closures translate with the current
+  // locale without re-running (and re-binding) the whole effect.
+  const tRef = useRef(t);
+  tRef.current = t;
 
   useEffect(() => {
     const root = rootRef.current;
@@ -142,12 +150,15 @@ export default function Intro() {
 
     // ---- Hatch interaction ----
     const selected = ["curious", "tidy"];
+    const traitLabel = (id: string) => tRef.current(`setup.hatch.traits.${id}`);
     const phrase = () => {
-      const s = selected.slice();
+      const s = selected.map(traitLabel);
       if (s.length === 0) return null;
       return s.length === 1
         ? s[0]
-        : s.slice(0, -1).join(", ") + " and " + s[s.length - 1];
+        : s.slice(0, -1).join(", ") +
+            tRef.current("setup.hatch.and") +
+            s[s.length - 1];
     };
 
     let hatchTimers: ReturnType<typeof setTimeout>[] = [];
@@ -173,19 +184,19 @@ export default function Intro() {
         done?: number;
       }[] = [];
       rows.push({ p: "$", c: "var(--term-prompt)", t: "/pet-driven:hatch" });
-      rows.push({ t: "reading personality plugins…", m: 1 });
+      rows.push({ t: tRef.current("setup.hatch.reading"), m: 1 });
       if (selected.length === 0)
-        rows.push({ t: "no plugins — hatching a blank slate", m: 1 });
+        rows.push({ t: tRef.current("setup.hatch.blank"), m: 1 });
       else
         selected.forEach((tr) =>
-          rows.push({ p: "+", c: "var(--term-accent)", t: tr }),
+          rows.push({ p: "+", c: "var(--term-accent)", t: traitLabel(tr) }),
         );
-      rows.push({ t: "warming the egg…", m: 1 });
-      rows.push({ t: "egg cracking…", m: 1, crack: 1 });
+      rows.push({ t: tRef.current("setup.hatch.warming"), m: 1 });
+      rows.push({ t: tRef.current("setup.hatch.cracking"), m: 1, crack: 1 });
       rows.push({
         p: "✓",
         c: "var(--mint-300)",
-        t: "meet Cato" + (ph ? " — " + ph : ""),
+        t: tRef.current("setup.hatch.meet") + (ph ? " — " + ph : ""),
         done: 1,
       });
       rows.forEach((r, i) => {
@@ -396,7 +407,7 @@ export default function Intro() {
                 textShadow: "0 2px 50px rgba(0,0,0,.55)",
               }}
             >
-              Development is over.
+              {t("hero.headline")}
             </h1>
             <p
               style={{
@@ -407,7 +418,7 @@ export default function Intro() {
                 margin: "22px 0 0",
               }}
             >
-              something has been watching your codebase
+              {t("hero.watching")}
             </p>
           </div>
 
@@ -455,7 +466,7 @@ export default function Intro() {
               className="pd-eyebrow"
               style={{ marginTop: 16, color: "var(--ink-500)" }}
             >
-              a cute way to develop with AI agents
+              {t("hero.tagline")}
             </p>
           </div>
 
@@ -479,7 +490,7 @@ export default function Intro() {
               pointerEvents: "none",
             }}
           >
-            <span>scroll</span>
+            <span>{t("hero.scroll")}</span>
             <span
               style={{
                 fontSize: 18,
@@ -505,14 +516,13 @@ export default function Intro() {
             }}
           >
             <span className="pd-eyebrow" style={{ color: "var(--teal-600)" }}>
-              Demo
+              {t("demo.eyebrow")}
             </span>
             <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(30px,4vw,54px)", lineHeight: 1.05, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: "12px 0 0" }}>
-              See it in action.
+              {t("demo.title")}
             </h2>
             <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: "var(--ink-700)", maxWidth: "52ch", margin: "18px auto 0" }}>
-              Summon a pet, give it a personality, and watch the pack settle into
-              your desktop.
+              {t("demo.body")}
             </p>
           </div>
           <div
@@ -589,7 +599,7 @@ export default function Intro() {
                 className="pd-eyebrow"
                 style={{ color: "var(--blossom-600)" }}
               >
-                The pack
+                {t("personalities.eyebrow")}
               </span>
               <h2
                 style={{
@@ -600,10 +610,10 @@ export default function Intro() {
                   letterSpacing: "-0.02em",
                   color: "var(--ink-950)",
                   margin: "14px 0 0",
+                  whiteSpace: "pre-line",
                 }}
               >
-                Every pet has a<br />
-                personality of its own.
+                {t("personalities.title")}
               </h2>
               <p
                 style={{
@@ -615,9 +625,7 @@ export default function Intro() {
                   margin: "22px 0 0",
                 }}
               >
-                Some pets explore your desktop far and wide — bouncing, jumping,
-                chasing things down. Others are shy: they peek out, sniff
-                around, and dart back the moment you look.
+                {t("personalities.body")}
               </p>
               <div
                 style={{
@@ -629,15 +637,15 @@ export default function Intro() {
               >
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 999, background: "var(--butter-100)", color: "var(--butter-600)", fontWeight: 700, fontSize: 13 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--butter-500)" }} />
-                  Otto roams far
+                  {t("personalities.tags.otto")}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 999, background: "var(--sky-100)", color: "var(--sky-700)", fontWeight: 700, fontSize: 13 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--sky-500)" }} />
-                  Pip zooms about
+                  {t("personalities.tags.pip")}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 999, background: "var(--blossom-100)", color: "var(--blossom-700)", fontWeight: 700, fontSize: 13 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--blossom-500)" }} />
-                  Mochi is shy
+                  {t("personalities.tags.mochi")}
                 </span>
               </div>
             </div>
@@ -660,12 +668,12 @@ export default function Intro() {
                 <div style={{ height: 208, borderRadius: 20, background: "var(--term-bg)", border: "7px solid #fff", boxShadow: "0 18px 44px rgba(34,31,46,.18), inset 0 0 0 1px var(--border-soft)", padding: 18, overflow: "hidden" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.7, color: "var(--term-muted)" }}>
                     <div>
-                      <span style={{ color: "var(--term-prompt)" }}>~</span> the den is open
+                      <span style={{ color: "var(--term-prompt)" }}>~</span> {t("personalities.terminal.den")}
                     </div>
-                    <div style={{ color: "var(--term-accent)" }}>6 pets ready</div>
-                    <div style={{ color: "var(--term-pink)" }}>pip is sniffing around…</div>
+                    <div style={{ color: "var(--term-accent)" }}>{t("personalities.terminal.ready")}</div>
+                    <div style={{ color: "var(--term-pink)" }}>{t("personalities.terminal.sniffing")}</div>
                     <div style={{ height: 8 }} />
-                    <div style={{ opacity: 0.6 }}>idle · waiting for a task</div>
+                    <div style={{ opacity: 0.6 }}>{t("personalities.terminal.idle")}</div>
                   </div>
                 </div>
                 <div style={{ width: 78, height: 24, margin: "0 auto", background: "#fff", boxShadow: "inset 0 0 0 1px var(--border-soft)" }} />
@@ -695,10 +703,10 @@ export default function Intro() {
 
               {/* floating captions */}
               <div style={{ position: "absolute", left: "6%", top: "6%", padding: "6px 11px", borderRadius: 999, background: "#fff", boxShadow: "0 8px 20px rgba(34,31,46,.1)", fontSize: 12, fontWeight: 700, color: "var(--butter-600)", animation: "pdFloat 4s ease-in-out infinite" }}>
-                jumps far!
+                {t("personalities.captions.jumps")}
               </div>
               <div style={{ position: "absolute", left: "80%", top: "38%", padding: "6px 11px", borderRadius: 999, background: "#fff", boxShadow: "0 8px 20px rgba(34,31,46,.1)", fontSize: 12, fontWeight: 700, color: "var(--blossom-600)", animation: "pdFloat 4.6s ease-in-out infinite" }}>
-                shy…
+                {t("personalities.captions.shy")}
               </div>
             </div>
           </div>
@@ -724,14 +732,13 @@ export default function Intro() {
             }}
           >
             <span className="pd-eyebrow" style={{ color: "var(--teal-600)" }}>
-              Preview
+              {t("preview.eyebrow")}
             </span>
             <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(30px,4vw,54px)", lineHeight: 1.05, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: "12px 0 0" }}>
-              Watch a pet decide what to do next.
+              {t("preview.title")}
             </h2>
             <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: "var(--ink-700)", maxWidth: "50ch", margin: "18px auto 0" }}>
-              A live simulation of how a pet weighs its options and picks its
-              next action.
+              {t("preview.body")}
             </p>
           </div>
           {/* Live behavior pipeline — the real decision simulation. */}
@@ -768,14 +775,13 @@ export default function Intro() {
               className="pd-eyebrow"
               style={{ color: "var(--lavender-600)" }}
             >
-              Setup
+              {t("setup.eyebrow")}
             </span>
             <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(30px,4vw,54px)", lineHeight: 1.05, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: "12px 0 0" }}>
-              Hatch your pet with one command.
+              {t("setup.title")}
             </h2>
             <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: "var(--ink-700)", maxWidth: "54ch", margin: "18px auto 0" }}>
-              Run a single command and watch your pet hatch right inside your
-              terminal — personality and all.
+              {t("setup.body")}
             </p>
           </div>
 
@@ -807,11 +813,11 @@ export default function Intro() {
                     transition: "transform .14s ease, background .14s ease",
                   }}
                 >
-                  Run
+                  {t("setup.run")}
                 </button>
               </div>
               <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-500)", margin: "12px 0 0" }}>
-                Run the command to hatch your pet.
+                {t("setup.runHint")}
               </p>
             </div>
 
@@ -831,11 +837,17 @@ export default function Intro() {
                     <span style={{ width: 10, height: 10, borderRadius: 999, background: "#FF7967" }} />
                     <span style={{ width: 10, height: 10, borderRadius: 999, background: "#FBC24A" }} />
                     <span style={{ width: 10, height: 10, borderRadius: 999, background: "#4FC894" }} />
-                    <span style={{ marginLeft: 8, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--term-muted)" }}>your terminal — pets-driven</span>
+                    <span style={{ marginLeft: 8, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--term-muted)" }}>{t("setup.terminalTitle")}</span>
                   </div>
                   <div data-hatch-out style={{ padding: "16px 18px", fontFamily: "var(--font-mono)", fontSize: 13.5, lineHeight: 1.7, color: "var(--term-fg)", minHeight: 178 }}>
                     <div style={{ color: "var(--term-muted)" }}>
-                      → run <span style={{ color: "var(--term-pink)" }}>/pet-driven:hatch</span> to hatch your pet
+                      <Trans
+                        i18nKey="setup.terminalHint"
+                        ns="landing"
+                        components={{
+                          cmd: <span style={{ color: "var(--term-pink)" }} />,
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -847,13 +859,13 @@ export default function Intro() {
                       <span style={{ position: "absolute", top: 40, left: 34, width: 5, height: 5, borderRadius: 999, background: "var(--blossom-200)" }} />
                       <span style={{ position: "absolute", top: 54, left: 18, width: 4, height: 4, borderRadius: 999, background: "var(--blossom-200)" }} />
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".04em", color: "var(--ink-400)" }}>waiting to hatch</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".04em", color: "var(--ink-400)" }}>{t("setup.waiting")}</div>
                   </div>
                   <div data-hatched style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, opacity: 0, transform: "scale(.4)", transition: "transform .55s cubic-bezier(.34,1.56,.64,1), opacity .4s ease" }}>
                     <PetAvatar pet="cato" size="xl" status="happy" ring />
                     <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 22, color: "var(--ink-950)" }}>Cato</div>
                     <p data-summary style={{ fontFamily: "var(--font-body)", fontSize: 15, lineHeight: 1.55, color: "var(--ink-700)", margin: 0, textAlign: "center", maxWidth: "30ch" }}>
-                      Cato is curious and tidy.
+                      {t("setup.summary")}
                     </p>
                   </div>
                 </div>
@@ -888,18 +900,17 @@ export default function Intro() {
               ))}
             </div>
             <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(34px,5vw,68px)", lineHeight: 1.02, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: 0 }}>
-              Ready to send the pack?
+              {t("cta.title")}
             </h2>
             <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.5vw,20px)", lineHeight: 1.6, color: "var(--ink-700)", margin: "18px auto 0", maxWidth: "42ch" }}>
-              Give your pets a task and watch them go. Development is over — the
-              pack takes it from here.
+              {t("cta.body")}
             </p>
             <div style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 34, flexWrap: "wrap" }}>
               <Button variant="primary" size="lg">
-                Adopt a pet
+                {t("cta.adopt")}
               </Button>
               <Button variant="ghost" size="lg">
-                Meet the pets
+                {t("cta.meet")}
               </Button>
             </div>
           </div>
@@ -911,7 +922,7 @@ export default function Intro() {
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 18, color: "var(--ink-800)" }}>
             Pets<span style={{ color: "var(--lavender-500)" }}>-</span>Driven
           </span>
-          <span style={{ fontSize: 13 }}>· a cute way to develop with AI agents</span>
+          <span style={{ fontSize: 13 }}>· {t("hero.tagline")}</span>
         </div>
       </section>
     </div>

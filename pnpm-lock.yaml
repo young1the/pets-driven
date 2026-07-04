@@ -74,6 +74,9 @@ importers:
       '@pets-driven/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@pets-driven/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@pets-driven/pet-engine':
         specifier: workspace:*
         version: link:../../packages/pet-engine
@@ -145,6 +148,25 @@ importers:
       vitest:
         specifier: ^3.1.3
         version: 3.2.6(@types/node@25.9.3)(jsdom@26.1.0)(terser@5.48.0)
+
+  packages/i18n:
+    dependencies:
+      i18next:
+        specifier: ^23.16.8
+        version: 23.16.8
+      react-i18next:
+        specifier: ^15.1.4
+        version: 15.7.4(i18next@23.16.8)(react@18.3.1)(typescript@5.9.3)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.23
+        version: 18.3.31
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
 
   packages/pet-engine:
     dependencies:
@@ -1622,6 +1644,9 @@ packages:
   html-entities@2.6.0:
     resolution: {integrity: sha512-kig+rMn/QOVRvr7c86gQ8lWXq+Hkv6CbAH1hLu+RG338StTpE8Z0b44SDVaqVu7HGKf27frdmUYEs9hTUX/cLQ==}
 
+  html-parse-stringify@3.0.1:
+    resolution: {integrity: sha512-KknJ50kTInJ7qIScF3jeaFRpMpE8/lfiTdzf/twXyPBLAGrLRTmkz3AdTnKeh40X8k9L2fdYwEp/42WGXIRGcg==}
+
   http-proxy-agent@7.0.2:
     resolution: {integrity: sha512-T1gkAiYYDWYx3V5Bmyu7HcfcvL7mUrTWiM6yOfa3PIphViJ/gFPbvidQ+veqSOHci/PxBcDabeUNCzpOODJZig==}
     engines: {node: '>= 14'}
@@ -1633,6 +1658,9 @@ packages:
   human-signals@2.1.0:
     resolution: {integrity: sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==}
     engines: {node: '>=10.17.0'}
+
+  i18next@23.16.8:
+    resolution: {integrity: sha512-06r/TitrM88Mg5FdUXAKL96dJMzgqLE5dv3ryBAra4KCwD9mJ4ndOTS95ZuymIGoE+2hzfdaMak2X11/es7ZWg==}
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
@@ -1908,6 +1936,22 @@ packages:
     resolution: {integrity: sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==}
     peerDependencies:
       react: ^18.3.1
+
+  react-i18next@15.7.4:
+    resolution: {integrity: sha512-nyU8iKNrI5uDJch0z9+Y5XEr34b0wkyYj3Rp+tfbahxtlswxSCjcUL9H0nqXo9IR3/t5Y5PKIA3fx3MfUyR9Xw==}
+    peerDependencies:
+      i18next: '>= 23.4.0'
+      react: '>= 16.8.0'
+      react-dom: '*'
+      react-native: '*'
+      typescript: ^5
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+      typescript:
+        optional: true
 
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
@@ -2252,6 +2296,10 @@ packages:
         optional: true
       jsdom:
         optional: true
+
+  void-elements@3.1.0:
+    resolution: {integrity: sha512-Dhxzh5HZuiHQhbvTW9AMetFfBHDMYpo23Uo9btPXgdYP+3T5S+p+jgNy7spra+veYhBP2dCSgxR/i2Y02h5/6w==}
+    engines: {node: '>=0.10.0'}
 
   w3c-xmlserializer@5.0.0:
     resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
@@ -2779,13 +2827,13 @@ snapshots:
       '@remotion/timeline-utils': 4.0.484
       '@rspack/core': 1.7.11(@swc/helpers@0.5.5)
       '@rspack/plugin-react-refresh': 1.6.1(react-refresh@0.18.0)
-      css-loader: 7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.5))(webpack@5.105.0(postcss@8.5.15))
+      css-loader: 7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.5))(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.15))
       esbuild: 0.28.1
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       react-refresh: 0.18.0
       remotion: 4.0.484(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      style-loader: 4.0.0(webpack@5.105.0(postcss@8.5.15))
+      style-loader: 4.0.0(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.15))
       webpack: 5.105.0(esbuild@0.28.1)(postcss@8.5.15)
     transitivePeerDependencies:
       - '@minify-html/node'
@@ -3514,7 +3562,7 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  css-loader@7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.5))(webpack@5.105.0(postcss@8.5.15)):
+  css-loader@7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.5))(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.15)):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.15)
       postcss: 8.5.15
@@ -3706,6 +3754,10 @@ snapshots:
 
   html-entities@2.6.0: {}
 
+  html-parse-stringify@3.0.1:
+    dependencies:
+      void-elements: 3.1.0
+
   http-proxy-agent@7.0.2:
     dependencies:
       agent-base: 7.1.4
@@ -3721,6 +3773,10 @@ snapshots:
       - supports-color
 
   human-signals@2.1.0: {}
+
+  i18next@23.16.8:
+    dependencies:
+      '@babel/runtime': 7.29.7
 
   iconv-lite@0.6.3:
     dependencies:
@@ -3975,6 +4031,15 @@ snapshots:
       react: 18.3.1
       scheduler: 0.23.2
 
+  react-i18next@15.7.4(i18next@23.16.8)(react@18.3.1)(typescript@5.9.3):
+    dependencies:
+      '@babel/runtime': 7.29.7
+      html-parse-stringify: 3.0.1
+      i18next: 23.16.8
+      react: 18.3.1
+    optionalDependencies:
+      typescript: 5.9.3
+
   react-is@17.0.2: {}
 
   react-refresh@0.17.0: {}
@@ -4106,7 +4171,7 @@ snapshots:
     dependencies:
       js-tokens: 9.0.1
 
-  style-loader@4.0.0(webpack@5.105.0(postcss@8.5.15)):
+  style-loader@4.0.0(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.15)):
     dependencies:
       webpack: 5.105.0(esbuild@0.28.1)(postcss@8.5.15)
 
@@ -4267,6 +4332,8 @@ snapshots:
       - terser
       - tsx
       - yaml
+
+  void-elements@3.1.0: {}
 
   w3c-xmlserializer@5.0.0:
     dependencies:
