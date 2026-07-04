@@ -1373,9 +1373,17 @@ function pickWanderPosition(
   bodyWidth = DEFAULT_WANDER_BODY_WIDTH,
 ): { x: number; y: number } {
   const margin = 48;
-  const minX = (bounds.x ?? 0) + margin;
+  // A wide body cannot centre itself within half its width of a side wall, so a
+  // target inside that band is physically unreachable: the walker jams against
+  // the wall, never satisfies the horizontal arrival test, never returns to
+  // "idle", and so never gets to re-decide (e.g. to jump). Widen the horizontal
+  // margin to at least the body's half-width so targets stay reachable. The
+  // default 32-wide body's half-width (16) stays under `margin`, so this leaves
+  // default-sized pets unchanged.
+  const horizontalMargin = Math.max(margin, bodyWidth / 2);
+  const minX = (bounds.x ?? 0) + horizontalMargin;
   const minY = (bounds.y ?? 0) + margin;
-  const maxX = (bounds.x ?? 0) + bounds.width - margin;
+  const maxX = (bounds.x ?? 0) + bounds.width - horizontalMargin;
   const maxY = (bounds.y ?? 0) + bounds.height - margin;
   const angle = random.next() * Math.PI * 2;
   const [minR, maxR] = personality
