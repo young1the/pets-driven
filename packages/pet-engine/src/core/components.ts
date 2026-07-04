@@ -39,6 +39,7 @@ export type {
   AgentChannelStateComponent,
   ActivityStateComponent,
   CompletionBehaviorComponent,
+  TaskMovementHoldComponent,
   SpeechProfileComponent,
   SpeechStateComponent,
   IdleConversationComponent,
@@ -109,6 +110,7 @@ import type {
   AgentChannelStateComponent,
   ActivityStateComponent,
   CompletionBehaviorComponent,
+  TaskMovementHoldComponent,
   SpeechProfileComponent,
   SpeechStateComponent,
   IdleConversationComponent,
@@ -186,6 +188,7 @@ export type Component =
   | PhysicsMaterialComponent
   | SpeechProfileComponent
   | SpeechStateComponent
+  | TaskMovementHoldComponent
   | TransformComponent
   | ThrowImpulseComponent
   | UserAnchorComponent

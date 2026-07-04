@@ -282,31 +282,31 @@ export function createWorld(input: WorldDefinition) {
   function getPetAnimationState(
     componentStore: ComponentStore,
     id: string,
-    body: { vy: number },
+    body: { vx: number; vy: number },
   ): PetAnimationState | undefined {
     if (!componentStore.getComponent(id, "PetIdentity")) {
       return undefined;
     }
 
-    const decision = componentStore.getComponent(id, "BehaviorDecisionState");
     const agentTask = componentStore.getComponent(id, "AgentTaskState");
-    if (agentTask?.status === "failed") return "failed";
-    if (agentTask?.status === "completed") return "review";
-    if (agentTask?.status === "waiting") return "waiting";
 
-    if (decision?.reason === "task.failed") {
-      return "failed";
-    }
+    // Status poses (waiting / failed / review) only apply while the pet is
+    // actually held. Once the user releases the hold, the reported status
+    // stays on the pet but locomotion drives the sprite again.
+    if (componentStore.getComponent(id, "TaskMovementHold")) {
+      if (agentTask?.status === "failed") return "failed";
+      if (agentTask?.status === "completed") return "review";
+      if (agentTask?.status === "waiting") return "waiting";
 
-    if (decision?.reason === "task.completed") {
-      return "review";
-    }
-
-    if (
-      decision?.reason === "task.waiting" ||
-      decision?.reason === "attention.requested"
-    ) {
-      return "waiting";
+      const decision = componentStore.getComponent(id, "BehaviorDecisionState");
+      if (decision?.reason === "task.failed") return "failed";
+      if (decision?.reason === "task.completed") return "review";
+      if (
+        decision?.reason === "task.waiting" ||
+        decision?.reason === "attention.requested"
+      ) {
+        return "waiting";
+      }
     }
 
     const jumpAction = componentStore.getComponent(id, "JumpActionState");
@@ -318,16 +318,14 @@ export function createWorld(input: WorldDefinition) {
       return "jumping";
     }
 
-    const motionTarget = componentStore.getComponent(id, "MotionTarget");
-    const transform = componentStore.getComponent(id, "Transform");
-    const targetX = motionTarget?.targetPosition?.x;
-    if (transform && targetX !== undefined) {
-      const deltaX = targetX - transform.position.x;
-      if (Math.abs(deltaX) > 2) {
-        return deltaX > 0 ? "running-right" : "running-left";
-      }
-
-      return "running";
+    // System-driven horizontal movement plays the directional travel sprites.
+    // Read the pet's actual horizontal velocity so every kind of system push —
+    // walking toward a target, fleeing, collision recoil, coasting momentum —
+    // reads as travel, rather than falling through to the stationary task-run
+    // ("running") sprite that does not look like it is moving.
+    const travelDirection = getTravelDirection(body);
+    if (travelDirection) {
+      return travelDirection === "right" ? "running-right" : "running-left";
     }
 
     const intent = componentStore.getComponent(id, "IntentState");
@@ -338,21 +336,20 @@ export function createWorld(input: WorldDefinition) {
     return agentTask?.status === "working" ? "running" : "idle";
   }
 
-  function getPetSpriteFacing(
-    componentStore: ComponentStore,
-    id: string,
-  ): PetSpriteFacing {
-    const transform = componentStore.getComponent(id, "Transform");
-    const motionTarget = componentStore.getComponent(id, "MotionTarget");
-    const targetX = motionTarget?.targetPosition?.x;
-    if (transform && targetX !== undefined) {
-      const deltaX = targetX - transform.position.x;
-      if (Math.abs(deltaX) > 2) {
-        return deltaX > 0 ? "right" : "left";
-      }
-    }
+  function getPetSpriteFacing(body: { vx: number }): PetSpriteFacing {
+    return getTravelDirection(body) ?? "right";
+  }
 
-    return "right";
+  // Horizontal speed above this (matter.js units, matching the vertical jump
+  // threshold) counts as the pet visibly travelling, so it plays a directional
+  // running sprite instead of the stationary task-run animation.
+  const TRAVEL_SPEED_THRESHOLD = 0.5;
+
+  function getTravelDirection(body: { vx: number }): PetSpriteFacing | null {
+    if (Math.abs(body.vx) <= TRAVEL_SPEED_THRESHOLD) {
+      return null;
+    }
+    return body.vx > 0 ? "right" : "left";
   }
 
   function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {
@@ -431,7 +428,7 @@ export function createWorld(input: WorldDefinition) {
       const bodies = physicsSnapshot.bodies.map((body) => ({
         ...body,
         animationState: getPetAnimationState(components, body.id, body),
-        spriteFacing: getPetSpriteFacing(components, body.id),
+        spriteFacing: getPetSpriteFacing(body),
         interaction: getInteractionSnapshot(components, body.id),
       }));
 

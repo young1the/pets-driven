@@ -212,6 +212,7 @@ export function DecisionShowcaseApp() {
     scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "JumpActionState");
     if (options.clearPresentation) {
       scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "AgentTaskState");
+      scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "TaskMovementHold");
       const speech = scenarioRef.current.world.getComponent(PRIMARY_PET_ID, "SpeechState");
       if (speech) {
         speech.speech = null;

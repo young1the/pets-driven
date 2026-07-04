@@ -192,7 +192,7 @@ describe("demo scenario", () => {
       "UserInteractionBehaviorSystem",
       "SpeechExpirationSystem",
       "PetExpressionExpirationSystem",
-      "AgentEventBehaviorSystem",
+      "AgentTaskEventSystem",
       "CollisionBehaviorSystem",
       "WorkingBehaviorSystem",
       "BehaviorDecisionSystem",
@@ -207,6 +207,7 @@ describe("demo scenario", () => {
       "ClimbAttachmentSystem",
       "MotionTargetSystem",
       // POST_UPDATE
+      "TaskMovementHoldSystem",
       "WalkSystem",
       "CollisionEscapeSystem",
       "JumpSystem",
@@ -214,7 +215,6 @@ describe("demo scenario", () => {
       "IntentSteeringSystem",
       "KeyboardControlMovementSystem",
       "FlightSystem",
-      "AgentEventHoldSystem",
       "DraggedEntityKinematicSystem",
       "ThrowImpulseSystem",
       // SIMULATE
@@ -338,29 +338,21 @@ describe("demo scenario", () => {
       writes: ["PetExpressionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
-      name: "AgentEventBehaviorSystem",
+      name: "AgentTaskEventSystem",
       dependsOn: ["PetExpressionExpirationSystem"],
-      reads: [
-        "AgentBinding",
-        "IntentState",
-        "SpeechProfile",
-        "SpeechState",
-        "ActivityState",
-        "CompletionBehavior",
-      ],
+      reads: ["AgentBinding", "SpeechProfile", "SpeechState", "ActivityState"],
       writes: [
+        "AgentTaskState",
         "AgentChannelState",
-        "IntentState",
         "SpeechState",
         "ActivityState",
         "BehaviorDecisionState",
-        "MotionTarget",
-        "PhysicsVelocity",
+        "TaskMovementHold",
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "CollisionBehaviorSystem",
-      dependsOn: ["AgentEventBehaviorSystem"],
+      dependsOn: ["AgentTaskEventSystem"],
       reads: [
         "Transform",
         "PhysicsBody",
@@ -494,9 +486,9 @@ describe("demo scenario", () => {
       writes: ["PhysicsGravityScale"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
-      name: "AgentEventHoldSystem",
-      dependsOn: ["FlightSystem"],
-      reads: ["AgentTaskState"],
+      name: "TaskMovementHoldSystem",
+      dependsOn: ["MotionTargetSystem"],
+      reads: ["TaskMovementHold"],
       writes: ["MotionTarget", "PhysicsVelocity"],
     });
   });
@@ -1172,9 +1164,14 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
+    // Interaction lifts the hold but the agent's "waiting" report stays on
+    // the pet.
+    expect(
+      scenario.world.getComponent("pet-a", "TaskMovementHold"),
+    ).toBeUndefined();
     expect(
       scenario.world.getComponent("pet-a", "AgentTaskState"),
-    ).toBeUndefined();
+    ).toMatchObject({ status: "waiting" });
   });
 
   it("clears stale seek-user targets after walking pets reach the resolved stop target", () => {
@@ -1203,9 +1200,9 @@ describe("demo scenario", () => {
       targetEntityId: null,
       targetPosition: null,
     });
-    expect(scenario.world.getComponent("pet-a", "IntentState")?.intent).toBe(
-      "idle",
-    );
+    expect(
+      scenario.world.getComponent("pet-a", "TaskMovementHold"),
+    ).toBeDefined();
   });
 
   it("reacts to a started then completed task lifecycle", () => {
@@ -1220,10 +1217,13 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
-      type: "IntentState",
-      intent: "active",
-    });
+    // Working is a moving status: task state is recorded, no hold applied.
+    expect(
+      scenario.world.getComponent("pet-a", "AgentTaskState"),
+    ).toMatchObject({ status: "working" });
+    expect(
+      scenario.world.getComponent("pet-a", "TaskMovementHold"),
+    ).toBeUndefined();
 
     scenario.world.pushEvent({
       kind: "agent",
@@ -1234,10 +1234,12 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
-      type: "IntentState",
-      intent: "idle",
-    });
+    expect(
+      scenario.world.getComponent("pet-a", "AgentTaskState"),
+    ).toMatchObject({ status: "completed" });
+    expect(
+      scenario.world.getComponent("pet-a", "TaskMovementHold"),
+    ).toBeDefined();
     expect(scenario.world.getComponent("pet-a", "SpeechState")).toMatchObject({
       type: "SpeechState",
       speech: "Done",

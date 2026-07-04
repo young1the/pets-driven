@@ -4,8 +4,8 @@ import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/w
 import { runUserInteractionBehaviorSystem } from "@pets-driven/pet-engine/features/interaction/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
-describe("user interaction clears AgentTaskState to idle", () => {
-  it("removes AgentTaskState when a controllable pet is pressed", () => {
+describe("user interaction releases the movement hold, keeps agent state", () => {
+  it("releases the hold but keeps AgentTaskState when a controllable pet is pressed", () => {
     const components = createComponentStore([
       {
         id: "pet",
@@ -14,6 +14,7 @@ describe("user interaction clears AgentTaskState to idle", () => {
           { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
           { type: "CanControl", speed: 1.4 },
           { type: "AgentTaskState", status: "waiting", since: 0 },
+          { type: "TaskMovementHold", since: 0 },
           {
             type: "AgentChannelState",
             source: "agent-task",
@@ -44,11 +45,17 @@ describe("user interaction clears AgentTaskState to idle", () => {
 
     runUserInteractionBehaviorSystem(components, events, clock);
 
-    expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
-    expect(components.getComponent("pet", "AgentChannelState")).toBeUndefined();
+    // The pet is free to move again, but the agent's report stays on it.
+    expect(components.getComponent("pet", "TaskMovementHold")).toBeUndefined();
+    expect(components.getComponent("pet", "AgentTaskState")?.status).toBe(
+      "waiting",
+    );
+    expect(components.getComponent("pet", "AgentChannelState")?.label).toBe(
+      "Waiting",
+    );
   });
 
-  it("removes AgentTaskState when a draggable pet is pressed", () => {
+  it("releases the hold but keeps AgentTaskState when a draggable pet is pressed", () => {
     const components = createComponentStore([
       {
         id: "pet",
@@ -57,6 +64,7 @@ describe("user interaction clears AgentTaskState to idle", () => {
           { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
           { type: "CanDrag" },
           { type: "AgentTaskState", status: "waiting", since: 0 },
+          { type: "TaskMovementHold", since: 0 },
         ],
       },
       {
@@ -81,6 +89,9 @@ describe("user interaction clears AgentTaskState to idle", () => {
 
     runUserInteractionBehaviorSystem(components, events, clock);
 
-    expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
+    expect(components.getComponent("pet", "TaskMovementHold")).toBeUndefined();
+    expect(components.getComponent("pet", "AgentTaskState")?.status).toBe(
+      "waiting",
+    );
   });
 });

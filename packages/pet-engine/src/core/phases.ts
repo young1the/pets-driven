@@ -21,8 +21,8 @@ import {
 import {
   SpeechExpirationSystem,
   PetExpressionExpirationSystem,
-  AgentEventBehaviorSystem,
-  AgentEventHoldSystem,
+  AgentTaskEventSystem,
+  TaskMovementHoldSystem,
   CollisionBehaviorSystem,
   WorkingBehaviorSystem,
   BehaviorDecisionSystem,
@@ -71,7 +71,7 @@ export const SYSTEM_PHASES: Record<
     UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
     SpeechExpirationSystem, // clear expired speech before new decisions
     PetExpressionExpirationSystem,
-    AgentEventBehaviorSystem, // priority 2: external agent events
+    AgentTaskEventSystem, // priority 2: external agent events → task state
     CollisionBehaviorSystem, // priority 3: entity overlap avoidance
     WorkingBehaviorSystem, // priority 4a: working-state focus or wandering
     BehaviorDecisionSystem, // priority 4a: personality-weighted next behavior (emits token)
@@ -90,6 +90,9 @@ export const SYSTEM_PHASES: Record<
   ],
 
   POST_UPDATE: [
+    // Runs before the force systems so a held pet's motion target is cleared
+    // before WalkSystem/IntentSteeringSystem can turn it into movement.
+    TaskMovementHoldSystem,
     WalkSystem,
     CollisionEscapeSystem,
     JumpSystem,
@@ -97,7 +100,6 @@ export const SYSTEM_PHASES: Record<
     IntentSteeringSystem,
     KeyboardControlMovementSystem,
     FlightSystem,
-    AgentEventHoldSystem,
     DraggedEntityKinematicSystem,
     ThrowImpulseSystem,
   ],

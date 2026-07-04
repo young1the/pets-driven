@@ -404,6 +404,7 @@ describe("BehaviorDecisionSystem", () => {
       since: 0,
       summary: "Needs approval",
     });
+    store.setComponent("pet", { type: "TaskMovementHold", since: 0 });
 
     runBehaviorDecisionSystem(store, createManualClock(12_000), createSeededRandom(1), BOUNDS);
 

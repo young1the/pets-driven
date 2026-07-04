@@ -20,31 +20,23 @@ describe("pet animation state", () => {
     expect(animationState()).toBe("idle");
   });
 
-  it("uses directional running states for motion targets", () => {
+  it("uses directional running states while moving horizontally", () => {
     const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
 
-    scenario.world.setComponent("pet-a", {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: { x: 820, y: 500 },
-    });
+    scenario.world.setPhysicsVelocity("pet-a", { x: 4, y: 0 });
     expect(bodySnapshot()).toMatchObject({
       animationState: "running-right",
       spriteFacing: "right",
     });
 
-    scenario.world.setComponent("pet-a", {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: { x: 120, y: 500 },
-    });
+    scenario.world.setPhysicsVelocity("pet-a", { x: -4, y: 0 });
     expect(bodySnapshot()).toMatchObject({
       animationState: "running-left",
       spriteFacing: "left",
     });
   });
 
-  it("does not infer left or right when no target exists", () => {
+  it("does not infer left or right when the pet is not moving", () => {
     const { scenario, animationState } = petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
@@ -53,11 +45,7 @@ describe("pet animation state", () => {
       climbableSurfaceId: null,
       climbableSurfacePosition: null,
     });
-    scenario.world.setComponent("pet-a", {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: null,
-    });
+    scenario.world.setPhysicsVelocity("pet-a", { x: 0, y: 0 });
     scenario.world.setComponent("pet-a", {
       type: "IntentState",
       intent: "active",
@@ -134,14 +122,10 @@ describe("pet animation state", () => {
     expect(animationState()).toBe("jumping");
   });
 
-  it("keeps left-facing direction while jumping toward a left motion target", () => {
+  it("keeps left-facing direction while jumping with leftward momentum", () => {
     const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
 
-    scenario.world.setComponent("pet-a", {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: { x: 120, y: 500 },
-    });
+    scenario.world.setPhysicsVelocity("pet-a", { x: -4, y: 0 });
     scenario.world.setComponent("pet-a", {
       type: "JumpActionState",
       phase: "requested",
@@ -154,7 +138,7 @@ describe("pet animation state", () => {
     });
   });
 
-  it("shows travel animation when working pet has a motion target", () => {
+  it("shows travel animation when a working pet is moving", () => {
     const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
@@ -162,28 +146,20 @@ describe("pet animation state", () => {
       status: "working",
       since: 0,
     });
-    scenario.world.setComponent("pet-a", {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: { x: 820, y: 500 },
-    });
+    scenario.world.setPhysicsVelocity("pet-a", { x: 4, y: 0 });
     expect(bodySnapshot()).toMatchObject({
       animationState: "running-right",
       spriteFacing: "right",
     });
 
-    scenario.world.setComponent("pet-a", {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: { x: 120, y: 500 },
-    });
+    scenario.world.setPhysicsVelocity("pet-a", { x: -4, y: 0 });
     expect(bodySnapshot()).toMatchObject({
       animationState: "running-left",
       spriteFacing: "left",
     });
   });
 
-  it("shows running animation when working pet has no motion target", () => {
+  it("shows running animation when a working pet is not moving", () => {
     const { scenario, animationState } = petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
@@ -191,11 +167,7 @@ describe("pet animation state", () => {
       status: "working",
       since: 0,
     });
-    scenario.world.setComponent("pet-a", {
-      type: "MotionTarget",
-      targetEntityId: null,
-      targetPosition: null,
-    });
+    scenario.world.setPhysicsVelocity("pet-a", { x: 0, y: 0 });
     expect(animationState()).toBe("running");
   });
 });

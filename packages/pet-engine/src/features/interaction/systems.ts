@@ -40,11 +40,11 @@ function handlePointerEvent(
     const controlHit = hitTest(components, event.position, "CanControl");
     const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
     if (target) target.entityId = controlHit?.id ?? null;
-    if (controlHit) clearAgentTaskState(components, controlHit.id);
+    if (controlHit) releaseTaskHold(components, controlHit.id);
 
     const dragHit = hitTest(components, event.position, "CanDrag");
     if (!dragHit) return;
-    clearAgentTaskState(components, dragHit.id);
+    releaseTaskHold(components, dragHit.id);
 
     components.setComponent(INTERACTION_ENTITY_ID, {
       type: "DragInteraction",
@@ -88,13 +88,11 @@ function handlePointerEvent(
   }
 }
 
-function clearAgentTaskState(components: ComponentStore, id: string): void {
-  components.removeComponent(id, "AgentTaskState");
-  if (
-    components.getComponent(id, "AgentChannelState")?.source === "agent-task"
-  ) {
-    components.removeComponent(id, "AgentChannelState");
-  }
+// Interacting with a pet only lifts the movement hold — the agent-reported
+// task state (and its channel badge) stays on the pet. Clicking means "I see
+// it, you can move again", not "erase what the agent reported".
+function releaseTaskHold(components: ComponentStore, id: string): void {
+  components.removeComponent(id, "TaskMovementHold");
 }
 
 function handleKeyboardEvent(
@@ -260,15 +258,13 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "KeyboardControlTarget",
     "KeyboardInputState",
     "DragInteraction",
-    "AgentChannelState",
   ],
   writes: [
     "KeyboardControlTarget",
     "KeyboardInputState",
     "DragInteraction",
     "BehaviorDecisionState",
-    "AgentTaskState",
-    "AgentChannelState",
+    "TaskMovementHold",
   ],
   update(ctx) {
     runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock);

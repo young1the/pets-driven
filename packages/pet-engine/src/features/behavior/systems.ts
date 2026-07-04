@@ -8,7 +8,10 @@ import type {
 import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
-import { statusFreezesMovement } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import {
+  statusFreezesMovement,
+  type AgentTaskStatus,
+} from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import {
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionKind,
@@ -229,12 +232,15 @@ export function runPetExpressionExpirationSystem(
   });
 }
 
-// Priority 2: Agent event reactions (task.started, task.waiting, etc.)
-export function runAgentEventBehaviorSystem(
+// Priority 2: record external agent events onto the pet (task.started, etc.).
+// This system only ingests agent facts — task/channel state, speech, activity,
+// the priority claim, and the movement hold a freezing status implies. It does
+// NOT touch IntentState; movement/behavior is owned by the decision layer and
+// user interaction.
+export function runAgentTaskEventSystem(
   components: ComponentStore,
   events: WorldEvent[],
   clock: Clock,
-  physics?: VelocityWriter,
 ): void {
   if (events.length === 0) return;
   const agentEvents = events.filter(
@@ -244,18 +250,8 @@ export function runAgentEventBehaviorSystem(
   const now = clock.now();
 
   components.forEach(
-    [
-      "AgentBinding",
-      "IntentState",
-      "SpeechProfile",
-      "SpeechState",
-      "ActivityState",
-      "CompletionBehavior",
-    ],
-    (
-      id,
-      [agent, intent, speechProfile, speech, activity, completionBehavior],
-    ) => {
+    ["AgentBinding", "SpeechProfile", "SpeechState", "ActivityState"],
+    (id, [agent, speechProfile, speech, activity]) => {
       if (isClaimed(components, id, "agent-event", now)) return;
 
       for (const event of agentEvents) {
@@ -263,7 +259,7 @@ export function runAgentEventBehaviorSystem(
 
         if (event.type === "task.started") {
           setAgentTaskState(components, id, "working", event);
-          intent.intent = "active";
+          applyTaskMovementHold(components, id, "working", event.at);
           setSpeech(speech, event.summary ?? speechProfile.taskStarted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.started");
@@ -273,9 +269,8 @@ export function runAgentEventBehaviorSystem(
           event.type === "task.waiting" ||
           event.type === "attention.requested"
         ) {
-          intent.intent = "idle";
-          stopPetMovement(components, physics, id);
           setAgentTaskState(components, id, "waiting", event);
+          applyTaskMovementHold(components, id, "waiting", event.at);
           setSpeech(
             speech,
             event.summary ?? speechProfile.attentionNeeded,
@@ -285,18 +280,16 @@ export function runAgentEventBehaviorSystem(
         }
 
         if (event.type === "task.failed") {
-          intent.intent = "idle";
-          stopPetMovement(components, physics, id);
           setAgentTaskState(components, id, "failed", event);
+          applyTaskMovementHold(components, id, "failed", event.at);
           setSpeech(speech, event.summary ?? "Task failed", now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.failed");
         }
 
         if (event.type === "task.completed") {
-          intent.intent = completionBehavior.intentAfterCompletion;
-          stopPetMovement(components, physics, id);
           setAgentTaskState(components, id, "completed", event);
+          applyTaskMovementHold(components, id, "completed", event.at);
           setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
@@ -306,12 +299,33 @@ export function runAgentEventBehaviorSystem(
   );
 }
 
-export function runAgentEventHoldSystem(
+/**
+ * Add or clear the movement hold in step with the status the pet just entered.
+ * Freezing statuses (waiting/failed/completed) hold the pet still; moving
+ * statuses (working/idle) clear any prior hold so the pet is free again. This
+ * runs only on an agent-event edge, so a user release between events survives
+ * untouched — the hold is not continuously re-derived from status.
+ */
+function applyTaskMovementHold(
+  components: ComponentStore,
+  id: string,
+  status: AgentTaskStatus,
+  at: number,
+): void {
+  if (statusFreezesMovement(status)) {
+    components.setComponent(id, { type: "TaskMovementHold", since: at });
+  } else {
+    components.removeComponent(id, "TaskMovementHold");
+  }
+}
+
+// Hold pets still while a TaskMovementHold is present — a freezing task the
+// user has not released yet.
+export function runTaskMovementHoldSystem(
   components: ComponentStore,
   physics: VelocityWriter,
 ): void {
-  components.forEach(["AgentTaskState"], (id, [task]) => {
-    if (!statusFreezesMovement(task.status)) return;
+  components.forEach(["TaskMovementHold"], (id) => {
     stopPetMovement(components, physics, id);
   });
 }
@@ -1176,8 +1190,10 @@ export function runBehaviorDecisionSystem(
       );
       if (existingClaim && existingClaim.expiresAt > now) return;
 
-      const agentTask = components.getComponent(id, "AgentTaskState");
-      if (agentTask && statusFreezesMovement(agentTask.status)) return;
+      // Skip only while the pet is actually held (a freezing task the user
+      // has not released). A released pet keeps its reported status but is
+      // free to make autonomous decisions again.
+      if (components.getComponent(id, "TaskMovementHold")) return;
 
       // If the pet is already committed to approaching a climb surface, don't
       // emit a new autonomous decision — that would change intent and allow
@@ -1679,49 +1695,40 @@ export const PetExpressionExpirationSystem: SimulationSystem<WorldStepContext> =
     },
   };
 
-export const AgentEventBehaviorSystem: SimulationSystem<WorldStepContext> = {
-  name: "AgentEventBehaviorSystem",
+export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
+  name: "AgentTaskEventSystem",
   dependsOn: ["PetExpressionExpirationSystem"],
-  reads: [
-    "AgentBinding",
-    "IntentState",
-    "SpeechProfile",
-    "SpeechState",
-    "ActivityState",
-    "CompletionBehavior",
-  ],
+  reads: ["AgentBinding", "SpeechProfile", "SpeechState", "ActivityState"],
   writes: [
+    "AgentTaskState",
     "AgentChannelState",
-    "IntentState",
     "SpeechState",
     "ActivityState",
     "BehaviorDecisionState",
-    "MotionTarget",
-    "PhysicsVelocity",
+    "TaskMovementHold",
   ],
   update(ctx) {
-    runAgentEventBehaviorSystem(
+    runAgentTaskEventSystem(
       ctx.components,
       ctx.events.drainWhere((event) => event.kind === "agent"),
       ctx.clock,
-      ctx.physics,
     );
   },
 };
 
-export const AgentEventHoldSystem: SimulationSystem<WorldStepContext> = {
-  name: "AgentEventHoldSystem",
-  dependsOn: ["FlightSystem"],
-  reads: ["AgentTaskState"],
+export const TaskMovementHoldSystem: SimulationSystem<WorldStepContext> = {
+  name: "TaskMovementHoldSystem",
+  dependsOn: ["MotionTargetSystem"],
+  reads: ["TaskMovementHold"],
   writes: ["MotionTarget", "PhysicsVelocity"],
   update(ctx) {
-    runAgentEventHoldSystem(ctx.components, ctx.physics);
+    runTaskMovementHoldSystem(ctx.components, ctx.physics);
   },
 };
 
 export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "CollisionBehaviorSystem",
-  dependsOn: ["AgentEventBehaviorSystem"],
+  dependsOn: ["AgentTaskEventSystem"],
   reads: [
     "Transform",
     "PhysicsBody",
