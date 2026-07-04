@@ -323,6 +323,36 @@
   line-height: 0;
 }
 
+.pd-video-poof {
+  position: absolute;
+  z-index: 78;
+  pointer-events: none;
+}
+
+.pd-video-poof__cloud {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 140px;
+  height: 140px;
+  border-radius: 999px;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 214, 232, 0.55) 62%,
+    rgba(255, 214, 232, 0)
+  );
+  filter: blur(1px);
+}
+
+.pd-video-poof__particle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(249, 94, 158, 0.28);
+}
+
 .pd-video-card-pet {
   width: 112px;
   height: 122px;
@@ -337,11 +367,78 @@
   transform: translate(-50%, -100%);
 }
 
-.pd-video-pet-emote {
+.pd-video-status-card {
   position: absolute;
-  top: -30px;
-  right: -4px;
-  z-index: 6;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  z-index: 50;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.pd-video-status-card__inner {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-lg);
+  border-radius: 999px;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+
+.pd-video-status-card__inner--expanded {
+  border-radius: 16px;
+  padding: 10px 16px 12px;
+}
+
+.pd-video-status-card__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pd-video-status-card__dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--status-card-accent, var(--sky-400));
+}
+
+.pd-video-status-card__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink-950);
+  line-height: 1;
+}
+
+.pd-video-status-card__label {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--status-card-accent, var(--sky-700));
+}
+
+.pd-video-status-card__message {
+  margin-top: 5px;
+  max-width: 210px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-subtle);
+  white-space: normal;
+}
+
+.pd-video-status-card__cwd {
+  margin-top: 4px;
+  max-width: 210px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pd-video-terminal {

@@ -1,12 +1,13 @@
 import type { CSSProperties, ReactNode } from "react";
 import { staticFile, useCurrentFrame } from "remotion";
-import { PetEmote, type PetEmoteKind, PetShowcaseCard } from "@pets-driven/design-system";
+import { PET_MOODS, PetShowcaseCard, type PetMood } from "@pets-driven/design-system";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import {
   PET_CELL_SIZE,
   type PetAnimationState,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import type { DemoPet } from "./fixtures";
+import type { DemoPet, DemoPetStatus } from "./fixtures";
 
 export function DemoWindow({
   children,
@@ -216,6 +217,59 @@ export function ClickBurst({
   );
 }
 
+const POOF_PARTICLES: { angle: number; color: string; size: number }[] = [
+  { angle: 0, color: "var(--blossom-400)", size: 10 },
+  { angle: Math.PI / 4, color: "var(--lavender-400)", size: 8 },
+  { angle: Math.PI / 2, color: "var(--sky-300)", size: 11 },
+  { angle: (3 * Math.PI) / 4, color: "var(--mint-300)", size: 8 },
+  { angle: Math.PI, color: "var(--blossom-500)", size: 10 },
+  { angle: (5 * Math.PI) / 4, color: "var(--lavender-300)", size: 8 },
+  { angle: (3 * Math.PI) / 2, color: "var(--sky-300)", size: 11 },
+  { angle: (7 * Math.PI) / 4, color: "var(--mint-300)", size: 8 },
+];
+
+export function PoofBurst({
+  progress: p,
+  x,
+  y,
+}: {
+  progress: number;
+  x: number;
+  y: number;
+}) {
+  const ease = 1 - (1 - p) ** 2;
+  const cloudScale = 0.4 + ease * 1.1;
+  const cloudOpacity = p < 0.45 ? p / 0.45 : Math.max(0, 1 - (p - 0.45) / 0.55);
+  const particleTravel = 18 + ease * 64;
+  const particleOpacity = p < 0.2 ? p / 0.2 : Math.max(0, 1 - (p - 0.2) / 0.8);
+  const particleScale = 1 - ease * 0.6;
+
+  return (
+    <div className="pd-video-poof" style={{ left: x, top: y }}>
+      <div
+        className="pd-video-poof__cloud"
+        style={{
+          opacity: cloudOpacity,
+          transform: `translate(-50%, -50%) scale(${cloudScale})`,
+        }}
+      />
+      {POOF_PARTICLES.map((particle, index) => (
+        <span
+          className="pd-video-poof__particle"
+          key={index}
+          style={{
+            background: particle.color,
+            height: particle.size,
+            opacity: particleOpacity,
+            transform: `translate(-50%, -50%) translate(${Math.cos(particle.angle) * particleTravel}px, ${Math.sin(particle.angle) * particleTravel}px) scale(${particleScale})`,
+            width: particle.size,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 const DESKTOP_DOCK_APPS: { from: string; to: string }[] = [
   { from: "#FF9DB6", to: "#F16A90" },
   { from: "#FFD08A", to: "#F2A45E" },
@@ -236,7 +290,7 @@ export function DesktopBackdrop() {
         <span className="pd-video-desktop__menu">View</span>
         <span className="pd-video-desktop__menu">Pack</span>
         <span className="pd-video-desktop__spacer" />
-        <span className="pd-video-desktop__clock">9:41</span>
+        <span className="pd-video-desktop__clock">01:25</span>
       </div>
       <div className="pd-video-desktop__icons">
         <div className="pd-video-desktop__icon">
@@ -298,31 +352,31 @@ export function DemoPetPortrait({ pet }: { pet: DemoPet }) {
 
 export function DesktopPet({
   animationState,
-  emoteKind,
+  decisionEmote = null,
   elapsedMs,
   facing = "right",
   pet,
   scale = 0.74,
+  status = null,
   x,
   y,
 }: {
   animationState: PetAnimationState;
-  emoteKind?: PetEmoteKind;
+  decisionEmote?: BehaviorTokenPresentation | null;
   elapsedMs: number;
   facing?: "left" | "right";
   pet: DemoPet;
   scale?: number;
+  status?: DemoPetStatus | null;
   x: number;
   y: number;
 }) {
   return (
     <div className="pd-video-desktop-pet" style={{ left: x, top: y }}>
-      {emoteKind ? (
-        <PetEmote className="pd-video-pet-emote" kind={emoteKind} size="sm" />
-      ) : null}
       <PetSprite
         alt={`${pet.name} sprite`}
         animationState={animationState}
+        decisionEmote={decisionEmote}
         elapsedMs={elapsedMs}
         facing={facing}
         imageUrl={staticFile(`codex-pets/${pet.assetId}/spritesheet.webp`)}
@@ -330,6 +384,54 @@ export function DesktopPet({
         showStatusBubble={false}
         size={PET_CELL_SIZE}
       />
+      {status ? (
+        <DemoPetStatusCard
+          cwd={pet.cwd}
+          label={status.label}
+          message={status.message}
+          mood={status.mood}
+          name={pet.name}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+export function DemoPetStatusCard({
+  cwd,
+  label,
+  message,
+  mood,
+  name,
+}: {
+  cwd?: string;
+  label: string;
+  message: string | null;
+  mood: PetMood;
+  name: string;
+}) {
+  const accent = PET_MOODS[mood].accent;
+
+  return (
+    <div
+      className="pd-video-status-card"
+      style={{ "--status-card-accent": accent } as CSSProperties}
+    >
+      <div
+        className={`pd-video-status-card__inner${
+          message || cwd ? " pd-video-status-card__inner--expanded" : ""
+        }`}
+      >
+        <div className="pd-video-status-card__row">
+          <span className="pd-video-status-card__dot" />
+          <span className="pd-video-status-card__name">{name}</span>
+          <span className="pd-video-status-card__label">{label}</span>
+        </div>
+        {message ? (
+          <div className="pd-video-status-card__message">{message}</div>
+        ) : null}
+        {cwd ? <div className="pd-video-status-card__cwd">{cwd}</div> : null}
+      </div>
     </div>
   );
 }
