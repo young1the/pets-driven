@@ -156,6 +156,27 @@ function hitLayoutForPresentation(
   };
 }
 
+// Same display hysteresis as the main-window card chip: autonomous decisions
+// churn every 500ms-2s, so hold each shown activity for a beat. Null → value
+// switches immediately (reactions feel instant); value → value/null waits.
+const ACTIVITY_MIN_DISPLAY_MS = 1_500;
+
+type ShownActivity = { value: PetActivityKind | null; at: number };
+
+function steadyActivity(
+  shown: ShownActivity,
+  next: PetActivityKind | null,
+  now: number,
+): PetActivityKind | null {
+  if (next !== shown.value) {
+    if (shown.value === null || now - shown.at >= ACTIVITY_MIN_DISPLAY_MS) {
+      shown.value = next;
+      shown.at = now;
+    }
+  }
+  return shown.value;
+}
+
 
 export function PetWindowView({ pet }: PetWindowViewProps) {
   const surfaceRef = useRef<HTMLElement | null>(null);
@@ -193,6 +214,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
   const [isBodyHovered, setIsBodyHovered] = useState(false);
   const [petName, setPetName] = useState<string | null>(null);
   const presentationRef = useRef<PetWindowPresentation>(presentation);
+  const shownActivityRef = useRef<ShownActivity>({ value: null, at: 0 });
   const petNameRef = useRef<string | null>(null);
   const cwdRef = useRef<string | null>(null);
 
@@ -236,6 +258,12 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       }
       if (frame.cwd !== undefined) cwdRef.current = frame.cwd || null;
 
+      const steadiedActivity = steadyActivity(
+        shownActivityRef.current,
+        frame.sprite.activity ?? null,
+        Date.now(),
+      );
+
       if (
         !isSamePetWindowPresentation(
           {
@@ -246,19 +274,22 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
             },
             overlay: presentationRef.current.overlay,
           },
-          { sprite: frame.sprite, overlay: frame.overlay },
+          {
+            sprite: { ...frame.sprite, activity: steadiedActivity },
+            overlay: frame.overlay,
+          },
         )
       ) {
         presentationRef.current = {
           decisionEmote: frame.sprite.decisionEmote ?? null,
           intent: frame.sprite.intent,
-          activity: frame.sprite.activity ?? null,
+          activity: steadiedActivity,
           overlay: frame.overlay,
         };
         setPresentation({
           decisionEmote: frame.sprite.decisionEmote ?? null,
           intent: frame.sprite.intent,
-          activity: frame.sprite.activity ?? null,
+          activity: steadiedActivity,
           overlay: frame.overlay,
         });
       }
