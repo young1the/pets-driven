@@ -264,4 +264,157 @@ describe("PerceptionSystem", () => {
     expect(perception?.self.climbing).toBe(true);
     expect(perception?.self.intent).toBe("active");
   });
+
+  describe("cursor field", () => {
+    function makeCursorStore(
+      samples: Array<{ at: number; position: { x: number; y: number } }>,
+      cursorPosition: { x: number; y: number } | null,
+      petPosition = { x: 200, y: 200 },
+    ) {
+      return createComponentStore([
+        {
+          id: "user-anchor",
+          components: [
+            { type: "UserAnchor" },
+            { type: "Transform", position: petPosition },
+            { type: "CursorState", position: cursorPosition, samples },
+          ],
+        },
+        {
+          id: "pet-a",
+          components: [
+            { type: "Transform", position: petPosition },
+            {
+              type: "Perception",
+              nearbyPets: [],
+              userAnchor: null,
+              nearbyClimbables: [],
+              self: { grounded: false, climbing: false, intent: "idle" as const },
+            },
+            { type: "IntentState", intent: "idle" as const },
+            {
+              type: "ContactState",
+              grounded: true,
+              climbableSurfaceId: null,
+              climbableSurfacePosition: null,
+            },
+            { type: "PetIdentity", name: "A" },
+          ],
+        },
+      ]);
+    }
+
+    it("is null when no CursorState entity exists", () => {
+      const store = createComponentStore([
+        {
+          id: "pet-a",
+          components: [
+            { type: "Transform", position: { x: 200, y: 200 } },
+            {
+              type: "Perception",
+              nearbyPets: [],
+              userAnchor: null,
+              nearbyClimbables: [],
+              self: { grounded: false, climbing: false, intent: "idle" as const },
+            },
+            { type: "IntentState", intent: "idle" as const },
+            {
+              type: "ContactState",
+              grounded: false,
+              climbableSurfaceId: null,
+              climbableSurfacePosition: null,
+            },
+            { type: "PetIdentity", name: "A" },
+          ],
+        },
+      ]);
+
+      runPerceptionSystem(store, 0);
+
+      expect(store.getComponent("pet-a", "Perception")?.cursor).toBeNull();
+    });
+
+    it("is null while CursorState.position is null (no cursor fed yet)", () => {
+      const store = makeCursorStore([], null);
+
+      runPerceptionSystem(store, 0);
+
+      expect(store.getComponent("pet-a", "Perception")?.cursor).toBeNull();
+    });
+
+    it("derives distance and low speed for a barely-moving cursor", () => {
+      // Two samples 16ms apart, 1px of horizontal drift → far below the
+      // playful threshold.
+      const store = makeCursorStore(
+        [
+          { at: 0, position: { x: 300, y: 200 } },
+          { at: 16, position: { x: 301, y: 200 } },
+        ],
+        { x: 301, y: 200 },
+      );
+
+      runPerceptionSystem(store, 16);
+
+      const cursor = store.getComponent("pet-a", "Perception")?.cursor;
+      expect(cursor).not.toBeNull();
+      expect(cursor?.distance).toBeCloseTo(101, 0);
+      expect(cursor?.speed).toBeLessThan(600);
+      expect(cursor?.isPlayful).toBe(false);
+    });
+
+    it("flags isPlayful when the cursor darts fast and close to the pet", () => {
+      // 200px in 40ms ≈ 5000 px/s — well above the 600 px/s threshold — and
+      // the cursor ends up 100px from the pet, inside the 300px radius.
+      const store = makeCursorStore(
+        [
+          { at: 0, position: { x: 100, y: 200 } },
+          { at: 40, position: { x: 300, y: 200 } },
+        ],
+        { x: 300, y: 200 },
+      );
+
+      runPerceptionSystem(store, 40);
+
+      const cursor = store.getComponent("pet-a", "Perception")?.cursor;
+      expect(cursor?.speed).toBeGreaterThan(600);
+      expect(cursor?.distance).toBeCloseTo(100, 0);
+      expect(cursor?.isPlayful).toBe(true);
+    });
+
+    it("is not playful when the cursor is fast but far from the pet", () => {
+      const store = makeCursorStore(
+        [
+          { at: 0, position: { x: 1000, y: 200 } },
+          { at: 40, position: { x: 1200, y: 200 } },
+        ],
+        { x: 1200, y: 200 },
+        { x: 200, y: 200 },
+      );
+
+      runPerceptionSystem(store, 40);
+
+      const cursor = store.getComponent("pet-a", "Perception")?.cursor;
+      expect(cursor?.speed).toBeGreaterThan(600);
+      expect(cursor?.isPlayful).toBe(false);
+    });
+
+    it("treats a stale cursor (no recent sample) as stationary", () => {
+      // Fast burst happened long ago; "now" is 1000ms later — well past the
+      // staleness window — so speed should decay to 0 rather than replay the
+      // old burst.
+      const store = makeCursorStore(
+        [
+          { at: 0, position: { x: 100, y: 200 } },
+          { at: 40, position: { x: 300, y: 200 } },
+        ],
+        { x: 300, y: 200 },
+      );
+
+      runPerceptionSystem(store, 1040);
+
+      const cursor = store.getComponent("pet-a", "Perception")?.cursor;
+      expect(cursor?.speed).toBe(0);
+      expect(cursor?.isPlayful).toBe(false);
+    });
+  });
 });

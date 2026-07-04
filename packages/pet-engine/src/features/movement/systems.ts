@@ -239,9 +239,18 @@ export function runMotionTargetSystem(
     if (intent.intent === "active" && motion.targetEntityId) {
       const perception = components.getComponent(_id, "Perception");
       const targetPet = perception?.nearbyPets.find((pet) => pet.id === motion.targetEntityId);
-      if (targetPet) {
-        motion.targetPosition = resolveApproachPetTarget(components, _id, targetPet.position);
-        requestJumpWhenWalkingTargetIsAbove(components, _id, targetPet.position);
+      // chase-cursor tracks the user-anchor entity the same way approach-pet
+      // tracks another pet — the anchor's Transform is kept in sync with the
+      // live cursor by CursorInputSystem, so this reuses the exact same
+      // walker-lane projection and above-target jump request.
+      const targetPosition =
+        targetPet?.position ??
+        (perception?.userAnchor?.id === motion.targetEntityId
+          ? perception.userAnchor.position
+          : undefined);
+      if (targetPosition) {
+        motion.targetPosition = resolveApproachPetTarget(components, _id, targetPosition);
+        requestJumpWhenWalkingTargetIsAbove(components, _id, targetPosition);
       }
       return;
     }

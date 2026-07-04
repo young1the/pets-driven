@@ -248,6 +248,24 @@ export function createWorld(input: WorldDefinition) {
           icon: "♪",
           label: "wandering",
         };
+      case "chase-cursor-success":
+        return {
+          kind: "playful",
+          icon: "★",
+          label: "caught the cursor",
+        };
+      case "chase-cursor":
+        return {
+          kind: "playful",
+          icon: "✦",
+          label: "chasing the cursor",
+        };
+      case "petting":
+        return {
+          kind: "affection",
+          icon: "♥",
+          label: "enjoying the pets",
+        };
       default:
         return null;
     }
@@ -402,6 +420,28 @@ export function createWorld(input: WorldDefinition) {
     },
     pushEvent(event: WorldEvent) {
       events.push(event);
+    },
+    /**
+     * Host-facing entry point for live cursor tracking: writes a transient
+     * CursorInput onto the "user-anchor" entity, which CursorInputSystem
+     * consumes on the next PRE_UPDATE pass (sample append + Transform sync).
+     * No-ops when the scenario has no UserAnchor entity (e.g. dual-monitor
+     * demo layouts that opt out of a user anchor).
+     */
+    feedCursorPosition(position: { x: number; y: number }, at: number) {
+      let anchorId: string | null = null;
+      for (const entity of components.entities()) {
+        if (components.getComponent(entity.id, "UserAnchor")) {
+          anchorId = entity.id;
+          break;
+        }
+      }
+      if (!anchorId) return;
+      components.setComponent(anchorId, {
+        type: "CursorInput",
+        position: { ...position },
+        at,
+      });
     },
     step(deltaMs: number) {
       runSimulationSystems(STEP_SYSTEMS, {

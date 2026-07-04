@@ -187,9 +187,11 @@ describe("demo scenario", () => {
       "PhysicsTransformSyncSystemPre",
       "PetCollisionSyncSystem",
       "ContactSystem",
+      "CursorInputSystem",
       "PerceptionSystem",
       // BEHAVIOR
       "UserInteractionBehaviorSystem",
+      "PettingDetectionSystem",
       "SpeechExpirationSystem",
       "PetExpressionExpirationSystem",
       "AgentTaskEventSystem",
@@ -302,7 +304,7 @@ describe("demo scenario", () => {
         "Perception",
         "ClimbIntentState",
       ],
-      writes: ["MotionTarget", "IntentState", "Drives"],
+      writes: ["MotionTarget", "IntentState", "PetExpressionState", "Drives"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "DriveDecaySystem",

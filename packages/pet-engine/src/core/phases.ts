@@ -29,8 +29,10 @@ import {
   AutonomousBehaviorSystem,
   BehaviorPlanningSystem,
   ArrivalBehaviorSystem,
+  PettingDetectionSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
 import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
+import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
 import { PerceptionSystem } from "@pets-driven/pet-engine/features/perception/systems";
 import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
 import {
@@ -65,11 +67,13 @@ export const SYSTEM_PHASES: Record<
     PhysicsTransformSyncSystemPre,
     PetCollisionSyncSystem,
     ContactSystem,
+    CursorInputSystem, // ingest live cursor samples before Perception reads them
     PerceptionSystem,
   ],
 
   BEHAVIOR: [
     UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
+    PettingDetectionSystem, // priority 1: cursor-oscillation petting reaction
     SpeechExpirationSystem, // clear expired speech before new decisions
     PetExpressionExpirationSystem,
     AgentTaskEventSystem, // priority 2: external agent events → task state

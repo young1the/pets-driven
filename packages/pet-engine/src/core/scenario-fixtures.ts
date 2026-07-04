@@ -518,6 +518,22 @@ export function createAdoptedPetsScenario(
     entities: [
       ...createMonitorBoundaryEntities(monitors, groundThickness),
       {
+        id: "user-anchor",
+        components: [
+          { type: "UserAnchor" as const },
+          {
+            type: "Transform" as const,
+            // Placeholder until the host feeds a live cursor position via
+            // world.feedCursorPosition() — CursorInputSystem then keeps this
+            // Transform (and CursorState) in sync every tick.
+            position: {
+              x: viewport.x + viewport.width / 2,
+              y: viewport.y + viewport.height / 2,
+            },
+          },
+        ],
+      },
+      {
         id: "user-interaction",
         components: [
           { type: "KeyboardControlTarget", entityId: null },
