@@ -5,6 +5,7 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import {
   availableMonitors,
   currentMonitor,
+  cursorPosition,
   getCurrentWindow,
   type Monitor,
 } from "@tauri-apps/api/window";
@@ -316,6 +317,19 @@ export function PetsDrivenApp() {
     width: number;
     height: number;
   } | null>(null);
+  // Cursor-as-stimulus: cache the latest physical cursor position (polled
+  // once per tick, fire-and-forget) plus the monitor scale factor needed to
+  // convert it into the world's logical coordinates. Fed into the shared
+  // simulation each tick via world.feedCursorPosition() so chase-cursor and
+  // petting reactions can see the live cursor.
+  const adoptedCursorPhysicalRef = useRef<{ x: number; y: number } | null>(
+    null,
+  );
+  const adoptedCursorScaleRef = useRef(1);
+  const fixtureCursorPhysicalRef = useRef<{ x: number; y: number } | null>(
+    null,
+  );
+  const fixtureCursorScaleRef = useRef(1);
   const { view, navigate } = useAppNavigation();
   const [petsDrivenState, setPetsDrivenState] = useState<PetsDrivenState>(
     petsDrivenStateRef.current,
@@ -684,6 +698,7 @@ export function PetsDrivenApp() {
       }
 
       const fixtureDpi = monitor.scaleFactor;
+      fixtureCursorScaleRef.current = fixtureDpi;
       fixtureHostBoundsRef.current = {
         x: monitor.workArea.position.x / fixtureDpi,
         y: monitor.workArea.position.y / fixtureDpi,
@@ -708,6 +723,27 @@ export function PetsDrivenApp() {
       }
 
       isBroadcasting = true;
+
+      // Cache the latest cursor position asynchronously — never block the tick.
+      void cursorPosition()
+        .then((physical) => {
+          fixtureCursorPhysicalRef.current = { x: physical.x, y: physical.y };
+        })
+        .catch(() => {
+          fixtureCursorPhysicalRef.current = null;
+        });
+
+      const fixtureCursorPhysical = fixtureCursorPhysicalRef.current;
+      if (fixtureCursorPhysical) {
+        const scale = fixtureCursorScaleRef.current || 1;
+        fixtureScenarioRef.current.world.feedCursorPosition(
+          {
+            x: fixtureCursorPhysical.x / scale,
+            y: fixtureCursorPhysical.y / scale,
+          },
+          fixtureScenarioRef.current.clock.now(),
+        );
+      }
 
       fixtureScenarioRef.current.clock.advanceBy(DESKTOP_FIXTURE_STEP_MS);
       fixtureScenarioRef.current.world.step(DESKTOP_FIXTURE_STEP_MS);
@@ -785,10 +821,13 @@ export function PetsDrivenApp() {
     void Promise.all([
       loadDesktopMonitorWorkAreas(),
       loadMainWindowSpawnPoint(),
-    ]).then(([monitors, spawnPoint]) => {
+      currentMonitor(),
+    ]).then(([monitors, spawnPoint, monitor]) => {
       if (!isActive || monitors.length === 0) {
         return;
       }
+
+      adoptedCursorScaleRef.current = monitor?.scaleFactor ?? 1;
 
       const bounds = projectionBoundsForMonitors(monitors);
       adoptedHostBoundsRef.current = bounds;
@@ -832,6 +871,24 @@ export function PetsDrivenApp() {
       }
 
       isBroadcasting = true;
+
+      // Cache the latest cursor position asynchronously — never block the tick.
+      void cursorPosition()
+        .then((physical) => {
+          adoptedCursorPhysicalRef.current = { x: physical.x, y: physical.y };
+        })
+        .catch(() => {
+          adoptedCursorPhysicalRef.current = null;
+        });
+
+      const cursorPhysical = adoptedCursorPhysicalRef.current;
+      if (cursorPhysical) {
+        const scale = adoptedCursorScaleRef.current || 1;
+        scenario.world.feedCursorPosition(
+          { x: cursorPhysical.x / scale, y: cursorPhysical.y / scale },
+          scenario.clock.now(),
+        );
+      }
 
       scenario.clock.advanceBy(DESKTOP_FIXTURE_STEP_MS);
       scenario.world.step(DESKTOP_FIXTURE_STEP_MS);
