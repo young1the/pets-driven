@@ -8,6 +8,7 @@ import type {
   AgentChannelSource,
   AgentChannelStatus,
 } from "@pets-driven/pet-engine/features/agent/components";
+import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 
 export type PetExpressionSnapshot = {
   source: PetExpressionSource;
@@ -61,6 +62,13 @@ export type PetSnapshot = {
     climbableSurfaceId: string | null;
   };
   motionTarget: { x: number; y: number } | null;
+  /**
+   * Canonical current activity, derived engine-side with claim-expiry checks
+   * (see core/pet-activity.ts). Null when the pet is simply standing by.
+   */
+  activity?: PetActivityKind | null;
+  /** Current drive pressures (0..1, higher = more pressing), if the pet has them. */
+  drives?: { social: number; energy: number; curiosity: number } | null;
   /** Current behavior decision claim, or null if no active claim. */
   decision: { source: string; reason: string; decidedAt: number } | null;
   /** Active deliberation timer, or null if no pending reaction. */

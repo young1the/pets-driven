@@ -21,6 +21,7 @@ import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/w
 import { runPhysicsTransformSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
 import type { PetVisualCue } from "@pets-driven/pet-engine/core/world-snapshot";
 import { agentTaskBadgeLabel } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import { derivePetActivity } from "@pets-driven/pet-engine/core/pet-activity";
 import {
   describeSimulationSystems,
   runSimulationSystems,
@@ -129,6 +130,21 @@ export function createWorld(input: WorldDefinition) {
           motionTarget:
             componentStore.getComponent(entity.id, "MotionTarget")
               ?.targetPosition ?? null,
+          activity: derivePetActivity(
+            componentStore,
+            entity.id,
+            input.clock.now(),
+          ),
+          drives: (() => {
+            const drives = componentStore.getComponent(entity.id, "Drives");
+            return drives
+              ? {
+                  social: drives.social,
+                  energy: drives.energy,
+                  curiosity: drives.curiosity,
+                }
+              : null;
+          })(),
           decision: decisionState
             ? {
                 source: decisionState.source,
