@@ -276,7 +276,7 @@ export function HomeSection({
                   border: "1px solid var(--border-soft)",
                   background: "var(--surface-card)",
                   borderRadius: "999px",
-                  padding: "5px 12px 5px 7px",
+                  padding: "5px 12px 5px 8px",
                   cursor: "pointer",
                   boxShadow: "var(--shadow-sm)",
                 }}
@@ -284,8 +284,8 @@ export function HomeSection({
               >
                 <span
                   style={{
-                    width: "18px",
-                    height: "18px",
+                    width: "8px",
+                    height: "8px",
                     borderRadius: "999px",
                     flex: "none",
                     background: pet.color,

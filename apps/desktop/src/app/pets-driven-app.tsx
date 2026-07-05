@@ -1374,7 +1374,7 @@ export function PetsDrivenApp() {
     .map((pet) => ({
       id: pet.id,
       name: pet.name,
-      color: petGradient(pet.id).from,
+      color: statusFor(pet.id).dotColor,
     }));
 
   const editingPet = managedPets.find((pet) => pet.id === editPetId) ?? null;
