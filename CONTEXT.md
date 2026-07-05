@@ -188,6 +188,34 @@ _Avoid_: persistent state, archive
 The optional per-pet `AGENTS.md` that defines working instructions for the bound **Agent Source** when present.
 _Avoid_: prompt, system prompt
 
+**Agent Work State**:
+The task status an **Agent Source** reports for a **Pet** — one of working, waiting, completed, failed, or idle. One of the two axes of what a **Pet** presents.
+_Avoid_: status (bare), behavior, activity
+
+**Activity**:
+What a **Pet** is autonomously doing in the **Simulation World** right now (for example exploring, hopping, chatting), computed by the simulation. The second, independent axis, separate from **Agent Work State**.
+_Avoid_: behavior, status, intent
+
+**Pet Status Card**:
+A card presentation of a **Pet** that combines its **Agent Work State** (as tone and color) and its **Activity** (as label) into a single chip. Presentation only, not a domain concept.
+_Avoid_: status, pet state
+
+**Decision**:
+The behavior a **Pet** picks to start this moment (for example wander-far, flee-from-pet, chase-cursor), chosen from ranked candidates and tagged with the source that won priority. Short-lived; the internal choice layer beneath **Activity**.
+_Avoid_: behavior (bare), intent, activity
+
+**Decision Source**:
+Which kind of trigger a **Decision** came from, used to rank competing decisions: user-interaction, agent-event, social, collision, or autonomous (in priority order, highest first).
+_Avoid_: behavior priority (as a domain term)
+
+**Locomotion**:
+How a **Pet**'s body moves: its means (walking, climbing, flying) and its gait (an easy amble versus a full-tilt run). Chosen from the **Decision** each frame, before **Steering**, and it gates which **Steering** force may apply (a walking body gets a walking push, a flying body gets a steering push).
+_Avoid_: steering, intent, motion mode
+
+**Steering**:
+Given a **Pet**'s **Locomotion**, the direction-and-force step that pushes the body toward its motion target and hands the result to the physics engine — the layer nearest the motion engine. Its mode is stand, pursue a target, or ease to a stop by the user. Replaces the retired "intent" (idle/active/seek).
+_Avoid_: intent, decision, locomotion
+
 ## Relationships
 
 - A **Pet** is bound to exactly one **Working Directory**.
@@ -276,6 +304,69 @@ _Avoid_: prompt, system prompt
 - **Terminal Channel** commands are reached through **Pet Context Menu** or attention-related **Pet Overlay Action**, not primary pet-body interaction.
 - When a **Pet** lacks a **Launch Configuration**, terminal commands guide the user to launch settings or **Attach** instead of failing as an error.
 - A **Registered Working Directory** may contain one **Instruction File**.
+- A **Pet** presents two independent axes: its **Agent Work State** and its **Activity**.
+- **Agent Work State** is reported by the **Agent Source** through the **Agent Event Feed**; **Activity** is computed by the **Simulation World**.
+- A **Pet Status Card** combines **Agent Work State** (as tone and color) with **Activity** (as label) into one indicator.
+- When a **Pet** needs the user (a waiting or failed **Agent Work State**), the **Agent Work State** owns the **Pet Status Card** label; otherwise the **Activity** provides the label.
+- A **Pet**'s motion is produced by a top-down chain each frame: **Drives** and perception feed a **Decision**, the **Decision** sets a **Locomotion**, the **Locomotion** gates **Steering**, and **Steering** hands force to the physics engine; the **Activity** is a read-only label derived from that state.
+- The layer order is Drives → **Decision** → **Locomotion** → **Steering** → physics engine → animation.
+- A **Decision** is ranked by its **Decision Source**: user-interaction > agent-event > social > collision > autonomous.
+- A **Decision** and the **Locomotion** it sets are always published together: applying a new **Decision** rewrites the **Locomotion** in the same step, so a **Pet**'s body never keeps executing a movement that its current **Decision** no longer wants. (Breaking this pairing is what would make a **Pet** keep walking after switching to a standing-still **Decision** such as a chat.)
+- What is short-lived is a **Decision**'s priority claim, not the **Locomotion**: when the claim lapses without a new **Decision** replacing it, the **Locomotion** persists so the **Pet** finishes the movement it already started.
+- **Steering** makes no choices of its own; it only turns a **Pet**'s **Locomotion** and motion target into force.
+
+## Architecture
+
+### How a Pet moves (per frame, one Pet)
+
+Top-down: each layer answers a different question and does not know the layer above's purpose. **Decision** and **Locomotion** are published together; **Locomotion** is settled before **Steering**, and it decides which **Steering** force applies.
+
+```mermaid
+flowchart TD
+    Drives["Drives — needs<br/>social / energy / curiosity<br/>(what do I need?)"]
+    Perception["Perception<br/>nearby pets / cursor / user anchor<br/>(what is around me?)"]
+    Decision["Decision — what to do<br/>approach-pet / flee / chat / wander"]
+    Locomotion["Locomotion — how the body moves<br/>walk / climb / fly + gait (walk | run)"]
+    Steering["Steering — direction & force<br/>push the body toward its target<br/>(the layer nearest the motion engine)"]
+    Physics["Physics engine (Matter.js)<br/>integrate force into a new position"]
+    Animation["Animation<br/>pick the sprite row"]
+
+    Drives --> Decision
+    Perception --> Decision
+    Decision --> Locomotion
+    Locomotion --> Steering
+    Steering --> Physics
+    Physics --> Animation
+```
+
+When several triggers compete for the **Decision**, the **Decision Source** ranks them: user-interaction ▸ agent-event ▸ social ▸ collision ▸ autonomous.
+
+### What a Pet shows (two independent axes)
+
+```mermaid
+flowchart LR
+    AWS["Agent Work State<br/>working / waiting / completed / failed / idle<br/>(reported by the Agent Source)"]
+    Activity["Activity<br/>exploring / hopping / chatting…<br/>(computed by the simulation)"]
+    AWS -->|tone & color| Card["Pet Status Card"]
+    Activity -->|label| Card
+```
+
+### How two Pets interact (relationship as an entity)
+
+Instead of one **Pet** calling a method on another, the interaction itself becomes a third entity that drives both — the ECS way to model a relationship.
+
+```mermaid
+flowchart TD
+    Session(["SocialSession — the relationship entity<br/>kind: greet | chat | chase<br/>initiatorId / responderId / phase"])
+    PetA["Pet A — holds SocialSessionMember"]
+    PetB["Pet B — holds SocialSessionMember"]
+    System["SocialInteractionSystem<br/>reads the session, choreographs both pets"]
+
+    Session --- PetA
+    Session --- PetB
+    System --> PetA
+    System --> PetB
+```
 
 ## Example dialogue
 
@@ -303,3 +394,6 @@ _Avoid_: prompt, system prompt
 - "Claude hook identity" was considered a source of truth; resolved: hook events carry **Working Directory** context and pets-driven maps that to the **Pet**.
 - "Terminal Channel" was considered required for hook expression; resolved: terminal linking is optional, while **Agent Event Feed** can still update pet expression.
 - "monitor/world coordinate" was used interchangeably; resolved: one **Simulation World** runs on one **World Coordinate Space** spanning the virtual desktop, distinct from monitor or screen geometry, and **Pet Windows** are projections of **Pet World Positions**.
+- "status" was used for both the agent's task state and the UI chip; resolved: a bare **status** means **Agent Work State**, and the chip that renders it is the **Pet Status Card**.
+- "behavior" was used for both the internal decision-selection machinery and the user-facing "what the pet is doing" label; resolved: the user-facing axis is **Activity**, the internal choice layer is a **Decision**, and bare "behavior" is avoided as a spoken term (it survives only as the `features/behavior` code folder).
+- "intent" (idle/active/seek) was one word doing three jobs — choosing the movement, being the coarse motion mode, and being read as a "busy" flag; resolved: the word **intent is retired**. Choosing the movement is the **Decision**; how the body moves (walk/climb/fly + gait) is **Locomotion**; the force toward the target is **Steering**; and "busy" is now derived from whether a **Pet** has an active **Decision**, not from a motion mode. (Code still names the component `IntentState` pending a rename to `Steering`/`Locomotion`.)
