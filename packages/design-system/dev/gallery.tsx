@@ -23,6 +23,7 @@ import {
   PetSpeechBubble,
   PlusIcon,
   Radio,
+  RefreshIcon,
   SearchIcon,
   SectionSlide,
   SegmentedControl,
@@ -138,6 +139,7 @@ export function Gallery() {
           <FolderIcon size={22} />
           <TrashIcon size={22} />
           <SearchIcon size={22} />
+          <RefreshIcon size={22} />
         </Cell>
       </Section>
 

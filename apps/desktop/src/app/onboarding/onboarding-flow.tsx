@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { Button } from "@pets-driven/design-system";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Button,
+  IconButton,
+  Input,
+  RefreshIcon,
+  SearchIcon,
+} from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import wordmarkUrl from "@pets-driven/design-system/assets/petsdriven-wordmark.svg";
 import {
@@ -183,6 +189,9 @@ export function OnboardingFlow({
     state.pets.length === 0 ? "welcome" : "choose",
   );
   const [packages, setPackages] = useState<CodexPetPackage[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [assetId, setAssetId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [personalityId, setPersonalityId] =
@@ -196,18 +205,29 @@ export function OnboardingFlow({
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  useEffect(() => {
-    let isMounted = true;
-
-    void gateway
-      .listPetPackages()
-      .then((next) => isMounted && setPackages(next))
-      .catch(() => isMounted && setPackages([]));
-
-    return () => {
-      isMounted = false;
-    };
+  const loadPackages = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      setPackages(await gateway.listPetPackages());
+    } catch {
+      setPackages([]);
+    } finally {
+      setRefreshing(false);
+    }
   }, [gateway]);
+
+  useEffect(() => {
+    void loadPackages();
+  }, [loadPackages]);
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const visiblePackages = normalizedQuery
+    ? packages.filter(
+        (pet) =>
+          pet.displayName.toLowerCase().includes(normalizedQuery) ||
+          pet.description.toLowerCase().includes(normalizedQuery),
+      )
+    : packages;
 
   const selectedPackage = packages.find((pet) => pet.id === assetId) ?? null;
   const personality =
@@ -353,13 +373,61 @@ export function OnboardingFlow({
           </span>
           {packages.length > 0 ? (
             <>
-              <h1 className="pd-onb__title">{t("onboarding.chooseTitle")}</h1>
-              <p className="pd-onb__lede">{t("onboarding.chooseLede")}</p>
-              <PetPackageGrid
-                onSelect={setAssetId}
-                packages={packages}
-                selectedAssetId={assetId}
-              />
+              <div className="pd-onb__list-head">
+                <div className="pd-onb__list-head-text">
+                  <h1 className="pd-onb__title">
+                    {t("onboarding.chooseTitle")}
+                  </h1>
+                  <p className="pd-onb__lede">{t("onboarding.chooseLede")}</p>
+                </div>
+                <div className="pd-onb__list-tools">
+                  {searchOpen && (
+                    <Input
+                      aria-label={t("onboarding.search")}
+                      autoFocus
+                      className="pd-onb__search"
+                      icon={<SearchIcon />}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder={t("onboarding.searchPlaceholder")}
+                      size="sm"
+                      value={query}
+                    />
+                  )}
+                  <IconButton
+                    label={t("onboarding.search")}
+                    onClick={() => {
+                      setSearchOpen((open) => {
+                        if (open) {
+                          setQuery("");
+                        }
+                        return !open;
+                      });
+                    }}
+                    variant={searchOpen ? "soft" : "ghost"}
+                  >
+                    <SearchIcon />
+                  </IconButton>
+                  <IconButton
+                    disabled={refreshing}
+                    label={t("onboarding.refresh")}
+                    onClick={() => void loadPackages()}
+                    variant="ghost"
+                  >
+                    <RefreshIcon
+                      className={refreshing ? "pd-onb__spin" : undefined}
+                    />
+                  </IconButton>
+                </div>
+              </div>
+              {visiblePackages.length > 0 ? (
+                <PetPackageGrid
+                  onSelect={setAssetId}
+                  packages={visiblePackages}
+                  selectedAssetId={assetId}
+                />
+              ) : (
+                <p className="pd-onb__lede">{t("onboarding.noMatches")}</p>
+              )}
               <div className="pd-onb__petdex-cta">
                 <span>{t("onboarding.petdexCta")}</span>
                 <a href={PETDEX_URL} rel="noreferrer" target="_blank">

@@ -770,6 +770,43 @@
   }
 }
 
+.pd-onb__list-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.pd-onb__list-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.pd-onb__list-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  padding-top: var(--space-1);
+}
+
+.pd-onb__search {
+  width: 200px;
+}
+
+.pd-onb__spin {
+  animation: pd-onb-spin 0.7s linear infinite;
+}
+
+@keyframes pd-onb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .onboarding-pet-grid {
   display: flex;
   gap: var(--space-3);

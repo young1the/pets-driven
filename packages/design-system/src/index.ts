@@ -66,6 +66,7 @@ export {
   FolderIcon,
   TrashIcon,
   SearchIcon,
+  RefreshIcon,
   type IconProps,
 } from "./components/icons/icons";
 export {
