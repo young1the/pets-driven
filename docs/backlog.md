@@ -256,6 +256,26 @@ left alone.
 travel 30px → 9px; the walker now yields ~0.9s after contact and wanders
 elsewhere after its dwell.
 
+**Follow-up (same day)** — Desktop still trembled. Colony-level jitter
+measurement (visible 1–3px direction flips per pet over 60s) exposed three
+more sources the first fix missed:
+1. *Convoy bounces*: the escape force knocks a tailgating walker ~6px back
+   every few frames, so the touching-only (4px) gap check reset the blocked
+   timer on every bounce. Widened to 12px with decay-instead-of-reset.
+2. *Unattachable climb approach*: pet-a oscillated at a climb wall forever
+   when attachment never fired (300 flips/min, the single worst source).
+   `ClimbIntentState.startedAt` + 6s timeout in ClimbApproachSystem, with
+   the request-climb repeat cooldown refreshed on cancel. Why the demo's
+   alice-climb-wall never attaches is still an open question (fixture
+   geometry), but no pet pins itself to a wall anymore.
+3. *Idle-speech claim churn*: "idle conversation" re-claims every ~1.5s,
+   clobbering repeat-cooldown history and eating arrival dwells (instant
+   re-decisions after arrivals). It is now a bookkeeping reason alongside
+   arrival-dwell (`BOOKKEEPING_AUTONOMOUS_REASONS`).
+
+Colony visible-flip total: 880 → 354 per 60s. The remainder is pet-a's
+6s-on/6s-off retry cycle against the unclimbable demo wall.
+
 ## B9. Surface the session partner in the UI
 
 **Problem** — The engine already exposes per-pet session state in the

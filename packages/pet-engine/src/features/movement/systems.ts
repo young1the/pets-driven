@@ -80,13 +80,24 @@ export function runLocomotionModeSystem(components: ComponentStore): void {
   );
 }
 
-export function runClimbApproachSystem(components: ComponentStore): void {
+// An approach that cannot complete — the pet reaches the surface x but the
+// contact/attachment gate never opens — would otherwise pin the pet at the
+// wall forever, visibly oscillating in the walk deadband. Cancel and let the
+// decision layer (with its request-climb repeat cooldown) try again later.
+const CLIMB_APPROACH_TIMEOUT_MS = 6_000;
+
+export function runClimbApproachSystem(
+  components: ComponentStore,
+  clock?: Clock,
+): void {
   type SurfaceEntry = { id: string; position: Vector };
   const surfaces: SurfaceEntry[] = [];
 
   components.forEach(["Transform", "ClimbableSurface"], (id, [transform]) => {
     surfaces.push({ id, position: transform.position });
   });
+
+  const now = clock?.now();
 
   components.forEach(
     ["Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb"],
@@ -95,7 +106,32 @@ export function runClimbApproachSystem(components: ComponentStore): void {
       if (climbIntent.phase !== "approaching") return;
 
       const surface = surfaces.find((s) => s.id === climbIntent.surfaceEntityId);
-      if (!surface) return;
+      const timedOut =
+        now !== undefined &&
+        climbIntent.startedAt !== undefined &&
+        now - climbIntent.startedAt > CLIMB_APPROACH_TIMEOUT_MS;
+      if (!surface || timedOut) {
+        components.removeComponent(id, "ClimbIntentState");
+        motion.targetEntityId = null;
+        motion.targetPosition = null;
+        const intent = components.getComponent(id, "IntentState");
+        if (intent) intent.intent = "idle";
+        // Refresh the request-climb repeat cooldown from *now*: the approach
+        // itself consumed the whole cooldown window, so without this the pet
+        // would immediately re-pick the same unclimbable surface and loop.
+        if (now !== undefined) {
+          const decision = components.getComponent(id, "BehaviorDecisionState");
+          if (
+            decision?.source === "autonomous" &&
+            decision.reason === "request-climb"
+          ) {
+            decision.decidedAt = now;
+          } else if (decision?.lastAutonomousReason === "request-climb") {
+            decision.lastAutonomousAt = now;
+          }
+        }
+        return;
+      }
 
       motion.targetEntityId = null;
       motion.targetPosition = {
@@ -604,10 +640,10 @@ export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbApproachSystem",
   dependsOn: ["LocomotionModeSystem"],
-  reads: ["ClimbingTag", "Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb", "ClimbableSurface"],
-  writes: ["MotionTarget"],
+  reads: ["ClimbingTag", "Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb", "ClimbableSurface", "IntentState", "BehaviorDecisionState"],
+  writes: ["MotionTarget", "ClimbIntentState", "IntentState", "BehaviorDecisionState"],
   update(ctx) {
-    runClimbApproachSystem(ctx.components);
+    runClimbApproachSystem(ctx.components, ctx.clock);
   },
 };
 

@@ -309,8 +309,15 @@ describe("demo scenario", () => {
         "ClimbIntentState",
         "CanWallClimb",
         "ClimbableSurface",
+        "IntentState",
+        "BehaviorDecisionState",
       ],
-      writes: ["MotionTarget"],
+      writes: [
+        "MotionTarget",
+        "ClimbIntentState",
+        "IntentState",
+        "BehaviorDecisionState",
+      ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "ClimbAttachmentSystem",

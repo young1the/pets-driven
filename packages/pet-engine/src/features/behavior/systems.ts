@@ -20,6 +20,8 @@ import {
 import { isBumpSocialEligible } from "@pets-driven/pet-engine/features/social/systems";
 import {
   ARRIVAL_DWELL_REASON,
+  BOOKKEEPING_AUTONOMOUS_REASONS,
+  IDLE_CONVERSATION_REASON,
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionKind,
   type BehaviorDecisionSelectionTrace,
@@ -266,13 +268,13 @@ function claim(
   const existing = components.getComponent(id, "BehaviorDecisionState");
   // When a higher-priority (non-autonomous) source overwrites an autonomous
   // claim, carry the autonomous history forward so repeat-cooldowns survive.
-  // The arrival-dwell rest beat is bookkeeping, not a decision — it also
-  // carries history forward instead of becoming the history itself.
+  // Bookkeeping reasons (arrival dwell, idle speech) are not decisions — they
+  // also carry history forward instead of becoming the history themselves.
   const recordsNewHistory =
-    source === "autonomous" && reason !== ARRIVAL_DWELL_REASON;
+    source === "autonomous" && !BOOKKEEPING_AUTONOMOUS_REASONS.has(reason);
   const existingIsRealAutonomous =
     existing?.source === "autonomous" &&
-    existing.reason !== ARRIVAL_DWELL_REASON;
+    !BOOKKEEPING_AUTONOMOUS_REASONS.has(existing.reason);
   const lastAutonomousReason = recordsNewHistory
     ? reason
     : existingIsRealAutonomous
@@ -880,8 +882,15 @@ export function runCollisionBehaviorSystem(
 
 const BLOCKED_PATH_YIELD_MS = 900;
 const BLOCKED_TARGET_EPS_PX = 1;
-/** Edge-to-edge gap under which two bodies count as pressing. */
-const BLOCKED_CONTACT_GAP_PX = 4;
+/**
+ * Edge-to-edge gap under which an in-the-way body counts as blocking. Wide
+ * enough to cover the convoy pattern: the escape force bounces a tailgating
+ * walker ~6px back off the pet ahead every few frames, so a strict
+ * touching-only threshold would reset the blocked timer on every bounce.
+ */
+const BLOCKED_CONTACT_GAP_PX = 12;
+/** While unblocked, accumulated blocked time decays instead of hard-resetting. */
+const BLOCKED_DECAY_FACTOR = 2;
 
 export function runCollisionYieldSystem(
   components: ComponentStore,
@@ -945,7 +954,7 @@ export function runCollisionYieldSystem(
       const targetChanged =
         !state || Math.abs(state.targetX - target.x) > BLOCKED_TARGET_EPS_PX;
 
-      if (!blocked || targetChanged) {
+      if (targetChanged) {
         if (blocked) {
           components.setComponent(id, {
             type: "BlockedPathState",
@@ -953,6 +962,16 @@ export function runCollisionYieldSystem(
             blockedMs: 0,
           });
         } else {
+          components.removeComponent(id, "BlockedPathState");
+        }
+        return;
+      }
+
+      if (!blocked) {
+        // Decay instead of resetting: a bounced-back tailgater is still
+        // blocked even during the frames the gap is momentarily open.
+        state.blockedMs -= deltaMs * BLOCKED_DECAY_FACTOR;
+        if (state.blockedMs <= 0) {
           components.removeComponent(id, "BlockedPathState");
         }
         return;
@@ -1186,7 +1205,7 @@ export function runAutonomousBehaviorSystem(
       if (speech.speech) return;
       if (clock.now() - activity.lastActiveAt >= idleConversation.idleAfterMs) {
         setSpeech(speech, speechProfile.idleCompanion, now);
-        claim(components, id, "autonomous", now, "idle conversation");
+        claim(components, id, "autonomous", now, IDLE_CONVERSATION_REASON);
       }
     },
   );
@@ -1207,7 +1226,17 @@ function applyArrivalDwell(
 ): void {
   const personality = components.getComponent(id, "Personality");
   if (!personality) return;
-  if (isClaimedBySameOrHigherPriority(components, id, "autonomous", now)) {
+  // A live claim blocks the dwell — unless it is itself just bookkeeping
+  // (idle-companion speech re-claims every ~1.5s and must not eat rest beats).
+  const existing = components.getComponent(id, "BehaviorDecisionState");
+  const blockedByLiveClaim =
+    !!existing &&
+    existing.expiresAt > now &&
+    !(
+      existing.source === "autonomous" &&
+      BOOKKEEPING_AUTONOMOUS_REASONS.has(existing.reason)
+    );
+  if (blockedByLiveClaim) {
     return;
   }
   claim(
@@ -1497,11 +1526,11 @@ function isAutonomousRepeatCoolingDown(
   if (!decision) return false;
 
   // Use the most recent autonomous decision, whether it is the current claim
-  // (source === "autonomous") or was carried over when a higher-priority claim
-  // (collision, agent-event) or an arrival-dwell rest beat overwrote it.
+  // (source === "autonomous") or was carried over when a higher-priority
+  // claim (collision, agent-event) or a bookkeeping claim overwrote it.
   const isRealAutonomous =
     decision.source === "autonomous" &&
-    decision.reason !== ARRIVAL_DWELL_REASON;
+    !BOOKKEEPING_AUTONOMOUS_REASONS.has(decision.reason);
   const lastReason = isRealAutonomous
     ? decision.reason
     : decision.lastAutonomousReason;
@@ -2194,6 +2223,7 @@ export function runBehaviorPlanningSystem(
           phase: "approaching",
           surfaceEntityId: token.climbSurfaceId!,
           targetY: token.climbTargetY!,
+          startedAt: token.decidedAt,
         });
         setPetIntent(components, id, "active");
         // Climbing costs energy and resolves curiosity, same as wander-far.

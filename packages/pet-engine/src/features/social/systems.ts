@@ -6,7 +6,7 @@ import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-
 import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import {
-  ARRIVAL_DWELL_REASON,
+  BOOKKEEPING_AUTONOMOUS_REASONS,
   BEHAVIOR_PRIORITY,
 } from "@pets-driven/pet-engine/features/behavior/components";
 import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
@@ -145,11 +145,11 @@ function claimSocial(
   expiresAt: number,
 ): void {
   const existing = components.getComponent(id, "BehaviorDecisionState");
-  // Look through arrival-dwell rest beats at the last genuine autonomous
-  // decision, mirroring the carry-forward in features/behavior/systems.ts.
+  // Look through bookkeeping claims (arrival dwell, idle speech) at the last
+  // genuine autonomous decision, mirroring features/behavior/systems.ts.
   const existingIsRealAutonomous =
     existing?.source === "autonomous" &&
-    existing.reason !== ARRIVAL_DWELL_REASON;
+    !BOOKKEEPING_AUTONOMOUS_REASONS.has(existing.reason);
   const lastAutonomousReason = existingIsRealAutonomous
     ? existing.reason
     : (existing?.lastAutonomousReason ?? null);

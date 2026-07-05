@@ -110,6 +110,14 @@ export type ClimbIntentStateComponent = {
   phase: "approaching" | "attached";
   surfaceEntityId: string;
   targetY: number;
+  /**
+   * When the approach began. An approach that cannot complete (the pet
+   * reaches the surface x but contact/attachment never fires) would
+   * otherwise oscillate at the wall forever; ClimbApproachSystem cancels it
+   * after a timeout. Optional for pre-existing states scripted directly into
+   * the attached phase.
+   */
+  startedAt?: number;
 };
 
 export type ClimbDismountPhase = "ready" | "airborne" | "coolingDown";

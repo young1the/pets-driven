@@ -145,3 +145,37 @@ describe("collision yield system (blocked-path yield)", () => {
     expect(store.getComponent("walker", "MotionTarget")?.targetPosition).not.toBeNull();
   });
 });
+
+describe("collision yield — convoy pattern (bounce gaps)", () => {
+  it("keeps accumulating blocked time across escape-force bounce gaps", () => {
+    const store = createComponentStore([walker(700), blocker(500)]);
+    const clock = createManualClock(0);
+
+    // Pressing 500ms.
+    runCollisionYieldSystem(store, clock, 16, NO_RANDOM);
+    runCollisionYieldSystem(store, clock, 500, NO_RANDOM);
+    expect(store.getComponent("walker", "BlockedPathState")?.blockedMs).toBe(500);
+
+    // Bounced ~6px back: gap opens briefly — decay, not reset.
+    store.setComponent("blocker", {
+      type: "Transform",
+      position: { x: 600, y: 500 },
+    });
+    runCollisionYieldSystem(store, clock, 100, NO_RANDOM);
+    expect(store.getComponent("walker", "BlockedPathState")?.blockedMs).toBe(300);
+
+    // Caught back up: pressing again crosses the threshold and yields.
+    store.setComponent("blocker", {
+      type: "Transform",
+      position: { x: 500, y: 500 },
+    });
+    clock.advanceBy(1_000);
+    runCollisionYieldSystem(store, clock, 500, NO_RANDOM);
+    runCollisionYieldSystem(store, clock, 200, NO_RANDOM);
+
+    expect(store.getComponent("walker", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("walker", "BehaviorDecisionState")?.reason).toBe(
+      "arrival-dwell",
+    );
+  });
+});

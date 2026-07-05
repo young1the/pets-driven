@@ -124,6 +124,20 @@ export type BehaviorDecisionSelectionTrace = {
  */
 export const ARRIVAL_DWELL_REASON = "arrival-dwell";
 
+/** Claim reason for the ambient idle-companion speech line. */
+export const IDLE_CONVERSATION_REASON = "idle conversation";
+
+/**
+ * Autonomous claim reasons that are bookkeeping, not movement decisions.
+ * Idle-companion speech re-claims every time its bubble expires (~1.5s), so
+ * letting it record history or gate the arrival dwell would clobber every
+ * repeat-cooldown mid-activity and randomly skip rest beats.
+ */
+export const BOOKKEEPING_AUTONOMOUS_REASONS: ReadonlySet<string> = new Set([
+  ARRIVAL_DWELL_REASON,
+  IDLE_CONVERSATION_REASON,
+]);
+
 /** Numeric priority — lower value wins. */
 export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   "user-interaction": 1,
