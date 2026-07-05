@@ -385,6 +385,7 @@ describe("demo scenario", () => {
         "ClimbingTag",
         "AirborneTag",
         "ClimbIntentState",
+        "SocialSessionMember",
       ],
       writes: [
         "PendingReaction",
@@ -472,6 +473,7 @@ describe("demo scenario", () => {
         "ClimbingTag",
         "CanWalk",
         "MovementProfile",
+        "SocialSessionMember",
       ],
       writes: ["PhysicsForce"],
     });

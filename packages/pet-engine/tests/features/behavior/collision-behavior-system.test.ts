@@ -1633,3 +1633,45 @@ describe("collision vs social priority (B1: social outranks collision)", () => {
     );
   });
 });
+
+describe("session-partner collision immunity (B2)", () => {
+  function withMember(pet: ReturnType<typeof makePet>, partnerId: string) {
+    pet.components.push({
+      type: "SocialSessionMember" as const,
+      sessionId: "sess",
+      partnerId,
+      role: "initiator" as const,
+    });
+    return pet;
+  }
+
+  it("ignores overlap with the session partner even without a live social claim", () => {
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      withMember(makePet("pet-a", 100, "idle"), "pet-b"),
+      withMember(makePet("pet-b", 110, "idle"), "pet-a"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(store.getComponent("pet-b", "PendingReaction")).toBeUndefined();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
+  });
+
+  it("still reacts to a third pet bumping into a session member", () => {
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      // Partner is far away; the overlap comes from an outsider.
+      withMember(makePet("pet-a", 100, "idle"), "pet-b"),
+      withMember(makePet("pet-b", 400, "idle"), "pet-a"),
+      makePet("pet-c", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    const reaction = store.getComponent("pet-a", "PendingReaction");
+    expect(reaction?.context.otherEntityId).toBe("pet-c");
+    expect(store.getComponent("pet-c", "PendingReaction")).toBeDefined();
+  });
+});

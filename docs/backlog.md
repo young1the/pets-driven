@@ -52,7 +52,7 @@ Note: while a social claim is live the pet ignores *all* collisions (not just
 partner ones) via the priority guard — B2 narrows the remaining gaps
 (escape-force damping, expiry fiddling) rather than introducing immunity.
 
-## B2. Session-partner collision immunity
+## B2. Session-partner collision immunity — DONE (2026-07-05)
 
 **Problem** — Even with B1, a collision claim against one's session partner
 still queues `PendingReaction` and churns state the moment the session ends.
@@ -75,6 +75,12 @@ still queues `PendingReaction` and churns state the moment the session ends.
   pair itself stays committed).
 
 Size: S. Depends on: B1 (order only; technically independent).
+
+**Outcome** — Partner overlaps are skipped in pass 2 of
+`CollisionBehaviorSystem` (covers the claim-gap windows B1 left), and
+`CollisionEscapeSystem` separates session partners at base force only — no
+4x multiplier, no stuck escalation. Pass 1 needed no change: session members
+never hold collision claims in the first place.
 
 ## B3. Per-pair collision reaction cooldown
 

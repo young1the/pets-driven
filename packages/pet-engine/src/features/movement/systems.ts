@@ -365,11 +365,19 @@ export function runCollisionEscapeSystem(
         walk?.force ??
         movement?.activeForce ??
         FALLBACK_COLLISION_ESCAPE_FORCE / COLLISION_ESCAPE_FORCE_MULTIPLIER;
+      // Overlapping with the session partner still separates the bodies, but
+      // gently — the 4x shove (and stuck escalation) between two pets who are
+      // deliberately standing close reads as them fighting.
+      const sessionMember = components.getComponent(id, "SocialSessionMember");
+      const isSessionPartner =
+        sessionMember?.partnerId === collision.otherEntityId;
       const stuckMultiplier =
         now - collision.startedAt >= COLLISION_ESCAPE_STUCK_MS
           ? COLLISION_ESCAPE_STUCK_MULTIPLIER
           : 1;
-      const force = baseForce * COLLISION_ESCAPE_FORCE_MULTIPLIER * stuckMultiplier;
+      const force = isSessionPartner
+        ? baseForce
+        : baseForce * COLLISION_ESCAPE_FORCE_MULTIPLIER * stuckMultiplier;
       forces.push({ id, x: away.x * force, y: away.y * force });
     },
   );
@@ -665,6 +673,7 @@ export const CollisionEscapeSystem: SimulationSystem<WorldStepContext> = {
     "ClimbingTag",
     "CanWalk",
     "MovementProfile",
+    "SocialSessionMember",
   ],
   writes: ["PhysicsForce"],
   update(ctx) {

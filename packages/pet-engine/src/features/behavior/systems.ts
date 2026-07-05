@@ -738,6 +738,15 @@ export function runCollisionBehaviorSystem(
           Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
       );
     if (!collision) continue;
+    // B2: contact with the session partner is expected choreography (greet
+    // gaps close in, chases catch), never a startle. This also covers the
+    // brief windows where the social claim is not live — e.g. right at
+    // teardown before the afterglow claim lands.
+    const sessionMember = components.getComponent(
+      entity.id,
+      "SocialSessionMember",
+    );
+    if (sessionMember && sessionMember.partnerId === collision.id) continue;
     if (isWorking) {
       const personality = components.getComponent(entity.id, "Personality");
       if (personality) {
@@ -2357,6 +2366,7 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "ClimbingTag",
     "AirborneTag",
     "ClimbIntentState",
+    "SocialSessionMember",
   ],
   writes: [
     "PendingReaction",
