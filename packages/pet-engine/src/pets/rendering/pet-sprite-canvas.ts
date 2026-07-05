@@ -13,28 +13,6 @@ export function drawPetSpriteCanvas(
   frame: PetSpriteFrame,
   position: PetSpriteCanvasPosition,
 ) {
-  if (frame.mirror) {
-    context.save();
-    try {
-      context.translate(position.x, position.y);
-      context.scale(-1, 1);
-      context.drawImage(
-        image,
-        frame.source.x,
-        frame.source.y,
-        frame.source.width,
-        frame.source.height,
-        -frame.drawSize.width / 2,
-        -frame.drawSize.height / 2,
-        frame.drawSize.width,
-        frame.drawSize.height,
-      );
-    } finally {
-      context.restore();
-    }
-    return;
-  }
-
   context.drawImage(
     image,
     frame.source.x,

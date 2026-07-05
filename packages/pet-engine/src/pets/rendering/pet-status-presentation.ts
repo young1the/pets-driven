@@ -1,13 +1,13 @@
 import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
 import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 
 /**
- * Pure mapping from simulation-side presentation data (sprite intent +
- * host-driven overlay) to the design-system status primitives (capsule
- * mood/label + corner emote). No Tauri, no DOM — unit-testable.
+ * Pure mapping from simulation-side presentation data (the sprite's current
+ * animation row + host-driven overlay) to the design-system status primitives
+ * (capsule mood/label + corner emote). No Tauri, no DOM — unit-testable.
  */
 /**
  * Stable identifier for a status label, so a localization layer can translate
@@ -48,13 +48,13 @@ type IntentPresentation = {
   emote: PetEmoteKind;
 };
 
-function presentationFromIntent(
-  intent: PetSpriteIntent | undefined,
+function presentationFromAnimationState(
+  animationState: PetAnimationState | undefined,
 ): IntentPresentation {
-  switch (intent?.kind) {
-    case "travel":
-      return { mood: "working", label: null, labelKey: null, emote: "none" };
-    case "working":
+  switch (animationState) {
+    case "running-right":
+    case "running-left":
+    case "running":
       return { mood: "working", label: null, labelKey: null, emote: "none" };
     case "idle":
       return { mood: "sleepy", label: "Idle", labelKey: "idle", emote: "zzz" };
@@ -89,12 +89,18 @@ function presentationFromIntent(
 }
 
 /**
- * Ambient sprite intents may hand the capsule label over to the engine's
- * canonical activity (snapshot.activity); task-owned intents (failed/waiting/
+ * Ambient animation rows may hand the capsule label over to the engine's
+ * canonical activity (snapshot.activity); task-owned rows (failed/waiting/
  * review) keep their label — a stuck pet must never read as "Exploring".
  */
-const ACTIVITY_OVERRIDABLE_INTENTS: ReadonlySet<PetSpriteIntent["kind"]> =
-  new Set(["travel", "working", "idle", "waving", "jumping"]);
+const ACTIVITY_OVERRIDABLE_ROWS: ReadonlySet<PetAnimationState> = new Set([
+  "running-right",
+  "running-left",
+  "running",
+  "idle",
+  "waving",
+  "jumping",
+]);
 
 /** English localization fallbacks; hosts translate via labelKey (petStatus.*). */
 const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
@@ -175,17 +181,17 @@ function presentationFromAgentStatus(
 }
 
 export function presentPetStatus(
-  intent: PetSpriteIntent | undefined,
+  animationState: PetAnimationState | undefined,
   overlay: PetSpriteOverlay | null | undefined,
   activity?: PetActivityKind | null,
 ): PetStatusPresentation {
-  // The canonical activity gives ambient intents a live, specific label
+  // The canonical activity gives ambient rows a live, specific label
   // ("Chasing the cursor" instead of a mute working capsule). Task-owned
-  // intents (failed/waiting/review) keep their label and mood.
+  // rows (failed/waiting/review) keep their label and mood.
   const base =
-    activity && ACTIVITY_OVERRIDABLE_INTENTS.has(intent?.kind ?? "idle")
+    activity && ACTIVITY_OVERRIDABLE_ROWS.has(animationState ?? "idle")
       ? ACTIVITY_PRESENTATION[activity]
-      : presentationFromIntent(intent);
+      : presentationFromAnimationState(animationState);
 
   if (!overlay) {
     return { ...base, message: null, showCapsule: false };

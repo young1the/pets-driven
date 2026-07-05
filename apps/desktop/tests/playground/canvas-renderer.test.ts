@@ -234,7 +234,7 @@ describe("canvas renderer", () => {
     expect(context.fillText).toHaveBeenCalledWith("WAIT", 100, 80);
   });
 
-  it("mirrors right-facing jumping sprites around the body center", () => {
+  it("draws the jumping row without mirroring", () => {
     const context = {
       clearRect: vi.fn(),
       drawImage: vi.fn(),
@@ -242,11 +242,11 @@ describe("canvas renderer", () => {
       restore: vi.fn(),
       translate: vi.fn(),
       scale: vi.fn(),
-    };
+    } as unknown as CanvasRenderingContext2D;
     const image = {} as HTMLImageElement;
 
     drawWorld(
-      context as unknown as CanvasRenderingContext2D,
+      context,
       {
         width: 320,
         height: 180,
@@ -260,7 +260,6 @@ describe("canvas renderer", () => {
             shape: "rectangle",
             ...DEFAULT_PET_BODY_SIZE,
             animationState: "jumping",
-            spriteFacing: "right",
           },
         ],
         pets: [],
@@ -270,21 +269,18 @@ describe("canvas renderer", () => {
       0,
     );
 
-    expect(context.save).toHaveBeenCalledBefore(context.scale);
-    expect(context.translate).toHaveBeenCalledWith(100, 80);
-    expect(context.scale).toHaveBeenCalledWith(-1, 1);
+    expect(context.scale).not.toHaveBeenCalled();
     expect(context.drawImage).toHaveBeenCalledWith(
       image,
       0,
       832,
       192,
       208,
-      -16,
-      -19,
+      84,
+      61,
       32,
       38,
     );
-    expect(context.restore).toHaveBeenCalledAfter(context.drawImage);
   });
 
   it("draws directional running rows without mirroring", () => {
@@ -313,7 +309,6 @@ describe("canvas renderer", () => {
             shape: "rectangle",
             ...DEFAULT_PET_BODY_SIZE,
             animationState: "running-right",
-            spriteFacing: "right",
           },
         ],
         pets: [],

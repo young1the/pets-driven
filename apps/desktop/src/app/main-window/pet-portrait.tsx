@@ -37,9 +37,9 @@ export function PetPortrait({
       {spritesheetUrl ? (
         <PetSprite
           alt={`${name} portrait`}
+          animationState="idle"
           elapsedMs={0}
           imageUrl={spritesheetUrl}
-          intent={{ kind: "idle", facing: "right" }}
           scale={scale}
           size={PET_CELL_SIZE}
         />

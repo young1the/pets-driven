@@ -380,7 +380,6 @@ export function ServiceDemoVideo() {
                 animationState={pose.animationState}
                 decisionEmote={pose.decisionEmote}
                 elapsedMs={frame * 33}
-                facing={pose.facing}
                 key={pet.id}
                 pet={pet}
                 status={pose.status}
@@ -542,7 +541,6 @@ function roamingPetPose(
       baseY: DESKTOP_ROAM_Y,
       phase: 0.2,
       vertical: 18,
-      workFacing: "right" as const,
       workX: 480,
       workY: DESKTOP_WORK_Y,
     },
@@ -552,7 +550,6 @@ function roamingPetPose(
       baseY: DESKTOP_ROAM_Y,
       phase: 2.5,
       vertical: 16,
-      workFacing: "left" as const,
       workX: 1440,
       workY: DESKTOP_WORK_Y,
     },
@@ -562,7 +559,6 @@ function roamingPetPose(
       baseY: DESKTOP_ROAM_Y,
       phase: 4.1,
       vertical: 24,
-      workFacing: "right" as const,
       workX: 960,
       workY: DESKTOP_WORK_Y,
     },
@@ -582,7 +578,6 @@ function roamingPetPose(
     return {
       animationState:
         roamFacing === "left" ? "running-left" : "running-right",
-      facing: roamFacing,
       frame,
       x: settledBaseX,
       y: settledBaseY,
@@ -600,7 +595,6 @@ function roamingPetPose(
         : bloopCompleted
           ? { emote: "sparkle", label: "Shipped", mood: "happy", tone: "spark" }
           : null,
-      facing: "right",
       frame,
       status: {
         label: !bloopWorking ? "Queued" : bloopCompleted ? "Done" : "Working",
@@ -627,7 +621,6 @@ function roamingPetPose(
           : reviewFlagWindow
             ? { emote: "exclaim", label: "Flagged", mood: "confused", tone: "alert" }
             : { emote: "sparkle", label: "Approved", mood: "happy", tone: "spark" },
-      facing: "left",
       frame,
       status: {
         label: reviewP <= 0 ? "Waiting" : reviewFlagWindow ? "Flagged" : "Approved",
@@ -662,7 +655,6 @@ function roamingPetPose(
         : jumpCycle > 60
           ? { emote: "zzz", label: "Napping", mood: "sleepy", tone: "calm" }
           : null,
-    facing: "right",
     frame,
     status: {
       label: jumpCycle < 18 ? "Done" : jumpCycle > 60 ? "Napping" : "Working",
@@ -689,7 +681,6 @@ function summonedPetPose(
     );
     return {
       animationState: "running-right",
-      facing: "right",
       frame,
       x: lerp(960, PET_EXIT_X, moveP),
       y: lerp(1008, PET_EXIT_Y, moveP),
@@ -703,7 +694,6 @@ function summonedPetPose(
         : frame >= TERMINAL_TYPING_DONE_FRAME
           ? "running"
           : "idle",
-    facing: "right",
     frame,
     x: 960,
     y: lerp(602, 1008, dropP),

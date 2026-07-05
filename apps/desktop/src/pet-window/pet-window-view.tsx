@@ -13,7 +13,7 @@ import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
 import { IconButton, PET_MOODS } from "@pets-driven/design-system";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import {
@@ -47,7 +47,7 @@ type PetWindowViewProps = {
 type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
 type PetWindowPresentation = {
   decisionEmote: BehaviorTokenPresentation | null;
-  intent: PetSpriteIntent;
+  animationState: PetAnimationState;
   activity: PetActivityKind | null;
   overlay: PetWindowOverlay | null;
 };
@@ -138,10 +138,8 @@ function canApplyResizeScale(scale: number) {
 function defaultPresentation(index: number): PetWindowPresentation {
   return {
     decisionEmote: null,
-    intent: {
-      kind: "travel",
-      direction: movementDirectionForWindow(index) >= 0 ? "right" : "left",
-    },
+    animationState:
+      movementDirectionForWindow(index) >= 0 ? "running-right" : "running-left",
     activity: null,
     overlay: { kind: "status", label: "!" },
   };
@@ -269,7 +267,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           {
             sprite: {
               decisionEmote: presentationRef.current.decisionEmote,
-              intent: presentationRef.current.intent,
+              animationState: presentationRef.current.animationState,
               activity: presentationRef.current.activity,
             },
             overlay: presentationRef.current.overlay,
@@ -282,13 +280,13 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       ) {
         presentationRef.current = {
           decisionEmote: frame.sprite.decisionEmote ?? null,
-          intent: frame.sprite.intent,
+          animationState: frame.sprite.animationState,
           activity: steadiedActivity,
           overlay: frame.overlay,
         };
         setPresentation({
           decisionEmote: frame.sprite.decisionEmote ?? null,
-          intent: frame.sprite.intent,
+          animationState: frame.sprite.animationState,
           activity: steadiedActivity,
           overlay: frame.overlay,
         });
@@ -730,10 +728,10 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         {spritesheetUrl ? (
           <PetSprite
             alt={`Pet Sprite ${pet.petId}`}
+            animationState={presentation.animationState}
             decisionEmote={presentation.decisionEmote}
             elapsedMs={elapsedMs}
             imageUrl={spritesheetUrl}
-            intent={presentation.intent}
             overlay={presentation.overlay}
             showStatusBubble={false}
             size={PET_CELL_SIZE}
@@ -744,8 +742,8 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         {petName !== null ? (
           <PetStatusCard
             activity={presentation.activity}
+            animationState={presentation.animationState}
             cwd={isBodyHovered ? cwdRef.current : null}
-            intent={presentation.intent}
             name={petName}
             overlay={presentation.overlay}
             spriteHeight={PET_CELL_SIZE.height * spriteScale}
@@ -779,7 +777,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
 type PetStatusCardProps = {
   name: string;
-  intent: PetSpriteIntent;
+  animationState: PetAnimationState;
   activity: PetActivityKind | null;
   overlay: PetWindowOverlay | null;
   cwd: string | null;
@@ -788,14 +786,14 @@ type PetStatusCardProps = {
 
 function PetStatusCard({
   name,
-  intent,
+  animationState,
   activity,
   overlay,
   cwd,
   spriteHeight,
 }: PetStatusCardProps) {
   const { t } = useTranslation("desktop");
-  const status = presentPetStatus(intent, overlay, activity);
+  const status = presentPetStatus(animationState, overlay, activity);
   const accent = PET_MOODS[status.mood].accent;
   // Static labels carry a stable key we can localize; host-supplied free text
   // (speech/attention overlays) has no key, so it shows as-is.

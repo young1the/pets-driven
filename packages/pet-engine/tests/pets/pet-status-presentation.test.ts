@@ -3,21 +3,21 @@ import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-sta
 
 describe("presentPetStatus", () => {
   it("hides the capsule when no agent channel overlay is present", () => {
-    const presentation = presentPetStatus({ kind: "working" }, null);
+    const presentation = presentPetStatus("running", null);
 
     expect(presentation.showCapsule).toBe(false);
     expect(presentation.mood).toBe("working");
   });
 
   it("maps idle pets to a napping mood with zzz emote", () => {
-    const presentation = presentPetStatus({ kind: "idle" }, null);
+    const presentation = presentPetStatus("idle", null);
 
     expect(presentation.mood).toBe("sleepy");
     expect(presentation.emote).toBe("zzz");
   });
 
   it("maps waiting pets to confused with a question emote", () => {
-    const presentation = presentPetStatus({ kind: "waiting" }, null);
+    const presentation = presentPetStatus("waiting", null);
 
     expect(presentation.mood).toBe("confused");
     expect(presentation.emote).toBe("question");
@@ -25,21 +25,21 @@ describe("presentPetStatus", () => {
   });
 
   it("maps failed pets to confused with an exclaim emote", () => {
-    const presentation = presentPetStatus({ kind: "failed" }, null);
+    const presentation = presentPetStatus("failed", null);
 
     expect(presentation.mood).toBe("confused");
     expect(presentation.emote).toBe("exclaim");
   });
 
   it("maps playful intents to celebratory moods", () => {
-    expect(presentPetStatus({ kind: "jumping" }, null).emote).toBe("sparkle");
-    expect(presentPetStatus({ kind: "waving" }, null).mood).toBe("happy");
-    expect(presentPetStatus({ kind: "review" }, null).mood).toBe("thinking");
+    expect(presentPetStatus("jumping", null).emote).toBe("sparkle");
+    expect(presentPetStatus("waving", null).mood).toBe("happy");
+    expect(presentPetStatus("review", null).mood).toBe("thinking");
   });
 
   it("lets an attention overlay override mood, label and emote", () => {
     const presentation = presentPetStatus(
-      { kind: "working" },
+      "running",
       { kind: "attention", label: "WAIT" },
     );
 
@@ -55,7 +55,7 @@ describe("presentPetStatus", () => {
 
   it("shows agent channel status in the speech bubble", () => {
     const presentation = presentPetStatus(
-      { kind: "idle" },
+      "idle",
       {
         kind: "agent-channel",
         status: "working",
@@ -76,7 +76,7 @@ describe("presentPetStatus", () => {
 
   it("keeps the intent mood for status overlays and shows their label", () => {
     const presentation = presentPetStatus(
-      { kind: "idle" },
+      "idle",
       { kind: "status", label: "!" },
     );
 
@@ -88,7 +88,7 @@ describe("presentPetStatus", () => {
 
   it("carries speech overlay text into the capsule label", () => {
     const presentation = presentPetStatus(
-      { kind: "travel", direction: "right" },
+      "running-right",
       { kind: "speech", label: "Otto's on it…" },
     );
 
@@ -99,7 +99,7 @@ describe("presentPetStatus", () => {
 
   it("does not show a status capsule just because a pet is traveling", () => {
     const presentation = presentPetStatus(
-      { kind: "travel", direction: "right" },
+      "running-right",
       null,
     );
 
@@ -120,7 +120,7 @@ describe("presentPetStatus", () => {
 
   it("lets the canonical activity label ambient intents", () => {
     const presentation = presentPetStatus(
-      { kind: "travel", direction: "right" },
+      "running-right",
       null,
       "chasingCursor",
     );
@@ -132,7 +132,7 @@ describe("presentPetStatus", () => {
   });
 
   it("activity replaces the idle zzz presentation", () => {
-    const presentation = presentPetStatus({ kind: "idle" }, null, "beingPetted");
+    const presentation = presentPetStatus("idle", null, "beingPetted");
 
     expect(presentation.mood).toBe("love");
     expect(presentation.emote).toBe("heart");
@@ -140,17 +140,17 @@ describe("presentPetStatus", () => {
   });
 
   it("never lets activity override task-owned intents", () => {
-    const waiting = presentPetStatus({ kind: "waiting" }, null, "exploring");
+    const waiting = presentPetStatus("waiting", null, "exploring");
     expect(waiting.label).toBe("Waiting");
     expect(waiting.mood).toBe("confused");
 
-    const failed = presentPetStatus({ kind: "failed" }, null, "exploring");
+    const failed = presentPetStatus("failed", null, "exploring");
     expect(failed.label).toBe("Stuck");
   });
 
   it("agent-channel overlays still own the capsule over an activity", () => {
     const presentation = presentPetStatus(
-      { kind: "idle" },
+      "idle",
       {
         kind: "agent-channel",
         status: "working",
@@ -166,7 +166,7 @@ describe("presentPetStatus", () => {
 
   it("speech overlays keep their free text but inherit the activity mood", () => {
     const presentation = presentPetStatus(
-      { kind: "travel", direction: "right" },
+      "running-right",
       { kind: "speech", label: "Otto's on it…" },
       "makingFriends",
     );

@@ -40,7 +40,6 @@ export type BodySnapshot = {
   radius?: number;
   isStatic?: boolean;
   animationState?: import("@pets-driven/pet-engine/pets/assets/pet-atlas").PetAnimationState;
-  spriteFacing?: import("@pets-driven/pet-engine/pets/assets/pet-atlas").PetSpriteFacing;
   interaction?: InteractionSnapshot;
 };
 

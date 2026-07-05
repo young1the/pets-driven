@@ -37,7 +37,6 @@ export function drawWorld(
       const frame = resolvePetSpriteFrame({
         animationState: body.animationState ?? "idle",
         elapsedMs,
-        facing: body.spriteFacing,
         size: { width: body.width, height: body.height },
         scale: body.interaction?.scale,
       });

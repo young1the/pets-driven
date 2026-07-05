@@ -1,5 +1,4 @@
 import type {
-  BodySnapshot,
   PetSnapshot,
   WorldSnapshot,
 } from "@pets-driven/pet-engine/core/world-snapshot";
@@ -26,7 +25,6 @@ import type {
   PetWindowFrame,
   PetWindowOverlay,
 } from "@/pet-window/pet-window-messages";
-import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import {
   presentBehaviorDecisionToken,
   presentPetExpression,
@@ -96,7 +94,7 @@ export function projectWorldSnapshotToPetWindows(
             decisionEmote: pet.expression
               ? presentPetExpression(pet.expression)
               : presentBehaviorDecisionToken(pet.decision?.reason),
-            intent: spriteIntentFromBody(body),
+            animationState: body.animationState ?? "idle",
             activity: pet.activity ?? null,
           },
           overlay: overlayFromPet(pet),
@@ -124,26 +122,6 @@ export function projectScreenPointToWorld(
     x: viewport.x + (screenPoint.x - bounds.x) / scaleX,
     y: viewport.y + (screenPoint.y - bounds.y) / scaleY,
   };
-}
-
-export function spriteIntentFromBody(body: BodySnapshot): PetSpriteIntent {
-  switch (body.animationState) {
-    case "running-right":
-      return { kind: "travel", direction: "right" };
-    case "running-left":
-      return { kind: "travel", direction: "left" };
-    case "running":
-      return { kind: "working", facing: body.spriteFacing };
-    case "waving":
-    case "jumping":
-    case "failed":
-    case "waiting":
-    case "review":
-      return { kind: body.animationState, facing: body.spriteFacing };
-    case "idle":
-    default:
-      return { kind: "idle", facing: body.spriteFacing };
-  }
 }
 
 export function overlayFromPet(pet: PetSnapshot): PetWindowOverlay | null {

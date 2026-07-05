@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  getAtlasFrame,
-  shouldMirrorSprite,
-} from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { getAtlasFrame } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 
 describe("pet atlas", () => {
   it("selects frames using the fixed hatch-pet row layout", () => {
@@ -30,13 +27,5 @@ describe("pet atlas", () => {
       rowIndex: 2,
       sourceY: 416,
     });
-  });
-
-  it("predefines non-directional states that mirror for right facing", () => {
-    expect(shouldMirrorSprite("jumping", "right")).toBe(true);
-    expect(shouldMirrorSprite("waiting", "right")).toBe(true);
-    expect(shouldMirrorSprite("running", "right")).toBe(false);
-    expect(shouldMirrorSprite("running-right", "right")).toBe(false);
-    expect(shouldMirrorSprite("jumping", "left")).toBe(false);
   });
 });

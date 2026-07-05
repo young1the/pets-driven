@@ -68,7 +68,7 @@ function petWindowFramePayload({
     sequence,
     petId,
     window: { x, y, width, height },
-    sprite: { intent: { kind: "idle" } },
+    sprite: { animationState: "idle" },
     overlay,
   };
 }
@@ -361,7 +361,7 @@ describe("pet window product route", () => {
             height: expect.any(Number),
           }),
           sprite: expect.objectContaining({
-            intent: expect.any(Object),
+            animationState: expect.any(String),
           }),
         }),
       );

@@ -25,15 +25,11 @@ describe("pet animation state", () => {
 
     scenario.world.setPhysicsVelocity("pet-a", { x: 4, y: 0 });
     expect(bodySnapshot()).toMatchObject({
-      animationState: "running-right",
-      spriteFacing: "right",
-    });
+      animationState: "running-right",    });
 
     scenario.world.setPhysicsVelocity("pet-a", { x: -4, y: 0 });
     expect(bodySnapshot()).toMatchObject({
-      animationState: "running-left",
-      spriteFacing: "left",
-    });
+      animationState: "running-left",    });
   });
 
   it("does not infer left or right when the pet is not moving", () => {
@@ -133,9 +129,7 @@ describe("pet animation state", () => {
     });
 
     expect(bodySnapshot()).toMatchObject({
-      animationState: "jumping",
-      spriteFacing: "left",
-    });
+      animationState: "jumping",    });
   });
 
   it("shows travel animation when a working pet is moving", () => {
@@ -148,15 +142,11 @@ describe("pet animation state", () => {
     });
     scenario.world.setPhysicsVelocity("pet-a", { x: 4, y: 0 });
     expect(bodySnapshot()).toMatchObject({
-      animationState: "running-right",
-      spriteFacing: "right",
-    });
+      animationState: "running-right",    });
 
     scenario.world.setPhysicsVelocity("pet-a", { x: -4, y: 0 });
     expect(bodySnapshot()).toMatchObject({
-      animationState: "running-left",
-      spriteFacing: "left",
-    });
+      animationState: "running-left",    });
   });
 
   it("shows running animation when a working pet is not moving", () => {

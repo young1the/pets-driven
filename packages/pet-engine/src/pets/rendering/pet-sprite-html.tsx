@@ -35,8 +35,6 @@ export function PetSpriteHtml({
         display: "inline-block",
         height: `${frame.drawSize.height}px`,
         overflow: "hidden",
-        transform: frame.mirror ? "scaleX(-1)" : undefined,
-        transformOrigin: "center",
         width: `${frame.drawSize.width}px`,
       }}
     />

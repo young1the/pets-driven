@@ -1,15 +1,11 @@
 import type { CSSProperties } from "react";
 import { PetSpeechBubble } from "@pets-driven/design-system";
-import {
-  type PetAnimationState,
-  type PetSpriteFacing,
-} from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { type PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import {
   resolvePetSpriteFrame,
   type PetSpriteSize,
 } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-frame";
 import { PetSpriteHtml } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-html";
-import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import { BehaviorTokenEmote } from "@pets-driven/pet-engine/pets/rendering/behavior-token-emote";
@@ -27,8 +23,9 @@ export type PetSpriteOverlay =
       label: string;
     };
 
-type PetSpriteBaseProps = {
+export type PetSpriteProps = {
   alt: string;
+  animationState?: PetAnimationState;
   className?: string;
   decisionEmote?: BehaviorTokenPresentation | null;
   elapsedMs: number;
@@ -43,20 +40,6 @@ type PetSpriteBaseProps = {
   spriteStyle?: CSSProperties;
   style?: CSSProperties;
 };
-
-type PetSpriteIntentProps = PetSpriteBaseProps & {
-  animationState?: never;
-  facing?: never;
-  intent: PetSpriteIntent;
-};
-
-type PetSpriteAnimationProps = PetSpriteBaseProps & {
-  animationState?: PetAnimationState;
-  facing?: PetSpriteFacing;
-  intent?: never;
-};
-
-export type PetSpriteProps = PetSpriteIntentProps | PetSpriteAnimationProps;
 
 const PET_SPRITE_OVERLAY_RECT = {
   x: 16,
@@ -93,7 +76,7 @@ export function PetSprite({
     scale,
     size,
   });
-  const status = presentPetStatus(frameInput.intent, overlay);
+  const status = presentPetStatus(frameInput.animationState, overlay);
   const drawScale = frame.drawSize.width / frame.source.width;
 
   return (

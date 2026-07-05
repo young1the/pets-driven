@@ -109,9 +109,9 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
   return spritesheetUrl ? (
     <PetSprite
       alt="Your pet"
+      animationState="idle"
       elapsedMs={elapsedMs}
       imageUrl={spritesheetUrl}
-      intent={{ kind: "idle" }}
       scale={scale}
       showStatusBubble={false}
       size={PET_CELL_SIZE}

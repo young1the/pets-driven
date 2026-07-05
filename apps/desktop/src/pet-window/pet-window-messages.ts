@@ -1,4 +1,4 @@
-import type { PetSpriteIntent } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
@@ -38,7 +38,8 @@ export type PetWindowFrameWindow = {
 
 export type PetWindowFrameSprite = {
   decisionEmote?: BehaviorTokenPresentation | null;
-  intent: PetSpriteIntent;
+  /** The atlas animation row the pet is currently playing. */
+  animationState: PetAnimationState;
   /** Engine-canonical current activity, for the status capsule label. */
   activity?: PetActivityKind | null;
 };

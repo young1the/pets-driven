@@ -21,7 +21,7 @@ describe("pet window message contract", () => {
       window: { x: 100, y: 200, width: 192, height: 208 },
       sprite: {
         decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
-        intent: { kind: "waiting", facing: "right" },
+        animationState: "waiting",
       },
       overlay: { kind: "attention", label: "WAIT" },
     };
@@ -48,14 +48,14 @@ describe("pet window message contract", () => {
         {
           sprite: {
             decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
-            intent: { kind: "travel", direction: "left" },
+            animationState: "running-left",
           },
           overlay: { kind: "status", label: "!" },
         },
         {
           sprite: {
             decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
-            intent: { kind: "travel", direction: "left" },
+            animationState: "running-left",
           },
           overlay: { kind: "status", label: "!" },
         },
@@ -64,18 +64,18 @@ describe("pet window message contract", () => {
 
     expect(
       isSamePetWindowPresentation(
-        { sprite: { decisionEmote: null, intent: { kind: "idle" } }, overlay: null },
-        { sprite: { decisionEmote: null, intent: { kind: "waiting" } }, overlay: null },
+        { sprite: { decisionEmote: null, animationState: "idle" }, overlay: null },
+        { sprite: { decisionEmote: null, animationState: "waiting" }, overlay: null },
       ),
     ).toBe(false);
 
     expect(
       isSamePetWindowPresentation(
-        { sprite: { decisionEmote: null, intent: { kind: "idle" } }, overlay: null },
+        { sprite: { decisionEmote: null, animationState: "idle" }, overlay: null },
         {
           sprite: {
             decisionEmote: { emote: "heart", label: "Approaching pet", mood: "love", tone: "affection" },
-            intent: { kind: "idle" },
+            animationState: "idle",
           },
           overlay: null,
         },

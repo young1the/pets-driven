@@ -1,41 +1,20 @@
 import {
   getAtlasFrame,
   PET_CELL_SIZE,
-  shouldMirrorSprite,
   type PetAnimationState,
-  type PetSpriteFacing,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import {
-  animationStateFromSpriteIntent,
-  facingFromSpriteIntent,
-  type PetSpriteIntent,
-} from "@pets-driven/pet-engine/pets/rendering/pet-sprite-intent";
 
 export type PetSpriteSize = {
   width: number;
   height: number;
 };
 
-type PetSpriteFrameBaseInput = {
+export type PetSpriteFrameInput = {
+  animationState?: PetAnimationState;
   elapsedMs: number;
-  facing?: PetSpriteFacing;
   size: PetSpriteSize;
   scale?: number;
 };
-
-type PetSpriteIntentFrameInput = PetSpriteFrameBaseInput & {
-  intent: PetSpriteIntent;
-  animationState?: never;
-};
-
-type PetSpriteAnimationFrameInput = PetSpriteFrameBaseInput & {
-  animationState?: PetAnimationState;
-  intent?: never;
-};
-
-export type PetSpriteFrameInput =
-  | PetSpriteIntentFrameInput
-  | PetSpriteAnimationFrameInput;
 
 export type PetSpriteFrame = {
   animationState: PetAnimationState;
@@ -48,18 +27,12 @@ export type PetSpriteFrame = {
     height: number;
   };
   drawSize: PetSpriteSize;
-  mirror: boolean;
 };
 
 export function resolvePetSpriteFrame(
   input: PetSpriteFrameInput,
 ): PetSpriteFrame {
-  const animationState =
-    input.intent
-      ? animationStateFromSpriteIntent(input.intent)
-      : input.animationState ?? "idle";
-  const facing =
-    input.facing ?? (input.intent ? facingFromSpriteIntent(input.intent) : undefined);
+  const animationState = input.animationState ?? "idle";
   const atlasFrame = getAtlasFrame(animationState, input.elapsedMs);
   const scale = input.scale ?? 1;
 
@@ -77,7 +50,6 @@ export function resolvePetSpriteFrame(
       width: normalizeSpriteDimension(input.size.width * scale),
       height: normalizeSpriteDimension(input.size.height * scale),
     },
-    mirror: shouldMirrorSprite(animationState, facing),
   };
 }
 

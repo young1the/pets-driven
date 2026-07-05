@@ -354,7 +354,6 @@ export function DesktopPet({
   animationState,
   decisionEmote = null,
   elapsedMs,
-  facing = "right",
   pet,
   scale = 0.74,
   status = null,
@@ -364,7 +363,6 @@ export function DesktopPet({
   animationState: PetAnimationState;
   decisionEmote?: BehaviorTokenPresentation | null;
   elapsedMs: number;
-  facing?: "left" | "right";
   pet: DemoPet;
   scale?: number;
   status?: DemoPetStatus | null;
@@ -378,7 +376,6 @@ export function DesktopPet({
         animationState={animationState}
         decisionEmote={decisionEmote}
         elapsedMs={elapsedMs}
-        facing={facing}
         imageUrl={staticFile(`codex-pets/${pet.assetId}/spritesheet.webp`)}
         scale={scale}
         showStatusBubble={false}

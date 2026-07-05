@@ -35,7 +35,6 @@ function snapshotFixture(input?: {
         width: 96,
         height: 114,
         animationState: "idle",
-        spriteFacing: "right",
       },
     ],
     pets: [

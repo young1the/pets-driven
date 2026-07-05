@@ -4,7 +4,6 @@ import {
   overlayFromPet,
   projectScreenPointToWorld,
   projectWorldSnapshotToPetWindows,
-  spriteIntentFromBody,
 } from "@/pet-window/pet-window-projection";
 
 function snapshotFixture(): WorldSnapshot {
@@ -23,7 +22,6 @@ function snapshotFixture(): WorldSnapshot {
         width: 48,
         height: 52,
         animationState: "running-left",
-        spriteFacing: "left",
       },
     ],
     pets: [
@@ -49,38 +47,6 @@ function snapshotFixture(): WorldSnapshot {
 }
 
 describe("pet window projection", () => {
-  it("maps body atlas states into Pet Window sprite intents", () => {
-    expect(
-      spriteIntentFromBody({
-        id: "pet-a",
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        shape: "rectangle",
-        width: 48,
-        height: 52,
-        animationState: "running-right",
-        spriteFacing: "right",
-      }),
-    ).toEqual({ kind: "travel", direction: "right" });
-
-    expect(
-      spriteIntentFromBody({
-        id: "pet-a",
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        shape: "rectangle",
-        width: 48,
-        height: 52,
-        animationState: "running",
-        spriteFacing: "left",
-      }),
-    ).toEqual({ kind: "working", facing: "left" });
-  });
-
   it("projects agent channel messages into the speech bubble", () => {
     const pet = snapshotFixture().pets[0];
 
@@ -146,7 +112,7 @@ describe("pet window projection", () => {
             mood: "excited",
             tone: "spark",
           },
-          intent: { kind: "travel", direction: "left" },
+          animationState: "running-left",
           activity: null,
         },
         overlay: null,
