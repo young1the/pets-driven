@@ -45,6 +45,7 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "request-climb": "climbing",
   "request-jump": "hopping",
   "collision-jump": "hopping",
+  "play-romp": "hopping",
   "idle conversation": "chatting",
 };
 

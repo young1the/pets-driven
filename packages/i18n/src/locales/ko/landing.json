@@ -96,7 +96,9 @@
       "collision-avoid": "피하기",
       "collision-jump": "폴짝 비키기",
       "collision-stay": "버티기",
-      "collision-unfazed": "대수롭지 않게 넘기기"
+      "collision-unfazed": "대수롭지 않게 넘기기",
+      "chase-cursor": "커서 쫓아다니기",
+      "play-romp": "신나게 뛰어놀기"
     },
     "temperaments": {
       "curiousExtrovert": "호기심 많은 외향형",

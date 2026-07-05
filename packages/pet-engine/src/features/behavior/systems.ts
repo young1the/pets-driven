@@ -18,6 +18,7 @@ import {
   driveResponseCurve,
 } from "@pets-driven/pet-engine/features/drives/systems";
 import {
+  ARRIVAL_DWELL_REASON,
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionKind,
   type BehaviorDecisionSelectionTrace,
@@ -70,6 +71,8 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "collision-unfazed": 500,
   // Cursor play
   "chase-cursor": 2_000,
+  // Sustained solo play — long cooldown so romps stay an occasional treat.
+  "play-romp": 8_000,
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
@@ -102,6 +105,60 @@ const WANDER_FAR_CURIOSITY_RELIEF = 0.35;
 const CLIMB_CURIOSITY_RELIEF = 0.3;
 const JUMP_ENERGY_COST = 0.08;
 const CLIMB_ENERGY_COST = 0.12;
+
+// ── Sustained activities ─────────────────────────────────────────────────
+// Lifelike behavior happens on the tens-of-seconds scale, not the sub-second
+// claim scale. Resting and playing are *activities with a duration*: their
+// autonomous claim lives for the whole activity, so the decision loop stops
+// re-rolling (and visibly pacing) every 500 ms.
+
+// idle-stay: a real rest. Introverts settle for much longer than extraverts.
+const IDLE_STAY_BASE_MS = 3_000;
+const IDLE_STAY_INTROVERSION_MS = 9_000;
+const IDLE_STAY_JITTER_MS = 3_000;
+
+// Arriving anywhere earns a beat of stillness before the next decision —
+// a pet that walks somewhere and immediately walks elsewhere reads as
+// aimless pacing. Extraverts dwell briefly; introverts linger.
+const ARRIVAL_DWELL_BASE_MS = 700;
+const ARRIVAL_DWELL_INTROVERSION_MS = 2_300;
+const ARRIVAL_DWELL_JITTER_MS = 1_000;
+
+// play-romp: playful pets string hops and dashes together for a while.
+const ROMP_BASE_MS = 4_000;
+const ROMP_EXTRA_MS = 4_000;
+const ROMP_HOP_INTERVAL_BASE_MS = 550;
+const ROMP_HOP_INTERVAL_JITTER_MS = 450;
+const ROMP_HOP_RANGE_MIN_BODY_WIDTHS = 2;
+const ROMP_HOP_RANGE_MAX_BODY_WIDTHS = 5;
+const ROMP_SPEED_FACTOR = 1.15;
+const ROMP_HOP_ENERGY_COST = JUMP_ENERGY_COST * 0.5;
+const ROMP_END_CUE_MS = 800;
+
+/** Personality-scaled rest length for an idle-stay decision. */
+function idleStayDurationMs(
+  p: PersonalityComponent,
+  random: RandomSource,
+): number {
+  return Math.round(
+    IDLE_STAY_BASE_MS +
+      (1 - p.extraversion) * IDLE_STAY_INTROVERSION_MS +
+      random.next() * IDLE_STAY_JITTER_MS,
+  );
+}
+
+/** Personality-scaled pause after reaching any destination. */
+function arrivalDwellMs(
+  p: PersonalityComponent,
+  random: RandomSource | undefined,
+): number {
+  const jitter = random ? random.next() : 0.5;
+  return Math.round(
+    ARRIVAL_DWELL_BASE_MS +
+      (1 - p.extraversion) * ARRIVAL_DWELL_INTROVERSION_MS +
+      jitter * ARRIVAL_DWELL_JITTER_MS,
+  );
+}
 
 /**
  * Applies a drive delta in place (component objects are mutated directly, same
@@ -173,18 +230,23 @@ function claim(
   const existing = components.getComponent(id, "BehaviorDecisionState");
   // When a higher-priority (non-autonomous) source overwrites an autonomous
   // claim, carry the autonomous history forward so repeat-cooldowns survive.
-  const lastAutonomousReason =
-    source === "autonomous"
-      ? reason
-      : existing?.source === "autonomous"
-        ? existing.reason
-        : (existing?.lastAutonomousReason ?? null);
-  const lastAutonomousAt =
-    source === "autonomous"
-      ? now
-      : existing?.source === "autonomous"
-        ? existing.decidedAt
-        : (existing?.lastAutonomousAt ?? null);
+  // The arrival-dwell rest beat is bookkeeping, not a decision — it also
+  // carries history forward instead of becoming the history itself.
+  const recordsNewHistory =
+    source === "autonomous" && reason !== ARRIVAL_DWELL_REASON;
+  const existingIsRealAutonomous =
+    existing?.source === "autonomous" &&
+    existing.reason !== ARRIVAL_DWELL_REASON;
+  const lastAutonomousReason = recordsNewHistory
+    ? reason
+    : existingIsRealAutonomous
+      ? existing.reason
+      : (existing?.lastAutonomousReason ?? null);
+  const lastAutonomousAt = recordsNewHistory
+    ? now
+    : existingIsRealAutonomous
+      ? existing.decidedAt
+      : (existing?.lastAutonomousAt ?? null);
 
   components.setComponent(id, {
     type: "BehaviorDecisionState",
@@ -971,12 +1033,41 @@ export function runAutonomousBehaviorSystem(
   );
 }
 
+/**
+ * A pet that just finished a movement earns a personality-length beat of
+ * stillness before the decision loop may run again — back-to-back walks are
+ * what read as aimless pacing. The dwell never steals the pet from any live
+ * claim (social sessions, collisions, user holds all keep ownership); it only
+ * fills the quiet gap after a completed, unclaimed movement.
+ */
+function applyArrivalDwell(
+  components: ComponentStore,
+  id: string,
+  now: number,
+  random: RandomSource | undefined,
+): void {
+  const personality = components.getComponent(id, "Personality");
+  if (!personality) return;
+  if (isClaimedBySameOrHigherPriority(components, id, "autonomous", now)) {
+    return;
+  }
+  claim(
+    components,
+    id,
+    "autonomous",
+    now,
+    ARRIVAL_DWELL_REASON,
+    now + arrivalDwellMs(personality, random),
+  );
+}
+
 // Arrival detection (runs in UPDATE phase, after locomotion decisions).
 // Not a BEHAVIOR-phase system: it detects arrival at any target regardless of
 // which source directed the pet there.
 export function runArrivalBehaviorSystem(
   components: ComponentStore,
   clock?: Clock,
+  random?: RandomSource,
 ): void {
   components.forEach(
     ["IntentState", "Transform", "MotionTarget", "WandersOnArrival"],
@@ -1125,6 +1216,7 @@ export function runArrivalBehaviorSystem(
         intent.intent = "idle";
         motion.targetEntityId = null;
         motion.targetPosition = null;
+        if (clock) applyArrivalDwell(components, id, clock.now(), random);
         return;
       }
 
@@ -1143,6 +1235,7 @@ export function runArrivalBehaviorSystem(
       motion.targetEntityId = null;
       motion.targetPosition = null;
       intent.intent = "idle";
+      if (clock) applyArrivalDwell(components, id, clock.now(), random);
     },
   );
 }
@@ -1246,15 +1339,16 @@ function isAutonomousRepeatCoolingDown(
 
   // Use the most recent autonomous decision, whether it is the current claim
   // (source === "autonomous") or was carried over when a higher-priority claim
-  // (collision, agent-event) overwrote it.
-  const lastReason =
-    decision.source === "autonomous"
-      ? decision.reason
-      : decision.lastAutonomousReason;
-  const lastAt =
-    decision.source === "autonomous"
-      ? decision.decidedAt
-      : decision.lastAutonomousAt;
+  // (collision, agent-event) or an arrival-dwell rest beat overwrote it.
+  const isRealAutonomous =
+    decision.source === "autonomous" &&
+    decision.reason !== ARRIVAL_DWELL_REASON;
+  const lastReason = isRealAutonomous
+    ? decision.reason
+    : decision.lastAutonomousReason;
+  const lastAt = isRealAutonomous
+    ? decision.decidedAt
+    : decision.lastAutonomousAt;
 
   if (lastReason !== reason || lastAt == null) return false;
 
@@ -1339,6 +1433,15 @@ function scoreChaseCursor(p: PersonalityComponent): number {
   // N (neuroticism) → suppresses the impulse. Base + weights are intentionally
   // high so playful cursor movement reliably wins for extraverted pets.
   return 0.4 + p.extraversion * 0.9 + p.openness * 0.5 - p.neuroticism * 0.5;
+}
+
+function scorePlayRomp(p: PersonalityComponent, drives?: DrivesComponent): number {
+  // E → play energy, O → novelty-seeking, N → inhibition. Playful pets should
+  // regularly choose a sustained romp over a single one-shot jump.
+  const base = 0.05 + p.extraversion * 0.55 + p.openness * 0.35 - p.neuroticism * 0.35;
+  if (!drives) return base;
+  // A tired pet has no romps left in it.
+  return base - driveResponseCurve(1 - drives.energy) * 0.7;
 }
 
 /**
@@ -1729,6 +1832,25 @@ export function runBehaviorDecisionSystem(
         });
       }
 
+      // Sustained solo play: a grounded walker can string hops and dashes
+      // together for several seconds (RompProgressSystem choreographs it).
+      const isGroundedWalker =
+        !!components.getComponent(id, "WalkingTag") &&
+        !isFlying &&
+        !components.getComponent(id, "ClimbingTag") &&
+        (!contact || contact.grounded);
+      if (canJump && !jumpState && isGroundedWalker) {
+        pushCandidate(candidates, components, id, now, {
+          kind: "play-romp",
+          score: scorePlayRomp(personality, drives),
+          build: () => ({
+            activityDurationMs: Math.round(
+              ROMP_BASE_MS + random.next() * ROMP_EXTRA_MS,
+            ),
+          }),
+        });
+      }
+
       const canClimb = components.getComponent(id, "CanWallClimb");
       const climbing = components.getComponent(id, "ClimbingTag");
       const climbDismount = components.getComponent(id, "ClimbDismountState");
@@ -1818,15 +1940,26 @@ export function runBehaviorDecisionSystem(
         random,
       );
       const winner = selection.winner;
+      const tokenFields = winner.build();
       components.setComponent(id, {
         type: "BehaviorDecisionToken",
         kind: winner.kind,
         decidedAt: now,
         consumed: false,
         selectionTrace: selection.trace,
-        ...winner.build(),
+        ...tokenFields,
       });
-      claim(components, id, "autonomous", now, winner.kind);
+      // Sustained activities hold their claim for their whole duration:
+      // idle-stay becomes a genuine, personality-length rest instead of a
+      // 500 ms pause before the next re-roll, and play-romp keeps its claim
+      // while RompProgressSystem choreographs the hops.
+      const activityExpiresAt =
+        winner.kind === "idle-stay"
+          ? now + idleStayDurationMs(personality, random)
+          : tokenFields.activityDurationMs !== undefined
+            ? now + tokenFields.activityDurationMs
+            : undefined;
+      claim(components, id, "autonomous", now, winner.kind, activityExpiresAt);
     },
   );
 }
@@ -1900,6 +2033,26 @@ export function runBehaviorPlanningSystem(
       case "idle-stay":
         // Intentional no-op: intent stays idle, target stays null.
         break;
+      case "play-romp": {
+        const durationMs = token.activityDurationMs ?? ROMP_BASE_MS;
+        components.setComponent(id, {
+          type: "RompState",
+          startedAt: token.decidedAt,
+          endsAt: token.decidedAt + durationMs,
+          // First hop fires on the next RompProgressSystem pass.
+          nextHopAt: token.decidedAt,
+        });
+        components.setComponent(id, {
+          type: "PetExpressionState",
+          source: "romp",
+          mood: "excited",
+          emote: "sparkle",
+          label: null,
+          startedAt: token.decidedAt,
+          expiresAt: token.decidedAt + ROMP_END_CUE_MS,
+        });
+        break;
+      }
       // Phase 3 — social movements.
       case "approach-pet":
         components.setComponent(id, {
@@ -1968,6 +2121,109 @@ export function runBehaviorPlanningSystem(
         break;
     }
     token.consumed = true;
+  });
+}
+
+// ── RompProgressSystem ─────────────────────────────────────────────────────
+//
+// Advances a live play-romp: every ROMP_HOP_INTERVAL the pet picks a short
+// dash target and jumps toward it, until RompState.endsAt. A higher-priority
+// claim (collision, user, social) taking the pet over cancels the romp
+// quietly — the interrupter owns the pet's motion from that point.
+
+export function runRompProgressSystem(
+  components: ComponentStore,
+  clock: Clock,
+  random: RandomSource,
+  bounds: { x?: number; y?: number; width: number; height: number },
+): void {
+  const now = clock.now();
+
+  components.forEach(["RompState", "Transform"], (id, [romp, transform]) => {
+    const decision = components.getComponent(id, "BehaviorDecisionState");
+    // Ownership is by source+reason, not expiry: the romp claim expires at the
+    // same instant the romp ends, so an expiry check here would make the
+    // graceful-end branch below unreachable. A higher-priority interrupter
+    // *overwrites* source/reason, which is what actually revokes ownership.
+    if (
+      !decision ||
+      decision.source !== "autonomous" ||
+      decision.reason !== "play-romp"
+    ) {
+      components.removeComponent(id, "RompState");
+      return;
+    }
+
+    if (now >= romp.endsAt || decision.expiresAt <= now) {
+      components.removeComponent(id, "RompState");
+      clearMotionTarget(components, id);
+      components.setComponent(id, { type: "IntentState", intent: "idle" });
+      // A worn-out pet catches its breath before the next decision, with a
+      // brief contented cue. (The dwell claim carries the play-romp history
+      // forward, so its repeat-cooldown survives the breather.)
+      const personality = components.getComponent(id, "Personality");
+      if (personality) {
+        claim(
+          components,
+          id,
+          "autonomous",
+          now,
+          ARRIVAL_DWELL_REASON,
+          now + arrivalDwellMs(personality, random),
+        );
+      } else {
+        decision.expiresAt = now;
+      }
+      components.setComponent(id, {
+        type: "PetExpressionState",
+        source: "romp",
+        mood: "happy",
+        emote: "sparkle",
+        label: null,
+        startedAt: now,
+        expiresAt: now + ROMP_END_CUE_MS,
+      });
+      return;
+    }
+
+    if (now < romp.nextHopAt) return;
+    const contact = components.getComponent(id, "ContactState");
+    if (contact && !contact.grounded) return;
+    if (components.getComponent(id, "JumpActionState")) return;
+
+    const width = petWidth(components, id);
+    const range =
+      width *
+      (ROMP_HOP_RANGE_MIN_BODY_WIDTHS +
+        random.next() *
+          (ROMP_HOP_RANGE_MAX_BODY_WIDTHS - ROMP_HOP_RANGE_MIN_BODY_WIDTHS));
+    const direction = random.next() < 0.5 ? -1 : 1;
+    components.setComponent(id, {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: {
+        x: clampToBoundsX(
+          transform.position.x + direction * range,
+          bounds,
+          COLLISION_TARGET_MARGIN,
+        ),
+        y: transform.position.y,
+      },
+      speedFactor: ROMP_SPEED_FACTOR,
+    });
+    components.setComponent(id, { type: "IntentState", intent: "active" });
+    if (components.getComponent(id, "CanJump")) {
+      components.setComponent(id, {
+        type: "JumpActionState",
+        phase: "requested",
+        cooldownMs: 0,
+      });
+    }
+    adjustDrive(components, id, { energy: -ROMP_HOP_ENERGY_COST });
+    romp.nextHopAt =
+      now +
+      ROMP_HOP_INTERVAL_BASE_MS +
+      random.next() * ROMP_HOP_INTERVAL_JITTER_MS;
   });
 }
 
@@ -2202,9 +2458,43 @@ export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "ClimbingTag",
     "Perception",
     "ClimbIntentState",
+    "Personality",
+    "BehaviorDecisionState",
   ],
-  writes: ["MotionTarget", "IntentState", "PetExpressionState", "Drives"],
+  writes: [
+    "MotionTarget",
+    "IntentState",
+    "PetExpressionState",
+    "Drives",
+    "BehaviorDecisionState",
+  ],
   update(ctx) {
-    runArrivalBehaviorSystem(ctx.components, ctx.clock);
+    runArrivalBehaviorSystem(ctx.components, ctx.clock, ctx.random);
+  },
+};
+
+export const RompProgressSystem: SimulationSystem<WorldStepContext> = {
+  name: "RompProgressSystem",
+  dependsOn: ["BehaviorPlanningSystem"],
+  reads: [
+    "RompState",
+    "Transform",
+    "BehaviorDecisionState",
+    "ContactState",
+    "JumpActionState",
+    "PhysicsBody",
+    "Drives",
+  ],
+  writes: [
+    "RompState",
+    "MotionTarget",
+    "IntentState",
+    "JumpActionState",
+    "PetExpressionState",
+    "BehaviorDecisionState",
+    "Drives",
+  ],
+  update(ctx) {
+    runRompProgressSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
   },
 };

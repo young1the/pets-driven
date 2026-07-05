@@ -630,6 +630,10 @@ describe("BehaviorDecisionSystem + BehaviorPlanningSystem (integration via world
       "idle-stay",
       "approach-pet",
       "flee-from-pet",
+      "play-romp",
+      // A completed movement now earns a personality-length rest beat before
+      // the next decision; the claim is still autonomous.
+      "arrival-dwell",
     ]).toContain(claim?.reason);
   });
 

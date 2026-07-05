@@ -5,12 +5,14 @@ import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
-import { BEHAVIOR_PRIORITY } from "@pets-driven/pet-engine/features/behavior/components";
+import {
+  ARRIVAL_DWELL_REASON,
+  BEHAVIOR_PRIORITY,
+} from "@pets-driven/pet-engine/features/behavior/components";
 import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
 import type {
   SocialSessionComponent,
   SocialSessionKind,
-  SocialSessionPhase,
 } from "./components";
 
 type Bounds = { x?: number; y?: number; width: number; height: number };
@@ -28,30 +30,41 @@ const INVITE_RADIUS = 220;
 const INVITE_TTL_MS = 1_200;
 // Per-ms base chance an eligible lonely extravert opens an invite; scaled by the
 // initiation score and the frame's deltaMs so tick rate doesn't change the feel.
-const INITIATE_RATE_PER_MS = 1 / 1_000;
+// Sessions now run tens of seconds, so invites are correspondingly rarer.
+const INITIATE_RATE_PER_MS = 1 / 3_000;
 // Re-claim lifetime while a session is live (refreshed every tick).
 const SOCIAL_CLAIM_TTL_MS = 250;
-// A finished session leaves this brief afterglow claim so the pet lingers,
-// content, for a moment instead of snapping straight back into wandering.
-const SESSION_AFTERGLOW_MS = 900;
+// A finished session leaves this afterglow claim so the pet lingers, content,
+// for a real moment instead of snapping straight back into wandering.
+export const SESSION_AFTERGLOW_MS = 4_000;
 // Reaching the end of a shared session is the biggest single relief of the
 // social drive — larger than a fleeting friendly collision (0.15).
 const SESSION_SOCIAL_REFILL = 0.55;
 const DECLINE_SOCIAL_RELIEF = 0.08;
 
-// Phase lengths per kind (ms). `greet` closes the gap; `play` is the payload;
-// `part` is a short wind-down before teardown.
-const PHASE_DURATIONS: Record<
+// The greet phase is arrival-driven: pets saunter toward each other and play
+// begins when they actually meet (or this timeout fires, e.g. one pet gets
+// physically stuck on the way).
+export const GREET_TIMEOUT_MS = 5_000;
+
+// play/part lengths per kind (ms). `play` is the payload; `part` is a short
+// wind-down before teardown. These run on the tens-of-seconds scale — a chat
+// is a real conversation to watch, not a blink.
+export const PHASE_DURATIONS: Record<
   SocialSessionKind,
-  { greet: number; play: number; part: number }
+  { play: number; part: number }
 > = {
-  greet: { greet: 1_200, play: 1_400, part: 500 },
-  chat: { greet: 800, play: 3_200, part: 400 },
-  chase: { greet: 400, play: 3_600, part: 300 },
+  greet: { play: 2_500, part: 800 },
+  chat: { play: 16_000, part: 800 },
+  chase: { play: 7_500, part: 800 },
 };
 
-const CHAT_TURN_MS = 1_600; // whose speech bubble shows, alternating
-const CHASE_SWAP_MS = 1_400; // how often chaser and runner trade roles
+export const CHAT_TURN_MS = 2_000; // whose speech bubble shows, alternating
+export const CHASE_SWAP_MS = 1_800; // how often chaser and runner trade roles
+
+// Gait: walking up to a friend is a saunter; a chase is a romp at full tilt.
+const APPROACH_SPEED_FACTOR = 0.45;
+const CHASE_SPEED_FACTOR = 1.15;
 
 const GREET_LINES = ["Hi!", "Hey there!", "Oh, hello!", "There you are!"];
 const CHAT_LINES = [
@@ -61,6 +74,10 @@ const CHAT_LINES = [
   "Hehe.",
   "So then—",
   "Same!",
+  "And then?",
+  "You think so?",
+  "Haha, right?",
+  "Tell me more!",
 ];
 
 // ── Small helpers ────────────────────────────────────────────────────────────
@@ -69,17 +86,27 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function sessionDurationMs(kind: SocialSessionKind): number {
+/** Upper bound on a session's lifetime, set at creation and tightened at play start. */
+function maxSessionDurationMs(kind: SocialSessionKind): number {
   const d = PHASE_DURATIONS[kind];
-  return d.greet + d.play + d.part;
+  return GREET_TIMEOUT_MS + d.play + d.part;
 }
 
-function phaseAt(session: SocialSessionComponent, now: number): SocialSessionPhase {
+/** The pets have met (or given up approaching): play begins now. */
+function beginPlay(session: SocialSessionComponent, now: number): void {
   const d = PHASE_DURATIONS[session.kind];
-  const elapsed = now - session.startedAt;
-  if (elapsed < d.greet) return "greet";
-  if (elapsed < d.greet + d.play) return "play";
-  return "part";
+  session.phase = "play";
+  session.playStartedAt = now;
+  session.endsAt = now + d.play + d.part;
+}
+
+/** Advance play → part once the play window has elapsed. */
+function advancePlayPhase(session: SocialSessionComponent, now: number): void {
+  if (session.phase !== "play") return;
+  const playStartedAt = session.playStartedAt ?? session.startedAt;
+  if (now - playStartedAt >= PHASE_DURATIONS[session.kind].play) {
+    session.phase = "part";
+  }
 }
 
 function bodyWidth(components: ComponentStore, id: string): number {
@@ -118,14 +145,17 @@ function claimSocial(
   expiresAt: number,
 ): void {
   const existing = components.getComponent(id, "BehaviorDecisionState");
-  const lastAutonomousReason =
-    existing?.source === "autonomous"
-      ? existing.reason
-      : (existing?.lastAutonomousReason ?? null);
-  const lastAutonomousAt =
-    existing?.source === "autonomous"
-      ? existing.decidedAt
-      : (existing?.lastAutonomousAt ?? null);
+  // Look through arrival-dwell rest beats at the last genuine autonomous
+  // decision, mirroring the carry-forward in features/behavior/systems.ts.
+  const existingIsRealAutonomous =
+    existing?.source === "autonomous" &&
+    existing.reason !== ARRIVAL_DWELL_REASON;
+  const lastAutonomousReason = existingIsRealAutonomous
+    ? existing.reason
+    : (existing?.lastAutonomousReason ?? null);
+  const lastAutonomousAt = existingIsRealAutonomous
+    ? existing.decidedAt
+    : (existing?.lastAutonomousAt ?? null);
   components.setComponent(id, {
     type: "BehaviorDecisionState",
     source: "social",
@@ -192,11 +222,13 @@ function moveToward(
   components: ComponentStore,
   id: string,
   target: Vec,
+  speedFactor?: number,
 ): void {
   components.setComponent(id, {
     type: "MotionTarget",
     targetEntityId: null,
     targetPosition: target,
+    speedFactor,
   });
   components.setComponent(id, { type: "IntentState", intent: "active" });
 }
@@ -353,9 +385,6 @@ function choreograph(
   const posB = positionOf(components, b);
   if (!posA || !posB) return;
 
-  const phase = phaseAt(session, now);
-  if (phase !== session.phase) session.phase = phase;
-
   const claimTtl = now + SOCIAL_CLAIM_TTL_MS;
   claimSocial(components, a, now, `session-${session.kind}`, claimTtl);
   claimSocial(components, b, now, `session-${session.kind}`, claimTtl);
@@ -366,12 +395,21 @@ function choreograph(
   }
 
   // greet & chat share the "close the gap, then face each other" shape.
+  // The greet phase is arrival-driven: both pets saunter toward each other and
+  // play begins when they actually meet, so the approach itself is visible.
   const gap = bodyWidth(components, a) * (session.kind === "chat" ? 2.6 : 2);
-  if (phase === "greet") {
-    moveToward(components, a, approachStop(posA, posB, gap));
-    moveToward(components, b, approachStop(posB, posA, gap));
-    return;
+  if (session.phase === "greet") {
+    const distance = Math.hypot(posB.x - posA.x, posB.y - posA.y);
+    const met = distance <= gap * 1.35;
+    const timedOut = now - session.startedAt >= GREET_TIMEOUT_MS;
+    if (!met && !timedOut) {
+      moveToward(components, a, approachStop(posA, posB, gap), APPROACH_SPEED_FACTOR);
+      moveToward(components, b, approachStop(posB, posA, gap), APPROACH_SPEED_FACTOR);
+      return;
+    }
+    beginPlay(session, now);
   }
+  advancePlayPhase(session, now);
 
   // play / part — stand together.
   stop(components, a);
@@ -383,21 +421,21 @@ function choreograph(
       setSpeech(components, b, pickLine(GREET_LINES, session.startedAt + 1), now);
       session.greeted = true;
     }
-    const emote = phase === "part" ? "sparkle" : "heart";
+    const emote = session.phase === "part" ? "sparkle" : "heart";
     setExpression(components, a, "love", emote, now, 400);
     setExpression(components, b, "love", emote, now, 400);
     return;
   }
 
   // chat — alternate whose bubble shows.
-  if (phase === "part") {
+  if (session.phase === "part") {
     setSpeech(components, a, null, now);
     setSpeech(components, b, null, now);
     setExpression(components, a, "happy", "sparkle", now, 400);
     setExpression(components, b, "happy", "sparkle", now, 400);
     return;
   }
-  const playElapsed = now - session.startedAt - PHASE_DURATIONS.chat.greet;
+  const playElapsed = now - (session.playStartedAt ?? session.startedAt);
   const turn = Math.floor(playElapsed / CHAT_TURN_MS);
   const speaker = turn % 2 === 0 ? a : b;
   const listener = speaker === a ? b : a;
@@ -417,9 +455,12 @@ function choreographChase(
 ): void {
   const a = session.initiatorId;
   const b = session.responderId;
-  const phase = phaseAt(session, now);
 
-  if (phase === "part") {
+  // A chase needs no approach ritual — it kicks off the moment both accept.
+  if (session.phase === "greet") beginPlay(session, now);
+  advancePlayPhase(session, now);
+
+  if (session.phase === "part") {
     stop(components, a);
     stop(components, b);
     setExpression(components, a, "happy", "sparkle", now, 400);
@@ -427,7 +468,7 @@ function choreographChase(
     return;
   }
 
-  const elapsed = now - session.startedAt;
+  const elapsed = now - (session.playStartedAt ?? session.startedAt);
   const initiatorChases = Math.floor(elapsed / CHASE_SWAP_MS) % 2 === 0;
   const chaser = initiatorChases ? a : b;
   const runner = initiatorChases ? b : a;
@@ -435,8 +476,13 @@ function choreographChase(
   const runnerPos = runner === a ? posA : posB;
   const fleeDistance = bodyWidth(components, runner) * 6;
 
-  moveToward(components, chaser, { ...runnerPos });
-  moveToward(components, runner, fleeTarget(runnerPos, chaserPos, fleeDistance, bounds));
+  moveToward(components, chaser, { ...runnerPos }, CHASE_SPEED_FACTOR);
+  moveToward(
+    components,
+    runner,
+    fleeTarget(runnerPos, chaserPos, fleeDistance, bounds),
+    CHASE_SPEED_FACTOR,
+  );
   setExpression(components, chaser, "excited", "sparkle", now, 400);
   setExpression(components, runner, "excited", "none", now, 400);
 }
@@ -521,7 +567,8 @@ function createSession(
       responderId,
       phase: "greet",
       startedAt: now,
-      endsAt: now + sessionDurationMs(kind),
+      endsAt: now + maxSessionDurationMs(kind),
+      playStartedAt: null,
       greeted: false,
     },
   ]);

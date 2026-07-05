@@ -7,7 +7,12 @@ import {
   createComponentStore,
   type ComponentStore,
 } from "@pets-driven/pet-engine/core/component-store";
-import { runSocialInteractionSystem } from "@pets-driven/pet-engine/features/social/systems";
+import {
+  CHASE_SWAP_MS,
+  GREET_TIMEOUT_MS,
+  PHASE_DURATIONS,
+  runSocialInteractionSystem,
+} from "@pets-driven/pet-engine/features/social/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 
@@ -71,11 +76,7 @@ function seedSession(
   kind: "greet" | "chat" | "chase",
   startedAt: number,
 ): void {
-  const durations = {
-    greet: 1_200 + 1_400 + 500,
-    chat: 800 + 3_200 + 400,
-    chase: 400 + 3_600 + 300,
-  } as const;
+  const d = PHASE_DURATIONS[kind];
   store.spawn("sess", [
     {
       type: "SocialSession",
@@ -84,7 +85,8 @@ function seedSession(
       responderId: "pet-b",
       phase: "greet",
       startedAt,
-      endsAt: startedAt + durations[kind],
+      endsAt: startedAt + GREET_TIMEOUT_MS + d.play + d.part,
+      playStartedAt: null,
       greeted: false,
     },
   ]);
@@ -192,7 +194,7 @@ describe("SocialInteractionSystem — invites", () => {
 });
 
 describe("SocialInteractionSystem — greet choreography", () => {
-  it("walks both pets together during the greet phase", () => {
+  it("saunters both pets together during the greet phase", () => {
     const store = makeStore();
     const clock = createManualClock(0);
     seedSession(store, "greet", 0);
@@ -205,16 +207,21 @@ describe("SocialInteractionSystem — greet choreography", () => {
     expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("active");
     expect(a?.targetPosition?.x).toBeGreaterThan(100); // moving toward pet-b (300)
     expect(b?.targetPosition?.x).toBeLessThan(300); // moving toward pet-a (100)
+    // Walking up for a hello is a saunter, not a sprint.
+    expect(a?.speedFactor).toBeLessThan(1);
+    expect(b?.speedFactor).toBeLessThan(1);
   });
 
-  it("stops, greets and shows hearts during the play phase", () => {
-    const store = makeStore();
+  it("stops, greets and shows hearts once the pets have met", () => {
+    // Seed the pets already within meeting distance so play begins immediately.
+    const store = makeStore(AGREEABLE, AGREEABLE, [100, 160]);
     const clock = createManualClock(0);
     seedSession(store, "greet", 0);
-    clock.advanceBy(1_300); // into play (greet phase is 1200ms)
+    clock.advanceBy(100);
 
     runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
 
+    expect(store.getComponent("sess", "SocialSession")?.phase).toBe("play");
     expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
     expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
@@ -226,12 +233,29 @@ describe("SocialInteractionSystem — greet choreography", () => {
     expect(store.getComponent("sess", "SocialSession")?.greeted).toBe(true);
   });
 
-  it("tears the session down and relieves the social drive when it ends", () => {
-    const store = makeStore(AGREEABLE, AGREEABLE, [100, 300], [0.8, 0.8]);
+  it("enters play via the greet timeout when the pets never manage to meet", () => {
+    const store = makeStore();
     const clock = createManualClock(0);
     seedSession(store, "greet", 0);
-    clock.advanceBy(3_100); // greet total duration = 3100ms
+    clock.advanceBy(GREET_TIMEOUT_MS + 100);
 
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    expect(store.getComponent("sess", "SocialSession")?.phase).toBe("play");
+    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+  });
+
+  it("tears the session down and relieves the social drive when it ends", () => {
+    const store = makeStore(AGREEABLE, AGREEABLE, [100, 160], [0.8, 0.8]);
+    const clock = createManualClock(0);
+    seedSession(store, "greet", 0);
+
+    // Meet immediately → play begins at t=100 and endsAt tightens to
+    // 100 + play + part.
+    clock.advanceBy(100);
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+    const d = PHASE_DURATIONS.greet;
+    clock.advanceBy(d.play + d.part + 100);
     runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
 
     expect(sessionCount(store)).toBe(0);
@@ -260,8 +284,8 @@ describe("SocialInteractionSystem — chase choreography", () => {
       store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x,
     ).toBeGreaterThan(300); // fleeing right, away from pet-a
 
-    // After a swap window (1400ms), roles flip: pet-b chases pet-a.
-    clock.advanceBy(1_500);
+    // After a swap window, roles flip: pet-b chases pet-a.
+    clock.advanceBy(CHASE_SWAP_MS + 100);
     runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
     expect(store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x).toBe(100); // toward pet-a
     expect(

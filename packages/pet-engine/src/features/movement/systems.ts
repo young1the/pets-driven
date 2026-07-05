@@ -320,7 +320,8 @@ export function runWalkSystem(components: ComponentStore, forceGroups: Force[][]
       const dx = target.x - transform.position.x;
       if (Math.abs(dx) <= WALK_ARRIVAL_RADIUS) return;
 
-      forces.push({ id, x: Math.sign(dx) * canWalk.force, y: 0 });
+      const gait = motion.speedFactor ?? 1;
+      forces.push({ id, x: Math.sign(dx) * canWalk.force * gait, y: 0 });
     },
   );
 
@@ -485,10 +486,11 @@ export function runIntentSteeringSystem(
             : movement.idleForce;
 
       const easedSpeed =
-        distance >= MOTION_SLOW_RADIUS
+        (distance >= MOTION_SLOW_RADIUS
           ? speed
           : speed *
-            ((distance - MOTION_ARRIVAL_RADIUS) / (MOTION_SLOW_RADIUS - MOTION_ARRIVAL_RADIUS));
+            ((distance - MOTION_ARRIVAL_RADIUS) / (MOTION_SLOW_RADIUS - MOTION_ARRIVAL_RADIUS))) *
+        (motion.speedFactor ?? 1);
 
       forces.push({ id, x: (dx / distance) * easedSpeed, y: (dy / distance) * easedSpeed });
     },

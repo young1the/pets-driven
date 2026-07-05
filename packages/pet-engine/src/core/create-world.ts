@@ -293,6 +293,12 @@ export function createWorld(input: WorldDefinition) {
           icon: "✦",
           label: "chasing the cursor",
         };
+      case "play-romp":
+        return {
+          kind: "playful",
+          icon: "✦",
+          label: "romping around",
+        };
       case "petting":
         return {
           kind: "affection",

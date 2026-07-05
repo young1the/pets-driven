@@ -64,7 +64,9 @@ export type BehaviorDecisionKind =
   | "collision-stay"
   | "collision-unfazed"
   // Cursor play — laser-pointer-style chase triggered by Perception.cursor
-  | "chase-cursor";
+  | "chase-cursor"
+  // Solo play — a sustained hop-and-dash activity for playful (high-E/O) pets.
+  | "play-romp";
 
 export type BehaviorDecisionTokenComponent = {
   type: "BehaviorDecisionToken";
@@ -76,6 +78,25 @@ export type BehaviorDecisionTokenComponent = {
   targetEntityId?: string;
   climbSurfaceId?: string;
   climbTargetY?: number;
+  /**
+   * For sustained activities (play-romp): how long the activity — and its
+   * autonomous claim — should live. Sub-second claims are what made pets feel
+   * twitchy; activities hold their claim for their whole duration instead.
+   */
+  activityDurationMs?: number;
+};
+
+/**
+ * Live state of a play-romp activity: the pet strings together short dashes
+ * and hops until endsAt. Written by BehaviorPlanningSystem, advanced by
+ * RompProgressSystem, removed on natural end or when a higher-priority claim
+ * takes the pet over.
+ */
+export type RompStateComponent = {
+  type: "RompState";
+  startedAt: number;
+  endsAt: number;
+  nextHopAt: number;
 };
 
 export type BehaviorDecisionSelectionCandidate = {
@@ -94,6 +115,14 @@ export type BehaviorDecisionSelectionTrace = {
   selectedKind: BehaviorDecisionKind;
   candidates: BehaviorDecisionSelectionCandidate[];
 };
+
+/**
+ * Claim reason for the post-arrival rest beat. It is bookkeeping, not a real
+ * autonomous decision: claim carry-forward and repeat-cooldown checks must
+ * look *through* it at the last genuine decision (wander-near, play-romp, …)
+ * or every cooldown would reset each time a pet pauses after a walk.
+ */
+export const ARRIVAL_DWELL_REASON = "arrival-dwell";
 
 /** Numeric priority — lower value wins. */
 export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
@@ -133,7 +162,8 @@ export type PetExpressionSource =
   | "collision"
   | "chase-cursor"
   | "petting"
-  | "social";
+  | "social"
+  | "romp";
 
 export type PetExpressionMood =
   "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";

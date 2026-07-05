@@ -58,7 +58,15 @@ export type SocialSessionComponent = {
   responderId: string;
   phase: SocialSessionPhase;
   startedAt: number;
+  /**
+   * Hard deadline for teardown. Set to an upper bound at creation (greet
+   * timeout + play + part) and tightened once play actually begins — the
+   * greet phase is arrival-driven (pets walk up to each other at a saunter),
+   * not a fixed timer.
+   */
   endsAt: number;
+  /** When the pets actually met and play began; null while still approaching. */
+  playStartedAt: number | null;
   /** Whether the initiator and responder have already exchanged their greeting speech. */
   greeted: boolean;
 };

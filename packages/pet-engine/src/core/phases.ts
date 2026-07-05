@@ -28,6 +28,7 @@ import {
   BehaviorDecisionSystem,
   AutonomousBehaviorSystem,
   BehaviorPlanningSystem,
+  RompProgressSystem,
   ArrivalBehaviorSystem,
   PettingDetectionSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
@@ -84,6 +85,7 @@ export const SYSTEM_PHASES: Record<
     BehaviorDecisionSystem, // priority 5 (autonomous): personality-weighted next behavior (emits token)
     AutonomousBehaviorSystem, // priority 4b: idle speech
     BehaviorPlanningSystem, // materializes the decision token into concrete state
+    RompProgressSystem, // advances live play-romp activities (hop/dash choreography)
   ],
 
   UPDATE: [

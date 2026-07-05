@@ -201,6 +201,7 @@ describe("demo scenario", () => {
       "BehaviorDecisionSystem",
       "AutonomousBehaviorSystem",
       "BehaviorPlanningSystem",
+      "RompProgressSystem",
       // UPDATE
       "LocomotionModeSystem",
       "ClimbApproachSystem",
@@ -304,8 +305,16 @@ describe("demo scenario", () => {
         "ClimbingTag",
         "Perception",
         "ClimbIntentState",
+        "Personality",
+        "BehaviorDecisionState",
       ],
-      writes: ["MotionTarget", "IntentState", "PetExpressionState", "Drives"],
+      writes: [
+        "MotionTarget",
+        "IntentState",
+        "PetExpressionState",
+        "Drives",
+        "BehaviorDecisionState",
+      ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "DriveDecaySystem",
@@ -1406,20 +1415,22 @@ describe("demo scenario", () => {
       targetPosition: { x: 600, y: 500 },
     });
 
-    // Step 1: ArrivalBehaviorSystem detects that Alice is already at (600, 500) and
-    // clears the target. BehaviorDecisionSystem picks a new behavior on the NEXT pass.
-    scenario.world.step(16);
-    // Step 2: BehaviorDecisionSystem fires and commits a new motion target.
-    scenario.world.step(16);
-
-    const motion = scenario.world.getComponent("pet-a", "MotionTarget");
-    // Alice has high extraversion and may choose seek-user (targetEntityId) or a wander
-    // (targetPosition). Either is a valid post-arrival autonomous decision.
-    const hasNewTarget =
-      motion?.targetEntityId !== null || motion?.targetPosition !== null;
+    // ArrivalBehaviorSystem detects that Alice is already at (600, 500),
+    // clears the target and grants a personality-length rest beat (arrival
+    // dwell). Once the dwell — and possibly a chosen rest — runs out,
+    // BehaviorDecisionSystem commits a new goal. Step with the clock advancing
+    // until that happens; the completed wander position must never come back.
+    let hasNewTarget = false;
+    for (let index = 0; index < 1_000 && !hasNewTarget; index += 1) {
+      scenario.clock.advanceBy(16);
+      scenario.world.step(16);
+      const motion = scenario.world.getComponent("pet-a", "MotionTarget");
+      // Must not have kept the completed wander position unchanged.
+      expect(motion?.targetPosition).not.toEqual({ x: 600, y: 500 });
+      hasNewTarget =
+        motion?.targetEntityId !== null || motion?.targetPosition !== null;
+    }
     expect(hasNewTarget).toBe(true);
-    // Must not have kept the completed wander position unchanged.
-    expect(motion?.targetPosition).not.toEqual({ x: 600, y: 500 });
   });
 
   it("jumps higher than the pet body height", () => {

@@ -29,6 +29,7 @@ export type {
   PetExpressionMood,
   PetExpressionEmote,
   PetExpressionStateComponent,
+  RompStateComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
 
 export type {
@@ -119,6 +120,7 @@ import type {
   BehaviorDecisionTokenComponent,
   PendingReactionComponent,
   PetExpressionStateComponent,
+  RompStateComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
 import type {
   AgentBindingComponent,
@@ -219,6 +221,7 @@ export type Component =
   | PetIdentityComponent
   | PhysicsBodyComponent
   | PhysicsMaterialComponent
+  | RompStateComponent
   | SpeechProfileComponent
   | SpeechStateComponent
   | TaskMovementHoldComponent

@@ -675,6 +675,7 @@ function animationStateForDecisionKind(
   switch (kind) {
     case "request-jump":
     case "collision-jump":
+    case "play-romp":
       return "jumping";
     case "request-climb":
       return "running";

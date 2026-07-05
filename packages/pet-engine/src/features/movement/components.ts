@@ -27,6 +27,14 @@ export type MotionTargetComponent = {
   type: "MotionTarget";
   targetEntityId: string | null;
   targetPosition: Vector | null;
+  /**
+   * Gait: multiplies the locomotion force while pursuing this target, so the
+   * *intent* behind a movement shows in its speed — sauntering up to a friend
+   * to say hi (< 1) reads differently from dashing in a chase (> 1). Absent
+   * means the pet's normal pace. Writers that replace the whole component
+   * reset the gait, which is the desired default.
+   */
+  speedFactor?: number;
 };
 
 // ── Capability components ──────────────────────────────────────────────────

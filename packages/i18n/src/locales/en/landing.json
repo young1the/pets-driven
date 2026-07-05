@@ -96,7 +96,9 @@
       "collision-avoid": "Dodge",
       "collision-jump": "Hop away",
       "collision-stay": "Hold ground",
-      "collision-unfazed": "Shrug it off"
+      "collision-unfazed": "Shrug it off",
+      "chase-cursor": "Chase the cursor",
+      "play-romp": "Romp around"
     },
     "temperaments": {
       "curiousExtrovert": "Curious extrovert",

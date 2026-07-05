@@ -87,6 +87,7 @@ describe("component store", () => {
         phase: "greet",
         startedAt: 0,
         endsAt: 3_000,
+        playStartedAt: null,
         greeted: false,
       },
     ]);

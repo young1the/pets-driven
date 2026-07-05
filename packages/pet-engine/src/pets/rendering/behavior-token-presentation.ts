@@ -107,6 +107,12 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<
     mood: "excited",
     tone: "spark",
   },
+  "play-romp": {
+    emote: "sparkle",
+    label: "Romping around",
+    mood: "excited",
+    tone: "spark",
+  },
 };
 
 export function presentBehaviorDecisionToken(
