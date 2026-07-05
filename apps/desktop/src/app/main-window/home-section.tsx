@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Button, PetShowcaseCard } from "@pets-driven/design-system";
+import { Button, PetShowcaseCard, PlusIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
-import { PlusIcon } from "@/app/main-window/main-window-icons";
 
 export type HomePetView = {
   id: string;

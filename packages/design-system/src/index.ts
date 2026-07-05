@@ -58,6 +58,17 @@ export {
   type ChatBubbleProps,
 } from "./components/chat/chat-bubble";
 export {
+  HomeIcon,
+  GearIcon,
+  WrenchIcon,
+  PlusIcon,
+  BackIcon,
+  FolderIcon,
+  TrashIcon,
+  SearchIcon,
+  type IconProps,
+} from "./components/icons/icons";
+export {
   PET_MOODS,
   type PetEmoteKind,
   type PetMood,

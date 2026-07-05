@@ -1,6 +1,5 @@
-import { Badge, Button } from "@pets-driven/design-system";
+import { Badge, Button, WrenchIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import { WrenchIcon } from "@/app/main-window/main-window-icons";
 
 export type DebugAction = { label: string; onClick: () => void };
 export type DebugGroup = { title: string; hint: string; items: DebugAction[] };

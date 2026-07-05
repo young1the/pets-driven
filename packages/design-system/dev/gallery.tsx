@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import {
+  BackIcon,
   Badge,
   BigQuoteSlide,
   Button,
@@ -10,20 +11,33 @@ import {
   ComparisonSlide,
   ContentSlide,
   Dialog,
+  FolderIcon,
+  GearIcon,
+  HomeIcon,
   IconButton,
   Input,
+  PET_MOODS,
+  PetAvatar,
   PetEmote,
+  PetShowcaseCard,
   PetSpeechBubble,
+  PlusIcon,
   Radio,
+  SearchIcon,
   SectionSlide,
+  SegmentedControl,
   Select,
   SlideHighlight,
   Switch,
   Tabs,
   Tag,
+  TerminalPreview,
   TitleSlide,
   Toast,
   Tooltip,
+  TrashIcon,
+  WrenchIcon,
+  type PetMood,
 } from "../src/index";
 import wordmark from "../src/assets/petsdriven-wordmark.svg";
 
@@ -46,38 +60,6 @@ function Pet({ emoji, bg = "var(--lavender-200)" }: { emoji: string; bg?: string
 }
 
 const PETS = ["🐱", "🦊", "🐹", "🫧", "🦉", "🐧"];
-
-function PlusIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.6"
-      strokeLinecap="round"
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-function SearchIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.2-3.2" />
-    </svg>
-  );
-}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -108,6 +90,7 @@ function SlideCell({ label, children }: { label: string; children: ReactNode }) 
 
 export function Gallery() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [density, setDensity] = useState("cozy");
 
   return (
     <div className="gx-wrap">
@@ -145,6 +128,19 @@ export function Gallery() {
         </Cell>
       </Section>
 
+      <Section title="Icons">
+        <Cell label="Line set">
+          <HomeIcon size={22} />
+          <GearIcon size={22} />
+          <WrenchIcon size={22} />
+          <PlusIcon size={22} />
+          <BackIcon size={22} />
+          <FolderIcon size={22} />
+          <TrashIcon size={22} />
+          <SearchIcon size={22} />
+        </Cell>
+      </Section>
+
       <Section title="Forms">
         <Cell label="Input">
           <Input label="Pet name" placeholder="Mochi" />
@@ -153,6 +149,17 @@ export function Gallery() {
         </Cell>
         <Cell label="Select">
           <Select label="Favourite pet" options={["Cato", "Fenn", "Mochi", "Bloop"]} />
+        </Cell>
+        <Cell label="Segmented control">
+          <SegmentedControl
+            value={density}
+            onChange={setDensity}
+            options={[
+              { value: "cozy", label: "Cozy" },
+              { value: "compact", label: "Compact" },
+              { value: "roomy", label: "Roomy" },
+            ]}
+          />
         </Cell>
         <Cell label="Checkbox / Radio / Switch">
           <Checkbox label="Treats enabled" defaultChecked />
@@ -190,10 +197,54 @@ export function Gallery() {
             ]}
           />
         </Cell>
-        <Cell label="Card">
-          <Card title="Soft surface" subtitle="rounded + puffy shadow" tone="lavender">
+        <Cell label="Card tones">
+          <Card title="Lavender" subtitle="rounded + puffy shadow" tone="lavender">
             A gently tinted container.
           </Card>
+          <Card title="Teal" tone="teal">
+            Cool surface.
+          </Card>
+          <Card title="Mint" tone="mint" elevation="lg">
+            Raised, minty.
+          </Card>
+          <Card title="Blossom" tone="blossom" interactive>
+            Interactive, hover me.
+          </Card>
+        </Cell>
+        <Cell label="Terminal preview">
+          <TerminalPreview
+            cwd="~/pets-driven"
+            prompt="cato ❯"
+            command="pnpm test --filter pet-engine"
+          />
+        </Cell>
+      </Section>
+
+      <Section title="Pets">
+        <Cell label="PetAvatar sizes">
+          <PetAvatar pet="cato" size="sm" />
+          <PetAvatar pet="fenn" size="md" ring />
+          <PetAvatar pet="mochi" size="lg" showStatus status="working" />
+          <PetAvatar pet="bloop" size="xl" showStatus status="happy" ring />
+        </Cell>
+        <Cell label="PetAvatar status">
+          <PetAvatar pet="cato" showStatus status="idle" />
+          <PetAvatar pet="fenn" showStatus status="thinking" />
+          <PetAvatar pet="mochi" showStatus status="napping" />
+          <PetAvatar pet="otto" showStatus status="confused" />
+        </Cell>
+        <Cell label="PetShowcaseCard">
+          <PetShowcaseCard
+            note="Ready to plan"
+            role="The Planner"
+            name="Cato"
+            status={{ label: "Working", dotColor: "var(--mint-500)" }}
+            gradient={{ from: "var(--lavender-200)", to: "var(--blossom-200)" }}
+            portrait={<Pet emoji="🐱" />}
+            cwd="~/pets-driven"
+            featured
+            onEdit={() => {}}
+          />
         </Cell>
       </Section>
 
@@ -233,6 +284,30 @@ export function Gallery() {
       </Section>
 
       <Section title="Pet status">
+        <Cell label="Moods">
+          {(Object.keys(PET_MOODS) as PetMood[]).map((mood) => {
+            const spec = PET_MOODS[mood];
+            return (
+              <span
+                key={mood}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  color: spec.accent,
+                  border: `1.5px solid ${spec.accent}`,
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>{spec.face}</span>
+                {spec.defaultLabel}
+              </span>
+            );
+          })}
+        </Cell>
         <Cell label="Emote">
           <PetEmote kind="heart" />
           <PetEmote kind="sparkle" />

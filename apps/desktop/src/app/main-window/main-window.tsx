@@ -1,10 +1,11 @@
-import { Button, Tabs } from "@pets-driven/design-system";
-import { useTranslation } from "@pets-driven/i18n";
 import {
+  Button,
   GearIcon,
   HomeIcon,
+  Tabs,
   WrenchIcon,
-} from "@/app/main-window/main-window-icons";
+} from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import {
   HomeSection,
   type HomeSectionProps,

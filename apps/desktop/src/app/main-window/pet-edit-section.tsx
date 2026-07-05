@@ -1,12 +1,14 @@
-import { Button, PetShowcaseCard, Switch } from "@pets-driven/design-system";
+import {
+  BackIcon,
+  Button,
+  FolderIcon,
+  PetShowcaseCard,
+  Switch,
+  TrashIcon,
+} from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
-import {
-  BackIcon,
-  FolderIcon,
-  TrashIcon,
-} from "@/app/main-window/main-window-icons";
 
 export interface PetEditView {
   id: string;
