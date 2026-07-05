@@ -190,3 +190,67 @@ for high-E pets (energy drain should self-limit; verify).
 
 Size: S (observation) + follow-up tweaks. Depends on: B1–B4 ideally landed
 first so one pass covers everything.
+
+## B9. Surface the session partner in the UI
+
+**Problem** — The engine already exposes per-pet session state in the
+snapshot (`pets[].social = { kind, phase, role, partnerId }`, built by
+`getSocialSnapshot` in `core/create-world.ts`), but nothing in the desktop
+app consumes it. Users can see a pet is "playing with a friend" (visual cue)
+but never *which* friend.
+
+**Change**
+- Desktop status capsule / pet card: when `social` is non-null, render a
+  partner-aware label, e.g. "Chatting with Otto" — resolve `partnerId` to the
+  pet's display `name` from the same snapshot.
+- i18n: parameterized keys in `desktop.json` (ko/en), e.g.
+  `petStatus.chattingWith` with a `{name}` placeholder, per session kind.
+- Coordinate with B6: both touch the activity/capsule surface; landing them
+  together avoids reworking the same presentation twice.
+
+**Acceptance**
+- With a seeded chat session, both pets' cards show the partner's name for
+  the whole session; the label clears on teardown (afterglow may keep a
+  "made a friend" cue without the name).
+- No raw i18n keys leak in either locale.
+
+Size: XS–S. Depends on: B6 (same surface; soft dependency).
+
+## B10. Group sessions (3+ participants)
+
+**Problem** — Sessions are structurally two-party: `SocialSession` has fixed
+`initiatorId`/`responderId` slots, each pet holds a single
+`SocialSessionMember`, and `emitInvites` only pairs 1:1 while excluding pets
+already in a session. Three pets can never share an interaction, and a third
+pet near a chatting pair has no way in.
+
+**Change**
+- Schema: replace the two id slots with `participants: string[]` (two-party
+  becomes the base case). Update `getSocialSnapshot`, tests, and any
+  role-based logic (`role: "initiator" | "responder"` → initiator + joiners).
+- Choreography generalization per kind:
+  - chat: round-robin the speaking turn across N participants (turn logic
+    already exists for 2).
+  - chase: tag — one chaser, N runners; catching a runner makes them the
+    chaser (pairs well with B5's catch moment).
+  - greet: stand in a loose circle (positions on a small ring around the
+    group centroid).
+- Join flow: a `CanSocialize` pet that wanders within join radius of a live
+  session may receive a *join invite* (session-scoped, not pet-scoped),
+  accepted with the same personality/drive weighting. Cap group size
+  (suggest 4) and gate joins to the play phase.
+- Teardown: a participant being claimed away (user drag, agent event) removes
+  just that member; the session survives while ≥2 remain.
+
+**Acceptance**
+- Seeded test: three idle agreeable pets end up in one chat session via a
+  join, with the speech turn rotating over all three.
+- Seeded test: removing one participant from a 3-pet session keeps the
+  session alive for the remaining pair; dropping to 1 tears it down.
+- Existing two-party tests keep passing (pairs are the degenerate case).
+
+**Risk** — Choreography geometry (circle spacing vs collision overlap) will
+fight the collision system unless B1–B3 have landed; sequence strictly after
+B4.
+
+Size: M–L. Depends on: B1–B4 (hard), B5 (chase-tag synergy, soft).
