@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PET_WINDOW_SCALE,
+  PET_WINDOW_MIN_SCALE,
   clampPetWindowScale,
   petWindowSizeForScale,
 } from "@/pet-window/pet-window-layout";
 
 describe("pet window layout", () => {
-  it("uses a smaller default Pet Window scale for newly spawned pets", () => {
-    expect(DEFAULT_PET_WINDOW_SCALE).toBe(0.8);
+  it("spawns newly created pets at the smallest size the app allows", () => {
+    expect(DEFAULT_PET_WINDOW_SCALE).toBe(PET_WINDOW_MIN_SCALE);
     expect(petWindowSizeForScale(DEFAULT_PET_WINDOW_SCALE)).toEqual({
-      width: 153.60000000000002,
-      height: 214.4,
+      width: 96,
+      height: 134,
     });
   });
 

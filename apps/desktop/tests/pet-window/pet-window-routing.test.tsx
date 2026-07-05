@@ -468,10 +468,10 @@ describe("pet window product route", () => {
     const petAFrame = petFrameFor("pet-a");
     const petBFrame = petFrameFor("pet-b");
 
-    expect(petAFrame?.window.x).toBeGreaterThan(330);
-    expect(petAFrame?.window.x).toBeLessThan(360);
-    expect(petBFrame?.window.x).toBeGreaterThan(330);
-    expect(petBFrame?.window.x).toBeLessThan(360);
+    expect(petAFrame?.window.x).toBeGreaterThan(358);
+    expect(petAFrame?.window.x).toBeLessThan(390);
+    expect(petBFrame?.window.x).toBeGreaterThan(358);
+    expect(petBFrame?.window.x).toBeLessThan(390);
   });
 
   it("resets the adopted pet simulation from the main screen", async () => {

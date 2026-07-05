@@ -100,10 +100,10 @@ describe("pet window projection", () => {
         sequence: 12,
         petId: "pet-a",
         window: {
-          x: 623.2,
-          y: 544,
-          width: 153.60000000000002,
-          height: 214.4,
+          x: 652,
+          y: 580,
+          width: 96,
+          height: 134,
         },
         sprite: {
           decisionEmote: {
@@ -203,8 +203,8 @@ describe("pet window projection", () => {
       12,
     );
 
-    expect(projection.frame.window.x).toBe(1223.2);
-    expect(projection.frame.window.y).toBe(544);
+    expect(projection.frame.window.x).toBe(1252);
+    expect(projection.frame.window.y).toBe(580);
   });
 
   it("projects negative virtual-desktop coordinates relative to the world viewport", () => {
@@ -230,8 +230,8 @@ describe("pet window projection", () => {
       12,
     );
 
-    expect(projection.frame.window.x).toBe(-396.8);
-    expect(projection.frame.window.y).toBe(284);
+    expect(projection.frame.window.x).toBe(-368);
+    expect(projection.frame.window.y).toBe(320);
   });
 
   it("clamps oversized saved scales before projecting Pet Window frames", () => {
