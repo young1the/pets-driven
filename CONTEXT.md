@@ -313,7 +313,8 @@ _Avoid_: cooldown (as a domain term), session
 - A **Pet Window** follows its **Pet** by projecting the **Pet World Position** onto virtual-desktop screen coordinates.
 - **Pets** approach, contact, and react to each other within the single **Simulation World**, regardless of which monitor their **Pet Windows** appear on.
 - **Pet** contact is computed only in the **Simulation World**; **Pet Windows** are OS windows and do not physically collide.
-- **Pets** physically collide softly in the **Simulation World** rather than passing through each other.
+- **Pets** do not physically block each other in the **Simulation World**: they pass through freely, and overlap is only a contact signal that can trigger a reaction, never a force that pushes them apart. (Solid pet bodies were removed because the separation forces they required produced grinding and trembling in clusters.)
+- Two idle **Pets** that come to rest on the same spot take one small step aside to keep a little personal space — a low-priority autonomous **Decision** (`make-room`) that sets a motion target, purely cosmetic, distinct from any collision reaction.
 - A **Pet World Position** is constrained to the **Walkable Region** so every **Pet Window** stays on a visible monitor.
 - Regions of the **World Coordinate Space** covered by no monitor act as boundaries a **Pet** cannot enter.
 - In the single-monitor MVP, the **Walkable Region** equals that monitor's work area, so no union computation is required.

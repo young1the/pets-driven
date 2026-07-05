@@ -76,6 +76,8 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "chase-cursor": 2_000,
   // Sustained solo play — long cooldown so romps stay an occasional treat.
   "play-romp": 8_000,
+  // Personal-space shuffle — after stepping aside, wait a while before again.
+  "make-room": 4_000,
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
@@ -172,6 +174,27 @@ const ROMP_HOP_RANGE_MAX_BODY_WIDTHS = 5;
 const ROMP_SPEED_FACTOR = 1.15;
 const ROMP_HOP_ENERGY_COST = JUMP_ENERGY_COST * 0.5;
 const ROMP_END_CUE_MS = 800;
+
+// Personal space — a cosmetic "make-room" shuffle. Since pets are physical
+// ghosts to each other (they pass through freely), two idle pets can settle on
+// the exact same spot and render stacked. When that happens a grounded walker
+// takes one small step aside — a low-stakes autonomous Decision that sets a
+// motion target, not a separation force, so it can never reintroduce the
+// grinding/trembling that came from solid bodies. It only fires when a pet is
+// genuinely idle and unclaimed, so it never interrupts a session, chase, or
+// reaction.
+const MAKE_ROOM_REASON = "make-room";
+// Trigger only on real stacking: centers within this fraction of a body width.
+const PERSONAL_SPACE_TRIGGER_BODY_FRACTION = 0.55;
+// How far aside to step, in body widths.
+const PERSONAL_SPACE_STEP_BODY_WIDTHS = 1.1;
+// A casual shuffle, not a dash.
+const PERSONAL_SPACE_SPEED_FACTOR = 0.5;
+// Claim lifetime for the shuffle (locomotion persists past it until arrival).
+const MAKE_ROOM_CLAIM_MS = 1_200;
+// Skip if clamping to bounds leaves less than this much room (pet against a
+// wall): stepping into a wall would just micro-oscillate in the walk deadband.
+const PERSONAL_SPACE_MIN_ROOM_PX = 12;
 
 /** Personality-scaled rest length for an idle-stay decision. */
 function idleStayDurationMs(
@@ -1080,6 +1103,86 @@ export function runAutonomousBehaviorSystem(
         setSpeech(speech, speechProfile.idleCompanion, now);
         claim(components, id, "autonomous", now, IDLE_CONVERSATION_REASON);
       }
+    },
+  );
+}
+
+// Personal-space "make-room" shuffle. Runs at the end of BEHAVIOR, so it only
+// sees pets that ended this frame genuinely idle and unclaimed. A grounded
+// walker stacked on top of another pet steps one body-width aside (a motion
+// target, handed to Steering — never a force), then settles via the normal
+// arrival + dwell path. See MAKE_ROOM_REASON for why this exists.
+export function runPersonalSpaceSystem(
+  components: ComponentStore,
+  clock: Clock,
+  bounds: { x?: number; y?: number; width: number; height: number },
+): void {
+  const now = clock.now();
+
+  components.forEach(
+    ["PetCollision", "IntentState", "MotionTarget", "Transform", "PetIdentity"],
+    (id, [collision, intent, motion, transform]) => {
+      if (intent.intent !== "idle") return;
+      if (motion.targetPosition !== null || motion.targetEntityId !== null) {
+        return;
+      }
+      // Ground walkers only; flyers/climbers overlapping reads fine as-is.
+      if (!components.getComponent(id, "WalkingTag")) return;
+      if (components.getComponent(id, "FlyingTag")) return;
+      if (components.getComponent(id, "ClimbingTag")) return;
+      const contact = components.getComponent(id, "ContactState");
+      if (contact && !contact.grounded) return;
+      // A pending startle is about to react (or greet) — don't pre-empt it.
+      if (components.getComponent(id, "PendingReaction")) return;
+      // Any live claim (session, chase, reaction, user hold, even a rest dwell)
+      // owns the pet: leave it be. autonomous is the lowest rank, so this is
+      // true whenever *any* claim is still live.
+      if (isClaimedBySameOrHigherPriority(components, id, "autonomous", now)) {
+        return;
+      }
+      if (isAutonomousRepeatCoolingDown(components, id, MAKE_ROOM_REASON, now)) {
+        return;
+      }
+
+      const body = components.getComponent(id, "PhysicsBody");
+      const width = body?.width ?? DEFAULT_BEHAVIOR_BODY_WIDTH;
+      const otherX =
+        components.getComponent(collision.otherEntityId, "Transform")?.position
+          .x ?? collision.otherPosition.x;
+      const dx = transform.position.x - otherX;
+      // Only real stacking, not incidental edge contact.
+      if (Math.abs(dx) > width * PERSONAL_SPACE_TRIGGER_BODY_FRACTION) return;
+
+      const direction =
+        Math.abs(dx) > width * 0.15
+          ? Math.sign(dx)
+          : fallbackHorizontalDirection(id, collision.otherEntityId);
+      const targetX = clampToBoundsX(
+        transform.position.x + direction * width * PERSONAL_SPACE_STEP_BODY_WIDTHS,
+        bounds,
+        COLLISION_TARGET_MARGIN,
+      );
+      // Against a wall with nowhere to go — better to stay stacked than to
+      // grind into the boundary.
+      if (Math.abs(targetX - transform.position.x) < PERSONAL_SPACE_MIN_ROOM_PX) {
+        return;
+      }
+
+      components.setComponent(id, {
+        type: "MotionTarget",
+        targetEntityId: null,
+        targetPosition: { x: targetX, y: transform.position.y },
+        speedFactor: PERSONAL_SPACE_SPEED_FACTOR,
+      });
+      intent.intent = "active";
+      claim(
+        components,
+        id,
+        "autonomous",
+        now,
+        MAKE_ROOM_REASON,
+        now + MAKE_ROOM_CLAIM_MS,
+      );
     },
   );
 }
@@ -2553,6 +2656,29 @@ export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
   ],
   update(ctx) {
     runArrivalBehaviorSystem(ctx.components, ctx.clock, ctx.random);
+  },
+};
+
+export const PersonalSpaceSystem: SimulationSystem<WorldStepContext> = {
+  name: "PersonalSpaceSystem",
+  dependsOn: ["BehaviorPlanningSystem"],
+  reads: [
+    "PetCollision",
+    "IntentState",
+    "MotionTarget",
+    "Transform",
+    "PetIdentity",
+    "WalkingTag",
+    "FlyingTag",
+    "ClimbingTag",
+    "ContactState",
+    "PendingReaction",
+    "BehaviorDecisionState",
+    "PhysicsBody",
+  ],
+  writes: ["MotionTarget", "IntentState", "BehaviorDecisionState"],
+  update(ctx) {
+    runPersonalSpaceSystem(ctx.components, ctx.clock, ctx.bounds);
   },
 };
 

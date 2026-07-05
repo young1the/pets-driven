@@ -297,10 +297,23 @@ the social/behavior layer.
   physically blocks a walker).
 
 **Outcome** — Demo-colony visible-flip metric: 880 (pre-B11) → 354 (B11) →
-**56 per 60s** (normal turn-around noise). Net code reduction. Known
-trade-off: pets can visually overlap while idling in the same spot; social
-choreography keeps session partners apart, and a cosmetic "personal space"
-sidestep can be added later if stacking bothers.
+**56 per 60s** (normal turn-around noise). Net code reduction. Trade-off
+(pets could visually stack while idling on the same spot) resolved by the
+cosmetic make-room shuffle below.
+
+### B12a. Personal-space make-room shuffle — DONE (2026-07-06)
+
+Ghost bodies let two idle pets settle on the exact same spot and render
+stacked. `PersonalSpaceSystem` (end of BEHAVIOR) gives a genuinely idle,
+unclaimed grounded walker overlapping another pet one small step aside — a
+low-priority autonomous `make-room` **Decision** that sets a motion target
+(handed to Steering) and settles through the normal arrival + dwell path.
+It is a motion target, never a force, so it cannot reintroduce grinding;
+it skips pets under any live claim (sessions, chases, reactions, holds),
+pets boxed against a wall, and honors a 4s repeat cooldown. Stress probe
+(three pets forced onto one spot): stacking clears within seconds and the
+visible-flip metric stays at turn-around noise (44/60s). CONTEXT.md's
+physical-collision language updated to match.
 
 ## B9. Surface the session partner in the UI
 

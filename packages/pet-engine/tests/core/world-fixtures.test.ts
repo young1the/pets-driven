@@ -236,6 +236,7 @@ describe("demo scenario", () => {
       "AutonomousBehaviorSystem",
       "BehaviorPlanningSystem",
       "RompProgressSystem",
+      "PersonalSpaceSystem",
       // UPDATE
       "LocomotionModeSystem",
       "ClimbApproachSystem",
