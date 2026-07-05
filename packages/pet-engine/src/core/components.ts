@@ -30,6 +30,7 @@ export type {
   PetExpressionEmote,
   PetExpressionStateComponent,
   RompStateComponent,
+  CollisionMemoryComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
 
 export type {
@@ -121,6 +122,7 @@ import type {
   PendingReactionComponent,
   PetExpressionStateComponent,
   RompStateComponent,
+  CollisionMemoryComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
 import type {
   AgentBindingComponent,
@@ -202,6 +204,7 @@ export type Component =
   | ClimbIntentStateComponent
   | ClimbableSurfaceComponent
   | ClimbingTagComponent
+  | CollisionMemoryComponent
   | CompletionBehaviorComponent
   | ContactStateComponent
   | CursorStateComponent

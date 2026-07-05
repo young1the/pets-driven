@@ -355,7 +355,12 @@ export function createDemoScenario(options?: {
             ? {
                 type: "CanWallClimb",
                 velocity: DEFAULT_PET_CLIMB_VELOCITY * 4,
-                dismountImpulse: { min: -0.024, max: -0.024 },
+                // Strong enough that a dismount from the top of the seam wall
+                // physically glides across to the left monitor. The previous
+                // -0.024 decayed (air friction) into a straight drop; the pet
+                // only ever crossed by riding rapid-fire collision reactions,
+                // which the per-pair collision cooldown removed by design.
+                dismountImpulse: { min: -0.06, max: -0.06 },
               }
             : { type: "CanWallClimb", velocity: DEFAULT_PET_CLIMB_VELOCITY },
           { type: "WandersOnArrival", arrivalRadius: 16 },

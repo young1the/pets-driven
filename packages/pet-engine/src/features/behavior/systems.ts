@@ -94,6 +94,41 @@ const WANDER_BASE_BODY_MULTIPLIER = 3;
 // Phase 4: collision reaction constants
 const PET_ENGAGE_STOP_WIDTH_MULTIPLIER = 2.5;
 
+// B3: after reacting to a specific neighbor, ignore further collisions with
+// that same neighbor for this long. Physical separation (CollisionEscape) is
+// not gated — only the behavioral re-reaction is suppressed.
+const PAIR_COLLISION_COOLDOWN_MS = 6_000;
+const COLLISION_MEMORY_MAX_ENTRIES = 8;
+
+function isPairCoolingDown(
+  components: ComponentStore,
+  id: string,
+  otherId: string,
+  now: number,
+): boolean {
+  const memory = components.getComponent(id, "CollisionMemory");
+  const entry = memory?.entries.find((e) => e.otherId === otherId);
+  return !!entry && now - entry.lastReactedAt < PAIR_COLLISION_COOLDOWN_MS;
+}
+
+function recordPairReaction(
+  components: ComponentStore,
+  id: string,
+  otherId: string,
+  now: number,
+): void {
+  const memory = components.getComponent(id, "CollisionMemory");
+  // Lazy pruning: drop the entry being refreshed and anything already lapsed.
+  const entries = (memory?.entries ?? []).filter(
+    (e) =>
+      e.otherId !== otherId &&
+      now - e.lastReactedAt < PAIR_COLLISION_COOLDOWN_MS,
+  );
+  entries.push({ otherId, lastReactedAt: now });
+  while (entries.length > COLLISION_MEMORY_MAX_ENTRIES) entries.shift();
+  components.setComponent(id, { type: "CollisionMemory", entries });
+}
+
 // ── Drives satisfaction hooks ────────────────────────────────────────────
 // Magnitudes on the same 0..1 scale as DrivesComponent fields. "Substantial"
 // refills (catching a pet) are larger than "partial" ones (a friendly
@@ -747,6 +782,8 @@ export function runCollisionBehaviorSystem(
       "SocialSessionMember",
     );
     if (sessionMember && sessionMember.partnerId === collision.id) continue;
+    // B3: already reacted to this particular neighbor recently — coexist.
+    if (isPairCoolingDown(components, entity.id, collision.id, now)) continue;
     if (isWorking) {
       const personality = components.getComponent(entity.id, "Personality");
       if (personality) {
@@ -786,6 +823,7 @@ export function runCollisionBehaviorSystem(
         existing.expiresAt = now;
       }
 
+      recordPairReaction(components, entity.id, collision.id, now);
       continue;
     }
     if (isEscapingCollisionFlee(components, entity, collision)) continue;
@@ -821,6 +859,7 @@ export function runCollisionBehaviorSystem(
     // Hold the claim until reactsAt so BehaviorDecisionSystem skips this pet
     // during the deliberation window.
     claim(components, entity.id, "collision", now, "entity overlap", reactsAt);
+    recordPairReaction(components, entity.id, collision.id, now);
   }
 }
 
@@ -2367,6 +2406,7 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "AirborneTag",
     "ClimbIntentState",
     "SocialSessionMember",
+    "CollisionMemory",
   ],
   writes: [
     "PendingReaction",
@@ -2374,6 +2414,7 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "MotionTarget",
     "IntentState",
     "PetExpressionState",
+    "CollisionMemory",
   ],
   update(ctx) {
     runCollisionBehaviorSystem(ctx.components, ctx.bounds, ctx.clock);

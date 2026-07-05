@@ -1636,13 +1636,18 @@ describe("collision vs social priority (B1: social outranks collision)", () => {
 
 describe("session-partner collision immunity (B2)", () => {
   function withMember(pet: ReturnType<typeof makePet>, partnerId: string) {
-    pet.components.push({
-      type: "SocialSessionMember" as const,
-      sessionId: "sess",
-      partnerId,
-      role: "initiator" as const,
-    });
-    return pet;
+    return {
+      id: pet.id,
+      components: [
+        ...pet.components,
+        {
+          type: "SocialSessionMember" as const,
+          sessionId: "sess",
+          partnerId,
+          role: "initiator" as const,
+        },
+      ],
+    };
   }
 
   it("ignores overlap with the session partner even without a live social claim", () => {
@@ -1673,5 +1678,62 @@ describe("session-partner collision immunity (B2)", () => {
     const reaction = store.getComponent("pet-a", "PendingReaction");
     expect(reaction?.context.otherEntityId).toBe("pet-c");
     expect(store.getComponent("pet-c", "PendingReaction")).toBeDefined();
+  });
+});
+
+describe("per-pair collision reaction cooldown (B3)", () => {
+  it("does not re-react to the same neighbor within the cooldown window", () => {
+    const store = createComponentStore([
+      makePet("pet-a", 100, "idle"),
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(1_000));
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
+
+    // Simulate the reaction being consumed: deliberation done, claim lapsed,
+    // but the pair is still overlapping 2s later.
+    store.removeComponent("pet-a", "PendingReaction");
+    store.removeComponent("pet-b", "PendingReaction");
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(3_000));
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(store.getComponent("pet-b", "PendingReaction")).toBeUndefined();
+  });
+
+  it("reacts again once the pair cooldown has lapsed", () => {
+    const store = createComponentStore([
+      makePet("pet-a", 100, "idle"),
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(1_000));
+    store.removeComponent("pet-a", "PendingReaction");
+    store.removeComponent("pet-b", "PendingReaction");
+
+    // 6s pair cooldown measured from the reaction at t=1000.
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(7_100));
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
+  });
+
+  it("a fresh neighbor is not affected by another pair's cooldown", () => {
+    const store = createComponentStore([
+      makePet("pet-a", 100, "idle"),
+      makePet("pet-b", 110, "idle"),
+    ]);
+
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(1_000));
+    store.removeComponent("pet-a", "PendingReaction");
+    store.removeComponent("pet-b", "PendingReaction");
+
+    // pet-b wanders off; pet-c bumps into pet-a during pet-b's cooldown.
+    store.setComponent("pet-b", { type: "Transform", position: { x: 400, y: 500 } });
+    store.spawn("pet-c", makePet("pet-c", 108, "idle").components);
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(3_000));
+
+    expect(
+      store.getComponent("pet-a", "PendingReaction")?.context.otherEntityId,
+    ).toBe("pet-c");
   });
 });

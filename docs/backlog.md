@@ -82,7 +82,7 @@ Size: S. Depends on: B1 (order only; technically independent).
 4x multiplier, no stuck escalation. Pass 1 needed no change: session members
 never hold collision claims in the first place.
 
-## B3. Per-pair collision reaction cooldown
+## B3. Per-pair collision reaction cooldown — DONE (2026-07-05)
 
 **Problem** — A pet that just reacted to pet X re-reacts to X on the next
 overlap (collision claim lasts only 1s), producing the rapid behavior
@@ -106,6 +106,18 @@ flip-flop when pets cluster.
   cluster (manual check via DecisionShowcase / desktop playground).
 
 Size: M. Depends on: nothing (compounds with B1/B2).
+
+**Outcome** — `CollisionMemory` (bounded, lazily pruned) + 6s
+`PAIR_COLLISION_COOLDOWN_MS`; recorded on both the PendingReaction path and
+the working-pet expression path, so working pets also stop re-emoting every
+overlap. Fallout worth remembering: the dual-monitor world-fixtures test
+("climb pet enters the left monitor") had been passing by riding exactly the
+collision churn this removes — pet-c crossed via rapid-fire collision-jump
+pinball at the seam wall base, not via its scripted high climb (the old
+-0.024 dismount impulse air-decayed into a straight drop). Fixed by raising
+the dual-fixture dismount impulse to -0.06 so a top dismount genuinely
+glides across the open seam (y 0..960), and by re-scripting the climb in the
+test with retries instead of waiting on 20s of emergent chaos.
 
 ## B4. Bump-to-greet: collision as a social on-ramp
 

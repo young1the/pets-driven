@@ -72,6 +72,40 @@ function runUntilPetReachesLeftMonitor(
   return null;
 }
 
+/**
+ * Put pet-c back into the dual-monitor fixture's scripted seam climb: attached
+ * to the seam climb-wall, heading for the top, ready to dismount leftward.
+ * Mirrors the initial dual-horizontal fixture state for pet-c.
+ */
+function scriptSeamClimb(scenario: ReturnType<typeof createDemoScenario>): void {
+  scenario.world.setPhysicsPosition("pet-c", { x: 24, y: 840 });
+  scenario.world.setPhysicsVelocity("pet-c", { x: 0, y: 0 });
+  scenario.world.removeComponent("pet-c", "ClimbDismountState");
+  scenario.world.removeComponent("pet-c", "JumpActionState");
+  scenario.world.setComponent("pet-c", { type: "ClimbingTag" });
+  scenario.world.setComponent("pet-c", {
+    type: "IntentState",
+    intent: "active",
+  });
+  scenario.world.setComponent("pet-c", {
+    type: "ContactState",
+    grounded: false,
+    climbableSurfaceId: "climb-wall",
+    climbableSurfacePosition: { x: 24, y: 840 },
+  });
+  scenario.world.setComponent("pet-c", {
+    type: "MotionTarget",
+    targetEntityId: null,
+    targetPosition: { x: 24, y: 160 },
+  });
+  scenario.world.setComponent("pet-c", {
+    type: "ClimbIntentState",
+    phase: "attached",
+    surfaceEntityId: "climb-wall",
+    targetY: 160,
+  });
+}
+
 function runPetPath(
   scenario: ReturnType<typeof createDemoScenario>,
   petId: string,
@@ -386,6 +420,7 @@ describe("demo scenario", () => {
         "AirborneTag",
         "ClimbIntentState",
         "SocialSessionMember",
+        "CollisionMemory",
       ],
       writes: [
         "PendingReaction",
@@ -393,6 +428,7 @@ describe("demo scenario", () => {
         "MotionTarget",
         "IntentState",
         "PetExpressionState",
+        "CollisionMemory",
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -785,12 +821,25 @@ describe("demo scenario", () => {
 
     expect(scenario.world.getComponent("pet-c", "CanFly")).toBeUndefined();
 
-    const crossing = runUntilPetReachesLeftMonitor(scenario, "pet-c", 1_200);
+    // The seam between the monitors is open for y 0..960; the fixture scripts
+    // pet-c to climb the seam wall to y=160 and dismount with a leftward
+    // impulse strong enough to glide across. The world stays live during the
+    // flight, so a passing pet can knock the glide off course — re-script the
+    // climb and retry instead of depending on 20 seconds of emergent chaos
+    // (the pre-cooldown behavior crossed by riding collision churn, which the
+    // per-pair collision cooldown removed on purpose).
+    let crossing = runUntilPetReachesLeftMonitor(scenario, "pet-c", 600);
+    for (let attempt = 0; attempt < 3 && !crossing; attempt += 1) {
+      scriptSeamClimb(scenario);
+      crossing = runUntilPetReachesLeftMonitor(scenario, "pet-c", 600);
+    }
 
     expect(crossing).not.toBeNull();
     expect(crossing?.pet.action).toBe("climb-dismounting");
     expect(crossing?.pet.position.x).toBeGreaterThan(-160);
-    expect(runPetPath(scenario, "pet-c", 240).minX).toBeGreaterThan(-560);
+    // Sanity: the glide lands near the seam side of the left monitor instead
+    // of rocketing to its far wall.
+    expect(runPetPath(scenario, "pet-c", 240).minX).toBeGreaterThan(-900);
   });
 
   it("models climbable surfaces as contact targets", () => {

@@ -164,6 +164,18 @@ export type PendingReactionComponent = {
   };
 };
 
+/**
+ * Per-pair collision reaction memory: after reacting to a specific neighbor,
+ * the pet ignores further collisions with that same neighbor for a cooldown
+ * window. Without this, clustered pets re-startle on every overlap (the
+ * collision claim only lasts ~1s) and their behavior never settles — the
+ * "rapid behavior flip-flop" symptom. Bounded list, lazily pruned on write.
+ */
+export type CollisionMemoryComponent = {
+  type: "CollisionMemory";
+  entries: Array<{ otherId: string; lastReactedAt: number }>;
+};
+
 export type PetExpressionSource =
   | "collision"
   | "chase-cursor"
