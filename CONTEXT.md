@@ -216,6 +216,26 @@ _Avoid_: steering, intent, motion mode
 Given a **Pet**'s **Locomotion**, the direction-and-force step that pushes the body toward its motion target and hands the result to the physics engine — the layer nearest the motion engine. Its mode is stand, pursue a target, or ease to a stop by the user. Replaces the retired "intent" (idle/active/seek).
 _Avoid_: intent, decision, locomotion
 
+**Social Session**:
+A single, transient pet-to-pet interaction that two **Pets** share until it ends. It is spawned as its own entity that owns the shared clock, not a lasting bond between the pair. Exactly two **Pets** at a time.
+_Avoid_: session (bare), relationship, friendship
+
+**Social Session Kind**:
+What the two **Pets** are doing together in a **Social Session**: greet (a quick hello), chat (alternating speech bubbles), or chase (taking turns as chaser and runner).
+_Avoid_: phase, activity
+
+**Social Session Phase**:
+How a **Social Session** progresses over its life: approach (walk together and close the gap), then play (the kind-specific interaction), then part (a short wind-down before teardown). The code still names the approach phase `greet`.
+_Avoid_: kind
+
+**Social Invite**:
+A transient offer one **Pet** places on another to start a **Social Session**; the target accepts or declines it, and it lapses if unanswered.
+_Avoid_: request, session
+
+**Afterglow**:
+The short contented beat right after a **Social Session** ends, during which a **Pet** lingers in place instead of snapping straight back to wandering and cannot be invited again — a social refractory period.
+_Avoid_: cooldown (as a domain term), session
+
 ## Relationships
 
 - A **Pet** is bound to exactly one **Working Directory**.
@@ -314,6 +334,15 @@ _Avoid_: intent, decision, locomotion
 - A **Decision** and the **Locomotion** it sets are always published together: applying a new **Decision** rewrites the **Locomotion** in the same step, so a **Pet**'s body never keeps executing a movement that its current **Decision** no longer wants. (Breaking this pairing is what would make a **Pet** keep walking after switching to a standing-still **Decision** such as a chat.)
 - What is short-lived is a **Decision**'s priority claim, not the **Locomotion**: when the claim lapses without a new **Decision** replacing it, the **Locomotion** persists so the **Pet** finishes the movement it already started.
 - **Steering** makes no choices of its own; it only turns a **Pet**'s **Locomotion** and motion target into force.
+- A **Pet** marked able to socialize can start and join **Social Sessions**; other **Pets** never do.
+- A **Social Session** has exactly two **Pets**: the **initiator** (which placed the **Social Invite**) and the **responder** (which accepted it).
+- A **Pet** is in at most one **Social Session** at a time.
+- A **Social Session** has one **Social Session Kind** and moves through its **Social Session Phases** in order: approach → play → part.
+- A **Social Session** is created only when a **responder** accepts a **Social Invite**; an unanswered **Social Invite** lapses and forms nothing.
+- Whether the target accepts or declines a **Social Invite** is weighted by its personality and social drive.
+- A running **Social Session** claims each member's **Decision** with the `social` **Decision Source**, so it outranks collision reactions but yields to agent events and user interaction.
+- When a **Social Session** ends it refills each **Pet**'s social drive and leaves an **Afterglow**.
+- A lasting **Relationship** that accumulates across **Social Sessions** is intentionally not modeled: a **Social Session** leaves no memory of the pair beyond its **Afterglow**.
 
 ## Architecture
 
@@ -397,3 +426,6 @@ flowchart TD
 - "status" was used for both the agent's task state and the UI chip; resolved: a bare **status** means **Agent Work State**, and the chip that renders it is the **Pet Status Card**.
 - "behavior" was used for both the internal decision-selection machinery and the user-facing "what the pet is doing" label; resolved: the user-facing axis is **Activity**, the internal choice layer is a **Decision**, and bare "behavior" is avoided as a spoken term (it survives only as the `features/behavior` code folder).
 - "intent" (idle/active/seek) was one word doing three jobs — choosing the movement, being the coarse motion mode, and being read as a "busy" flag; resolved: the word **intent is retired**. Choosing the movement is the **Decision**; how the body moves (walk/climb/fly + gait) is **Locomotion**; the force toward the target is **Steering**; and "busy" is now derived from whether a **Pet** has an active **Decision**, not from a motion mode. (Code still names the component `IntentState` pending a rename to `Steering`/`Locomotion`.)
+- "session" already means a terminal-facing channel (**Terminal Channel** avoids it); resolved: the pet-to-pet interaction is always the qualified **Social Session**, and bare "session" stays avoided.
+- "greet" named both a **Social Session Kind** and the first **Social Session Phase**; resolved: the phase is renamed **approach**, so "greet" now means only the kind. (Code still calls the phase `greet`.)
+- "relationship" was considered as a next concept; resolved: it is intentionally out of scope — **Pets** have transient **Social Sessions**, not persistent relationships between pairs.
