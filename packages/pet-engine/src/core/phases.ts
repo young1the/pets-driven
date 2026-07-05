@@ -24,7 +24,6 @@ import {
   AgentTaskEventSystem,
   TaskMovementHoldSystem,
   CollisionBehaviorSystem,
-  CollisionYieldSystem,
   WorkingBehaviorSystem,
   BehaviorDecisionSystem,
   AutonomousBehaviorSystem,
@@ -46,7 +45,6 @@ import {
   ClimbAttachmentSystem,
   MotionTargetSystem,
   WalkSystem,
-  CollisionEscapeSystem,
   JumpSystem,
   WallClimbSystem,
   IntentSteeringSystem,
@@ -80,8 +78,7 @@ export const SYSTEM_PHASES: Record<
     SpeechExpirationSystem, // clear expired speech before new decisions
     PetExpressionExpirationSystem,
     AgentTaskEventSystem, // priority 2: external agent events → task state
-    CollisionBehaviorSystem, // priority 3: entity overlap avoidance
-    CollisionYieldSystem, // blocked walkers give up grinding through neighbors
+    CollisionBehaviorSystem, // priority 3: overlap startle → reaction/bump-to-greet
     WorkingBehaviorSystem, // priority 4a: working-state focus or wandering
     SocialInteractionSystem, // priority 4 (social): pet-to-pet greet/chat/chase sessions
     BehaviorDecisionSystem, // priority 5 (autonomous): personality-weighted next behavior (emits token)
@@ -106,7 +103,6 @@ export const SYSTEM_PHASES: Record<
     // before WalkSystem/IntentSteeringSystem can turn it into movement.
     TaskMovementHoldSystem,
     WalkSystem,
-    CollisionEscapeSystem,
     JumpSystem,
     WallClimbSystem,
     IntentSteeringSystem,

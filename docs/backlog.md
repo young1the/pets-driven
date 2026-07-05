@@ -276,6 +276,32 @@ more sources the first fix missed:
 Colony visible-flip total: 880 → 354 per 60s. The remainder is pet-a's
 6s-on/6s-off retry cycle against the unclimbable demo wall.
 
+## B12. Ghost bodies: delete pet-to-pet physical collision — DONE (2026-07-06)
+
+**Problem** — Even after B11 and its follow-ups, clustered pets still
+trembled on desktop. Every fix in that line was a bandage over the same
+root: pets being solid to each other. The physical layer produced grinding,
+convoy bounces, bulldozing, and cluster jitter, while contributing almost
+nothing the product needs — all *meaningful* pet-to-pet interaction lives in
+the social/behavior layer.
+
+**Change** — Pets are now physical ghosts to each other:
+- Matter collision filters: dynamic bodies mask `SURFACE` only (gravity,
+  floors, walls, jumping, dragging all unchanged).
+- `PetCollision` is derived geometrically (nearest overlapping pet AABB) in
+  `PetCollisionSyncSystem` — a stable signal with no solver blinking. The
+  behavior layer on top (startle → bump-to-greet / reactions, B2 partner
+  immunity, B3 pair cooldown) is unchanged.
+- Deleted outright: `CollisionEscapeSystem` (separation forces),
+  `CollisionYieldSystem` + `BlockedPathState` (B11 — obsolete when nothing
+  physically blocks a walker).
+
+**Outcome** — Demo-colony visible-flip metric: 880 (pre-B11) → 354 (B11) →
+**56 per 60s** (normal turn-around noise). Net code reduction. Known
+trade-off: pets can visually overlap while idling in the same spot; social
+choreography keeps session partners apart, and a cosmetic "personal space"
+sidestep can be added later if stacking bothers.
+
 ## B9. Surface the session partner in the UI
 
 **Problem** — The engine already exposes per-pet session state in the

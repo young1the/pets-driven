@@ -82,7 +82,11 @@ export function createMatterPhysicsWorld(bounds: {
       const body = Bodies.circle(position.x, position.y, radius, {
         collisionFilter: {
           category: COLLISION_CATEGORY_DYNAMIC_BODY,
-          mask: COLLISION_CATEGORY_SURFACE | COLLISION_CATEGORY_DYNAMIC_BODY,
+          // Pets are ghosts to each other: they collide with surfaces only.
+          // Pet-to-pet solidity produced nothing but pathologies (grinding,
+          // convoy bounces, bulldozing); "touching" is now a geometric signal
+          // computed by PetCollisionSyncSystem, not a physical constraint.
+          mask: COLLISION_CATEGORY_SURFACE,
         },
         frictionAir: 0.08,
         restitution: 0.2,
@@ -93,7 +97,8 @@ export function createMatterPhysicsWorld(bounds: {
       const body = Bodies.rectangle(position.x, position.y, size.width, size.height, {
         collisionFilter: {
           category: COLLISION_CATEGORY_DYNAMIC_BODY,
-          mask: COLLISION_CATEGORY_SURFACE | COLLISION_CATEGORY_DYNAMIC_BODY,
+          // See addCircle: pets pass through each other by design.
+          mask: COLLISION_CATEGORY_SURFACE,
         },
         friction: material?.friction,
         frictionAir: material?.frictionAir ?? 0.04,

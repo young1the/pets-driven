@@ -3,23 +3,28 @@ import { createComponentStore } from "@pets-driven/pet-engine/core/component-sto
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { runPetCollisionSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
 
-describe("pet collision sync system", () => {
-  it("projects active Matter.js dynamic collisions into PetCollision components", () => {
-    const store = createComponentStore([
+function pet(id: string, x: number, y = 100) {
+  return {
+    id,
+    components: [
+      { type: "Transform" as const, position: { x, y } },
       {
-        id: "pet-a",
-        components: [{ type: "Transform", position: { x: 100, y: 100 } }],
+        type: "PhysicsBody" as const,
+        shape: "rectangle" as const,
+        width: 32,
+        height: 38,
       },
-      {
-        id: "pet-b",
-        components: [{ type: "Transform", position: { x: 130, y: 100 } }],
-      },
-    ]);
-    const physics = {
-      activeCollisions: () => [{ bodyAId: "pet-a", bodyBId: "pet-b" }],
-    };
+      { type: "PetIdentity" as const, name: id },
+    ],
+  };
+}
 
-    runPetCollisionSyncSystem(store, physics, createManualClock(1200));
+describe("pet collision sync system (geometric overlap)", () => {
+  it("derives PetCollision from overlapping pet AABBs", () => {
+    // Centers 30px apart with 32px-wide bodies: overlapping by 2px.
+    const store = createComponentStore([pet("pet-a", 100), pet("pet-b", 130)]);
+
+    runPetCollisionSyncSystem(store, createManualClock(1200));
 
     expect(store.getComponent("pet-a", "PetCollision")).toEqual({
       type: "PetCollision",
@@ -34,25 +39,67 @@ describe("pet collision sync system", () => {
     });
   });
 
-  it("removes stale PetCollision components when Matter.js no longer reports the pair", () => {
+  it("keeps startedAt stable while the same pair stays overlapped", () => {
+    const store = createComponentStore([pet("pet-a", 100), pet("pet-b", 130)]);
+
+    runPetCollisionSyncSystem(store, createManualClock(1200));
+    runPetCollisionSyncSystem(store, createManualClock(1700));
+
+    expect(store.getComponent("pet-a", "PetCollision")).toMatchObject({
+      startedAt: 1200,
+      lastSeenAt: 1700,
+    });
+  });
+
+  it("removes PetCollision once the bodies separate", () => {
+    const store = createComponentStore([pet("pet-a", 100), pet("pet-b", 130)]);
+
+    runPetCollisionSyncSystem(store, createManualClock(1200));
+    store.setComponent("pet-b", {
+      type: "Transform",
+      position: { x: 300, y: 100 },
+    });
+    runPetCollisionSyncSystem(store, createManualClock(1216));
+
+    expect(store.getComponent("pet-a", "PetCollision")).toBeUndefined();
+    expect(store.getComponent("pet-b", "PetCollision")).toBeUndefined();
+  });
+
+  it("ignores non-pet entities and picks the nearest overlapping pet", () => {
     const store = createComponentStore([
+      pet("pet-a", 100),
+      pet("pet-b", 126),
+      pet("pet-c", 130),
       {
-        id: "pet-a",
+        id: "ground",
         components: [
-          { type: "Transform", position: { x: 100, y: 100 } },
+          { type: "Transform" as const, position: { x: 100, y: 110 } },
           {
-            type: "PetCollision",
-            otherEntityId: "pet-b",
-            otherPosition: { x: 130, y: 100 },
-            startedAt: 1200,
-            lastSeenAt: 1200,
+            type: "PhysicsBody" as const,
+            shape: "rectangle" as const,
+            width: 960,
+            height: 24,
           },
         ],
       },
     ]);
-    const physics = { activeCollisions: () => [] };
 
-    runPetCollisionSyncSystem(store, physics, createManualClock(1216));
+    runPetCollisionSyncSystem(store, createManualClock(0));
+
+    // Ground overlaps pet-a but has no PetIdentity — never a collision.
+    expect(
+      store.getComponent("pet-a", "PetCollision")?.otherEntityId,
+    ).toBe("pet-b");
+    expect(store.getComponent("ground", "PetCollision")).toBeUndefined();
+  });
+
+  it("pets stacked vertically apart do not register", () => {
+    const store = createComponentStore([
+      pet("pet-a", 100, 100),
+      pet("pet-b", 100, 200),
+    ]);
+
+    runPetCollisionSyncSystem(store, createManualClock(0));
 
     expect(store.getComponent("pet-a", "PetCollision")).toBeUndefined();
   });

@@ -27,10 +27,6 @@ const APPROACH_JUMP_VERTICAL_BODY_MULTIPLIER = 1;
 // SEEK_USER_STOP_DISTANCE, it is "near" and won't re-pick seek-user until it
 // has wandered outside USER_PROXIMITY_RADIUS.
 const SEEK_USER_STOP_DISTANCE = 80;
-const COLLISION_ESCAPE_FORCE_MULTIPLIER = 4;
-const COLLISION_ESCAPE_STUCK_MS = 350;
-const COLLISION_ESCAPE_STUCK_MULTIPLIER = 2;
-const FALLBACK_COLLISION_ESCAPE_FORCE = 0.004;
 
 // ── MOVEMENT_STATE phase ───────────────────────────────────────────────────
 
@@ -364,63 +360,6 @@ export function runWalkSystem(components: ComponentStore, forceGroups: Force[][]
   if (forces.length > 0) forceGroups.push(forces);
 }
 
-export function runCollisionEscapeSystem(
-  components: ComponentStore,
-  forceGroups: Force[][],
-  clock: Clock,
-): void {
-  const forces: Force[] = [];
-  const now = clock.now();
-
-  components.forEach(
-    ["Transform", "PhysicsBody", "PetCollision"],
-    (id, [transform, , collision]) => {
-      if (components.getComponent(id, "ClimbingTag")) return;
-
-      const otherTransform = components.getComponent(collision.otherEntityId, "Transform");
-      const otherPosition = otherTransform?.position ?? collision.otherPosition;
-      const isWalking =
-        !!components.getComponent(id, "WalkingTag") &&
-        !components.getComponent(id, "FlyingTag") &&
-        !components.getComponent(id, "ClimbingTag");
-
-      const rawAway = normalize({
-        x: transform.position.x - otherPosition.x,
-        y: transform.position.y - otherPosition.y,
-      });
-      const away = isWalking
-        ? {
-            x: Math.abs(rawAway.x) > 0.2 ? Math.sign(rawAway.x) : fallbackHorizontalDirection(id, collision.otherEntityId),
-            y: 0,
-          }
-        : rawAway;
-
-      const walk = components.getComponent(id, "CanWalk");
-      const movement = components.getComponent(id, "MovementProfile");
-      const baseForce =
-        walk?.force ??
-        movement?.activeForce ??
-        FALLBACK_COLLISION_ESCAPE_FORCE / COLLISION_ESCAPE_FORCE_MULTIPLIER;
-      // Overlapping with the session partner still separates the bodies, but
-      // gently — the 4x shove (and stuck escalation) between two pets who are
-      // deliberately standing close reads as them fighting.
-      const sessionMember = components.getComponent(id, "SocialSessionMember");
-      const isSessionPartner =
-        sessionMember?.partnerId === collision.otherEntityId;
-      const stuckMultiplier =
-        now - collision.startedAt >= COLLISION_ESCAPE_STUCK_MS
-          ? COLLISION_ESCAPE_STUCK_MULTIPLIER
-          : 1;
-      const force = isSessionPartner
-        ? baseForce
-        : baseForce * COLLISION_ESCAPE_FORCE_MULTIPLIER * stuckMultiplier;
-      forces.push({ id, x: away.x * force, y: away.y * force });
-    },
-  );
-
-  if (forces.length > 0) forceGroups.push(forces);
-}
-
 export function runJumpSystem(
   components: ComponentStore,
   deltaMs: number,
@@ -615,16 +554,6 @@ function requestJumpWhenWalkingTargetIsAbove(
   });
 }
 
-function normalize(v: Vector): Vector {
-  const len = Math.hypot(v.x, v.y);
-  return len === 0 ? { x: 1, y: 0 } : { x: v.x / len, y: v.y / len };
-}
-
-function fallbackHorizontalDirection(id: string, otherId: string | undefined): -1 | 1 {
-  if (!otherId) return -1;
-  return id.localeCompare(otherId) <= 0 ? -1 : 1;
-}
-
 // ── System descriptors ─────────────────────────────────────────────────────
 
 export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
@@ -694,26 +623,6 @@ export const WalkSystem: SimulationSystem<WorldStepContext> = {
   writes: ["PhysicsForce"],
   update(ctx) {
     runWalkSystem(ctx.components, ctx.forceGroups);
-  },
-};
-
-export const CollisionEscapeSystem: SimulationSystem<WorldStepContext> = {
-  name: "CollisionEscapeSystem",
-  dependsOn: ["MotionTargetSystem"],
-  reads: [
-    "Transform",
-    "PhysicsBody",
-    "PetCollision",
-    "WalkingTag",
-    "FlyingTag",
-    "ClimbingTag",
-    "CanWalk",
-    "MovementProfile",
-    "SocialSessionMember",
-  ],
-  writes: ["PhysicsForce"],
-  update(ctx) {
-    runCollisionEscapeSystem(ctx.components, ctx.forceGroups, ctx.clock);
   },
 };
 

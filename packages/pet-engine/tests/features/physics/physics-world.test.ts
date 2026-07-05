@@ -76,7 +76,9 @@ describe("matter physics world", () => {
     expect(pet?.y).toBeGreaterThan(220);
   });
 
-  it("lets dynamic pet bodies collide and reports the active pair", () => {
+  it("lets dynamic pet bodies pass through each other (ghost bodies)", () => {
+    // Pets only collide with surfaces; pet-to-pet "touching" is a geometric
+    // signal derived by PetCollisionSyncSystem, not a physical constraint.
     const world = createMatterPhysicsWorld({ width: 800, height: 600 });
     world.addRectangle("pet-a", { x: 100, y: 100 }, { width: 32, height: 38 });
     world.addRectangle("pet-b", { x: 112, y: 100 }, { width: 32, height: 38 });
@@ -87,10 +89,11 @@ describe("matter physics world", () => {
 
     const petA = world.snapshot().bodies.find((body) => body.id === "pet-a");
     const petB = world.snapshot().bodies.find((body) => body.id === "pet-b");
-    const pair = world.activeCollisions()[0];
 
-    expect(pair).toEqual({ bodyAId: "pet-a", bodyBId: "pet-b" });
-    expect(Math.abs((petA?.x ?? 0) - (petB?.x ?? 0))).toBeGreaterThan(12);
+    expect(world.activeCollisions()).toEqual([]);
+    // No solver separation: the overlapping bodies fall in place, unmoved in x.
+    expect(petA?.x).toBeCloseTo(100, 5);
+    expect(petB?.x).toBeCloseTo(112, 5);
   });
 
   it("supports per-body gravity scale for flyable or low-gravity bodies", () => {

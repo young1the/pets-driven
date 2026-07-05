@@ -230,7 +230,6 @@ describe("demo scenario", () => {
       "PetExpressionExpirationSystem",
       "AgentTaskEventSystem",
       "CollisionBehaviorSystem",
-      "CollisionYieldSystem",
       "WorkingBehaviorSystem",
       "SocialInteractionSystem",
       "BehaviorDecisionSystem",
@@ -249,7 +248,6 @@ describe("demo scenario", () => {
       // POST_UPDATE
       "TaskMovementHoldSystem",
       "WalkSystem",
-      "CollisionEscapeSystem",
       "JumpSystem",
       "WallClimbSystem",
       "IntentSteeringSystem",
@@ -269,7 +267,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "PetCollisionSyncSystem",
       dependsOn: ["PhysicsTransformSyncSystemPre"],
-      reads: ["PhysicsWorld"],
+      reads: ["Transform", "PhysicsBody", "PetIdentity"],
       writes: ["PetCollision"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -506,22 +504,6 @@ describe("demo scenario", () => {
         "ContactState",
         "CanWalk",
         "MotionTarget",
-      ],
-      writes: ["PhysicsForce"],
-    });
-    expect(scenario.world.systemPlan()).toContainEqual({
-      name: "CollisionEscapeSystem",
-      dependsOn: ["MotionTargetSystem"],
-      reads: [
-        "Transform",
-        "PhysicsBody",
-        "PetCollision",
-        "WalkingTag",
-        "FlyingTag",
-        "ClimbingTag",
-        "CanWalk",
-        "MovementProfile",
-        "SocialSessionMember",
       ],
       writes: ["PhysicsForce"],
     });

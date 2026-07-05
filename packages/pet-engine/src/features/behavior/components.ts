@@ -179,23 +179,6 @@ export type PendingReactionComponent = {
 };
 
 /**
- * Blocked-walk tracking for CollisionYieldSystem: a walker pressing against
- * another pet that sits between it and its target is grinding (or slowly
- * bulldozing the neighbor), not walking. Neither PetCollision age (pressing
- * bodies separate and retouch every few frames) nor distance progress (a
- * bulldozed neighbor still yields slow "progress") detects this reliably, so
- * the system measures the geometric fact directly — body-to-body gap in the
- * walk direction — and accumulates how long it has persisted.
- */
-export type BlockedPathStateComponent = {
-  type: "BlockedPathState";
-  /** Target x this state was measured against; a new target resets tracking. */
-  targetX: number;
-  /** Accumulated milliseconds spent pressing against an in-the-way pet. */
-  blockedMs: number;
-};
-
-/**
  * Per-pair collision reaction memory: after reacting to a specific neighbor,
  * the pet ignores further collisions with that same neighbor for a cooldown
  * window. Without this, clustered pets re-startle on every overlap (the

@@ -63,51 +63,66 @@ export function runPhysicsIntegrationSystem(
   physics.step(deltaMs);
 }
 
-type ActiveCollisionSource = {
-  activeCollisions(): Array<{ bodyAId: string; bodyBId: string }>;
-};
-
+/**
+ * Pets are physical ghosts to each other (they only collide with surfaces —
+ * see matter-physics-world collision filters), so "touching another pet" is
+ * a *perceived* fact, not a physics constraint. This system derives it
+ * geometrically from body AABBs each tick: stable while bodies overlap, no
+ * solver-separation blinking, and it feeds the same PetCollision component
+ * the behavior layer (startle, bump-to-greet, pair cooldown) already reads.
+ */
 export function runPetCollisionSyncSystem(
   components: ComponentStore,
-  physics: ActiveCollisionSource,
   clock: Clock,
 ): void {
   const now = clock.now();
-  const seenEntityIds = new Set<string>();
 
-  for (const pair of physics.activeCollisions()) {
-    syncPetCollision(components, pair.bodyAId, pair.bodyBId, now);
-    syncPetCollision(components, pair.bodyBId, pair.bodyAId, now);
-    seenEntityIds.add(pair.bodyAId);
-    seenEntityIds.add(pair.bodyBId);
-  }
+  type PetBody = { id: string; x: number; y: number; halfW: number; halfH: number };
+  const pets: PetBody[] = [];
+  components.forEach(
+    ["Transform", "PhysicsBody", "PetIdentity"],
+    (id, [transform, body]) => {
+      pets.push({
+        id,
+        x: transform.position.x,
+        y: transform.position.y,
+        halfW: body.width / 2,
+        halfH: body.height / 2,
+      });
+    },
+  );
 
-  for (const [id] of components.components("PetCollision")) {
-    if (!seenEntityIds.has(id)) {
-      components.removeComponent(id, "PetCollision");
+  for (const pet of pets) {
+    let nearest: PetBody | null = null;
+    let nearestDistance = Infinity;
+    for (const other of pets) {
+      if (other.id === pet.id) continue;
+      const overlapping =
+        Math.abs(other.x - pet.x) < pet.halfW + other.halfW &&
+        Math.abs(other.y - pet.y) < pet.halfH + other.halfH;
+      if (!overlapping) continue;
+      const distance = Math.hypot(other.x - pet.x, other.y - pet.y);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = other;
+      }
     }
+
+    if (!nearest) {
+      components.removeComponent(pet.id, "PetCollision");
+      continue;
+    }
+
+    const existing = components.getComponent(pet.id, "PetCollision");
+    components.setComponent(pet.id, {
+      type: "PetCollision",
+      otherEntityId: nearest.id,
+      otherPosition: { x: nearest.x, y: nearest.y },
+      startedAt:
+        existing?.otherEntityId === nearest.id ? existing.startedAt : now,
+      lastSeenAt: now,
+    });
   }
-}
-
-function syncPetCollision(
-  components: ComponentStore,
-  id: string,
-  otherId: string,
-  now: number,
-): void {
-  if (!components.getEntity(id) || !components.getEntity(otherId)) return;
-
-  const otherTransform = components.getComponent(otherId, "Transform");
-  if (!otherTransform) return;
-
-  const existing = components.getComponent(id, "PetCollision");
-  components.setComponent(id, {
-    type: "PetCollision",
-    otherEntityId: otherId,
-    otherPosition: { ...otherTransform.position },
-    startedAt: existing?.otherEntityId === otherId ? existing.startedAt : now,
-    lastSeenAt: now,
-  });
 }
 
 // ── System descriptors ─────────────────────────────────────────────────────
@@ -124,10 +139,10 @@ export const PhysicsTransformSyncSystemPre: SimulationSystem<WorldStepContext> =
 export const PetCollisionSyncSystem: SimulationSystem<WorldStepContext> = {
   name: "PetCollisionSyncSystem",
   dependsOn: ["PhysicsTransformSyncSystemPre"],
-  reads: ["PhysicsWorld"],
+  reads: ["Transform", "PhysicsBody", "PetIdentity"],
   writes: ["PetCollision"],
   update(ctx) {
-    runPetCollisionSyncSystem(ctx.components, ctx.physics, ctx.clock);
+    runPetCollisionSyncSystem(ctx.components, ctx.clock);
   },
 };
 
