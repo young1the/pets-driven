@@ -345,6 +345,7 @@ export function runSocialInteractionSystem(
 
   advanceSessions(components, now, bounds);
   resolveInvites(components, now, random);
+  convertBumpsToInvites(components, now, random);
   emitInvites(components, now, random, deltaMs);
 }
 
@@ -595,6 +596,143 @@ function createSession(
     // The session absorbs any startle that was still pending — a stale
     // PendingReaction must not fire a collision response after the party.
     components.removeComponent(id, "PendingReaction");
+  }
+}
+
+// ── Bump-to-greet (B4) ───────────────────────────────────────────────────────
+//
+// A collision between two socializable pets is a social event, not a hazard.
+// When a pet's collision deliberation (PendingReaction) matures, this pass
+// runs BEFORE BehaviorDecisionSystem gets to sample the reactive pool: a
+// personality-weighted roll may convert the bump into a SocialInvite instead.
+// The friendly turn also defuses the partner's own pending startle, so a
+// mutual bump produces one invite, not two crossing reactions. Shy pets
+// (high N, low A) roll near zero and keep their flee/avoid instincts.
+
+// Bump invites skew toward a greet — you say hi to someone you walked into —
+// with the remainder falling through to the personality-weighted pickKind.
+const BUMP_GREET_BIAS = 0.6;
+
+/** Personality/drive-weighted chance a matured bump turns into an invite. */
+function bumpInviteChance(
+  p: PersonalityComponent,
+  drives: DrivesComponent | undefined,
+): number {
+  return clamp(
+    0.2 +
+      p.extraversion * 0.35 +
+      p.agreeableness * 0.45 -
+      p.neuroticism * 0.6 +
+      socialDrive(drives) * 0.35,
+    0,
+    0.95,
+  );
+}
+
+/**
+ * Both halves of a bump must be free social agents for the conversion to be
+ * on the table. Exported for BehaviorDecisionSystem, which drops the
+ * collision-engage candidate for eligible pairs — the invite path supersedes
+ * it (engage remains the fallback toward non-socializable entities).
+ */
+export function isBumpSocialEligible(
+  components: ComponentStore,
+  id: string,
+  otherId: string,
+  now: number,
+): boolean {
+  for (const participant of [id, otherId]) {
+    if (!components.getComponent(participant, "CanSocialize")) return false;
+    if (!components.getComponent(participant, "Personality")) return false;
+    if (components.getComponent(participant, "SocialSessionMember")) {
+      return false;
+    }
+    if (components.getComponent(participant, "TaskMovementHold")) return false;
+    if (
+      components.getComponent(participant, "AgentTaskState")?.status ===
+      "working"
+    ) {
+      return false;
+    }
+    if (isBlockedByHigherPriority(components, participant, now)) return false;
+  }
+  return true;
+}
+
+function convertBumpsToInvites(
+  components: ComponentStore,
+  now: number,
+  random: RandomSource,
+): void {
+  type Bump = {
+    id: string;
+    otherId: string;
+    personality: PersonalityComponent;
+  };
+  const bumps: Bump[] = [];
+  components.forEach(
+    ["PendingReaction", "CanSocialize", "Personality"],
+    (id, [reaction, , personality]) => {
+      if (reaction.source !== "collision") return;
+      // Preserve the startle beat: the pet stays visibly frozen until its
+      // deliberation matures, then turns friendly (or reacts) in one motion.
+      if (now < reaction.reactsAt) return;
+      const otherId = reaction.context.otherEntityId;
+      if (!otherId) return;
+      if (components.getComponent(id, "SocialInvite")) return;
+      if (components.getComponent(otherId, "SocialInvite")) return;
+      if (!isBumpSocialEligible(components, id, otherId, now)) return;
+      bumps.push({ id, otherId, personality });
+    },
+  );
+  if (bumps.length === 0) return;
+
+  // Deterministic order; the first converter consumes both sides of the pair.
+  bumps.sort((l, r) => (l.id < r.id ? -1 : l.id > r.id ? 1 : 0));
+  const consumed = new Set<string>();
+
+  for (const bump of bumps) {
+    if (consumed.has(bump.id) || consumed.has(bump.otherId)) continue;
+    // A failed roll leaves the PendingReaction in place: the pet declined the
+    // friendly option, and BehaviorDecisionSystem consumes the reaction with
+    // the normal (engage-less) reactive pool later this same tick.
+    if (
+      random.next() >=
+      bumpInviteChance(bump.personality, components.getComponent(bump.id, "Drives"))
+    ) {
+      continue;
+    }
+
+    const otherPersonality = components.getComponent(
+      bump.otherId,
+      "Personality",
+    );
+    const kind: SocialSessionKind =
+      random.next() < BUMP_GREET_BIAS || !otherPersonality
+        ? "greet"
+        : pickKind(bump.personality, otherPersonality, random);
+
+    components.setComponent(bump.otherId, {
+      type: "SocialInvite",
+      fromId: bump.id,
+      kind,
+      createdAt: now,
+      expiresAt: now + INVITE_TTL_MS,
+    });
+    claimSocial(components, bump.id, now, "social-invite", now + INVITE_TTL_MS);
+    stop(components, bump.id);
+    setExpression(components, bump.id, "happy", "heart", now, 500);
+    components.removeComponent(bump.id, "PendingReaction");
+    // The friendly turn defuses the partner's own startle about this bump.
+    const otherReaction = components.getComponent(
+      bump.otherId,
+      "PendingReaction",
+    );
+    if (otherReaction?.context.otherEntityId === bump.id) {
+      components.removeComponent(bump.otherId, "PendingReaction");
+    }
+    consumed.add(bump.id);
+    consumed.add(bump.otherId);
   }
 }
 

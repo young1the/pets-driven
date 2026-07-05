@@ -370,3 +370,85 @@ describe("SocialInteractionSystem — collision no longer interrupts (B1)", () =
     expect(store.getComponent("pet-b", "PendingReaction")).toBeDefined();
   });
 });
+
+describe("SocialInteractionSystem — bump-to-greet (B4)", () => {
+  function seedBump(store: ComponentStore, id: string, otherId: string, otherX: number) {
+    store.setComponent(id, {
+      type: "PendingReaction",
+      source: "collision",
+      triggeredAt: 0,
+      reactsAt: 400,
+      context: { otherEntityId: otherId, otherPosition: { x: otherX, y: 500 } },
+    });
+  }
+
+  it("converts a matured mutual bump into a single greet invite", () => {
+    const store = makeStore(AGREEABLE, AGREEABLE, [100, 130]);
+    const clock = createManualClock(500); // past both reactsAt deadlines
+    seedBump(store, "pet-a", "pet-b", 130);
+    seedBump(store, "pet-b", "pet-a", 100);
+
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    // One invite (a → b), both startles defused, initiator holds the invite claim.
+    expect(store.getComponent("pet-b", "SocialInvite")).toMatchObject({
+      fromId: "pet-a",
+      kind: "greet",
+    });
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(store.getComponent("pet-b", "PendingReaction")).toBeUndefined();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toMatchObject({
+      source: "social",
+      reason: "social-invite",
+    });
+    expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
+      source: "social",
+      mood: "happy",
+    });
+
+    // Next tick the invite resolves into a session.
+    clock.advanceBy(16);
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+    expect(sessionCount(store)).toBe(1);
+  });
+
+  it("leaves the startle in place while deliberation has not matured", () => {
+    const store = makeStore(AGREEABLE, AGREEABLE, [100, 130]);
+    const clock = createManualClock(200); // before reactsAt
+    seedBump(store, "pet-a", "pet-b", 130);
+
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
+    expect(store.getComponent("pet-b", "SocialInvite")).toBeUndefined();
+  });
+
+  it("a shy pet never converts its bump and keeps the pending reaction", () => {
+    const store = makeStore(RESERVED, AGREEABLE, [100, 130]);
+    const clock = createManualClock(500);
+    seedBump(store, "pet-a", "pet-b", 130);
+
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    // RESERVED's bump-invite chance clamps to 0 — the reactive pool
+    // (flee/avoid) stays in charge via BehaviorDecisionSystem.
+    expect(store.getComponent("pet-b", "SocialInvite")).toBeUndefined();
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
+  });
+
+  it("does not convert a bump against a working pet", () => {
+    const store = makeStore(AGREEABLE, AGREEABLE, [100, 130]);
+    const clock = createManualClock(500);
+    seedBump(store, "pet-a", "pet-b", 130);
+    store.setComponent("pet-b", {
+      type: "AgentTaskState",
+      status: "working",
+      since: 0,
+    });
+
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    expect(store.getComponent("pet-b", "SocialInvite")).toBeUndefined();
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
+  });
+});

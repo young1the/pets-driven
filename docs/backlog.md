@@ -119,7 +119,7 @@ the dual-fixture dismount impulse to -0.06 so a top dismount genuinely
 glides across the open seam (y 0..960), and by re-scripting the climb in the
 test with retries instead of waiting on 20s of emergent chaos.
 
-## B4. Bump-to-greet: collision as a social on-ramp
+## B4. Bump-to-greet: collision as a social on-ramp — DONE (2026-07-05)
 
 **Problem** — A friendly bump between two idle, socializable pets currently
 routes into the flee/avoid/engage pool; `collision-engage` walks the pets near
@@ -149,6 +149,21 @@ each other and stops — a dead end instead of an interaction.
   `collision-engage` is removed).
 
 Size: L. Depends on: B1, B2, B3.
+
+**Outcome** — Implemented as a `convertBumpsToInvites` pass inside
+`SocialInteractionSystem` (which owns invites), running between invite
+resolution and emission. It fires exactly when a collision deliberation
+matures (`now >= reactsAt`, preserving the visible startle beat): a
+personality/drive-weighted roll (`bumpInviteChance`, clamps to 0 for
+high-N/low-A pets) converts the bump into a SocialInvite — 60% biased to
+greet, else `pickKind` — and defuses the partner's own pending startle so a
+mutual bump yields one invite, not two crossing reactions. A failed roll
+leaves the PendingReaction for BehaviorDecisionSystem, which now drops the
+`collision-engage` candidate for bump-eligible pairs (`isBumpSocialEligible`
+is shared) — engage remains only as the fallback toward non-socializable
+entities, so the kind, its presentation, and i18n entries all stay.
+Declined/failed bumps cannot re-invite immediately thanks to B3's pair
+cooldown.
 
 ## B5. Chase catch moment (polish)
 

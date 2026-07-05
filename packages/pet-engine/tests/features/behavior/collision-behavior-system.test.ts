@@ -1737,3 +1737,76 @@ describe("per-pair collision reaction cooldown (B3)", () => {
     ).toBe("pet-c");
   });
 });
+
+describe("bump-to-greet supersedes collision-engage (B4)", () => {
+  function makeReactingPet(withSocial: boolean) {
+    const social = withSocial ? [{ type: "CanSocialize" as const }] : [];
+    return createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform" as const, position: { x: 100, y: 500 } },
+          { type: "IntentState" as const, intent: "idle" as const },
+          {
+            type: "MotionTarget" as const,
+            targetEntityId: null,
+            targetPosition: null,
+          },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.8,
+            agreeableness: 0.9,
+            neuroticism: 0.1,
+          },
+          ...social,
+          {
+            type: "PendingReaction" as const,
+            source: "collision" as const,
+            triggeredAt: 0,
+            reactsAt: 400,
+            context: {
+              otherEntityId: "pet-b",
+              otherPosition: { x: 110, y: 500 },
+            },
+          },
+        ],
+      },
+      {
+        id: "pet-b",
+        components: [
+          { type: "Transform" as const, position: { x: 110, y: 500 } },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.8,
+            agreeableness: 0.9,
+            neuroticism: 0.1,
+          },
+          ...social,
+        ],
+      },
+    ]);
+  }
+
+  it("drops collision-engage from the reactive pool for a socializable pair", () => {
+    const store = makeReactingPet(true);
+
+    runBehaviorDecisionSystem(store, createManualClock(500), createSeededRandom(1), BOUNDS);
+
+    const trace = store.getComponent("pet-a", "BehaviorDecisionToken")?.selectionTrace;
+    expect(trace).toBeDefined();
+    expect(trace?.candidates.map((c) => c.kind)).not.toContain("collision-engage");
+  });
+
+  it("keeps collision-engage toward non-socializable entities", () => {
+    const store = makeReactingPet(false);
+
+    runBehaviorDecisionSystem(store, createManualClock(500), createSeededRandom(1), BOUNDS);
+
+    const trace = store.getComponent("pet-a", "BehaviorDecisionToken")?.selectionTrace;
+    expect(trace?.candidates.map((c) => c.kind)).toContain("collision-engage");
+  });
+});

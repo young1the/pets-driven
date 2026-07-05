@@ -17,6 +17,7 @@ import {
   clampDrive,
   driveResponseCurve,
 } from "@pets-driven/pet-engine/features/drives/systems";
+import { isBumpSocialEligible } from "@pets-driven/pet-engine/features/social/systems";
 import {
   ARRIVAL_DWELL_REASON,
   BEHAVIOR_PRIORITY,
@@ -1722,17 +1723,30 @@ export function runBehaviorDecisionSystem(
             COLLISION_TARGET_MARGIN,
           ),
         };
+        // B4: for a socializable pair the bump-to-greet conversion (in
+        // SocialInteractionSystem, earlier this tick) supersedes the engage
+        // reaction — reaching this point means the pet rolled against
+        // inviting, so "walk close and stop" would be a mixed signal. Engage
+        // stays available toward non-socializable entities.
+        const bumpOtherId = pendingReaction.context.otherEntityId;
+        const bumpSupersedesEngage =
+          !!bumpOtherId &&
+          isBumpSocialEligible(components, id, bumpOtherId, now);
         const reactiveCandidates: Candidate[] = [
           {
             kind: "collision-flee",
             score: scoreCollisionFlee(personality),
             build: () => ({ targetPosition: fleeTarget }),
           },
-          {
-            kind: "collision-engage",
-            score: scoreCollisionEngage(personality),
-            build: () => ({ targetPosition: engageTarget }),
-          },
+          ...(bumpSupersedesEngage
+            ? []
+            : [
+                {
+                  kind: "collision-engage" as const,
+                  score: scoreCollisionEngage(personality),
+                  build: () => ({ targetPosition: engageTarget }),
+                },
+              ]),
           {
             kind: "collision-avoid",
             score: scoreCollisionAvoid(),
@@ -2453,12 +2467,17 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "Perception",
     "PendingReaction",
     "FlyingTag",
+    "WalkingTag",
     "CanJump",
     "JumpActionState",
     "ContactState",
     "CanWallClimb",
     "ClimbDismountState",
     "Drives",
+    "TaskMovementHold",
+    // B4: bump-to-greet eligibility (drops collision-engage for social pairs).
+    "CanSocialize",
+    "SocialSessionMember",
   ],
   writes: ["BehaviorDecisionToken", "BehaviorDecisionState", "PendingReaction"],
   update(ctx) {
