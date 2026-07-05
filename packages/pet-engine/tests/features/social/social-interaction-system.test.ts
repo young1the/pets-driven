@@ -317,3 +317,56 @@ describe("SocialInteractionSystem — interruption", () => {
     expect(store.getComponent("pet-b", "SocialSessionMember")).toBeUndefined();
   });
 });
+
+describe("SocialInteractionSystem — collision no longer interrupts (B1)", () => {
+  it("keeps a session alive when a collision claim lands on a participant", () => {
+    const store = makeStore(AGREEABLE, AGREEABLE, [100, 160]);
+    const clock = createManualClock(0);
+    seedSession(store, "chat", 0);
+    clock.advanceBy(100);
+    store.setComponent("pet-a", {
+      type: "BehaviorDecisionState",
+      source: "collision",
+      decidedAt: 100,
+      expiresAt: 1_100,
+      reason: "entity overlap",
+      lastAutonomousReason: null,
+      lastAutonomousAt: null,
+    });
+
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    expect(sessionCount(store)).toBe(1);
+    expect(store.getComponent("pet-a", "SocialSessionMember")).toBeDefined();
+    // The session re-claims the pet, replacing the collision claim.
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
+      "social",
+    );
+  });
+
+  it("drops an invite while the target is frozen in collision deliberation", () => {
+    const store = makeStore();
+    const clock = createManualClock(0);
+    store.setComponent("pet-b", {
+      type: "SocialInvite",
+      fromId: "pet-a",
+      kind: "greet",
+      createdAt: 0,
+      expiresAt: 1_200,
+    });
+    store.setComponent("pet-b", {
+      type: "PendingReaction",
+      source: "collision",
+      triggeredAt: 0,
+      reactsAt: 400,
+      context: {},
+    });
+
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    expect(sessionCount(store)).toBe(0);
+    expect(store.getComponent("pet-b", "SocialInvite")).toBeUndefined();
+    // The pending startle is untouched — the pet still gets to react.
+    expect(store.getComponent("pet-b", "PendingReaction")).toBeDefined();
+  });
+});

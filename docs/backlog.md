@@ -16,7 +16,7 @@ feature payoff. Each item should land with its own tests and keep
 
 ---
 
-## B1. Swap priority: social outranks collision
+## B1. Swap priority: social outranks collision — DONE (2026-07-05)
 
 **Problem** — A live `SocialSession` is torn down by the physical contact it
 naturally produces (greet gap ≈ 2 body widths, chase = guaranteed overlap).
@@ -41,6 +41,16 @@ path that must keep functioning when the working pet is *also* in a session
 teardown path must not regress).
 
 Size: S. Depends on: nothing.
+
+**Outcome** — Landed with one addition beyond the plan: collision no longer
+outranking social opened a window where a pet frozen in collision
+deliberation (`PendingReaction`) could send/accept invites while mid-startle,
+leaving a stale reaction to fire after the session. Guarded in
+`SocialInteractionSystem` (invite emission, invite resolution) and
+`createSession` now clears any lingering `PendingReaction` on both members.
+Note: while a social claim is live the pet ignores *all* collisions (not just
+partner ones) via the priority guard — B2 narrows the remaining gaps
+(escape-force damping, expiry fiddling) rather than introducing immunity.
 
 ## B2. Session-partner collision immunity
 

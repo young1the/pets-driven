@@ -1601,3 +1601,35 @@ describe("Phase 4 — reactive outcomes are reachable", () => {
     expect(found).toBe(true);
   });
 });
+
+describe("collision vs social priority (B1: social outranks collision)", () => {
+  it("skips collision reactions for a pet holding a live social claim", () => {
+    const clock = createManualClock(1000);
+    const store = createComponentStore([
+      makePet("pet-a", 100, "idle"),
+      makePet("pet-b", 110, "idle"),
+    ]);
+    store.setComponent("pet-a", {
+      type: "BehaviorDecisionState",
+      source: "social",
+      decidedAt: 900,
+      expiresAt: 1_250,
+      reason: "session-chat",
+      lastAutonomousReason: null,
+      lastAutonomousAt: null,
+    });
+
+    runCollisionBehaviorSystem(store, BOUNDS, clock);
+
+    // The session member shrugs the bump off entirely...
+    expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
+      "social",
+    );
+    // ...while the unclaimed other pet still reacts normally.
+    expect(store.getComponent("pet-b", "PendingReaction")).toBeDefined();
+    expect(store.getComponent("pet-b", "BehaviorDecisionState")?.source).toBe(
+      "collision",
+    );
+  });
+});

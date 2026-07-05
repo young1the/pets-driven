@@ -128,10 +128,16 @@ export const ARRIVAL_DWELL_REASON = "arrival-dwell";
 export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   "user-interaction": 1,
   "agent-event": 2,
-  collision: 3,
-  // A committed pet-to-pet session outranks solo autonomous wandering, but a
-  // collision, an agent event, or a user touch still interrupts it.
-  social: 4,
+  // A committed pet-to-pet session outranks collision reactions: sessions
+  // produce contact by design (greet gaps close in, chases catch), so the
+  // contact they cause must not tear them down — this reverses the original
+  // ordering where any overlap killed a running session. While a social
+  // claim is live the collision guards also skip the pet entirely, so
+  // session members shrug off bumps; physical separation stays with the
+  // claim-independent CollisionEscapeSystem. User touches and agent events
+  // still interrupt sessions.
+  social: 3,
+  collision: 4,
   autonomous: 5,
 };
 

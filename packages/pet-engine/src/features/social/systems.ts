@@ -520,11 +520,16 @@ function resolveInvites(
     if (!invite) continue;
     const fromId = invite.fromId;
 
+    // A pet frozen in collision deliberation (PendingReaction) is not ready:
+    // collision no longer outranks social, so without this check a session
+    // could form mid-freeze and leave the stale reaction to fire much later.
     const initiatorReady =
       !components.getComponent(fromId, "SocialSessionMember") &&
+      !components.getComponent(fromId, "PendingReaction") &&
       !isBlockedByHigherPriority(components, fromId, now);
     const targetReady =
       !components.getComponent(targetId, "SocialSessionMember") &&
+      !components.getComponent(targetId, "PendingReaction") &&
       !isBlockedByHigherPriority(components, targetId, now);
 
     if (now >= invite.expiresAt || !initiatorReady || !targetReady) {
@@ -585,8 +590,12 @@ function createSession(
     role: "responder",
   });
   const ttl = now + SOCIAL_CLAIM_TTL_MS;
-  claimSocial(components, initiatorId, now, `session-${kind}`, ttl);
-  claimSocial(components, responderId, now, `session-${kind}`, ttl);
+  for (const id of [initiatorId, responderId]) {
+    claimSocial(components, id, now, `session-${kind}`, ttl);
+    // The session absorbs any startle that was still pending — a stale
+    // PendingReaction must not fire a collision response after the party.
+    components.removeComponent(id, "PendingReaction");
+  }
 }
 
 // Pass 3 — idle, eligible pets may open an invite to a nearby idle partner.
@@ -611,6 +620,9 @@ function emitInvites(
       if (!contact.grounded) return;
       if (components.getComponent(id, "SocialSessionMember")) return;
       if (components.getComponent(id, "SocialInvite")) return;
+      // Mid-collision-deliberation pets look idle (frozen, target cleared)
+      // but must finish reacting before they can strike up a conversation.
+      if (components.getComponent(id, "PendingReaction")) return;
       if (isBlockedByHigherPriority(components, id, now)) return;
       // Skip pets already holding a live social claim: one that just finished a
       // session (its "socialized" afterglow) or is awaiting its own pending
@@ -695,6 +707,7 @@ export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
     "SocialInvite",
     "SocialSession",
     "SocialSessionMember",
+    "PendingReaction",
   ],
   writes: [
     "SocialInvite",
@@ -706,6 +719,7 @@ export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
     "PetExpressionState",
     "SpeechState",
     "Drives",
+    "PendingReaction",
   ],
   update(ctx) {
     runSocialInteractionSystem(
