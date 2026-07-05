@@ -234,6 +234,28 @@ for high-E pets (energy drain should self-limit; verify).
 Size: S (observation) + follow-up tweaks. Depends on: B1–B4 ideally landed
 first so one pass covers everything.
 
+## B11. Blocked-path yield: stop cluster trembling — DONE (2026-07-05)
+
+**Problem** — Fallout of B3, observed on desktop: clustered pets tremble.
+With per-pair reactions suppressed for 6s, a walker whose target lies behind
+another pet keeps pressing into it — walk force vs collision-escape force
+fighting every tick (visible vibration) while slowly bulldozing the idle
+neighbor across the floor.
+
+**Change** — New `CollisionYieldSystem` (BEHAVIOR, after
+CollisionBehaviorSystem): a grounded walker pressing against a pet that sits
+between it and its target for ≥900ms gives the target up and takes an
+arrival dwell — a blocked path is an arrival. Detection is geometric
+(`BlockedPathState` accumulates body-abutment time in the walk direction):
+PetCollision age is useless (pressing bodies separate/retouch every few
+frames, resetting `startedAt`) and distance progress still trickles in while
+bulldozing. Live claims (session chase, romp, deliberation, user hold) are
+left alone.
+
+**Outcome** — Headless repro: bulldozed displacement 17px → 4px, in-contact
+travel 30px → 9px; the walker now yields ~0.9s after contact and wanders
+elsewhere after its dwell.
+
 ## B9. Surface the session partner in the UI
 
 **Problem** — The engine already exposes per-pet session state in the

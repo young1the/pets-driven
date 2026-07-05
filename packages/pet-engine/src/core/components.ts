@@ -31,6 +31,7 @@ export type {
   PetExpressionStateComponent,
   RompStateComponent,
   CollisionMemoryComponent,
+  BlockedPathStateComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
 
 export type {
@@ -123,6 +124,7 @@ import type {
   PetExpressionStateComponent,
   RompStateComponent,
   CollisionMemoryComponent,
+  BlockedPathStateComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
 import type {
   AgentBindingComponent,
@@ -196,6 +198,7 @@ export type Component =
   | PersonalityComponent
   | AirborneTagComponent
   | BehaviorDecisionStateComponent
+  | BlockedPathStateComponent
   | CanFlyComponent
   | CanJumpComponent
   | CanWalkComponent

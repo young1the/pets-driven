@@ -864,6 +864,116 @@ export function runCollisionBehaviorSystem(
   }
 }
 
+// ── CollisionYieldSystem ───────────────────────────────────────────────────
+//
+// A walker whose path is blocked by another pet must not grind through it.
+// The per-pair reaction cooldown means CollisionBehaviorSystem may ignore a
+// lingering contact for seconds; without this system the walk force and the
+// collision-escape force fight every tick — the pair visibly trembles and
+// the walker slowly bulldozes its idle neighbor across the floor. The
+// "blocked" signal is measured geometrically (a pet body abutting mine in
+// the walk direction, between me and my target) because both alternatives
+// fail: PetCollision blinks as pressing bodies separate and retouch, and
+// distance progress still trickles in while bulldozing. Once the blockage
+// has persisted BLOCKED_PATH_YIELD_MS, the pet treats the blocked path as
+// an arrival — stop, catch a breath (arrival dwell), decide something else.
+
+const BLOCKED_PATH_YIELD_MS = 900;
+const BLOCKED_TARGET_EPS_PX = 1;
+/** Edge-to-edge gap under which two bodies count as pressing. */
+const BLOCKED_CONTACT_GAP_PX = 4;
+
+export function runCollisionYieldSystem(
+  components: ComponentStore,
+  clock: Clock,
+  deltaMs: number,
+  random?: RandomSource,
+): void {
+  const now = clock.now();
+
+  type Body = { id: string; x: number; y: number; halfW: number; halfH: number };
+  const bodies: Body[] = [];
+  components.forEach(
+    ["Transform", "PhysicsBody", "PetIdentity"],
+    (id, [transform, body]) => {
+      bodies.push({
+        id,
+        x: transform.position.x,
+        y: transform.position.y,
+        halfW: body.width / 2,
+        halfH: body.height / 2,
+      });
+    },
+  );
+
+  components.forEach(
+    ["MotionTarget", "IntentState", "Transform", "PhysicsBody"],
+    (id, [motion, intent, transform, body]) => {
+      const target = motion.targetPosition;
+      const isBlockableWalk =
+        target !== null &&
+        intent.intent !== "idle" &&
+        !!components.getComponent(id, "WalkingTag") &&
+        !components.getComponent(id, "FlyingTag") &&
+        !components.getComponent(id, "ClimbingTag") &&
+        // ClimbApproachSystem re-derives its target every tick and would
+        // fight the yield; a blocked climb approach resolves via reactions.
+        components.getComponent(id, "ClimbIntentState")?.phase !==
+          "approaching";
+
+      if (!isBlockableWalk) {
+        components.removeComponent(id, "BlockedPathState");
+        return;
+      }
+
+      const targetDx = target.x - transform.position.x;
+      const blocked = bodies.some((other) => {
+        if (other.id === id) return false;
+        const dx = other.x - transform.position.x;
+        // In the walk direction, closer than the target, vertically level,
+        // and pressing (edge gap below threshold).
+        if (Math.sign(dx) !== Math.sign(targetDx)) return false;
+        if (Math.abs(dx) >= Math.abs(targetDx)) return false;
+        if (Math.abs(other.y - transform.position.y) > other.halfH + body.height / 2) {
+          return false;
+        }
+        const edgeGap = Math.abs(dx) - (other.halfW + body.width / 2);
+        return edgeGap <= BLOCKED_CONTACT_GAP_PX;
+      });
+
+      const state = components.getComponent(id, "BlockedPathState");
+      const targetChanged =
+        !state || Math.abs(state.targetX - target.x) > BLOCKED_TARGET_EPS_PX;
+
+      if (!blocked || targetChanged) {
+        if (blocked) {
+          components.setComponent(id, {
+            type: "BlockedPathState",
+            targetX: target.x,
+            blockedMs: 0,
+          });
+        } else {
+          components.removeComponent(id, "BlockedPathState");
+        }
+        return;
+      }
+
+      state.blockedMs += deltaMs;
+      if (state.blockedMs < BLOCKED_PATH_YIELD_MS) return;
+      // A live claim owns this movement (session chase, romp, deliberation
+      // freeze, user hold) — leave it alone.
+      if (isClaimedBySameOrHigherPriority(components, id, "autonomous", now)) {
+        return;
+      }
+
+      components.removeComponent(id, "BlockedPathState");
+      clearMotionTarget(components, id);
+      intent.intent = "idle";
+      applyArrivalDwell(components, id, now, random);
+    },
+  );
+}
+
 // ── Phase 4: Reaction latency ─────────────────────────────────────────────
 //
 // High N (anxiety) → longer freeze before reacting.
@@ -2432,6 +2542,34 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
   ],
   update(ctx) {
     runCollisionBehaviorSystem(ctx.components, ctx.bounds, ctx.clock);
+  },
+};
+
+export const CollisionYieldSystem: SimulationSystem<WorldStepContext> = {
+  name: "CollisionYieldSystem",
+  dependsOn: ["CollisionBehaviorSystem"],
+  reads: [
+    "MotionTarget",
+    "IntentState",
+    "Transform",
+    "PhysicsBody",
+    "PetIdentity",
+    "WalkingTag",
+    "FlyingTag",
+    "ClimbingTag",
+    "ClimbIntentState",
+    "BehaviorDecisionState",
+    "Personality",
+    "BlockedPathState",
+  ],
+  writes: [
+    "MotionTarget",
+    "IntentState",
+    "BehaviorDecisionState",
+    "BlockedPathState",
+  ],
+  update(ctx) {
+    runCollisionYieldSystem(ctx.components, ctx.clock, ctx.deltaMs, ctx.random);
   },
 };
 

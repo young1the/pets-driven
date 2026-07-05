@@ -24,6 +24,7 @@ import {
   AgentTaskEventSystem,
   TaskMovementHoldSystem,
   CollisionBehaviorSystem,
+  CollisionYieldSystem,
   WorkingBehaviorSystem,
   BehaviorDecisionSystem,
   AutonomousBehaviorSystem,
@@ -80,6 +81,7 @@ export const SYSTEM_PHASES: Record<
     PetExpressionExpirationSystem,
     AgentTaskEventSystem, // priority 2: external agent events → task state
     CollisionBehaviorSystem, // priority 3: entity overlap avoidance
+    CollisionYieldSystem, // blocked walkers give up grinding through neighbors
     WorkingBehaviorSystem, // priority 4a: working-state focus or wandering
     SocialInteractionSystem, // priority 4 (social): pet-to-pet greet/chat/chase sessions
     BehaviorDecisionSystem, // priority 5 (autonomous): personality-weighted next behavior (emits token)

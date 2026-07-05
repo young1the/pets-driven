@@ -230,6 +230,7 @@ describe("demo scenario", () => {
       "PetExpressionExpirationSystem",
       "AgentTaskEventSystem",
       "CollisionBehaviorSystem",
+      "CollisionYieldSystem",
       "WorkingBehaviorSystem",
       "SocialInteractionSystem",
       "BehaviorDecisionSystem",
