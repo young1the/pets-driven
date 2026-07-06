@@ -20,6 +20,7 @@ export type PetActivityKind =
   | "caughtCursor"
   | "beingPetted"
   | "chatting"
+  | "playing"
   | "onTheMove";
 
 /**
@@ -47,6 +48,14 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "collision-jump": "hopping",
   "play-romp": "hopping",
   "idle conversation": "chatting",
+  // Social sessions (SocialInteractionSystem claims reason `session-${kind}`).
+  // These read as the Activity axis even while the pets stand still mid-chat,
+  // because the session re-claims every tick so the claim stays unexpired.
+  "session-greet": "makingFriends",
+  "session-chat": "chatting",
+  "session-chase": "playing",
+  "social-invite": "makingFriends",
+  socialized: "foundAFriend",
 };
 
 /**

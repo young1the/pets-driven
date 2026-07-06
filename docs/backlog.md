@@ -181,7 +181,7 @@ lingering overlap doesn't machine-gun the cue).
 
 Size: S. Depends on: B1, B2.
 
-## B6. Social chat surfaces as the "chatting" activity
+## B6. Social chat surfaces as the "chatting" activity — DONE (2026-07-06)
 
 **Problem** — The status capsule's "chatting" activity is only produced by the
 agent idle-companion speech (`"idle conversation"` reason). A pet in a 16s
@@ -205,7 +205,18 @@ maps to its own (renamed) activity.
 Size: S–M (M if the rename is included). Depends on: coordination with the
 uncommitted pet-status changes on this branch.
 
-## B7. Idle-conversation claim is shorter than its own speech bubble
+**Outcome** — `DECISION_ACTIVITY` maps `session-greet`→makingFriends,
+`session-chat`→chatting, `session-chase`→ a new `playing` activity kind,
+plus `social-invite`→makingFriends and `socialized`→foundAFriend for the
+afterglow. These resolve even while pets stand still mid-chat because the
+session re-claims every tick (claim stays unexpired). Added the `playing`
+kind across its exhaustive surfaces (pet-status-presentation label +
+presentation, desktop pet-card label, ko/en `petStatus` i18n). The
+idle-companion `checkingIn` rename was *not* taken — with B7 the idle
+companion and social chat no longer visibly collide, so the shared
+"chatting" label is acceptable; left as a future nicety.
+
+## B7. Idle-conversation claim is shorter than its own speech bubble — DONE (2026-07-06)
 
 **Problem** — `"idle conversation"` claims the default autonomous 500ms while
 its bubble lives 1.5s; the "chatting" capsule state flickers.
@@ -218,6 +229,12 @@ bubble + a small tail) via the custom-expiry `claim` parameter in
 visible (unit test with a manual clock).
 
 Size: XS. Depends on: nothing.
+
+**Outcome** — `runAutonomousBehaviorSystem` now claims the idle-companion
+beat for `SPEECH_BUBBLE_DURATION_MS` (1.5s) instead of the 500ms autonomous
+default, so the "chatting" activity no longer flickers off a second before
+its bubble. (The claim is still a `BOOKKEEPING_AUTONOMOUS_REASON`, so the
+longer hold does not clobber repeat-cooldown history or eat arrival dwells.)
 
 ## B8. Desktop tuning pass for the new constants
 

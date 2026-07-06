@@ -43,6 +43,7 @@ const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
   caughtCursor: "Caught it!",
   beingPetted: "Being petted",
   chatting: "Chatting",
+  playing: "Playing",
   onTheMove: "On the move",
 };
 

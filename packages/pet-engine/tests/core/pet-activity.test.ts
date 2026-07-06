@@ -150,4 +150,30 @@ describe("derivePetActivity", () => {
       derivePetActivity(storeWith([intent("seek")]), "pet", 100),
     ).toBe("headingOver");
   });
+
+  it("reads a standing chat session as chatting (idle but unexpired claim)", () => {
+    // Chat play phase stops the pets (idle) but the session re-claims each
+    // tick, so the social claim stays unexpired and owns the Activity.
+    const store = storeWith([
+      intent("idle"),
+      { type: "BehaviorDecisionState", source: "social", decidedAt: 0, expiresAt: 250, reason: "session-chat", lastAutonomousReason: null, lastAutonomousAt: null },
+    ]);
+    expect(derivePetActivity(store, "pet", 100)).toBe("chatting");
+  });
+
+  it("maps the social session kinds and afterglow to their activities", () => {
+    const cases: Array<[string, string]> = [
+      ["session-greet", "makingFriends"],
+      ["session-chase", "playing"],
+      ["social-invite", "makingFriends"],
+      ["socialized", "foundAFriend"],
+    ];
+    for (const [reason, expected] of cases) {
+      const store = storeWith([
+        intent("idle"),
+        { type: "BehaviorDecisionState", source: "social", decidedAt: 0, expiresAt: 1_000, reason, lastAutonomousReason: null, lastAutonomousAt: null },
+      ]);
+      expect(derivePetActivity(store, "pet", 200)).toBe(expected);
+    }
+  });
 });

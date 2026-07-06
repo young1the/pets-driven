@@ -117,6 +117,7 @@ const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   caughtCursor: "Caught it!",
   beingPetted: "Being petted",
   chatting: "Chatting",
+  playing: "Playing",
   onTheMove: "On the move",
 };
 
@@ -142,6 +143,7 @@ const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   caughtCursor: activityEntry("caughtCursor", "excited", "sparkle"),
   beingPetted: activityEntry("beingPetted", "love", "heart"),
   chatting: activityEntry("chatting", "happy", "none"),
+  playing: activityEntry("playing", "excited", "sparkle"),
   onTheMove: activityEntry("onTheMove", "working", "none"),
 };
 

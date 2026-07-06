@@ -1101,7 +1101,17 @@ export function runAutonomousBehaviorSystem(
       if (speech.speech) return;
       if (clock.now() - activity.lastActiveAt >= idleConversation.idleAfterMs) {
         setSpeech(speech, speechProfile.idleCompanion, now);
-        claim(components, id, "autonomous", now, IDLE_CONVERSATION_REASON);
+        // Hold the claim for the bubble's whole lifetime, not the 500ms
+        // autonomous default: otherwise the "chatting" activity flickers off
+        // a second before the speech bubble it describes disappears.
+        claim(
+          components,
+          id,
+          "autonomous",
+          now,
+          IDLE_CONVERSATION_REASON,
+          now + SPEECH_BUBBLE_DURATION_MS,
+        );
       }
     },
   );
