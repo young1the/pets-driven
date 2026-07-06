@@ -9,24 +9,70 @@ import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity"
  */
 export type PetBehaviorLabelKey = PetActivityKind;
 
+/**
+ * Partner-aware variants of the social activity labels: when the pet is in a
+ * live session, the chip names its partner ("Chatting with Otto").
+ */
+export type PetCardSocialLabelKey =
+  | "chattingWith"
+  | "playingWith"
+  | "makingFriendsWith";
+
 /** Stable key for a card status label, so the UI can localize it. */
 export type PetCardStatusLabelKey =
   | "idle"
   | "working"
   | "needsYou"
   | "done"
-  | PetBehaviorLabelKey;
+  | PetBehaviorLabelKey
+  | PetCardSocialLabelKey;
 
 /**
  * Status pill shown on a pet card: a label, a Badge tone, and a dot color.
  * `label` is the English source; `labelKey` lets the render layer translate it.
+ * `labelParams` carries interpolation values (the partner name) for the
+ * partner-aware social labels.
  */
 export type PetCardStatus = {
   label: string;
   labelKey: PetCardStatusLabelKey;
+  labelParams?: { name: string };
   tone: BadgeTone;
   dotColor: string;
 };
+
+/** Which social activities get a partner-aware "…with <name>" label. */
+const SOCIAL_WITH_LABEL: Partial<
+  Record<PetBehaviorLabelKey, { key: PetCardSocialLabelKey; label: string }>
+> = {
+  chatting: { key: "chattingWith", label: "Chatting with" },
+  playing: { key: "playingWith", label: "Playing with" },
+  makingFriends: { key: "makingFriendsWith", label: "Making friends with" },
+};
+
+/**
+ * The behavior label for a pet, partner-aware when it is in a live social
+ * session. Returns null when the pet has no notable autonomous activity.
+ */
+function behaviorLabel(snapshot: PetSnapshot): {
+  label: string;
+  labelKey: PetCardStatusLabelKey;
+  labelParams?: { name: string };
+} | null {
+  const behaviorKey = snapshot.activity ?? null;
+  if (!behaviorKey) return null;
+
+  const partnerName = snapshot.social?.partnerName ?? null;
+  const withVariant = SOCIAL_WITH_LABEL[behaviorKey];
+  if (partnerName && withVariant) {
+    return {
+      label: `${withVariant.label} ${partnerName}`,
+      labelKey: withVariant.key,
+      labelParams: { name: partnerName },
+    };
+  }
+  return { label: BEHAVIOR_LABEL[behaviorKey], labelKey: behaviorKey };
+}
 
 /** English source strings for the autonomous-behavior labels. */
 const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
@@ -115,18 +161,20 @@ export function petStatusFromSnapshot(
   // Working / idle: surface the pet's autonomous behavior so the card feels
   // alive. Falls back to the plain work label when nothing notable is
   // happening, preserving the base "Working" / "Idle" contract.
-  const behaviorKey = snapshot.activity ?? null;
+  const behavior = behaviorLabel(snapshot);
   if (status === "working") {
     return {
-      label: behaviorKey ? BEHAVIOR_LABEL[behaviorKey] : WORKING.label,
-      labelKey: behaviorKey ?? "working",
+      label: behavior?.label ?? WORKING.label,
+      labelKey: behavior?.labelKey ?? "working",
+      labelParams: behavior?.labelParams,
       tone: "info",
       dotColor: "var(--sky-300)",
     };
   }
   return {
-    label: behaviorKey ? BEHAVIOR_LABEL[behaviorKey] : IDLE.label,
-    labelKey: behaviorKey ?? "idle",
+    label: behavior?.label ?? IDLE.label,
+    labelKey: behavior?.labelKey ?? "idle",
+    labelParams: behavior?.labelParams,
     tone: "neutral",
     dotColor: "var(--ink-300)",
   };

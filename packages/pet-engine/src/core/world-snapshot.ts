@@ -9,6 +9,20 @@ import type {
   AgentChannelStatus,
 } from "@pets-driven/pet-engine/features/agent/components";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import type {
+  SocialSessionKind,
+  SocialSessionPhase,
+} from "@pets-driven/pet-engine/features/social/components";
+
+/** The live social session a pet is part of, if any (for UI display). */
+export type SocialSnapshot = {
+  kind: SocialSessionKind;
+  phase: SocialSessionPhase;
+  role: "initiator" | "responder";
+  partnerId: string;
+  /** The partner pet's display name, resolved engine-side. Null if unknown. */
+  partnerName: string | null;
+};
 
 export type PetExpressionSnapshot = {
   source: PetExpressionSource;
@@ -82,6 +96,8 @@ export type PetSnapshot = {
   expression?: PetExpressionSnapshot | null;
   /** Presentation state derived from current user interaction, if any. */
   interaction?: InteractionSnapshot;
+  /** The live social session this pet is in, or null when it is on its own. */
+  social?: SocialSnapshot | null;
 };
 
 export type InteractionSnapshot = {

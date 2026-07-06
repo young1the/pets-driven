@@ -332,7 +332,7 @@ pets boxed against a wall, and honors a 4s repeat cooldown. Stress probe
 visible-flip metric stays at turn-around noise (44/60s). CONTEXT.md's
 physical-collision language updated to match.
 
-## B9. Surface the session partner in the UI
+## B9. Surface the session partner in the UI — DONE (2026-07-06)
 
 **Problem** — The engine already exposes per-pet session state in the
 snapshot (`pets[].social = { kind, phase, role, partnerId }`, built by
@@ -356,6 +356,23 @@ but never *which* friend.
 - No raw i18n keys leak in either locale.
 
 Size: XS–S. Depends on: B6 (same surface; soft dependency).
+
+**Outcome** — `SocialSnapshot` (now a typed field on `PetSnapshot`, was
+runtime-only) carries `partnerName`, resolved engine-side in
+`getSocialSnapshot`. The management-surface pet card (`petStatusFromSnapshot`)
+picks a partner-aware label for the live social activities — chatting →
+`chattingWith`, playing → `playingWith`, making-friends → `makingFriendsWith` —
+carrying `labelParams: { name }` that the card localizer interpolates
+(`petStatus.*With` = "… with {{name}}", ko/en). Non-social activities and
+sessions with an unknown partner fall back to the plain label; the afterglow
+(`socialized` → found-a-friend) and pending `social-invite` stay generic
+because they have no live SocialSessionMember.
+
+**Scoped out (follow-up B9a)** — the floating **pet-window capsule**
+(`presentPetStatus`) still shows the bare "Chatting"/"Playing" label. Adding
+the partner name there means threading `social` across the pet-window IPC
+boundary (`PetWindowFrameSprite`) and widening `presentPetStatus`'s
+signature — larger than this XS–S slice, deferred.
 
 ## B10. Group sessions (3+ participants)
 

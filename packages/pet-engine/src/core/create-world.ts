@@ -203,6 +203,9 @@ export function createWorld(input: WorldDefinition) {
       phase: session.phase,
       role: member.role,
       partnerId: member.partnerId,
+      partnerName:
+        componentStore.getComponent(member.partnerId, "PetIdentity")?.name ??
+        null,
     };
   }
 

@@ -203,6 +203,9 @@
     "beingPetted": "Being petted",
     "chatting": "Chatting",
     "playing": "Playing",
+    "chattingWith": "Chatting with {{name}}",
+    "playingWith": "Playing with {{name}}",
+    "makingFriendsWith": "Making friends with {{name}}",
     "onTheMove": "On the move"
   },
   "toast": {

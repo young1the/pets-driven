@@ -199,6 +199,9 @@
     "beingPetted": "쓰다듬 받는 중",
     "chatting": "수다 중",
     "playing": "노는 중",
+    "chattingWith": "{{name}}와(과) 수다 중",
+    "playingWith": "{{name}}와(과) 노는 중",
+    "makingFriendsWith": "{{name}}와(과) 친해지는 중",
     "onTheMove": "이동 중"
   },
   "toast": {

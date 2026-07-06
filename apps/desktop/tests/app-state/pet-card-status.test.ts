@@ -86,6 +86,63 @@ describe("petStatusFromSnapshot", () => {
       ).label,
     ).toBe("Needs you");
   });
+
+  it("names the partner during a live social session", () => {
+    const status = petStatusFromSnapshot(
+      snapshot(null, {
+        activity: "chatting",
+        social: {
+          kind: "chat",
+          phase: "play",
+          role: "initiator",
+          partnerId: "pet-b",
+          partnerName: "Otto",
+        },
+      }),
+    );
+    expect(status.labelKey).toBe("chattingWith");
+    expect(status.label).toBe("Chatting with Otto");
+    expect(status.labelParams).toEqual({ name: "Otto" });
+  });
+
+  it("maps playing and making-friends to their partner-aware variants", () => {
+    const playing = petStatusFromSnapshot(
+      snapshot(null, {
+        activity: "playing",
+        social: { kind: "chase", phase: "play", role: "responder", partnerId: "p", partnerName: "Bo" },
+      }),
+    );
+    expect(playing.labelKey).toBe("playingWith");
+    const greeting = petStatusFromSnapshot(
+      snapshot(null, {
+        activity: "makingFriends",
+        social: { kind: "greet", phase: "greet", role: "initiator", partnerId: "p", partnerName: "Bo" },
+      }),
+    );
+    expect(greeting.labelKey).toBe("makingFriendsWith");
+  });
+
+  it("falls back to the plain label when the partner name is unknown", () => {
+    const status = petStatusFromSnapshot(
+      snapshot(null, {
+        activity: "chatting",
+        social: { kind: "chat", phase: "play", role: "initiator", partnerId: "p", partnerName: null },
+      }),
+    );
+    expect(status.labelKey).toBe("chatting");
+    expect(status.labelParams).toBeUndefined();
+  });
+
+  it("does not add a partner name to non-social activities", () => {
+    const status = petStatusFromSnapshot(
+      snapshot(null, {
+        activity: "exploring",
+        social: { kind: "chat", phase: "play", role: "initiator", partnerId: "p", partnerName: "Otto" },
+      }),
+    );
+    expect(status.labelKey).toBe("exploring");
+    expect(status.labelParams).toBeUndefined();
+  });
 });
 
 describe("createPetCardStatusTracker", () => {

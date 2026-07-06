@@ -1349,7 +1349,7 @@ export function PetsDrivenApp() {
       dotColor: "var(--ink-300)",
     };
   const localizedStatusLabel = (status: PetCardStatus): string =>
-    t(`petStatus.${status.labelKey}`);
+    t(`petStatus.${status.labelKey}`, status.labelParams);
 
   const atHome: HomePetView[] = managedPets
     .filter((pet) => !pet.visible)
