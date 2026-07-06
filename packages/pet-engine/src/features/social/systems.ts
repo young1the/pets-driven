@@ -61,10 +61,19 @@ export const PHASE_DURATIONS: Record<
 
 export const CHAT_TURN_MS = 2_000; // whose speech bubble shows, alternating
 export const CHASE_SWAP_MS = 1_800; // how often chaser and runner trade roles
+// A catch: chaser center within this many runner-body-widths triggers an
+// immediate role swap and a "tag!" cue.
+const CHASE_CATCH_BODY_WIDTHS = 1.2;
+// After a catch cue, ignore further catches this long so a lingering overlap
+// during the swap-around doesn't machine-gun the cue.
+const CHASE_CATCH_COOLDOWN_MS = 700;
 
 // Gait: walking up to a friend is a saunter; a chase is a romp at full tilt.
 const APPROACH_SPEED_FACTOR = 0.45;
 const CHASE_SPEED_FACTOR = 1.15;
+
+// Said by the pet that just tagged its friend.
+const CHASE_CATCH_LINES = ["Tag!", "Gotcha!", "Caught you!", "Got you!"];
 
 const GREET_LINES = ["Hi!", "Hey there!", "Oh, hello!", "There you are!"];
 const CHAT_LINES = [
@@ -469,10 +478,36 @@ function choreographChase(
     return;
   }
 
-  const elapsed = now - (session.playStartedAt ?? session.startedAt);
-  const initiatorChases = Math.floor(elapsed / CHASE_SWAP_MS) % 2 === 0;
-  const chaser = initiatorChases ? a : b;
-  const runner = initiatorChases ? b : a;
+  // Roles come from an explicit swap counter (parity) rather than raw elapsed
+  // time, so a catch can force a swap off-schedule. Even = initiator chases.
+  const swapReference =
+    session.lastChaseSwapAt ?? session.playStartedAt ?? session.startedAt;
+  const swapsBefore = session.chaseSwaps ?? 0;
+  const chaserBefore = swapsBefore % 2 === 0 ? a : b;
+  const runnerBefore = chaserBefore === a ? b : a;
+
+  const distance = Math.hypot(posA.x - posB.x, posA.y - posB.y);
+  const catchRadius = bodyWidth(components, runnerBefore) * CHASE_CATCH_BODY_WIDTHS;
+  const cueCooledDown =
+    now - (session.lastCatchAt ?? Number.NEGATIVE_INFINITY) >=
+    CHASE_CATCH_COOLDOWN_MS;
+  const caught = distance <= catchRadius && cueCooledDown;
+
+  if (caught) {
+    // The chaser tags the runner: a quick excited cue, spoken by the catcher.
+    setSpeech(components, chaserBefore, pickLine(CHASE_CATCH_LINES, now), now);
+    setExpression(components, chaserBefore, "excited", "sparkle", now, 600);
+    setExpression(components, runnerBefore, "confused", "exclaim", now, 600);
+    session.lastCatchAt = now;
+  }
+
+  if (caught || now - swapReference >= CHASE_SWAP_MS) {
+    session.chaseSwaps = swapsBefore + 1;
+    session.lastChaseSwapAt = now;
+  }
+
+  const chaser = (session.chaseSwaps ?? 0) % 2 === 0 ? a : b;
+  const runner = chaser === a ? b : a;
   const chaserPos = chaser === a ? posA : posB;
   const runnerPos = runner === a ? posA : posB;
   const fleeDistance = bodyWidth(components, runner) * 6;
@@ -484,8 +519,12 @@ function choreographChase(
     fleeTarget(runnerPos, chaserPos, fleeDistance, bounds),
     CHASE_SPEED_FACTOR,
   );
-  setExpression(components, chaser, "excited", "sparkle", now, 400);
-  setExpression(components, runner, "excited", "none", now, 400);
+  // The catch cue owns the expressions this tick; otherwise the running pair
+  // just looks excited.
+  if (!caught) {
+    setExpression(components, chaser, "excited", "sparkle", now, 400);
+    setExpression(components, runner, "excited", "none", now, 400);
+  }
 }
 
 function endSession(
@@ -576,6 +615,9 @@ function createSession(
       endsAt: now + maxSessionDurationMs(kind),
       playStartedAt: null,
       greeted: false,
+      chaseSwaps: 0,
+      lastChaseSwapAt: null,
+      lastCatchAt: null,
     },
   ]);
   components.setComponent(initiatorId, {

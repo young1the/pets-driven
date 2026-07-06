@@ -69,6 +69,17 @@ export type SocialSessionComponent = {
   playStartedAt: number | null;
   /** Whether the initiator and responder have already exchanged their greeting speech. */
   greeted: boolean;
+  /**
+   * chase only — how many times the chaser/runner roles have swapped. Its
+   * parity decides who currently chases (even = initiator). A swap fires on
+   * the swap timer *or* the moment the chaser catches the runner. Optional so
+   * pre-chase sessions and older fixtures need not set it.
+   */
+  chaseSwaps?: number;
+  /** chase only — when the last role swap happened (the swap-timer reference). */
+  lastChaseSwapAt?: number | null;
+  /** chase only — when the last catch cue fired, so it can't machine-gun. */
+  lastCatchAt?: number | null;
 };
 
 /** Back-reference placed on each participating pet. */

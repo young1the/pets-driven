@@ -165,7 +165,7 @@ entities, so the kind, its presentation, and i18n entries all stay.
 Declined/failed bumps cannot re-invite immediately thanks to B3's pair
 cooldown.
 
-## B5. Chase catch moment (polish)
+## B5. Chase catch moment (polish) — DONE (2026-07-06)
 
 **Problem** — With B1/B2 the chase no longer aborts on contact, but the catch
 is anticlimactic: chaser reaches runner and they just keep running the swap
@@ -180,6 +180,16 @@ catch radius (~1.2 body widths), trigger an immediate role swap plus a short
 lingering overlap doesn't machine-gun the cue).
 
 Size: S. Depends on: B1, B2.
+
+**Outcome** — `choreographChase` now derives roles from an explicit
+`chaseSwaps` counter (parity = who chases) instead of raw elapsed time, so a
+swap can fire off the swap timer *or* the instant the chaser closes within
+`CHASE_CATCH_BODY_WIDTHS` (1.2) of the runner. A catch also speaks a tag line
+(`CHASE_CATCH_LINES`) from the catcher and shows an excited/exclaim cue pair,
+gated by a 700ms `lastCatchAt` cooldown so a lingering overlap during the
+swap-around doesn't machine-gun it. New session fields (`chaseSwaps`,
+`lastChaseSwapAt`, `lastCatchAt`) are optional, so older fixtures are
+unaffected.
 
 ## B6. Social chat surfaces as the "chatting" activity — DONE (2026-07-06)
 

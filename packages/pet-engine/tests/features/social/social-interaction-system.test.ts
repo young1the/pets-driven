@@ -292,6 +292,47 @@ describe("SocialInteractionSystem — chase choreography", () => {
       store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x,
     ).toBeLessThan(100); // fleeing left
   });
+
+  it("catching the runner swaps roles early and fires a one-shot tag cue", () => {
+    // Pets seeded within the catch radius (centers 20px apart, 32px bodies).
+    const store = makeStore(AGREEABLE, AGREEABLE, [200, 220]);
+    const clock = createManualClock(0);
+    seedSession(store, "chase", 0);
+
+    // t=100, well inside CHASE_SWAP_MS: only a catch could swap this early.
+    clock.advanceBy(100);
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    // pet-a (initiator) caught pet-b → it speaks the tag line, and roles have
+    // already flipped so pet-b now chases pet-a.
+    expect(store.getComponent("pet-a", "SpeechState")?.speech).not.toBeNull();
+    expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
+      mood: "excited",
+      emote: "sparkle",
+    });
+    expect(store.getComponent("sess", "SocialSession")?.chaseSwaps).toBe(1);
+    expect(store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x).toBe(200); // now chasing pet-a
+
+    // A lingering overlap on the next tick must not re-fire the cue (cooldown).
+    clock.advanceBy(100);
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+    expect(store.getComponent("sess", "SocialSession")?.chaseSwaps).toBe(1);
+  });
+
+  it("re-catches once the catch cooldown has lapsed", () => {
+    const store = makeStore(AGREEABLE, AGREEABLE, [200, 220]);
+    const clock = createManualClock(0);
+    seedSession(store, "chase", 0);
+
+    clock.advanceBy(100);
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+    expect(store.getComponent("sess", "SocialSession")?.chaseSwaps).toBe(1);
+
+    // Past the 700ms cue cooldown, still overlapping → another catch/swap.
+    clock.advanceBy(800);
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+    expect(store.getComponent("sess", "SocialSession")?.chaseSwaps).toBe(2);
+  });
 });
 
 describe("SocialInteractionSystem — interruption", () => {
