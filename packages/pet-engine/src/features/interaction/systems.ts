@@ -293,7 +293,7 @@ export const ThrowImpulseSystem: SimulationSystem<WorldStepContext> = {
 
 export const KeyboardControlMovementSystem: SimulationSystem<WorldStepContext> = {
   name: "KeyboardControlMovementSystem",
-  dependsOn: ["IntentSteeringSystem"],
+  dependsOn: ["SteeringForceSystem"],
   reads: ["KeyboardControlTarget", "KeyboardInputState", "CanControl"],
   writes: ["PhysicsVelocity", "BehaviorDecisionState"],
   update(ctx) {

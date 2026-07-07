@@ -33,7 +33,7 @@ describe("component store", () => {
         id: "pet-a",
         components: [
           { type: "Transform", position: { x: 0, y: 0 } },
-          { type: "IntentState", intent: "idle" },
+          { type: "Steering", mode: "stand" },
         ],
       },
       {
@@ -45,14 +45,14 @@ describe("component store", () => {
       },
     ]);
 
-    const results = store.query("Transform", "IntentState");
+    const results = store.query("Transform", "Steering");
 
     expect(results).toEqual([
       {
         id: "pet-a",
         components: [
           { type: "Transform", position: { x: 0, y: 0 } },
-          { type: "IntentState", intent: "idle" },
+          { type: "Steering", mode: "stand" },
         ],
       },
     ]);
@@ -83,7 +83,7 @@ describe("component store", () => {
         type: "SocialSession",
         kind: "greet",
         participantIds: ["pet-a", "pet-b"],
-        phase: "greet",
+        phase: "approach",
         startedAt: 0,
         endsAt: 3_000,
         playStartedAt: null,
@@ -136,20 +136,20 @@ describe("component store", () => {
         id: "pet-a",
         components: [
           { type: "Transform", position: { x: 0, y: 0 } },
-          { type: "IntentState", intent: "idle" },
+          { type: "Steering", mode: "stand" },
         ],
       },
       {
         id: "pet-b",
         components: [
           { type: "Transform", position: { x: 10, y: 0 } },
-          { type: "IntentState", intent: "active" },
+          { type: "Steering", mode: "pursue" },
         ],
       },
     ]);
 
     const tuples: unknown[] = [];
-    store.forEach(["Transform", "IntentState"], (_id, components) => {
+    store.forEach(["Transform", "Steering"], (_id, components) => {
       tuples.push(components);
     });
 

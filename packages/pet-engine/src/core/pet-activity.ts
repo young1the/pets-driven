@@ -95,11 +95,11 @@ export function derivePetActivity(
   if (components.getComponent(id, "JumpActionState")) return "hopping";
   if (components.getComponent(id, "AirborneTag")) return "midAir";
 
-  const intent = components.getComponent(id, "IntentState")?.intent ?? "idle";
+  const mode = components.getComponent(id, "Steering")?.mode ?? "stand";
 
   const decision = components.getComponent(id, "BehaviorDecisionState");
   if (decision) {
-    const stillExecuting = intent !== "idle";
+    const stillExecuting = mode !== "stand";
     const unexpired = decision.expiresAt > now;
     if (stillExecuting || unexpired) {
       const activity = DECISION_ACTIVITY[decision.reason];
@@ -107,7 +107,7 @@ export function derivePetActivity(
     }
   }
 
-  if (intent === "seek") return "headingOver";
-  if (intent === "active") return "onTheMove";
+  if (mode === "arrive") return "headingOver";
+  if (mode === "pursue") return "onTheMove";
   return null;
 }

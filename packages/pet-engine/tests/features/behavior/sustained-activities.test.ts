@@ -26,14 +26,14 @@ function makeRestingStore(extraversion: number) {
       id: "pet",
       components: [
         { type: "Transform", position: { x: 200, y: 200 } },
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         { type: "MotionTarget", targetEntityId: null, targetPosition: null },
         {
           type: "Perception" as const,
           userAnchor: null,
           nearbyPets: [],
           nearbyClimbables: [],
-          self: { grounded: false, climbing: false, intent: "idle" as const },
+          self: { grounded: false, climbing: false, mode: "stand" as const },
         },
         {
           type: "Personality" as const,
@@ -81,7 +81,7 @@ describe("arrival dwell", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 600, y: 500 } },
-          { type: "IntentState", intent: "active" as const },
+          { type: "Steering", mode: "pursue" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 604, y: 500 } },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
@@ -103,7 +103,7 @@ describe("arrival dwell", () => {
     runArrivalBehaviorSystem(store, createManualClock(10_000), constantRandom(0.5));
 
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
     const claim = store.getComponent("pet", "BehaviorDecisionState");
     expect(claim?.source).toBe("autonomous");
     expect(claim?.reason).toBe("arrival-dwell");
@@ -157,7 +157,7 @@ describe("play-romp", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 400, y: 500 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           { type: "WalkingTag" },
           { type: "CanWalk", force: 0.01 },
@@ -230,7 +230,7 @@ describe("play-romp", () => {
     const motion = store.getComponent("pet", "MotionTarget");
     expect(motion?.targetPosition).not.toBeNull();
     expect(motion?.speedFactor).toBeGreaterThan(1);
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
     expect(store.getComponent("pet", "JumpActionState")?.phase).toBe("requested");
     expect(store.getComponent("pet", "RompState")?.nextHopAt).toBeGreaterThan(2_000);
   });
@@ -241,7 +241,7 @@ describe("play-romp", () => {
     runRompProgressSystem(store, createManualClock(8_000), constantRandom(0.5), BOUNDS);
 
     expect(store.getComponent("pet", "RompState")).toBeUndefined();
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
     const claim = store.getComponent("pet", "BehaviorDecisionState");
     expect(claim?.reason).toBe("arrival-dwell");
@@ -269,7 +269,7 @@ describe("play-romp", () => {
     expect(store.getComponent("pet", "RompState")).toBeUndefined();
     // The interrupter keeps ownership: no motion target or intent written.
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
     expect(
       store.getComponent("pet", "BehaviorDecisionState")?.source,
     ).toBe("collision");

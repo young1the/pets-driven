@@ -30,7 +30,7 @@ const CURIOSITY_RISE_PER_MS = 1 / (2.5 * 60 * 1000); // 0 -> 1 over ~2.5 min wit
 
 /**
  * Pure per-tick drive drift. Social loneliness always rises; energy drains
- * while the pet is pursuing a goal (MotionTarget/IntentState "active"/"seek")
+ * while the pet is pursuing a goal (MotionTarget/Steering "active"/"seek")
  * and recovers while idle; curiosity rises only while idle (no new stimuli).
  * Satisfaction hooks (approach-pet-success, collision-engage, wander-far,
  * request-jump/climb) live next to their triggers in behavior/systems.ts.
@@ -39,8 +39,8 @@ export function runDriveDecaySystem(
   components: ComponentStore,
   deltaMs: number,
 ): void {
-  components.forEach(["Drives", "IntentState"], (_id, [drives, intent]) => {
-    const isPursuingGoal = intent.intent === "active" || intent.intent === "seek";
+  components.forEach(["Drives", "Steering"], (_id, [drives, intent]) => {
+    const isPursuingGoal = intent.mode === "pursue" || intent.mode === "arrive";
 
     drives.social = clampDrive(drives.social + SOCIAL_RISE_PER_MS * deltaMs);
 
@@ -63,7 +63,7 @@ export function runDriveDecaySystem(
 export const DriveDecaySystem: SimulationSystem<WorldStepContext> = {
   name: "DriveDecaySystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Drives", "IntentState"],
+  reads: ["Drives", "Steering"],
   writes: ["Drives"],
   update(ctx) {
     runDriveDecaySystem(ctx.components, ctx.deltaMs);

@@ -158,7 +158,7 @@ export const PhysicsTransformSyncSystemPost: SimulationSystem<WorldStepContext> 
 
 export const PhysicsIntegrationSystem: SimulationSystem<WorldStepContext> = {
   name: "PhysicsIntegrationSystem",
-  dependsOn: ["WalkSystem", "CollisionEscapeSystem", "JumpSystem", "WallClimbSystem", "IntentSteeringSystem", "FlightSystem"],
+  dependsOn: ["WalkSystem", "CollisionEscapeSystem", "JumpSystem", "WallClimbSystem", "SteeringForceSystem", "FlightSystem"],
   reads: ["PhysicsForce"],
   writes: ["PhysicsWorld"],
   update(ctx) {

@@ -16,7 +16,7 @@ function approachingPet(startedAt?: number) {
       id: "pet",
       components: [
         { type: "Transform" as const, position: { x: 130, y: 500 } },
-        { type: "IntentState" as const, intent: "active" as const },
+        { type: "Steering" as const, mode: "pursue" as const },
         {
           type: "MotionTarget" as const,
           targetEntityId: null,
@@ -52,7 +52,7 @@ describe("climb approach timeout", () => {
 
     expect(store.getComponent("pet", "ClimbIntentState")).toBeUndefined();
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
     // The repeat cooldown restarts from the cancellation, so the pet does not
     // immediately re-pick the same unclimbable surface.
     expect(

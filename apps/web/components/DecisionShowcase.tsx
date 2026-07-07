@@ -230,8 +230,8 @@ export function DecisionShowcaseApp() {
       }
     }
     scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
-      type: "IntentState",
-      intent: "idle",
+      type: "Steering",
+      mode: "stand",
     });
     scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
       type: "MotionTarget",

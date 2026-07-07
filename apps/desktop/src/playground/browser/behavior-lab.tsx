@@ -179,7 +179,7 @@ export function BehaviorLab({
           )}
           <div>
             <dt>Intent</dt>
-            <dd>{selectedPet.intent}</dd>
+            <dd>{selectedPet.steering}</dd>
           </div>
           <div>
             <dt>Locomotion</dt>

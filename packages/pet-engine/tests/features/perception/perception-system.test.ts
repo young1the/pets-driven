@@ -28,9 +28,9 @@ describe("PerceptionSystem", () => {
             nearbyPets: [],
             userAnchor: null,
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           {
             type: "ContactState",
             grounded: true,
@@ -50,9 +50,9 @@ describe("PerceptionSystem", () => {
             nearbyPets: [],
             userAnchor: null,
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           {
             type: "ContactState",
             grounded: true,
@@ -75,7 +75,7 @@ describe("PerceptionSystem", () => {
     expect(perceptionA?.nearbyPets[0].distance).toBeCloseTo(20, 0);
     expect(perceptionA?.nearbyClimbables).toHaveLength(1);
     expect(perceptionA?.self.grounded).toBe(true);
-    expect(perceptionA?.self.intent).toBe("idle");
+    expect(perceptionA?.self.mode).toBe("stand");
   });
 
   it("sorts nearbyPets and nearbyClimbables by ascending distance", () => {
@@ -103,9 +103,9 @@ describe("PerceptionSystem", () => {
             nearbyPets: [],
             userAnchor: null,
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           {
             type: "ContactState",
             grounded: false,
@@ -150,9 +150,9 @@ describe("PerceptionSystem", () => {
             nearbyPets: [],
             userAnchor: null,
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           {
             type: "ContactState",
             grounded: false,
@@ -182,9 +182,9 @@ describe("PerceptionSystem", () => {
             nearbyPets: [],
             userAnchor: null,
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           {
             type: "ContactState",
             grounded: false,
@@ -212,9 +212,9 @@ describe("PerceptionSystem", () => {
             nearbyPets: [],
             userAnchor: null,
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           {
             type: "ContactState",
             grounded: false,
@@ -243,9 +243,9 @@ describe("PerceptionSystem", () => {
             nearbyPets: [],
             userAnchor: null,
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
-          { type: "IntentState", intent: "active" as const },
+          { type: "Steering", mode: "pursue" as const },
           {
             type: "ContactState",
             grounded: false,
@@ -262,7 +262,7 @@ describe("PerceptionSystem", () => {
 
     const perception = store.getComponent("pet-a", "Perception");
     expect(perception?.self.climbing).toBe(true);
-    expect(perception?.self.intent).toBe("active");
+    expect(perception?.self.mode).toBe("pursue");
   });
 
   describe("cursor field", () => {
@@ -289,9 +289,9 @@ describe("PerceptionSystem", () => {
               nearbyPets: [],
               userAnchor: null,
               nearbyClimbables: [],
-              self: { grounded: false, climbing: false, intent: "idle" as const },
+              self: { grounded: false, climbing: false, mode: "stand" as const },
             },
-            { type: "IntentState", intent: "idle" as const },
+            { type: "Steering", mode: "stand" as const },
             {
               type: "ContactState",
               grounded: true,
@@ -315,9 +315,9 @@ describe("PerceptionSystem", () => {
               nearbyPets: [],
               userAnchor: null,
               nearbyClimbables: [],
-              self: { grounded: false, climbing: false, intent: "idle" as const },
+              self: { grounded: false, climbing: false, mode: "stand" as const },
             },
-            { type: "IntentState", intent: "idle" as const },
+            { type: "Steering", mode: "stand" as const },
             {
               type: "ContactState",
               grounded: false,

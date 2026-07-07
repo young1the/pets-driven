@@ -237,7 +237,7 @@ function stop(components: ComponentStore, id: string): void {
     targetEntityId: null,
     targetPosition: null,
   });
-  components.setComponent(id, { type: "IntentState", intent: "idle" });
+  components.setComponent(id, { type: "Steering", mode: "stand" });
 }
 
 function moveToward(
@@ -252,7 +252,7 @@ function moveToward(
     targetPosition: target,
     speedFactor,
   });
-  components.setComponent(id, { type: "IntentState", intent: "active" });
+  components.setComponent(id, { type: "Steering", mode: "pursue" });
 }
 
 /** A point on the P→Q line stopping `gap` short of Q (or P if already close). */
@@ -525,7 +525,7 @@ function choreograph(
   // play begins when they have all bunched up (or the greet timeout fires).
   const gap = bodyWidth(components, ids[0]) * (session.kind === "chat" ? 2.6 : 2);
   const centre = centroidOf(pos);
-  if (session.phase === "greet") {
+  if (session.phase === "approach") {
     const met = maxPairwiseDistance(pos) <= gap * 1.35;
     const timedOut = now - session.startedAt >= GREET_TIMEOUT_MS;
     if (!met && !timedOut) {
@@ -592,7 +592,7 @@ function choreographChase(
   const ids = session.participantIds;
 
   // A chase needs no approach ritual — it kicks off the moment everyone joins.
-  if (session.phase === "greet") beginPlay(session, now);
+  if (session.phase === "approach") beginPlay(session, now);
   advancePlayPhase(session, now);
   // One chaser, everyone else runs. The initiator chases first.
   if (session.chaserId == null || !ids.includes(session.chaserId)) {
@@ -785,7 +785,7 @@ function createSession(
       type: "SocialSession",
       kind,
       participantIds: [...participantIds],
-      phase: "greet",
+      phase: "approach",
       startedAt: now,
       endsAt: now + maxSessionDurationMs(kind),
       playStartedAt: null,
@@ -989,10 +989,10 @@ function emitJoins(
     };
     const candidates: Candidate[] = [];
     components.forEach(
-      ["CanSocialize", "Personality", "IntentState", "MotionTarget", "Transform", "ContactState"],
+      ["CanSocialize", "Personality", "Steering", "MotionTarget", "Transform", "ContactState"],
       (id, [, personality, intent, motion, transform, contact]) => {
         if (session.participantIds.includes(id)) return;
-        if (intent.intent !== "idle") return;
+        if (intent.mode !== "stand") return;
         if (motion.targetPosition !== null || motion.targetEntityId !== null) return;
         if (!contact.grounded) return;
         if (components.getComponent(id, "SocialSessionMember")) return;
@@ -1044,9 +1044,9 @@ function emitInvites(
   };
   const candidates: Candidate[] = [];
   components.forEach(
-    ["CanSocialize", "Personality", "IntentState", "MotionTarget", "Transform", "ContactState"],
+    ["CanSocialize", "Personality", "Steering", "MotionTarget", "Transform", "ContactState"],
     (id, [, personality, intent, motion, transform, contact]) => {
-      if (intent.intent !== "idle") return;
+      if (intent.mode !== "stand") return;
       if (motion.targetPosition !== null || motion.targetEntityId !== null) return;
       if (!contact.grounded) return;
       if (components.getComponent(id, "SocialSessionMember")) return;
@@ -1127,7 +1127,7 @@ export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
     "CanSocialize",
     "Personality",
     "Drives",
-    "IntentState",
+    "Steering",
     "MotionTarget",
     "Transform",
     "ContactState",
@@ -1146,7 +1146,7 @@ export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
     "SocialSessionMember",
     "BehaviorDecisionState",
     "MotionTarget",
-    "IntentState",
+    "Steering",
     "PetExpressionState",
     "SpeechState",
     "Drives",

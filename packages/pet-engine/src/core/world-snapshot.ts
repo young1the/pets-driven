@@ -61,7 +61,7 @@ export type PetSnapshot = {
   id: string;
   sourceId: string;
   name: string;
-  intent: string;
+  steering: string;
   locomotion: string;
   /** Current behavior/action overlay, separate from locomotion. */
   action?: string;

@@ -10,7 +10,7 @@ function makeStore() {
       id: "pet",
       components: [
         { type: "AgentBinding", sourceId: "agent-a" },
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         {
           type: "SpeechProfile",
           idleCompanion: "hi",

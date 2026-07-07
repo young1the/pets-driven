@@ -220,8 +220,8 @@ export function DecisionShowcaseApp() {
       }
     }
     scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
-      type: "IntentState",
-      intent: "idle",
+      type: "Steering",
+      mode: "stand",
     });
     scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
       type: "MotionTarget",
@@ -417,7 +417,7 @@ export function DecisionShowcaseApp() {
           <dl className="decision-showcase__stats">
             <div>
               <dt>Intent</dt>
-              <dd>{selectedPet.intent}</dd>
+              <dd>{selectedPet.steering}</dd>
             </div>
             <div>
               <dt>Locomotion</dt>

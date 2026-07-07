@@ -24,7 +24,7 @@ function makeStore(opts: {
         agreeableness: 0.5,
         neuroticism: 0.3,
       },
-      { type: "IntentState", intent: "active" as const },
+      { type: "Steering", mode: "pursue" as const },
       {
         type: "MotionTarget",
         targetEntityId: null,
@@ -131,7 +131,7 @@ describe("runWorkingBehaviorSystem", () => {
     expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe(
       "working-focus",
     );
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
   });
 
   it("can reselect working behavior after a working collision expression is written", () => {
@@ -182,7 +182,7 @@ describe("runWorkingBehaviorSystem", () => {
     expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe(
       "working-wander",
     );
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
   });
 
   it("respects an expired claim (fires again after cooldown)", () => {

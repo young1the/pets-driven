@@ -76,8 +76,8 @@ export function drawWorld(
     context.fillStyle = ink[600];
     context.fillText(
       pet.action && pet.action !== "none"
-        ? `${pet.intent} / ${pet.locomotion} / ${pet.action}`
-        : `${pet.intent} / ${pet.locomotion}`,
+        ? `${pet.steering} / ${pet.locomotion} / ${pet.action}`
+        : `${pet.steering} / ${pet.locomotion}`,
       pet.position.x,
       pet.position.y - 16,
     );

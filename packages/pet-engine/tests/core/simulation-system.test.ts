@@ -30,14 +30,14 @@ describe("simulation system runner", () => {
     const systems: SimulationSystem<{ deltaMs: number }>[] = [
       {
         name: "MotionTargetSystem",
-        reads: ["IntentState", "MotionTarget", "Transform", "UserAnchor"],
+        reads: ["Steering", "MotionTarget", "Transform", "UserAnchor"],
         writes: ["MotionTarget"],
         update() {},
       },
       {
-        name: "IntentSteeringSystem",
+        name: "SteeringForceSystem",
         dependsOn: ["MotionTargetSystem"],
-        reads: ["Transform", "MovementProfile", "IntentState", "MotionTarget"],
+        reads: ["Transform", "MovementProfile", "Steering", "MotionTarget"],
         writes: ["PhysicsForce"],
         update() {},
       },
@@ -46,13 +46,13 @@ describe("simulation system runner", () => {
     expect(describeSimulationSystems(systems)).toEqual([
       {
         name: "MotionTargetSystem",
-        reads: ["IntentState", "MotionTarget", "Transform", "UserAnchor"],
+        reads: ["Steering", "MotionTarget", "Transform", "UserAnchor"],
         writes: ["MotionTarget"],
       },
       {
-        name: "IntentSteeringSystem",
+        name: "SteeringForceSystem",
         dependsOn: ["MotionTargetSystem"],
-        reads: ["Transform", "MovementProfile", "IntentState", "MotionTarget"],
+        reads: ["Transform", "MovementProfile", "Steering", "MotionTarget"],
         writes: ["PhysicsForce"],
       },
     ]);

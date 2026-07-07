@@ -33,7 +33,7 @@ describe("pet contracts", () => {
       activeForce: 0.0016,
       seekForce: 0.002,
       idleConversationMs: 9000,
-      completionIntent: "seek",
+      completionIntent: "arrive",
       openness: 0.7,
       conscientiousness: 0.4,
       extraversion: 0.85,

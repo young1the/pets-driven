@@ -99,7 +99,7 @@ describe("decision showcase adapter", () => {
     });
     expect(explanation.steps.find((step) => step.id === "planning")).toMatchObject({
       status: "complete",
-      value: "idle",
+      value: "stand",
     });
     expect(explanation.steps.find((step) => step.id === "presentation")).toMatchObject({
       status: "complete",

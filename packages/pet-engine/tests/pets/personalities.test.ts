@@ -52,7 +52,7 @@ describe("personality factories — OCEAN axes", () => {
     expect(p.conscientiousness).toBe(0.85);
     expect(p.neuroticism).toBe(0.15);
     expect(p.extraversion).toBe(0.45);
-    expect(p.completionIntent).toBe("idle");
+    expect(p.completionIntent).toBe("stand");
   });
 
   it("bold has high openness and extraversion with low neuroticism", () => {
@@ -60,7 +60,7 @@ describe("personality factories — OCEAN axes", () => {
     expect(p.openness).toBe(0.8);
     expect(p.extraversion).toBe(0.9);
     expect(p.neuroticism).toBe(0.12);
-    expect(p.completionIntent).toBe("seek");
+    expect(p.completionIntent).toBe("arrive");
   });
 
   it("gentle has very high agreeableness and low neuroticism", () => {
@@ -68,7 +68,7 @@ describe("personality factories — OCEAN axes", () => {
     expect(p.agreeableness).toBe(0.9);
     expect(p.neuroticism).toBe(0.15);
     expect(p.extraversion).toBe(0.4);
-    expect(p.completionIntent).toBe("seek");
+    expect(p.completionIntent).toBe("arrive");
   });
 
   it("mischievous has high openness and extraversion with low conscientiousness", () => {
@@ -76,21 +76,21 @@ describe("personality factories — OCEAN axes", () => {
     expect(p.openness).toBe(0.85);
     expect(p.extraversion).toBe(0.8);
     expect(p.conscientiousness).toBe(0.2);
-    expect(p.completionIntent).toBe("seek");
+    expect(p.completionIntent).toBe("arrive");
   });
 
   it("lazy has very low extraversion and conscientiousness", () => {
     const p = createLazyPersonality();
     expect(p.extraversion).toBe(0.15);
     expect(p.conscientiousness).toBe(0.25);
-    expect(p.completionIntent).toBe("idle");
+    expect(p.completionIntent).toBe("stand");
   });
 
   it("zen has very low neuroticism and balanced traits", () => {
     const p = createZenPersonality();
     expect(p.neuroticism).toBe(0.05);
     expect(p.agreeableness).toBeGreaterThan(0.7);
-    expect(p.completionIntent).toBe("idle");
+    expect(p.completionIntent).toBe("stand");
   });
 
   it("all factories return all five OCEAN axes as numbers", () => {

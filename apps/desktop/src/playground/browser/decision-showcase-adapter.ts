@@ -170,7 +170,7 @@ export function explainDecisionPipeline(input: {
   const token = input.getComponent(input.pet.id, "BehaviorDecisionToken");
   const pendingReaction = input.getComponent(input.pet.id, "PendingReaction");
   const agentTask = input.getComponent(input.pet.id, "AgentTaskState");
-  const intent = input.getComponent(input.pet.id, "IntentState");
+  const intent = input.getComponent(input.pet.id, "Steering");
   const motion = input.getComponent(input.pet.id, "MotionTarget");
   const speech = input.getComponent(input.pet.id, "SpeechState");
   const jump = input.getComponent(input.pet.id, "JumpActionState");
@@ -225,7 +225,7 @@ export function explainDecisionPipeline(input: {
         id: "planning",
         title: "Planning result",
         status: intent || motion || jump || climb ? "complete" : "idle",
-        value: intent?.intent ?? "none",
+        value: intent?.mode ?? "none",
         detail: formatPlanningDetail(action, motion),
       },
       {

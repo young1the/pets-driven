@@ -27,11 +27,11 @@ export type CanSocializeComponent = {
 export type SocialSessionKind = "greet" | "chat" | "chase";
 
 /**
- * Session progression. `greet` = move together / close the gap; `play` = the
+ * Session progression. `approach` = move together / close the gap; `play` = the
  * kind-specific interaction (emote exchange, alternating chat, chasing);
  * `part` = wind down before teardown.
  */
-export type SocialSessionPhase = "greet" | "play" | "part";
+export type SocialSessionPhase = "approach" | "play" | "part";
 
 /**
  * Transient offer written by an initiator onto the *target* pet. Read once by

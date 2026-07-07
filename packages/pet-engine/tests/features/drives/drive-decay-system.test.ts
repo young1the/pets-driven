@@ -6,7 +6,7 @@ import {
   runDriveDecaySystem,
 } from "@pets-driven/pet-engine/features/drives/systems";
 
-function makeStore(intent: "idle" | "active" | "seek", drives?: Partial<{
+function makeStore(mode: "stand" | "pursue" | "arrive", drives?: Partial<{
   social: number;
   energy: number;
   curiosity: number;
@@ -15,7 +15,7 @@ function makeStore(intent: "idle" | "active" | "seek", drives?: Partial<{
     {
       id: "pet",
       components: [
-        { type: "IntentState", intent },
+        { type: "Steering", mode },
         {
           type: "Drives",
           social: 0.3,
@@ -81,56 +81,56 @@ describe("driveResponseCurve", () => {
 
 describe("runDriveDecaySystem", () => {
   it("raises social (loneliness) over time regardless of activity", () => {
-    const store = makeStore("idle", { social: 0.3 });
+    const store = makeStore("stand", { social: 0.3 });
     runDriveDecaySystem(store, 60_000);
     expect(store.getComponent("pet", "Drives")!.social).toBeGreaterThan(0.3);
   });
 
   it("drains energy while the pet is pursuing an active goal", () => {
-    const store = makeStore("active", { energy: 1 });
+    const store = makeStore("pursue", { energy: 1 });
     runDriveDecaySystem(store, 60_000);
     expect(store.getComponent("pet", "Drives")!.energy).toBeLessThan(1);
   });
 
   it("drains energy while seeking, same as active", () => {
-    const store = makeStore("seek", { energy: 1 });
+    const store = makeStore("arrive", { energy: 1 });
     runDriveDecaySystem(store, 60_000);
     expect(store.getComponent("pet", "Drives")!.energy).toBeLessThan(1);
   });
 
   it("recovers energy while idle", () => {
-    const store = makeStore("idle", { energy: 0.3 });
+    const store = makeStore("stand", { energy: 0.3 });
     runDriveDecaySystem(store, 60_000);
     expect(store.getComponent("pet", "Drives")!.energy).toBeGreaterThan(0.3);
   });
 
   it("raises curiosity while idle", () => {
-    const store = makeStore("idle", { curiosity: 0.2 });
+    const store = makeStore("stand", { curiosity: 0.2 });
     runDriveDecaySystem(store, 60_000);
     expect(store.getComponent("pet", "Drives")!.curiosity).toBeGreaterThan(0.2);
   });
 
   it("does not raise curiosity while pursuing a goal", () => {
-    const store = makeStore("active", { curiosity: 0.2 });
+    const store = makeStore("pursue", { curiosity: 0.2 });
     runDriveDecaySystem(store, 60_000);
     expect(store.getComponent("pet", "Drives")!.curiosity).toBe(0.2);
   });
 
   it("clamps social at 1 even after a very long idle period", () => {
-    const store = makeStore("idle", { social: 0.99 });
+    const store = makeStore("stand", { social: 0.99 });
     runDriveDecaySystem(store, 10 * 60 * 1000);
     expect(store.getComponent("pet", "Drives")!.social).toBe(1);
   });
 
   it("clamps energy at 0 even after prolonged continuous activity", () => {
-    const store = makeStore("active", { energy: 0.01 });
+    const store = makeStore("pursue", { energy: 0.01 });
     runDriveDecaySystem(store, 10 * 60 * 1000);
     expect(store.getComponent("pet", "Drives")!.energy).toBe(0);
   });
 
   it("leaves entities without a Drives component untouched (no crash)", () => {
     const store = createComponentStore([
-      { id: "pet", components: [{ type: "IntentState", intent: "idle" }] },
+      { id: "pet", components: [{ type: "Steering", mode: "stand" }] },
     ]);
     expect(() => runDriveDecaySystem(store, 16)).not.toThrow();
     expect(store.getComponent("pet", "Drives")).toBeUndefined();

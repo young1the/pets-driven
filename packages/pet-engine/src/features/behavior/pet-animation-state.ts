@@ -84,8 +84,8 @@ export function getPetAnimationState(
     return travelDirection === "right" ? "running-right" : "running-left";
   }
 
-  const intent = componentStore.getComponent(id, "IntentState");
-  if (intent?.intent === "active") {
+  const intent = componentStore.getComponent(id, "Steering");
+  if (intent?.mode === "pursue") {
     return "running";
   }
 

@@ -66,8 +66,8 @@ describe("pet animation state", () => {
     });
     setTravel(0, 0);
     scenario.world.setComponent("pet-a", {
-      type: "IntentState",
-      intent: "active",
+      type: "Steering",
+      mode: "pursue",
     });
 
     expect(animationState()).toBe("running");
@@ -128,8 +128,8 @@ describe("pet animation state", () => {
       climbableSurfacePosition: null,
     });
     scenario.world.setComponent("pet-a", {
-      type: "IntentState",
-      intent: "active",
+      type: "Steering",
+      mode: "pursue",
     });
     expect(animationState()).toBe("running");
 

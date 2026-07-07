@@ -3,7 +3,7 @@ export type PetPersonality = {
   activeForce: number;
   seekForce: number;
   idleConversationMs?: number;
-  completionIntent: "idle" | "seek";
+  completionIntent: "stand" | "arrive";
   /** OCEAN Big-Five traits (0..1 each). */
   openness: number;
   conscientiousness: number;
@@ -20,7 +20,7 @@ export const createPlayfulPersonality: PersonalityFactory = () => ({
   activeForce: 0.0016,
   seekForce: 0.002,
   idleConversationMs: 9000,
-  completionIntent: "seek",
+  completionIntent: "arrive",
   openness: 0.7,
   conscientiousness: 0.4,
   extraversion: 0.85,
@@ -34,7 +34,7 @@ export const createAttentivePersonality: PersonalityFactory = () => ({
   activeForce: 0.001,
   seekForce: 0.0016,
   idleConversationMs: 12000,
-  completionIntent: "seek",
+  completionIntent: "arrive",
   openness: 0.3,
   conscientiousness: 0.6,
   extraversion: 0.8,
@@ -47,7 +47,7 @@ export const createReservedPersonality: PersonalityFactory = () => ({
   idleForce: 0.0004,
   activeForce: 0.0008,
   seekForce: 0.001,
-  completionIntent: "idle",
+  completionIntent: "stand",
   openness: 0.3,
   conscientiousness: 0.5,
   extraversion: 0.2,
@@ -61,7 +61,7 @@ export const createCuriousPersonality: PersonalityFactory = () => ({
   activeForce: 0.0013,
   seekForce: 0.0015,
   idleConversationMs: 14000,
-  completionIntent: "seek",
+  completionIntent: "arrive",
   openness: 0.9,
   conscientiousness: 0.35,
   extraversion: 0.55,
@@ -75,7 +75,7 @@ export const createSteadyPersonality: PersonalityFactory = () => ({
   activeForce: 0.0009,
   seekForce: 0.0012,
   idleConversationMs: 18000,
-  completionIntent: "idle",
+  completionIntent: "stand",
   openness: 0.45,
   conscientiousness: 0.85,
   extraversion: 0.45,
@@ -89,7 +89,7 @@ export const createBoldPersonality: PersonalityFactory = () => ({
   activeForce: 0.0018,
   seekForce: 0.0022,
   idleConversationMs: 8000,
-  completionIntent: "seek",
+  completionIntent: "arrive",
   openness: 0.8,
   conscientiousness: 0.45,
   extraversion: 0.9,
@@ -103,7 +103,7 @@ export const createGentlePersonality: PersonalityFactory = () => ({
   activeForce: 0.0008,
   seekForce: 0.001,
   idleConversationMs: 15000,
-  completionIntent: "seek",
+  completionIntent: "arrive",
   openness: 0.4,
   conscientiousness: 0.6,
   extraversion: 0.4,
@@ -117,7 +117,7 @@ export const createMischievousPersonality: PersonalityFactory = () => ({
   activeForce: 0.002,
   seekForce: 0.0025,
   idleConversationMs: 7000,
-  completionIntent: "seek",
+  completionIntent: "arrive",
   openness: 0.85,
   conscientiousness: 0.2,
   extraversion: 0.8,
@@ -131,7 +131,7 @@ export const createLazyPersonality: PersonalityFactory = () => ({
   activeForce: 0.0005,
   seekForce: 0.0007,
   idleConversationMs: 30000,
-  completionIntent: "idle",
+  completionIntent: "stand",
   openness: 0.35,
   conscientiousness: 0.25,
   extraversion: 0.15,
@@ -145,7 +145,7 @@ export const createZenPersonality: PersonalityFactory = () => ({
   activeForce: 0.0007,
   seekForce: 0.0009,
   idleConversationMs: 20000,
-  completionIntent: "idle",
+  completionIntent: "stand",
   openness: 0.55,
   conscientiousness: 0.65,
   extraversion: 0.5,

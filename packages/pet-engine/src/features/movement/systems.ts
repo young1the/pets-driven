@@ -110,8 +110,8 @@ export function runClimbApproachSystem(
         components.removeComponent(id, "ClimbIntentState");
         motion.targetEntityId = null;
         motion.targetPosition = null;
-        const intent = components.getComponent(id, "IntentState");
-        if (intent) intent.intent = "idle";
+        const intent = components.getComponent(id, "Steering");
+        if (intent) intent.mode = "stand";
         // Refresh the request-climb repeat cooldown from *now*: the approach
         // itself consumed the whole cooldown window, so without this the pet
         // would immediately re-pick the same unclimbable surface and loop.
@@ -267,8 +267,8 @@ export function runMotionTargetSystem(
   random: RandomSource,
   bounds: { x?: number; y?: number; width: number; height: number },
 ): void {
-  components.forEach(["IntentState", "MotionTarget"], (_id, [intent, motion]) => {
-    if (intent.intent === "active" && motion.targetEntityId) {
+  components.forEach(["Steering", "MotionTarget"], (_id, [intent, motion]) => {
+    if (intent.mode === "pursue" && motion.targetEntityId) {
       const perception = components.getComponent(_id, "Perception");
       const targetPet = perception?.nearbyPets.find((pet) => pet.id === motion.targetEntityId);
       // chase-cursor tracks the user-anchor entity the same way approach-pet
@@ -287,7 +287,7 @@ export function runMotionTargetSystem(
       return;
     }
 
-    if (intent.intent === "seek") {
+    if (intent.mode === "arrive") {
       const perception = components.getComponent(_id, "Perception");
       const anchor = perception?.userAnchor ?? null;
       if (!anchor) {
@@ -438,14 +438,14 @@ export function runWallClimbSystem(
   );
 }
 
-export function runIntentSteeringSystem(
+export function runSteeringForceSystem(
   components: ComponentStore,
   forceGroups: Force[][],
 ): void {
   const forces: Force[] = [];
 
   components.forEach(
-    ["Transform", "FlyingTag", "MovementProfile", "IntentState", "MotionTarget"],
+    ["Transform", "FlyingTag", "MovementProfile", "Steering", "MotionTarget"],
     (id, [transform, , movement, intent, motion]) => {
       const target = motion.targetPosition;
       if (!target) {
@@ -462,9 +462,9 @@ export function runIntentSteeringSystem(
       }
 
       const speed =
-        intent.intent === "seek"
+        intent.mode === "arrive"
           ? movement.seekForce
-          : intent.intent === "active"
+          : intent.mode === "pursue"
             ? movement.activeForce
             : movement.idleForce;
 
@@ -589,8 +589,8 @@ export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbApproachSystem",
   dependsOn: ["LocomotionModeSystem"],
-  reads: ["ClimbingTag", "Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb", "ClimbableSurface", "IntentState", "BehaviorDecisionState"],
-  writes: ["MotionTarget", "ClimbIntentState", "IntentState", "BehaviorDecisionState"],
+  reads: ["ClimbingTag", "Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb", "ClimbableSurface", "Steering", "BehaviorDecisionState"],
+  writes: ["MotionTarget", "ClimbIntentState", "Steering", "BehaviorDecisionState"],
   update(ctx) {
     runClimbApproachSystem(ctx.components, ctx.clock);
   },
@@ -629,7 +629,7 @@ export const ClimbAttachmentSystem: SimulationSystem<WorldStepContext> = {
 export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
   name: "MotionTargetSystem",
   dependsOn: ["ClimbAttachmentSystem"],
-  reads: ["IntentState", "MotionTarget", "Transform", "Perception", "Personality", "WalkingTag", "FlyingTag", "ClimbingTag", "PhysicsBody", "ContactState", "CanJump", "JumpActionState"],
+  reads: ["Steering", "MotionTarget", "Transform", "Perception", "Personality", "WalkingTag", "FlyingTag", "ClimbingTag", "PhysicsBody", "ContactState", "CanJump", "JumpActionState"],
   writes: ["MotionTarget", "JumpActionState"],
   update(ctx) {
     runMotionTargetSystem(ctx.components, ctx.random, ctx.bounds);
@@ -666,19 +666,19 @@ export const WallClimbSystem: SimulationSystem<WorldStepContext> = {
   },
 };
 
-export const IntentSteeringSystem: SimulationSystem<WorldStepContext> = {
-  name: "IntentSteeringSystem",
+export const SteeringForceSystem: SimulationSystem<WorldStepContext> = {
+  name: "SteeringForceSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "FlyingTag", "MovementProfile", "IntentState", "MotionTarget"],
+  reads: ["Transform", "FlyingTag", "MovementProfile", "Steering", "MotionTarget"],
   writes: ["PhysicsForce"],
   update(ctx) {
-    runIntentSteeringSystem(ctx.components, ctx.forceGroups);
+    runSteeringForceSystem(ctx.components, ctx.forceGroups);
   },
 };
 
 export const FlightSystem: SimulationSystem<WorldStepContext> = {
   name: "FlightSystem",
-  dependsOn: ["IntentSteeringSystem"],
+  dependsOn: ["SteeringForceSystem"],
   reads: ["PhysicsBody", "FlyingTag", "CanFly"],
   writes: ["PhysicsGravityScale"],
   update(ctx) {

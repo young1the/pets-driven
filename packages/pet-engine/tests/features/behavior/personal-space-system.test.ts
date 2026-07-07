@@ -17,7 +17,7 @@ function idlePet(id: string, x: number, extra: Record<string, unknown>[] = []) {
         height: 38,
       },
       { type: "PetIdentity" as const, name: id },
-      { type: "IntentState" as const, intent: "idle" as const },
+      { type: "Steering" as const, mode: "stand" as const },
       {
         type: "MotionTarget" as const,
         targetEntityId: null,
@@ -61,7 +61,7 @@ describe("personal space system (make-room shuffle)", () => {
     expect(b?.targetPosition?.x).toBeGreaterThan(404);
     // A casual shuffle, not a dash.
     expect(a?.speedFactor).toBeLessThan(1);
-    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet-a", "Steering")?.mode).toBe("pursue");
     expect(store.getComponent("pet-a", "BehaviorDecisionState")).toMatchObject({
       source: "autonomous",
       reason: "make-room",

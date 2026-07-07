@@ -10,14 +10,14 @@ describe("motion target system", () => {
       {
         id: "pet-a",
         components: [
-          { type: "IntentState", intent: "seek" as const },
+          { type: "Steering", mode: "arrive" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: { id: "user-anchor", position: { x: 480, y: 500 }, distance: 300 },
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "seek" as const },
+            self: { grounded: false, climbing: false, mode: "arrive" as const },
           },
         ],
       },
@@ -40,14 +40,14 @@ describe("motion target system", () => {
         id: "pet-a",
         components: [
           { type: "Transform", position: { x: 600, y: 500 } },
-          { type: "IntentState", intent: "seek" as const },
+          { type: "Steering", mode: "arrive" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: { id: "user-anchor", position: { x: 480, y: 500 }, distance: 120 },
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "seek" as const },
+            self: { grounded: false, climbing: false, mode: "arrive" as const },
           },
         ],
       },
@@ -70,14 +70,14 @@ describe("motion target system", () => {
         id: "pet-a",
         components: [
           { type: "Transform", position: { x: 520, y: 500 } },
-          { type: "IntentState", intent: "seek" as const },
+          { type: "Steering", mode: "arrive" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: { id: "user-anchor", position: { x: 480, y: 500 }, distance: 40 },
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "seek" as const },
+            self: { grounded: false, climbing: false, mode: "arrive" as const },
           },
         ],
       },
@@ -93,7 +93,7 @@ describe("motion target system", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: null },
       ],
     }]);
@@ -109,7 +109,7 @@ describe("motion target system", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         { type: "MotionTarget", targetEntityId: null, targetPosition: null },
       ],
     }]);
@@ -124,7 +124,7 @@ describe("motion target system", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 300, y: 200 } },
       ],
     }]);
@@ -138,14 +138,14 @@ describe("motion target system", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
-        { type: "IntentState", intent: "active" as const },
+        { type: "Steering", mode: "pursue" as const },
         { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 300, y: 200 } },
         {
           type: "Perception" as const,
           userAnchor: null,
           nearbyPets: [{ id: "pet-b", position: { x: 360, y: 210 }, distance: 120 }],
           nearbyClimbables: [],
-          self: { grounded: true, climbing: false, intent: "active" as const },
+          self: { grounded: true, climbing: false, mode: "pursue" as const },
         },
         {
           type: "Personality" as const,
@@ -173,14 +173,14 @@ describe("motion target system", () => {
     const store = createComponentStore([{
       id: "pet-a",
       components: [
-        { type: "IntentState", intent: "active" as const },
+        { type: "Steering", mode: "pursue" as const },
         { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 300, y: 200 } },
         {
           type: "Perception" as const,
           userAnchor: { id: "user-anchor", position: { x: 420, y: 260 }, distance: 120 },
           nearbyPets: [],
           nearbyClimbables: [],
-          self: { grounded: true, climbing: false, intent: "active" as const },
+          self: { grounded: true, climbing: false, mode: "pursue" as const },
         },
       ],
     }]);
@@ -202,14 +202,14 @@ describe("motion target system", () => {
         { type: "CanWalk", force: 0.001 },
         { type: "CanJump", impulse: 0.009 },
         { type: "ContactState" as const, grounded: true, climbableSurfaceId: null, climbableSurfacePosition: null },
-        { type: "IntentState", intent: "active" as const },
+        { type: "Steering", mode: "pursue" as const },
         { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 300, y: 500 } },
         {
           type: "Perception" as const,
           userAnchor: null,
           nearbyPets: [{ id: "pet-b", position: { x: 360, y: 360 }, distance: 140 }],
           nearbyClimbables: [],
-          self: { grounded: true, climbing: false, intent: "active" as const },
+          self: { grounded: true, climbing: false, mode: "pursue" as const },
         },
       ],
     }]);

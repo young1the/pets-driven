@@ -10,7 +10,7 @@ function snapshotFixture(input?: {
   y?: number;
   vx?: number;
   vy?: number;
-  intent?: string;
+  steering?: string;
   motionTarget?: { x: number; y: number } | null;
 }): WorldSnapshot {
   const x = input?.x ?? 120;
@@ -42,7 +42,7 @@ function snapshotFixture(input?: {
         id: "pet-a",
         sourceId: "agent-a",
         name: "Alice",
-        intent: input?.intent ?? "active",
+        steering: input?.steering ?? "pursue",
         locomotion: "walk",
         speech: null,
         position: { x, y },

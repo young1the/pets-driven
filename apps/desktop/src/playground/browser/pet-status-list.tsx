@@ -14,7 +14,7 @@ export function PetStatusList({ pets }: PetStatusListProps) {
           <li key={pet.id}>
             <strong>{pet.name}</strong>
             <span>{pet.sourceId}</span>
-            <span>{pet.intent}</span>
+            <span>{pet.steering}</span>
             <span>{pet.locomotion}</span>
             {pet.agentTask?.label && <span>{pet.agentTask.label}</span>}
             {pet.action && pet.action !== "none" && <span>{pet.action}</span>}

@@ -85,12 +85,12 @@ export function createWorld(input: WorldDefinition) {
       .query(
         "PetIdentity",
         "AgentBinding",
-        "IntentState",
+        "Steering",
         "SpeechState",
         "Transform",
       )
       .map((entity) => {
-        const [identity, agent, intent, speech, transform] = entity.components;
+        const [identity, agent, steering, speech, transform] = entity.components;
         const contactState = componentStore.getComponent(
           entity.id,
           "ContactState",
@@ -115,7 +115,7 @@ export function createWorld(input: WorldDefinition) {
           id: entity.id,
           sourceId: agent.sourceId,
           name: identity.name,
-          intent: intent.intent,
+          steering: steering.mode,
           locomotion: getLocomotionLabel(componentStore, entity.id),
           action: getActionLabel(componentStore, entity.id),
           speech: speech.speech,

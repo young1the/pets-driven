@@ -50,7 +50,7 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
 
   // Pass 2: write each pet's Perception
   components.forEach(
-    ["Perception", "Transform", "IntentState", "ContactState"],
+    ["Perception", "Transform", "Steering", "ContactState"],
     (id, [perception, transform, intentState, contact]) => {
       const px = transform.position.x;
       const py = transform.position.y;
@@ -85,7 +85,7 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
       perception.self = {
         grounded: contact.grounded,
         climbing: !!components.getComponent(id, "ClimbingTag"),
-        intent: intentState.intent,
+        mode: intentState.mode,
       };
     },
   );
@@ -152,7 +152,7 @@ export const PerceptionSystem: SimulationSystem<WorldStepContext> = {
     "ClimbableSurface",
     "PetIdentity",
     "Perception",
-    "IntentState",
+    "Steering",
     "ContactState",
     "ClimbingTag",
     "CursorState",

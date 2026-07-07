@@ -32,7 +32,7 @@ import {
   type PetExpressionEmote,
   type PetExpressionMood,
   type ReactionSource,
-  type PetIntent,
+  type SteeringMode,
 } from "./components";
 
 const DEFAULT_BEHAVIOR_BODY_WIDTH = 32;
@@ -520,7 +520,7 @@ export function runPettingDetectionSystem(
         "petting",
         now + PETTING_DURATION_MS,
       );
-      components.setComponent(id, { type: "IntentState", intent: "idle" });
+      components.setComponent(id, { type: "Steering", mode: "stand" });
       stopPetMovement(components, physics, id);
       components.setComponent(id, {
         type: "PetExpressionState",
@@ -538,7 +538,7 @@ export function runPettingDetectionSystem(
 // Priority 2: record external agent events onto the pet (task.started, etc.).
 // This system only ingests agent facts — task/channel state, speech, activity,
 // the priority claim, and the movement hold a freezing status implies. It does
-// NOT touch IntentState; movement/behavior is owned by the decision layer and
+// NOT touch Steering; movement/behavior is owned by the decision layer and
 // user interaction.
 export function runAgentTaskEventSystem(
   components: ComponentStore,
@@ -670,7 +670,7 @@ export function runWorkingBehaviorSystem(
           targetEntityId: null,
           targetPosition: target,
         });
-        setPetIntent(components, id, "active");
+        setPetSteering(components, id, "pursue");
         claim(components, id, "autonomous", now, "working-wander", now + 750);
         return;
       }
@@ -694,7 +694,7 @@ export function runCollisionBehaviorSystem(
     y: number;
     halfW: number;
     halfH: number;
-    intent: string;
+    mode: string;
     targetX: number | null;
     targetY: number | null;
     motion: {
@@ -706,7 +706,7 @@ export function runCollisionBehaviorSystem(
 
   const entities: Collidable[] = [];
   components.forEach(
-    ["Transform", "PhysicsBody", "IntentState", "MotionTarget"],
+    ["Transform", "PhysicsBody", "Steering", "MotionTarget"],
     (id, [transform, body, intent, motion]) => {
       entities.push({
         id,
@@ -714,7 +714,7 @@ export function runCollisionBehaviorSystem(
         y: transform.position.y,
         halfW: body.width / 2,
         halfH: body.height / 2,
-        intent: intent.intent,
+        mode: intent.mode,
         targetX: motion.targetPosition?.x ?? null,
         targetY: motion.targetPosition?.y ?? null,
         motion,
@@ -838,8 +838,8 @@ export function runCollisionBehaviorSystem(
         targetPosition: null,
       });
       components.setComponent(entity.id, {
-        type: "IntentState" as const,
-        intent: "active",
+        type: "Steering" as const,
+        mode: "pursue",
       });
 
       const existing = components.getComponent(
@@ -888,7 +888,7 @@ export function runCollisionBehaviorSystem(
       targetEntityId: null,
       targetPosition: null,
     });
-    components.setComponent(entity.id, { type: "IntentState", intent: "idle" });
+    components.setComponent(entity.id, { type: "Steering", mode: "stand" });
 
     // Hold the claim until reactsAt so BehaviorDecisionSystem skips this pet
     // during the deliberation window.
@@ -929,13 +929,13 @@ function isEscapingCollisionFlee(
     id: string;
     x: number;
     y: number;
-    intent: string;
+    mode: string;
     targetX: number | null;
     targetY: number | null;
   },
   collision: { x: number; y: number },
 ): boolean {
-  if (entity.intent !== "active") return false;
+  if (entity.mode !== "pursue") return false;
   if (entity.targetX == null || entity.targetY == null) return false;
 
   const decision = components.getComponent(entity.id, "BehaviorDecisionState");
@@ -1138,9 +1138,9 @@ export function runPersonalSpaceSystem(
   const now = clock.now();
 
   components.forEach(
-    ["PetCollision", "IntentState", "MotionTarget", "Transform", "PetIdentity"],
+    ["PetCollision", "Steering", "MotionTarget", "Transform", "PetIdentity"],
     (id, [collision, intent, motion, transform]) => {
-      if (intent.intent !== "idle") return;
+      if (intent.mode !== "stand") return;
       if (motion.targetPosition !== null || motion.targetEntityId !== null) {
         return;
       }
@@ -1192,7 +1192,7 @@ export function runPersonalSpaceSystem(
         targetPosition: { x: targetX, y: transform.position.y },
         speedFactor: PERSONAL_SPACE_SPEED_FACTOR,
       });
-      intent.intent = "active";
+      intent.mode = "pursue";
       claim(
         components,
         id,
@@ -1252,7 +1252,7 @@ export function runArrivalBehaviorSystem(
   random?: RandomSource,
 ): void {
   components.forEach(
-    ["IntentState", "Transform", "MotionTarget", "WandersOnArrival"],
+    ["Steering", "Transform", "MotionTarget", "WandersOnArrival"],
     (id, [intent, transform, motion, wandersOnArrival]) => {
       if (motion.targetEntityId) {
         const decision = components.getComponent(id, "BehaviorDecisionState");
@@ -1261,7 +1261,7 @@ export function runArrivalBehaviorSystem(
           "BehaviorDecisionToken",
         );
         const isApproachingPet =
-          intent.intent === "active" &&
+          intent.mode === "pursue" &&
           (decisionToken?.kind === "approach-pet" ||
             decision?.reason === "approach-pet");
 
@@ -1284,7 +1284,7 @@ export function runArrivalBehaviorSystem(
             if (dist <= APPROACH_PET_SUCCESS_RADIUS) {
               motion.targetEntityId = null;
               motion.targetPosition = null;
-              intent.intent = "idle";
+              intent.mode = "stand";
               components.setComponent(id, {
                 type: "BehaviorDecisionState",
                 source: "autonomous",
@@ -1307,7 +1307,7 @@ export function runArrivalBehaviorSystem(
           if (now - startedAt > APPROACH_PET_TIMEOUT_MS) {
             motion.targetEntityId = null;
             motion.targetPosition = null;
-            intent.intent = "idle";
+            intent.mode = "stand";
             if (decision) decision.expiresAt = now;
             components.removeComponent(id, "BehaviorDecisionToken");
             return;
@@ -1317,7 +1317,7 @@ export function runArrivalBehaviorSystem(
         }
 
         const isChasingCursor =
-          intent.intent === "active" &&
+          intent.mode === "pursue" &&
           (decisionToken?.kind === "chase-cursor" ||
             decision?.reason === "chase-cursor");
 
@@ -1341,7 +1341,7 @@ export function runArrivalBehaviorSystem(
             if (dist <= CHASE_CURSOR_SUCCESS_RADIUS) {
               motion.targetEntityId = null;
               motion.targetPosition = null;
-              intent.intent = "idle";
+              intent.mode = "stand";
               components.setComponent(id, {
                 type: "BehaviorDecisionState",
                 source: "autonomous",
@@ -1369,7 +1369,7 @@ export function runArrivalBehaviorSystem(
           if (now - startedAt > CHASE_CURSOR_TIMEOUT_MS) {
             motion.targetEntityId = null;
             motion.targetPosition = null;
-            intent.intent = "idle";
+            intent.mode = "stand";
             if (decision) decision.expiresAt = now;
             components.removeComponent(id, "BehaviorDecisionToken");
             return;
@@ -1378,7 +1378,7 @@ export function runArrivalBehaviorSystem(
           return;
         }
 
-        if (intent.intent !== "seek") return;
+        if (intent.mode !== "arrive") return;
         const perception = components.getComponent(id, "Perception");
         const anchor = perception?.userAnchor;
         if (!anchor) return;
@@ -1395,7 +1395,7 @@ export function runArrivalBehaviorSystem(
         const isFlying = !!components.getComponent(id, "FlyingTag");
         const dist = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
         if (dist > wandersOnArrival.arrivalRadius) return;
-        intent.intent = "idle";
+        intent.mode = "stand";
         motion.targetEntityId = null;
         motion.targetPosition = null;
         if (clock) applyArrivalDwell(components, id, clock.now(), random);
@@ -1416,7 +1416,7 @@ export function runArrivalBehaviorSystem(
       if (delta > wandersOnArrival.arrivalRadius) return;
       motion.targetEntityId = null;
       motion.targetPosition = null;
-      intent.intent = "idle";
+      intent.mode = "stand";
       if (clock) applyArrivalDwell(components, id, clock.now(), random);
     },
   );
@@ -1686,12 +1686,12 @@ function pickWanderPosition(
   };
 }
 
-function setPetIntent(
+function setPetSteering(
   components: ComponentStore,
   id: string,
-  intent: PetIntent,
+  mode: SteeringMode,
 ): void {
-  components.setComponent(id, { type: "IntentState", intent });
+  components.setComponent(id, { type: "Steering", mode });
 }
 
 function isNearUserAnchor(
@@ -1713,7 +1713,7 @@ function isNearUserAnchor(
 // Scores all candidates using OCEAN Personality weights, then samples a winner
 // via softmax (temperature scales with neuroticism: high N → flatter distribution).
 // Emits a BehaviorDecisionToken and claims the entity with source="autonomous".
-// Does NOT mutate MotionTarget / IntentState / JumpActionState / ClimbIntentState —
+// Does NOT mutate MotionTarget / Steering / JumpActionState / ClimbIntentState —
 // that is the responsibility of BehaviorPlanningSystem.
 
 export function runBehaviorDecisionSystem(
@@ -1742,13 +1742,13 @@ export function runBehaviorDecisionSystem(
   });
 
   components.forEach(
-    ["IntentState", "MotionTarget", "Transform", "Personality"],
+    ["Steering", "MotionTarget", "Transform", "Personality"],
     (id, [intent, motion, transform, personality]) => {
       // Trigger conditions — only fire for pets that have no active goal.
       // "active" = pursuing a wander/climb target  "seek" = pursuing user
       // Both set a motion target; arrival resets intent back to "idle".
       // "idle" is the only state that means "ready for a new decision".
-      if (intent.intent !== "idle") return;
+      if (intent.mode !== "stand") return;
       if (motion.targetPosition !== null) return;
       if (motion.targetEntityId !== null) return;
 
@@ -2163,7 +2163,7 @@ export function runBehaviorDecisionSystem(
 //
 // Runs at end of BEHAVIOR phase, after BehaviorDecisionSystem.
 // Reads the unconsumed BehaviorDecisionToken and materializes it into
-// concrete state components (MotionTarget, IntentState, JumpActionState,
+// concrete state components (MotionTarget, Steering, JumpActionState,
 // ClimbIntentState). Marks the token consumed when done.
 
 export function runBehaviorPlanningSystem(
@@ -2179,7 +2179,7 @@ export function runBehaviorPlanningSystem(
           targetEntityId: null,
           targetPosition: token.targetPosition!,
         });
-        setPetIntent(components, id, "active");
+        setPetSteering(components, id, "pursue");
         break;
       case "wander-far":
         components.setComponent(id, {
@@ -2187,7 +2187,7 @@ export function runBehaviorPlanningSystem(
           targetEntityId: null,
           targetPosition: token.targetPosition!,
         });
-        setPetIntent(components, id, "active");
+        setPetSteering(components, id, "pursue");
         // Venturing far resolves some of the pet's need for novelty.
         adjustDrive(components, id, {
           curiosity: -WANDER_FAR_CURIOSITY_RELIEF,
@@ -2196,7 +2196,7 @@ export function runBehaviorPlanningSystem(
       case "seek-user":
         // MotionTargetSystem (UPDATE phase) reads Perception.userAnchor and owns
         // all seek positioning. Planning only promotes the intent.
-        setPetIntent(components, id, "seek");
+        setPetSteering(components, id, "arrive");
         break;
       case "request-jump": {
         const jumpState = components.getComponent(id, "JumpActionState");
@@ -2219,7 +2219,7 @@ export function runBehaviorPlanningSystem(
           targetY: token.climbTargetY!,
           startedAt: token.decidedAt,
         });
-        setPetIntent(components, id, "active");
+        setPetSteering(components, id, "pursue");
         // Climbing costs energy and resolves curiosity, same as wander-far.
         adjustDrive(components, id, {
           energy: -CLIMB_ENERGY_COST,
@@ -2256,7 +2256,7 @@ export function runBehaviorPlanningSystem(
           targetEntityId: token.targetEntityId ?? null,
           targetPosition: token.targetPosition!,
         });
-        setPetIntent(components, id, "active");
+        setPetSteering(components, id, "pursue");
         break;
       case "flee-from-pet":
         components.setComponent(id, {
@@ -2264,7 +2264,7 @@ export function runBehaviorPlanningSystem(
           targetEntityId: null,
           targetPosition: token.targetPosition!,
         });
-        setPetIntent(components, id, "active");
+        setPetSteering(components, id, "pursue");
         break;
       // Cursor play — chase the user-anchor entity, which now tracks the
       // live cursor position (see CursorInputSystem).
@@ -2274,7 +2274,7 @@ export function runBehaviorPlanningSystem(
           targetEntityId: token.targetEntityId ?? null,
           targetPosition: token.targetPosition!,
         });
-        setPetIntent(components, id, "active");
+        setPetSteering(components, id, "pursue");
         break;
       // Phase 4 — collision reactions (position pre-computed in Decision)
       case "collision-engage":
@@ -2305,14 +2305,14 @@ export function runBehaviorPlanningSystem(
             targetEntityId: null,
             targetPosition: token.targetPosition,
           });
-          setPetIntent(components, id, "active");
+          setPetSteering(components, id, "pursue");
         } else if (token.kind === "collision-stay") {
           components.setComponent(id, {
             type: "MotionTarget",
             targetEntityId: null,
             targetPosition: null,
           });
-          setPetIntent(components, id, "idle");
+          setPetSteering(components, id, "stand");
         }
         break;
     }
@@ -2353,7 +2353,7 @@ export function runRompProgressSystem(
     if (now >= romp.endsAt || decision.expiresAt <= now) {
       components.removeComponent(id, "RompState");
       clearMotionTarget(components, id);
-      components.setComponent(id, { type: "IntentState", intent: "idle" });
+      components.setComponent(id, { type: "Steering", mode: "stand" });
       // A worn-out pet catches its breath before the next decision, with a
       // brief contented cue. (The dwell claim carries the play-romp history
       // forward, so its repeat-cooldown survives the breather.)
@@ -2407,7 +2407,7 @@ export function runRompProgressSystem(
       },
       speedFactor: ROMP_SPEED_FACTOR,
     });
-    components.setComponent(id, { type: "IntentState", intent: "active" });
+    components.setComponent(id, { type: "Steering", mode: "pursue" });
     if (components.getComponent(id, "CanJump")) {
       components.setComponent(id, {
         type: "JumpActionState",
@@ -2497,7 +2497,7 @@ export const PettingDetectionSystem: SimulationSystem<WorldStepContext> = {
   writes: [
     "BehaviorDecisionState",
     "PetExpressionState",
-    "IntentState",
+    "Steering",
     "MotionTarget",
     "PhysicsVelocity",
   ],
@@ -2543,7 +2543,7 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
   reads: [
     "Transform",
     "PhysicsBody",
-    "IntentState",
+    "Steering",
     "MotionTarget",
     "Personality",
     "BehaviorDecisionState",
@@ -2560,7 +2560,7 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "PendingReaction",
     "BehaviorDecisionState",
     "MotionTarget",
-    "IntentState",
+    "Steering",
     "PetExpressionState",
     "CollisionMemory",
   ],
@@ -2580,7 +2580,7 @@ export const WorkingBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "BehaviorDecisionState",
     "PhysicsBody",
   ],
-  writes: ["MotionTarget", "IntentState", "BehaviorDecisionState"],
+  writes: ["MotionTarget", "Steering", "BehaviorDecisionState"],
   update(ctx) {
     runWorkingBehaviorSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
   },
@@ -2590,7 +2590,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
   name: "BehaviorDecisionSystem",
   dependsOn: ["WorkingBehaviorSystem"],
   reads: [
-    "IntentState",
+    "Steering",
     "MotionTarget",
     "Transform",
     "Personality",
@@ -2629,7 +2629,7 @@ export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
   dependsOn: ["AutonomousBehaviorSystem"],
   reads: ["BehaviorDecisionToken", "JumpActionState"],
   writes: [
-    "IntentState",
+    "Steering",
     "MotionTarget",
     "JumpActionState",
     "ClimbIntentState",
@@ -2658,7 +2658,7 @@ export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "Transform",
     "MotionTarget",
     "WandersOnArrival",
-    "IntentState",
+    "Steering",
     "ClimbingTag",
     "Perception",
     "ClimbIntentState",
@@ -2667,7 +2667,7 @@ export const ArrivalBehaviorSystem: SimulationSystem<WorldStepContext> = {
   ],
   writes: [
     "MotionTarget",
-    "IntentState",
+    "Steering",
     "PetExpressionState",
     "Drives",
     "BehaviorDecisionState",
@@ -2682,7 +2682,7 @@ export const PersonalSpaceSystem: SimulationSystem<WorldStepContext> = {
   dependsOn: ["BehaviorPlanningSystem"],
   reads: [
     "PetCollision",
-    "IntentState",
+    "Steering",
     "MotionTarget",
     "Transform",
     "PetIdentity",
@@ -2694,7 +2694,7 @@ export const PersonalSpaceSystem: SimulationSystem<WorldStepContext> = {
     "BehaviorDecisionState",
     "PhysicsBody",
   ],
-  writes: ["MotionTarget", "IntentState", "BehaviorDecisionState"],
+  writes: ["MotionTarget", "Steering", "BehaviorDecisionState"],
   update(ctx) {
     runPersonalSpaceSystem(ctx.components, ctx.clock, ctx.bounds);
   },
@@ -2715,7 +2715,7 @@ export const RompProgressSystem: SimulationSystem<WorldStepContext> = {
   writes: [
     "RompState",
     "MotionTarget",
-    "IntentState",
+    "Steering",
     "JumpActionState",
     "PetExpressionState",
     "BehaviorDecisionState",

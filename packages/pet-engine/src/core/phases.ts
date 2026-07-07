@@ -48,7 +48,7 @@ import {
   WalkSystem,
   JumpSystem,
   WallClimbSystem,
-  IntentSteeringSystem,
+  SteeringForceSystem,
   FlightSystem,
   TravelTrackingSystem,
 } from "@pets-driven/pet-engine/features/movement/systems";
@@ -98,17 +98,17 @@ export const SYSTEM_PHASES: Record<
     LocomotionActiveStateSystem,
     ClimbAttachmentSystem,
     MotionTargetSystem,
-    DriveDecaySystem, // passive drive drift; reads this tick's IntentState
+    DriveDecaySystem, // passive drive drift; reads this tick's Steering
   ],
 
   POST_UPDATE: [
     // Runs before the force systems so a held pet's motion target is cleared
-    // before WalkSystem/IntentSteeringSystem can turn it into movement.
+    // before WalkSystem/SteeringForceSystem can turn it into movement.
     TaskMovementHoldSystem,
     WalkSystem,
     JumpSystem,
     WallClimbSystem,
-    IntentSteeringSystem,
+    SteeringForceSystem,
     KeyboardControlMovementSystem,
     FlightSystem,
     DraggedEntityKinematicSystem,

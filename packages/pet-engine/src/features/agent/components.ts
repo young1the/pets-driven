@@ -1,4 +1,4 @@
-export type CompletionIntent = "idle" | "seek";
+export type CompletionIntent = "stand" | "arrive";
 
 /** Connects a pet entity to the external agent or hook source it represents. */
 export type AgentBindingComponent = {

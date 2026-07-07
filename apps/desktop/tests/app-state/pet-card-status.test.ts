@@ -13,7 +13,7 @@ function snapshot(
     id: "pet",
     sourceId: "agent-a",
     name: "Rex",
-    intent: "idle",
+    steering: "stand",
     locomotion: "idle",
     speech: null,
     position: { x: 0, y: 0 },
@@ -116,7 +116,7 @@ describe("petStatusFromSnapshot", () => {
     const greeting = petStatusFromSnapshot(
       snapshot(null, {
         activity: "makingFriends",
-        social: { kind: "greet", phase: "greet", role: "initiator", partnerId: "p", partnerName: "Bo" },
+        social: { kind: "greet", phase: "approach", role: "initiator", partnerId: "p", partnerName: "Bo" },
       }),
     );
     expect(greeting.labelKey).toBe("makingFriendsWith");

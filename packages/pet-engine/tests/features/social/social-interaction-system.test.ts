@@ -51,7 +51,7 @@ function socialPet(
     { type: "CanSocialize" },
     { type: "Transform", position: { x, y: 500 } },
     { type: "PhysicsBody", shape: "rectangle", width: 32, height: 38 },
-    { type: "IntentState", intent: "idle" },
+    { type: "Steering", mode: "stand" },
     { type: "MotionTarget", targetEntityId: null, targetPosition: null },
     { type: "ContactState", grounded: true, climbableSurfaceId: null, climbableSurfacePosition: null },
     { type: "SpeechState", speech: null, expiresAt: null },
@@ -84,7 +84,7 @@ function seedSession(
       type: "SocialSession",
       kind,
       participantIds,
-      phase: "greet",
+      phase: "approach",
       startedAt,
       endsAt: startedAt + GREET_TIMEOUT_MS + d.play + d.part,
       playStartedAt: null,
@@ -201,7 +201,7 @@ describe("SocialInteractionSystem — greet choreography", () => {
 
     const a = store.getComponent("pet-a", "MotionTarget");
     const b = store.getComponent("pet-b", "MotionTarget");
-    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet-a", "Steering")?.mode).toBe("pursue");
     expect(a?.targetPosition?.x).toBeGreaterThan(100); // moving toward pet-b (300)
     expect(b?.targetPosition?.x).toBeLessThan(300); // moving toward pet-a (100)
     // Walking up for a hello is a saunter, not a sprint.
@@ -219,7 +219,7 @@ describe("SocialInteractionSystem — greet choreography", () => {
     runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
 
     expect(store.getComponent("sess", "SocialSession")?.phase).toBe("play");
-    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
     expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
       source: "social",
@@ -281,7 +281,7 @@ describe("SocialInteractionSystem — greet choreography", () => {
     runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
 
     expect(store.getComponent("sess", "SocialSession")?.phase).toBe("play");
-    expect(store.getComponent("pet-a", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
   });
 
   it("tears the session down and relieves the social drive when it ends", () => {

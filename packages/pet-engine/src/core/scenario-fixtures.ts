@@ -111,7 +111,7 @@ export function createFixturePet(input: {
     { type: "PetIdentity" as const, name: input.name },
     { type: "AgentBinding" as const, sourceId: input.sourceId },
     // MovementProfile is NOT hardcoded here — derived from Personality below.
-    { type: "IntentState" as const, intent: "idle" as const },
+    { type: "Steering" as const, mode: "stand" as const },
     {
       type: "MotionTarget" as const,
       targetEntityId: null,
@@ -126,7 +126,7 @@ export function createFixturePet(input: {
     { type: "ActivityState" as const, lastActiveAt: 0 },
     {
       type: "CompletionBehavior" as const,
-      intentAfterCompletion: "idle" as const,
+      intentAfterCompletion: "stand" as const,
     },
     { type: "SpeechState" as const, speech: null, expiresAt: null },
     { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
@@ -151,7 +151,7 @@ export function createFixturePet(input: {
       userAnchor: null,
       nearbyPets: [],
       nearbyClimbables: [],
-      self: { grounded: false, climbing: false, intent: "idle" as const },
+      self: { grounded: false, climbing: false, mode: "stand" as const },
     },
     // Default personality — per-pet entries in input.components override this.
     defaultPersonality,
@@ -366,7 +366,7 @@ export function createDemoScenario(options?: {
           { type: "WandersOnArrival", arrivalRadius: 16 },
           ...(isDualMonitor
             ? [
-                { type: "IntentState" as const, intent: "active" as const },
+                { type: "Steering" as const, mode: "pursue" as const },
                 {
                   type: "ContactState" as const,
                   grounded: false,
@@ -977,7 +977,7 @@ export function createClimbPlaygroundScenario() {
               dismountImpulse: { min: pet.min, max: pet.max },
             },
             { type: "WandersOnArrival", arrivalRadius: 16 },
-            { type: "IntentState", intent: "active" },
+            { type: "Steering", mode: "pursue" },
             {
               type: "ContactState",
               grounded: false,

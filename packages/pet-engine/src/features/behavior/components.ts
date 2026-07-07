@@ -1,10 +1,14 @@
-/** Drives AutonomousBehaviorSystem and MotionTargetSystem target selection. */
-export type PetIntent = "idle" | "active" | "seek";
+/**
+ * The pet's high-level steering mode, driving AutonomousBehaviorSystem and
+ * MotionTargetSystem target selection: `stand` = hold position, `pursue` = move
+ * toward a chosen target, `arrive` = ease up to the user anchor.
+ */
+export type SteeringMode = "stand" | "pursue" | "arrive";
 
-/** Stores the current high-level behavior intent selected for the entity. */
-export type IntentStateComponent = {
-  type: "IntentState";
-  intent: PetIntent;
+/** Stores the current steering mode selected for the entity. */
+export type SteeringComponent = {
+  type: "Steering";
+  mode: SteeringMode;
 };
 
 /** Human-facing identity for rendering and status panels. */

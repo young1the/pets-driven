@@ -14,8 +14,8 @@ export type {
 export type { ContactStateComponent } from "@pets-driven/pet-engine/features/contact/components";
 
 export type {
-  PetIntent,
-  IntentStateComponent,
+  SteeringMode,
+  SteeringComponent,
   PetIdentityComponent,
   UserAnchorComponent,
   BehaviorDecisionSource,
@@ -114,7 +114,7 @@ import type {
 } from "@pets-driven/pet-engine/features/physics/components";
 import type { ContactStateComponent } from "@pets-driven/pet-engine/features/contact/components";
 import type {
-  IntentStateComponent,
+  SteeringComponent,
   PetIdentityComponent,
   UserAnchorComponent,
   BehaviorDecisionStateComponent,
@@ -216,7 +216,7 @@ export type Component =
   | FlyingTagComponent
   | GroundComponent
   | IdleConversationComponent
-  | IntentStateComponent
+  | SteeringComponent
   | JumpActionStateComponent
   | KeyboardControlTargetComponent
   | KeyboardInputStateComponent

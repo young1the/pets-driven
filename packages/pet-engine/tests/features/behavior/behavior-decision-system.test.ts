@@ -41,7 +41,7 @@ function makeStore(prefOverride: Partial<{
       id: "pet",
       components: [
         { type: "Transform", position: { x: 200, y: 200 } },
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         { type: "MotionTarget", targetEntityId: null, targetPosition: null },
         { type: "ActivityState", lastActiveAt: 0 },
         { type: "WandersOnArrival", arrivalRadius: 16 },
@@ -54,7 +54,7 @@ function makeStore(prefOverride: Partial<{
           },
           nearbyPets: [],
           nearbyClimbables: [],
-          self: { grounded: false, climbing: false, intent: "idle" as const },
+          self: { grounded: false, climbing: false, mode: "stand" as const },
         },
         {
           type: "Personality" as const,
@@ -94,7 +94,7 @@ function makeNearbyStore(prefOverride: Partial<{
       id: "pet",
       components: [
         { type: "Transform", position: { x: 200, y: 200 } },
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         { type: "MotionTarget", targetEntityId: null, targetPosition: null },
         { type: "WandersOnArrival", arrivalRadius: 16 },
         {
@@ -102,7 +102,7 @@ function makeNearbyStore(prefOverride: Partial<{
           userAnchor: null, // excluded so seek-user is never a candidate
           nearbyPets: [{ id: "other-pet", position: { x: 350, y: 200 }, distance: 150 }],
           nearbyClimbables: [],
-          self: { grounded: false, climbing: false, intent: "idle" as const },
+          self: { grounded: false, climbing: false, mode: "stand" as const },
         },
         {
           type: "Personality" as const,
@@ -149,7 +149,7 @@ describe("BehaviorDecisionSystem", () => {
     expect(motion?.targetPosition).toBeNull();
 
     // Intent stays idle until Planning materializes
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
   });
 
   it("does not emit a token while already close to the user anchor", () => {
@@ -164,7 +164,7 @@ describe("BehaviorDecisionSystem", () => {
       userAnchor: { id: "user-anchor", position: { x: 480, y: 500 }, distance: 12 },
       nearbyPets: [],
       nearbyClimbables: [],
-      self: { grounded: false, climbing: false, intent: "idle" as const },
+      self: { grounded: false, climbing: false, mode: "stand" as const },
     });
 
     runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), BOUNDS);
@@ -179,7 +179,7 @@ describe("BehaviorDecisionSystem", () => {
     runBehaviorDecisionSystem(store, clock, createSeededRandom(1), BOUNDS);
     expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("seek-user");
 
-    store.setComponent("pet", { type: "IntentState", intent: "idle" as const });
+    store.setComponent("pet", { type: "Steering", mode: "stand" as const });
     store.setComponent("pet", { type: "MotionTarget", targetEntityId: null, targetPosition: null });
     store.removeComponent("pet", "BehaviorDecisionToken");
     clock.advanceBy(600);
@@ -209,7 +209,7 @@ describe("BehaviorDecisionSystem", () => {
           components: [
             { type: "Transform", position: origin },
             { type: "PhysicsBody", shape: "rectangle", width: bodyWidth, height: 38 },
-            { type: "IntentState", intent: "idle" as const },
+            { type: "Steering", mode: "stand" as const },
             { type: "MotionTarget", targetEntityId: null, targetPosition: null },
             { type: "WandersOnArrival", arrivalRadius: 16 },
             {
@@ -217,7 +217,7 @@ describe("BehaviorDecisionSystem", () => {
               userAnchor: null,
               nearbyPets: [],
               nearbyClimbables: [],
-              self: { grounded: true, climbing: false, intent: "idle" as const },
+              self: { grounded: true, climbing: false, mode: "stand" as const },
             },
             {
               type: "Personality" as const,
@@ -253,7 +253,7 @@ describe("BehaviorDecisionSystem", () => {
         components: [
           { type: "Transform", position: { x: -320, y: 500 } },
           { type: "PhysicsBody", shape: "rectangle" as const, width: 32, height: 38 },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
@@ -261,7 +261,7 @@ describe("BehaviorDecisionSystem", () => {
             userAnchor: null,
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: true, climbing: false, intent: "idle" as const },
+            self: { grounded: true, climbing: false, mode: "stand" as const },
           },
           {
             type: "Personality" as const,
@@ -295,7 +295,7 @@ describe("BehaviorDecisionSystem", () => {
       userAnchor: null,
       nearbyPets: [],
       nearbyClimbables: [],
-      self: { grounded: false, climbing: false, intent: "idle" as const },
+      self: { grounded: false, climbing: false, mode: "stand" as const },
     });
     store.setComponent("pet", { type: "CanJump", impulse: 0.009 });
 
@@ -336,7 +336,7 @@ describe("BehaviorDecisionSystem", () => {
         id: "pet-1",
         components: [
           { type: "Transform", position: { x: 100, y: 500 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           { type: "CanWallClimb", velocity: 1.1 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
@@ -345,7 +345,7 @@ describe("BehaviorDecisionSystem", () => {
             userAnchor: null, // excluded so climb can win
             nearbyPets: [{ id: "pet-2", position: { x: 140, y: 500 }, distance: 40 }],
             nearbyClimbables: [{ id: "wall-a", position: { x: 120, y: 300 }, distance: Math.hypot(20, 200) }],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           climbPersonality,
         ],
@@ -354,7 +354,7 @@ describe("BehaviorDecisionSystem", () => {
         id: "pet-2",
         components: [
           { type: "Transform", position: { x: 140, y: 500 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           { type: "CanWallClimb", velocity: 1.1 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
@@ -363,7 +363,7 @@ describe("BehaviorDecisionSystem", () => {
             userAnchor: null, // excluded so climb can win
             nearbyPets: [{ id: "pet-1", position: { x: 100, y: 500 }, distance: 40 }],
             nearbyClimbables: [{ id: "wall-a", position: { x: 120, y: 300 }, distance: Math.hypot(20, 200) }],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           climbPersonality,
         ],
@@ -435,14 +435,14 @@ describe("BehaviorPlanningSystem", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: { id: "user-anchor", position: { x: 480, y: 500 }, distance: Math.hypot(280, 300) },
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
@@ -461,7 +461,7 @@ describe("BehaviorPlanningSystem", () => {
     // Planning must NOT write MotionTarget — MotionTargetSystem handles that.
     expect(motion?.targetEntityId).toBeNull();
     expect(motion?.targetPosition).toBeNull();
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("seek");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("arrive");
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 
@@ -471,14 +471,14 @@ describe("BehaviorPlanningSystem", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: null,
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
@@ -496,7 +496,7 @@ describe("BehaviorPlanningSystem", () => {
     const motion = store.getComponent("pet", "MotionTarget");
     expect(motion?.targetEntityId).toBeNull();
     expect(motion?.targetPosition).toEqual({ x: 250, y: 220 });
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 
@@ -506,14 +506,14 @@ describe("BehaviorPlanningSystem", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: null,
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
@@ -537,14 +537,14 @@ describe("BehaviorPlanningSystem", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: null,
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
@@ -564,7 +564,7 @@ describe("BehaviorPlanningSystem", () => {
     expect(climbIntent?.phase).toBe("approaching");
     expect(climbIntent?.surfaceEntityId).toBe("wall-a");
     expect(climbIntent?.targetY).toBe(120);
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 
@@ -574,14 +574,14 @@ describe("BehaviorPlanningSystem", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: null,
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
@@ -597,7 +597,7 @@ describe("BehaviorPlanningSystem", () => {
 
     // No state change since token was already consumed
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("idle");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
   });
 });
 
@@ -611,7 +611,7 @@ describe("BehaviorDecisionSystem + BehaviorPlanningSystem (integration via world
       targetEntityId: null,
       targetPosition: { x: (before?.position.x ?? 600) + 4, y: before?.position.y ?? 500 },
     });
-    world.setComponent("pet-a", { type: "IntentState", intent: "active" as const });
+    world.setComponent("pet-a", { type: "Steering", mode: "pursue" as const });
 
     clock.advanceBy(16);
     world.step(16);
@@ -699,14 +699,14 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: null, // no seek-user candidate
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "Personality" as const,
@@ -787,14 +787,14 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
             id: "pet",
             components: [
               { type: "Transform", position: { x: 200, y: 200 } },
-              { type: "IntentState", intent: "idle" as const },
+              { type: "Steering", mode: "stand" as const },
               { type: "MotionTarget", targetEntityId: null, targetPosition: null },
               {
                 type: "Perception" as const,
                 userAnchor: null,
                 nearbyPets: [],
                 nearbyClimbables: [],
-                self: { grounded: false, climbing: false, intent: "idle" as const },
+                self: { grounded: false, climbing: false, mode: "stand" as const },
               },
               {
                 type: "Personality" as const,
@@ -895,7 +895,7 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
         components: [
           { type: "Transform", position: { x: 500, y: 200 } },
           { type: "PhysicsBody", shape: "rectangle", width: 40, height: 38 },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
@@ -903,7 +903,7 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
             userAnchor: null,
             nearbyPets: [{ id: "other-pet", position: { x: 650, y: 200 }, distance: 150 }],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "Personality" as const,
@@ -932,14 +932,14 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: null,
             nearbyPets: [{ id: "other-pet", position: { x: 270, y: 200 }, distance: 70 }],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "Personality" as const,
@@ -989,7 +989,7 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
@@ -998,7 +998,7 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
             nearbyPets: [],
             nearbyClimbables: [],
             cursor,
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "Personality" as const,
@@ -1106,14 +1106,14 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: null,
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
@@ -1132,7 +1132,7 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
     const motion = store.getComponent("pet", "MotionTarget");
     expect(motion?.targetEntityId).toBe("user-anchor");
     expect(motion?.targetPosition).toEqual({ x: 260, y: 210 });
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 
@@ -1147,7 +1147,7 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
     runBehaviorDecisionSystem(store, clock, { next: () => 0.5 }, BOUNDS);
     expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("chase-cursor");
 
-    store.setComponent("pet", { type: "IntentState", intent: "idle" as const });
+    store.setComponent("pet", { type: "Steering", mode: "stand" as const });
     store.setComponent("pet", { type: "MotionTarget", targetEntityId: null, targetPosition: null });
     store.removeComponent("pet", "BehaviorDecisionToken");
     // Past the 500ms autonomous claim duration (so a new decision can fire)
@@ -1170,14 +1170,14 @@ describe("BehaviorPlanningSystem — Phase 3 social tokens", () => {
         id: "pet",
         components: [
           { type: "Transform", position: { x: 200, y: 200 } },
-          { type: "IntentState", intent: "idle" as const },
+          { type: "Steering", mode: "stand" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
             userAnchor: null,
             nearbyPets: [],
             nearbyClimbables: [],
-            self: { grounded: false, climbing: false, intent: "idle" as const },
+            self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           {
             type: "BehaviorDecisionToken" as const,
@@ -1207,7 +1207,7 @@ describe("BehaviorPlanningSystem — Phase 3 social tokens", () => {
     const motion = store.getComponent("pet", "MotionTarget");
     expect(motion?.targetEntityId).toBe("other-pet");
     expect(motion?.targetPosition).toEqual({ x: 250, y: 200 });
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 
@@ -1217,7 +1217,7 @@ describe("BehaviorPlanningSystem — Phase 3 social tokens", () => {
     const motion = store.getComponent("pet", "MotionTarget");
     expect(motion?.targetEntityId).toBeNull();
     expect(motion?.targetPosition).toEqual({ x: 100, y: 200 });
-    expect(store.getComponent("pet", "IntentState")?.intent).toBe("active");
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 });
@@ -1251,7 +1251,7 @@ function makeStoreWithDrives(
       id: "pet",
       components: [
         { type: "Transform", position: { x: 200, y: 200 } },
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         { type: "MotionTarget", targetEntityId: null, targetPosition: null },
         { type: "ActivityState", lastActiveAt: 0 },
         { type: "WandersOnArrival", arrivalRadius: 16 },
@@ -1264,7 +1264,7 @@ function makeStoreWithDrives(
           },
           nearbyPets: [],
           nearbyClimbables: [],
-          self: { grounded: false, climbing: false, intent: "idle" as const },
+          self: { grounded: false, climbing: false, mode: "stand" as const },
         },
         {
           type: "Personality" as const,
@@ -1299,7 +1299,7 @@ function makeNearbyStoreWithDrives(
       id: "pet",
       components: [
         { type: "Transform", position: { x: 200, y: 200 } },
-        { type: "IntentState", intent: "idle" as const },
+        { type: "Steering", mode: "stand" as const },
         { type: "MotionTarget", targetEntityId: null, targetPosition: null },
         { type: "WandersOnArrival", arrivalRadius: 16 },
         {
@@ -1307,7 +1307,7 @@ function makeNearbyStoreWithDrives(
           userAnchor: null,
           nearbyPets: [{ id: "other-pet", position: { x: 350, y: 200 }, distance: 150 }],
           nearbyClimbables: [],
-          self: { grounded: false, climbing: false, intent: "idle" as const },
+          self: { grounded: false, climbing: false, mode: "stand" as const },
         },
         {
           type: "Personality" as const,

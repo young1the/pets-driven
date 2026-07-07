@@ -11,7 +11,7 @@ describe("pet entity builder", () => {
     expect(buildPersonalityComponents(createPlayfulPersonality())).toEqual([
       { type: "MovementProfile", idleForce: 0.0008, activeForce: 0.0016, seekForce: 0.002 },
       { type: "IdleConversation", idleAfterMs: 9000 },
-      { type: "CompletionBehavior", intentAfterCompletion: "seek" },
+      { type: "CompletionBehavior", intentAfterCompletion: "arrive" },
       {
         type: "Personality",
         openness: 0.7,
@@ -27,7 +27,7 @@ describe("pet entity builder", () => {
     expect(buildPersonalityComponents(createAttentivePersonality())).toEqual([
       { type: "MovementProfile", idleForce: 0.0005, activeForce: 0.001, seekForce: 0.0016 },
       { type: "IdleConversation", idleAfterMs: 12000 },
-      { type: "CompletionBehavior", intentAfterCompletion: "seek" },
+      { type: "CompletionBehavior", intentAfterCompletion: "arrive" },
       {
         type: "Personality",
         openness: 0.3,
@@ -42,7 +42,7 @@ describe("pet entity builder", () => {
   it("omits IdleConversation when idleConversationMs is absent", () => {
     expect(buildPersonalityComponents(createReservedPersonality())).toEqual([
       { type: "MovementProfile", idleForce: 0.0004, activeForce: 0.0008, seekForce: 0.001 },
-      { type: "CompletionBehavior", intentAfterCompletion: "idle" },
+      { type: "CompletionBehavior", intentAfterCompletion: "stand" },
       {
         type: "Personality",
         openness: 0.3,
@@ -60,7 +60,7 @@ describe("pet entity builder", () => {
         idleForce: 0.001,
         activeForce: 0.002,
         seekForce: 0.003,
-        completionIntent: "idle",
+        completionIntent: "stand",
         openness: 0.5,
         conscientiousness: 0.4,
         extraversion: 0.5,
@@ -69,7 +69,7 @@ describe("pet entity builder", () => {
       }),
     ).toEqual([
       { type: "MovementProfile", idleForce: 0.001, activeForce: 0.002, seekForce: 0.003 },
-      { type: "CompletionBehavior", intentAfterCompletion: "idle" },
+      { type: "CompletionBehavior", intentAfterCompletion: "stand" },
       {
         type: "Personality",
         openness: 0.5,

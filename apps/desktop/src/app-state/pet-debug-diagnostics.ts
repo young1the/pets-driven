@@ -18,7 +18,7 @@ export type PetDiagnosticSample = {
   y: number;
   vx: number;
   vy: number;
-  intent: string;
+  steering: string;
   locomotion: string;
   motionTarget: { x: number; y: number } | null;
 };
@@ -162,7 +162,7 @@ function sampleFromPet(
     y: body?.y ?? pet.position.y,
     vx: body?.vx ?? 0,
     vy: body?.vy ?? 0,
-    intent: pet.intent,
+    steering: pet.steering,
     locomotion: pet.locomotion,
     motionTarget: pet.motionTarget,
   };
@@ -188,7 +188,7 @@ function buildPetDiagnosticEntry(input: {
   );
   const shouldMove =
     !expectedHold &&
-    (pet.intent === "active" || pet.intent === "seek" || !!pet.motionTarget);
+    (pet.steering === "pursue" || pet.steering === "arrive" || !!pet.motionTarget);
   const stationaryForMs = input.stationaryForMs;
   const stall: PetStallDiagnostic =
     shouldMove && stationaryForMs >= stallAfterMs
@@ -232,8 +232,8 @@ function diagnosticSignals(
 
   if (pet.motionTarget) signals.push("has-motion-target");
   else signals.push("no-motion-target");
-  if (pet.intent === "active") signals.push("active-intent");
-  if (pet.intent === "seek") signals.push("seek-intent");
+  if (pet.steering === "pursue") signals.push("active-intent");
+  if (pet.steering === "arrive") signals.push("seek-intent");
   if (pet.agentTask && pet.agentTask.status !== "working") {
     signals.push("agent-task-hold");
   }
@@ -297,7 +297,7 @@ export function formatPetDiagnosticsReport(input: {
       `  stallReason: ${diagnostic.stall.reason}`,
       `  stationaryForMs: ${diagnostic.stall.stationaryForMs}`,
       `  signals: ${diagnostic.signals.join(", ")}`,
-      `  intent: ${diagnostic.pet.intent}`,
+      `  intent: ${diagnostic.pet.steering}`,
       `  locomotion: ${diagnostic.pet.locomotion}`,
       `  action: ${diagnostic.pet.action ?? "none"}`,
       `  agentTask: ${formatJson(diagnostic.pet.agentTask ?? null)}`,
@@ -310,7 +310,7 @@ export function formatPetDiagnosticsReport(input: {
       "  recentSamples:",
       ...diagnostic.recentSamples.map(
         (sample) =>
-          `    - seq=${sample.sequence} t=${sample.now} pos=(${formatNumber(sample.x)}, ${formatNumber(sample.y)}) vel=(${formatNumber(sample.vx)}, ${formatNumber(sample.vy)}) intent=${sample.intent} locomotion=${sample.locomotion} target=${formatJson(sample.motionTarget)}`,
+          `    - seq=${sample.sequence} t=${sample.now} pos=(${formatNumber(sample.x)}, ${formatNumber(sample.y)}) vel=(${formatNumber(sample.vx)}, ${formatNumber(sample.vy)}) intent=${sample.steering} locomotion=${sample.locomotion} target=${formatJson(sample.motionTarget)}`,
       ),
     );
   }

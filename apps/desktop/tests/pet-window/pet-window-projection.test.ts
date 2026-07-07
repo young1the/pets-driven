@@ -29,7 +29,7 @@ function snapshotFixture(): WorldSnapshot {
         id: "pet-a",
         sourceId: "agent-a",
         name: "Alice",
-        intent: "seek",
+        steering: "arrive",
         locomotion: "walking",
         speech: "hello",
         position: { x: 600, y: 500 },

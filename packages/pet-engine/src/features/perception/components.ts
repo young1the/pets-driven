@@ -1,4 +1,4 @@
-import type { PetIntent } from "@pets-driven/pet-engine/features/behavior/components";
+import type { SteeringMode } from "@pets-driven/pet-engine/features/behavior/components";
 
 export type PerceivedEntity = {
   id: string;
@@ -30,6 +30,6 @@ export type PerceptionComponent = {
   self: {
     grounded: boolean;
     climbing: boolean;
-    intent: PetIntent;
+    mode: SteeringMode;
   };
 };

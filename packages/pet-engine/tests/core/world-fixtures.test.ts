@@ -84,8 +84,8 @@ function scriptSeamClimb(scenario: ReturnType<typeof createDemoScenario>): void 
   scenario.world.removeComponent("pet-c", "JumpActionState");
   scenario.world.setComponent("pet-c", { type: "ClimbingTag" });
   scenario.world.setComponent("pet-c", {
-    type: "IntentState",
-    intent: "active",
+    type: "Steering",
+    mode: "pursue",
   });
   scenario.world.setComponent("pet-c", {
     type: "ContactState",
@@ -251,7 +251,7 @@ describe("demo scenario", () => {
       "WalkSystem",
       "JumpSystem",
       "WallClimbSystem",
-      "IntentSteeringSystem",
+      "SteeringForceSystem",
       "KeyboardControlMovementSystem",
       "FlightSystem",
       "DraggedEntityKinematicSystem",
@@ -309,13 +309,13 @@ describe("demo scenario", () => {
         "ClimbIntentState",
         "CanWallClimb",
         "ClimbableSurface",
-        "IntentState",
+        "Steering",
         "BehaviorDecisionState",
       ],
       writes: [
         "MotionTarget",
         "ClimbIntentState",
-        "IntentState",
+        "Steering",
         "BehaviorDecisionState",
       ],
     });
@@ -343,7 +343,7 @@ describe("demo scenario", () => {
         "Transform",
         "MotionTarget",
         "WandersOnArrival",
-        "IntentState",
+        "Steering",
         "ClimbingTag",
         "Perception",
         "ClimbIntentState",
@@ -352,7 +352,7 @@ describe("demo scenario", () => {
       ],
       writes: [
         "MotionTarget",
-        "IntentState",
+        "Steering",
         "PetExpressionState",
         "Drives",
         "BehaviorDecisionState",
@@ -361,7 +361,7 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "DriveDecaySystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["Drives", "IntentState"],
+      reads: ["Drives", "Steering"],
       writes: ["Drives"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -417,7 +417,7 @@ describe("demo scenario", () => {
       reads: [
         "Transform",
         "PhysicsBody",
-        "IntentState",
+        "Steering",
         "MotionTarget",
         "Personality",
         "BehaviorDecisionState",
@@ -434,7 +434,7 @@ describe("demo scenario", () => {
         "PendingReaction",
         "BehaviorDecisionState",
         "MotionTarget",
-        "IntentState",
+        "Steering",
         "PetExpressionState",
         "CollisionMemory",
       ],
@@ -450,13 +450,13 @@ describe("demo scenario", () => {
         "BehaviorDecisionState",
         "PhysicsBody",
       ],
-      writes: ["MotionTarget", "IntentState", "BehaviorDecisionState"],
+      writes: ["MotionTarget", "Steering", "BehaviorDecisionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "BehaviorDecisionSystem",
       dependsOn: ["WorkingBehaviorSystem"],
       reads: [
-        "IntentState",
+        "Steering",
         "MotionTarget",
         "Transform",
         "Personality",
@@ -489,7 +489,7 @@ describe("demo scenario", () => {
       dependsOn: ["AutonomousBehaviorSystem"],
       reads: ["BehaviorDecisionToken", "JumpActionState"],
       writes: [
-        "IntentState",
+        "Steering",
         "MotionTarget",
         "JumpActionState",
         "ClimbIntentState",
@@ -536,7 +536,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "FlightSystem",
-      dependsOn: ["IntentSteeringSystem"],
+      dependsOn: ["SteeringForceSystem"],
       reads: ["PhysicsBody", "FlyingTag", "CanFly"],
       writes: ["PhysicsGravityScale"],
     });
@@ -619,7 +619,7 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-a", "CompletionBehavior")).toEqual({
       type: "CompletionBehavior",
-      intentAfterCompletion: "idle",
+      intentAfterCompletion: "stand",
     });
     expect(scenario.world.getComponent("pet-a", "WalkingTag")).toEqual({
       type: "WalkingTag",
@@ -938,7 +938,7 @@ describe("demo scenario", () => {
       id: "pet-a",
       sourceId: "agent-a",
       name: "Alice",
-      intent: "idle",
+      steering: "stand",
       locomotion: "walk",
       action: "none",
       speech: null,
@@ -1081,9 +1081,9 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
-      type: "IntentState",
-      intent: "idle",
+    expect(scenario.world.getComponent("pet-a", "Steering")).toEqual({
+      type: "Steering",
+      mode: "stand",
     });
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
       type: "MotionTarget",
@@ -1114,8 +1114,8 @@ describe("demo scenario", () => {
       scenario.world.step(16);
     }
     scenario.world.setComponent("pet-a", {
-      type: "IntentState",
-      intent: "active",
+      type: "Steering",
+      mode: "pursue",
     });
     scenario.world.setComponent("pet-a", {
       type: "MotionTarget",
@@ -1337,9 +1337,9 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-a", "IntentState")).toEqual({
-      type: "IntentState",
-      intent: "idle",
+    expect(scenario.world.getComponent("pet-a", "Steering")).toEqual({
+      type: "Steering",
+      mode: "stand",
     });
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
       type: "MotionTarget",
@@ -1422,9 +1422,9 @@ describe("demo scenario", () => {
     scenario.world.step(16);
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-e", "IntentState")).toEqual({
-      type: "IntentState",
-      intent: "idle",
+    expect(scenario.world.getComponent("pet-e", "Steering")).toEqual({
+      type: "Steering",
+      mode: "stand",
     });
     const motionAfterArrival = scenario.world.getComponent(
       "pet-e",
