@@ -63,4 +63,11 @@ describe("PetEditSection", () => {
     fireEvent.click(screen.getByText("Done"));
     expect(onDone).toHaveBeenCalled();
   });
+
+  it("toggles show-on-desktop by clicking its label text", () => {
+    const onToggleDeployed = vi.fn();
+    setup({ onToggleDeployed });
+    fireEvent.click(screen.getByText("Show on desktop"));
+    expect(onToggleDeployed).toHaveBeenCalledTimes(1);
+  });
 });

@@ -201,9 +201,6 @@ export function PetEditSection({
 
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
                 marginTop: "16px",
                 padding: "12px 14px",
                 background: "var(--surface-sunken)",
@@ -214,21 +211,25 @@ export function PetEditSection({
                 checked={pet.deployed}
                 onChange={onToggleDeployed}
                 size="sm"
-              />
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "14px",
-                    color: "var(--text-strong)",
-                  }}
-                >
-                  {t("edit.showOnDesktop")}
+                className="pd-edit-deploy-toggle"
+              >
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "14px",
+                      color: "var(--text-strong)",
+                    }}
+                  >
+                    {t("edit.showOnDesktop")}
+                  </div>
+                  <div
+                    style={{ fontSize: "12.5px", color: "var(--text-muted)" }}
+                  >
+                    {t("edit.showOnDesktopHint")}
+                  </div>
                 </div>
-                <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
-                  {t("edit.showOnDesktopHint")}
-                </div>
-              </div>
+              </Switch>
             </div>
 
             <div

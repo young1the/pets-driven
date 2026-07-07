@@ -132,3 +132,8 @@
   transition: none;
   cursor: grabbing;
 }
+
+.pd-edit-deploy-toggle {
+  width: 100%;
+  align-items: center;
+}
