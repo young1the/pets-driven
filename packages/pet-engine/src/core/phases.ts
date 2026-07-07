@@ -50,6 +50,7 @@ import {
   WallClimbSystem,
   IntentSteeringSystem,
   FlightSystem,
+  TravelTrackingSystem,
 } from "@pets-driven/pet-engine/features/movement/systems";
 import {
   PhysicsTransformSyncSystemPre,
@@ -114,7 +115,13 @@ export const SYSTEM_PHASES: Record<
     ThrowImpulseSystem,
   ],
 
-  SIMULATE: [PhysicsIntegrationSystem, PhysicsTransformSyncSystemPost],
+  SIMULATE: [
+    PhysicsIntegrationSystem,
+    PhysicsTransformSyncSystemPost,
+    // Derives per-tick travel displacement from the freshly synced Transform,
+    // so the animation layer reads movement from engine state, not physics.
+    TravelTrackingSystem,
+  ],
 };
 
 export const PHASE_ORDER: PhaseName[] = [

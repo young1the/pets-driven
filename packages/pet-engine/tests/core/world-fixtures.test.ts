@@ -259,6 +259,7 @@ describe("demo scenario", () => {
       // SIMULATE
       "PhysicsIntegrationSystem",
       "PhysicsTransformSyncSystemPost",
+      "TravelTrackingSystem",
     ]);
   });
 

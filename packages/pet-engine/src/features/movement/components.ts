@@ -22,6 +22,21 @@ export type AirborneTagComponent = {
   type: "AirborneTag";
 };
 
+/**
+ * Per-tick screen displacement, derived from the pet's own Transform rather
+ * than the matter.js body velocity. TravelTrackingSystem writes this at the
+ * end of each simulation tick by differencing the current Transform position
+ * against the previous tick's. The animation layer reads dx/dy to choose a
+ * directional running row, so "which way is the pet visibly moving" stays a
+ * function of engine position state and never reaches into the physics library.
+ */
+export type TravelStateComponent = {
+  type: "TravelState";
+  previousPosition: Vector;
+  dx: number;
+  dy: number;
+};
+
 /** Stores the entity or world position the pet is currently trying to reach. */
 export type MotionTargetComponent = {
   type: "MotionTarget";

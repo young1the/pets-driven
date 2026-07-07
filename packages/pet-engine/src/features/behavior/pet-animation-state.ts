@@ -1,18 +1,27 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 
-// Horizontal speed above this (matter.js units, matching the vertical jump
-// threshold) counts as the pet visibly travelling, so it plays a directional
-// running row instead of the stationary task-run animation.
-const TRAVEL_SPEED_THRESHOLD = 0.5;
+// Per-tick horizontal displacement (engine pixels) above this counts as the pet
+// visibly travelling, so it plays a directional running row instead of the
+// stationary task-run animation. Empirically, resting pets sit at ~0 dx while
+// real walking spends most of its time in the 0.1–3 range and only briefly
+// peaks past 0.5 (the ~0.5 median of eased approach used to fall through to the
+// in-place "running" row even though the pet was clearly moving). Kept well
+// below that walking band, and far above resting noise, so any actual travel
+// reads as directional.
+const TRAVEL_DISPLACEMENT_THRESHOLD = 0.1;
+
+// Per-tick vertical displacement above this reads as airborne motion (a fall or
+// throw the jump/airborne tags did not already flag), keeping the jumping row.
+const AIRBORNE_DISPLACEMENT_THRESHOLD = 0.5;
 
 type TravelDirection = "left" | "right";
 
-function getTravelDirection(body: { vx: number }): TravelDirection | null {
-  if (Math.abs(body.vx) <= TRAVEL_SPEED_THRESHOLD) {
+function getTravelDirection(dx: number): TravelDirection | null {
+  if (Math.abs(dx) <= TRAVEL_DISPLACEMENT_THRESHOLD) {
     return null;
   }
-  return body.vx > 0 ? "right" : "left";
+  return dx > 0 ? "right" : "left";
 }
 
 /**
@@ -24,11 +33,16 @@ function getTravelDirection(body: { vx: number }): TravelDirection | null {
 export function getPetAnimationState(
   componentStore: ComponentStore,
   id: string,
-  body: { vx: number; vy: number },
 ): PetAnimationState | undefined {
   if (!componentStore.getComponent(id, "PetIdentity")) {
     return undefined;
   }
+
+  // Movement is read from the engine's own per-tick displacement (Transform
+  // delta, recorded by TravelTrackingSystem), never the matter.js velocity.
+  const travel = componentStore.getComponent(id, "TravelState");
+  const dx = travel?.dx ?? 0;
+  const dy = travel?.dy ?? 0;
 
   const agentTask = componentStore.getComponent(id, "AgentTaskState");
 
@@ -55,17 +69,17 @@ export function getPetAnimationState(
   if (
     jumpAction ||
     componentStore.getComponent(id, "AirborneTag") ||
-    Math.abs(body.vy) > 0.5
+    Math.abs(dy) > AIRBORNE_DISPLACEMENT_THRESHOLD
   ) {
     return "jumping";
   }
 
   // System-driven horizontal movement plays the directional travel rows. Read
-  // the pet's actual horizontal velocity so every kind of system push —
+  // the pet's actual per-tick displacement so every kind of system push —
   // walking toward a target, fleeing, collision recoil, coasting momentum —
   // reads as travel, rather than falling through to the stationary task-run
   // ("running") sprite that does not look like it is moving.
-  const travelDirection = getTravelDirection(body);
+  const travelDirection = getTravelDirection(dx);
   if (travelDirection) {
     return travelDirection === "right" ? "running-right" : "running-left";
   }

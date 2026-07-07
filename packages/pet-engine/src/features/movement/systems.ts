@@ -494,6 +494,26 @@ export function runFlightSystem(
   });
 }
 
+// ── TRAVEL_TRACKING (end of SIMULATE) ──────────────────────────────────────
+
+// Records each pet's per-tick screen displacement from its own Transform, so
+// the animation layer can tell "visibly travelling" from "standing" without
+// reaching into the matter.js body velocity. Runs after the final transform
+// sync of the tick; the first tick seeds the previous position and reports a
+// zero delta.
+export function runTravelTrackingSystem(components: ComponentStore): void {
+  components.forEach(["PetIdentity", "Transform"], (id, [, transform]) => {
+    const { x, y } = transform.position;
+    const previous = components.getComponent(id, "TravelState");
+    components.setComponent(id, {
+      type: "TravelState",
+      previousPosition: { x, y },
+      dx: previous ? x - previous.previousPosition.x : 0,
+      dy: previous ? y - previous.previousPosition.y : 0,
+    });
+  });
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function canEnterClimb(
@@ -663,5 +683,15 @@ export const FlightSystem: SimulationSystem<WorldStepContext> = {
   writes: ["PhysicsGravityScale"],
   update(ctx) {
     runFlightSystem(ctx.components, ctx.physics);
+  },
+};
+
+export const TravelTrackingSystem: SimulationSystem<WorldStepContext> = {
+  name: "TravelTrackingSystem",
+  dependsOn: ["PhysicsTransformSyncSystemPost"],
+  reads: ["PetIdentity", "Transform", "TravelState"],
+  writes: ["TravelState"],
+  update(ctx) {
+    runTravelTrackingSystem(ctx.components);
   },
 };

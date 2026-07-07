@@ -458,7 +458,7 @@ export function createWorld(input: WorldDefinition) {
       );
       const bodies = physicsSnapshot.bodies.map((body) => ({
         ...body,
-        animationState: getPetAnimationState(components, body.id, body),
+        animationState: getPetAnimationState(components, body.id),
         interaction: getInteractionSnapshot(components, body.id),
       }));
 

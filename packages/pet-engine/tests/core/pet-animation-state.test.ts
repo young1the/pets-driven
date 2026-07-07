@@ -6,9 +6,21 @@ function petBodyAnimationState(id: string) {
   const bodySnapshot = () =>
     scenario.world.snapshot().bodies.find((body) => body.id === id);
 
+  // Directional running is a function of the pet's per-tick displacement
+  // (TravelState), which the engine derives from Transform — not from the
+  // matter.js body velocity. Tests set it directly to drive the mapping.
+  const setTravel = (dx: number, dy: number) =>
+    scenario.world.setComponent(id, {
+      type: "TravelState",
+      previousPosition: { x: 0, y: 0 },
+      dx,
+      dy,
+    });
+
   return {
     scenario,
     bodySnapshot,
+    setTravel,
     animationState: () => bodySnapshot()?.animationState,
   };
 }
@@ -21,19 +33,30 @@ describe("pet animation state", () => {
   });
 
   it("uses directional running states while moving horizontally", () => {
-    const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
+    const { setTravel, animationState } = petBodyAnimationState("pet-a");
 
-    scenario.world.setPhysicsVelocity("pet-a", { x: 4, y: 0 });
-    expect(bodySnapshot()).toMatchObject({
-      animationState: "running-right",    });
+    setTravel(4, 0);
+    expect(animationState()).toBe("running-right");
 
-    scenario.world.setPhysicsVelocity("pet-a", { x: -4, y: 0 });
-    expect(bodySnapshot()).toMatchObject({
-      animationState: "running-left",    });
+    setTravel(-4, 0);
+    expect(animationState()).toBe("running-left");
+  });
+
+  it("uses directional running even at slow walking speeds", () => {
+    const { setTravel, animationState } = petBodyAnimationState("pet-a");
+
+    // Real walking spends most of its time well below the old 0.5 threshold;
+    // these speeds must still read as directional travel, not in-place running.
+    setTravel(0.3, 0);
+    expect(animationState()).toBe("running-right");
+
+    setTravel(-0.3, 0);
+    expect(animationState()).toBe("running-left");
   });
 
   it("does not infer left or right when the pet is not moving", () => {
-    const { scenario, animationState } = petBodyAnimationState("pet-a");
+    const { scenario, setTravel, animationState } =
+      petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
       type: "ContactState",
@@ -41,7 +64,7 @@ describe("pet animation state", () => {
       climbableSurfaceId: null,
       climbableSurfacePosition: null,
     });
-    scenario.world.setPhysicsVelocity("pet-a", { x: 0, y: 0 });
+    setTravel(0, 0);
     scenario.world.setComponent("pet-a", {
       type: "IntentState",
       intent: "active",
@@ -118,46 +141,62 @@ describe("pet animation state", () => {
     expect(animationState()).toBe("jumping");
   });
 
-  it("keeps left-facing direction while jumping with leftward momentum", () => {
-    const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
+  it("keeps jumping while airborne with leftward momentum", () => {
+    const { scenario, setTravel, animationState } =
+      petBodyAnimationState("pet-a");
 
-    scenario.world.setPhysicsVelocity("pet-a", { x: -4, y: 0 });
+    setTravel(-4, 0);
     scenario.world.setComponent("pet-a", {
       type: "JumpActionState",
       phase: "requested",
       cooldownMs: 0,
     });
 
-    expect(bodySnapshot()).toMatchObject({
-      animationState: "jumping",    });
+    expect(animationState()).toBe("jumping");
   });
 
   it("shows travel animation when a working pet is moving", () => {
-    const { scenario, bodySnapshot } = petBodyAnimationState("pet-a");
+    const { scenario, setTravel, animationState } =
+      petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
       type: "AgentTaskState",
       status: "working",
       since: 0,
     });
-    scenario.world.setPhysicsVelocity("pet-a", { x: 4, y: 0 });
-    expect(bodySnapshot()).toMatchObject({
-      animationState: "running-right",    });
+    setTravel(4, 0);
+    expect(animationState()).toBe("running-right");
 
-    scenario.world.setPhysicsVelocity("pet-a", { x: -4, y: 0 });
-    expect(bodySnapshot()).toMatchObject({
-      animationState: "running-left",    });
+    setTravel(-4, 0);
+    expect(animationState()).toBe("running-left");
   });
 
   it("shows running animation when a working pet is not moving", () => {
-    const { scenario, animationState } = petBodyAnimationState("pet-a");
+    const { scenario, setTravel, animationState } =
+      petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
       type: "AgentTaskState",
       status: "working",
       since: 0,
     });
-    scenario.world.setPhysicsVelocity("pet-a", { x: 0, y: 0 });
+    setTravel(0, 0);
     expect(animationState()).toBe("running");
+  });
+
+  it("derives travel displacement from Transform, not physics velocity", () => {
+    const { scenario } = petBodyAnimationState("pet-a");
+
+    // Seed the previous position, then teleport the body purely by position
+    // (velocity stays ~0). If travel were read from matter.js velocity this
+    // would register as standing still; from Transform it is a clear rightward
+    // step, proving the animation input is decoupled from physics velocity.
+    scenario.world.step(16);
+    const start = scenario.world.getComponent("pet-a", "Transform")!.position;
+    scenario.world.setPhysicsPosition("pet-a", { x: start.x + 100 });
+    scenario.world.step(16);
+
+    const travel = scenario.world.getComponent("pet-a", "TravelState")!;
+    expect(travel.dx).toBeGreaterThan(50);
   });
 });

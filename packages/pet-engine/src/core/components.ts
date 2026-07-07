@@ -55,6 +55,7 @@ export type {
   FlyingTagComponent,
   AirborneTagComponent,
   MotionTargetComponent,
+  TravelStateComponent,
 } from "@pets-driven/pet-engine/features/movement/components";
 
 export type {
@@ -141,6 +142,7 @@ import type {
   FlyingTagComponent,
   AirborneTagComponent,
   MotionTargetComponent,
+  TravelStateComponent,
 } from "@pets-driven/pet-engine/features/movement/components";
 import type {
   CanWalkComponent,
@@ -229,6 +231,7 @@ export type Component =
   | SpeechStateComponent
   | TaskMovementHoldComponent
   | TransformComponent
+  | TravelStateComponent
   | ThrowImpulseComponent
   | UserAnchorComponent
   | WalkingTagComponent
