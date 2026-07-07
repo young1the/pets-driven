@@ -378,11 +378,21 @@ sessions with an unknown partner fall back to the plain label; the afterglow
 (`socialized` → found-a-friend) and pending `social-invite` stay generic
 because they have no live SocialSessionMember.
 
-**Scoped out (follow-up B9a)** — the floating **pet-window capsule**
-(`presentPetStatus`) still shows the bare "Chatting"/"Playing" label. Adding
-the partner name there means threading `social` across the pet-window IPC
-boundary (`PetWindowFrameSprite`) and widening `presentPetStatus`'s
-signature — larger than this XS–S slice, deferred.
+### B9a. Partner name on the floating pet-window capsule — DONE (2026-07-06)
+
+Threaded `partnerName` across the pet-window IPC boundary so the floating
+capsule matches the management card:
+- `PetWindowFrameSprite` gains `partnerName`; the projection fills it from
+  `pet.social?.partnerName`.
+- The view's presentation state and its activity-hysteresis carry the name
+  in step with the shown activity (the held label keeps the held partner;
+  a fresh activity adopts the new partner). `isSamePetWindowPresentation`
+  already diffs the sprite by JSON, and the explicit comparison object now
+  includes `partnerName` so a partner change re-renders.
+- `presentPetStatus` gained a `partnerName` param and maps the ambient
+  social labels (chatting/playing/makingFriends) to the `*With` keys +
+  `labelParams`, reusing the B9 i18n. `PetStatusCard` passes it through and
+  interpolates via `t(key, labelParams)`.
 
 ## B10. Group sessions (3+ participants)
 

@@ -114,6 +114,7 @@ describe("pet window projection", () => {
           },
           animationState: "running-left",
           activity: null,
+          partnerName: null,
         },
         overlay: null,
       },
@@ -131,6 +132,29 @@ describe("pet window projection", () => {
     );
 
     expect(projection.frame.sprite.activity).toBe("chasingCursor");
+  });
+
+  it("passes the session partner name through to the frame sprite", () => {
+    const snapshot = snapshotFixture();
+    snapshot.pets[0] = {
+      ...snapshot.pets[0],
+      activity: "chatting",
+      social: {
+        kind: "chat",
+        phase: "play",
+        role: "initiator",
+        partnerId: "pet-b",
+        partnerName: "Otto",
+      },
+    };
+
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 0, y: 0, width: 1000, height: 800 },
+      7,
+    );
+
+    expect(projection.frame.sprite.partnerName).toBe("Otto");
   });
 
   it("prefers expression emotes over behavior decision emotes", () => {

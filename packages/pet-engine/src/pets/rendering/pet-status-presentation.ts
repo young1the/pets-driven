@@ -23,7 +23,11 @@ export type PetStatusLabelKey =
   | "failed"
   | "stuck"
   | "reviewing"
-  | PetActivityKind;
+  | PetActivityKind
+  // Partner-aware variants of the social activities (need a {{name}} param).
+  | "chattingWith"
+  | "playingWith"
+  | "makingFriendsWith";
 
 export type PetStatusPresentation = {
   mood: PetMood;
@@ -34,6 +38,8 @@ export type PetStatusPresentation = {
    * host-supplied free text with no fixed key.
    */
   labelKey: PetStatusLabelKey | null;
+  /** Interpolation values for the label (the partner name), if any. */
+  labelParams?: { name: string };
   /** Optional agent-channel message line. */
   message: string | null;
   emote: PetEmoteKind;
@@ -45,8 +51,36 @@ type IntentPresentation = {
   mood: PetMood;
   label: string | null;
   labelKey: PetStatusLabelKey | null;
+  labelParams?: { name: string };
   emote: PetEmoteKind;
 };
+
+/** Social activities that gain a partner name when the pet is in a session. */
+const SOCIAL_WITH_KEY: Partial<Record<PetActivityKind, PetStatusLabelKey>> = {
+  chatting: "chattingWith",
+  playing: "playingWith",
+  makingFriends: "makingFriendsWith",
+};
+
+/**
+ * When the pet is in a live session, name its partner: "Chatting" becomes
+ * "Chatting with Otto". Leaves non-social activities and partner-less states
+ * untouched.
+ */
+function withPartnerName(
+  base: IntentPresentation,
+  partnerName: string | null | undefined,
+): IntentPresentation {
+  if (!partnerName || base.labelKey === null) return base;
+  const withKey = SOCIAL_WITH_KEY[base.labelKey as PetActivityKind];
+  if (!withKey) return base;
+  return {
+    ...base,
+    labelKey: withKey,
+    label: base.label ? `${base.label} with ${partnerName}` : partnerName,
+    labelParams: { name: partnerName },
+  };
+}
 
 function presentationFromAnimationState(
   animationState: PetAnimationState | undefined,
@@ -186,14 +220,17 @@ export function presentPetStatus(
   animationState: PetAnimationState | undefined,
   overlay: PetSpriteOverlay | null | undefined,
   activity?: PetActivityKind | null,
+  partnerName?: string | null,
 ): PetStatusPresentation {
   // The canonical activity gives ambient rows a live, specific label
   // ("Chasing the cursor" instead of a mute working capsule). Task-owned
   // rows (failed/waiting/review) keep their label and mood.
-  const base =
+  const activityBase =
     activity && ACTIVITY_OVERRIDABLE_ROWS.has(animationState ?? "idle")
       ? ACTIVITY_PRESENTATION[activity]
       : presentationFromAnimationState(animationState);
+  // Name the session partner on the ambient social label ("Chatting with Otto").
+  const base = withPartnerName(activityBase, partnerName);
 
   if (!overlay) {
     return { ...base, message: null, showCapsule: false };

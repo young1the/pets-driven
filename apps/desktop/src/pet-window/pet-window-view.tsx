@@ -49,6 +49,8 @@ type PetWindowPresentation = {
   decisionEmote: BehaviorTokenPresentation | null;
   animationState: PetAnimationState;
   activity: PetActivityKind | null;
+  /** Session partner name for the capsule label, following the shown activity. */
+  partnerName: string | null;
   overlay: PetWindowOverlay | null;
 };
 
@@ -141,6 +143,7 @@ function defaultPresentation(index: number): PetWindowPresentation {
     animationState:
       movementDirectionForWindow(index) >= 0 ? "running-right" : "running-left",
     activity: null,
+    partnerName: null,
     overlay: { kind: "status", label: "!" },
   };
 }
@@ -261,6 +264,12 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         frame.sprite.activity ?? null,
         Date.now(),
       );
+      // The partner name follows the shown activity: keep it in step when the
+      // new activity wins, hold the previous name while the old label is held.
+      const steadiedPartnerName =
+        steadiedActivity === (frame.sprite.activity ?? null)
+          ? (frame.sprite.partnerName ?? null)
+          : presentationRef.current.partnerName;
 
       if (
         !isSamePetWindowPresentation(
@@ -269,11 +278,16 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
               decisionEmote: presentationRef.current.decisionEmote,
               animationState: presentationRef.current.animationState,
               activity: presentationRef.current.activity,
+              partnerName: presentationRef.current.partnerName,
             },
             overlay: presentationRef.current.overlay,
           },
           {
-            sprite: { ...frame.sprite, activity: steadiedActivity },
+            sprite: {
+              ...frame.sprite,
+              activity: steadiedActivity,
+              partnerName: steadiedPartnerName,
+            },
             overlay: frame.overlay,
           },
         )
@@ -282,12 +296,14 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
           decisionEmote: frame.sprite.decisionEmote ?? null,
           animationState: frame.sprite.animationState,
           activity: steadiedActivity,
+          partnerName: steadiedPartnerName,
           overlay: frame.overlay,
         };
         setPresentation({
           decisionEmote: frame.sprite.decisionEmote ?? null,
           animationState: frame.sprite.animationState,
           activity: steadiedActivity,
+          partnerName: steadiedPartnerName,
           overlay: frame.overlay,
         });
       }
@@ -742,6 +758,7 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
         {petName !== null ? (
           <PetStatusCard
             activity={presentation.activity}
+            partnerName={presentation.partnerName}
             animationState={presentation.animationState}
             cwd={isBodyHovered ? cwdRef.current : null}
             name={petName}
@@ -779,6 +796,7 @@ type PetStatusCardProps = {
   name: string;
   animationState: PetAnimationState;
   activity: PetActivityKind | null;
+  partnerName: string | null;
   overlay: PetWindowOverlay | null;
   cwd: string | null;
   spriteHeight: number;
@@ -788,17 +806,18 @@ function PetStatusCard({
   name,
   animationState,
   activity,
+  partnerName,
   overlay,
   cwd,
   spriteHeight,
 }: PetStatusCardProps) {
   const { t } = useTranslation("desktop");
-  const status = presentPetStatus(animationState, overlay, activity);
+  const status = presentPetStatus(animationState, overlay, activity, partnerName);
   const accent = PET_MOODS[status.mood].accent;
   // Static labels carry a stable key we can localize; host-supplied free text
   // (speech/attention overlays) has no key, so it shows as-is.
   const label = status.labelKey
-    ? t(`petStatus.${status.labelKey}`)
+    ? t(`petStatus.${status.labelKey}`, status.labelParams)
     : status.label;
 
   return (

@@ -42,6 +42,11 @@ export type PetWindowFrameSprite = {
   animationState: PetAnimationState;
   /** Engine-canonical current activity, for the status capsule label. */
   activity?: PetActivityKind | null;
+  /**
+   * The session partner's display name when the pet is in a live social
+   * session, so the capsule can read "Chatting with Otto". Null otherwise.
+   */
+  partnerName?: string | null;
 };
 
 export type PetWindowResizeEvent = {

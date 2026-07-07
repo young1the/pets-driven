@@ -96,6 +96,7 @@ export function projectWorldSnapshotToPetWindows(
               : presentBehaviorDecisionToken(pet.decision?.reason),
             animationState: body.animationState ?? "idle",
             activity: pet.activity ?? null,
+            partnerName: pet.social?.partnerName ?? null,
           },
           overlay: overlayFromPet(pet),
         },

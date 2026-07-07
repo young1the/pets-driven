@@ -86,6 +86,40 @@ describe("presentPetStatus", () => {
     expect(presentation.showCapsule).toBe(true);
   });
 
+  it("names the session partner on the ambient social label", () => {
+    const presentation = presentPetStatus(
+      "running-right",
+      null,
+      "chatting",
+      "Otto",
+    );
+
+    expect(presentation.labelKey).toBe("chattingWith");
+    expect(presentation.label).toBe("Chatting with Otto");
+    expect(presentation.labelParams).toEqual({ name: "Otto" });
+  });
+
+  it("maps playing and making-friends to their partner-aware variants", () => {
+    expect(
+      presentPetStatus("running-right", null, "playing", "Bo").labelKey,
+    ).toBe("playingWith");
+    expect(
+      presentPetStatus("running-right", null, "makingFriends", "Bo").labelKey,
+    ).toBe("makingFriendsWith");
+  });
+
+  it("leaves the plain label when there is no partner or the activity is non-social", () => {
+    expect(
+      presentPetStatus("running-right", null, "chatting", null).labelKey,
+    ).toBe("chatting");
+    expect(
+      presentPetStatus("running-right", null, "exploring", "Otto").labelKey,
+    ).toBe("exploring");
+    expect(
+      presentPetStatus("running-right", null, "exploring", "Otto").labelParams,
+    ).toBeUndefined();
+  });
+
   it("carries speech overlay text into the capsule label", () => {
     const presentation = presentPetStatus(
       "running-right",
