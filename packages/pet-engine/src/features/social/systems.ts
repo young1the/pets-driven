@@ -79,6 +79,12 @@ const CHASE_CATCH_COOLDOWN_MS = 700;
 const APPROACH_SPEED_FACTOR = 0.45;
 const CHASE_SPEED_FACTOR = 1.15;
 
+// Standing together during play: if any two participants are horizontally
+// closer than MIN_PLAY_SPACING (body widths) the group is "stacked" and gets
+// spread into an evenly spaced row at STAND_SPACING between neighbours.
+const MIN_PLAY_SPACING_BW = 1.2;
+const STAND_SPACING_BW = 1.5;
+
 // Said by the pet that just tagged its friend.
 const CHASE_CATCH_LINES = ["Tag!", "Gotcha!", "Caught you!", "Got you!"];
 
@@ -298,6 +304,55 @@ function maxPairwiseDistance(points: Vec[]): number {
   return max;
 }
 
+/**
+ * Stand a playing group together without overlapping. Pets are floor-bound
+ * ghosts, so spacing is purely horizontal: if the tightest pair is closer than
+ * MIN_PLAY_SPACING the group is stacked, and everyone saunters to an evenly
+ * spaced row (keeping left-to-right order so nobody crosses through a friend);
+ * otherwise they just stop where they are.
+ */
+function standSpaced(
+  components: ComponentStore,
+  ids: string[],
+  pos: Vec[],
+  bounds: Bounds,
+): void {
+  if (ids.length < 2) {
+    for (const id of ids) stop(components, id);
+    return;
+  }
+  const bw = bodyWidth(components, ids[0]);
+
+  let minGap = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < pos.length; i += 1) {
+    for (let j = i + 1; j < pos.length; j += 1) {
+      minGap = Math.min(minGap, Math.abs(pos[i].x - pos[j].x));
+    }
+  }
+  if (minGap >= bw * MIN_PLAY_SPACING_BW) {
+    for (const id of ids) stop(components, id);
+    return;
+  }
+
+  const centreX = pos.reduce((sum, p) => sum + p.x, 0) / pos.length;
+  const spacing = bw * STAND_SPACING_BW;
+  const margin = 48;
+  const minX = (bounds.x ?? 0) + margin;
+  const maxX = (bounds.x ?? 0) + bounds.width - margin;
+  // Left-to-right order so the row assignment never asks two pets to swap sides.
+  const order = ids
+    .map((id, index) => ({ id, index }))
+    .sort((l, r) => pos[l.index].x - pos[r.index].x);
+  order.forEach(({ id, index }, rank) => {
+    const targetX = clamp(
+      centreX + (rank - (order.length - 1) / 2) * spacing,
+      minX,
+      maxX,
+    );
+    moveToward(components, id, { x: targetX, y: pos[index].y }, APPROACH_SPEED_FACTOR);
+  });
+}
+
 /** The point nearest to `fromIndex` among the others (there is always one). */
 function nearestOther(
   points: Vec[],
@@ -488,8 +543,10 @@ function choreograph(
   }
   advancePlayPhase(session, now);
 
-  // play / part — stand together.
-  for (const id of ids) stop(components, id);
+  // play / part — stand together, but not on top of each other. Pets are
+  // physical ghosts (they pass through), so standing still where they met can
+  // leave them stacked; nudge a too-close huddle into an evenly-spaced row.
+  standSpaced(components, ids, pos, bounds);
 
   if (session.kind === "greet") {
     if (!session.greeted) {

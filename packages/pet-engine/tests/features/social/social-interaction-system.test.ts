@@ -230,6 +230,48 @@ describe("SocialInteractionSystem — greet choreography", () => {
     expect(store.getComponent("sess", "SocialSession")?.greeted).toBe(true);
   });
 
+  it("spreads a stacked pair apart instead of standing on top of each other", () => {
+    // Pets meet almost on the same spot (10px apart, bodies 32 wide).
+    const store = makeStore(AGREEABLE, AGREEABLE, [200, 210]);
+    const clock = createManualClock(0);
+    seedSession(store, "greet", 0);
+    clock.advanceBy(100);
+
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    const a = store.getComponent("pet-a", "MotionTarget")?.targetPosition;
+    const b = store.getComponent("pet-b", "MotionTarget")?.targetPosition;
+    // Both get a spacing target (not a stand-still), and the targets clear a
+    // full body width so the bodies no longer overlap.
+    expect(a).not.toBeNull();
+    expect(b).not.toBeNull();
+    expect(Math.abs((a?.x ?? 0) - (b?.x ?? 0))).toBeGreaterThanOrEqual(32);
+    // Left pet stays left; nobody crosses through the other.
+    expect(a?.x).toBeLessThan(b?.x ?? 0);
+  });
+
+  it("arranges a stacked trio into a spaced row", () => {
+    const store = createComponentStore([
+      { id: "pet-a", components: socialPet("pet-a", 300, AGREEABLE, 0.9) },
+      { id: "pet-b", components: socialPet("pet-b", 308, AGREEABLE, 0.9) },
+      { id: "pet-c", components: socialPet("pet-c", 316, AGREEABLE, 0.9) },
+    ]);
+    const clock = createManualClock(0);
+    seedSession(store, "greet", 0, ["pet-a", "pet-b", "pet-c"]);
+    clock.advanceBy(100);
+
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    const xs = ["pet-a", "pet-b", "pet-c"].map(
+      (id) => store.getComponent(id, "MotionTarget")?.targetPosition?.x ?? null,
+    );
+    expect(xs.every((x) => x !== null)).toBe(true);
+    const sorted = [...(xs as number[])].sort((l, r) => l - r);
+    // Every neighbour clears a body width.
+    expect(sorted[1] - sorted[0]).toBeGreaterThanOrEqual(32);
+    expect(sorted[2] - sorted[1]).toBeGreaterThanOrEqual(32);
+  });
+
   it("enters play via the greet timeout when the pets never manage to meet", () => {
     const store = makeStore();
     const clock = createManualClock(0);

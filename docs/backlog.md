@@ -457,3 +457,16 @@ physical ghosts, so group geometry can't fight a solver. Also observed: the
 default demo scenario (pet-a…g) does not wire `CanSocialize`, so sessions
 only form in the **adopted-pets** scenario (the real desktop path) — worth
 knowing when eyeballing social behavior via the plain demo (it won't show).
+
+### B10a. Playing pets keep their personal space — DONE (2026-07-06)
+
+Ghosts can occupy the same spot, so a greet/chat group that met while bunched
+up rendered stacked. `standSpaced` replaces the play-phase "stand still":
+since pets are floor-bound the spacing is purely horizontal — if the tightest
+pair is within `MIN_PLAY_SPACING` (1.2 body widths) the group saunters into an
+evenly spaced row (`STAND_SPACING` = 1.5 bw, left-to-right order preserved so
+nobody crosses through a friend); otherwise they just stop where they are, so
+an already-spaced pair still reads as standing together (existing two-party
+play tests unchanged). Chase is unaffected (it's inherently in motion). The
+target-setting is unit-tested (stacked pair/trio spread ≥ a body width);
+WalkSystem carries the walk out for grounded pets.
