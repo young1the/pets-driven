@@ -190,8 +190,8 @@
     "hopping": "폴짝폴짝",
     "midAir": "공중에!",
     "headingOver": "다가가는 중",
-    "makingFriends": "친해지는 중",
-    "foundAFriend": "친구를 만났어요",
+    "makingFriends": "놀자!",
+    "foundAFriend": "친구 됐다!",
     "keepingDistance": "거리 두는 중",
     "startled": "깜짝!",
     "chasingCursor": "커서 쫓는 중",
@@ -201,7 +201,7 @@
     "playing": "노는 중",
     "chattingWith": "{{name}}와(과) 수다 중",
     "playingWith": "{{name}}와(과) 노는 중",
-    "makingFriendsWith": "{{name}}와(과) 친해지는 중",
+    "makingFriendsWith": "{{name}}! 놀자!",
     "onTheMove": "이동 중"
   },
   "toast": {

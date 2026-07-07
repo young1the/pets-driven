@@ -194,8 +194,8 @@
     "hopping": "Hopping",
     "midAir": "Mid-air",
     "headingOver": "Heading over",
-    "makingFriends": "Making friends",
-    "foundAFriend": "Found a friend",
+    "makingFriends": "Let's play!",
+    "foundAFriend": "New friend!",
     "keepingDistance": "Keeping distance",
     "startled": "Startled",
     "chasingCursor": "Chasing the cursor",
@@ -205,7 +205,7 @@
     "playing": "Playing",
     "chattingWith": "Chatting with {{name}}",
     "playingWith": "Playing with {{name}}",
-    "makingFriendsWith": "Making friends with {{name}}",
+    "makingFriendsWith": "Let's play, {{name}}!",
     "onTheMove": "On the move"
   },
   "toast": {
