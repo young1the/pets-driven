@@ -48,14 +48,22 @@ export type SocialInviteComponent = {
 
 /**
  * The spawned session entity's state — the single source of truth for the
- * shared clock and (for chase) whose turn it is to chase. Both participants
- * derive their choreography from this each tick.
+ * shared clock and (for chase) whose turn it is to chase. Every participant
+ * derives its choreography from this each tick.
+ *
+ * A session holds two participants at birth and can grow to a small group as
+ * nearby pets join (see the join flow). Two-party is the base case, not a
+ * separate shape.
  */
 export type SocialSessionComponent = {
   type: "SocialSession";
   kind: SocialSessionKind;
-  initiatorId: string;
-  responderId: string;
+  /**
+   * Everyone currently in the session, in join order. `participantIds[0]` is
+   * the initiator (it placed the founding invite); the rest are the responder
+   * and any later joiners. Always has at least two while the session lives.
+   */
+  participantIds: string[];
   phase: SocialSessionPhase;
   startedAt: number;
   /**
@@ -67,13 +75,18 @@ export type SocialSessionComponent = {
   endsAt: number;
   /** When the pets actually met and play began; null while still approaching. */
   playStartedAt: number | null;
-  /** Whether the initiator and responder have already exchanged their greeting speech. */
+  /** Whether the participants have already exchanged their greeting speech. */
   greeted: boolean;
   /**
-   * chase only — how many times the chaser/runner roles have swapped. Its
-   * parity decides who currently chases (even = initiator). A swap fires on
-   * the swap timer *or* the moment the chaser catches the runner. Optional so
-   * pre-chase sessions and older fixtures need not set it.
+   * chase only — the pet currently chasing (the rest are runners). Null until
+   * play starts, then set to the initiator. Catching a runner makes that
+   * runner the new chaser; the swap timer rotates it otherwise.
+   */
+  chaserId?: string | null;
+  /**
+   * chase only — how many times the chaser role has swapped (telemetry / the
+   * swap cadence). Optional so pre-chase sessions and older fixtures need not
+   * set it.
    */
   chaseSwaps?: number;
   /** chase only — when the last role swap happened (the swap-timer reference). */
@@ -86,6 +99,12 @@ export type SocialSessionComponent = {
 export type SocialSessionMemberComponent = {
   type: "SocialSessionMember";
   sessionId: string;
+  /**
+   * A representative co-participant, for the status label ("Chatting with
+   * Otto"). Exactly the partner in a two-party session; the first other
+   * participant in a group. Co-participation is checked by matching sessionId,
+   * not this field.
+   */
   partnerId: string;
   role: "initiator" | "responder";
 };

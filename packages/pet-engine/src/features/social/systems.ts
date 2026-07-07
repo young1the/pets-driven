@@ -42,6 +42,13 @@ export const SESSION_AFTERGLOW_MS = 4_000;
 const SESSION_SOCIAL_REFILL = 0.55;
 const DECLINE_SOCIAL_RELIEF = 0.08;
 
+// Group sessions: a live session can grow up to this many participants as
+// nearby idle pets join. Two is the base case, four keeps a group readable.
+export const MAX_GROUP_SIZE = 4;
+// A pet within this distance of a live session's centre may join it. Tighter
+// than INVITE_RADIUS — you slip into a nearby huddle, you don't cross the room.
+const JOIN_RADIUS = 160;
+
 // The greet phase is arrival-driven: pets saunter toward each other and play
 // begins when they actually meet (or this timeout fires, e.g. one pet gets
 // physically stuck on the way).
@@ -271,6 +278,47 @@ function fleeTarget(self: Vec, from: Vec, distance: number, bounds: Bounds): Vec
   };
 }
 
+/** Arithmetic centre of a set of points. */
+function centroidOf(points: Vec[]): Vec {
+  const sum = points.reduce(
+    (acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }),
+    { x: 0, y: 0 },
+  );
+  return { x: sum.x / points.length, y: sum.y / points.length };
+}
+
+/** The largest distance between any two of the points (group "spread"). */
+function maxPairwiseDistance(points: Vec[]): number {
+  let max = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    for (let j = i + 1; j < points.length; j += 1) {
+      max = Math.max(max, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
+    }
+  }
+  return max;
+}
+
+/** The point nearest to `fromIndex` among the others (there is always one). */
+function nearestOther(
+  points: Vec[],
+  fromIndex: number,
+): { index: number; distance: number } {
+  let index = -1;
+  let distance = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < points.length; i += 1) {
+    if (i === fromIndex) continue;
+    const d = Math.hypot(
+      points[i].x - points[fromIndex].x,
+      points[i].y - points[fromIndex].y,
+    );
+    if (d < distance) {
+      distance = d;
+      index = i;
+    }
+  }
+  return { index, distance };
+}
+
 // ── Personality/drive scoring ────────────────────────────────────────────────
 
 function socialDrive(drives: DrivesComponent | undefined): number {
@@ -355,28 +403,41 @@ export function runSocialInteractionSystem(
   advanceSessions(components, now, bounds);
   resolveInvites(components, now, random);
   convertBumpsToInvites(components, now, random);
+  emitJoins(components, now, random);
   emitInvites(components, now, random, deltaMs);
 }
 
-// Pass 1 — advance live sessions and tear down finished/interrupted ones.
+// Pass 1 — advance live sessions: prune members who left or got claimed away,
+// tear the session down when it runs out or drops below two, else choreograph.
 function advanceSessions(components: ComponentStore, now: number, bounds: Bounds): void {
   const sessionIds = [...components.components("SocialSession").keys()];
   for (const sessionId of sessionIds) {
     const session = components.getComponent(sessionId, "SocialSession");
     if (!session) continue;
-    const a = session.initiatorId;
-    const b = session.responderId;
 
-    const stillPaired =
-      components.getComponent(a, "SocialSessionMember")?.sessionId === sessionId &&
-      components.getComponent(b, "SocialSessionMember")?.sessionId === sessionId;
-    const interrupted =
-      isBlockedByHigherPriority(components, a, now) ||
-      isBlockedByHigherPriority(components, b, now);
+    // Who is still genuinely in the session: their SocialSessionMember still
+    // points here and nothing more urgent has grabbed them.
+    const remaining = session.participantIds.filter(
+      (id) =>
+        components.getComponent(id, "SocialSessionMember")?.sessionId ===
+          sessionId && !isBlockedByHigherPriority(components, id, now),
+    );
 
-    if (!stillPaired || interrupted || now >= session.endsAt) {
+    // A group survives a drop-out; a pair does not (nobody left to play with).
+    if (remaining.length < 2 || now >= session.endsAt) {
       endSession(components, sessionId, session, now);
       continue;
+    }
+
+    if (remaining.length !== session.participantIds.length) {
+      for (const id of session.participantIds) {
+        if (!remaining.includes(id)) partWithParticipant(components, sessionId, id, now);
+      }
+      session.participantIds = remaining;
+      if (session.chaserId && !remaining.includes(session.chaserId)) {
+        session.chaserId = remaining[0];
+      }
+      refreshPartnerIds(components, session);
     }
 
     choreograph(components, session, now, bounds);
@@ -389,32 +450,38 @@ function choreograph(
   now: number,
   bounds: Bounds,
 ): void {
-  const a = session.initiatorId;
-  const b = session.responderId;
-  const posA = positionOf(components, a);
-  const posB = positionOf(components, b);
-  if (!posA || !posB) return;
+  const ids = session.participantIds;
+  const positions = ids.map((id) => positionOf(components, id));
+  if (positions.some((p) => !p)) return;
+  const pos = positions as Vec[];
 
   const claimTtl = now + SOCIAL_CLAIM_TTL_MS;
-  claimSocial(components, a, now, `session-${session.kind}`, claimTtl);
-  claimSocial(components, b, now, `session-${session.kind}`, claimTtl);
+  for (const id of ids) {
+    claimSocial(components, id, now, `session-${session.kind}`, claimTtl);
+  }
 
   if (session.kind === "chase") {
-    choreographChase(components, session, posA, posB, now, bounds);
+    choreographChase(components, session, pos, now, bounds);
     return;
   }
 
-  // greet & chat share the "close the gap, then face each other" shape.
-  // The greet phase is arrival-driven: both pets saunter toward each other and
-  // play begins when they actually meet, so the approach itself is visible.
-  const gap = bodyWidth(components, a) * (session.kind === "chat" ? 2.6 : 2);
+  // greet & chat share the "gather, then stand together" shape. The greet
+  // phase is arrival-driven: everyone saunters toward the group's centre and
+  // play begins when they have all bunched up (or the greet timeout fires).
+  const gap = bodyWidth(components, ids[0]) * (session.kind === "chat" ? 2.6 : 2);
+  const centre = centroidOf(pos);
   if (session.phase === "greet") {
-    const distance = Math.hypot(posB.x - posA.x, posB.y - posA.y);
-    const met = distance <= gap * 1.35;
+    const met = maxPairwiseDistance(pos) <= gap * 1.35;
     const timedOut = now - session.startedAt >= GREET_TIMEOUT_MS;
     if (!met && !timedOut) {
-      moveToward(components, a, approachStop(posA, posB, gap), APPROACH_SPEED_FACTOR);
-      moveToward(components, b, approachStop(posB, posA, gap), APPROACH_SPEED_FACTOR);
+      ids.forEach((id, i) =>
+        moveToward(
+          components,
+          id,
+          approachStop(pos[i], centre, gap),
+          APPROACH_SPEED_FACTOR,
+        ),
+      );
       return;
     }
     beginPlay(session, now);
@@ -422,108 +489,129 @@ function choreograph(
   advancePlayPhase(session, now);
 
   // play / part — stand together.
-  stop(components, a);
-  stop(components, b);
+  for (const id of ids) stop(components, id);
 
   if (session.kind === "greet") {
     if (!session.greeted) {
-      setSpeech(components, a, pickLine(GREET_LINES, session.startedAt), now);
-      setSpeech(components, b, pickLine(GREET_LINES, session.startedAt + 1), now);
+      ids.forEach((id, i) =>
+        setSpeech(components, id, pickLine(GREET_LINES, session.startedAt + i), now),
+      );
       session.greeted = true;
     }
     const emote = session.phase === "part" ? "sparkle" : "heart";
-    setExpression(components, a, "love", emote, now, 400);
-    setExpression(components, b, "love", emote, now, 400);
+    for (const id of ids) setExpression(components, id, "love", emote, now, 400);
     return;
   }
 
-  // chat — alternate whose bubble shows.
+  // chat — one speaker at a time, the turn rotating round-robin over everyone.
   if (session.phase === "part") {
-    setSpeech(components, a, null, now);
-    setSpeech(components, b, null, now);
-    setExpression(components, a, "happy", "sparkle", now, 400);
-    setExpression(components, b, "happy", "sparkle", now, 400);
+    for (const id of ids) {
+      setSpeech(components, id, null, now);
+      setExpression(components, id, "happy", "sparkle", now, 400);
+    }
     return;
   }
   const playElapsed = now - (session.playStartedAt ?? session.startedAt);
   const turn = Math.floor(playElapsed / CHAT_TURN_MS);
-  const speaker = turn % 2 === 0 ? a : b;
-  const listener = speaker === a ? b : a;
-  setSpeech(components, speaker, pickLine(CHAT_LINES, session.startedAt + turn), now);
-  setSpeech(components, listener, null, now);
-  setExpression(components, a, "thinking", "none", now, 400);
-  setExpression(components, b, "thinking", "question", now, 400);
+  const speakerIndex = ((turn % ids.length) + ids.length) % ids.length;
+  ids.forEach((id, i) => {
+    if (i === speakerIndex) {
+      setSpeech(components, id, pickLine(CHAT_LINES, session.startedAt + turn), now);
+      setExpression(components, id, "thinking", "none", now, 400);
+    } else {
+      setSpeech(components, id, null, now);
+      setExpression(components, id, "thinking", "question", now, 400);
+    }
+  });
 }
 
 function choreographChase(
   components: ComponentStore,
   session: SocialSessionComponent,
-  posA: Vec,
-  posB: Vec,
+  pos: Vec[],
   now: number,
   bounds: Bounds,
 ): void {
-  const a = session.initiatorId;
-  const b = session.responderId;
+  const ids = session.participantIds;
 
-  // A chase needs no approach ritual — it kicks off the moment both accept.
+  // A chase needs no approach ritual — it kicks off the moment everyone joins.
   if (session.phase === "greet") beginPlay(session, now);
   advancePlayPhase(session, now);
+  // One chaser, everyone else runs. The initiator chases first.
+  if (session.chaserId == null || !ids.includes(session.chaserId)) {
+    session.chaserId = ids[0];
+  }
 
   if (session.phase === "part") {
-    stop(components, a);
-    stop(components, b);
-    setExpression(components, a, "happy", "sparkle", now, 400);
-    setExpression(components, b, "happy", "sparkle", now, 400);
+    for (const id of ids) {
+      stop(components, id);
+      setExpression(components, id, "happy", "sparkle", now, 400);
+    }
     return;
   }
 
-  // Roles come from an explicit swap counter (parity) rather than raw elapsed
-  // time, so a catch can force a swap off-schedule. Even = initiator chases.
-  const swapReference =
-    session.lastChaseSwapAt ?? session.playStartedAt ?? session.startedAt;
-  const swapsBefore = session.chaseSwaps ?? 0;
-  const chaserBefore = swapsBefore % 2 === 0 ? a : b;
-  const runnerBefore = chaserBefore === a ? b : a;
-
-  const distance = Math.hypot(posA.x - posB.x, posA.y - posB.y);
-  const catchRadius = bodyWidth(components, runnerBefore) * CHASE_CATCH_BODY_WIDTHS;
+  // Detect a catch against the chaser's nearest runner.
+  const chaserIndex = ids.indexOf(session.chaserId!);
+  const chaserPos = pos[chaserIndex];
+  const nearestRunner = nearestOther(pos, chaserIndex);
   const cueCooledDown =
     now - (session.lastCatchAt ?? Number.NEGATIVE_INFINITY) >=
     CHASE_CATCH_COOLDOWN_MS;
-  const caught = distance <= catchRadius && cueCooledDown;
+  const catchRadius =
+    bodyWidth(components, ids[nearestRunner.index]) * CHASE_CATCH_BODY_WIDTHS;
+  const caught = nearestRunner.distance <= catchRadius && cueCooledDown;
+
+  const swapReference =
+    session.lastChaseSwapAt ?? session.playStartedAt ?? session.startedAt;
 
   if (caught) {
-    // The chaser tags the runner: a quick excited cue, spoken by the catcher.
-    setSpeech(components, chaserBefore, pickLine(CHASE_CATCH_LINES, now), now);
-    setExpression(components, chaserBefore, "excited", "sparkle", now, 600);
-    setExpression(components, runnerBefore, "confused", "exclaim", now, 600);
+    const chaserId = session.chaserId!;
+    const caughtId = ids[nearestRunner.index];
+    // The chaser tags a runner: a quick excited cue, spoken by the catcher.
+    setSpeech(components, chaserId, pickLine(CHASE_CATCH_LINES, now), now);
+    setExpression(components, chaserId, "excited", "sparkle", now, 600);
+    setExpression(components, caughtId, "confused", "exclaim", now, 600);
     session.lastCatchAt = now;
-  }
-
-  if (caught || now - swapReference >= CHASE_SWAP_MS) {
-    session.chaseSwaps = swapsBefore + 1;
+    // The caught runner becomes the new chaser (tag!).
+    session.chaserId = caughtId;
+    session.chaseSwaps = (session.chaseSwaps ?? 0) + 1;
+    session.lastChaseSwapAt = now;
+  } else if (now - swapReference >= CHASE_SWAP_MS) {
+    // Timer swap: hand the role round-robin to the next participant.
+    session.chaserId = ids[(chaserIndex + 1) % ids.length];
+    session.chaseSwaps = (session.chaseSwaps ?? 0) + 1;
     session.lastChaseSwapAt = now;
   }
 
-  const chaser = (session.chaseSwaps ?? 0) % 2 === 0 ? a : b;
-  const runner = chaser === a ? b : a;
-  const chaserPos = chaser === a ? posA : posB;
-  const runnerPos = runner === a ? posA : posB;
-  const fleeDistance = bodyWidth(components, runner) * 6;
-
-  moveToward(components, chaser, { ...runnerPos }, CHASE_SPEED_FACTOR);
-  moveToward(
-    components,
-    runner,
-    fleeTarget(runnerPos, chaserPos, fleeDistance, bounds),
-    CHASE_SPEED_FACTOR,
-  );
-  // The catch cue owns the expressions this tick; otherwise the running pair
-  // just looks excited.
+  // Movement uses the (possibly updated) chaser: it pursues its nearest runner
+  // and everyone else flees from it.
+  const activeChaserIndex = ids.indexOf(session.chaserId!);
+  const activeChaserPos = pos[activeChaserIndex];
+  const target = nearestOther(pos, activeChaserIndex);
+  moveToward(components, session.chaserId!, { ...pos[target.index] }, CHASE_SPEED_FACTOR);
+  ids.forEach((id, i) => {
+    if (i === activeChaserIndex) return;
+    const fleeDistance = bodyWidth(components, id) * 6;
+    moveToward(
+      components,
+      id,
+      fleeTarget(pos[i], activeChaserPos, fleeDistance, bounds),
+      CHASE_SPEED_FACTOR,
+    );
+  });
+  // The catch cue owns the expressions this tick; otherwise everyone just
+  // looks excited (the chaser with a sparkle).
   if (!caught) {
-    setExpression(components, chaser, "excited", "sparkle", now, 400);
-    setExpression(components, runner, "excited", "none", now, 400);
+    ids.forEach((id, i) =>
+      setExpression(
+        components,
+        id,
+        "excited",
+        i === activeChaserIndex ? "sparkle" : "none",
+        now,
+        400,
+      ),
+    );
   }
 }
 
@@ -533,19 +621,51 @@ function endSession(
   session: SocialSessionComponent,
   now: number,
 ): void {
-  for (const id of [session.initiatorId, session.responderId]) {
-    if (components.getComponent(id, "SocialSessionMember")?.sessionId === sessionId) {
-      components.removeComponent(id, "SocialSessionMember");
-    }
-    stop(components, id);
-    refillSocial(components, id, SESSION_SOCIAL_REFILL);
-    // Only hold the afterglow when nothing more urgent has grabbed the pet.
-    if (!isBlockedByHigherPriority(components, id, now)) {
-      claimSocial(components, id, now, "socialized", now + SESSION_AFTERGLOW_MS);
-      setExpression(components, id, "happy", "sparkle", now, 500);
-    }
+  for (const id of session.participantIds) {
+    partWithParticipant(components, sessionId, id, now);
   }
   components.destroy(sessionId);
+}
+
+/**
+ * Release one pet from a session — used both when the whole session ends and
+ * when a single participant drops out of a surviving group. Removes the member
+ * link, refills its social drive, and (unless something more urgent already
+ * owns it) stops it into a brief content afterglow.
+ */
+function partWithParticipant(
+  components: ComponentStore,
+  sessionId: string,
+  id: string,
+  now: number,
+): void {
+  if (
+    components.getComponent(id, "SocialSessionMember")?.sessionId === sessionId
+  ) {
+    components.removeComponent(id, "SocialSessionMember");
+  }
+  refillSocial(components, id, SESSION_SOCIAL_REFILL);
+  // A pet the session lost to a higher-priority claim is owned by that claim;
+  // don't stop it or hold an afterglow over the top of it.
+  if (!isBlockedByHigherPriority(components, id, now)) {
+    stop(components, id);
+    claimSocial(components, id, now, "socialized", now + SESSION_AFTERGLOW_MS);
+    setExpression(components, id, "happy", "sparkle", now, 500);
+  }
+}
+
+/** Point each member's representative partnerId at a current co-participant. */
+function refreshPartnerIds(
+  components: ComponentStore,
+  session: SocialSessionComponent,
+): void {
+  for (const id of session.participantIds) {
+    const member = components.getComponent(id, "SocialSessionMember");
+    if (member?.sessionId) {
+      member.partnerId =
+        session.participantIds.find((p) => p !== id) ?? id;
+    }
+  }
 }
 
 // Pass 2 — accept or decline every pending invite.
@@ -584,7 +704,7 @@ function resolveInvites(
       !!personality && random.next() < acceptChance(personality, drives);
 
     if (accepts) {
-      createSession(components, fromId, targetId, invite.kind, now);
+      createSession(components, [fromId, targetId], invite.kind, now);
     } else {
       // A decline is content too: the target shrugs it off, the initiator's
       // hold lapses so it wanders on.
@@ -598,47 +718,51 @@ function resolveInvites(
 
 function createSession(
   components: ComponentStore,
-  initiatorId: string,
-  responderId: string,
+  participantIds: string[],
   kind: SocialSessionKind,
   now: number,
 ): void {
-  const sessionId = `social-${initiatorId}-${responderId}-${now}`;
+  const sessionId = `social-${participantIds.join("-")}-${now}`;
   components.spawn(sessionId, [
     {
       type: "SocialSession",
       kind,
-      initiatorId,
-      responderId,
+      participantIds: [...participantIds],
       phase: "greet",
       startedAt: now,
       endsAt: now + maxSessionDurationMs(kind),
       playStartedAt: null,
       greeted: false,
+      chaserId: null,
       chaseSwaps: 0,
       lastChaseSwapAt: null,
       lastCatchAt: null,
     },
   ]);
-  components.setComponent(initiatorId, {
-    type: "SocialSessionMember",
-    sessionId,
-    partnerId: responderId,
-    role: "initiator",
-  });
-  components.setComponent(responderId, {
-    type: "SocialSessionMember",
-    sessionId,
-    partnerId: initiatorId,
-    role: "responder",
-  });
   const ttl = now + SOCIAL_CLAIM_TTL_MS;
-  for (const id of [initiatorId, responderId]) {
+  participantIds.forEach((id, index) => {
+    setSessionMember(components, sessionId, participantIds, id, index);
     claimSocial(components, id, now, `session-${kind}`, ttl);
     // The session absorbs any startle that was still pending — a stale
     // PendingReaction must not fire a collision response after the party.
     components.removeComponent(id, "PendingReaction");
-  }
+  });
+}
+
+/** Write the back-reference for one participant (index 0 = initiator). */
+function setSessionMember(
+  components: ComponentStore,
+  sessionId: string,
+  participantIds: string[],
+  id: string,
+  index: number,
+): void {
+  components.setComponent(id, {
+    type: "SocialSessionMember",
+    sessionId,
+    partnerId: participantIds.find((p) => p !== id) ?? id,
+    role: index === 0 ? "initiator" : "responder",
+  });
 }
 
 // ── Bump-to-greet (B4) ───────────────────────────────────────────────────────
@@ -775,6 +899,76 @@ function convertBumpsToInvites(
     }
     consumed.add(bump.id);
     consumed.add(bump.otherId);
+  }
+}
+
+// Pass 2b — a nearby idle pet may slip into a live session that has room.
+// Joining is session-scoped (no pet-to-pet handshake): the huddle is open, so
+// an eligible pet close to its centre and willing (personality/drive-weighted)
+// simply joins. Gated to the play phase and capped at MAX_GROUP_SIZE.
+function emitJoins(
+  components: ComponentStore,
+  now: number,
+  random: RandomSource,
+): void {
+  const sessionIds = [...components.components("SocialSession").keys()];
+  for (const sessionId of sessionIds) {
+    const session = components.getComponent(sessionId, "SocialSession");
+    if (!session) continue;
+    if (session.phase !== "play") continue;
+    if (session.participantIds.length >= MAX_GROUP_SIZE) continue;
+
+    const positions = session.participantIds
+      .map((id) => positionOf(components, id))
+      .filter((p): p is Vec => p !== null);
+    if (positions.length === 0) continue;
+    const centre = centroidOf(positions);
+
+    type Candidate = {
+      id: string;
+      dist: number;
+      personality: PersonalityComponent;
+      drives: DrivesComponent | undefined;
+    };
+    const candidates: Candidate[] = [];
+    components.forEach(
+      ["CanSocialize", "Personality", "IntentState", "MotionTarget", "Transform", "ContactState"],
+      (id, [, personality, intent, motion, transform, contact]) => {
+        if (session.participantIds.includes(id)) return;
+        if (intent.intent !== "idle") return;
+        if (motion.targetPosition !== null || motion.targetEntityId !== null) return;
+        if (!contact.grounded) return;
+        if (components.getComponent(id, "SocialSessionMember")) return;
+        if (components.getComponent(id, "SocialInvite")) return;
+        if (components.getComponent(id, "PendingReaction")) return;
+        if (isBlockedByHigherPriority(components, id, now)) return;
+        const decision = components.getComponent(id, "BehaviorDecisionState");
+        if (decision?.source === "social" && decision.expiresAt > now) return;
+        if (components.getComponent(id, "AgentTaskState")?.status === "working") return;
+        const dist = Math.hypot(transform.position.x - centre.x, transform.position.y - centre.y);
+        if (dist >= JOIN_RADIUS) return;
+        candidates.push({ id, dist, personality, drives: components.getComponent(id, "Drives") });
+      },
+    );
+    if (candidates.length === 0) continue;
+
+    // Nearest eligible pet, deterministic tie-break; one join roll per tick.
+    candidates.sort((l, r) => l.dist - r.dist || (l.id < r.id ? -1 : 1));
+    const joiner = candidates[0];
+    if (random.next() >= acceptChance(joiner.personality, joiner.drives)) continue;
+
+    session.participantIds = [...session.participantIds, joiner.id];
+    setSessionMember(
+      components,
+      sessionId,
+      session.participantIds,
+      joiner.id,
+      session.participantIds.length - 1,
+    );
+    claimSocial(components, joiner.id, now, `session-${session.kind}`, now + SOCIAL_CLAIM_TTL_MS);
+    components.removeComponent(joiner.id, "PendingReaction");
+    refreshPartnerIds(components, session);
+    stop(components, joiner.id);
   }
 }
 

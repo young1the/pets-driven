@@ -394,7 +394,7 @@ capsule matches the management card:
   `labelParams`, reusing the B9 i18n. `PetStatusCard` passes it through and
   interpolates via `t(key, labelParams)`.
 
-## B10. Group sessions (3+ participants)
+## B10. Group sessions (3+ participants) — DONE (2026-07-06)
 
 **Problem** — Sessions are structurally two-party: `SocialSession` has fixed
 `initiatorId`/`responderId` slots, each pet holds a single
@@ -432,3 +432,28 @@ fight the collision system unless B1–B3 have landed; sequence strictly after
 B4.
 
 Size: M–L. Depends on: B1–B4 (hard), B5 (chase-tag synergy, soft).
+
+**Outcome** — `SocialSession` now holds `participantIds: string[]` (index 0 =
+initiator); two-party is the base case. Choreography generalized:
+- greet/chat: everyone saunters toward the group centroid, `met` when the
+  max pairwise spread closes; play stands together; chat rotates a single
+  speaker round-robin over all N.
+- chase: `chaserId` tracks the one chaser; catching the nearest runner makes
+  *that* runner the chaser (tag), the timer rotates it round-robin otherwise.
+  For N=2 this reduces exactly to B5, so those tests pass unchanged.
+
+`emitJoins` (new pass, gated to the play phase, capped at `MAX_GROUP_SIZE`=4)
+lets the nearest willing `CanSocialize` pet within `JOIN_RADIUS` of the
+centroid slip in — a direct session-scoped join, no pet-to-pet handshake.
+`advanceSessions` prunes members who left or were claimed away and keeps the
+session alive while ≥2 remain, ending it below that. B2 immunity now matches
+by shared `sessionId` (co-membership) instead of the representative
+`partnerId`, so every member of a group is immune to every other.
+`SocialSessionMember` keeps a representative `partnerId` for the B9/B9a status
+label, refreshed as the roster changes.
+
+Note: the risk about circle-spacing vs collision is moot — B12 made pets
+physical ghosts, so group geometry can't fight a solver. Also observed: the
+default demo scenario (pet-a…g) does not wire `CanSocialize`, so sessions
+only form in the **adopted-pets** scenario (the real desktop path) — worth
+knowing when eyeballing social behavior via the plain demo (it won't show).

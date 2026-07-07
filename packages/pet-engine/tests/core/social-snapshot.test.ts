@@ -37,8 +37,7 @@ describe("social snapshot", () => {
             {
               type: "SocialSession" as const,
               kind: "chat" as const,
-              initiatorId: "pet-a",
-              responderId: "pet-b",
+              participantIds: ["pet-a", "pet-b"],
               phase: "play" as const,
               startedAt: 0,
               endsAt: 20_000,

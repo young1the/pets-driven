@@ -82,8 +82,7 @@ describe("component store", () => {
       {
         type: "SocialSession",
         kind: "greet",
-        initiatorId: "pet-a",
-        responderId: "pet-b",
+        participantIds: ["pet-a", "pet-b"],
         phase: "greet",
         startedAt: 0,
         endsAt: 3_000,
@@ -95,7 +94,7 @@ describe("component store", () => {
     expect(store.getEntity("social-1")).toEqual({ id: "social-1" });
     expect(store.getComponent("social-1", "SocialSession")).toMatchObject({
       kind: "greet",
-      initiatorId: "pet-a",
+      participantIds: ["pet-a", "pet-b"],
     });
   });
 

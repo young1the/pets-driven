@@ -799,15 +799,23 @@ export function runCollisionBehaviorSystem(
           Math.abs(c.y - entity.y) < entity.halfH + c.halfH,
       );
     if (!collision) continue;
-    // B2: contact with the session partner is expected choreography (greet
-    // gaps close in, chases catch), never a startle. This also covers the
-    // brief windows where the social claim is not live — e.g. right at
-    // teardown before the afterglow claim lands.
+    // B2: contact with a co-participant in the same session is expected
+    // choreography (greet gaps close in, chases catch), never a startle. This
+    // also covers the brief windows where the social claim is not live — e.g.
+    // right at teardown before the afterglow claim lands. Matching by
+    // sessionId (not partnerId) keeps every member of a group immune to every
+    // other, not just its representative partner.
     const sessionMember = components.getComponent(
       entity.id,
       "SocialSessionMember",
     );
-    if (sessionMember && sessionMember.partnerId === collision.id) continue;
+    if (sessionMember) {
+      const otherMember = components.getComponent(
+        collision.id,
+        "SocialSessionMember",
+      );
+      if (otherMember?.sessionId === sessionMember.sessionId) continue;
+    }
     // B3: already reacted to this particular neighbor recently — coexist.
     if (isPairCoolingDown(components, entity.id, collision.id, now)) continue;
     if (isWorking) {

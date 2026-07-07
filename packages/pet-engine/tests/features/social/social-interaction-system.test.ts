@@ -9,6 +9,7 @@ import {
 } from "@pets-driven/pet-engine/core/component-store";
 import {
   CHASE_SWAP_MS,
+  CHAT_TURN_MS,
   GREET_TIMEOUT_MS,
   PHASE_DURATIONS,
   runSocialInteractionSystem,
@@ -75,14 +76,14 @@ function seedSession(
   store: ComponentStore,
   kind: "greet" | "chat" | "chase",
   startedAt: number,
+  participantIds: string[] = ["pet-a", "pet-b"],
 ): void {
   const d = PHASE_DURATIONS[kind];
   store.spawn("sess", [
     {
       type: "SocialSession",
       kind,
-      initiatorId: "pet-a",
-      responderId: "pet-b",
+      participantIds,
       phase: "greet",
       startedAt,
       endsAt: startedAt + GREET_TIMEOUT_MS + d.play + d.part,
@@ -90,17 +91,13 @@ function seedSession(
       greeted: false,
     },
   ]);
-  store.setComponent("pet-a", {
-    type: "SocialSessionMember",
-    sessionId: "sess",
-    partnerId: "pet-b",
-    role: "initiator",
-  });
-  store.setComponent("pet-b", {
-    type: "SocialSessionMember",
-    sessionId: "sess",
-    partnerId: "pet-a",
-    role: "responder",
+  participantIds.forEach((id, index) => {
+    store.setComponent(id, {
+      type: "SocialSessionMember",
+      sessionId: "sess",
+      partnerId: participantIds.find((p) => p !== id) ?? id,
+      role: index === 0 ? "initiator" : "responder",
+    });
   });
 }
 
@@ -491,5 +488,114 @@ describe("SocialInteractionSystem — bump-to-greet (B4)", () => {
 
     expect(store.getComponent("pet-b", "SocialInvite")).toBeUndefined();
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
+  });
+});
+
+describe("SocialInteractionSystem — group sessions (B10)", () => {
+  function agentBusy(id: string): Component {
+    return {
+      type: "BehaviorDecisionState",
+      source: "agent-event",
+      decidedAt: 0,
+      expiresAt: 10_000_000,
+      reason: "task.waiting",
+      lastAutonomousReason: null,
+      lastAutonomousAt: null,
+    } as Component;
+  }
+
+  function trio(): ComponentStore {
+    // Three agreeable, lonely pets bunched together.
+    return createComponentStore([
+      { id: "pet-a", components: socialPet("pet-a", 200, AGREEABLE, 0.9) },
+      { id: "pet-b", components: socialPet("pet-b", 230, AGREEABLE, 0.9) },
+      { id: "pet-c", components: socialPet("pet-c", 250, AGREEABLE, 0.9) },
+    ]);
+  }
+
+  it("lets a nearby pet join a live chat and rotates the speech turn over all three", () => {
+    const store = trio();
+    const clock = createManualClock(0);
+    seedSession(store, "chat", 0, ["pet-a", "pet-b"]);
+
+    // Tick 1: the pair meets → play; pet-c is close and willing → it joins.
+    clock.advanceBy(100);
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    expect(store.getComponent("sess", "SocialSession")?.phase).toBe("play");
+    expect(store.getComponent("sess", "SocialSession")?.participantIds).toEqual([
+      "pet-a",
+      "pet-b",
+      "pet-c",
+    ]);
+    expect(store.getComponent("pet-c", "SocialSessionMember")?.sessionId).toBe(
+      "sess",
+    );
+
+    // Over successive turns the single speaker rotates across all three.
+    const spoke = new Set<string>();
+    for (const id of ["pet-a", "pet-b", "pet-c"]) {
+      if (store.getComponent(id, "SpeechState")?.speech) spoke.add(id);
+    }
+    for (let turn = 0; turn < 3; turn += 1) {
+      clock.advanceBy(CHAT_TURN_MS);
+      runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
+      for (const id of ["pet-a", "pet-b", "pet-c"]) {
+        if (store.getComponent(id, "SpeechState")?.speech) spoke.add(id);
+      }
+    }
+    expect(spoke).toEqual(new Set(["pet-a", "pet-b", "pet-c"]));
+  });
+
+  it("survives one participant leaving but tears down when only one remains", () => {
+    const store = trio();
+    const clock = createManualClock(0);
+    seedSession(store, "chat", 0, ["pet-a", "pet-b", "pet-c"]);
+
+    // Reach play with all three.
+    clock.advanceBy(100);
+    runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
+    expect(store.getComponent("sess", "SocialSession")?.phase).toBe("play");
+
+    // pet-c is claimed away by an agent event → pruned, session lives on.
+    store.setComponent("pet-c", agentBusy("pet-c"));
+    clock.advanceBy(16);
+    runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
+
+    expect(sessionCount(store)).toBe(1);
+    expect(store.getComponent("sess", "SocialSession")?.participantIds).toEqual([
+      "pet-a",
+      "pet-b",
+    ]);
+    expect(store.getComponent("pet-c", "SocialSessionMember")).toBeUndefined();
+
+    // pet-b leaves too → only one left → the session ends.
+    store.setComponent("pet-b", agentBusy("pet-b"));
+    clock.advanceBy(16);
+    runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
+
+    expect(sessionCount(store)).toBe(0);
+    expect(store.getComponent("pet-a", "SocialSessionMember")).toBeUndefined();
+  });
+
+  it("does not exceed the group size cap", () => {
+    // Four already in session, a fifth pet nearby must not be added.
+    const store = createComponentStore([
+      { id: "pet-a", components: socialPet("pet-a", 200, AGREEABLE, 0.9) },
+      { id: "pet-b", components: socialPet("pet-b", 215, AGREEABLE, 0.9) },
+      { id: "pet-c", components: socialPet("pet-c", 230, AGREEABLE, 0.9) },
+      { id: "pet-d", components: socialPet("pet-d", 245, AGREEABLE, 0.9) },
+      { id: "pet-e", components: socialPet("pet-e", 260, AGREEABLE, 0.9) },
+    ]);
+    const clock = createManualClock(0);
+    seedSession(store, "chat", 0, ["pet-a", "pet-b", "pet-c", "pet-d"]);
+
+    clock.advanceBy(100);
+    runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
+
+    expect(
+      store.getComponent("sess", "SocialSession")?.participantIds,
+    ).toHaveLength(4);
+    expect(store.getComponent("pet-e", "SocialSessionMember")).toBeUndefined();
   });
 });
