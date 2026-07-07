@@ -7,14 +7,9 @@ const pet = {
   name: "Otto",
   assetId: "patamon",
   role: "Steady",
-  status: {
-    label: "Idle",
-    labelKey: "idle" as const,
-    tone: "neutral" as const,
-    dotColor: "var(--ink-300)",
-  },
   gradient: { from: "#8B7FE8", to: "#6F5FD6" },
   folder: "core",
+  cwd: null,
   memo: "Watch the auth queue",
   deployed: false,
 };

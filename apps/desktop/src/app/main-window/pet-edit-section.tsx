@@ -7,7 +7,6 @@ import {
   TrashIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import type { PetCardStatus } from "@/app-state/pet-card-status";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 
 export interface PetEditView {
@@ -15,9 +14,9 @@ export interface PetEditView {
   name: string;
   assetId: string;
   role: string;
-  status: PetCardStatus;
   gradient: { from: string; to: string };
   folder: string;
+  cwd: string | null;
   memo: string;
   deployed: boolean;
 }
@@ -97,16 +96,12 @@ export function PetEditSection({
           >
             <div style={{ width: "224px" }}>
               <PetShowcaseCard
-                featured
                 gradient={pet.gradient}
                 name={pet.name}
                 note={previewNote}
                 portrait={<PetPortrait assetId={pet.assetId} name={pet.name} />}
                 role={pet.role}
-                status={{
-                  label: pet.status.label,
-                  dotColor: pet.status.dotColor,
-                }}
+                cwd={pet.cwd ?? undefined}
               />
             </div>
           </div>

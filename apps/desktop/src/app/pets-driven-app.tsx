@@ -1378,19 +1378,18 @@ export function PetsDrivenApp() {
     }));
 
   const editingPet = managedPets.find((pet) => pet.id === editPetId) ?? null;
+  const editDirPath = editingPet
+    ? (getWorkingDirectoryForPet(petsDrivenState, editingPet.id)?.path ?? null)
+    : null;
   const editPetView: PetEditView | null = editingPet
     ? {
         id: editingPet.id,
         name: editingPet.name,
         assetId: editingPet.assetId,
         role: t(personalityRoleLabelKey(profileFor(editingPet)?.personalityId)),
-        status: {
-          ...statusFor(editingPet.id),
-          label: localizedStatusLabel(statusFor(editingPet.id)),
-        },
         gradient: petGradient(editingPet.id),
-        folder:
-          getWorkingDirectoryForPet(petsDrivenState, editingPet.id)?.path ?? "",
+        folder: editDirPath ?? "",
+        cwd: editDirPath ? shortWorkingDir(editDirPath) : null,
         memo: editingPet.memo ?? "",
         deployed: editingPet.visible,
       }
