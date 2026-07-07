@@ -116,7 +116,6 @@ html.pet-window-document body {
 .pet-window-status-card__inner {
   background: var(--surface-card);
   border: 1px solid var(--border-default);
-  box-shadow: var(--shadow-lg);
   border-radius: 18px;
   padding: 5px 11px;
   white-space: nowrap;
