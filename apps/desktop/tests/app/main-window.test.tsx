@@ -15,6 +15,7 @@ const home = {
 const edit = {
   onName: vi.fn(),
   onMemo: vi.fn(),
+  onPersonalityId: vi.fn(),
   onPickFolder: vi.fn(),
   onToggleDeployed: vi.fn(),
   onDelete: vi.fn(),

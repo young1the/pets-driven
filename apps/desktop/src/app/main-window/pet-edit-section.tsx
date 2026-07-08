@@ -8,6 +8,11 @@ import {
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
+import {
+  PERSONALITY_OPTIONS,
+  personalityTitleKey,
+} from "@/app/onboarding/personality-options";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 export interface PetEditView {
   id: string;
@@ -19,12 +24,14 @@ export interface PetEditView {
   cwd: string | null;
   memo: string;
   deployed: boolean;
+  personalityId: PetPersonalityId | undefined;
 }
 
 export interface PetEditSectionProps {
   pet: PetEditView;
   onName: (value: string) => void;
   onMemo: (value: string) => void;
+  onPersonalityId: (value: PetPersonalityId) => void;
   onPickFolder: () => void;
   onToggleDeployed: () => void;
   onDelete: () => void;
@@ -57,6 +64,7 @@ export function PetEditSection({
   pet,
   onName,
   onMemo,
+  onPersonalityId,
   onPickFolder,
   onToggleDeployed,
   onDelete,
@@ -180,6 +188,43 @@ export function PetEditSection({
                   {pet.folder || t("edit.chooseFolder")}
                 </span>
               </button>
+            </div>
+
+            <div style={{ marginTop: "18px" }}>
+              <span style={fieldLabelStyle}>{t("edit.personality")}</span>
+              <div
+                role="radiogroup"
+                style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
+              >
+                {PERSONALITY_OPTIONS.map((option) => {
+                  const active = pet.personalityId === option.id;
+                  return (
+                    <button
+                      aria-checked={active}
+                      key={option.id}
+                      onClick={() => onPersonalityId(option.id)}
+                      role="radio"
+                      type="button"
+                      style={{
+                        border: active
+                          ? "1.5px solid var(--color-primary)"
+                          : "1.5px solid var(--border-default)",
+                        background: active
+                          ? "var(--color-primary)"
+                          : "var(--surface-card)",
+                        color: active ? "#fff" : "var(--text-strong)",
+                        fontWeight: 700,
+                        fontSize: "13px",
+                        padding: "8px 14px",
+                        borderRadius: "999px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {t(personalityTitleKey(option.id))}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <label style={{ display: "block", marginTop: "18px" }}>

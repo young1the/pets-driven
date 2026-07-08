@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PetEditSection } from "@/app/main-window/pet-edit-section";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 const pet = {
   id: "otto",
@@ -12,6 +13,7 @@ const pet = {
   cwd: null,
   memo: "Watch the auth queue",
   deployed: false,
+  personalityId: "steady" as PetPersonalityId,
 };
 
 function setup(overrides = {}) {
@@ -19,6 +21,7 @@ function setup(overrides = {}) {
     pet,
     onName: vi.fn(),
     onMemo: vi.fn(),
+    onPersonalityId: vi.fn(),
     onPickFolder: vi.fn(),
     onToggleDeployed: vi.fn(),
     onDelete: vi.fn(),
@@ -33,7 +36,7 @@ describe("PetEditSection", () => {
   it("shows the note and personality in the card preview", () => {
     setup();
     expect(screen.getAllByText("Watch the auth queue")).toHaveLength(2);
-    expect(screen.getByText("Steady")).toBeInTheDocument();
+    expect(screen.getAllByText("Steady").length).toBeGreaterThan(0);
   });
 
   it("edits the name", () => {
@@ -55,6 +58,13 @@ describe("PetEditSection", () => {
       },
     );
     expect(onMemo).toHaveBeenCalledWith("watch auth");
+  });
+
+  it("changes the personality", () => {
+    const onPersonalityId = vi.fn();
+    setup({ onPersonalityId });
+    fireEvent.click(screen.getByRole("radio", { name: "Playful" }));
+    expect(onPersonalityId).toHaveBeenCalledWith("playful");
   });
 
   it("returns home via Done", () => {

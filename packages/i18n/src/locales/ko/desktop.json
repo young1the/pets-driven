@@ -56,6 +56,7 @@
     "back": "무리로 돌아가기",
     "details": "펫 정보",
     "name": "이름",
+    "personality": "성격",
     "workingFolder": "작업 폴더",
     "chooseFolder": "폴더를 선택하세요…",
     "note": "메모",

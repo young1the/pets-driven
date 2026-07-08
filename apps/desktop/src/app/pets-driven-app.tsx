@@ -42,6 +42,8 @@ import {
   type PetCardStatus,
 } from "@/app-state/pet-card-status";
 import { personalityRoleLabelKey } from "@/app/pet-presentation";
+import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import {
   getWorkingDirectoryForPet,
   registerWorkingDirectory,
@@ -1239,6 +1241,28 @@ export function PetsDrivenApp() {
     void desktopGateway.writePetsDrivenState(next);
   }
 
+  function setPetPersonality(petId: string, personalityId: PetPersonalityId) {
+    const current = petsDrivenStateRef.current;
+    const pet = current.pets.find((p) => p.id === petId);
+    if (!pet) {
+      return;
+    }
+    const option = PERSONALITY_OPTIONS.find((o) => o.id === personalityId);
+    if (!option) {
+      return;
+    }
+    const next: PetsDrivenState = {
+      ...current,
+      petProfiles: current.petProfiles.map((profile) =>
+        profile.id === pet.profileId
+          ? { ...profile, personalityId, personality: option.factory() }
+          : profile,
+      ),
+    };
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
   function showPet(petId: string) {
     const pet = petsDrivenStateRef.current.pets.find((p) => p.id === petId);
     patchPet(petId, { visible: true });
@@ -1392,6 +1416,7 @@ export function PetsDrivenApp() {
         cwd: editDirPath ? shortWorkingDir(editDirPath) : null,
         memo: editingPet.memo ?? "",
         deployed: editingPet.visible,
+        personalityId: profileFor(editingPet)?.personalityId,
       }
     : null;
 
@@ -1472,6 +1497,8 @@ export function PetsDrivenApp() {
       edit={{
         onName: (value) => editPetId && patchPet(editPetId, { name: value }),
         onMemo: (value) => editPetId && patchPet(editPetId, { memo: value }),
+        onPersonalityId: (value) =>
+          editPetId && setPetPersonality(editPetId, value),
         onPickFolder: () => editPetId && void pickFolderForPet(editPetId),
         onToggleDeployed: () =>
           editPetId &&
