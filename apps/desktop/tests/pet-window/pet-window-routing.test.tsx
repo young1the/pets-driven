@@ -468,10 +468,13 @@ describe("pet window product route", () => {
     const petAFrame = petFrameFor("pet-a");
     const petBFrame = petFrameFor("pet-b");
 
-    expect(petAFrame?.window.x).toBeGreaterThan(358);
-    expect(petAFrame?.window.x).toBeLessThan(390);
-    expect(petBFrame?.window.x).toBeGreaterThan(358);
-    expect(petBFrame?.window.x).toBeLessThan(390);
+    // The fixed 192-wide OS window is centred on the pet, so its left edge sits
+    // osWindowWidth/2 (96) − frameWidth/2 (48) = 48px further left than the old
+    // frame-sized projection placed it.
+    expect(petAFrame?.window.x).toBeGreaterThan(310);
+    expect(petAFrame?.window.x).toBeLessThan(342);
+    expect(petBFrame?.window.x).toBeGreaterThan(310);
+    expect(petBFrame?.window.x).toBeLessThan(342);
   });
 
   it("resets the adopted pet simulation from the main screen", async () => {

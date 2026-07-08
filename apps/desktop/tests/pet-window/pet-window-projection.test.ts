@@ -100,8 +100,8 @@ describe("pet window projection", () => {
         sequence: 12,
         petId: "pet-a",
         window: {
-          x: 652,
-          y: 580,
+          x: 604,
+          y: 543,
           width: 96,
           height: 134,
         },
@@ -227,8 +227,8 @@ describe("pet window projection", () => {
       12,
     );
 
-    expect(projection.frame.window.x).toBe(1252);
-    expect(projection.frame.window.y).toBe(580);
+    expect(projection.frame.window.x).toBe(1204);
+    expect(projection.frame.window.y).toBe(543);
   });
 
   it("projects negative virtual-desktop coordinates relative to the world viewport", () => {
@@ -254,8 +254,8 @@ describe("pet window projection", () => {
       12,
     );
 
-    expect(projection.frame.window.x).toBe(-368);
-    expect(projection.frame.window.y).toBe(320);
+    expect(projection.frame.window.x).toBe(-416);
+    expect(projection.frame.window.y).toBe(283);
   });
 
   it("clamps oversized saved scales before projecting Pet Window frames", () => {
@@ -268,6 +268,71 @@ describe("pet window projection", () => {
 
     expect(projection.frame.window.width).toBe(384);
     expect(projection.frame.window.height).toBe(536);
+  });
+
+  it("keeps a full-size (scale 1) pet's window position unchanged", () => {
+    // Scale 1 is the size the projection was originally tuned at; the fixed-
+    // window fix must be a no-op here so full-size pets keep sitting correctly.
+    const snapshot: WorldSnapshot = {
+      ...snapshotFixture(),
+      viewport: { x: 0, y: 0, width: 960, height: 540 },
+    };
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 100, y: 200, width: 960, height: 540 },
+      1,
+      { "pet-a": 1 },
+    );
+    // bounds.x(100) + body.x(600) - osWindowWidth/2(96) = 604
+    expect(projection.frame.window.x).toBe(604);
+    // bounds.y(200) + body.y(500) - 134 - 60 - 16 + 30 = 520
+    expect(projection.frame.window.y).toBe(520);
+    expect(projection.frame.window.width).toBe(192);
+    expect(projection.frame.window.height).toBe(268);
+  });
+
+  it("lands a resting pet's feet on the floor consistently at every scale", () => {
+    // The OS pet window is a fixed 192×268; the scaled sprite frame is centred
+    // inside it (place-items:center). Model that centring here and confirm the
+    // rendered feet sit the same proportional distance from the floor at every
+    // scale — otherwise the default min-scale (0.5) pet sinks while a full-size
+    // pet sits correctly, which is the bug this guards.
+    const OS_WINDOW_HEIGHT = 268; // PET_CELL_SIZE.height(208) + bubble(60)
+    const FEET_IN_FRAME = 250; // body.y(94) + body.height(156), unscaled
+    const floorWorldY = 1000;
+
+    const feetGapPerScale = (scale: number) => {
+      const bodyHeight = 156 * scale; // adopted body scales with the sprite
+      const snapshot: WorldSnapshot = {
+        ...snapshotFixture(),
+        width: 1920,
+        height: 1080,
+        viewport: { x: 0, y: 0, width: 1920, height: 1080 },
+        bodies: [
+          {
+            ...snapshotFixture().bodies[0],
+            y: floorWorldY - bodyHeight / 2, // body bottom rests on the floor
+            height: bodyHeight,
+          },
+        ],
+      };
+      const [projection] = projectWorldSnapshotToPetWindows(
+        snapshot,
+        { x: 0, y: 0, width: 1920, height: 1080 },
+        1,
+        { "pet-a": scale },
+      );
+      const frameHeight = OS_WINDOW_HEIGHT * scale;
+      const centeringOffsetY = (OS_WINDOW_HEIGHT - frameHeight) / 2;
+      const feetScreenY =
+        projection.frame.window.y + centeringOffsetY + FEET_IN_FRAME * scale;
+      return (feetScreenY - floorWorldY) / scale;
+    };
+
+    // The feet-to-floor gap is a pure multiple of scale, so dividing it out is
+    // the same constant for every size.
+    expect(feetGapPerScale(0.5)).toBeCloseTo(feetGapPerScale(1), 6);
+    expect(feetGapPerScale(1)).toBeCloseTo(feetGapPerScale(0.75), 6);
   });
 
   it("maps desktop screen points back into viewport-relative world coordinates", () => {

@@ -15,6 +15,7 @@ export type MatterPhysicsWorld = {
   addCircle(id: string, position: Vector, radius: number): void;
   addRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
   addStaticRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
+  resizeRectangle(id: string, size: Size): void;
   applyForce(id: string, force: Vector): void;
   setGravityScale(id: string, scale: number): void;
   setPosition(id: string, position: Partial<Vector>): void;
@@ -118,6 +119,39 @@ export function createMatterPhysicsWorld(bounds: {
         restitution: material?.restitution ?? 0,
       });
       addBody(id, body, { shape: "rectangle", isStatic: true, ...size });
+    },
+    resizeRectangle(id, size) {
+      const existing = bodies.get(id);
+      const shape = shapes.get(id);
+      if (
+        !existing ||
+        existing.isStatic ||
+        !shape ||
+        shape.shape !== "rectangle"
+      ) {
+        return;
+      }
+      // Keep the body's bottom edge fixed so a grounded pet's feet stay on the
+      // floor when it grows or shrinks, instead of sinking below or hovering
+      // above it while the rest of the body scales around its centre.
+      const bottom = existing.position.y + shape.height / 2;
+      const position = {
+        x: existing.position.x,
+        y: bottom - size.height / 2,
+      };
+      const velocity = { x: existing.velocity.x, y: existing.velocity.y };
+      World.remove(engine.world, existing);
+      const body = Bodies.rectangle(position.x, position.y, size.width, size.height, {
+        collisionFilter: {
+          category: COLLISION_CATEGORY_DYNAMIC_BODY,
+          mask: COLLISION_CATEGORY_SURFACE,
+        },
+        frictionAir: 0.04,
+        restitution: 0,
+      });
+      Body.setInertia(body, Infinity);
+      Body.setVelocity(body, velocity);
+      addBody(id, body, { shape: "rectangle", ...size });
     },
     applyForce(id, force) {
       const body = bodies.get(id);

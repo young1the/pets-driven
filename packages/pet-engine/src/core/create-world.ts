@@ -406,6 +406,21 @@ export function createWorld(input: WorldDefinition) {
     ) {
       physics.setVelocity(id, velocity);
     },
+    // Resize a live rectangle body (and its PhysicsBody component) in place,
+    // keeping its bottom edge on the floor. Lets the desktop host track a pet's
+    // scale changes without rebuilding the whole world. Transform re-syncs from
+    // the physics body on the next snapshot.
+    setBodySize(id: string, size: { width: number; height: number }) {
+      physics.resizeRectangle(id, size);
+      const body = components.getComponent(id, "PhysicsBody");
+      if (body && body.shape === "rectangle") {
+        components.setComponent(id, {
+          ...body,
+          width: size.width,
+          height: size.height,
+        });
+      }
+    },
     removeComponent(id: string, type: ComponentType) {
       components.removeComponent(id, type);
     },

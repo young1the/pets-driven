@@ -67,9 +67,21 @@ export function projectWorldSnapshotToPetWindows(
     const petScale = clampPetWindowScale(
       scaleByPetId?.[pet.id] ?? DEFAULT_PET_WINDOW_SCALE,
     );
+    // The sprite frame scales with petScale; width/height below drive the
+    // sprite's rendered size.
     const windowWidth = PET_CELL_SIZE.width * petScale;
     const windowHeight =
       (PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD) * petScale;
+    // The desktop pet window is created at this fixed size (see
+    // open_adopted_pet_window / open_pet_window_playground: inner_size 192×268)
+    // and never shrinks — it is non-resizable, so setSize is a no-op and the
+    // scaled sprite frame is centred inside this fixed window (place-items:
+    // center in pet-window.css). So the host must position the FIXED window
+    // centred on the pet, not the scaled frame; otherwise a min-scale (0.5) pet
+    // is centred low in the oversized window and its feet sink below the floor
+    // while a full-size pet (frame == window) sits correctly.
+    const osWindowWidth = PET_CELL_SIZE.width;
+    const osWindowHeight = PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD;
 
     return [
       {
@@ -79,12 +91,14 @@ export function projectWorldSnapshotToPetWindows(
           sequence,
           petId: pet.id,
           window: {
-            x: bounds.x + (body.x - viewport.x) * scaleX - windowWidth / 2,
+            x: bounds.x + (body.x - viewport.x) * scaleX - osWindowWidth / 2,
             y:
               bounds.y +
               (body.y - viewport.y) * scaleY -
-              windowHeight / 2 -
-              PET_WINDOW_BUBBLE_OVERHEAD -
+              osWindowHeight / 2 -
+              // Scaled with the sprite so the feet land the same way at every
+              // size (an unscaled constant here only lined up at scale 1).
+              PET_WINDOW_BUBBLE_OVERHEAD * petScale -
               PET_WINDOW_BODY_ANCHOR_OFFSET * petScale +
               (PET_WINDOW_BUBBLE_OVERHEAD / 2) * petScale,
             width: windowWidth,

@@ -4,6 +4,7 @@ import type {
   MovementProfileComponent,
   IdleConversationComponent,
   CanJumpComponent,
+  CanWalkComponent,
 } from "@pets-driven/pet-engine/core/components";
 import {
   DEFAULT_PET_BODY_SIZE,
@@ -490,6 +491,55 @@ export function createDemoScenario(options?: {
 }
 
 /**
+ * Derive an adopted pet's mass-tuned locomotion from its rendered body size.
+ *
+ * Matter.js gives a rectangle body a mass proportional to its area, but
+ * DEFAULT_PET_WALK_FORCE / DEFAULT_PET_JUMP_IMPULSE are tuned for the default
+ * 32×38 body. A larger adopted body (the desktop app scales the sprite up to
+ * ~156×156) is many times heavier, so under the default constants it barely
+ * accelerates: it never reaches a wander target, never returns to "idle", and
+ * so BehaviorDecisionSystem never even offers a jump candidate — the pet
+ * visibly stops jumping. Scale the walk force and jump impulse by the same area
+ * ratio so acceleration matches the default body regardless of rendered size.
+ *
+ * Shared by scenario construction and the desktop host's live resize handler so
+ * a pet resized on the fly keeps the same force/impulse tuning it would get from
+ * a fresh scenario build. (The jump playground compensates the same way via its
+ * explicit impulse multiplier; it builds pets through a separate scenario, so
+ * this stays isolated to adopted pets.)
+ */
+export function deriveAdoptedPetLocomotion(
+  bodySize: { width: number; height: number } | undefined,
+  personality?: PersonalityComponent,
+): { canWalk: CanWalkComponent; canJump: CanJumpComponent; bodyMassScale: number } {
+  const bodyMassScale = bodySize
+    ? (bodySize.width * bodySize.height) /
+      (DEFAULT_PET_BODY_SIZE.width * DEFAULT_PET_BODY_SIZE.height)
+    : 1;
+  const forwardImpulseBase = personality
+    ? deriveJumpForwardImpulse(personality)
+    : {
+        min: DEFAULT_PET_FORWARD_JUMP_IMPULSE_MIN,
+        max: DEFAULT_PET_FORWARD_JUMP_IMPULSE_MAX,
+      };
+  const canJump: CanJumpComponent = bodySize
+    ? {
+        type: "CanJump",
+        impulse: DEFAULT_PET_JUMP_IMPULSE * bodyMassScale,
+        forwardImpulse: {
+          min: forwardImpulseBase.min * bodyMassScale,
+          max: forwardImpulseBase.max * bodyMassScale,
+        },
+      }
+    : { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE };
+  const canWalk: CanWalkComponent = {
+    type: "CanWalk",
+    force: DEFAULT_PET_WALK_FORCE * bodyMassScale,
+  };
+  return { canWalk, canJump, bodyMassScale };
+}
+
+/**
  * Build a live world seeded with the user's actual adopted pets so they walk,
  * jump and wander on the screen floor exactly like the demo playground pets.
  * Unlike createDemoScenario the roster is dynamic — one grounded walker per
@@ -562,38 +612,10 @@ export function createAdoptedPetsScenario(
         const bodyComponents: Component[] = bodySize
           ? [{ type: "PhysicsBody", shape: "rectangle", width: bodySize.width, height: bodySize.height }]
           : [];
-        // Matter.js gives a rectangle body a mass proportional to its area, but
-        // DEFAULT_PET_WALK_FORCE / DEFAULT_PET_JUMP_IMPULSE are tuned for the
-        // default 32×38 body. A larger adopted body (the desktop app scales the
-        // sprite up to ~156×156) is many times heavier, so under the default
-        // constants it barely accelerates: it never reaches a wander target,
-        // never returns to "idle", and so BehaviorDecisionSystem never even
-        // offers a jump candidate — the pet visibly stops jumping. Scale the
-        // walk force and jump impulse by the same area ratio so acceleration
-        // matches the default body regardless of rendered size. (The jump
-        // playground compensates the same way via its explicit impulse
-        // multiplier; it builds pets through a separate scenario, so this stays
-        // isolated to adopted pets.)
-        const bodyMassScale = bodySize
-          ? (bodySize.width * bodySize.height) /
-            (DEFAULT_PET_BODY_SIZE.width * DEFAULT_PET_BODY_SIZE.height)
-          : 1;
-        const forwardImpulseBase = pet.personality
-          ? deriveJumpForwardImpulse(pet.personality)
-          : {
-              min: DEFAULT_PET_FORWARD_JUMP_IMPULSE_MIN,
-              max: DEFAULT_PET_FORWARD_JUMP_IMPULSE_MAX,
-            };
-        const canJump: Component = bodySize
-          ? {
-              type: "CanJump",
-              impulse: DEFAULT_PET_JUMP_IMPULSE * bodyMassScale,
-              forwardImpulse: {
-                min: forwardImpulseBase.min * bodyMassScale,
-                max: forwardImpulseBase.max * bodyMassScale,
-              },
-            }
-          : { type: "CanJump", impulse: DEFAULT_PET_JUMP_IMPULSE };
+        const { canWalk, canJump } = deriveAdoptedPetLocomotion(
+          bodySize,
+          pet.personality,
+        );
         return createFixturePet({
           id: pet.id,
           sourceId: pet.sourceId,
@@ -603,7 +625,7 @@ export function createAdoptedPetsScenario(
           components: [
             ...bodyComponents,
             { type: "WalkingTag" },
-            { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE * bodyMassScale },
+            canWalk,
             canJump,
             { type: "WandersOnArrival", arrivalRadius: 16 },
             { type: "CanSocialize" },

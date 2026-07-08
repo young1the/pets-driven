@@ -64,6 +64,7 @@ import {
 import {
   createAdoptedPetsScenario,
   createDemoScenario,
+  deriveAdoptedPetLocomotion,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import {
@@ -545,6 +546,25 @@ export function PetsDrivenApp() {
         ...adoptedScaleByPetIdRef.current,
         [petId]: nextScale,
       };
+      // The live simulation body was sized to the pet's previous scale; resize
+      // it (and rescale its mass-tuned walk/jump forces) in place so the sprite
+      // and its physics body stay the same size. Without this the enlarged
+      // sprite's feet sink below the floor — its y drifts down — until the world
+      // is rebuilt, e.g. by sending the pet home and redeploying it.
+      const scenario = adoptedScenarioRef.current;
+      if (scenario?.world.getEntity(petId)) {
+        const bodySize = adoptedPetBodySize(nextScale);
+        scenario.world.setBodySize(petId, bodySize);
+        const personality = selectAdoptedPetSimInputs(
+          petsDrivenStateRef.current,
+        ).find((input) => input.id === petId)?.personality;
+        const { canWalk, canJump } = deriveAdoptedPetLocomotion(
+          bodySize,
+          personality,
+        );
+        scenario.world.setComponent(petId, canWalk);
+        scenario.world.setComponent(petId, canJump);
+      }
       const current = petsDrivenStateRef.current;
       const next: typeof current = {
         ...current,
