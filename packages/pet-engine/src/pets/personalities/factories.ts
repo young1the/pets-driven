@@ -1,7 +1,7 @@
 export type PetPersonality = {
-  idleForce: number;
-  activeForce: number;
-  seekForce: number;
+  standForce: number;
+  pursueForce: number;
+  arriveForce: number;
   idleConversationMs?: number;
   completionIntent: "stand" | "arrive";
   /** OCEAN Big-Five traits (0..1 each). */
@@ -16,9 +16,9 @@ export type PersonalityFactory = () => PetPersonality;
 
 /** High openness + extraversion, low neuroticism — explores and engages freely. */
 export const createPlayfulPersonality: PersonalityFactory = () => ({
-  idleForce: 0.0008,
-  activeForce: 0.0016,
-  seekForce: 0.002,
+  standForce: 0.0008,
+  pursueForce: 0.0016,
+  arriveForce: 0.002,
   idleConversationMs: 9000,
   completionIntent: "arrive",
   openness: 0.7,
@@ -30,9 +30,9 @@ export const createPlayfulPersonality: PersonalityFactory = () => ({
 
 /** High extraversion + agreeableness — seeks the user and engages readily. */
 export const createAttentivePersonality: PersonalityFactory = () => ({
-  idleForce: 0.0005,
-  activeForce: 0.001,
-  seekForce: 0.0016,
+  standForce: 0.0005,
+  pursueForce: 0.001,
+  arriveForce: 0.0016,
   idleConversationMs: 12000,
   completionIntent: "arrive",
   openness: 0.3,
@@ -44,9 +44,9 @@ export const createAttentivePersonality: PersonalityFactory = () => ({
 
 /** High neuroticism, low extraversion — cautious, prefers staying close. */
 export const createReservedPersonality: PersonalityFactory = () => ({
-  idleForce: 0.0004,
-  activeForce: 0.0008,
-  seekForce: 0.001,
+  standForce: 0.0004,
+  pursueForce: 0.0008,
+  arriveForce: 0.001,
   completionIntent: "stand",
   openness: 0.3,
   conscientiousness: 0.5,
@@ -57,9 +57,9 @@ export const createReservedPersonality: PersonalityFactory = () => ({
 
 /** Very high openness — investigates new space while staying moderately social. */
 export const createCuriousPersonality: PersonalityFactory = () => ({
-  idleForce: 0.0007,
-  activeForce: 0.0013,
-  seekForce: 0.0015,
+  standForce: 0.0007,
+  pursueForce: 0.0013,
+  arriveForce: 0.0015,
   idleConversationMs: 14000,
   completionIntent: "arrive",
   openness: 0.9,
@@ -71,9 +71,9 @@ export const createCuriousPersonality: PersonalityFactory = () => ({
 
 /** High conscientiousness, low neuroticism — steady, calm, and deliberate. */
 export const createSteadyPersonality: PersonalityFactory = () => ({
-  idleForce: 0.00045,
-  activeForce: 0.0009,
-  seekForce: 0.0012,
+  standForce: 0.00045,
+  pursueForce: 0.0009,
+  arriveForce: 0.0012,
   idleConversationMs: 18000,
   completionIntent: "stand",
   openness: 0.45,
@@ -85,9 +85,9 @@ export const createSteadyPersonality: PersonalityFactory = () => ({
 
 /** High openness + extraversion, low neuroticism — approaches boldly. */
 export const createBoldPersonality: PersonalityFactory = () => ({
-  idleForce: 0.0009,
-  activeForce: 0.0018,
-  seekForce: 0.0022,
+  standForce: 0.0009,
+  pursueForce: 0.0018,
+  arriveForce: 0.0022,
   idleConversationMs: 8000,
   completionIntent: "arrive",
   openness: 0.8,
@@ -99,9 +99,9 @@ export const createBoldPersonality: PersonalityFactory = () => ({
 
 /** Very high agreeableness, low neuroticism — warm and unhurried, gravitates toward the user. */
 export const createGentlePersonality: PersonalityFactory = () => ({
-  idleForce: 0.0004,
-  activeForce: 0.0008,
-  seekForce: 0.001,
+  standForce: 0.0004,
+  pursueForce: 0.0008,
+  arriveForce: 0.001,
   idleConversationMs: 15000,
   completionIntent: "arrive",
   openness: 0.4,
@@ -113,9 +113,9 @@ export const createGentlePersonality: PersonalityFactory = () => ({
 
 /** High openness + extraversion, low conscientiousness — unpredictable and impulsive. */
 export const createMischievousPersonality: PersonalityFactory = () => ({
-  idleForce: 0.001,
-  activeForce: 0.002,
-  seekForce: 0.0025,
+  standForce: 0.001,
+  pursueForce: 0.002,
+  arriveForce: 0.0025,
   idleConversationMs: 7000,
   completionIntent: "arrive",
   openness: 0.85,
@@ -127,9 +127,9 @@ export const createMischievousPersonality: PersonalityFactory = () => ({
 
 /** Low extraversion + conscientiousness — barely budges, perfectly content doing nothing. */
 export const createLazyPersonality: PersonalityFactory = () => ({
-  idleForce: 0.0002,
-  activeForce: 0.0005,
-  seekForce: 0.0007,
+  standForce: 0.0002,
+  pursueForce: 0.0005,
+  arriveForce: 0.0007,
   idleConversationMs: 30000,
   completionIntent: "stand",
   openness: 0.35,
@@ -141,9 +141,9 @@ export const createLazyPersonality: PersonalityFactory = () => ({
 
 /** Very low neuroticism, balanced traits — unhurried, serene, and easy to be around. */
 export const createZenPersonality: PersonalityFactory = () => ({
-  idleForce: 0.00035,
-  activeForce: 0.0007,
-  seekForce: 0.0009,
+  standForce: 0.00035,
+  pursueForce: 0.0007,
+  arriveForce: 0.0009,
   idleConversationMs: 20000,
   completionIntent: "stand",
   openness: 0.55,

@@ -5,9 +5,9 @@ export function buildPersonalityComponents(personality: PetPersonality): Compone
   const components: Component[] = [
     {
       type: "MovementProfile",
-      idleForce: personality.idleForce,
-      activeForce: personality.activeForce,
-      seekForce: personality.seekForce,
+      standForce: personality.standForce,
+      pursueForce: personality.pursueForce,
+      arriveForce: personality.arriveForce,
     },
   ];
   if (personality.idleConversationMs !== undefined) {

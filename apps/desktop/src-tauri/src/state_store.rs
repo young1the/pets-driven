@@ -104,9 +104,9 @@ pub(crate) enum HatchError {
 fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
     match personality_id {
         "playful" => Some(serde_json::json!({
-            "idleForce": 0.0008,
-            "activeForce": 0.0016,
-            "seekForce": 0.002,
+            "standForce": 0.0008,
+            "pursueForce": 0.0016,
+            "arriveForce": 0.002,
             "idleConversationMs": 9000,
             "completionIntent": "arrive",
             "openness": 0.7,
@@ -116,9 +116,9 @@ fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
             "neuroticism": 0.1
         })),
         "attentive" => Some(serde_json::json!({
-            "idleForce": 0.0005,
-            "activeForce": 0.001,
-            "seekForce": 0.0016,
+            "standForce": 0.0005,
+            "pursueForce": 0.001,
+            "arriveForce": 0.0016,
             "idleConversationMs": 12000,
             "completionIntent": "arrive",
             "openness": 0.3,
@@ -128,9 +128,9 @@ fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
             "neuroticism": 0.2
         })),
         "reserved" => Some(serde_json::json!({
-            "idleForce": 0.0004,
-            "activeForce": 0.0008,
-            "seekForce": 0.001,
+            "standForce": 0.0004,
+            "pursueForce": 0.0008,
+            "arriveForce": 0.001,
             "completionIntent": "stand",
             "openness": 0.3,
             "conscientiousness": 0.5,
@@ -139,9 +139,9 @@ fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
             "neuroticism": 0.75
         })),
         "curious" => Some(serde_json::json!({
-            "idleForce": 0.0007,
-            "activeForce": 0.0013,
-            "seekForce": 0.0015,
+            "standForce": 0.0007,
+            "pursueForce": 0.0013,
+            "arriveForce": 0.0015,
             "idleConversationMs": 14000,
             "completionIntent": "arrive",
             "openness": 0.9,
@@ -151,9 +151,9 @@ fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
             "neuroticism": 0.25
         })),
         "steady" => Some(serde_json::json!({
-            "idleForce": 0.00045,
-            "activeForce": 0.0009,
-            "seekForce": 0.0012,
+            "standForce": 0.00045,
+            "pursueForce": 0.0009,
+            "arriveForce": 0.0012,
             "idleConversationMs": 18000,
             "completionIntent": "stand",
             "openness": 0.45,
@@ -163,9 +163,9 @@ fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
             "neuroticism": 0.15
         })),
         "bold" => Some(serde_json::json!({
-            "idleForce": 0.0009,
-            "activeForce": 0.0018,
-            "seekForce": 0.0022,
+            "standForce": 0.0009,
+            "pursueForce": 0.0018,
+            "arriveForce": 0.0022,
             "idleConversationMs": 8000,
             "completionIntent": "arrive",
             "openness": 0.8,

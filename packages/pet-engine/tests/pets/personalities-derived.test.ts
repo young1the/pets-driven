@@ -54,23 +54,23 @@ describe("deriveMovementProfile", () => {
   it("high-E speeds exceed low-E speeds (same N)", () => {
     const highE = deriveMovementProfile(p({ extraversion: 0.9, neuroticism: 0.1 }));
     const lowE  = deriveMovementProfile(p({ extraversion: 0.1, neuroticism: 0.1 }));
-    expect(highE.activeForce).toBeGreaterThan(lowE.activeForce);
-    expect(highE.idleForce).toBeGreaterThan(lowE.idleForce);
-    expect(highE.seekForce).toBeGreaterThan(lowE.seekForce);
+    expect(highE.pursueForce).toBeGreaterThan(lowE.pursueForce);
+    expect(highE.standForce).toBeGreaterThan(lowE.standForce);
+    expect(highE.arriveForce).toBeGreaterThan(lowE.arriveForce);
   });
 
   it("high-N speeds are slower than low-N (same E)", () => {
     const highN = deriveMovementProfile(p({ extraversion: 0.5, neuroticism: 0.9 }));
     const lowN  = deriveMovementProfile(p({ extraversion: 0.5, neuroticism: 0.0 }));
-    expect(highN.activeForce).toBeLessThan(lowN.activeForce);
+    expect(highN.pursueForce).toBeLessThan(lowN.pursueForce);
   });
 
   it("exact values for E=0.9, N=0.1 — energy = 0.6 + 0.9×0.5 − 0.1×0.2 = 1.03", () => {
     const energy = 0.6 + 0.9 * 0.5 - 0.1 * 0.2;        // 1.03
     const mp = deriveMovementProfile(p({ extraversion: 0.9, neuroticism: 0.1 }));
-    expect(mp.idleForce).toBeCloseTo(0.0005 * energy, 10);
-    expect(mp.activeForce).toBeCloseTo(0.0012 * energy, 10);
-    expect(mp.seekForce).toBeCloseTo(0.0018 * energy, 10);
+    expect(mp.standForce).toBeCloseTo(0.0005 * energy, 10);
+    expect(mp.pursueForce).toBeCloseTo(0.0012 * energy, 10);
+    expect(mp.arriveForce).toBeCloseTo(0.0018 * energy, 10);
   });
 
   it("returns a MovementProfile component type tag", () => {
@@ -143,18 +143,18 @@ describe("createFixturePet — Personality-derived components", () => {
     // energy = 0.6 + 0.9×0.5 − 0.1×0.2 = 1.03
     const energy = 0.6 + 0.9 * 0.5 - 0.1 * 0.2;
     expect(mp).toBeDefined();
-    expect(mp!.activeForce).toBeCloseTo(0.0012 * energy, 10);
+    expect(mp!.pursueForce).toBeCloseTo(0.0012 * energy, 10);
   });
 
   it("explicit MovementProfile in input.components wins over derivation", () => {
     const { components } = buildPet([
       p({ extraversion: 0.9 }),
-      { type: "MovementProfile", idleForce: 0.001, activeForce: 0.002, seekForce: 0.003 },
+      { type: "MovementProfile", standForce: 0.001, pursueForce: 0.002, arriveForce: 0.003 },
     ]);
     const mp = last<MovementProfileComponent>(components, "MovementProfile");
-    expect(mp!.idleForce).toBe(0.001);
-    expect(mp!.activeForce).toBe(0.002);
-    expect(mp!.seekForce).toBe(0.003);
+    expect(mp!.standForce).toBe(0.001);
+    expect(mp!.pursueForce).toBe(0.002);
+    expect(mp!.arriveForce).toBe(0.003);
   });
 
   it("pet with no explicit IdleConversation gets one derived from Personality", () => {
@@ -201,7 +201,7 @@ describe("createFixturePet — Personality-derived components", () => {
     const mp = last<MovementProfileComponent>(components, "MovementProfile");
     const energy = 0.6 + 0.5 * 0.5 - 0.2 * 0.2;        // 0.81
     expect(mp).toBeDefined();
-    expect(mp!.activeForce).toBeCloseTo(0.0012 * energy, 10);
+    expect(mp!.pursueForce).toBeCloseTo(0.0012 * energy, 10);
   });
 
   it("exactly one MovementProfile component per pet (no double-attach)", () => {

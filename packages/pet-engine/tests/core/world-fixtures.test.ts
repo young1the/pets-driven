@@ -592,9 +592,9 @@ describe("demo scenario", () => {
     const aliceEnergy = 0.6 + 0.85 * 0.5 - 0.1 * 0.2;
     expect(scenario.world.getComponent("pet-a", "MovementProfile")).toEqual({
       type: "MovementProfile",
-      idleForce: 0.0005 * aliceEnergy,
-      activeForce: 0.0012 * aliceEnergy,
-      seekForce: 0.0018 * aliceEnergy,
+      standForce: 0.0005 * aliceEnergy,
+      pursueForce: 0.0012 * aliceEnergy,
+      arriveForce: 0.0018 * aliceEnergy,
     });
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
       type: "MotionTarget",

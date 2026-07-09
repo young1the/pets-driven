@@ -20,7 +20,7 @@ function makeStore() {
         },
         { type: "SpeechState", speech: null, expiresAt: null },
         { type: "ActivityState", lastActiveAt: 0 },
-        { type: "CompletionBehavior", intentAfterCompletion: "seek" as const },
+        { type: "CompletionBehavior", intentAfterCompletion: "arrive" as const },
       ],
     },
   ]);

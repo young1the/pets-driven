@@ -463,10 +463,10 @@ export function runSteeringForceSystem(
 
       const speed =
         intent.mode === "arrive"
-          ? movement.seekForce
+          ? movement.arriveForce
           : intent.mode === "pursue"
-            ? movement.activeForce
-            : movement.idleForce;
+            ? movement.pursueForce
+            : movement.standForce;
 
       const easedSpeed =
         (distance >= MOTION_SLOW_RADIUS

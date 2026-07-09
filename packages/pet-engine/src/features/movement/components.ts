@@ -60,12 +60,12 @@ export type CanWalkComponent = {
   force: number;
 };
 
-/** Force magnitudes used by steering-based movement for each intent. */
+/** Force magnitudes used by steering-based movement, one per Steering mode. */
 export type MovementProfileComponent = {
   type: "MovementProfile";
-  idleForce: number;
-  activeForce: number;
-  seekForce: number;
+  standForce: number;
+  pursueForce: number;
+  arriveForce: number;
 };
 
 /** Personality component for pets that keep wandering after reaching a target. */

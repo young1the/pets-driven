@@ -37,9 +37,9 @@ export function deriveMovementProfile(
   const energy = 0.6 + p.extraversion * 0.5 - p.neuroticism * 0.2;
   return {
     type: "MovementProfile",
-    idleForce: 0.0005 * energy,
-    activeForce: 0.0012 * energy,
-    seekForce: 0.0018 * energy,
+    standForce: 0.0005 * energy,
+    pursueForce: 0.0012 * energy,
+    arriveForce: 0.0018 * energy,
   };
 }
 

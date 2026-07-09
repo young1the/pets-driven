@@ -9,7 +9,7 @@ import {
 describe("pet entity builder", () => {
   it("converts playful personality to simulation components", () => {
     expect(buildPersonalityComponents(createPlayfulPersonality())).toEqual([
-      { type: "MovementProfile", idleForce: 0.0008, activeForce: 0.0016, seekForce: 0.002 },
+      { type: "MovementProfile", standForce: 0.0008, pursueForce: 0.0016, arriveForce: 0.002 },
       { type: "IdleConversation", idleAfterMs: 9000 },
       { type: "CompletionBehavior", intentAfterCompletion: "arrive" },
       {
@@ -25,7 +25,7 @@ describe("pet entity builder", () => {
 
   it("converts attentive personality to simulation components", () => {
     expect(buildPersonalityComponents(createAttentivePersonality())).toEqual([
-      { type: "MovementProfile", idleForce: 0.0005, activeForce: 0.001, seekForce: 0.0016 },
+      { type: "MovementProfile", standForce: 0.0005, pursueForce: 0.001, arriveForce: 0.0016 },
       { type: "IdleConversation", idleAfterMs: 12000 },
       { type: "CompletionBehavior", intentAfterCompletion: "arrive" },
       {
@@ -41,7 +41,7 @@ describe("pet entity builder", () => {
 
   it("omits IdleConversation when idleConversationMs is absent", () => {
     expect(buildPersonalityComponents(createReservedPersonality())).toEqual([
-      { type: "MovementProfile", idleForce: 0.0004, activeForce: 0.0008, seekForce: 0.001 },
+      { type: "MovementProfile", standForce: 0.0004, pursueForce: 0.0008, arriveForce: 0.001 },
       { type: "CompletionBehavior", intentAfterCompletion: "stand" },
       {
         type: "Personality",
@@ -57,9 +57,9 @@ describe("pet entity builder", () => {
   it("accepts an inline personality object", () => {
     expect(
       buildPersonalityComponents({
-        idleForce: 0.001,
-        activeForce: 0.002,
-        seekForce: 0.003,
+        standForce: 0.001,
+        pursueForce: 0.002,
+        arriveForce: 0.003,
         completionIntent: "stand",
         openness: 0.5,
         conscientiousness: 0.4,
@@ -68,7 +68,7 @@ describe("pet entity builder", () => {
         neuroticism: 0.2,
       }),
     ).toEqual([
-      { type: "MovementProfile", idleForce: 0.001, activeForce: 0.002, seekForce: 0.003 },
+      { type: "MovementProfile", standForce: 0.001, pursueForce: 0.002, arriveForce: 0.003 },
       { type: "CompletionBehavior", intentAfterCompletion: "stand" },
       {
         type: "Personality",
