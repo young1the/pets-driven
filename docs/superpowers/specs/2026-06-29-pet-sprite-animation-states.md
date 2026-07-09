@@ -93,6 +93,26 @@ During `AgentTaskState.status === "working"`:
 Personality governs which happens: high `conscientiousness` stays still; low
 `conscientiousness` plus high `extraversion` wanders with travel animation.
 
+### Autonomous expressive poses
+
+The five status-flavoured rows (`waving` / `failed` / `waiting` / `running` /
+`review`) are not agent-only. A family of sustained, stationary "expressive
+pose" activities in `BehaviorDecisionSystem` lets ordinary autonomous pets
+exercise them, each personality-shaped (OCEAN). While one is active the pet
+holds a `stand` steering claim named for the gesture, and
+`getPetAnimationState` maps that claim reason to the row:
+
+```text
+BehaviorDecisionState.reason "greet"   -> "waving"  (row 3)  — high E/A
+BehaviorDecisionState.reason "groom"   -> "running" (row 7)  — high C
+BehaviorDecisionState.reason "observe" -> "review"  (row 8)  — high O
+BehaviorDecisionState.reason "beckon"  -> "waiting" (row 6)  — lonely, agreeable
+BehaviorDecisionState.reason "fret"    -> "failed"  (row 5)  — high N
+```
+
+These only apply to autonomous claims and require no `TaskMovementHold`, so
+they never collide with the agent-task poses, which still win via the hold.
+
 ## Effect Constraints
 
 All effects must be:

@@ -495,6 +495,7 @@ describe("demo scenario", () => {
         "ClimbIntentState",
         "BehaviorDecisionToken",
         "Drives",
+        "PetExpressionState",
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({

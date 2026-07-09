@@ -151,6 +151,24 @@ describe("derivePetActivity", () => {
     ).toBe("headingOver");
   });
 
+  it("maps the expressive idle poses from their sustained standing claim", () => {
+    const cases: Array<[string, string]> = [
+      ["greet", "greeting"],
+      ["groom", "grooming"],
+      ["observe", "observing"],
+      ["beckon", "beckoning"],
+      ["fret", "fretting"],
+    ];
+    for (const [reason, expected] of cases) {
+      // Stationary (stand) but the pose claim is still live.
+      const store = storeWith([
+        steering("stand"),
+        decision(reason, { decidedAt: 0, expiresAt: 2_000 }),
+      ]);
+      expect(derivePetActivity(store, "pet", 500)).toBe(expected);
+    }
+  });
+
   it("reads a standing chat session as chatting (idle but unexpired claim)", () => {
     // Chat play phase stops the pets (idle) but the session re-claims each
     // tick, so the social claim stays unexpired and owns the Activity.

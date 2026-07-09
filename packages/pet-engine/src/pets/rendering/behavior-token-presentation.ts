@@ -113,6 +113,36 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<
     mood: "excited",
     tone: "spark",
   },
+  greet: {
+    emote: "sparkle",
+    label: "Saying hi",
+    mood: "happy",
+    tone: "calm",
+  },
+  groom: {
+    emote: "none",
+    label: "Tidying up",
+    mood: "working",
+    tone: "calm",
+  },
+  observe: {
+    emote: "question",
+    label: "Looking around",
+    mood: "thinking",
+    tone: "curious",
+  },
+  beckon: {
+    emote: "heart",
+    label: "Come here",
+    mood: "love",
+    tone: "affection",
+  },
+  fret: {
+    emote: "exclaim",
+    label: "Fretting",
+    mood: "confused",
+    tone: "alert",
+  },
 };
 
 export function presentBehaviorDecisionToken(

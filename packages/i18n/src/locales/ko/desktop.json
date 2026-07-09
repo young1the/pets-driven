@@ -203,7 +203,12 @@
     "chattingWith": "{{name}}와(과) 수다 중",
     "playingWith": "{{name}}와(과) 노는 중",
     "makingFriendsWith": "{{name}}! 놀자!",
-    "onTheMove": "이동 중"
+    "onTheMove": "이동 중",
+    "greeting": "안녕!",
+    "grooming": "단장 중",
+    "observing": "구경 중",
+    "beckoning": "이리 와요!",
+    "fretting": "걱정 중"
   },
   "toast": {
     "onDesktop": "{{name}}이(가) 데스크탑에 나왔어요",

@@ -184,6 +184,54 @@ describe("pet animation state", () => {
     expect(animationState()).toBe("running");
   });
 
+  it.each([
+    ["greet", "waving"],
+    ["groom", "running"],
+    ["observe", "review"],
+    ["beckon", "waiting"],
+    ["fret", "failed"],
+  ] as const)(
+    "shows the %s expressive pose on its sprite row",
+    (reason, expected) => {
+      const { scenario, setTravel, animationState } =
+        petBodyAnimationState("pet-a");
+
+      // A held expressive pose: standing still with the sustained autonomous
+      // claim naming the gesture.
+      setTravel(0, 0);
+      scenario.world.setComponent("pet-a", { type: "Steering", mode: "stand" });
+      scenario.world.setComponent("pet-a", {
+        type: "BehaviorDecisionState",
+        source: "autonomous",
+        decidedAt: 0,
+        expiresAt: 5_000,
+        reason,
+        lastAutonomousReason: reason,
+        lastAutonomousAt: 0,
+      });
+
+      expect(animationState()).toBe(expected);
+    },
+  );
+
+  it("keeps travel over an expressive pose while the pet is moving", () => {
+    const { scenario, setTravel, animationState } =
+      petBodyAnimationState("pet-a");
+
+    scenario.world.setComponent("pet-a", {
+      type: "BehaviorDecisionState",
+      source: "autonomous",
+      decidedAt: 0,
+      expiresAt: 5_000,
+      reason: "greet",
+      lastAutonomousReason: "greet",
+      lastAutonomousAt: 0,
+    });
+    setTravel(4, 0);
+
+    expect(animationState()).toBe("running-right");
+  });
+
   it("derives travel displacement from Transform, not physics velocity", () => {
     const { scenario } = petBodyAnimationState("pet-a");
 

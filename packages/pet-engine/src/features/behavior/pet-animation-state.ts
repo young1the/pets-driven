@@ -17,6 +17,21 @@ const AIRBORNE_DISPLACEMENT_THRESHOLD = 0.5;
 
 type TravelDirection = "left" | "right";
 
+/**
+ * Sustained expressive idle activities (see BehaviorDecisionKind) hold their
+ * autonomous claim for the whole pose. They stand the pet still, so the
+ * travel/jump branches fall through and this reason→row map drives the sprite.
+ * This is what makes the otherwise agent-only rows — waving / focus / review /
+ * waiting / failed — appear during ordinary autonomous life.
+ */
+const EXPRESSIVE_POSE_ROWS: Partial<Record<string, PetAnimationState>> = {
+  greet: "waving",
+  groom: "running",
+  observe: "review",
+  beckon: "waiting",
+  fret: "failed",
+};
+
 function getTravelDirection(dx: number): TravelDirection | null {
   if (Math.abs(dx) <= TRAVEL_DISPLACEMENT_THRESHOLD) {
     return null;
@@ -82,6 +97,15 @@ export function getPetAnimationState(
   const travelDirection = getTravelDirection(dx);
   if (travelDirection) {
     return travelDirection === "right" ? "running-right" : "running-left";
+  }
+
+  // Sustained expressive poses: the pet is standing still with an autonomous
+  // claim naming the gesture. Checked after travel/jump so a moving pet still
+  // animates locomotion; a stationary pose wins over the idle fallback.
+  const decision = componentStore.getComponent(id, "BehaviorDecisionState");
+  if (decision?.source === "autonomous") {
+    const pose = EXPRESSIVE_POSE_ROWS[decision.reason];
+    if (pose) return pose;
   }
 
   const intent = componentStore.getComponent(id, "Steering");

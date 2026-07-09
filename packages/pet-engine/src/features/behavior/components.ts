@@ -70,7 +70,15 @@ export type BehaviorDecisionKind =
   // Cursor play — laser-pointer-style chase triggered by Perception.cursor
   | "chase-cursor"
   // Solo play — a sustained hop-and-dash activity for playful (high-E/O) pets.
-  | "play-romp";
+  | "play-romp"
+  // Expressive idle poses — sustained, stationary gestures that exercise the
+  // otherwise agent-only sprite rows (waving / focus / review / waiting /
+  // failed) during ordinary autonomous life. Each is personality-shaped.
+  | "greet" // waving row — a friendly hello (high E/A)
+  | "groom" // focus/"running" row — absorbed self-tidying (high C)
+  | "observe" // review row — curious examination (high O)
+  | "beckon" // waiting row — an expectant "come here" (lonely, agreeable)
+  | "fret"; // failed row — an anxious sulk (high N)
 
 export type BehaviorDecisionTokenComponent = {
   type: "BehaviorDecisionToken";
@@ -199,7 +207,9 @@ export type PetExpressionSource =
   | "chase-cursor"
   | "petting"
   | "social"
-  | "romp";
+  | "romp"
+  // Expressive idle poses (greet / groom / observe / beckon / fret).
+  | "expressive";
 
 export type PetExpressionMood =
   "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";

@@ -153,6 +153,11 @@ const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   chatting: "Chatting",
   playing: "Playing",
   onTheMove: "On the move",
+  greeting: "Hi there!",
+  grooming: "Tidying up",
+  observing: "Looking around",
+  beckoning: "Come here!",
+  fretting: "Worried",
 };
 
 function activityEntry(
@@ -179,6 +184,11 @@ const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   chatting: activityEntry("chatting", "happy", "none"),
   playing: activityEntry("playing", "excited", "sparkle"),
   onTheMove: activityEntry("onTheMove", "working", "none"),
+  greeting: activityEntry("greeting", "happy", "sparkle"),
+  grooming: activityEntry("grooming", "working", "none"),
+  observing: activityEntry("observing", "thinking", "question"),
+  beckoning: activityEntry("beckoning", "love", "heart"),
+  fretting: activityEntry("fretting", "confused", "exclaim"),
 };
 
 function presentationFromAgentStatus(

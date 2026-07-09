@@ -78,6 +78,13 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "play-romp": 8_000,
   // Personal-space shuffle — after stepping aside, wait a while before again.
   "make-room": 4_000,
+  // Expressive idle poses — occasional treats, same tier as play-romp so they
+  // punctuate ordinary life without spamming.
+  greet: 6_000,
+  groom: 8_000,
+  observe: 8_000,
+  beckon: 6_000,
+  fret: 8_000,
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
@@ -174,6 +181,44 @@ const ROMP_HOP_RANGE_MAX_BODY_WIDTHS = 5;
 const ROMP_SPEED_FACTOR = 1.15;
 const ROMP_HOP_ENERGY_COST = JUMP_ENERGY_COST * 0.5;
 const ROMP_END_CUE_MS = 800;
+
+// ── Expressive idle poses ──────────────────────────────────────────────────
+// Sustained, stationary gestures that exercise the otherwise agent-only sprite
+// rows during ordinary autonomous life (see BehaviorDecisionKind). Like
+// idle-stay and play-romp, each holds its autonomous claim for the whole pose
+// so the pet reads as genuinely doing something rather than twitching. Base +
+// jitter loosely track each row's sprite loop length so the animation completes
+// a few cycles.
+const EXPRESSIVE_POSE_DURATIONS: Record<
+  "greet" | "groom" | "observe" | "beckon" | "fret",
+  { base: number; jitter: number }
+> = {
+  greet: { base: 1_400, jitter: 800 },
+  groom: { base: 3_000, jitter: 1_500 },
+  observe: { base: 2_200, jitter: 1_200 },
+  beckon: { base: 1_800, jitter: 900 },
+  fret: { base: 1_600, jitter: 900 },
+};
+
+/** Mood/emote cue attached to each expressive pose (a PetExpressionState). */
+const EXPRESSIVE_POSE_CUES: Record<
+  "greet" | "groom" | "observe" | "beckon" | "fret",
+  { mood: PetExpressionMood; emote: PetExpressionEmote }
+> = {
+  greet: { mood: "happy", emote: "sparkle" },
+  groom: { mood: "working", emote: "none" },
+  observe: { mood: "thinking", emote: "question" },
+  beckon: { mood: "love", emote: "heart" },
+  fret: { mood: "confused", emote: "exclaim" },
+};
+
+function expressivePoseDurationMs(
+  kind: "greet" | "groom" | "observe" | "beckon" | "fret",
+  random: RandomSource,
+): number {
+  const { base, jitter } = EXPRESSIVE_POSE_DURATIONS[kind];
+  return Math.round(base + random.next() * jitter);
+}
 
 // Personal space — a cosmetic "make-room" shuffle. Since pets are physical
 // ghosts to each other (they pass through freely), two idle pets can settle on
@@ -1626,6 +1671,45 @@ function scorePlayRomp(p: PersonalityComponent, drives?: DrivesComponent): numbe
   return base - driveResponseCurve(1 - drives.energy) * 0.7;
 }
 
+// ── Expressive idle pose score functions ───────────────────────────────────
+// Each pose leans on the personality axes that best explain the gesture, with
+// modest bases so they punctuate — rather than dominate — the wander/rest pool.
+
+function scoreGreet(p: PersonalityComponent, drives?: DrivesComponent): number {
+  // E + A → warmth toward whoever is near; N → shyness.
+  const base = 0.15 + p.extraversion * 0.6 + p.agreeableness * 0.4 - p.neuroticism * 0.3;
+  if (!drives) return base;
+  // A lonely pet is a little keener to say hello.
+  return base + driveResponseCurve(drives.social) * 0.3;
+}
+
+function scoreGroom(p: PersonalityComponent): number {
+  // C → tidy self-maintenance; low E → the calm homebody settles into it.
+  return 0.15 + p.conscientiousness * 0.5 + (1 - p.extraversion) * 0.25;
+}
+
+function scoreObserve(p: PersonalityComponent, drives?: DrivesComponent): number {
+  // O → curiosity; slight introvert lean (extraverts would rather approach).
+  const base = 0.15 + p.openness * 0.6 - p.extraversion * 0.1;
+  if (!drives) return base;
+  // Boredom (unmet curiosity) makes examining the surroundings appealing.
+  return base + driveResponseCurve(drives.curiosity) * 0.4;
+}
+
+function scoreBeckon(p: PersonalityComponent, drives?: DrivesComponent): number {
+  // A + E → wanting the user's company; N → hesitance.
+  const base =
+    0.1 + p.extraversion * 0.3 + p.agreeableness * 0.3 - p.neuroticism * 0.2;
+  if (!drives) return base;
+  // Loneliness is the strongest pull toward an expectant "come here".
+  return base + driveResponseCurve(drives.social) * 0.5;
+}
+
+function scoreFret(p: PersonalityComponent): number {
+  // N → anxious sulking; E → shrugs it off. Low base keeps it occasional.
+  return 0.05 + p.neuroticism * 0.55 - p.extraversion * 0.2;
+}
+
 /**
  * Personality-modulated wander radii.
  * "near": high N → tighter range but still meaningfully visible movement.
@@ -2120,6 +2204,47 @@ export function runBehaviorDecisionSystem(
         });
       }
 
+      // Expressive idle poses — sustained, stationary gestures that light up
+      // the otherwise agent-only sprite rows. Each is gated to the context that
+      // makes it read, then materialized as a claim held for its whole
+      // duration. Greeting waves at the user when they are near (pet-to-pet
+      // hellos are already served by approach-pet); beckoning calls the user
+      // over when they are far; groom/observe/fret are grounded-walker poses,
+      // the same footing as play-romp.
+      if (userAnchor && isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
+        pushCandidate(candidates, components, id, now, {
+          kind: "greet",
+          score: scoreGreet(personality, drives),
+          build: () => ({ activityDurationMs: expressivePoseDurationMs("greet", random) }),
+        });
+      }
+
+      if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
+        pushCandidate(candidates, components, id, now, {
+          kind: "beckon",
+          score: scoreBeckon(personality, drives),
+          build: () => ({ activityDurationMs: expressivePoseDurationMs("beckon", random) }),
+        });
+      }
+
+      if (isGroundedWalker) {
+        pushCandidate(candidates, components, id, now, {
+          kind: "groom",
+          score: scoreGroom(personality),
+          build: () => ({ activityDurationMs: expressivePoseDurationMs("groom", random) }),
+        });
+        pushCandidate(candidates, components, id, now, {
+          kind: "observe",
+          score: scoreObserve(personality, drives),
+          build: () => ({ activityDurationMs: expressivePoseDurationMs("observe", random) }),
+        });
+        pushCandidate(candidates, components, id, now, {
+          kind: "fret",
+          score: scoreFret(personality),
+          build: () => ({ activityDurationMs: expressivePoseDurationMs("fret", random) }),
+        });
+      }
+
       pushCandidate(candidates, components, id, now, {
         kind: "idle-stay",
         score: scoreIdleStay(personality, drives),
@@ -2247,6 +2372,40 @@ export function runBehaviorPlanningSystem(
           startedAt: token.decidedAt,
           expiresAt: token.decidedAt + ROMP_END_CUE_MS,
         });
+        break;
+      }
+      // Expressive idle poses — stand still and hold a gesture. No motion; the
+      // sustained autonomous claim (set in the decision) drives the sprite row.
+      // The mood/emote cue and any drive relief run here.
+      case "greet":
+      case "groom":
+      case "observe":
+      case "beckon":
+      case "fret": {
+        setPetSteering(components, id, "stand");
+        clearMotionTarget(components, id);
+        const cue = EXPRESSIVE_POSE_CUES[token.kind];
+        const durationMs =
+          token.activityDurationMs ?? EXPRESSIVE_POSE_DURATIONS[token.kind].base;
+        components.setComponent(id, {
+          type: "PetExpressionState",
+          source: "expressive",
+          mood: cue.mood,
+          emote: cue.emote,
+          label: null,
+          startedAt: token.decidedAt,
+          expiresAt: token.decidedAt + durationMs,
+        });
+        if (token.kind === "greet") {
+          // A hello meets a little of the need for company.
+          adjustDrive(components, id, { social: -0.15 });
+        } else if (token.kind === "groom") {
+          // A calm tidy-up is mildly restful.
+          adjustDrive(components, id, { energy: 0.1 });
+        } else if (token.kind === "observe") {
+          // Examining the surroundings scratches the novelty itch.
+          adjustDrive(components, id, { curiosity: -0.3 });
+        }
         break;
       }
       // Phase 3 — social movements.
@@ -2635,6 +2794,7 @@ export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
     "ClimbIntentState",
     "BehaviorDecisionToken",
     "Drives",
+    "PetExpressionState",
   ],
   update(ctx) {
     runBehaviorPlanningSystem(ctx.components, ctx.clock);

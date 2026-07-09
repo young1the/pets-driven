@@ -207,7 +207,12 @@
     "chattingWith": "Chatting with {{name}}",
     "playingWith": "Playing with {{name}}",
     "makingFriendsWith": "Let's play, {{name}}!",
-    "onTheMove": "On the move"
+    "onTheMove": "On the move",
+    "greeting": "Hi there!",
+    "grooming": "Tidying up",
+    "observing": "Looking around",
+    "beckoning": "Come here!",
+    "fretting": "Worried"
   },
   "toast": {
     "onDesktop": "{{name}} is on the desktop",
