@@ -27,11 +27,13 @@ export type UserAnchorComponent = {
  * Lower-priority systems skip an entity when this component is present with a
  * higher-ranked source. Expires at expiresAt (clock.now() time).
  */
+// Listed in priority order (highest first); the numeric ranking lives in
+// BEHAVIOR_PRIORITY below and is the source of truth.
 export type BehaviorDecisionSource =
   | "user-interaction"
   | "agent-event"
-  | "collision"
   | "social"
+  | "collision"
   | "autonomous";
 
 export type BehaviorDecisionStateComponent = {
