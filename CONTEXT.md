@@ -217,7 +217,7 @@ Given a **Pet**'s **Locomotion**, the direction-and-force step that pushes the b
 _Avoid_: intent, decision, locomotion
 
 **Social Session**:
-A single, transient pet-to-pet interaction that two **Pets** share until it ends. It is spawned as its own entity that owns the shared clock, not a lasting bond between the pair. Exactly two **Pets** at a time.
+A single, transient pet-to-pet interaction that a small set of **Pets** share until it ends. It is spawned as its own entity that owns the shared clock, not a lasting bond between the members. Two **Pets** is the base case; during play nearby idle **Pets** may join, growing it into a small group capped at four so it stays readable.
 _Avoid_: session (bare), relationship, friendship
 
 **Social Session Kind**:
@@ -225,7 +225,7 @@ What the two **Pets** are doing together in a **Social Session**: greet (a quick
 _Avoid_: phase, activity
 
 **Social Session Phase**:
-How a **Social Session** progresses over its life: approach (walk together and close the gap), then play (the kind-specific interaction), then part (a short wind-down before teardown). The code still names the approach phase `greet`.
+How a **Social Session** progresses over its life: approach (walk together and close the gap), then play (the kind-specific interaction), then part (a short wind-down before teardown).
 _Avoid_: kind
 
 **Social Invite**:
@@ -336,7 +336,8 @@ _Avoid_: cooldown (as a domain term), session
 - What is short-lived is a **Decision**'s priority claim, not the **Locomotion**: when the claim lapses without a new **Decision** replacing it, the **Locomotion** persists so the **Pet** finishes the movement it already started.
 - **Steering** makes no choices of its own; it only turns a **Pet**'s **Locomotion** and motion target into force.
 - A **Pet** marked able to socialize can start and join **Social Sessions**; other **Pets** never do.
-- A **Social Session** has exactly two **Pets**: the **initiator** (which placed the **Social Invite**) and the **responder** (which accepted it).
+- A **Social Session** starts with two **Pets**: the **initiator** (which placed the **Social Invite**) and the **responder** (which accepted it).
+- During the play phase, nearby idle **Pets** able to socialize may join a live **Social Session**, growing it into a small group capped at four members; the base and most common case is still two.
 - A **Pet** is in at most one **Social Session** at a time.
 - A **Social Session** has one **Social Session Kind** and moves through its **Social Session Phases** in order: approach → play → part.
 - A **Social Session** is created only when a **responder** accepts a **Social Invite**; an unanswered **Social Invite** lapses and forms nothing.
@@ -383,14 +384,14 @@ flowchart LR
 
 ### How two Pets interact (relationship as an entity)
 
-Instead of one **Pet** calling a method on another, the interaction itself becomes a third entity that drives both — the ECS way to model a relationship.
+Instead of one **Pet** calling a method on another, the interaction itself becomes a separate entity that drives every member — the ECS way to model a relationship. Two pets is the base case drawn below; a group session is the same shape with more members on `participantIds`.
 
 ```mermaid
 flowchart TD
-    Session(["SocialSession — the relationship entity<br/>kind: greet | chat | chase<br/>initiatorId / responderId / phase"])
+    Session(["SocialSession — the relationship entity<br/>kind: greet | chat | chase<br/>participantIds[] / phase"])
     PetA["Pet A — holds SocialSessionMember"]
     PetB["Pet B — holds SocialSessionMember"]
-    System["SocialInteractionSystem<br/>reads the session, choreographs both pets"]
+    System["SocialInteractionSystem<br/>reads the session, choreographs every member"]
 
     Session --- PetA
     Session --- PetB
@@ -426,7 +427,7 @@ flowchart TD
 - "monitor/world coordinate" was used interchangeably; resolved: one **Simulation World** runs on one **World Coordinate Space** spanning the virtual desktop, distinct from monitor or screen geometry, and **Pet Windows** are projections of **Pet World Positions**.
 - "status" was used for both the agent's task state and the UI chip; resolved: a bare **status** means **Agent Work State**, and the chip that renders it is the **Pet Status Card**.
 - "behavior" was used for both the internal decision-selection machinery and the user-facing "what the pet is doing" label; resolved: the user-facing axis is **Activity**, the internal choice layer is a **Decision**, and bare "behavior" is avoided as a spoken term (it survives only as the `features/behavior` code folder).
-- "intent" (idle/active/seek) was one word doing three jobs — choosing the movement, being the coarse motion mode, and being read as a "busy" flag; resolved: the word **intent is retired**. Choosing the movement is the **Decision**; how the body moves (walk/climb/fly + gait) is **Locomotion**; the force toward the target is **Steering**; and "busy" is now derived from whether a **Pet** has an active **Decision**, not from a motion mode. (Code still names the component `IntentState` pending a rename to `Steering`/`Locomotion`.)
+- "intent" (idle/active/seek) was one word doing three jobs — choosing the movement, being the coarse motion mode, and being read as a "busy" flag; resolved: the word **intent is retired**. Choosing the movement is the **Decision**; how the body moves (walk/climb/fly + gait) is **Locomotion**; the force toward the target is **Steering**; and "busy" is now derived from whether a **Pet** has an active **Decision**, not from a motion mode. (The rename is done: the component is now `Steering`; `IntentState` survives only in the unrelated `ClimbIntentState`.)
 - "session" already means a terminal-facing channel (**Terminal Channel** avoids it); resolved: the pet-to-pet interaction is always the qualified **Social Session**, and bare "session" stays avoided.
-- "greet" named both a **Social Session Kind** and the first **Social Session Phase**; resolved: the phase is renamed **approach**, so "greet" now means only the kind. (Code still calls the phase `greet`.)
-- "relationship" was considered as a next concept; resolved: it is intentionally out of scope — **Pets** have transient **Social Sessions**, not persistent relationships between pairs.
+- "greet" named both a **Social Session Kind** and the first **Social Session Phase**; resolved: the phase is renamed **approach**, so "greet" now means only the kind. The code matches: `SocialSessionPhase` is `approach | play | part`.
+- "relationship" was considered as a next concept; resolved: it is intentionally out of scope — **Pets** have transient **Social Sessions**, not persistent relationships between pairs. A **Social Session** may still be a small transient group (up to four), but it leaves no lasting bond once it ends.
