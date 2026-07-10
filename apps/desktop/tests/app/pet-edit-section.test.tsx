@@ -6,7 +6,7 @@ import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet
 const pet = {
   id: "otto",
   name: "Otto",
-  assetId: "patamon",
+  assetId: "bloop",
   role: "Steady",
   gradient: { from: "#8B7FE8", to: "#6F5FD6" },
   folder: "core",

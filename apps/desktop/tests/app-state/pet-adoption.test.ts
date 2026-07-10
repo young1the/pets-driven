@@ -13,7 +13,7 @@ import {
 } from "@/app-state/pets-driven-state";
 import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 
-function adopt(state: PetsDrivenState, id: string, assetId = "patamon") {
+function adopt(state: PetsDrivenState, id: string, assetId = "bloop") {
   return adoptPet(state, {
     id,
     profileId: `profile-${id}`,
@@ -54,7 +54,7 @@ describe("adoptPet", () => {
     expect(state.pets[0]).toEqual({
       id: "pet-1",
       workingDirectoryId: null,
-      assetId: "patamon",
+      assetId: "bloop",
       profileId: "profile-pet-1",
       name: "Name pet-1",
       adoptedAt: 1234,
@@ -63,7 +63,7 @@ describe("adoptPet", () => {
     });
     expect(state.petProfiles[0]).toMatchObject({
       id: "profile-pet-1",
-      petAssetId: "patamon",
+      petAssetId: "bloop",
       personalityId: "playful",
       personality: createPlayfulPersonality(),
     });
@@ -73,7 +73,7 @@ describe("adoptPet", () => {
 describe("removePet", () => {
   it("removes the pet, its profile, and its linked working directory", () => {
     let state = adopt(createEmptyPetsDrivenState(), "pet-1");
-    state = adopt(state, "pet-2", "agumon");
+    state = adopt(state, "pet-2", "cato");
     const linked = registerWorkingDirectory(state, {
       petId: "pet-1",
       path: "D:\\code\\one",
@@ -94,7 +94,7 @@ describe("removePet", () => {
 
   it("leaves other pets' directories intact", () => {
     let state = adopt(createEmptyPetsDrivenState(), "pet-1");
-    state = adopt(state, "pet-2", "agumon");
+    state = adopt(state, "pet-2", "cato");
     const first = registerWorkingDirectory(state, {
       petId: "pet-1",
       path: "D:\\code\\one",
@@ -140,7 +140,7 @@ describe("linkPetToWorkingDirectory", () => {
 
   it("steals the directory from a previously linked pet", () => {
     let state = adopt(createEmptyPetsDrivenState(), "pet-1");
-    state = adopt(state, "pet-2", "agumon");
+    state = adopt(state, "pet-2", "cato");
     state = withDirectory(state, "wd-1");
     state = linkPetToWorkingDirectory(state, "pet-1", "wd-1");
 

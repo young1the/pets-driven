@@ -91,7 +91,7 @@ describe("pet sprite rendering", () => {
       <PetSpriteHtml
         alt="Waiting pet"
         frame={frame}
-        imageUrl="/fallback-pets/patamon/spritesheet.webp"
+        imageUrl="/fallback-pets/bloop/spritesheet.webp"
       />,
     );
 
@@ -101,7 +101,7 @@ describe("pet sprite rendering", () => {
       width: "32px",
       height: "38px",
       overflow: "hidden",
-      backgroundImage: "url(/fallback-pets/patamon/spritesheet.webp)",
+      backgroundImage: "url(/fallback-pets/bloop/spritesheet.webp)",
       backgroundPosition: "-64px -228px",
       backgroundSize: "256px 342px",
     });
@@ -114,7 +114,7 @@ describe("pet sprite rendering", () => {
         animationState="waiting"
         decisionEmote={{ emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" }}
         elapsedMs={320}
-        imageUrl="/fallback-pets/patamon/spritesheet.webp"
+        imageUrl="/fallback-pets/bloop/spritesheet.webp"
         overlay={{ kind: "attention", label: "WAIT" }}
         size={{ width: 96, height: 104 }}
       />,
@@ -127,7 +127,7 @@ describe("pet sprite rendering", () => {
     expect(sprite).toHaveStyle({
       width: "96px",
       height: "104px",
-      backgroundImage: "url(/fallback-pets/patamon/spritesheet.webp)",
+      backgroundImage: "url(/fallback-pets/bloop/spritesheet.webp)",
       backgroundPosition: "-192px -624px",
       backgroundSize: "768px 936px",
     });

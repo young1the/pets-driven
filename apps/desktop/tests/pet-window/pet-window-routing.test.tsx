@@ -174,7 +174,7 @@ const testPetsDrivenState: PetsDrivenState = {
     {
       id: "pet-a",
       workingDirectoryId: "wd-cms",
-      assetId: "patamon",
+      assetId: "bloop",
       profileId: "profile-pet-a",
       name: "Otto",
       adoptedAt: 1,
@@ -185,7 +185,7 @@ const testPetsDrivenState: PetsDrivenState = {
   petProfiles: [
     {
       id: "profile-pet-a",
-      petAssetId: "patamon",
+      petAssetId: "bloop",
       personalityId: "playful",
       personality: createPlayfulPersonality(),
     },
@@ -282,7 +282,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -298,7 +298,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -308,7 +308,7 @@ describe("pet window product route", () => {
     const sprite = await screen.findByLabelText("Pet Sprite pet-a");
 
     expect(sprite).toHaveStyle({
-      backgroundImage: "url(/codex-pets/patamon/spritesheet.webp)",
+      backgroundImage: "url(/codex-pets/bloop/spritesheet.webp)",
     });
     expect(
       document.querySelector("canvas.pet-window-canvas"),
@@ -399,7 +399,7 @@ describe("pet window product route", () => {
             {
               id: "pet-b",
               workingDirectoryId: "wd-second",
-              assetId: "patamon",
+              assetId: "bloop",
               profileId: "profile-pet-b",
               name: "Mochi",
               adoptedAt: 2,
@@ -411,7 +411,7 @@ describe("pet window product route", () => {
             ...testPetsDrivenState.petProfiles,
             {
               id: "profile-pet-b",
-              petAssetId: "patamon",
+              petAssetId: "bloop",
               personalityId: "playful",
               personality: createPlayfulPersonality(),
             },
@@ -925,7 +925,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -957,7 +957,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -983,7 +983,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1021,7 +1021,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1074,7 +1074,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1118,7 +1118,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-b&assetId=gabumon",
+      "/?surface=pet-window&petId=pet-b&assetId=otto",
     );
 
     render(<PetsDrivenApp />);
@@ -1162,7 +1162,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-b&assetId=gabumon",
+      "/?surface=pet-window&petId=pet-b&assetId=otto",
     );
 
     render(<PetsDrivenApp />);
@@ -1211,7 +1211,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1294,7 +1294,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1347,7 +1347,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1368,7 +1368,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
@@ -1439,7 +1439,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
@@ -1517,7 +1517,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1591,7 +1591,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1651,7 +1651,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1728,7 +1728,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1781,7 +1781,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1816,7 +1816,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);
@@ -1851,7 +1851,7 @@ describe("pet window product route", () => {
     window.history.replaceState(
       {},
       "",
-      "/?surface=pet-window&petId=pet-a&assetId=patamon",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
     );
 
     render(<PetsDrivenApp />);

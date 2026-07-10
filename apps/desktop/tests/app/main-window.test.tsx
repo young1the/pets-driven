@@ -79,7 +79,7 @@ describe("MainWindow", () => {
       editPet: {
         id: "otto",
         name: "Otto",
-        assetId: "patamon",
+        assetId: "bloop",
         role: "Steady",
         status: {
           label: "Idle",

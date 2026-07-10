@@ -5,7 +5,7 @@ import { HomeSection } from "@/app/main-window/home-section";
 const pet = {
   id: "otto",
   name: "Otto",
-  assetId: "patamon",
+  assetId: "bloop",
   note: "Watch the auth queue",
   role: "Steady",
   gradient: { from: "#8B7FE8", to: "#6F5FD6" },

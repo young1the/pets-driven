@@ -4,13 +4,13 @@ use crate::pet_assets::validate_asset_id;
 
 const PET_WINDOW_PLAYGROUND_MAX_WINDOWS: u8 = 7;
 const PET_WINDOW_PLAYGROUND_FIXTURES: [(&str, &str); 7] = [
-    ("pet-a", "agumon"),
-    ("pet-b", "gabumon"),
-    ("pet-c", "gomamon"),
-    ("pet-d", "palmon"),
-    ("pet-e", "patamon"),
-    ("pet-f", "piyomon"),
-    ("pet-g", "tentomon"),
+    ("pet-a", "cato"),
+    ("pet-b", "otto"),
+    ("pet-c", "mochi"),
+    ("pet-d", "fenn"),
+    ("pet-e", "bloop"),
+    ("pet-f", "pip"),
+    ("pet-g", "cato"),
 ];
 
 fn pet_window_playground_count(count: Option<u8>) -> u8 {
@@ -34,7 +34,7 @@ fn pet_window_playground_asset_id(index: u8) -> &'static str {
     PET_WINDOW_PLAYGROUND_FIXTURES
         .get(usize::from(index.saturating_sub(1)))
         .map(|fixture| fixture.1)
-        .unwrap_or("agumon")
+        .unwrap_or("cato")
 }
 
 fn pet_window_playground_url(index: u8) -> String {
@@ -276,11 +276,11 @@ mod tests {
     fn pet_window_playground_url_routes_to_pet_window_surface() {
         assert_eq!(
             pet_window_playground_url(2),
-            "index.html?surface=pet-window&petId=pet-b&assetId=gabumon&windowIndex=2"
+            "index.html?surface=pet-window&petId=pet-b&assetId=otto&windowIndex=2"
         );
         assert_eq!(
             pet_window_playground_url(7),
-            "index.html?surface=pet-window&petId=pet-g&assetId=tentomon&windowIndex=7"
+            "index.html?surface=pet-window&petId=pet-g&assetId=cato&windowIndex=7"
         );
     }
 }

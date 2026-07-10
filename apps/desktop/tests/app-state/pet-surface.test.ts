@@ -21,7 +21,7 @@ function stateWithPet(overrides: {
       {
         id: overrides.id,
         workingDirectoryId: overrides.agentSourceId ? "wd-1" : null,
-        assetId: "patamon",
+        assetId: "bloop",
         profileId: `profile-${overrides.id}`,
         name: `Name ${overrides.id}`,
         adoptedAt: 0,
@@ -32,7 +32,7 @@ function stateWithPet(overrides: {
     petProfiles: [
       {
         id: `profile-${overrides.id}`,
-        petAssetId: "patamon",
+        petAssetId: "bloop",
         personalityId: overrides.personalityId ?? "playful",
         personality: createPlayfulPersonality(),
       },

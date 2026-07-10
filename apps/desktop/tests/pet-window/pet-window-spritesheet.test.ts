@@ -22,9 +22,9 @@ afterEach(() => {
 
 describe("pet window spritesheet loading", () => {
   it("uses the browser Codex pets route outside Tauri", async () => {
-    const spritesheet = await loadPetWindowSpritesheetUrl("agumon");
+    const spritesheet = await loadPetWindowSpritesheetUrl("cato");
 
-    expect(spritesheet.url).toBe("/codex-pets/agumon/spritesheet.webp");
+    expect(spritesheet.url).toBe("/codex-pets/cato/spritesheet.webp");
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
@@ -36,10 +36,10 @@ describe("pet window spritesheet loading", () => {
     );
     URL.revokeObjectURL = vi.fn<typeof URL.revokeObjectURL>();
 
-    const spritesheet = await loadPetWindowSpritesheetUrl("agumon");
+    const spritesheet = await loadPetWindowSpritesheetUrl("cato");
 
     expect(invokeMock).toHaveBeenCalledWith("load_codex_pet_spritesheet", {
-      assetId: "agumon",
+      assetId: "cato",
     });
     expect(spritesheet.url).toBe("blob:codex-pet");
 

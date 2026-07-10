@@ -13,15 +13,14 @@ afterEach(() => {
 });
 
 describe("codex pet fixtures", () => {
-  it("maps every default Codex pet package into a playground entity", () => {
+  it("lists the owned starter pets used by playground entities", () => {
     expect(CODEX_PET_ASSETS.map((asset) => asset.id)).toEqual([
-      "agumon",
-      "gabumon",
-      "gomamon",
-      "palmon",
-      "patamon",
-      "piyomon",
-      "tentomon",
+      "cato",
+      "otto",
+      "mochi",
+      "fenn",
+      "bloop",
+      "pip",
     ]);
     expect(Object.keys(PLAYGROUND_PET_ASSET_BY_ENTITY_ID)).toEqual([
       "pet-a",
@@ -35,8 +34,8 @@ describe("codex pet fixtures", () => {
   });
 
   it("uses the Codex pets route for spritesheets without rewriting pet packages", () => {
-    expect(getCodexPetSpritesheetUrl("agumon")).toBe(
-      "/codex-pets/agumon/spritesheet.webp",
+    expect(getCodexPetSpritesheetUrl("cato")).toBe(
+      "/codex-pets/cato/spritesheet.webp",
     );
   });
 
@@ -56,11 +55,11 @@ describe("codex pet fixtures", () => {
       "pet-f",
       "pet-g",
     ]);
-    expect(catalog["pet-a"].src).toBe("/codex-pets/agumon/spritesheet.webp");
+    expect(catalog["pet-a"].src).toBe("/codex-pets/cato/spritesheet.webp");
     expect(loadedUrls).toHaveLength(7);
   });
 
-  it("falls back to the bundled Patamon spritesheet when a Codex pet is missing", async () => {
+  it("falls back to the bundled Bloop spritesheet when a Codex pet is missing", async () => {
     const loadedUrls: string[] = [];
     const catalog = await loadPlaygroundPetAssetCatalog(async (url) => {
       loadedUrls.push(url);
@@ -71,7 +70,7 @@ describe("codex pet fixtures", () => {
     });
 
     expect(catalog["pet-a"].src).toBe(FALLBACK_CODEX_PET_SPRITESHEET_URL);
-    expect(loadedUrls).toContain("/codex-pets/agumon/spritesheet.webp");
+    expect(loadedUrls).toContain("/codex-pets/cato/spritesheet.webp");
     expect(loadedUrls).toContain(FALLBACK_CODEX_PET_SPRITESHEET_URL);
   });
 
@@ -80,7 +79,7 @@ describe("codex pet fixtures", () => {
       return { src: url } as HTMLImageElement;
     });
 
-    expect(catalog["pet-a"].src).toBe("/codex-pets/agumon/spritesheet.webp");
+    expect(catalog["pet-a"].src).toBe("/codex-pets/cato/spritesheet.webp");
   });
 
   it("keeps Tauri spritesheet transport outside the pets package API", () => {

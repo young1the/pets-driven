@@ -120,7 +120,7 @@ function petWindowRouteParams(): PetWindowRouteParams | null {
 
   return {
     petId: params.get("petId") || "pet-a",
-    assetId: params.get("assetId") || "patamon",
+    assetId: params.get("assetId") || "bloop",
     windowIndex: Number(params.get("windowIndex") || "1"),
     name: params.get("name") ?? undefined,
   };

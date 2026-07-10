@@ -4,64 +4,57 @@ import type { PetAsset } from "@pets-driven/pet-engine/pets/assets/pet-asset";
 
 export const CODEX_PET_ASSETS: PetAsset[] = [
   {
-    id: "agumon",
-    displayName: "Agumon",
+    id: "cato",
+    displayName: "Cato",
     description:
-      "Agumon, the rookie partner Digimon from Digimon Adventure, redrawn as a Codex pixel pet.",
+      "A tiny lavender cat companion with soft rounded proportions, glossy eyes, rosy cheeks, and expressive task animations.",
     spritesheetPath: "spritesheet.webp",
   },
   {
-    id: "gabumon",
-    displayName: "Gabumon",
+    id: "otto",
+    displayName: "Otto",
     description:
-      "Gabumon, the rookie partner Digimon from Digimon Adventure, redrawn as a Codex pixel pet.",
+      "A tiny golden puppy companion with floppy ears, glossy eyes, rosy cheeks, and expressive task animations.",
     spritesheetPath: "spritesheet.webp",
   },
   {
-    id: "gomamon",
-    displayName: "Gomamon",
+    id: "mochi",
+    displayName: "Mochi",
     description:
-      "Gomamon, the rookie partner Digimon from Digimon Adventure, redrawn as a Codex pixel pet.",
+      "A tiny pink bunny companion with tall soft ears, glossy eyes, rosy cheeks, and expressive task animations.",
     spritesheetPath: "spritesheet.webp",
   },
   {
-    id: "palmon",
-    displayName: "Palmon",
+    id: "fenn",
+    displayName: "Fenn",
     description:
-      "Palmon, the rookie partner Digimon from Digimon Adventure, redrawn as a Codex pixel pet.",
+      "A tiny coral fox companion with sharp little ears, a fluffy tail, glossy eyes, and expressive task animations.",
     spritesheetPath: "spritesheet.webp",
   },
   {
-    id: "patamon",
-    displayName: "Patamon",
+    id: "bloop",
+    displayName: "Bloop",
     description:
-      "A compact Patamon digital pet in a playful low crouch with tall wing ears, orange head mask, cream body, blue eyes, tiny paws, and a cheerful smile.",
+      "A tiny mint frog companion with round raised eyes, rosy cheeks, a gentle goofy face, and expressive task animations.",
     spritesheetPath: "spritesheet.webp",
   },
   {
-    id: "piyomon",
-    displayName: "Piyomon",
+    id: "pip",
+    displayName: "Pip",
     description:
-      "Piyomon, the rookie partner Digimon from Digimon Adventure, redrawn as a Codex pixel pet.",
-    spritesheetPath: "spritesheet.webp",
-  },
-  {
-    id: "tentomon",
-    displayName: "Tentomon",
-    description:
-      "Tentomon, the rookie partner Digimon from Digimon Adventure, redrawn as a Codex pixel pet.",
+      "A tiny sky-blue bird companion with little wings, a feather tuft, glossy eyes, and expressive task animations.",
     spritesheetPath: "spritesheet.webp",
   },
 ];
 
 export const PLAYGROUND_PET_ASSET_BY_ENTITY_ID = {
-  "pet-a": "agumon",
-  "pet-b": "gabumon",
-  "pet-c": "gomamon",
-  "pet-d": "palmon",
-  "pet-e": "patamon",
-  "pet-f": "piyomon",
-  "pet-g": "tentomon",
+  "pet-a": "cato",
+  "pet-b": "otto",
+  "pet-c": "mochi",
+  "pet-d": "fenn",
+  "pet-e": "bloop",
+  "pet-f": "pip",
+  "pet-g": "cato",
 } as const;
 export const PLAYGROUND_PET_ENTITY_IDS = Object.keys(
   PLAYGROUND_PET_ASSET_BY_ENTITY_ID,
@@ -71,7 +64,7 @@ export type PlaygroundPetEntityId =
   keyof typeof PLAYGROUND_PET_ASSET_BY_ENTITY_ID;
 
 export const FALLBACK_CODEX_PET_SPRITESHEET_URL =
-  "/fallback-pets/patamon/spritesheet.webp";
+  "/fallback-pets/bloop/spritesheet.webp";
 
 export function getCodexPetSpritesheetUrl(assetId: string) {
   return `/codex-pets/${assetId}/spritesheet.webp`;

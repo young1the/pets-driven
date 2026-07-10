@@ -72,7 +72,7 @@ self_check() {
   # A Windows path's backslashes must be escaped so the request JSON does not
   # inject control characters (a raw "\r" parses to a carriage return).
   local hatch
-  hatch="$(hatch_body "agumon" "Rex" "playful" 'C:\a\b')"
+  hatch="$(hatch_body "cato" "Rex" "playful" 'C:\a\b')"
   case "$hatch" in
     *'\\a\\b'*) ;;
     *) echo "FAIL: hatch path not escaped: $hatch" >&2; exit 1 ;;

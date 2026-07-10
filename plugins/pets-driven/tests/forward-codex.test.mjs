@@ -111,10 +111,10 @@ assert.match(defaultCwdPayload.cwd, /^[A-Z]:\\/i);
 
 const msysPathPayload = render("UserPromptSubmit", {
   PATH: "C:\\Windows\\System32;C:\\Windows",
-  PETS_DRIVEN_TEST_CWD: "/d/workspaces/gabumon",
+  PETS_DRIVEN_TEST_CWD: "/d/workspaces/otto",
 });
 
-assert.equal(msysPathPayload.cwd, "D:\\workspaces\\gabumon");
+assert.equal(msysPathPayload.cwd, "D:\\workspaces\\otto");
 
 function renderWithCmdWrapper(eventName, env = {}) {
   if (process.platform !== "win32") {

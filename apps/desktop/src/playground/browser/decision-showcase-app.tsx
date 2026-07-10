@@ -20,7 +20,7 @@ import {
 const STEP_MS = 16;
 const PRIMARY_PET_ID = "pet-a";
 const COLLIDER_PET_ID = "pet-b";
-const SPRITE_URL = "/fallback-pets/patamon/spritesheet.webp";
+const SPRITE_URL = "/fallback-pets/bloop/spritesheet.webp";
 const SPRITE_SIZE = { width: 192, height: 208 };
 const VISUAL_TICK_MS = 120;
 const MOTION_RESET_MS = 980;

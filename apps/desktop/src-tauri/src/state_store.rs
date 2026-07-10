@@ -391,7 +391,7 @@ mod tests {
     fn apply_hatch_appends_pet_profile_and_directory() {
         let input = HatchInput {
             cwd: "D:/proj".to_string(),
-            asset_id: "agumon".to_string(),
+            asset_id: "cato".to_string(),
             name: "Rex".to_string(),
             personality_id: "playful".to_string(),
         };
@@ -404,7 +404,7 @@ mod tests {
         let pet = &next["pets"][0];
         assert_eq!(pet["id"], "pet-1");
         assert_eq!(pet["name"], "Rex");
-        assert_eq!(pet["assetId"], "agumon");
+        assert_eq!(pet["assetId"], "cato");
         assert_eq!(pet["profileId"], "profile-1");
         assert_eq!(pet["workingDirectoryId"], "dir-1");
         assert_eq!(pet["adoptedAt"], 1000);
@@ -413,7 +413,7 @@ mod tests {
 
         let profile = &next["petProfiles"][0];
         assert_eq!(profile["id"], "profile-1");
-        assert_eq!(profile["petAssetId"], "agumon");
+        assert_eq!(profile["petAssetId"], "cato");
         assert_eq!(profile["personalityId"], "playful");
         assert_eq!(profile["personality"]["extraversion"], 0.85);
 
@@ -431,7 +431,7 @@ mod tests {
             &empty_pets_driven_state(),
             &HatchInput {
                 cwd: "D:/Proj".to_string(),
-                asset_id: "agumon".to_string(),
+                asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "playful".to_string(),
             },
@@ -444,7 +444,7 @@ mod tests {
             &first,
             &HatchInput {
                 cwd: "d:\\proj".to_string(),
-                asset_id: "gabumon".to_string(),
+                asset_id: "otto".to_string(),
                 name: "Blue".to_string(),
                 personality_id: "reserved".to_string(),
             },
@@ -472,7 +472,7 @@ mod tests {
             &empty_pets_driven_state(),
             &HatchInput {
                 cwd: "D:\realtime".to_string(),
-                asset_id: "agumon".to_string(),
+                asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "playful".to_string(),
             },
@@ -490,7 +490,7 @@ mod tests {
             &empty_pets_driven_state(),
             &HatchInput {
                 cwd: "D:/proj".to_string(),
-                asset_id: "agumon".to_string(),
+                asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "chaotic".to_string(),
             },
@@ -506,7 +506,7 @@ mod tests {
     fn apply_hatch_accepts_curious_personality() {
         let input = HatchInput {
             cwd: "D:/proj".to_string(),
-            asset_id: "agumon".to_string(),
+            asset_id: "cato".to_string(),
             name: "Rex".to_string(),
             personality_id: "curious".to_string(),
         };
@@ -531,7 +531,7 @@ mod tests {
             &empty_pets_driven_state(),
             &HatchInput {
                 cwd: "D:/Proj".to_string(),
-                asset_id: "agumon".to_string(),
+                asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "playful".to_string(),
             },

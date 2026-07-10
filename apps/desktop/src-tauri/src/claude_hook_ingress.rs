@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn hatch_ingress_parses_path_and_body() {
-        let body = r#"{"cwd":"D:/proj","assetId":"agumon","name":"Rex","personalityId":"playful"}"#;
+        let body = r#"{"cwd":"D:/proj","assetId":"cato","name":"Rex","personalityId":"playful"}"#;
         let request =
             format!("POST /pets-driven/hatch HTTP/1.1\r\nContent-Length: {}\r\n\r\n{body}", body.len());
         let (path, parsed) = parse_http_request(request.as_bytes()).expect("request should parse");
@@ -475,14 +475,14 @@ mod tests {
         assert_eq!(path, "/pets-driven/hatch");
         let input = hatch_input_from_payload(&parsed).expect("payload should map to hatch input");
         assert_eq!(input.cwd, "D:/proj");
-        assert_eq!(input.asset_id, "agumon");
+        assert_eq!(input.asset_id, "cato");
         assert_eq!(input.name, "Rex");
         assert_eq!(input.personality_id, "playful");
     }
 
     #[test]
     fn hatch_input_requires_all_fields() {
-        let payload = serde_json::json!({ "cwd": "D:/proj", "assetId": "agumon" });
+        let payload = serde_json::json!({ "cwd": "D:/proj", "assetId": "cato" });
         assert!(hatch_input_from_payload(&payload).is_err());
     }
 

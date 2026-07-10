@@ -20,7 +20,7 @@ const v1Payload = {
     {
       id: "pet-1",
       workingDirectoryId: "wd-1",
-      assetId: "patamon",
+      assetId: "bloop",
       profileId: "profile-1",
       archived: false,
       visible: true,
@@ -28,7 +28,7 @@ const v1Payload = {
     {
       id: "pet-2",
       workingDirectoryId: "",
-      assetId: "agumon",
+      assetId: "cato",
       profileId: "profile-2",
       archived: false,
       visible: true,
@@ -54,13 +54,13 @@ describe("parsePetsDrivenState", () => {
     expect(state.schemaVersion).toBe(2);
     expect(state.pets[0]).toMatchObject({
       id: "pet-1",
-      name: "Patamon",
+      name: "Bloop",
       adoptedAt: 0,
       workingDirectoryId: "wd-1",
     });
     expect(state.pets[1]).toMatchObject({
       id: "pet-2",
-      name: "Agumon",
+      name: "Cato",
       adoptedAt: 0,
       workingDirectoryId: null,
     });
@@ -98,7 +98,7 @@ describe("parsePetsDrivenState", () => {
         {
           id: "pet-1",
           workingDirectoryId: "wd-stale",
-          assetId: "patamon",
+          assetId: "bloop",
           profileId: "profile-1",
           name: "Otto",
           adoptedAt: 1,
@@ -108,7 +108,7 @@ describe("parsePetsDrivenState", () => {
         {
           id: "pet-2",
           workingDirectoryId: "wd-1",
-          assetId: "agumon",
+          assetId: "cato",
           profileId: "profile-2",
           name: "Cato",
           adoptedAt: 2,
@@ -131,7 +131,7 @@ describe("parsePetsDrivenState", () => {
         {
           id: "pet-1",
           workingDirectoryId: null,
-          assetId: "patamon",
+          assetId: "bloop",
           profileId: "profile-1",
           name: "Otto",
           adoptedAt: 1,
@@ -153,7 +153,7 @@ describe("parsePetsDrivenState", () => {
         {
           id: "pet-1",
           workingDirectoryId: null,
-          assetId: "patamon",
+          assetId: "bloop",
           profileId: "profile-1",
           name: "Otto",
           adoptedAt: 1,
