@@ -1,0 +1,58 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Without this guard, a v0.3.0 tag could silently end up with a 0.2.0 MSI attached.
+      - name: Verify tag matches Cargo.toml version
+        shell: pwsh
+        run: |
+          # -replace strips one leading v; TrimStart("v") would eat every one of them.
+          $expected = "${{ github.ref_name }}" -replace '^v', ''
+          $toml = Get-Content apps/desktop/src-tauri/Cargo.toml -Raw
+          if ($toml -notmatch '\[package\][^\[]*?\r?\nversion\s*=\s*"([^"]+)"') {
+            throw "version not found in [package] section of Cargo.toml"
+          }
+          $actual = $matches[1]
+          if ($actual -ne $expected) {
+            throw "Tag ${{ github.ref_name }} expects version $expected but Cargo.toml has $actual"
+          }
+          Write-Host "Cargo.toml version $actual matches tag ${{ github.ref_name }}"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - run: pnpm install --frozen-lockfile
+
+      # tauri.conf.json's beforeBuildCommand builds the frontend, so no
+      # separate vite build step is needed.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          releaseDraft: true
+          args: --bundles nsis
