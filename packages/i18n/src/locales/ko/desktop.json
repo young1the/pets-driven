@@ -170,6 +170,7 @@
   "contextMenu": {
     "cardAria": "펫 컨텍스트 메뉴",
     "writeNote": "노트 작성하기",
+    "chooseFolder": "폴더 지정하기",
     "close": "닫기",
     "noteAria": "{{name}}에게 메모",
     "noteHeader": "{{name}}에게 메모",

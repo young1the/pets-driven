@@ -17,7 +17,7 @@ type PetContextMenuViewProps = {
 
 type MenuView = "menu" | "note";
 
-const MENU_WINDOW_SIZE = { width: 192, height: 132 };
+const MENU_WINDOW_SIZE = { width: 192, height: 172 };
 const NOTE_WINDOW_SIZE = { width: 228, height: 192 };
 
 export function PetContextMenuView({
@@ -189,6 +189,30 @@ export function PetContextMenuView({
             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
           {t("contextMenu.writeNote")}
+        </button>
+        <button
+          className="pet-context-menu-card__item pet-context-menu-card__item--folder"
+          role="menuitem"
+          type="button"
+          onClick={() => {
+            emitSignal("menu.pick-folder");
+            closeWindow();
+          }}
+        >
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="15"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="15"
+          >
+            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+          </svg>
+          {t("contextMenu.chooseFolder")}
         </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--close"

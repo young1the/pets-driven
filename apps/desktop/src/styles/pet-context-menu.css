@@ -75,6 +75,16 @@ html.pet-context-menu-document body {
   background: var(--lavender-50, #f5f3ff);
 }
 
+.pet-context-menu-card__item--folder {
+  color: var(--aqua-700, #177b92);
+}
+
+.pet-context-menu-card__item--folder:hover,
+.pet-context-menu-card__item--folder:focus-visible {
+  outline: none;
+  background: var(--aqua-50, #eefcff);
+}
+
 .pet-context-menu-card__item--close {
   color: var(--coral-600, #dc3f3f);
 }

@@ -94,6 +94,9 @@ const tauriEventMocks = vi.hoisted(() => ({
   listen: vi.fn(),
   listeners: new Map<string, TauriEventHandler>(),
 }));
+const dialogMocks = vi.hoisted(() => ({
+  open: vi.fn(),
+}));
 
 vi.mock("@tauri-apps/api/core", () => ({
   isTauri: vi.fn(() => true),
@@ -103,6 +106,10 @@ vi.mock("@tauri-apps/api/core", () => ({
 vi.mock("@tauri-apps/api/event", () => ({
   emitTo: tauriEventMocks.emitTo,
   listen: tauriEventMocks.listen,
+}));
+
+vi.mock("@tauri-apps/plugin-dialog", () => ({
+  open: dialogMocks.open,
 }));
 
 vi.mock("@tauri-apps/api/window", () => ({
@@ -256,6 +263,8 @@ describe("pet window product route", () => {
       tauriEventMocks.listeners.set(eventName, handler as TauriEventHandler);
       return Promise.resolve(() => tauriEventMocks.listeners.delete(eventName));
     });
+    dialogMocks.open.mockReset();
+    dialogMocks.open.mockResolvedValue(null);
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       clearRect: vi.fn(),
       drawImage: vi.fn(),
@@ -671,6 +680,57 @@ describe("pet window product route", () => {
               expect.objectContaining({
                 id: "pet-a",
                 memo: "Great work today!",
+              }),
+            ]),
+          }),
+        }),
+      );
+    });
+  });
+
+  it("lets the pet context menu assign a working folder to the pet", async () => {
+    dialogMocks.open.mockResolvedValue("D:\\new-project");
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-context-menu-pet-a",
+          pointerId: 0,
+          kind: "menu.pick-folder",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(dialogMocks.open).toHaveBeenCalledWith({
+        directory: true,
+        multiple: false,
+      });
+      expect(invokeMock).toHaveBeenCalledWith(
+        "write_pets_driven_state",
+        expect.objectContaining({
+          state: expect.objectContaining({
+            pets: expect.arrayContaining([
+              expect.objectContaining({
+                id: "pet-a",
+                workingDirectoryId: expect.any(String),
+              }),
+            ]),
+            registeredWorkingDirectories: expect.arrayContaining([
+              expect.objectContaining({
+                path: "D:\\new-project",
+                petId: "pet-a",
               }),
             ]),
           }),

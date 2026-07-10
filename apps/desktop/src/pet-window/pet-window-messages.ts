@@ -60,6 +60,7 @@ export type PetWindowInputKind =
   | "body.pointer.up"
   | "body.focus"
   | "menu.close"
+  | "menu.pick-folder"
   | "menu.note-save"
   | "menu.start-session"
   | "menu.unbind"

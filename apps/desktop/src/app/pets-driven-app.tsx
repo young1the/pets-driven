@@ -467,6 +467,10 @@ export function PetsDrivenApp() {
           void desktopGateway.writePetsDrivenState(next);
           return;
         }
+        if (input.kind === "menu.pick-folder") {
+          void pickFolderForPet(input.petId);
+          return;
+        }
         if (
           input.kind === "body.contextmenu" ||
           input.kind === "overlay.contextmenu"
