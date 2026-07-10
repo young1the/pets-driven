@@ -2,6 +2,7 @@
   "name": "@pets-driven/pet-engine",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "exports": {
     "./pets/rendering/pet-sprite": "./src/pets/rendering/pet-sprite.tsx",

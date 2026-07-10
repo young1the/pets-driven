@@ -3,6 +3,7 @@ name = "pets-driven"
 version = "0.1.0"
 description = "Codex pet playground"
 authors = ["pets-driven"]
+license = "MIT"
 edition = "2021"
 default-run = "pets-driven"
 

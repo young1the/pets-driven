@@ -1,6 +1,7 @@
 {
   "name": "pets-driven-monorepo",
   "private": true,
+  "license": "MIT",
   "packageManager": "pnpm@10.25.0",
   "scripts": {
     "dev": "pnpm --filter pets-driven dev",
