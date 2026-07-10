@@ -22,6 +22,7 @@ import {
 } from "@/adapters/agent-events/hatch-ingress";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
+import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
 import { DesktopLanguageSwitcher } from "@/app/i18n/desktop-language-switcher";
@@ -99,6 +100,10 @@ const DESKTOP_FIXTURE_HOST_TICK_MS = 16;
 const DESKTOP_FIXTURE_STEP_MS = 16;
 const DESKTOP_FIXTURE_WORLD_SIZE = { width: 1920, height: 1080 };
 const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
+const EMPTY_PET_PACKAGES_GATEWAY = {
+  ...desktopGateway,
+  listPetPackages: async () => [],
+};
 // Native folder dialogs are app-modal side effects. Keep the guard outside the
 // React tree so duplicate listeners from a remount cannot open a second dialog.
 let activeFolderPickerPetId: string | null = null;
@@ -303,9 +308,15 @@ export function PetsDrivenApp() {
 
 function PetsDrivenHostApp() {
   const { t } = useTranslation("desktop");
+  const devFixture = resolveDesktopFixture(window.location.search, {
+    hostname: window.location.hostname,
+    isDev: import.meta.env.DEV,
+  });
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
-  const petsDrivenStateRef = useRef(createInitialPetsDrivenState());
+  const petsDrivenStateRef = useRef(
+    devFixture?.state ?? createInitialPetsDrivenState(),
+  );
   const fixtureHostBoundsRef = useRef<{
     x: number;
     y: number;
@@ -352,7 +363,7 @@ function PetsDrivenHostApp() {
     null,
   );
   const fixtureCursorScaleRef = useRef(1);
-  const { view, navigate } = useAppNavigation();
+  const { view, navigate } = useAppNavigation(devFixture?.view ?? "home");
   const [petsDrivenState, setPetsDrivenState] = useState<PetsDrivenState>(
     petsDrivenStateRef.current,
   );
@@ -361,8 +372,12 @@ function PetsDrivenHostApp() {
   const [petWindowError, setPetWindowError] = useState<string | null>(null);
   const [claudeHookIngressStatus, setClaudeHookIngressStatus] =
     useState<ClaudeHookIngressStatus>(defaultClaudeHookIngressStatus);
-  const [mainTab, setMainTab] = useState<MainWindowTab>("home");
-  const [editPetId, setEditPetId] = useState<string | null>(null);
+  const [mainTab, setMainTab] = useState<MainWindowTab>(
+    devFixture?.tab ?? "home",
+  );
+  const [editPetId, setEditPetId] = useState<string | null>(
+    devFixture?.editPetId ?? null,
+  );
   const [toast, setToast] = useState<string | null>(null);
   const [diagnosticReport, setDiagnosticReport] = useState<string | null>(null);
   const [petStatusById, setPetStatusById] = useState<
@@ -598,6 +613,10 @@ function PetsDrivenHostApp() {
   }, []);
 
   useEffect(() => {
+    if (devFixture) {
+      return;
+    }
+
     let isMounted = true;
 
     void desktopGateway
@@ -622,7 +641,7 @@ function PetsDrivenHostApp() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [devFixture]);
 
   useEffect(() => {
     if (!isTauri()) {
@@ -1024,6 +1043,12 @@ function PetsDrivenHostApp() {
   if (view === "onboarding") {
     return (
       <OnboardingFlow
+        gateway={
+          devFixture?.petPackages === "empty"
+            ? EMPTY_PET_PACKAGES_GATEWAY
+            : desktopGateway
+        }
+        initialStep={devFixture?.onboardingStep}
         onDone={() => navigate("home")}
         onStateChange={applyPetsDrivenState}
         state={petsDrivenState}

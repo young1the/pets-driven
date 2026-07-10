@@ -32,6 +32,23 @@ function renderOnboarding(gateway: DesktopGateway) {
 }
 
 describe("OnboardingFlow Petdex CTA", () => {
+  it("can open directly on the empty Pet Asset selection state", async () => {
+    render(
+      <OnboardingFlow
+        gateway={createGateway([])}
+        initialStep="choose"
+        onDone={vi.fn()}
+        onStateChange={vi.fn()}
+        state={createEmptyPetsDrivenState()}
+      />,
+    );
+
+    expect(
+      await screen.findByText("No pet looks installed yet."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Get started →")).not.toBeInTheDocument();
+  });
+
   it("offers Petdex from the choose step when local pet packs exist", async () => {
     renderOnboarding(
       createGateway([

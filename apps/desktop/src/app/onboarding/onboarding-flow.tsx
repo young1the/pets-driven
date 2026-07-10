@@ -53,6 +53,7 @@ type OnboardingFlowProps = {
   onStateChange: (state: PetsDrivenState) => void;
   onDone: () => void;
   gateway?: DesktopGateway;
+  initialStep?: "welcome" | "choose";
 };
 
 function isValidPetName(name: string) {
@@ -179,6 +180,7 @@ export function OnboardingFlow({
   onStateChange,
   onDone,
   gateway = desktopGateway,
+  initialStep,
 }: OnboardingFlowProps) {
   const { t } = useTranslation("desktop");
   // Welcome is an intro shown only to first-time users; once any pet exists the
@@ -186,7 +188,7 @@ export function OnboardingFlow({
   // after this run adopts a pet.
   const [includeWelcome] = useState(() => state.pets.length === 0);
   const [step, setStep] = useState<OnboardingStep>(() =>
-    state.pets.length === 0 ? "welcome" : "choose",
+    initialStep ?? (state.pets.length === 0 ? "welcome" : "choose"),
   );
   const [packages, setPackages] = useState<CodexPetPackage[]>([]);
   const [refreshing, setRefreshing] = useState(false);
