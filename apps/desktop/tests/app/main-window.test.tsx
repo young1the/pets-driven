@@ -38,6 +38,9 @@ const settings = {
     url: "",
   },
   onReconnect: vi.fn(),
+  petSourceDirectories: [] as string[],
+  onAddPetFolder: vi.fn(),
+  onRemovePetFolder: vi.fn(),
 };
 const debug = { groups: [], error: null };
 

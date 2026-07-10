@@ -93,3 +93,39 @@ describe("OnboardingFlow Petdex CTA", () => {
     expect(screen.getByRole("link", { name: "Browse Petdex" }).getAttribute("href")).toBe("https://petdex.dev");
   });
 });
+
+describe("OnboardingFlow pet source folders", () => {
+  it("lets the user choose a Petdex folder from the empty state", async () => {
+    const gateway = createGateway([]);
+    gateway.pickDirectory = vi.fn().mockResolvedValue("D:\\pets\\mine");
+    const onStateChange = vi.fn();
+
+    render(
+      <OnboardingFlow
+        gateway={gateway}
+        onDone={vi.fn()}
+        onStateChange={onStateChange}
+        state={createEmptyPetsDrivenState()}
+      />,
+    );
+    fireEvent.click(screen.getByText("Get started →"));
+
+    const chooseFolder = await screen.findByText("Choose a Petdex folder");
+    fireEvent.click(chooseFolder);
+
+    await waitFor(() => {
+      expect(gateway.writePetsDrivenState).toHaveBeenCalledWith(
+        expect.objectContaining({
+          petSourceDirectories: ["D:\\pets\\mine"],
+        }),
+      );
+    });
+
+    expect(onStateChange).toHaveBeenCalledWith(
+      expect.objectContaining({ petSourceDirectories: ["D:\\pets\\mine"] }),
+    );
+    // The pet-pack roots are rescanned once on mount and again after the
+    // folder is added, so the new folder's packs surface immediately.
+    expect(gateway.listPetPackages).toHaveBeenCalledTimes(2);
+  });
+});

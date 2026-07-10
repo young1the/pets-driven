@@ -1,7 +1,10 @@
 use std::{
+    collections::HashSet,
     env, fs,
     path::{Path, PathBuf},
 };
+
+use crate::state_store;
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -118,20 +121,94 @@ fn read_pet_packages(pets_root: &Path) -> Result<Vec<CodexPetPackage>, String> {
     Ok(packages)
 }
 
-#[tauri::command]
-pub(crate) fn list_codex_pet_packages() -> Result<Vec<CodexPetPackage>, String> {
-    read_pet_packages(&codex_pets_root()?)
+/// Discover pet packages across several roots (the built-in Codex root plus any
+/// user-configured Petdex folders), unioning the results. Earlier roots win on
+/// an asset-id collision, so the built-in pets take precedence over a folder the
+/// user added later. A root that cannot be read (missing folder, permissions) is
+/// skipped rather than failing the whole scan.
+fn read_pet_packages_from_roots(roots: &[PathBuf]) -> Vec<CodexPetPackage> {
+    let mut packages: Vec<CodexPetPackage> = Vec::new();
+    let mut seen_ids: HashSet<String> = HashSet::new();
+
+    for root in roots {
+        let found = read_pet_packages(root).unwrap_or_default();
+
+        for package in found {
+            if seen_ids.insert(package.id.clone()) {
+                packages.push(package);
+            }
+        }
+    }
+
+    // Re-sort after merging so the combined list is ordered by display name, not
+    // grouped by the root a pack happened to come from.
+    packages.sort_by_key(|package| package.display_name.to_lowercase());
+
+    packages
+}
+
+/// The ordered list of roots to scan: the built-in Codex root first, then the
+/// user's extra `petSourceDirectories` read straight from the persisted state
+/// file. Reading the config here (rather than threading it through every caller)
+/// keeps the frontend and the pet windows unaware of the extra folders while
+/// still resolving their sprites. Order matches `read_pet_packages_from_roots`
+/// so a listed pack and its loaded sprite always resolve to the same file.
+fn configured_pet_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = Vec::new();
+
+    if let Ok(root) = codex_pets_root() {
+        roots.push(root);
+    }
+
+    if let Ok(state) = state_store::read_state_pub(app) {
+        if let Some(directories) = state
+            .get("petSourceDirectories")
+            .and_then(|value| value.as_array())
+        {
+            for directory in directories {
+                if let Some(path) = directory.as_str() {
+                    let trimmed = path.trim();
+                    if !trimmed.is_empty() {
+                        roots.push(PathBuf::from(trimmed));
+                    }
+                }
+            }
+        }
+    }
+
+    roots
 }
 
 #[tauri::command]
-pub(crate) fn load_codex_pet_spritesheet(asset_id: String) -> Result<tauri::ipc::Response, String> {
+pub(crate) fn list_codex_pet_packages(
+    app: tauri::AppHandle,
+) -> Result<Vec<CodexPetPackage>, String> {
+    Ok(read_pet_packages_from_roots(&configured_pet_roots(&app)))
+}
+
+#[tauri::command]
+pub(crate) fn load_codex_pet_spritesheet(
+    app: tauri::AppHandle,
+    asset_id: String,
+) -> Result<tauri::ipc::Response, String> {
     validate_asset_id(&asset_id)?;
 
-    let spritesheet_path = codex_pets_root()?.join(asset_id).join("spritesheet.webp");
-    let bytes = fs::read(&spritesheet_path)
-        .map_err(|error| format!("Could not read Codex pet spritesheet: {error}"))?;
+    // Search every configured root in the same order as listing, so a pet
+    // adopted from a custom folder still resolves its sprite in its window.
+    for root in configured_pet_roots(&app) {
+        let spritesheet_path = root.join(&asset_id).join("spritesheet.webp");
 
-    Ok(tauri::ipc::Response::new(bytes))
+        if spritesheet_path.exists() {
+            let bytes = fs::read(&spritesheet_path)
+                .map_err(|error| format!("Could not read Codex pet spritesheet: {error}"))?;
+
+            return Ok(tauri::ipc::Response::new(bytes));
+        }
+    }
+
+    Err(format!(
+        "Could not find a spritesheet for Codex pet asset '{asset_id}'"
+    ))
 }
 
 #[cfg(test)]
@@ -236,5 +313,51 @@ mod tests {
         assert_eq!(ids, vec!["abe", "zed"]);
 
         fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn unions_packages_across_roots_sorted_by_display_name() {
+        let primary = unique_temp_dir();
+        let extra = unique_temp_dir();
+        write_pet(&primary, "zed", r#"{"displayName":"Zed"}"#, true);
+        write_pet(&extra, "abe", r#"{"displayName":"Abe"}"#, true);
+
+        let packages = read_pet_packages_from_roots(&[primary.clone(), extra.clone()]);
+
+        let ids: Vec<&str> = packages.iter().map(|p| p.id.as_str()).collect();
+        assert_eq!(ids, vec!["abe", "zed"]);
+
+        fs::remove_dir_all(&primary).ok();
+        fs::remove_dir_all(&extra).ok();
+    }
+
+    #[test]
+    fn earlier_root_wins_on_asset_id_collision() {
+        let primary = unique_temp_dir();
+        let extra = unique_temp_dir();
+        write_pet(&primary, "boba", r#"{"displayName":"Built-in Boba"}"#, true);
+        write_pet(&extra, "boba", r#"{"displayName":"Custom Boba"}"#, true);
+
+        let packages = read_pet_packages_from_roots(&[primary.clone(), extra.clone()]);
+
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].display_name, "Built-in Boba");
+
+        fs::remove_dir_all(&primary).ok();
+        fs::remove_dir_all(&extra).ok();
+    }
+
+    #[test]
+    fn skips_roots_that_cannot_be_read() {
+        let primary = unique_temp_dir();
+        write_pet(&primary, "abe", r#"{"displayName":"Abe"}"#, true);
+        let missing = env::temp_dir().join("pets-driven-does-not-exist-xyz");
+
+        let packages = read_pet_packages_from_roots(&[missing, primary.clone()]);
+
+        let ids: Vec<&str> = packages.iter().map(|p| p.id.as_str()).collect();
+        assert_eq!(ids, vec!["abe"]);
+
+        fs::remove_dir_all(&primary).ok();
     }
 }

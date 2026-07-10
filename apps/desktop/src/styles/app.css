@@ -385,6 +385,98 @@
   opacity: 0.5;
 }
 
+.pd-onb__empty-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* "Add folder" affordance shown next to the Petdex CTA. */
+.pd-onb__addfolder {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: var(--text-md);
+  color: var(--text-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Configured extra pet-source folders (shared by empty + populated states). */
+.pd-onb__sources {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 560px;
+}
+
+.pd-onb__sources-label {
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.pd-onb__source {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.pd-onb__source-icon {
+  font-size: 20px;
+}
+
+.pd-onb__source-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.pd-onb__source-text b {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.pd-onb__source-text small {
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pd-onb__source-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  color: var(--text-subtle);
+}
+
+.pd-onb__source-remove:hover {
+  color: var(--text-strong);
+  background: var(--surface-card);
+}
+
 /* Profile (name + personality) */
 .pd-onb__profile {
   display: grid;

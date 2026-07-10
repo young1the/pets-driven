@@ -54,6 +54,14 @@ export type PetsDrivenStateV2 = {
   petProfiles: PetProfile[];
   /** App-wide launch line for "Start new session". See DEFAULT_SESSION_COMMAND. */
   sessionCommand: string;
+  /**
+   * Extra folders to scan for pet packs, in addition to the built-in
+   * `~/.codex/pets` root. Lets users surface pets installed by the Petdex
+   * service into another location. The Rust `list_codex_pet_packages` /
+   * `load_codex_pet_spritesheet` commands read this list from the persisted
+   * state file, so both listing and sprite loading stay folder-aware.
+   */
+  petSourceDirectories: string[];
 };
 
 /** Canonical state alias — always the latest schema. */
@@ -66,7 +74,20 @@ export function createEmptyPetsDrivenState(): PetsDrivenState {
     pets: [],
     petProfiles: [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
+    petSourceDirectories: [],
   };
+}
+
+/** Keep only non-blank strings, so a corrupt persisted value cannot crash scans. */
+function sanitizePetSourceDirectories(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(
+    (entry): entry is string =>
+      typeof entry === "string" && entry.trim().length > 0,
+  );
 }
 
 function defaultPetNameFromAssetId(assetId: string): string {
@@ -100,6 +121,7 @@ function migratePetsDrivenStateV1ToV2(
       ? candidate.petProfiles
       : [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
+    petSourceDirectories: [],
   };
 }
 
@@ -161,6 +183,7 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
       typeof v2.sessionCommand === "string" && v2.sessionCommand.trim()
         ? v2.sessionCommand
         : DEFAULT_SESSION_COMMAND,
+    petSourceDirectories: sanitizePetSourceDirectories(v2.petSourceDirectories),
   });
 }
 
@@ -199,6 +222,56 @@ export function normalizeWorkingDirectoryPath(path: string): string {
 
 function comparableWorkingDirectoryPath(path: string): string {
   return normalizeWorkingDirectoryPath(path).toLowerCase();
+}
+
+/**
+ * Add a pet-pack source folder, normalising the path and skipping blanks and
+ * case-insensitive duplicates. Returns the same state reference when nothing
+ * changes so callers can avoid needless persistence.
+ */
+export function addPetSourceDirectory(
+  state: PetsDrivenState,
+  path: string,
+): PetsDrivenState {
+  const normalized = normalizeWorkingDirectoryPath(path);
+
+  if (!normalized) {
+    return state;
+  }
+
+  const comparable = comparableWorkingDirectoryPath(normalized);
+  const alreadyPresent = state.petSourceDirectories.some(
+    (existing) => comparableWorkingDirectoryPath(existing) === comparable,
+  );
+
+  if (alreadyPresent) {
+    return state;
+  }
+
+  return {
+    ...state,
+    petSourceDirectories: [...state.petSourceDirectories, normalized],
+  };
+}
+
+/**
+ * Remove a pet-pack source folder by case-insensitive path match. Returns the
+ * same state reference when the folder was not registered.
+ */
+export function removePetSourceDirectory(
+  state: PetsDrivenState,
+  path: string,
+): PetsDrivenState {
+  const comparable = comparableWorkingDirectoryPath(path);
+  const next = state.petSourceDirectories.filter(
+    (existing) => comparableWorkingDirectoryPath(existing) !== comparable,
+  );
+
+  if (next.length === state.petSourceDirectories.length) {
+    return state;
+  }
+
+  return { ...state, petSourceDirectories: next };
 }
 
 function isSameOrAncestorPath(

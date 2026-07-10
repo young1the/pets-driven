@@ -51,7 +51,9 @@ import {
   removePet,
 } from "@/app-state/pet-adoption";
 import {
+  addPetSourceDirectory,
   createEmptyPetsDrivenState,
+  removePetSourceDirectory,
   resolveRegisteredWorkingDirectoryForCwd,
   type PetRecord,
   type PetsDrivenState,
@@ -1404,6 +1406,28 @@ function PetsDrivenHostApp() {
     }
   }
 
+  async function addPetSourceFolder() {
+    const path = await desktopGateway.pickDirectory();
+    if (!path) {
+      return;
+    }
+    const next = addPetSourceDirectory(petsDrivenStateRef.current, path);
+    if (next === petsDrivenStateRef.current) {
+      return;
+    }
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
+  function removePetSourceFolder(path: string) {
+    const next = removePetSourceDirectory(petsDrivenStateRef.current, path);
+    if (next === petsDrivenStateRef.current) {
+      return;
+    }
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
   function setLaunchProfile(profile: LaunchProfileId) {
     const settings = parseLaunchLine(petsDrivenStateRef.current.sessionCommand);
     if (profile === "custom") {
@@ -1613,6 +1637,9 @@ function PetsDrivenHostApp() {
           url: claudeHookIngressStatus.url,
         },
         onReconnect: () => void emitClaudeHookTestEvent(),
+        petSourceDirectories: petsDrivenState.petSourceDirectories,
+        onAddPetFolder: () => void addPetSourceFolder(),
+        onRemovePetFolder: removePetSourceFolder,
         languageSwitcher: <DesktopLanguageSwitcher />,
       }}
       tab={mainTab}

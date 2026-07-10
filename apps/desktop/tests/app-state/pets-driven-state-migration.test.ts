@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  addPetSourceDirectory,
   createEmptyPetsDrivenState,
   parsePetsDrivenState,
+  removePetSourceDirectory,
 } from "@/app-state/pets-driven-state";
 
 const v1Payload = {
@@ -45,6 +47,7 @@ describe("parsePetsDrivenState", () => {
       pets: [],
       petProfiles: [],
       sessionCommand: "cmd /k claude",
+      petSourceDirectories: [],
     });
   });
 
@@ -166,5 +169,59 @@ describe("parsePetsDrivenState", () => {
     });
 
     expect(state.pets[0].memo).toBe("watch the auth flow");
+  });
+
+  it("defaults petSourceDirectories to an empty array when missing", () => {
+    const state = parsePetsDrivenState({
+      schemaVersion: 2,
+      registeredWorkingDirectories: [],
+      pets: [],
+      petProfiles: [],
+    });
+
+    expect(state.petSourceDirectories).toEqual([]);
+  });
+
+  it("keeps only non-blank string source directories", () => {
+    const state = parsePetsDrivenState({
+      schemaVersion: 2,
+      registeredWorkingDirectories: [],
+      pets: [],
+      petProfiles: [],
+      petSourceDirectories: ["D:\\pets", "  ", 42, "C:\\more"],
+    });
+
+    expect(state.petSourceDirectories).toEqual(["D:\\pets", "C:\\more"]);
+  });
+});
+
+describe("pet source directory helpers", () => {
+  it("adds a normalized folder and skips case-insensitive duplicates", () => {
+    const empty = createEmptyPetsDrivenState();
+    const added = addPetSourceDirectory(empty, "D:/pets/../pets/mine/");
+
+    expect(added.petSourceDirectories).toEqual(["D:\\pets\\mine"]);
+
+    // A path that normalizes to the same folder is a no-op (same reference).
+    const again = addPetSourceDirectory(added, "d:\\pets\\mine");
+    expect(again).toBe(added);
+  });
+
+  it("ignores a blank path", () => {
+    const empty = createEmptyPetsDrivenState();
+    expect(addPetSourceDirectory(empty, "   ")).toBe(empty);
+  });
+
+  it("removes a folder by case-insensitive match", () => {
+    const seeded = addPetSourceDirectory(
+      createEmptyPetsDrivenState(),
+      "D:\\pets\\mine",
+    );
+    const removed = removePetSourceDirectory(seeded, "d:/pets/mine");
+
+    expect(removed.petSourceDirectories).toEqual([]);
+
+    // Removing something that is not registered is a no-op.
+    expect(removePetSourceDirectory(removed, "D:\\nope")).toBe(removed);
   });
 });

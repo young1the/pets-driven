@@ -22,6 +22,9 @@ function setup(overrides = {}) {
       url: "claude-hook://127.0.0.1:7878",
     },
     onReconnect: vi.fn(),
+    petSourceDirectories: [] as string[],
+    onAddPetFolder: vi.fn(),
+    onRemovePetFolder: vi.fn(),
     ...overrides,
   };
   render(<SettingsSection {...props} />);
@@ -72,5 +75,36 @@ describe("SettingsSection", () => {
     expect(screen.queryByText("Claude agent hook")).not.toBeInTheDocument();
     expect(screen.queryByText("All connected")).not.toBeInTheDocument();
     expect(screen.queryByText("Reconnect")).not.toBeInTheDocument();
+  });
+
+  it("shows an empty hint when no pet source folders are configured", () => {
+    setup();
+    expect(
+      screen.getByText(
+        "No extra folders yet. Only the built-in folder is scanned.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("lists configured pet source folders and removes them", () => {
+    const onRemovePetFolder = vi.fn();
+    setup({
+      petSourceDirectories: ["D:\\pets\\mine", "C:\\studio\\pets"],
+      onRemovePetFolder,
+    });
+
+    expect(screen.getByText("D:\\pets\\mine")).toBeInTheDocument();
+    expect(screen.getByText("C:\\studio\\pets")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Remove mine"));
+    expect(onRemovePetFolder).toHaveBeenCalledWith("D:\\pets\\mine");
+  });
+
+  it("adds a pet source folder", () => {
+    const onAddPetFolder = vi.fn();
+    setup({ onAddPetFolder });
+
+    fireEvent.click(screen.getByText("Add a folder"));
+    expect(onAddPetFolder).toHaveBeenCalled();
   });
 });

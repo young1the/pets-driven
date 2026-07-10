@@ -198,6 +198,7 @@ const testPetsDrivenState: PetsDrivenState = {
     },
   ],
   sessionCommand: "claude",
+  petSourceDirectories: [],
 };
 
 describe("pet window product route", () => {

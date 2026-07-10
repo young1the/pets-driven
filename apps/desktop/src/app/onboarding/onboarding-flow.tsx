@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
+  FolderIcon,
   IconButton,
   Input,
   RefreshIcon,
   SearchIcon,
+  TrashIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import wordmarkUrl from "@pets-driven/design-system/assets/petsdriven-wordmark.svg";
@@ -23,7 +25,9 @@ import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { adoptPet, registerWorkingDirectory } from "@/app-state/pet-adoption";
 import {
+  addPetSourceDirectory,
   normalizeWorkingDirectoryPath,
+  removePetSourceDirectory,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
@@ -222,6 +226,58 @@ export function OnboardingFlow({
     void loadPackages();
   }, [loadPackages]);
 
+  // Persist a mutated state and rescan the pet-pack roots so a folder change is
+  // reflected in the list immediately. Reuses the same write path as adoption.
+  const persistAndRescan = useCallback(
+    async (nextState: PetsDrivenState) => {
+      try {
+        await gateway.writePetsDrivenState(nextState);
+        onStateChange(nextState);
+        setAdoptionError(null);
+      } catch (error) {
+        setAdoptionError(
+          error instanceof Error ? error.message : String(error),
+        );
+        return;
+      }
+
+      void loadPackages();
+    },
+    [gateway, loadPackages, onStateChange],
+  );
+
+  const addSourceFolder = useCallback(async () => {
+    const picked = await gateway.pickDirectory();
+
+    if (!picked) {
+      return;
+    }
+
+    const nextState = addPetSourceDirectory(stateRef.current, picked);
+
+    // Already registered: nothing to persist, but rescan in case the folder
+    // gained pets since it was added.
+    if (nextState === stateRef.current) {
+      void loadPackages();
+      return;
+    }
+
+    await persistAndRescan(nextState);
+  }, [gateway, loadPackages, persistAndRescan]);
+
+  const removeSourceFolder = useCallback(
+    async (path: string) => {
+      const nextState = removePetSourceDirectory(stateRef.current, path);
+
+      if (nextState === stateRef.current) {
+        return;
+      }
+
+      await persistAndRescan(nextState);
+    },
+    [persistAndRescan],
+  );
+
   const normalizedQuery = query.trim().toLowerCase();
   const visiblePackages = normalizedQuery
     ? packages.filter(
@@ -343,6 +399,41 @@ export function OnboardingFlow({
   const totalSteps = stepOrder.length;
   const stepNumber = stepOrder.indexOf(step) + 1;
 
+  function renderSourceFolders() {
+    if (state.petSourceDirectories.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="pd-onb__sources">
+        <span className="pd-onb__sources-label">
+          {t("onboarding.sourceFoldersLabel")}
+        </span>
+        {state.petSourceDirectories.map((path) => (
+          <div className="pd-onb__source" key={path}>
+            <span className="pd-onb__source-icon" aria-hidden>
+              📁
+            </span>
+            <span className="pd-onb__source-text">
+              <b>{folderName(path)}</b>
+              <small>{path}</small>
+            </span>
+            <button
+              aria-label={t("onboarding.removeFolder", {
+                name: folderName(path),
+              })}
+              className="pd-onb__source-remove"
+              onClick={() => void removeSourceFolder(path)}
+              type="button"
+            >
+              <TrashIcon />
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <main aria-label={t("onboarding.pageAria")} className="pd-onb">
       <div aria-hidden className="pd-onb__dots" />
@@ -435,21 +526,56 @@ export function OnboardingFlow({
                 <a href={PETDEX_URL} rel="noreferrer" target="_blank">
                   {t("onboarding.openPetdex")}
                 </a>
+                <button
+                  className="pd-onb__addfolder"
+                  onClick={() => void addSourceFolder()}
+                  type="button"
+                >
+                  <FolderIcon />
+                  {t("onboarding.addFolder")}
+                </button>
               </div>
+              {renderSourceFolders()}
             </>
           ) : (
             <div className="pd-onb__empty">
+              <span className="pd-onb__paw" aria-hidden>
+                🐾
+              </span>
               <h1 className="pd-onb__title">{t("onboarding.emptyTitle")}</h1>
               <p className="pd-onb__lede">{t("onboarding.emptyLede")}</p>
+
+              <div className="pd-onb__empty-actions">
+                <Button
+                  onClick={() => void addSourceFolder()}
+                  size="lg"
+                >
+                  <FolderIcon />
+                  {t("onboarding.emptyChooseFolder")}
+                </Button>
+                <Button
+                  disabled={refreshing}
+                  onClick={() => void loadPackages()}
+                  variant="ghost"
+                >
+                  <RefreshIcon
+                    className={refreshing ? "pd-onb__spin" : undefined}
+                  />
+                  {t("onboarding.refresh")}
+                </Button>
+              </div>
+              <p className="pd-onb__fineprint">
+                {t("onboarding.emptyChooseFolderHint")}
+              </p>
+
+              {renderSourceFolders()}
+
               <div className="pd-onb__petdex-empty">
                 <code>npx petdex install boba</code>
                 <a href={PETDEX_URL} rel="noreferrer" target="_blank">
                   {t("onboarding.browsePetdex")}
                 </a>
               </div>
-              <span className="pd-onb__paw" aria-hidden>
-                🐾
-              </span>
             </div>
           )}
           <div className="pd-onb__footer">

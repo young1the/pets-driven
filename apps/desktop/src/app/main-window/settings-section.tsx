@@ -1,9 +1,13 @@
 import type { ReactNode } from "react";
 import {
+  Button,
+  FolderIcon,
+  IconButton,
   Input,
   Select,
   Switch,
   TerminalPreview,
+  TrashIcon,
   type BadgeTone,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
@@ -22,8 +26,18 @@ export interface SettingsSectionProps {
   preview: { cwd: string; prompt: string; command: string };
   hook: { tone: BadgeTone; label: string; summary: string; url: string };
   onReconnect: () => void;
+  /** Extra folders scanned for pet packs alongside the built-in root. */
+  petSourceDirectories: string[];
+  onAddPetFolder: () => void;
+  onRemovePetFolder: (path: string) => void;
   /** Optional language picker, injected by the app (needs the locale context). */
   languageSwitcher?: ReactNode;
+}
+
+function folderName(path: string): string {
+  const parts = path.split(/[\\/]/).filter(Boolean);
+
+  return parts[parts.length - 1] || path;
 }
 
 const uppercaseLabel = {
@@ -52,6 +66,9 @@ export function SettingsSection({
   onCommand,
   onLaunchLine,
   preview,
+  petSourceDirectories,
+  onAddPetFolder,
+  onRemovePetFolder,
   languageSwitcher,
 }: SettingsSectionProps) {
   const { t } = useTranslation("desktop");
@@ -181,6 +198,104 @@ export function SettingsSection({
             </div>
 
           </div>
+        </div>
+
+        <div style={{ ...cardStyle, marginBottom: "20px" }}>
+          <h3
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 600,
+              fontSize: "17px",
+              color: "var(--text-strong)",
+              margin: "0 0 5px",
+            }}
+          >
+            {t("settings.petSourcesTitle")}
+          </h3>
+          <p
+            style={{
+              fontSize: "13px",
+              color: "var(--text-muted)",
+              margin: "0 0 18px",
+              lineHeight: 1.45,
+            }}
+          >
+            {t("settings.petSourcesDesc")}
+          </p>
+
+          {petSourceDirectories.length > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                marginBottom: "16px",
+              }}
+            >
+              {petSourceDirectories.map((path) => (
+                <div
+                  key={path}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "10px 12px",
+                    border: "1px solid var(--border-soft)",
+                    borderRadius: "14px",
+                    background: "var(--surface-sunken)",
+                  }}
+                >
+                  <FolderIcon />
+                  <span
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      minWidth: 0,
+                      flex: 1,
+                    }}
+                  >
+                    <b style={{ color: "var(--text-strong)" }}>
+                      {folderName(path)}
+                    </b>
+                    <small
+                      style={{
+                        color: "var(--text-subtle)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {path}
+                    </small>
+                  </span>
+                  <IconButton
+                    label={t("settings.removePetFolder", {
+                      name: folderName(path),
+                    })}
+                    onClick={() => onRemovePetFolder(path)}
+                    variant="ghost"
+                  >
+                    <TrashIcon />
+                  </IconButton>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--text-subtle)",
+                margin: "0 0 16px",
+              }}
+            >
+              {t("settings.noPetFolders")}
+            </p>
+          )}
+
+          <Button onClick={onAddPetFolder} variant="neutral">
+            <FolderIcon />
+            {t("settings.addPetFolder")}
+          </Button>
         </div>
 
         {languageSwitcher ? (
