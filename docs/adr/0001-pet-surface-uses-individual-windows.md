@@ -1,3 +1,0 @@
-# Pet Surface Uses Individual Windows
-
-Accepted. Visible pets live in individual desktop overlay windows instead of one large transparent surface. A single full-screen surface would either block every app behind it or require expensive region-level hit testing across the whole desktop. Per-pet windows keep the problem small: each window follows one pet, and pointer input is accepted only on the pet's Pet Hit Region, including visible overlay pixels, so transparent pixels pass through to the desktop. The management UI remains a normal app window, and each pet window stays small enough for users to keep working around it while still supporting direct manipulation, context menus, and attention overlays. ADR 0007 defines the MVP approximation for this hit region.
