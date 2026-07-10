@@ -1,3 +1,5 @@
+/// <reference path="./css.d.ts" />
+
 export { Button, type ButtonProps } from "./components/buttons/button";
 export {
   IconButton,

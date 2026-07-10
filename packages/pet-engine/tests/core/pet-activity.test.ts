@@ -101,7 +101,11 @@ describe("derivePetActivity", () => {
     expect(
       derivePetActivity(
         storeWith([
-          { type: "JumpActionState", phase: "crouch" as const, cooldownMs: 0 },
+          {
+            type: "JumpActionState",
+            phase: "requested" as const,
+            cooldownMs: 0,
+          },
         ]),
         "pet",
         0,
