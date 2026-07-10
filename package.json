@@ -13,6 +13,7 @@
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "test:e2e": "pnpm --filter pets-driven test:e2e",
     "tauri": "pnpm --filter pets-driven tauri",
-    "release:bump": "node scripts/bump-version.mjs"
+    "release:bump": "node scripts/bump-version.mjs",
+    "test:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-install-test.ps1"
   }
 }
