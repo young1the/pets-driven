@@ -99,6 +99,9 @@ const DESKTOP_FIXTURE_HOST_TICK_MS = 16;
 const DESKTOP_FIXTURE_STEP_MS = 16;
 const DESKTOP_FIXTURE_WORLD_SIZE = { width: 1920, height: 1080 };
 const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
+// Native folder dialogs are app-modal side effects. Keep the guard outside the
+// React tree so duplicate listeners from a remount cannot open a second dialog.
+let activeFolderPickerPetId: string | null = null;
 
 // A foreign OS window a pet is bound to. Mirrors the Rust `ForeignWindow`.
 type ForeignWindow = { hwnd: number; title: string };
@@ -289,8 +292,17 @@ function cardNote(memo: string | undefined, emptyLabel: string): string {
 }
 
 export function PetsDrivenApp() {
-  const { t } = useTranslation("desktop");
   const petWindowPet = petWindowRouteParams();
+
+  if (petWindowPet) {
+    return <PetWindowView pet={petWindowPet} />;
+  }
+
+  return <PetsDrivenHostApp />;
+}
+
+function PetsDrivenHostApp() {
+  const { t } = useTranslation("desktop");
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
   const petsDrivenStateRef = useRef(createInitialPetsDrivenState());
@@ -586,10 +598,6 @@ export function PetsDrivenApp() {
   }, []);
 
   useEffect(() => {
-    if (petWindowPet) {
-      return;
-    }
-
     let isMounted = true;
 
     void desktopGateway
@@ -997,10 +1005,6 @@ export function PetsDrivenApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adoptedSimKey, adoptedSimulationResetKey]);
 
-  if (petWindowPet) {
-    return <PetWindowView pet={petWindowPet} />;
-  }
-
   if (view === "playground") {
     return (
       <div className="app-playground-view">
@@ -1346,23 +1350,33 @@ export function PetsDrivenApp() {
   }
 
   async function pickFolderForPet(petId: string) {
-    const path = await desktopGateway.pickDirectory();
-    if (!path) {
+    if (activeFolderPickerPetId !== null) {
       return;
     }
-    const result = registerWorkingDirectory(petsDrivenStateRef.current, {
-      petId,
-      path,
-      workingDirectoryId: crypto.randomUUID(),
-      agentSourceId: crypto.randomUUID(),
-      now: Date.now(),
-    });
-    if (result.status === "occupied") {
-      flashToast(t("toast.folderOccupied"));
-      return;
+
+    activeFolderPickerPetId = petId;
+
+    try {
+      const path = await desktopGateway.pickDirectory();
+      if (!path) {
+        return;
+      }
+      const result = registerWorkingDirectory(petsDrivenStateRef.current, {
+        petId,
+        path,
+        workingDirectoryId: crypto.randomUUID(),
+        agentSourceId: crypto.randomUUID(),
+        now: Date.now(),
+      });
+      if (result.status === "occupied") {
+        flashToast(t("toast.folderOccupied"));
+        return;
+      }
+      applyPetsDrivenState(result.state);
+      void desktopGateway.writePetsDrivenState(result.state);
+    } finally {
+      activeFolderPickerPetId = null;
     }
-    applyPetsDrivenState(result.state);
-    void desktopGateway.writePetsDrivenState(result.state);
   }
 
   function setLaunchProfile(profile: LaunchProfileId) {

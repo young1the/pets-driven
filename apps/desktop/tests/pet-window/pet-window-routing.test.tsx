@@ -300,6 +300,10 @@ describe("pet window product route", () => {
     expect(
       screen.queryByRole("heading", { name: "Pets Driven" }),
     ).not.toBeInTheDocument();
+    expect(tauriEventMocks.listen).not.toHaveBeenCalledWith(
+      PET_WINDOW_INPUT_EVENT,
+      expect.any(Function),
+    );
   });
 
   it("waits for the Pet Window spritesheet before rendering the shared HTML sprite", async () => {
@@ -688,7 +692,7 @@ describe("pet window product route", () => {
     });
   });
 
-  it("lets the pet context menu assign a working folder to the pet", async () => {
+  it("handles duplicate folder-pick input only once", async () => {
     dialogMocks.open.mockResolvedValue("D:\\new-project");
 
     render(<PetsDrivenApp />);
@@ -697,23 +701,27 @@ describe("pet window product route", () => {
       expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
     });
 
+    const inputEvent = {
+      payload: {
+        sequence: 1,
+        petId: "pet-a",
+        windowLabel: "pet-context-menu-pet-a",
+        pointerId: 0,
+        kind: "menu.pick-folder",
+        localPoint: { x: 0, y: 0 },
+        screenPoint: { x: 0, y: 0 },
+        at: Date.now(),
+      },
+    };
+
     act(() => {
-      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
-        payload: {
-          sequence: 1,
-          petId: "pet-a",
-          windowLabel: "pet-context-menu-pet-a",
-          pointerId: 0,
-          kind: "menu.pick-folder",
-          localPoint: { x: 0, y: 0 },
-          screenPoint: { x: 0, y: 0 },
-          at: Date.now(),
-        },
-      });
+      const handler = tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT);
+      handler?.(inputEvent);
+      handler?.(inputEvent);
     });
 
     await waitFor(() => {
-      expect(dialogMocks.open).toHaveBeenCalledWith({
+      expect(dialogMocks.open).toHaveBeenCalledExactlyOnceWith({
         directory: true,
         multiple: false,
       });
@@ -736,6 +744,11 @@ describe("pet window product route", () => {
           }),
         }),
       );
+      expect(
+        invokeMock.mock.calls.filter(
+          ([command]) => command === "write_pets_driven_state",
+        ),
+      ).toHaveLength(1);
     });
   });
 
