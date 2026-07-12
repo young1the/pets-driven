@@ -1,4 +1,5 @@
 mod claude_hook_ingress;
+mod claude_plugin;
 mod pet_assets;
 mod pet_windows;
 mod state_store;
@@ -65,6 +66,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             claude_hook_ingress::get_claude_hook_ingress_status,
             claude_hook_ingress::emit_test_claude_hook_ingress_event,
+            claude_plugin::get_claude_plugin_status,
+            claude_plugin::install_claude_plugin,
+            claude_plugin::uninstall_claude_plugin,
             state_store::read_pets_driven_state,
             state_store::write_pets_driven_state,
             pet_assets::list_codex_pet_packages,

@@ -24,6 +24,7 @@ import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
 import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import { desktopGateway } from "@/app/desktop-gateway";
+import { useClaudePlugin } from "@/app/use-claude-plugin";
 import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
@@ -373,6 +374,7 @@ function PetsDrivenHostApp() {
   const [petWindowError, setPetWindowError] = useState<string | null>(null);
   const [claudeHookIngressStatus, setClaudeHookIngressStatus] =
     useState<ClaudeHookIngressStatus>(defaultClaudeHookIngressStatus);
+  const claudePlugin = useClaudePlugin(desktopGateway);
   const [mainTab, setMainTab] = useState<MainWindowTab>(
     devFixture?.tab ?? "home",
   );
@@ -1636,6 +1638,10 @@ function PetsDrivenHostApp() {
           url: claudeHookIngressStatus.url,
         },
         onReconnect: () => void emitClaudeHookTestEvent(),
+        plugin: claudePlugin.status,
+        pluginBusy: claudePlugin.busy,
+        onInstallPlugin: () => void claudePlugin.install(),
+        onUninstallPlugin: () => void claudePlugin.uninstall(),
         petSourceDirectories: petsDrivenState.petSourceDirectories,
         onAddPetFolder: () => void addPetSourceFolder(),
         onRemovePetFolder: removePetSourceFolder,

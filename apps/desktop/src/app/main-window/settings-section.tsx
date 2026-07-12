@@ -6,6 +6,7 @@ import {
   type BadgeTone,
 } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
+import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 import {
@@ -23,6 +24,11 @@ export interface SettingsSectionProps {
   preview: { cwd: string; prompt: string; command: string };
   hook: { tone: BadgeTone; label: string; summary: string; url: string };
   onReconnect: () => void;
+  /** Bundled Claude Code plugin install state; null while the check runs. */
+  plugin: ClaudePluginStatus | null;
+  pluginBusy: boolean;
+  onInstallPlugin: () => void;
+  onUninstallPlugin: () => void;
   /** Extra folders scanned for pet packs alongside the built-in root. */
   petSourceDirectories: string[];
   onAddPetFolder: () => void;
@@ -139,6 +145,38 @@ const swatch = (hex: string, on: boolean): CSSProperties => ({
   boxShadow: on ? "0 0 0 3px var(--surface-card)" : "none",
   transition: "transform 140ms ease",
 });
+const connectionCard: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  padding: "12px 14px",
+  border: "1px solid var(--border-soft)",
+  borderRadius: "14px",
+  background: "var(--surface-sunken)",
+};
+const connectionText: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  minWidth: 0,
+  flex: 1,
+};
+const smallAction: CSSProperties = {
+  ...browseStyle,
+  padding: "8px 14px",
+  fontSize: "12.5px",
+};
+const TONE_COLORS: Partial<Record<BadgeTone, string>> = {
+  success: "#2f9e63",
+  info: "#3f82d9",
+  danger: "#d9544f",
+};
+const statusDot = (tone: BadgeTone): CSSProperties => ({
+  width: "10px",
+  height: "10px",
+  flex: "none",
+  borderRadius: "999px",
+  background: TONE_COLORS[tone] ?? "var(--text-muted)",
+});
 const smallCaps: CSSProperties = {
   display: "block",
   fontSize: "11px",
@@ -157,6 +195,12 @@ export function SettingsSection({
   onCommand,
   onLaunchLine,
   preview,
+  hook,
+  onReconnect,
+  plugin,
+  pluginBusy,
+  onInstallPlugin,
+  onUninstallPlugin,
   petSourceDirectories,
   onAddPetFolder,
   onRemovePetFolder,
@@ -172,6 +216,18 @@ export function SettingsSection({
   const [defaultFolder, setDefaultFolder] = useState("~/projects");
 
   const customLaunchLine = launchProfile === "custom";
+
+  const pluginHintText = !plugin
+    ? t("claudePlugin.checking")
+    : plugin.state === "installed"
+      ? plugin.version
+        ? t("claudePlugin.installedVersion", { version: plugin.version })
+        : t("claudePlugin.installed")
+      : plugin.state === "cli-missing"
+        ? t("claudePlugin.cliMissing")
+        : plugin.state === "error"
+          ? (plugin.error ?? t("claudePlugin.error"))
+          : t("claudePlugin.notInstalledHint");
 
   return (
     <div style={{ padding: "38px 24px 64px", minHeight: "100%" }}>
@@ -386,6 +442,84 @@ export function SettingsSection({
               <FolderIcon />
               {t("settings.addPetFolder")}
             </button>
+          </div>
+
+          {/* Agent connection — hook ingress status and the Claude Code
+              plugin that forwards agent events into it. */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.agentConnection")}</span>
+            <p style={hint}>{t("settings.agentConnectionDesc")}</p>
+            <div style={connectionCard}>
+              <span aria-hidden style={statusDot(hook.tone)} />
+              <span style={connectionText}>
+                <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
+                  {hook.label}
+                </b>
+                <small
+                  style={{
+                    color: "var(--text-muted)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {hook.summary}
+                  {hook.url ? ` · ${hook.url}` : ""}
+                </small>
+              </span>
+              <button onClick={onReconnect} style={smallAction} type="button">
+                {t("settings.reconnect")}
+              </button>
+            </div>
+            <div style={{ ...connectionCard, marginTop: "10px" }}>
+              <span style={connectionText}>
+                <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
+                  {t("claudePlugin.title")}
+                </b>
+                <small style={{ color: "var(--text-muted)" }}>
+                  {pluginHintText}
+                </small>
+              </span>
+              {plugin?.state === "installed" ? (
+                <>
+                  <button
+                    disabled={pluginBusy}
+                    onClick={onInstallPlugin}
+                    style={smallAction}
+                    type="button"
+                  >
+                    {pluginBusy
+                      ? t("claudePlugin.installing")
+                      : t("claudePlugin.reinstall")}
+                  </button>
+                  <button
+                    disabled={pluginBusy}
+                    onClick={onUninstallPlugin}
+                    style={smallAction}
+                    type="button"
+                  >
+                    {t("claudePlugin.uninstall")}
+                  </button>
+                </>
+              ) : plugin && plugin.state !== "cli-missing" ? (
+                <button
+                  disabled={pluginBusy}
+                  onClick={onInstallPlugin}
+                  style={{
+                    ...smallAction,
+                    background: "var(--color-primary)",
+                    color: "var(--color-on-primary)",
+                  }}
+                  type="button"
+                >
+                  {pluginBusy
+                    ? t("claudePlugin.installing")
+                    : plugin.state === "error"
+                      ? t("claudePlugin.retry")
+                      : t("claudePlugin.install")}
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {/* Appearance — flips the whole-app light/dark/system theme. */}

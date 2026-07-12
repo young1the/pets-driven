@@ -28,6 +28,9 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "resources": {
+      "../../../plugins": "plugins"
+    },
     "windows": {
       "nsis": {
         "installMode": "currentUser"

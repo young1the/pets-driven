@@ -15,6 +15,21 @@ function createGateway(
     closeAdoptedPetWindow: vi.fn(),
     openPetContextMenu: vi.fn(),
     pickDirectory: vi.fn(),
+    getClaudePluginStatus: vi.fn().mockResolvedValue({
+      state: "not-installed",
+      version: null,
+      error: null,
+    }),
+    installClaudePlugin: vi.fn().mockResolvedValue({
+      state: "installed",
+      version: "0.1.0",
+      error: null,
+    }),
+    uninstallClaudePlugin: vi.fn().mockResolvedValue({
+      state: "not-installed",
+      version: null,
+      error: null,
+    }),
   };
 }
 
@@ -127,5 +142,35 @@ describe("OnboardingFlow pet source folders", () => {
     // The pet-pack roots are rescanned once on mount and again after the
     // folder is added, so the new folder's packs surface immediately.
     expect(gateway.listPetPackages).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("OnboardingFlow Claude Code connect", () => {
+  it("offers the Claude plugin install on the done step", async () => {
+    const gateway = createGateway([
+      {
+        id: "boba",
+        displayName: "Boba",
+        description: "A cozy Petdex pet.",
+        spritesheetPath: "boba/spritesheet.webp",
+      },
+    ]);
+    renderOnboarding(gateway);
+
+    fireEvent.click(await screen.findByText("Boba"));
+    fireEvent.click(screen.getByText("Continue →"));
+    fireEvent.click(screen.getByText("Looks good →"));
+    fireEvent.click(screen.getByText("Adopt without a folder →"));
+
+    expect(
+      await screen.findByText("Connect Claude Code"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByText("Install"));
+
+    await waitFor(() => {
+      expect(gateway.installClaudePlugin).toHaveBeenCalled();
+    });
+    expect(await screen.findByText(/Installed/)).toBeInTheDocument();
   });
 });

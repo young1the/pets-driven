@@ -22,6 +22,7 @@ import {
 } from "@/app/onboarding/personality-options";
 import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
+import { useClaudePlugin } from "@/app/use-claude-plugin";
 import { adoptPet, registerWorkingDirectory } from "@/app-state/pet-adoption";
 import {
   addPetSourceDirectory,
@@ -36,10 +37,6 @@ import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet
 const PET_NAME_MAX_LENGTH = 24;
 const TOTAL_STEPS = 6;
 const PETDEX_URL = "https://petdex.dev";
-// ponytail: the `connect` CLI is still forthcoming, so this command text is
-// guidance only. The "listening" indicator below is wired to the real Claude
-// hook ingress, so the flow detects a genuine first signal regardless.
-const CONNECT_COMMAND_PREFIX = "npx pets-driven connect";
 
 type OnboardingStep = "welcome" | "choose" | "profile" | "folder" | "done";
 
@@ -161,6 +158,49 @@ function Wordmark({ title }: { title: string }) {
         Pets<tspan fill="#F95E9E">-</tspan>Driven
       </text>
     </svg>
+  );
+}
+
+/**
+ * Install card for the Claude Code plugin, shown once the pet is born — the
+ * plugin forwards the agent events the new pet reacts to. Installing is a
+ * one-click consent, never automatic, since it touches the user's Claude
+ * Code configuration.
+ */
+function ClaudeConnectCard({ gateway }: { gateway: DesktopGateway }) {
+  const { t } = useTranslation("desktop");
+  const { status, busy, install } = useClaudePlugin(gateway);
+
+  const hintText = !status
+    ? t("claudePlugin.checking")
+    : status.state === "installed"
+      ? t("claudePlugin.installedHint")
+      : status.state === "cli-missing"
+        ? t("claudePlugin.cliMissing")
+        : status.state === "error"
+          ? (status.error ?? t("claudePlugin.error"))
+          : t("claudePlugin.notInstalledHint");
+
+  return (
+    <div className="pd-onb__connect-card">
+      <span className="pd-onb__connect-text">
+        <b>{t("claudePlugin.connectTitle")}</b>
+        <small>{hintText}</small>
+      </span>
+      {status?.state === "installed" ? (
+        <span className="pd-onb__connect-ok">
+          ✓ {t("claudePlugin.installed")}
+        </span>
+      ) : status && status.state !== "cli-missing" ? (
+        <Button disabled={busy} onClick={() => void install()}>
+          {busy
+            ? t("claudePlugin.installing")
+            : status.state === "error"
+              ? t("claudePlugin.retry")
+              : t("claudePlugin.install")}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
@@ -857,6 +897,8 @@ export function OnboardingFlow({
               <strong>{t("onboarding.summaryReactsToValue")}</strong>
             </div>
           </div>
+
+          <ClaudeConnectCard gateway={gateway} />
 
           <div className="pd-onb__done-actions">
             <Button onClick={onDone} size="lg">

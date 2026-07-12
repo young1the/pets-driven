@@ -14,6 +14,19 @@ export type CodexPetPackage = {
   spritesheetPath: string;
 };
 
+export type ClaudePluginState =
+  | "cli-missing"
+  | "not-installed"
+  | "installed"
+  | "error";
+
+/** Install state of the bundled Claude Code plugin, as reported by the CLI. */
+export type ClaudePluginStatus = {
+  state: ClaudePluginState;
+  version: string | null;
+  error: string | null;
+};
+
 /**
  * Thin gateway over the Tauri commands the app shell and onboarding need.
  * Components receive this via props so tests can inject fakes without
@@ -34,6 +47,15 @@ export type DesktopGateway = {
   ): Promise<void>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
+  getClaudePluginStatus(): Promise<ClaudePluginStatus>;
+  installClaudePlugin(): Promise<ClaudePluginStatus>;
+  uninstallClaudePlugin(): Promise<ClaudePluginStatus>;
+};
+
+const CLAUDE_PLUGIN_UNAVAILABLE: ClaudePluginStatus = {
+  state: "cli-missing",
+  version: null,
+  error: null,
 };
 
 export const desktopGateway: DesktopGateway = {
@@ -106,5 +128,29 @@ export const desktopGateway: DesktopGateway = {
     const selection = await open({ directory: true, multiple: false });
 
     return typeof selection === "string" ? selection : null;
+  },
+
+  async getClaudePluginStatus() {
+    if (!isTauri()) {
+      return CLAUDE_PLUGIN_UNAVAILABLE;
+    }
+
+    return await invoke<ClaudePluginStatus>("get_claude_plugin_status");
+  },
+
+  async installClaudePlugin() {
+    if (!isTauri()) {
+      return CLAUDE_PLUGIN_UNAVAILABLE;
+    }
+
+    return await invoke<ClaudePluginStatus>("install_claude_plugin");
+  },
+
+  async uninstallClaudePlugin() {
+    if (!isTauri()) {
+      return CLAUDE_PLUGIN_UNAVAILABLE;
+    }
+
+    return await invoke<ClaudePluginStatus>("uninstall_claude_plugin");
   },
 };

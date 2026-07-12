@@ -919,6 +919,48 @@
   font-weight: 600;
 }
 
+.pd-onb__connect-card {
+  width: 100%;
+  max-width: 560px;
+  margin: var(--space-3) auto 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: left;
+  background: var(--surface-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-4) var(--space-5);
+}
+
+.pd-onb__connect-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pd-onb__connect-text b {
+  font-size: var(--text-md);
+  color: var(--text-body);
+  font-weight: 600;
+}
+
+.pd-onb__connect-text small {
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+  line-height: 1.4;
+}
+
+.pd-onb__connect-ok {
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-body);
+}
+
 .pd-onb__done-actions {
   display: flex;
   flex-direction: column;

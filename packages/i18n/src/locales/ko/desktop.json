@@ -58,7 +58,10 @@
     "notifications": "알림",
     "notificationsDesc": "펫이 작업을 끝내거나 도움이 필요할 때 알림을 받습니다.",
     "sound": "효과음",
-    "soundDesc": "알림마다 짧은 효과음을 재생합니다."
+    "soundDesc": "알림마다 짧은 효과음을 재생합니다.",
+    "agentConnection": "에이전트 연결",
+    "agentConnectionDesc": "앱이 이 기기에서 Claude Code 이벤트를 수신해요. 플러그인이 세션의 이벤트를 전달합니다.",
+    "reconnect": "테스트 이벤트 보내기"
   },
   "launchProfile": {
     "cmd": "명령 프롬프트",
@@ -71,6 +74,22 @@
     "connecting": "연결 중",
     "offline": "오프라인",
     "summary": "Claude 훅 {{state}}"
+  },
+  "claudePlugin": {
+    "title": "Claude Code 플러그인",
+    "connectTitle": "Claude Code 연결하기",
+    "checking": "Claude Code 확인 중…",
+    "install": "설치",
+    "installing": "진행 중…",
+    "reinstall": "다시 설치",
+    "uninstall": "제거",
+    "retry": "다시 시도",
+    "installed": "설치됨",
+    "installedVersion": "설치됨 · v{{version}}",
+    "installedHint": "Claude Code가 에이전트 활동을 펫에게 알려줘요.",
+    "notInstalledHint": "플러그인을 설치하면 에이전트가 일할 때 펫이 반응해요.",
+    "cliMissing": "Claude Code CLI를 찾지 못했어요. 먼저 Claude Code를 설치한 뒤 다시 시도해 주세요.",
+    "error": "Claude Code와 통신하는 중 문제가 생겼어요."
   },
   "edit": {
     "back": "무리로 돌아가기",

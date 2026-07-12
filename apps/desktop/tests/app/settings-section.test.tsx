@@ -22,6 +22,14 @@ function setup(overrides = {}) {
       url: "claude-hook://127.0.0.1:7878",
     },
     onReconnect: vi.fn(),
+    plugin: {
+      state: "not-installed" as const,
+      version: null,
+      error: null,
+    },
+    pluginBusy: false,
+    onInstallPlugin: vi.fn(),
+    onUninstallPlugin: vi.fn(),
     petSourceDirectories: [] as string[],
     onAddPetFolder: vi.fn(),
     onRemovePetFolder: vi.fn(),
@@ -68,11 +76,53 @@ describe("SettingsSection", () => {
     expect(onLaunchLine).toHaveBeenCalledWith("wt -d . powershell");
   });
 
-  it("does not show the Claude hook card", () => {
-    setup();
-    expect(screen.queryByText("Claude agent hook")).not.toBeInTheDocument();
-    expect(screen.queryByText("All connected")).not.toBeInTheDocument();
-    expect(screen.queryByText("Reconnect")).not.toBeInTheDocument();
+  it("shows the hook status and sends a test event", () => {
+    const onReconnect = vi.fn();
+    setup({ onReconnect });
+
+    expect(screen.getByText("All connected")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Send test event"));
+    expect(onReconnect).toHaveBeenCalled();
+  });
+
+  it("installs the Claude plugin when not installed", () => {
+    const onInstallPlugin = vi.fn();
+    setup({ onInstallPlugin });
+
+    fireEvent.click(screen.getByText("Install"));
+    expect(onInstallPlugin).toHaveBeenCalled();
+  });
+
+  it("offers reinstall and remove when the plugin is installed", () => {
+    const onInstallPlugin = vi.fn();
+    const onUninstallPlugin = vi.fn();
+    setup({
+      plugin: { state: "installed" as const, version: "0.1.0", error: null },
+      onInstallPlugin,
+      onUninstallPlugin,
+    });
+
+    expect(screen.getByText("Installed · v0.1.0")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Reinstall"));
+    expect(onInstallPlugin).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText("Remove"));
+    expect(onUninstallPlugin).toHaveBeenCalled();
+  });
+
+  it("hides plugin actions and explains when the CLI is missing", () => {
+    setup({
+      plugin: { state: "cli-missing" as const, version: null, error: null },
+    });
+
+    expect(
+      screen.getByText(
+        "Claude Code CLI not found. Install Claude Code first, then come back.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Install")).not.toBeInTheDocument();
   });
 
   it("shows an empty hint when no pet source folders are configured", () => {

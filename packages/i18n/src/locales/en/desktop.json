@@ -62,7 +62,10 @@
     "notifications": "Notifications",
     "notificationsDesc": "Get notified when a pet finishes or needs your help.",
     "sound": "Sound effects",
-    "soundDesc": "Play a short sound with each notification."
+    "soundDesc": "Play a short sound with each notification.",
+    "agentConnection": "Agent connection",
+    "agentConnectionDesc": "The app listens for Claude Code events on this machine; the plugin forwards them from your sessions.",
+    "reconnect": "Send test event"
   },
   "launchProfile": {
     "cmd": "Command Prompt",
@@ -75,6 +78,22 @@
     "connecting": "Connecting",
     "offline": "Offline",
     "summary": "Claude hook {{state}}"
+  },
+  "claudePlugin": {
+    "title": "Claude Code plugin",
+    "connectTitle": "Connect Claude Code",
+    "checking": "Checking Claude Code…",
+    "install": "Install",
+    "installing": "Working…",
+    "reinstall": "Reinstall",
+    "uninstall": "Remove",
+    "retry": "Try again",
+    "installed": "Installed",
+    "installedVersion": "Installed · v{{version}}",
+    "installedHint": "Claude Code reports agent activity to your pets.",
+    "notInstalledHint": "Install the plugin so your pets react while agents work.",
+    "cliMissing": "Claude Code CLI not found. Install Claude Code first, then come back.",
+    "error": "Something went wrong talking to Claude Code."
   },
   "edit": {
     "back": "Back to the pack",
