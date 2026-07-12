@@ -118,11 +118,6 @@
     "exit": "온보딩 종료",
     "step": "{{total}}단계 중 {{step}}단계",
     "back": "← 뒤로",
-    "welcomeEyebrow": "Pets-Driven에 오신 걸 환영해요",
-    "welcomeTitle": "첫 펫을 집으로 데려와 볼까요.",
-    "welcomeLede": "약 1분이면 프로젝트에서 에이전트가 작업할 때마다 반응하는 데스크탑 펫이 생겨요. 모습을 고르고, 이름을 짓고, 폴더를 지정해 주세요.",
-    "welcomeFineprint": "약 1분 소요 · 어떤 것도 기기를 벗어나지 않아요",
-    "getStarted": "시작하기 →",
     "chooseEyebrow": "모습 고르기",
     "chooseTitle": "누가 무리에 합류하나요?",
     "chooseLede": "이 기기에 설치된 모습들이에요 — 언제든 더 받아올 수 있어요.",
@@ -167,6 +162,69 @@
     "summaryReactsToValue": "코딩 에이전트 — 시작하고, 끝내고, 막힐 때",
     "openApp": "Pets-Driven 열기 →",
     "addAnother": "펫 더 추가하기"
+  },
+  "setupWizard": {
+    "pageAria": "Pets-Driven 설정",
+    "skipAll": "모두 건너뛰기",
+    "skip": "건너뛰기",
+    "skipForNow": "설정 나중에 하기",
+    "continue": "계속 →",
+    "checklist": {
+      "welcome": {
+        "title": "시작하기",
+        "desc": "당신의 보금자리에 오신 걸 환영해요"
+      },
+      "appearance": {
+        "title": "테마",
+        "desc": "테마 · 색상 · 언어"
+      },
+      "petsFolder": {
+        "title": "펫 폴더",
+        "desc": "펫들이 사는 곳"
+      },
+      "plugin": {
+        "title": "플러그인",
+        "desc": "에이전트 연결"
+      }
+    },
+    "guideName": {
+      "cato": "카토",
+      "otto": "오토",
+      "fenn": "펜"
+    },
+    "guideWelcome": "제가 안내해 드릴게요.",
+    "guideAppearance": "이곳을 꾸며볼까요.",
+    "guidePetsFolder": "제가 무리를 데려올게요.",
+    "guidePlugin": "마지막이에요 — 연결해 볼까요.",
+    "guideDone": "다 됐어요 — 수고하셨어요.",
+    "welcomeEyebrow": "Pets-Driven에 오신 걸 환영해요",
+    "welcomeTitle": "AI 에이전트로 이루어진 작은 가족.",
+    "welcomeLede": "네 단계만 거치면 코딩 에이전트가 작업할 때마다 살아나는 펫이 생겨요. 모든 건 이 기기 안에만 머물러요.",
+    "welcomeFineprint": "약 1분 소요 · 어떤 것도 기기를 벗어나지 않아요",
+    "getStarted": "시작하기 →",
+    "appearanceEyebrow": "테마",
+    "appearanceTitle": "취향대로 꾸며보세요.",
+    "appearanceLede": "이 설정들은 나중에 설정 화면에서 언제든 바꿀 수 있어요.",
+    "petsFolderEyebrow": "펫 폴더",
+    "petsFolderTitle": "펫들이 어디에 살고 있나요?",
+    "petsFolderLede": "폴더 안에서 찾은 모습을 모두 불러올게요.",
+    "petsFolderScanning": "펫 모습을 찾는 중…",
+    "petsFolderFound": "모습 {{count}}개 찾음",
+    "pluginEyebrow": "에이전트 연결",
+    "pluginTitle": "플러그인을 설치하세요.",
+    "pluginLede": "펫이 반응할 에이전트를 고르고 연결해 주세요.",
+    "claudeName": "Claude",
+    "claudeSubtitle": "Claude Code",
+    "claudeConnected": "Claude 연결됨",
+    "claudeNotConnected": "아직 Claude가 연결되지 않음",
+    "codexName": "Codex",
+    "comingSoon": "곧 지원 예정",
+    "connectLater": "나중에 연결할게요",
+    "finish": "완료 →",
+    "doneEyebrow": "모두 준비됐어요 ✨",
+    "doneTitle": "보금자리가 준비됐어요.",
+    "createFirstPet": "첫 펫 만들기 →",
+    "goToHome": "홈으로 이동"
   },
   "personality": {
     "role": "펫",

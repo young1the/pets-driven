@@ -22,6 +22,7 @@ import {
 } from "@/app/onboarding/personality-options";
 import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
+import { Wordmark } from "@/app/onboarding/wordmark";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
 import { adoptPet, registerWorkingDirectory } from "@/app-state/pet-adoption";
 import {
@@ -35,10 +36,10 @@ import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 const PET_NAME_MAX_LENGTH = 24;
-const TOTAL_STEPS = 6;
 const PETDEX_URL = "https://petdex.dev";
 
-type OnboardingStep = "welcome" | "choose" | "profile" | "folder" | "done";
+type AdoptPetStep = "choose" | "profile" | "folder" | "done";
+const STEP_ORDER: AdoptPetStep[] = ["choose", "profile", "folder", "done"];
 
 type BornPet = {
   id: string;
@@ -48,12 +49,11 @@ type BornPet = {
   folderPath: string;
 };
 
-type OnboardingFlowProps = {
+type AdoptPetFlowProps = {
   state: PetsDrivenState;
   onStateChange: (state: PetsDrivenState) => void;
   onDone: () => void;
   gateway?: DesktopGateway;
-  initialStep?: "welcome" | "choose";
 };
 
 function isValidPetName(name: string) {
@@ -124,41 +124,6 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
       size={PET_CELL_SIZE}
     />
   ) : null;
-}
-
-// Inlined so the wordmark text follows the theme (a static <img> can't be
-// recolored, leaving the near-black lettering invisible in dark mode). The
-// brand mark keeps its fixed colors; only the text tracks --text-strong.
-function Wordmark({ title }: { title: string }) {
-  return (
-    <svg
-      aria-label={title}
-      className="pd-onb__wordmark"
-      role="img"
-      viewBox="0 0 360 100"
-    >
-      <rect x="6" y="14" width="72" height="72" rx="22" fill="#F95E9E" />
-      <ellipse cx="42" cy="60" rx="14" ry="11.5" fill="#fff" />
-      <ellipse cx="26" cy="49" rx="5.6" ry="7.2" fill="#fff" />
-      <ellipse cx="36" cy="41" rx="5.6" ry="7.6" fill="#fff" />
-      <ellipse cx="48" cy="41" rx="5.6" ry="7.6" fill="#fff" />
-      <ellipse cx="58" cy="49" rx="5.6" ry="7.2" fill="#fff" />
-      <path
-        d="M42 63 C40 59.5 35 60.5 35 64 C35 67 42 70 42 70 C42 70 49 67 49 64 C49 60.5 44 59.5 42 63 Z"
-        fill="#16B8A6"
-      />
-      <text
-        x="96"
-        y="65"
-        fontFamily="Fredoka, Trebuchet MS, sans-serif"
-        fontSize="42"
-        fontWeight="600"
-        fill="var(--text-strong)"
-      >
-        Pets<tspan fill="#F95E9E">-</tspan>Driven
-      </text>
-    </svg>
-  );
 }
 
 /**
@@ -249,21 +214,20 @@ function StepHeader({
   );
 }
 
-export function OnboardingFlow({
+/**
+ * Adopts a single pet: pick a look, name it and give it a personality, then
+ * optionally point it at a folder to watch. Entered either from the setup
+ * wizard's "Create your first pet" CTA or from "Add a pet" anywhere else in
+ * the app — it always starts at "choose".
+ */
+export function AdoptPetFlow({
   state,
   onStateChange,
   onDone,
   gateway = desktopGateway,
-  initialStep,
-}: OnboardingFlowProps) {
+}: AdoptPetFlowProps) {
   const { t } = useTranslation("desktop");
-  // Welcome is an intro shown only to first-time users; once any pet exists the
-  // flow starts at "choose". Frozen per run so the step count stays stable even
-  // after this run adopts a pet.
-  const [includeWelcome] = useState(() => state.pets.length === 0);
-  const [step, setStep] = useState<OnboardingStep>(() =>
-    initialStep ?? (state.pets.length === 0 ? "welcome" : "choose"),
-  );
+  const [step, setStep] = useState<AdoptPetStep>("choose");
   const [packages, setPackages] = useState<CodexPetPackage[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -459,15 +423,11 @@ export function OnboardingFlow({
     setSelectedFolderPath(null);
     setBornPet(null);
     setAdoptionError(null);
-    // A pet exists by now, so skip the first-time welcome.
     setStep("choose");
   }
 
-  const stepOrder: OnboardingStep[] = includeWelcome
-    ? ["welcome", "choose", "profile", "folder", "done"]
-    : ["choose", "profile", "folder", "done"];
-  const totalSteps = stepOrder.length;
-  const stepNumber = stepOrder.indexOf(step) + 1;
+  const totalSteps = STEP_ORDER.length;
+  const stepNumber = STEP_ORDER.indexOf(step) + 1;
 
   function renderSourceFolders() {
     if (state.petSourceDirectories.length === 0) {
@@ -508,26 +468,6 @@ export function OnboardingFlow({
     <main aria-label={t("onboarding.pageAria")} className="pd-onb">
       <div aria-hidden className="pd-onb__dots" />
       <StepHeader onExit={onDone} step={stepNumber} total={totalSteps} />
-
-      {step === "welcome" && (
-        <section className="pd-onb__body pd-onb__welcome">
-          <span className="pd-onb__eyebrow">
-            {t("onboarding.welcomeEyebrow")}
-          </span>
-          <h1 className="pd-onb__title pd-onb__title--hero">
-            {t("onboarding.welcomeTitle")}
-          </h1>
-          <p className="pd-onb__lede">{t("onboarding.welcomeLede")}</p>
-          <div className="pd-onb__footer">
-            <span className="pd-onb__fineprint">
-              {t("onboarding.welcomeFineprint")}
-            </span>
-            <Button onClick={() => setStep("choose")} size="lg">
-              {t("onboarding.getStarted")}
-            </Button>
-          </div>
-        </section>
-      )}
 
       {step === "choose" && (
         <section className="pd-onb__body">
@@ -643,12 +583,7 @@ export function OnboardingFlow({
             </div>
           )}
           <div className="pd-onb__footer">
-            {/* "choose" is the first step when there's no welcome (a pet already
-                exists), so Back exits to home instead of the first-time welcome. */}
-            <Button
-              onClick={includeWelcome ? () => setStep("welcome") : onDone}
-              variant="ghost"
-            >
+            <Button onClick={onDone} variant="ghost">
               {t("onboarding.back")}
             </Button>
             {packages.length > 0 ? (

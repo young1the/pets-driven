@@ -122,11 +122,6 @@
     "exit": "Exit onboarding",
     "step": "Step {{step}} / {{total}}",
     "back": "← Back",
-    "welcomeEyebrow": "Welcome to Pets-Driven",
-    "welcomeTitle": "Let's bring home your first pet.",
-    "welcomeLede": "In about a minute you'll have a desktop pet that perks up whenever an agent works in your project. Pick its look, name it, and point it at a folder.",
-    "welcomeFineprint": "Takes about a minute · nothing leaves your machine",
-    "getStarted": "Get started →",
     "chooseEyebrow": "Choose a look",
     "chooseTitle": "Who's joining the pack?",
     "chooseLede": "These are the looks installed on this machine — you can fetch more anytime.",
@@ -171,6 +166,69 @@
     "summaryReactsToValue": "Your coding agent — starts, finishes, gets stuck",
     "openApp": "Open Pets-Driven →",
     "addAnother": "Add another pet"
+  },
+  "setupWizard": {
+    "pageAria": "Pets-Driven setup",
+    "skipAll": "Skip all",
+    "skip": "Skip",
+    "skipForNow": "Skip setup for now",
+    "continue": "Continue →",
+    "checklist": {
+      "welcome": {
+        "title": "Get started",
+        "desc": "Welcome to your den"
+      },
+      "appearance": {
+        "title": "Appearance",
+        "desc": "Theme · color · language"
+      },
+      "petsFolder": {
+        "title": "Pets folder",
+        "desc": "Where pets live"
+      },
+      "plugin": {
+        "title": "Plugin",
+        "desc": "Connect your agent"
+      }
+    },
+    "guideName": {
+      "cato": "Cato",
+      "otto": "Otto",
+      "fenn": "Fenn"
+    },
+    "guideWelcome": "I'll walk you through it.",
+    "guideAppearance": "Dress the place up.",
+    "guidePetsFolder": "I'll fetch the pack.",
+    "guidePlugin": "Last one — let's connect.",
+    "guideDone": "All done — nice work.",
+    "welcomeEyebrow": "Welcome to Pets-Driven",
+    "welcomeTitle": "A little household of AI agents.",
+    "welcomeLede": "Four quick steps and your pets come to life whenever your coding agent works. Everything stays on your machine.",
+    "welcomeFineprint": "Takes about a minute · nothing leaves your machine",
+    "getStarted": "Get started →",
+    "appearanceEyebrow": "Appearance",
+    "appearanceTitle": "Make it yours.",
+    "appearanceLede": "Change any of this later in Settings.",
+    "petsFolderEyebrow": "Pets folder",
+    "petsFolderTitle": "Where do your pets live?",
+    "petsFolderLede": "We'll load every look we find inside.",
+    "petsFolderScanning": "Looking for pet looks…",
+    "petsFolderFound": "{{count}} looks found",
+    "pluginEyebrow": "Connect your agent",
+    "pluginTitle": "Install the plugin.",
+    "pluginLede": "Pick the agent your pets react to, then connect.",
+    "claudeName": "Claude",
+    "claudeSubtitle": "Claude Code",
+    "claudeConnected": "Claude connected",
+    "claudeNotConnected": "Claude not connected yet",
+    "codexName": "Codex",
+    "comingSoon": "Coming soon",
+    "connectLater": "I'll connect later",
+    "finish": "Finish →",
+    "doneEyebrow": "All set ✨",
+    "doneTitle": "Your den is ready.",
+    "createFirstPet": "Create your first pet →",
+    "goToHome": "Go to home"
   },
   "personality": {
     "role": "Pet",

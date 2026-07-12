@@ -41,7 +41,6 @@ export type DesktopFixture = {
   tab: MainWindowTab;
   editPetId: string | null;
   petPackages: "default" | "empty";
-  onboardingStep?: "choose";
 };
 
 type FixturePetInput = {
@@ -200,13 +199,12 @@ export const DESKTOP_FIXTURES: readonly DesktopFixture[] = [
   {
     id: "onboarding-empty",
     label: "Onboarding without pets",
-    description: "First-run state with no installed Pet Assets.",
+    description: "Adopt-a-pet flow with no installed Pet Assets.",
     state: createEmptyPetsDrivenState(),
-    view: "onboarding",
+    view: "adopt",
     tab: "home",
     editPetId: null,
     petPackages: "empty",
-    onboardingStep: "choose",
   },
   {
     id: "home",

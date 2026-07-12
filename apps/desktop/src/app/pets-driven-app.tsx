@@ -26,7 +26,8 @@ import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import { pushSearchParams } from "@/app/spa-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
-import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
+import { SetupWizard } from "@/app/onboarding/setup-wizard";
+import { AdoptPetFlow } from "@/app/onboarding/adopt-pet-flow";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import type { HomePetView } from "@/app/main-window/home-section";
@@ -1137,13 +1138,28 @@ function PetsDrivenHostApp() {
 
   if (view === "onboarding") {
     return (
-      <OnboardingFlow
+      <SetupWizard
         gateway={
           devFixture?.petPackages === "empty"
             ? EMPTY_PET_PACKAGES_GATEWAY
             : desktopGateway
         }
-        initialStep={devFixture?.onboardingStep}
+        onCreatePet={() => navigate("adopt")}
+        onDone={() => navigate("home")}
+        onStateChange={applyPetsDrivenState}
+        state={petsDrivenState}
+      />
+    );
+  }
+
+  if (view === "adopt") {
+    return (
+      <AdoptPetFlow
+        gateway={
+          devFixture?.petPackages === "empty"
+            ? EMPTY_PET_PACKAGES_GATEWAY
+            : desktopGateway
+        }
         onDone={() => navigate("home")}
         onStateChange={applyPetsDrivenState}
         state={petsDrivenState}
@@ -1616,7 +1632,7 @@ function PetsDrivenHostApp() {
             title: "Pets",
             hint: "adoption & state",
             items: [
-              { label: "Adopt a pet", onClick: () => navigate("onboarding") },
+              { label: "Adopt a pet", onClick: () => navigate("adopt") },
               { label: "Reset pets", onClick: () => void resetPets() },
               { label: "Show all pets", onClick: () => void openAllPets() },
               { label: "Close all pets", onClick: () => void closeAllPets() },
@@ -1693,7 +1709,7 @@ function PetsDrivenHostApp() {
         onDeploy: showPet,
         onRecall: hidePet,
         onEdit: (petId) => setEditPetId(petId),
-        onAddPet: () => navigate("onboarding"),
+        onAddPet: () => navigate("adopt"),
         onShowAll: showAllPets,
         onHideAll: hideAllPets,
       }}

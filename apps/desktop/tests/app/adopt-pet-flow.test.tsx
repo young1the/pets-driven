@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
+import { AdoptPetFlow } from "@/app/onboarding/adopt-pet-flow";
 import { createEmptyPetsDrivenState } from "@/app-state/pets-driven-state";
 import type { DesktopGateway } from "@/app/desktop-gateway";
 
@@ -35,23 +35,20 @@ function createGateway(
 
 function renderOnboarding(gateway: DesktopGateway) {
   render(
-    <OnboardingFlow
+    <AdoptPetFlow
       gateway={gateway}
       onDone={vi.fn()}
       onStateChange={vi.fn()}
       state={createEmptyPetsDrivenState()}
     />,
   );
-
-  fireEvent.click(screen.getByText("Get started →"));
 }
 
-describe("OnboardingFlow Petdex CTA", () => {
+describe("AdoptPetFlow Petdex CTA", () => {
   it("can open directly on the empty Pet Asset selection state", async () => {
     render(
-      <OnboardingFlow
+      <AdoptPetFlow
         gateway={createGateway([])}
-        initialStep="choose"
         onDone={vi.fn()}
         onStateChange={vi.fn()}
         state={createEmptyPetsDrivenState()}
@@ -109,21 +106,20 @@ describe("OnboardingFlow Petdex CTA", () => {
   });
 });
 
-describe("OnboardingFlow pet source folders", () => {
+describe("AdoptPetFlow pet source folders", () => {
   it("lets the user choose a Petdex folder from the empty state", async () => {
     const gateway = createGateway([]);
     gateway.pickDirectory = vi.fn().mockResolvedValue("D:\\pets\\mine");
     const onStateChange = vi.fn();
 
     render(
-      <OnboardingFlow
+      <AdoptPetFlow
         gateway={gateway}
         onDone={vi.fn()}
         onStateChange={onStateChange}
         state={createEmptyPetsDrivenState()}
       />,
     );
-    fireEvent.click(screen.getByText("Get started →"));
 
     const chooseFolder = await screen.findByText("Choose a Petdex folder");
     fireEvent.click(chooseFolder);
@@ -145,7 +141,7 @@ describe("OnboardingFlow pet source folders", () => {
   });
 });
 
-describe("OnboardingFlow Claude Code connect", () => {
+describe("AdoptPetFlow Claude Code connect", () => {
   it("offers the Claude plugin install on the done step", async () => {
     const gateway = createGateway([
       {
