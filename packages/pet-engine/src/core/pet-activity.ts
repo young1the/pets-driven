@@ -27,7 +27,10 @@ export type PetActivityKind =
   | "grooming"
   | "observing"
   | "beckoning"
-  | "fretting";
+  | "fretting"
+  | "napping"
+  | "meditating"
+  | "teasing";
 
 /**
  * Reasons that describe a *movement* the pet may still be executing after the
@@ -59,6 +62,7 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "request-jump": "hopping",
   "collision-jump": "hopping",
   "play-romp": "hopping",
+  "play-feint": "teasing",
   // Expressive idle poses hold a stationary claim (Steering stays "stand"), so
   // unlike the movement reasons above they read purely from the unexpired
   // claim, not from a non-idle intent.
@@ -67,6 +71,8 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   observe: "observing",
   beckon: "beckoning",
   fret: "fretting",
+  nap: "napping",
+  meditate: "meditating",
   "idle conversation": "chatting",
   // Social sessions (SocialInteractionSystem claims reason `session-${kind}`).
   // These read as the Activity axis even while the pets stand still mid-chat,

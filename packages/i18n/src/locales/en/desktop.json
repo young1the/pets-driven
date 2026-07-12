@@ -265,7 +265,10 @@
     "grooming": "Tidying up",
     "observing": "Looking around",
     "beckoning": "Come here!",
-    "fretting": "Worried"
+    "fretting": "Worried",
+    "napping": "Napping",
+    "meditating": "Meditating",
+    "teasing": "Playing a trick"
   },
   "toast": {
     "onDesktop": "{{name}} is on the desktop",

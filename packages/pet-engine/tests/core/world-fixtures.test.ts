@@ -236,6 +236,7 @@ describe("demo scenario", () => {
       "BehaviorDecisionSystem",
       "AutonomousBehaviorSystem",
       "BehaviorPlanningSystem",
+      "FeintProgressSystem",
       "RompProgressSystem",
       "PersonalSpaceSystem",
       // UPDATE
@@ -509,7 +510,12 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "BehaviorPlanningSystem",
       dependsOn: ["AutonomousBehaviorSystem"],
-      reads: ["BehaviorDecisionToken", "JumpActionState"],
+      reads: [
+        "BehaviorDecisionToken",
+        "JumpActionState",
+        "MoodState",
+        "RecentExperienceMemory",
+      ],
       writes: [
         "Steering",
         "MotionTarget",
@@ -518,6 +524,30 @@ describe("demo scenario", () => {
         "BehaviorDecisionToken",
         "Drives",
         "PetExpressionState",
+        "FeintState",
+        "MoodState",
+        "RecentExperienceMemory",
+      ],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
+      name: "FeintProgressSystem",
+      dependsOn: ["BehaviorPlanningSystem"],
+      reads: [
+        "FeintState",
+        "Transform",
+        "PhysicsBody",
+        "BehaviorDecisionState",
+        "MoodState",
+        "RecentExperienceMemory",
+      ],
+      writes: [
+        "FeintState",
+        "MotionTarget",
+        "Steering",
+        "PetExpressionState",
+        "BehaviorDecisionState",
+        "MoodState",
+        "RecentExperienceMemory",
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({

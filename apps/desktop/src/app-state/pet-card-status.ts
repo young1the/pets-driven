@@ -96,6 +96,9 @@ const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
   observing: "Looking around",
   beckoning: "Come here!",
   fretting: "Worried",
+  napping: "Napping",
+  meditating: "Meditating",
+  teasing: "Playing a trick",
 };
 
 const IDLE: PetCardStatus = {

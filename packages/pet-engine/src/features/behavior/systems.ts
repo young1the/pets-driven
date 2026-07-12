@@ -98,6 +98,9 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   observe: 8_000,
   beckon: 6_000,
   fret: 8_000,
+  nap: 15_000,
+  meditate: 12_000,
+  "play-feint": 10_000,
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
@@ -195,6 +198,23 @@ const ROMP_SPEED_FACTOR = 1.15;
 const ROMP_HOP_ENERGY_COST = JUMP_ENERGY_COST * 0.5;
 const ROMP_END_CUE_MS = 800;
 
+// play-feint: mischievous pets approach as if asking for attention, then turn
+// on their heel and dash away. The turn is time-based so the beat completes
+// even when the target moves or the pet cannot quite reach it.
+const FEINT_BASE_MS = 3_200;
+const FEINT_EXTRA_MS = 1_200;
+const FEINT_APPROACH_MS = 1_200;
+const FEINT_RETREAT_BODY_WIDTHS = 5;
+
+type ExpressivePoseKind =
+  | "greet"
+  | "groom"
+  | "observe"
+  | "beckon"
+  | "fret"
+  | "nap"
+  | "meditate";
+
 // ── Expressive idle poses ──────────────────────────────────────────────────
 // Sustained, stationary gestures that exercise the otherwise agent-only sprite
 // rows during ordinary autonomous life (see BehaviorDecisionKind). Like
@@ -203,7 +223,7 @@ const ROMP_END_CUE_MS = 800;
 // jitter loosely track each row's sprite loop length so the animation completes
 // a few cycles.
 const EXPRESSIVE_POSE_DURATIONS: Record<
-  "greet" | "groom" | "observe" | "beckon" | "fret",
+  ExpressivePoseKind,
   { base: number; jitter: number }
 > = {
   greet: { base: 1_400, jitter: 800 },
@@ -211,11 +231,13 @@ const EXPRESSIVE_POSE_DURATIONS: Record<
   observe: { base: 2_200, jitter: 1_200 },
   beckon: { base: 1_800, jitter: 900 },
   fret: { base: 1_600, jitter: 900 },
+  nap: { base: 7_000, jitter: 5_000 },
+  meditate: { base: 5_000, jitter: 3_000 },
 };
 
 /** Mood/emote cue attached to each expressive pose (a PetExpressionState). */
 const EXPRESSIVE_POSE_CUES: Record<
-  "greet" | "groom" | "observe" | "beckon" | "fret",
+  ExpressivePoseKind,
   { mood: PetExpressionMood; emote: PetExpressionEmote }
 > = {
   greet: { mood: "happy", emote: "sparkle" },
@@ -223,10 +245,12 @@ const EXPRESSIVE_POSE_CUES: Record<
   observe: { mood: "thinking", emote: "question" },
   beckon: { mood: "love", emote: "heart" },
   fret: { mood: "confused", emote: "exclaim" },
+  nap: { mood: "sleepy", emote: "zzz" },
+  meditate: { mood: "happy", emote: "sparkle" },
 };
 
 function expressivePoseDurationMs(
-  kind: "greet" | "groom" | "observe" | "beckon" | "fret",
+  kind: ExpressivePoseKind,
   random: RandomSource,
 ): number {
   const { base, jitter } = EXPRESSIVE_POSE_DURATIONS[kind];
@@ -1843,6 +1867,25 @@ function scoreFret(p: PersonalityComponent): number {
   return 0.05 + p.neuroticism * 0.55 - p.extraversion * 0.2;
 }
 
+function scoreNap(p: PersonalityComponent, drives?: DrivesComponent): number {
+  const base = 0.05 + (1 - p.extraversion) * 0.2;
+  if (!drives) return base;
+  return base + driveResponseCurve(1 - drives.energy) * 0.45;
+}
+
+function scoreMeditate(p: PersonalityComponent): number {
+  return 0.05 + p.conscientiousness * 0.12 + (1 - p.neuroticism) * 0.15;
+}
+
+function scorePlayFeint(p: PersonalityComponent): number {
+  return (
+    0.05 +
+    p.extraversion * 0.3 +
+    p.openness * 0.2 +
+    (1 - p.conscientiousness) * 0.15
+  );
+}
+
 /**
  * Personality-modulated wander radii.
  * "near": high N → tighter range but still meaningfully visible movement.
@@ -2362,6 +2405,22 @@ export function runBehaviorDecisionSystem(
           score: scoreGreet(personality, drives),
           build: () => ({ activityDurationMs: expressivePoseDurationMs("greet", random) }),
         });
+        if (
+          isGroundedWalker &&
+          personality.catalogId === "mischievous"
+        ) {
+          pushCandidate(candidates, components, id, now, {
+            kind: "play-feint",
+            score: scorePlayFeint(personality),
+            build: () => ({
+              targetEntityId: userAnchor.id,
+              targetPosition: { x: userAnchor.x, y: userAnchor.y },
+              activityDurationMs: Math.round(
+                FEINT_BASE_MS + random.next() * FEINT_EXTRA_MS,
+              ),
+            }),
+          });
+        }
       }
 
       if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
@@ -2388,6 +2447,27 @@ export function runBehaviorDecisionSystem(
           score: scoreFret(personality),
           build: () => ({ activityDurationMs: expressivePoseDurationMs("fret", random) }),
         });
+        if (personality.catalogId === "lazy") {
+          pushCandidate(candidates, components, id, now, {
+            kind: "nap",
+            score: scoreNap(personality, drives),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs("nap", random),
+            }),
+          });
+        }
+        if (personality.catalogId === "zen") {
+          pushCandidate(candidates, components, id, now, {
+            kind: "meditate",
+            score: scoreMeditate(personality),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs(
+                "meditate",
+                random,
+              ),
+            }),
+          });
+        }
       }
 
       pushCandidate(candidates, components, id, now, {
@@ -2530,6 +2610,33 @@ export function runBehaviorPlanningSystem(
         });
         break;
       }
+      case "play-feint": {
+        const durationMs = token.activityDurationMs ?? FEINT_BASE_MS;
+        components.setComponent(id, {
+          type: "FeintState",
+          phase: "approach",
+          targetEntityId: token.targetEntityId!,
+          startedAt: token.decidedAt,
+          turnsAt: token.decidedAt + FEINT_APPROACH_MS,
+          endsAt: token.decidedAt + durationMs,
+        });
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: token.targetEntityId ?? null,
+          targetPosition: token.targetPosition ?? null,
+        });
+        setPetSteering(components, id, "pursue");
+        components.setComponent(id, {
+          type: "PetExpressionState",
+          source: "signature",
+          mood: "thinking",
+          emote: "question",
+          label: null,
+          startedAt: token.decidedAt,
+          expiresAt: token.decidedAt + FEINT_APPROACH_MS,
+        });
+        break;
+      }
       // Expressive idle poses — stand still and hold a gesture. No motion; the
       // sustained autonomous claim (set in the decision) drives the sprite row.
       // The mood/emote cue and any drive relief run here.
@@ -2537,7 +2644,9 @@ export function runBehaviorPlanningSystem(
       case "groom":
       case "observe":
       case "beckon":
-      case "fret": {
+      case "fret":
+      case "nap":
+      case "meditate": {
         setPetSteering(components, id, "stand");
         clearMotionTarget(components, id);
         const cue = EXPRESSIVE_POSE_CUES[token.kind];
@@ -2561,6 +2670,12 @@ export function runBehaviorPlanningSystem(
         } else if (token.kind === "observe") {
           // Examining the surroundings scratches the novelty itch.
           adjustDrive(components, id, { curiosity: -0.3 });
+        } else if (token.kind === "nap") {
+          adjustDrive(components, id, { energy: 0.3 });
+          recordPetExperience(components, id, "rested", token.decidedAt);
+        } else if (token.kind === "meditate") {
+          adjustDrive(components, id, { energy: 0.1 });
+          recordPetExperience(components, id, "self-soothed", token.decidedAt);
         }
         break;
       }
@@ -2735,6 +2850,93 @@ export function runRompProgressSystem(
       now +
       ROMP_HOP_INTERVAL_BASE_MS +
       random.next() * ROMP_HOP_INTERVAL_JITTER_MS;
+  });
+}
+
+/** Advance the mischievous approach-then-retreat signature choreography. */
+export function runFeintProgressSystem(
+  components: ComponentStore,
+  clock: Clock,
+  bounds: { x?: number; y?: number; width: number; height: number },
+): void {
+  const now = clock.now();
+
+  components.forEach(["FeintState", "Transform"], (id, [feint, transform]) => {
+    const decision = components.getComponent(id, "BehaviorDecisionState");
+    if (
+      !decision ||
+      decision.source !== "autonomous" ||
+      decision.reason !== "play-feint"
+    ) {
+      components.removeComponent(id, "FeintState");
+      return;
+    }
+
+    if (now >= feint.endsAt || decision.expiresAt <= now) {
+      components.removeComponent(id, "FeintState");
+      clearMotionTarget(components, id);
+      setPetSteering(components, id, "stand");
+      decision.expiresAt = now;
+      components.setComponent(id, {
+        type: "PetExpressionState",
+        source: "signature",
+        mood: "happy",
+        emote: "sparkle",
+        label: null,
+        startedAt: now,
+        expiresAt: now + ROMP_END_CUE_MS,
+      });
+      recordPetExperience(components, id, "played", now);
+      return;
+    }
+
+    const target = components.getComponent(feint.targetEntityId, "Transform");
+    if (feint.phase === "approach" && now < feint.turnsAt) {
+      if (target) {
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: feint.targetEntityId,
+          targetPosition: { ...target.position },
+          speedFactor: 0.8,
+        });
+        setPetSteering(components, id, "pursue");
+      }
+      return;
+    }
+
+    if (feint.phase === "approach") {
+      const targetX = target?.position.x ?? transform.position.x;
+      const fallbackDirection = id < feint.targetEntityId ? -1 : 1;
+      const direction =
+        Math.abs(transform.position.x - targetX) < 1
+          ? fallbackDirection
+          : Math.sign(transform.position.x - targetX);
+      feint.phase = "retreat";
+      components.setComponent(id, {
+        type: "MotionTarget",
+        targetEntityId: null,
+        targetPosition: {
+          x: clampToBoundsX(
+            transform.position.x +
+              direction * petWidth(components, id) * FEINT_RETREAT_BODY_WIDTHS,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          ),
+          y: transform.position.y,
+        },
+        speedFactor: 1.2,
+      });
+      setPetSteering(components, id, "pursue");
+      components.setComponent(id, {
+        type: "PetExpressionState",
+        source: "signature",
+        mood: "excited",
+        emote: "exclaim",
+        label: null,
+        startedAt: now,
+        expiresAt: feint.endsAt,
+      });
+    }
   });
 }
 
@@ -2988,7 +3190,12 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
 export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
   name: "BehaviorPlanningSystem",
   dependsOn: ["AutonomousBehaviorSystem"],
-  reads: ["BehaviorDecisionToken", "JumpActionState"],
+  reads: [
+    "BehaviorDecisionToken",
+    "JumpActionState",
+    "MoodState",
+    "RecentExperienceMemory",
+  ],
   writes: [
     "Steering",
     "MotionTarget",
@@ -2997,6 +3204,9 @@ export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
     "BehaviorDecisionToken",
     "Drives",
     "PetExpressionState",
+    "FeintState",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   update(ctx) {
     runBehaviorPlanningSystem(ctx.components, ctx.clock);
@@ -3085,5 +3295,30 @@ export const RompProgressSystem: SimulationSystem<WorldStepContext> = {
   ],
   update(ctx) {
     runRompProgressSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+  },
+};
+
+export const FeintProgressSystem: SimulationSystem<WorldStepContext> = {
+  name: "FeintProgressSystem",
+  dependsOn: ["BehaviorPlanningSystem"],
+  reads: [
+    "FeintState",
+    "Transform",
+    "PhysicsBody",
+    "BehaviorDecisionState",
+    "MoodState",
+    "RecentExperienceMemory",
+  ],
+  writes: [
+    "FeintState",
+    "MotionTarget",
+    "Steering",
+    "PetExpressionState",
+    "BehaviorDecisionState",
+    "MoodState",
+    "RecentExperienceMemory",
+  ],
+  update(ctx) {
+    runFeintProgressSystem(ctx.components, ctx.clock, ctx.bounds);
   },
 };

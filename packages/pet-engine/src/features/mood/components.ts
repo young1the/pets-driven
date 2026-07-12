@@ -6,7 +6,10 @@ export type PetExperienceKind =
   | "task-failed"
   | "task-completed"
   | "socialized"
-  | "acknowledged";
+  | "acknowledged"
+  | "rested"
+  | "self-soothed"
+  | "played";
 
 /** Short-lived affect that changes how the next few decisions are weighted. */
 export type MoodStateComponent = {

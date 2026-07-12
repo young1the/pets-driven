@@ -261,7 +261,10 @@
     "grooming": "단장 중",
     "observing": "구경 중",
     "beckoning": "이리 와요!",
-    "fretting": "걱정 중"
+    "fretting": "걱정 중",
+    "napping": "낮잠 중",
+    "meditating": "명상 중",
+    "teasing": "장난치는 중"
   },
   "toast": {
     "onDesktop": "{{name}}이(가) 데스크탑에 나왔어요",

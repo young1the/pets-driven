@@ -28,6 +28,9 @@ export const EXPERIENCE_IMPACT: Record<PetExperienceKind, MoodImpact> = {
   "task-completed": { valence: 0.4, arousal: -0.1, confidence: 0.2 },
   socialized: { valence: 0.45, arousal: -0.12, confidence: 0.18 },
   acknowledged: { valence: 0.22, arousal: -0.25, confidence: 0.15 },
+  rested: { valence: 0.18, arousal: -0.3, confidence: 0.08 },
+  "self-soothed": { valence: 0.22, arousal: -0.4, confidence: 0.18 },
+  played: { valence: 0.3, arousal: 0.12, confidence: 0.15 },
 };
 
 export function initialMoodState(
@@ -108,6 +111,7 @@ export function moodAdjustedDecisionScore(
 
   switch (kind) {
     case "play-romp":
+    case "play-feint":
     case "chase-cursor":
     case "greet":
       return baseScore + positive * 0.3 + mood.arousal * 0.12 - negative * 0.2;
@@ -127,6 +131,8 @@ export function moodAdjustedDecisionScore(
     case "fret":
       return baseScore + negative * 0.4 + fear * 0.25;
     case "idle-stay":
+    case "nap":
+    case "meditate":
     case "groom":
       return baseScore + negative * 0.15 + (1 - mood.arousal) * 0.1;
     default:

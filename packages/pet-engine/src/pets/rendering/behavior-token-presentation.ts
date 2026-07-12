@@ -113,6 +113,24 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<
     mood: "excited",
     tone: "spark",
   },
+  nap: {
+    emote: "zzz",
+    label: "Taking a nap",
+    mood: "sleepy",
+    tone: "calm",
+  },
+  meditate: {
+    emote: "sparkle",
+    label: "Meditating",
+    mood: "happy",
+    tone: "calm",
+  },
+  "play-feint": {
+    emote: "exclaim",
+    label: "Playing a trick",
+    mood: "excited",
+    tone: "spark",
+  },
   greet: {
     emote: "sparkle",
     label: "Saying hi",

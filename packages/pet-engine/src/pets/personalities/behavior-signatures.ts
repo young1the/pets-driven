@@ -85,8 +85,9 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<
     socialKindScale: { greet: 2.2, chat: 1.2, chase: 0.35 },
   },
   mischievous: {
-    primaryDecision: "chase-cursor",
+    primaryDecision: "play-feint",
     decisionBias: {
+      "play-feint": 0.85,
       "chase-cursor": 0.55,
       "request-jump": 0.3,
       "wander-far": 0.2,
@@ -98,8 +99,9 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<
     socialKindScale: { greet: 0.45, chat: 0.8, chase: 2.5 },
   },
   lazy: {
-    primaryDecision: "idle-stay",
+    primaryDecision: "nap",
     decisionBias: {
+      nap: 0.95,
       "idle-stay": 0.7,
       groom: 0.15,
       "wander-far": -0.35,
@@ -111,8 +113,9 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<
     socialKindScale: { greet: 1.4, chat: 1, chase: 0.2 },
   },
   zen: {
-    primaryDecision: "collision-stay",
+    primaryDecision: "meditate",
     decisionBias: {
+      meditate: 0.85,
       "collision-stay": 0.6,
       "collision-unfazed": 0.5,
       "idle-stay": 0.5,

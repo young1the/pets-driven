@@ -73,6 +73,10 @@ export type BehaviorDecisionKind =
   | "chase-cursor"
   // Solo play — a sustained hop-and-dash activity for playful (high-E/O) pets.
   | "play-romp"
+  // Personality signature activities with sustained, readable choreography.
+  | "nap"
+  | "meditate"
+  | "play-feint"
   // Expressive idle poses — sustained, stationary gestures that exercise the
   // otherwise agent-only sprite rows (waving / focus / review / waiting /
   // failed) during ordinary autonomous life. Each is personality-shaped.
@@ -111,6 +115,16 @@ export type RompStateComponent = {
   startedAt: number;
   endsAt: number;
   nextHopAt: number;
+};
+
+/** Two-beat mischievous activity: approach a target, then dash away. */
+export type FeintStateComponent = {
+  type: "FeintState";
+  phase: "approach" | "retreat";
+  targetEntityId: string;
+  startedAt: number;
+  turnsAt: number;
+  endsAt: number;
 };
 
 export type BehaviorDecisionSelectionCandidate = {
@@ -212,6 +226,7 @@ export type PetExpressionSource =
   | "social"
   | "romp"
   | "acknowledge"
+  | "signature"
   // Expressive idle poses (greet / groom / observe / beckon / fret).
   | "expressive";
 

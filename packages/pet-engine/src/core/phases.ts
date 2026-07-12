@@ -29,6 +29,7 @@ import {
   AutonomousBehaviorSystem,
   BehaviorPlanningSystem,
   RompProgressSystem,
+  FeintProgressSystem,
   PersonalSpaceSystem,
   ArrivalBehaviorSystem,
   PettingDetectionSystem,
@@ -89,6 +90,7 @@ export const SYSTEM_PHASES: Record<
     BehaviorDecisionSystem, // priority 5 (autonomous): personality-weighted next behavior (emits token)
     AutonomousBehaviorSystem, // priority 4b: idle speech
     BehaviorPlanningSystem, // materializes the decision token into concrete state
+    FeintProgressSystem, // mischievous approach-then-retreat signature activity
     RompProgressSystem, // advances live play-romp activities (hop/dash choreography)
     PersonalSpaceSystem, // idle stacked pets take a cosmetic step aside
   ],

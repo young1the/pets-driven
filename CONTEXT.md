@@ -339,6 +339,7 @@ _Avoid_: cooldown (as a domain term), session
 - When a **Pet** needs the user (a waiting or failed **Agent Work State**), the **Agent Work State** owns the **Pet Status Card** label; otherwise the **Activity** provides the label.
 - A **Pet**'s motion is produced by a top-down chain each frame: **Drives** and perception feed a **Decision**, the **Decision** sets a **Locomotion**, the **Locomotion** gates **Steering**, and **Steering** hands force to the physics engine; the **Activity** is a read-only label derived from that state.
 - A **Pet**'s **Mood** also shapes candidate **Decisions** after the **Pet Profile** and **Drives** are applied.
+- A **Personality Catalog** entry may define a signature **Activity** that other entries do not select; signature activities use sustained claims and choreography so their identity is readable on the **Pet Surface**.
 - Meaningful user, agent, collision, and social events append to **Recent Experience Memory** and immediately shift **Mood**.
 - **Mood** recovers toward the **Pet Profile**'s temperament baseline over time.
 - **Recent Experience Memory** is bounded, session-local, and expires automatically; it does not create a lasting **Relationship** between **Pets**.
