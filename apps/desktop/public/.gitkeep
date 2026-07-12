@@ -1,0 +1,3 @@
+# Keeps apps/desktop/public/ in the repo. Its real contents — codex-pets/ and
+# fallback-pets/ — are generated from the repo-root pets/ source of truth by
+# scripts/sync-pet-assets.mjs and are git-ignored (see .gitignore).

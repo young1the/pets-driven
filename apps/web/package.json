@@ -5,7 +5,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "predev": "node ../../scripts/sync-pet-assets.mjs web",
     "dev": "next dev",
+    "prebuild": "node ../../scripts/sync-pet-assets.mjs web",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
