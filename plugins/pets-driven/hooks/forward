@@ -19,8 +19,11 @@ HATCH_URL="http://127.0.0.1:43187/pets-driven/hatch"
 
 post() {
   # -s silent, -m 2 caps the wait so a stopped app never blocks the agent.
-  curl -s -m 2 -X POST "$INGRESS_URL" \
-    -H "Content-Type: application/json" --data-binary "$1" >/dev/null 2>&1
+  # The body must travel via stdin, not argv: on Windows the bash -> curl.exe
+  # argv boundary re-encodes non-ASCII (e.g. Korean OneDrive paths) into the
+  # ANSI codepage, and the ingress then rejects the body as invalid UTF-8.
+  printf '%s' "$1" | curl -s -m 2 -X POST "$INGRESS_URL" \
+    -H "Content-Type: application/json" --data-binary @- >/dev/null 2>&1
 }
 
 json_escape() {
@@ -101,8 +104,8 @@ case "$1" in
     # so the agent can report "app not running" vs. a rejection (e.g. occupied).
     # JSON is built here from plain args so the agent never has to escape a path.
     shift
-    curl -sS -m 5 -X POST "$HATCH_URL" \
-      -H "Content-Type: application/json" --data-binary "$(hatch_body "$@")"
+    printf '%s' "$(hatch_body "$@")" | curl -sS -m 5 -X POST "$HATCH_URL" \
+      -H "Content-Type: application/json" --data-binary @-
     exit $?
     ;;
   summary)

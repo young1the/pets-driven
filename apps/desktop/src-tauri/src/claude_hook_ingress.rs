@@ -317,6 +317,7 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
     let request = match read_http_request(&mut stream) {
         Ok(request) => request,
         Err(error) => {
+            eprintln!("[pets-driven-hook] rejected 400: {error}");
             let _ = write_http_response(
                 &mut stream,
                 "400 Bad Request",
@@ -357,6 +358,7 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
                 handle_show_hide_request(&app, &payload, &mut stream, "hide");
             }
             _ => {
+                eprintln!("[pets-driven-hook] rejected 404: unknown ingress path {path}");
                 let _ = write_http_response(
                     &mut stream,
                     "404 Not Found",
@@ -365,6 +367,9 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
             }
         },
         Err(error) => {
+            // The reason (never the payload) goes to stderr: forward's post()
+            // discards responses, so a silent 400 here is invisible on both ends.
+            eprintln!("[pets-driven-hook] rejected 400: {error}");
             let _ = write_http_response(
                 &mut stream,
                 "400 Bad Request",

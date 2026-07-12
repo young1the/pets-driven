@@ -17,10 +17,13 @@ SOURCE_ID="codex"
 
 post() {
   # -s silent and -m 2 keep a stopped desktop app from blocking Codex turns.
-  curl -fs -m 2 -X POST "$INGRESS_URL" \
-    -H "Content-Type: application/json" --data-binary "$1" >/dev/null 2>&1 ||
-    curl -s -m 2 -X POST "$LEGACY_INGRESS_URL" \
-      -H "Content-Type: application/json" --data-binary "$1" >/dev/null 2>&1
+  # The body must travel via stdin, not argv: on Windows the bash -> curl.exe
+  # argv boundary re-encodes non-ASCII (e.g. Korean OneDrive paths) into the
+  # ANSI codepage, and the ingress then rejects the body as invalid UTF-8.
+  printf '%s' "$1" | curl -fs -m 2 -X POST "$INGRESS_URL" \
+    -H "Content-Type: application/json" --data-binary @- >/dev/null 2>&1 ||
+    printf '%s' "$1" | curl -s -m 2 -X POST "$LEGACY_INGRESS_URL" \
+      -H "Content-Type: application/json" --data-binary @- >/dev/null 2>&1
 }
 
 json_escape() {
