@@ -213,6 +213,14 @@
     "zen": {
       "title": "Zen",
       "blurb": "Unhurried and unflappable. Moves with quiet purpose, never in a rush."
+    },
+    "aloof": {
+      "title": "Aloof",
+      "blurb": "Keeps to itself. Slow to warm up, and usually waves off company."
+    },
+    "skittish": {
+      "title": "Skittish",
+      "blurb": "Spooks at the slightest thing. Darts around, then bolts when a friend comes near."
     }
   },
   "contextMenu": {

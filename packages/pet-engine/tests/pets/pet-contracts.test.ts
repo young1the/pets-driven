@@ -34,11 +34,11 @@ describe("pet contracts", () => {
       arriveForce: 0.002,
       idleConversationMs: 9000,
       completionIntent: "arrive",
-      openness: 0.7,
-      conscientiousness: 0.4,
-      extraversion: 0.85,
-      agreeableness: 0.5,
-      neuroticism: 0.1,
+      openness: 0.75,
+      conscientiousness: 0.3,
+      extraversion: 0.95,
+      agreeableness: 0.55,
+      neuroticism: 0.08,
     });
   });
 

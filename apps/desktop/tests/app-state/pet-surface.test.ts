@@ -67,11 +67,11 @@ describe("selectAdoptedPetSimInputs", () => {
         sourceId: "agent-1",
         personality: {
           type: "Personality",
-          openness: 0.3,
-          conscientiousness: 0.5,
-          extraversion: 0.2,
-          agreeableness: 0.4,
-          neuroticism: 0.75,
+          openness: 0.22,
+          conscientiousness: 0.55,
+          extraversion: 0.12,
+          agreeableness: 0.38,
+          neuroticism: 0.82,
         },
       },
     ]);
@@ -91,11 +91,11 @@ describe("selectAdoptedPetSimInputs", () => {
 
     expect(selectAdoptedPetSimInputs(state)[0].personality).toEqual({
       type: "Personality",
-      openness: 0.9,
+      openness: 0.98,
       conscientiousness: 0.35,
-      extraversion: 0.55,
-      agreeableness: 0.6,
-      neuroticism: 0.25,
+      extraversion: 0.45,
+      agreeableness: 0.55,
+      neuroticism: 0.3,
     });
   });
 

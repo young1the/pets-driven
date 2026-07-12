@@ -1,5 +1,6 @@
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 import type { PersonalityComponent } from "@pets-driven/pet-engine/core/components";
+import { PERSONALITY_REGISTRY } from "@pets-driven/pet-engine/pets/personalities/registry";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 export type AdoptedPetSimInput = {
@@ -10,84 +11,23 @@ export type AdoptedPetSimInput = {
 };
 
 /**
- * OCEAN presets per personality preset, mirroring the demo scenario's walkers
- * so adopted pets move with a recognisable temperament.
+ * OCEAN preset per personality id, sourced directly from the pet-engine
+ * personality registry so an adopted pet's temperament always matches the
+ * onboarding preset. Deriving it (rather than hand-mirroring the values) keeps
+ * this in lock-step with the factories — including any presets added later —
+ * and re-derives from `personalityId`, so pets adopted before a preset was
+ * retuned pick up its current temperament rather than a stale stored copy.
  */
-const PERSONALITY_OCEAN: Record<
-  PetPersonalityId,
-  Omit<PersonalityComponent, "type">
-> = {
-  playful: {
-    openness: 0.7,
-    conscientiousness: 0.4,
-    extraversion: 0.85,
-    agreeableness: 0.5,
-    neuroticism: 0.1,
-  },
-  attentive: {
-    openness: 0.3,
-    conscientiousness: 0.6,
-    extraversion: 0.8,
-    agreeableness: 0.8,
-    neuroticism: 0.2,
-  },
-  reserved: {
-    openness: 0.3,
-    conscientiousness: 0.5,
-    extraversion: 0.2,
-    agreeableness: 0.4,
-    neuroticism: 0.75,
-  },
-  curious: {
-    openness: 0.9,
-    conscientiousness: 0.35,
-    extraversion: 0.55,
-    agreeableness: 0.6,
-    neuroticism: 0.25,
-  },
-  steady: {
-    openness: 0.45,
-    conscientiousness: 0.85,
-    extraversion: 0.45,
-    agreeableness: 0.7,
-    neuroticism: 0.15,
-  },
-  bold: {
-    openness: 0.8,
-    conscientiousness: 0.45,
-    extraversion: 0.9,
-    agreeableness: 0.55,
-    neuroticism: 0.12,
-  },
-  gentle: {
-    openness: 0.4,
-    conscientiousness: 0.6,
-    extraversion: 0.4,
-    agreeableness: 0.9,
-    neuroticism: 0.15,
-  },
-  mischievous: {
-    openness: 0.85,
-    conscientiousness: 0.2,
-    extraversion: 0.8,
-    agreeableness: 0.4,
-    neuroticism: 0.3,
-  },
-  lazy: {
-    openness: 0.35,
-    conscientiousness: 0.25,
-    extraversion: 0.15,
-    agreeableness: 0.6,
-    neuroticism: 0.3,
-  },
-  zen: {
-    openness: 0.55,
-    conscientiousness: 0.65,
-    extraversion: 0.5,
-    agreeableness: 0.75,
-    neuroticism: 0.05,
-  },
-};
+const PERSONALITY_OCEAN = Object.fromEntries(
+  PERSONALITY_REGISTRY.map((entry) => {
+    const { openness, conscientiousness, extraversion, agreeableness, neuroticism } =
+      entry.factory();
+    return [
+      entry.id,
+      { openness, conscientiousness, extraversion, agreeableness, neuroticism },
+    ];
+  }),
+) as Record<PetPersonalityId, Omit<PersonalityComponent, "type">>;
 
 function personalityComponent(
   id: PetPersonalityId | undefined,

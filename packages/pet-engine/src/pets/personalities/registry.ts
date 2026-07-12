@@ -1,4 +1,5 @@
 import {
+  createAloofPersonality,
   createAttentivePersonality,
   createBoldPersonality,
   createCuriousPersonality,
@@ -7,6 +8,7 @@ import {
   createMischievousPersonality,
   createPlayfulPersonality,
   createReservedPersonality,
+  createSkittishPersonality,
   createSteadyPersonality,
   createZenPersonality,
   type PersonalityFactory,
@@ -28,6 +30,8 @@ export const PERSONALITY_REGISTRY = [
   { id: "mischievous", factory: createMischievousPersonality },
   { id: "lazy",        factory: createLazyPersonality },
   { id: "zen",         factory: createZenPersonality },
+  { id: "aloof",       factory: createAloofPersonality },
+  { id: "skittish",    factory: createSkittishPersonality },
 ] as const satisfies ReadonlyArray<PersonalityRegistryEntry>;
 
 export type PetPersonalityId = typeof PERSONALITY_REGISTRY[number]["id"];

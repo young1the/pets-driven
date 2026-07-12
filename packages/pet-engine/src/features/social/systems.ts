@@ -62,7 +62,7 @@ export const PHASE_DURATIONS: Record<
   { play: number; part: number }
 > = {
   greet: { play: 2_500, part: 800 },
-  chat: { play: 16_000, part: 800 },
+  chat: { play: 9_000, part: 800 },
   chase: { play: 7_500, part: 800 },
 };
 
@@ -380,33 +380,45 @@ function socialDrive(drives: DrivesComponent | undefined): number {
   return drives ? driveResponseCurve(drives.social) : 0;
 }
 
-/** Desire to open an invite this tick (before the deltaMs/rate scaling). */
+/**
+ * Desire to open an invite this tick (before the deltaMs/rate scaling). Low
+ * base + a strong extraversion term and neuroticism penalty so introverts and
+ * anxious pets almost never strike up a conversation, while extraverts drive
+ * most of the social life.
+ */
 function initiateScore(
   p: PersonalityComponent,
   drives: DrivesComponent | undefined,
 ): number {
   return clamp(
-    0.15 +
-      p.extraversion * 0.5 +
+    0.05 +
+      p.extraversion * 0.6 +
       p.agreeableness * 0.2 +
-      socialDrive(drives) * 0.5 -
-      p.neuroticism * 0.3,
+      socialDrive(drives) * 0.4 -
+      p.neuroticism * 0.4,
     0,
     1,
   );
 }
 
-/** Probability the responder accepts an invite. */
+/**
+ * Probability the responder accepts an invite. The base is intentionally low
+ * and the agreeableness/neuroticism weights steep: a prickly loner (low A) or a
+ * shy/anxious pet (high N) genuinely turns most invites down, so "everyone
+ * always says yes" no longer flattens the roster. Warm, calm pets still accept
+ * readily. Loneliness (social drive) can coax a reluctant pet out, but only so
+ * far.
+ */
 function acceptChance(
   p: PersonalityComponent,
   drives: DrivesComponent | undefined,
 ): number {
   return clamp(
-    0.3 +
-      p.agreeableness * 0.5 +
+    0.1 +
+      p.agreeableness * 0.55 +
       p.extraversion * 0.3 +
-      socialDrive(drives) * 0.4 -
-      p.neuroticism * 0.45,
+      socialDrive(drives) * 0.35 -
+      p.neuroticism * 0.55,
     0.05,
     0.95,
   );

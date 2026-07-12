@@ -14,11 +14,11 @@ describe("pet entity builder", () => {
       { type: "CompletionBehavior", intentAfterCompletion: "arrive" },
       {
         type: "Personality",
-        openness: 0.7,
-        conscientiousness: 0.4,
-        extraversion: 0.85,
-        agreeableness: 0.5,
-        neuroticism: 0.1,
+        openness: 0.75,
+        conscientiousness: 0.3,
+        extraversion: 0.95,
+        agreeableness: 0.55,
+        neuroticism: 0.08,
       },
     ]);
   });
@@ -26,15 +26,15 @@ describe("pet entity builder", () => {
   it("converts attentive personality to simulation components", () => {
     expect(buildPersonalityComponents(createAttentivePersonality())).toEqual([
       { type: "MovementProfile", standForce: 0.0005, pursueForce: 0.001, arriveForce: 0.0016 },
-      { type: "IdleConversation", idleAfterMs: 12000 },
+      { type: "IdleConversation", idleAfterMs: 11000 },
       { type: "CompletionBehavior", intentAfterCompletion: "arrive" },
       {
         type: "Personality",
-        openness: 0.3,
-        conscientiousness: 0.6,
-        extraversion: 0.8,
-        agreeableness: 0.8,
-        neuroticism: 0.2,
+        openness: 0.25,
+        conscientiousness: 0.72,
+        extraversion: 0.72,
+        agreeableness: 0.95,
+        neuroticism: 0.15,
       },
     ]);
   });
@@ -45,11 +45,11 @@ describe("pet entity builder", () => {
       { type: "CompletionBehavior", intentAfterCompletion: "stand" },
       {
         type: "Personality",
-        openness: 0.3,
-        conscientiousness: 0.5,
-        extraversion: 0.2,
-        agreeableness: 0.4,
-        neuroticism: 0.75,
+        openness: 0.22,
+        conscientiousness: 0.55,
+        extraversion: 0.12,
+        agreeableness: 0.38,
+        neuroticism: 0.82,
       },
     ]);
   });

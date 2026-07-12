@@ -1263,6 +1263,12 @@ export function runAutonomousBehaviorSystem(
       if (speech.speech) return;
       if (clock.now() - activity.lastActiveAt >= idleConversation.idleAfterMs) {
         setSpeech(speech, speechProfile.idleCompanion, now);
+        // Reset the idle timer so the *next* chatter is another full
+        // idleAfterMs away. Without this, lastActiveAt stays frozen (it is only
+        // otherwise bumped by agent events), the threshold remains crossed, and
+        // the pet re-chatters every time this claim lapses (~1.5s) forever —
+        // making idleConversationMs meaningless after the first utterance.
+        activity.lastActiveAt = now;
         // Hold the claim for the bubble's whole lifetime, not the 500ms
         // autonomous default: otherwise the "chatting" activity flickers off
         // a second before the speech bubble it describes disappears.

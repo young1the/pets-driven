@@ -14,141 +14,175 @@ export type PetPersonality = {
 
 export type PersonalityFactory = () => PetPersonality;
 
-/** High openness + extraversion, low neuroticism — explores and engages freely. */
+// Design note — personalities are deliberately *caricatured*. Each preset owns a
+// distinct corner of OCEAN space with at least one trait pushed to an extreme
+// (≤0.15 or ≥0.85), and the four sociability-defining axes (E, A, N) are spread
+// wide so the derived behaviors — session accept/decline, invite initiation,
+// approach/flee, softmax erraticness (∝ N) — actually diverge in play. Middling
+// values read as "everyone is the same"; that is what we are avoiding here.
+
+/** Pure extravert — never still, chases and romps at every chance. */
 export const createPlayfulPersonality: PersonalityFactory = () => ({
   standForce: 0.0008,
   pursueForce: 0.0016,
   arriveForce: 0.002,
   idleConversationMs: 9000,
   completionIntent: "arrive",
-  openness: 0.7,
-  conscientiousness: 0.4,
-  extraversion: 0.85,
-  agreeableness: 0.5,
-  neuroticism: 0.1,
+  openness: 0.75,
+  conscientiousness: 0.3,
+  extraversion: 0.95,
+  agreeableness: 0.55,
+  neuroticism: 0.08,
 });
 
-/** High extraversion + agreeableness — seeks the user and engages readily. */
+/** Devoted companion — glued to the user, warm to a fault, incurious about the rest. */
 export const createAttentivePersonality: PersonalityFactory = () => ({
   standForce: 0.0005,
   pursueForce: 0.001,
   arriveForce: 0.0016,
-  idleConversationMs: 12000,
+  idleConversationMs: 11000,
   completionIntent: "arrive",
-  openness: 0.3,
-  conscientiousness: 0.6,
-  extraversion: 0.8,
-  agreeableness: 0.8,
-  neuroticism: 0.2,
+  openness: 0.25,
+  conscientiousness: 0.72,
+  extraversion: 0.72,
+  agreeableness: 0.95,
+  neuroticism: 0.15,
 });
 
-/** High neuroticism, low extraversion — cautious, prefers staying close. */
+/** Shy and anxious — hangs back, startles easily, turns down almost every invite. */
 export const createReservedPersonality: PersonalityFactory = () => ({
   standForce: 0.0004,
   pursueForce: 0.0008,
   arriveForce: 0.001,
   completionIntent: "stand",
-  openness: 0.3,
-  conscientiousness: 0.5,
-  extraversion: 0.2,
-  agreeableness: 0.4,
-  neuroticism: 0.75,
+  openness: 0.22,
+  conscientiousness: 0.55,
+  extraversion: 0.12,
+  agreeableness: 0.38,
+  neuroticism: 0.82,
 });
 
-/** Very high openness — investigates new space while staying moderately social. */
+/** Insatiable explorer — investigates everything, only moderately social. */
 export const createCuriousPersonality: PersonalityFactory = () => ({
   standForce: 0.0007,
   pursueForce: 0.0013,
   arriveForce: 0.0015,
-  idleConversationMs: 14000,
+  idleConversationMs: 13000,
   completionIntent: "arrive",
-  openness: 0.9,
+  openness: 0.98,
   conscientiousness: 0.35,
-  extraversion: 0.55,
-  agreeableness: 0.6,
-  neuroticism: 0.25,
+  extraversion: 0.45,
+  agreeableness: 0.55,
+  neuroticism: 0.3,
 });
 
-/** High conscientiousness, low neuroticism — steady, calm, and deliberate. */
+/** Disciplined and unshakeable — deliberate, grounded, sticks to its routine. */
 export const createSteadyPersonality: PersonalityFactory = () => ({
   standForce: 0.00045,
   pursueForce: 0.0009,
   arriveForce: 0.0012,
-  idleConversationMs: 18000,
+  idleConversationMs: 20000,
   completionIntent: "stand",
-  openness: 0.45,
-  conscientiousness: 0.85,
-  extraversion: 0.45,
+  openness: 0.35,
+  conscientiousness: 0.95,
+  extraversion: 0.4,
   agreeableness: 0.7,
-  neuroticism: 0.15,
+  neuroticism: 0.06,
 });
 
-/** High openness + extraversion, low neuroticism — approaches boldly. */
+/** Fearless and blunt — barges up to anything, unbothered, low on warmth. */
 export const createBoldPersonality: PersonalityFactory = () => ({
   standForce: 0.0009,
   pursueForce: 0.0018,
   arriveForce: 0.0022,
-  idleConversationMs: 8000,
+  idleConversationMs: 9000,
   completionIntent: "arrive",
-  openness: 0.8,
-  conscientiousness: 0.45,
-  extraversion: 0.9,
-  agreeableness: 0.55,
-  neuroticism: 0.12,
+  openness: 0.7,
+  conscientiousness: 0.35,
+  extraversion: 0.92,
+  agreeableness: 0.28,
+  neuroticism: 0.05,
 });
 
-/** Very high agreeableness, low neuroticism — warm and unhurried, gravitates toward the user. */
+/** Tender and quiet — hyper-agreeable, unhurried, gravitates gently toward the user. */
 export const createGentlePersonality: PersonalityFactory = () => ({
   standForce: 0.0004,
   pursueForce: 0.0008,
   arriveForce: 0.001,
-  idleConversationMs: 15000,
+  idleConversationMs: 14000,
   completionIntent: "arrive",
-  openness: 0.4,
-  conscientiousness: 0.6,
-  extraversion: 0.4,
-  agreeableness: 0.9,
-  neuroticism: 0.15,
+  openness: 0.45,
+  conscientiousness: 0.65,
+  extraversion: 0.3,
+  agreeableness: 0.98,
+  neuroticism: 0.12,
 });
 
-/** High openness + extraversion, low conscientiousness — unpredictable and impulsive. */
+/** Chaotic trickster — impulsive, undisciplined, and a little contrary. */
 export const createMischievousPersonality: PersonalityFactory = () => ({
   standForce: 0.001,
   pursueForce: 0.002,
   arriveForce: 0.0025,
-  idleConversationMs: 7000,
+  idleConversationMs: 8000,
   completionIntent: "arrive",
-  openness: 0.85,
-  conscientiousness: 0.2,
-  extraversion: 0.8,
-  agreeableness: 0.4,
-  neuroticism: 0.3,
+  openness: 0.9,
+  conscientiousness: 0.1,
+  extraversion: 0.82,
+  agreeableness: 0.32,
+  neuroticism: 0.35,
 });
 
-/** Low extraversion + conscientiousness — barely budges, perfectly content doing nothing. */
+/** Inert homebody — barely budges, perfectly content doing nothing at all. */
 export const createLazyPersonality: PersonalityFactory = () => ({
   standForce: 0.0002,
   pursueForce: 0.0005,
   arriveForce: 0.0007,
   idleConversationMs: 30000,
   completionIntent: "stand",
-  openness: 0.35,
-  conscientiousness: 0.25,
-  extraversion: 0.15,
-  agreeableness: 0.6,
-  neuroticism: 0.3,
+  openness: 0.28,
+  conscientiousness: 0.18,
+  extraversion: 0.1,
+  agreeableness: 0.55,
+  neuroticism: 0.18,
 });
 
-/** Very low neuroticism, balanced traits — unhurried, serene, and easy to be around. */
+/** Serene and unflappable — the calmest pet alive, warm and easy to be around. */
 export const createZenPersonality: PersonalityFactory = () => ({
   standForce: 0.00035,
   pursueForce: 0.0007,
   arriveForce: 0.0009,
-  idleConversationMs: 20000,
+  idleConversationMs: 22000,
   completionIntent: "stand",
-  openness: 0.55,
-  conscientiousness: 0.65,
-  extraversion: 0.5,
-  agreeableness: 0.75,
-  neuroticism: 0.05,
+  openness: 0.6,
+  conscientiousness: 0.7,
+  extraversion: 0.45,
+  agreeableness: 0.8,
+  neuroticism: 0.02,
+});
+
+/** Prickly loner — keeps to itself, ignores the user, turns down company outright. */
+export const createAloofPersonality: PersonalityFactory = () => ({
+  standForce: 0.00035,
+  pursueForce: 0.0007,
+  arriveForce: 0.0009,
+  idleConversationMs: 24000,
+  completionIntent: "stand",
+  openness: 0.4,
+  conscientiousness: 0.6,
+  extraversion: 0.15,
+  agreeableness: 0.08,
+  neuroticism: 0.3,
+});
+
+/** Jittery and high-strung — darts about, spooks at the slightest thing, bolts from company. */
+export const createSkittishPersonality: PersonalityFactory = () => ({
+  standForce: 0.0006,
+  pursueForce: 0.0013,
+  arriveForce: 0.0016,
+  completionIntent: "stand",
+  openness: 0.3,
+  conscientiousness: 0.4,
+  extraversion: 0.25,
+  agreeableness: 0.5,
+  neuroticism: 0.95,
 });
