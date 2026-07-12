@@ -79,6 +79,21 @@ describe("Personality Catalog behavior signatures", () => {
     );
   });
 
+  it(
+    "assigns distinct user-distance signatures to attentive, reserved, and aloof",
+    () => {
+      expect(PERSONALITY_BEHAVIOR_SIGNATURES.attentive.primaryDecision).toBe(
+        "keep-watch",
+      );
+      expect(PERSONALITY_BEHAVIOR_SIGNATURES.reserved.primaryDecision).toBe(
+        "peek",
+      );
+      expect(PERSONALITY_BEHAVIOR_SIGNATURES.aloof.primaryDecision).toBe(
+        "withdraw",
+      );
+    },
+  );
+
   it("distinguishes calm personalities by social and solo signatures", () => {
     expect(signedDecisionScore("gentle", "greet", 0)).toBeGreaterThan(
       signedDecisionScore("zen", "greet", 0),

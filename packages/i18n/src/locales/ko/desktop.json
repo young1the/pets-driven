@@ -264,7 +264,10 @@
     "fretting": "걱정 중",
     "napping": "낮잠 중",
     "meditating": "명상 중",
-    "teasing": "장난치는 중"
+    "teasing": "장난치는 중",
+    "keepingWatch": "곁을 지키는 중",
+    "peeking": "멀리서 살피는 중",
+    "seekingSolitude": "혼자 있는 중"
   },
   "toast": {
     "onDesktop": "{{name}}이(가) 데스크탑에 나왔어요",

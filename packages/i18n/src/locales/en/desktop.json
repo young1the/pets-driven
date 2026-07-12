@@ -268,7 +268,10 @@
     "fretting": "Worried",
     "napping": "Napping",
     "meditating": "Meditating",
-    "teasing": "Playing a trick"
+    "teasing": "Playing a trick",
+    "keepingWatch": "Keeping watch",
+    "peeking": "Peeking from afar",
+    "seekingSolitude": "Seeking solitude"
   },
   "toast": {
     "onDesktop": "{{name}} is on the desktop",

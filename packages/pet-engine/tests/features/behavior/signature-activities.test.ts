@@ -11,13 +11,13 @@ import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-cl
 
 const BOUNDS = { x: 0, y: 0, width: 960, height: 540 };
 
-function decisionStore(catalogId: PetPersonalityId) {
+function decisionStore(catalogId: PetPersonalityId, userX = 260) {
   return createComponentStore([
     {
       id: "user-anchor",
       components: [
         { type: "UserAnchor" },
-        { type: "Transform", position: { x: 260, y: 500 } },
+        { type: "Transform", position: { x: userX, y: 500 } },
       ],
     },
     {
@@ -38,8 +38,8 @@ function decisionStore(catalogId: PetPersonalityId) {
           type: "Perception",
           userAnchor: {
             id: "user-anchor",
-            position: { x: 260, y: 500 },
-            distance: 60,
+            position: { x: userX, y: 500 },
+            distance: Math.abs(userX - 200),
           },
           nearbyPets: [],
           nearbyClimbables: [],
@@ -72,8 +72,12 @@ function probability(
   );
 }
 
-function signatureProbability(catalogId: PetPersonalityId, kind: string) {
-  const store = decisionStore(catalogId);
+function signatureProbability(
+  catalogId: PetPersonalityId,
+  kind: string,
+  userX = 260,
+) {
+  const store = decisionStore(catalogId, userX);
   runBehaviorDecisionSystem(
     store,
     createManualClock(0),
@@ -83,7 +87,9 @@ function signatureProbability(catalogId: PetPersonalityId, kind: string) {
   return probability(store, kind);
 }
 
-function stationaryActivityStore(kind: "nap" | "meditate") {
+function stationaryActivityStore(
+  kind: "nap" | "meditate" | "keep-watch" | "peek",
+) {
   return createComponentStore([
     {
       id: "pet",
@@ -115,6 +121,15 @@ describe("personality signature activities", () => {
     );
     expect(signatureProbability("mischievous", "play-feint")).toBeGreaterThan(
       signatureProbability("curious", "play-feint"),
+    );
+    expect(signatureProbability("attentive", "keep-watch")).toBeGreaterThan(
+      signatureProbability("gentle", "keep-watch"),
+    );
+    expect(signatureProbability("reserved", "peek", 500)).toBeGreaterThan(
+      signatureProbability("curious", "peek", 500),
+    );
+    expect(signatureProbability("aloof", "withdraw")).toBeGreaterThan(
+      signatureProbability("reserved", "withdraw"),
     );
   });
 
@@ -151,6 +166,67 @@ describe("personality signature activities", () => {
     expect(store.getComponent("pet", "RecentExperienceMemory")?.entries.at(-1)?.kind).toBe(
       "self-soothed",
     );
+  });
+
+  it("keeps an attentive pet close while satisfying some social need", () => {
+    const store = stationaryActivityStore("keep-watch");
+    const socialBefore = store.getComponent("pet", "Drives")!.social;
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
+      mood: "love",
+      emote: "heart",
+    });
+    expect(store.getComponent("pet", "Drives")!.social).toBeLessThan(
+      socialBefore,
+    );
+  });
+
+  it("lets a reserved pet peek without approaching", () => {
+    const store = stationaryActivityStore("peek");
+    const curiosityBefore = store.getComponent("pet", "Drives")!.curiosity;
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
+    expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
+      mood: "thinking",
+      emote: "question",
+    });
+    expect(store.getComponent("pet", "Drives")!.curiosity).toBeLessThan(
+      curiosityBefore,
+    );
+  });
+
+  it("moves an aloof pet away without presenting the retreat as fear", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Steering", mode: "stand" },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          {
+            type: "BehaviorDecisionToken",
+            kind: "withdraw",
+            decidedAt: 0,
+            consumed: false,
+            targetPosition: { x: 40, y: 500 },
+            activityDurationMs: 3_500,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({
+      x: 40,
+      y: 500,
+    });
+    expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
+      mood: "thinking",
+      emote: "none",
+    });
   });
 
   it("runs a feint through approach, retreat, and a playful finish", () => {

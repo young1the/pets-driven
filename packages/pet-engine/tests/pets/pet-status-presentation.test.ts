@@ -173,6 +173,16 @@ describe("presentPetStatus", () => {
     expect(presentation.labelKey).toBe("beingPetted");
   });
 
+  it("shows signature activity labels on reused task animation rows", () => {
+    const watch = presentPetStatus("waiting", null, "keepingWatch");
+    expect(watch.labelKey).toBe("keepingWatch");
+    expect(watch.mood).toBe("love");
+
+    const peek = presentPetStatus("review", null, "peeking");
+    expect(peek.labelKey).toBe("peeking");
+    expect(peek.mood).toBe("thinking");
+  });
+
   it("never lets activity override task-owned intents", () => {
     const waiting = presentPetStatus("waiting", null, "exploring");
     expect(waiting.label).toBe("Waiting");

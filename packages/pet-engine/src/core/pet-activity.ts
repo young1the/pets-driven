@@ -22,7 +22,7 @@ export type PetActivityKind =
   | "chatting"
   | "playing"
   | "onTheMove"
-  // Expressive idle poses (greet / groom / observe / beckon / fret).
+  // Expressive idle poses and catalog-exclusive signature activities.
   | "greeting"
   | "grooming"
   | "observing"
@@ -30,7 +30,10 @@ export type PetActivityKind =
   | "fretting"
   | "napping"
   | "meditating"
-  | "teasing";
+  | "teasing"
+  | "keepingWatch"
+  | "peeking"
+  | "seekingSolitude";
 
 /**
  * Reasons that describe a *movement* the pet may still be executing after the
@@ -63,6 +66,9 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "collision-jump": "hopping",
   "play-romp": "hopping",
   "play-feint": "teasing",
+  "keep-watch": "keepingWatch",
+  peek: "peeking",
+  withdraw: "seekingSolitude",
   // Expressive idle poses hold a stationary claim (Steering stays "stand"), so
   // unlike the movement reasons above they read purely from the unexpired
   // claim, not from a non-idle intent.

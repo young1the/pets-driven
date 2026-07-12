@@ -192,6 +192,8 @@ describe("pet animation state", () => {
     ["fret", "failed"],
     ["nap", "idle"],
     ["meditate", "review"],
+    ["keep-watch", "waiting"],
+    ["peek", "review"],
   ] as const)(
     "shows the %s expressive pose on its sprite row",
     (reason, expected) => {

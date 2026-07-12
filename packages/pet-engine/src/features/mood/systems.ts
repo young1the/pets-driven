@@ -117,6 +117,7 @@ export function moodAdjustedDecisionScore(
       return baseScore + positive * 0.3 + mood.arousal * 0.12 - negative * 0.2;
     case "seek-user":
     case "beckon":
+    case "keep-watch":
       return baseScore + negative * 0.2 + fear * 0.15;
     case "wander-far":
     case "request-climb":
@@ -130,6 +131,10 @@ export function moodAdjustedDecisionScore(
       return baseScore + mood.confidence * 0.22 - fear * 0.2;
     case "fret":
       return baseScore + negative * 0.4 + fear * 0.25;
+    case "peek":
+      return baseScore + (1 - mood.confidence) * 0.18 - fear * 0.08;
+    case "withdraw":
+      return baseScore + negative * 0.2 + mood.confidence * 0.12;
     case "idle-stay":
     case "nap":
     case "meditate":

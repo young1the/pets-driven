@@ -136,6 +136,13 @@ const ACTIVITY_OVERRIDABLE_ROWS: ReadonlySet<PetAnimationState> = new Set([
   "jumping",
 ]);
 
+/** Signature poses intentionally reuse task atlas rows but remain pet activities. */
+const SIGNATURE_ROW_ACTIVITY: ReadonlySet<PetActivityKind> = new Set([
+  "meditating",
+  "keepingWatch",
+  "peeking",
+]);
+
 /** English localization fallbacks; hosts translate via labelKey (petStatus.*). */
 const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   exploring: "Exploring",
@@ -161,6 +168,9 @@ const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   napping: "Napping",
   meditating: "Meditating",
   teasing: "Playing a trick",
+  keepingWatch: "Keeping watch",
+  peeking: "Peeking from afar",
+  seekingSolitude: "Seeking solitude",
 };
 
 function activityEntry(
@@ -195,6 +205,9 @@ const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   napping: activityEntry("napping", "sleepy", "zzz"),
   meditating: activityEntry("meditating", "happy", "sparkle"),
   teasing: activityEntry("teasing", "excited", "exclaim"),
+  keepingWatch: activityEntry("keepingWatch", "love", "heart"),
+  peeking: activityEntry("peeking", "thinking", "question"),
+  seekingSolitude: activityEntry("seekingSolitude", "thinking", "none"),
 };
 
 function presentationFromAgentStatus(
@@ -242,7 +255,9 @@ export function presentPetStatus(
   // ("Chasing the cursor" instead of a mute working capsule). Task-owned
   // rows (failed/waiting/review) keep their label and mood.
   const activityBase =
-    activity && ACTIVITY_OVERRIDABLE_ROWS.has(animationState ?? "idle")
+    activity &&
+    (ACTIVITY_OVERRIDABLE_ROWS.has(animationState ?? "idle") ||
+      SIGNATURE_ROW_ACTIVITY.has(activity))
       ? ACTIVITY_PRESENTATION[activity]
       : presentationFromAnimationState(animationState);
   // Name the session partner on the ambient social label ("Chatting with Otto").

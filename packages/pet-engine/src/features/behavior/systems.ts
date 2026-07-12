@@ -101,6 +101,9 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   nap: 15_000,
   meditate: 12_000,
   "play-feint": 10_000,
+  "keep-watch": 10_000,
+  peek: 10_000,
+  withdraw: 8_000,
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
@@ -205,6 +208,8 @@ const FEINT_BASE_MS = 3_200;
 const FEINT_EXTRA_MS = 1_200;
 const FEINT_APPROACH_MS = 1_200;
 const FEINT_RETREAT_BODY_WIDTHS = 5;
+const WITHDRAW_BODY_WIDTHS = 5;
+const WITHDRAW_DURATION_MS = 3_500;
 
 type ExpressivePoseKind =
   | "greet"
@@ -213,7 +218,9 @@ type ExpressivePoseKind =
   | "beckon"
   | "fret"
   | "nap"
-  | "meditate";
+  | "meditate"
+  | "keep-watch"
+  | "peek";
 
 // ── Expressive idle poses ──────────────────────────────────────────────────
 // Sustained, stationary gestures that exercise the otherwise agent-only sprite
@@ -233,6 +240,8 @@ const EXPRESSIVE_POSE_DURATIONS: Record<
   fret: { base: 1_600, jitter: 900 },
   nap: { base: 7_000, jitter: 5_000 },
   meditate: { base: 5_000, jitter: 3_000 },
+  "keep-watch": { base: 4_000, jitter: 2_000 },
+  peek: { base: 3_500, jitter: 2_000 },
 };
 
 /** Mood/emote cue attached to each expressive pose (a PetExpressionState). */
@@ -247,6 +256,8 @@ const EXPRESSIVE_POSE_CUES: Record<
   fret: { mood: "confused", emote: "exclaim" },
   nap: { mood: "sleepy", emote: "zzz" },
   meditate: { mood: "happy", emote: "sparkle" },
+  "keep-watch": { mood: "love", emote: "heart" },
+  peek: { mood: "thinking", emote: "question" },
 };
 
 function expressivePoseDurationMs(
@@ -1886,6 +1897,23 @@ function scorePlayFeint(p: PersonalityComponent): number {
   );
 }
 
+function scoreKeepWatch(
+  p: PersonalityComponent,
+  drives?: DrivesComponent,
+): number {
+  const base = 0.05 + p.agreeableness * 0.25 + p.conscientiousness * 0.15;
+  if (!drives) return base;
+  return base + driveResponseCurve(drives.social) * 0.25;
+}
+
+function scorePeek(p: PersonalityComponent): number {
+  return 0.05 + (1 - p.extraversion) * 0.2 + p.openness * 0.15;
+}
+
+function scoreWithdraw(p: PersonalityComponent): number {
+  return 0.05 + (1 - p.agreeableness) * 0.25 + (1 - p.extraversion) * 0.15;
+}
+
 /**
  * Personality-modulated wander radii.
  * "near": high N → tighter range but still meaningfully visible movement.
@@ -2397,8 +2425,9 @@ export function runBehaviorDecisionSystem(
       // makes it read, then materialized as a claim held for its whole
       // duration. Greeting waves at the user when they are near (pet-to-pet
       // hellos are already served by approach-pet); beckoning calls the user
-      // over when they are far; groom/observe/fret are grounded-walker poses,
-      // the same footing as play-romp.
+      // over when they are far. Catalog-exclusive poses are gated by both
+      // user distance and catalog id so their silhouettes do not leak into
+      // neighboring personalities.
       if (userAnchor && isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
         pushCandidate(candidates, components, id, now, {
           kind: "greet",
@@ -2421,6 +2450,39 @@ export function runBehaviorDecisionSystem(
             }),
           });
         }
+        if (isGroundedWalker && personality.catalogId === "attentive") {
+          pushCandidate(candidates, components, id, now, {
+            kind: "keep-watch",
+            score: scoreKeepWatch(personality, drives),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs("keep-watch", random),
+            }),
+          });
+        }
+        if (isGroundedWalker && personality.catalogId === "aloof") {
+          const direction =
+            petX === userAnchor.x
+              ? random.next() < 0.5
+                ? -1
+                : 1
+              : Math.sign(petX - userAnchor.x);
+          const targetPosition = {
+            x: clampToBoundsX(
+              petX + direction * petWidth(components, id) * WITHDRAW_BODY_WIDTHS,
+              bounds,
+              COLLISION_TARGET_MARGIN,
+            ),
+            y: petY,
+          };
+          pushCandidate(candidates, components, id, now, {
+            kind: "withdraw",
+            score: scoreWithdraw(personality),
+            build: () => ({
+              targetPosition,
+              activityDurationMs: WITHDRAW_DURATION_MS,
+            }),
+          });
+        }
       }
 
       if (userAnchor && !isNearUserAnchor(userAnchor, petX, petY, isFlying)) {
@@ -2429,6 +2491,15 @@ export function runBehaviorDecisionSystem(
           score: scoreBeckon(personality, drives),
           build: () => ({ activityDurationMs: expressivePoseDurationMs("beckon", random) }),
         });
+        if (isGroundedWalker && personality.catalogId === "reserved") {
+          pushCandidate(candidates, components, id, now, {
+            kind: "peek",
+            score: scorePeek(personality),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs("peek", random),
+            }),
+          });
+        }
       }
 
       if (isGroundedWalker) {
@@ -2637,6 +2708,26 @@ export function runBehaviorPlanningSystem(
         });
         break;
       }
+      case "withdraw": {
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: null,
+          targetPosition: token.targetPosition!,
+        });
+        setPetSteering(components, id, "pursue");
+        components.setComponent(id, {
+          type: "PetExpressionState",
+          source: "signature",
+          mood: "thinking",
+          emote: "none",
+          label: null,
+          startedAt: token.decidedAt,
+          expiresAt:
+            token.decidedAt +
+            (token.activityDurationMs ?? WITHDRAW_DURATION_MS),
+        });
+        break;
+      }
       // Expressive idle poses — stand still and hold a gesture. No motion; the
       // sustained autonomous claim (set in the decision) drives the sprite row.
       // The mood/emote cue and any drive relief run here.
@@ -2646,7 +2737,9 @@ export function runBehaviorPlanningSystem(
       case "beckon":
       case "fret":
       case "nap":
-      case "meditate": {
+      case "meditate":
+      case "keep-watch":
+      case "peek": {
         setPetSteering(components, id, "stand");
         clearMotionTarget(components, id);
         const cue = EXPRESSIVE_POSE_CUES[token.kind];
@@ -2676,6 +2769,10 @@ export function runBehaviorPlanningSystem(
         } else if (token.kind === "meditate") {
           adjustDrive(components, id, { energy: 0.1 });
           recordPetExperience(components, id, "self-soothed", token.decidedAt);
+        } else if (token.kind === "keep-watch") {
+          adjustDrive(components, id, { social: -0.2 });
+        } else if (token.kind === "peek") {
+          adjustDrive(components, id, { curiosity: -0.15 });
         }
         break;
       }

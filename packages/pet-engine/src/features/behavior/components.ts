@@ -77,6 +77,9 @@ export type BehaviorDecisionKind =
   | "nap"
   | "meditate"
   | "play-feint"
+  | "keep-watch"
+  | "peek"
+  | "withdraw"
   // Expressive idle poses — sustained, stationary gestures that exercise the
   // otherwise agent-only sprite rows (waving / focus / review / waiting /
   // failed) during ordinary autonomous life. Each is personality-shaped.
@@ -227,7 +230,7 @@ export type PetExpressionSource =
   | "romp"
   | "acknowledge"
   | "signature"
-  // Expressive idle poses (greet / groom / observe / beckon / fret).
+  // Expressive idle poses and catalog-exclusive signature activities.
   | "expressive";
 
 export type PetExpressionMood =

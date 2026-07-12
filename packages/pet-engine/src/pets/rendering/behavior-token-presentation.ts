@@ -131,6 +131,24 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<
     mood: "excited",
     tone: "spark",
   },
+  "keep-watch": {
+    emote: "heart",
+    label: "Keeping watch",
+    mood: "love",
+    tone: "affection",
+  },
+  peek: {
+    emote: "question",
+    label: "Peeking from afar",
+    mood: "thinking",
+    tone: "curious",
+  },
+  withdraw: {
+    emote: "none",
+    label: "Seeking solitude",
+    mood: "thinking",
+    tone: "calm",
+  },
   greet: {
     emote: "sparkle",
     label: "Saying hi",
