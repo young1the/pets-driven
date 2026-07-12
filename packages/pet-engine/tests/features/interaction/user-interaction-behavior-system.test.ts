@@ -33,6 +33,64 @@ function createStore() {
 }
 
 describe("UserInteractionBehaviorSystem", () => {
+  it("shows personality-aware feedback when acknowledging a completed task", () => {
+    const components = createStore();
+    const events = createWorldEventQueue();
+    const clock = createManualClock(500);
+    components.setComponent("pet-a", {
+      type: "Personality",
+      catalogId: "mischievous",
+      openness: 0.9,
+      conscientiousness: 0.1,
+      extraversion: 0.82,
+      agreeableness: 0.32,
+      neuroticism: 0.35,
+    });
+    components.setComponent("pet-a", {
+      type: "AgentTaskState",
+      status: "completed",
+      since: 100,
+    });
+    components.setComponent("pet-a", { type: "TaskMovementHold", since: 100 });
+    components.setComponent("pet-a", {
+      type: "AgentChannelState",
+      source: "agent-task",
+      status: "completed",
+      label: "Done",
+      message: null,
+      updatedAt: 100,
+      expiresAt: null,
+    });
+
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 1,
+      at: 500,
+      position: { x: 100, y: 100 },
+    });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    expect(components.getComponent("pet-a", "TaskMovementHold")).toBeUndefined();
+    expect(components.getComponent("pet-a", "AgentTaskState")).toBeUndefined();
+    expect(components.getComponent("pet-a", "AgentChannelState")).toBeUndefined();
+    expect(components.getComponent("pet-a", "SpeechState")).toMatchObject({
+      speech: "Surprise! It actually worked.",
+      expiresAt: 2_300,
+    });
+    expect(components.getComponent("pet-a", "PetExpressionState")).toMatchObject({
+      source: "acknowledge",
+      mood: "excited",
+      emote: "sparkle",
+      expiresAt: 2_300,
+    });
+    expect(components.getComponent("pet-a", "BehaviorDecisionState")).toMatchObject({
+      source: "user-interaction",
+      reason: "acknowledge-completed",
+      expiresAt: 2_300,
+    });
+  });
+
   it("selects only CanControl entities on pointer down", () => {
     const components = createStore();
     const events = createWorldEventQueue();

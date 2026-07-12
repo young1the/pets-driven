@@ -9,6 +9,7 @@ import type { WorldEventQueue } from "@pets-driven/pet-engine/features/events/wo
 import { statusFreezesMovement } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { personalityAcknowledgeFeedback } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 
 const INTERACTION_ENTITY_ID = "user-interaction";
 const DRAG_START_DISTANCE = 4;
@@ -41,11 +42,11 @@ function handlePointerEvent(
     const controlHit = hitTest(components, event.position, "CanControl");
     const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
     if (target) target.entityId = controlHit?.id ?? null;
-    if (controlHit) releaseAgentTask(components, controlHit.id);
+    if (controlHit) releaseAgentTask(components, controlHit.id, clock.now());
 
     const dragHit = hitTest(components, event.position, "CanDrag");
     if (!dragHit) return;
-    releaseAgentTask(components, dragHit.id);
+    releaseAgentTask(components, dragHit.id, clock.now());
 
     components.setComponent(INTERACTION_ENTITY_ID, {
       type: "DragInteraction",
@@ -91,18 +92,53 @@ function handlePointerEvent(
 
 // Interacting with a pet acknowledges what the agent reported: the movement
 // hold lifts, and a settled status (waiting/failed/completed) clears along
-// with its channel badge — the pet returns to idle. A live "working" status
-// stays; clicking must not erase an agent that is still running.
-function releaseAgentTask(components: ComponentStore, id: string): void {
+// with its channel badge. Catalog personalities then play a brief
+// acknowledgement beat before returning to autonomous life. A live "working"
+// status stays; clicking must not erase an agent that is still running.
+function releaseAgentTask(
+  components: ComponentStore,
+  id: string,
+  now: number,
+): void {
   components.removeComponent(id, "TaskMovementHold");
 
   const task = components.getComponent(id, "AgentTaskState");
   if (!task || !statusFreezesMovement(task.status)) return;
+  const personality = components.getComponent(id, "Personality");
+  const feedback = personalityAcknowledgeFeedback(
+    personality?.catalogId,
+    task.status,
+  );
   components.removeComponent(id, "AgentTaskState");
 
   const channel = components.getComponent(id, "AgentChannelState");
   if (channel?.source === "agent-task") {
     components.removeComponent(id, "AgentChannelState");
+  }
+
+  if (feedback) {
+    const durationMs = 1_800;
+    components.setComponent(id, {
+      type: "SpeechState",
+      speech: feedback.speech,
+      expiresAt: now + durationMs,
+    });
+    components.setComponent(id, {
+      type: "PetExpressionState",
+      source: "acknowledge",
+      mood: feedback.mood,
+      emote: feedback.emote,
+      label: null,
+      startedAt: now,
+      expiresAt: now + durationMs,
+    });
+    claimUserInteraction(
+      components,
+      id,
+      now,
+      `acknowledge-${task.status}`,
+      durationMs,
+    );
   }
 }
 
@@ -271,6 +307,9 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "DragInteraction",
     "AgentTaskState",
     "AgentChannelState",
+    "Personality",
+    "SpeechState",
+    "PetExpressionState",
   ],
   writes: [
     "KeyboardControlTarget",
@@ -280,6 +319,8 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "TaskMovementHold",
     "AgentTaskState",
     "AgentChannelState",
+    "SpeechState",
+    "PetExpressionState",
   ],
   update(ctx) {
     runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock);

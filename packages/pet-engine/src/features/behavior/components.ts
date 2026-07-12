@@ -211,6 +211,7 @@ export type PetExpressionSource =
   | "hover"
   | "social"
   | "romp"
+  | "acknowledge"
   // Expressive idle poses (greet / groom / observe / beckon / fret).
   | "expressive";
 

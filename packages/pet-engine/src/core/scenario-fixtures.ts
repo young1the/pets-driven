@@ -16,6 +16,7 @@ import {
   DEFAULT_PET_WALK_FORCE,
 } from "@pets-driven/pet-engine/pets/constants/pet-body";
 import { DEFAULT_PET_SPEECH } from "@pets-driven/pet-engine/pets/constants/pet-speech";
+import { personalitySpeechProfile } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { createWorld } from "@pets-driven/pet-engine/core/create-world";
 import {
@@ -172,12 +173,24 @@ export function createFixturePet(input: {
   const hasIdleConversation = allComponents.some(
     (c) => c.type === "IdleConversation",
   );
+  const hasExplicitSpeechProfile = input.components.some(
+    (component) => component.type === "SpeechProfile",
+  );
 
   if (!hasMovementProfile && effectivePersonality) {
     allComponents.push(deriveMovementProfile(effectivePersonality));
   }
   if (!hasIdleConversation && effectivePersonality) {
     allComponents.push(deriveIdleConversation(effectivePersonality));
+  }
+  if (!hasExplicitSpeechProfile && effectivePersonality?.catalogId) {
+    const speechProfile = personalitySpeechProfile(effectivePersonality.catalogId);
+    const defaultSpeechIndex = allComponents.findIndex(
+      (component) => component.type === "SpeechProfile",
+    );
+    if (speechProfile && defaultSpeechIndex >= 0) {
+      allComponents[defaultSpeechIndex] = speechProfile;
+    }
   }
   if (effectivePersonality) {
     const forwardImpulse = deriveJumpForwardImpulse(effectivePersonality);

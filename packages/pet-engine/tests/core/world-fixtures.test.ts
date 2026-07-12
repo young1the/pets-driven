@@ -1698,6 +1698,30 @@ describe("adopted pets scenario", () => {
     { id: "pet-uuid-2", name: "Mochi", sourceId: "agent-2" },
   ];
 
+  it("attaches the catalog voice to an adopted pet", () => {
+    const scenario = createAdoptedPetsScenario([
+      {
+        id: "reserved-pet",
+        name: "Otto",
+        sourceId: "agent-reserved",
+        personality: {
+          ...reservedPersonality,
+          catalogId: "reserved",
+        },
+      },
+    ]);
+
+    expect(
+      scenario.world.getComponent("reserved-pet", "SpeechProfile"),
+    ).toEqual({
+      type: "SpeechProfile",
+      idleCompanion: "I will be here.",
+      attentionNeeded: "When you have a moment...",
+      taskStarted: "I will start quietly.",
+      taskCompleted: "It is finished.",
+    });
+  });
+
   it("creates one grounded walker per adopted pet keyed by its real id", () => {
     const scenario = createAdoptedPetsScenario(pets);
     const snapshot = scenario.world.snapshot();
