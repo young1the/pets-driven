@@ -7,6 +7,12 @@
       "runtimeArgs": ["--filter", "@pets-driven/web", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "desktop-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "pets-driven", "exec", "vite", "--port", "5174"],
+      "port": 5174
     }
   ]
 }

@@ -61,3 +61,25 @@ export function getAtlasFrame(
     sourceY: rowIndex * PET_CELL_SIZE.height,
   };
 }
+
+/**
+ * How long the frame shown at `elapsedMs` stays on screen before the atlas
+ * flips to the next one. Lets renderers wake up exactly at frame boundaries
+ * instead of polling every display refresh.
+ */
+export function msUntilNextAtlasFrame(
+  animationState: PetAnimationState,
+  elapsedMs: number,
+) {
+  const durations = PET_ANIMATION_DURATIONS[animationState];
+  const loopDuration = durations.reduce((sum, duration) => sum + duration, 0);
+  let remaining = elapsedMs % loopDuration;
+  let frameIndex = 0;
+
+  while (remaining >= durations[frameIndex]) {
+    remaining -= durations[frameIndex];
+    frameIndex += 1;
+  }
+
+  return durations[frameIndex] - remaining;
+}

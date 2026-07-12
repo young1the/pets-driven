@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getAtlasFrame } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import {
+  getAtlasFrame,
+  msUntilNextAtlasFrame,
+} from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 
 describe("pet atlas", () => {
   it("selects frames using the fixed hatch-pet row layout", () => {
@@ -27,5 +30,25 @@ describe("pet atlas", () => {
       rowIndex: 2,
       sourceY: 416,
     });
+  });
+
+  it("reports the exact delay until the atlas flips frames", () => {
+    // idle durations: [280, 110, 110, 140, 140, 320], loop = 1100
+    expect(msUntilNextAtlasFrame("idle", 0)).toBe(280);
+    expect(msUntilNextAtlasFrame("idle", 279)).toBe(1);
+    expect(msUntilNextAtlasFrame("idle", 280)).toBe(110);
+    expect(msUntilNextAtlasFrame("idle", 1100)).toBe(280);
+  });
+
+  it("stays on the same frame until the reported delay elapses", () => {
+    const elapsedMs = 137;
+    const delay = msUntilNextAtlasFrame("waiting", elapsedMs);
+
+    expect(getAtlasFrame("waiting", elapsedMs + delay - 1).frameIndex).toBe(
+      getAtlasFrame("waiting", elapsedMs).frameIndex,
+    );
+    expect(getAtlasFrame("waiting", elapsedMs + delay).frameIndex).not.toBe(
+      getAtlasFrame("waiting", elapsedMs).frameIndex,
+    );
   });
 });

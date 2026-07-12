@@ -8,7 +8,10 @@ import {
   LogicalPosition,
 } from "@tauri-apps/api/window";
 import { FALLBACK_CODEX_PET_SPRITESHEET_URL } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
-import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import {
+  msUntilNextAtlasFrame,
+  PET_CELL_SIZE,
+} from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
 import { IconButton, PET_MOODS } from "@pets-driven/design-system";
@@ -393,28 +396,36 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     };
   }, [pet.assetId]);
 
+  // Advance the sprite clock only when the atlas is about to flip frames
+  // (every 110-320ms) instead of re-rendering at display refresh rate: pet
+  // windows are always-on, so a 60Hz rAF loop here was a steady idle-CPU
+  // cost per pet. performance.now() shares rAF's time origin, so the
+  // animation phase is unchanged.
+  const currentAnimationState = presentation.animationState;
   useEffect(() => {
     let isActive = true;
-    let animationFrame = 0;
+    let timeoutId = 0;
 
-    const tick = (nextElapsedMs: number) => {
+    const tick = () => {
       if (!isActive) {
         return;
       }
 
+      const nextElapsedMs = performance.now();
       setElapsedMs(nextElapsedMs);
-      animationFrame = window.requestAnimationFrame(tick);
+      timeoutId = window.setTimeout(
+        tick,
+        msUntilNextAtlasFrame(currentAnimationState, nextElapsedMs),
+      );
     };
 
-    animationFrame = window.requestAnimationFrame(tick);
+    tick();
 
     return () => {
       isActive = false;
-      if (animationFrame) {
-        window.cancelAnimationFrame(animationFrame);
-      }
+      window.clearTimeout(timeoutId);
     };
-  }, []);
+  }, [currentAnimationState]);
 
   function emitPetWindowInput(
     kind: PetWindowInputKind,

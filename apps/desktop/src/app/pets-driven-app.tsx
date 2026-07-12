@@ -100,6 +100,13 @@ import { PlaygroundApp } from "@/playground/browser/playground-app";
 
 const DESKTOP_FIXTURE_HOST_TICK_MS = 16;
 const DESKTOP_FIXTURE_STEP_MS = 16;
+// Unchanged frames are still re-emitted twice a second: pet windows
+// re-evaluate their held activity label (steadyActivity) only on incoming
+// frames, and a window that finishes creating after its first frame was
+// emitted must not wait for the next real change to show itself.
+const PET_WINDOW_FRAME_HEARTBEAT_TICKS = Math.round(
+  500 / DESKTOP_FIXTURE_HOST_TICK_MS,
+);
 const DESKTOP_FIXTURE_WORLD_SIZE = { width: 1920, height: 1080 };
 const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
 const EMPTY_PET_PACKAGES_GATEWAY = {
@@ -345,6 +352,11 @@ function PetsDrivenHostApp() {
   // window would spawn a duplicate terminal.
   const launchingPetIdsRef = useRef<Set<string>>(new Set());
   const adoptedHostSequenceRef = useRef(0);
+  // petId -> last frame actually emitted to that pet's window, so idle ticks
+  // (same position, same sprite) skip the per-window IPC emit entirely.
+  const adoptedLastEmitByPetIdRef = useRef<
+    Map<string, { body: string; sequence: number }>
+  >(new Map());
   const adoptedScaleByPetIdRef = useRef<Record<string, number>>({});
   const adoptedHostBoundsRef = useRef<{
     x: number;
@@ -863,6 +875,7 @@ function PetsDrivenHostApp() {
       adoptedDiagnosticsRef.current = null;
       adoptedSnapshotRef.current = null;
       adoptedPetIdsRef.current = new Set();
+      adoptedLastEmitByPetIdRef.current = new Map();
       return;
     }
 
@@ -916,6 +929,7 @@ function PetsDrivenHostApp() {
       });
       adoptedPetIdsRef.current = new Set(simInputs.map((pet) => pet.id));
       adoptedHostSequenceRef.current = 0;
+      adoptedLastEmitByPetIdRef.current = new Map();
       adoptedScaleByPetIdRef.current = scaleByPetId;
       adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
       adoptedStatusTrackerRef.current = createPetCardStatusTracker();
@@ -998,7 +1012,7 @@ function PetsDrivenHostApp() {
       const pets = petsDrivenStateRef.current.pets;
       const dirs = petsDrivenStateRef.current.registeredWorkingDirectories;
       void Promise.all(
-        projections.map((projection) => {
+        projections.flatMap((projection) => {
           const petRecord = pets.find((p) => p.id === projection.petId);
           const dirPath =
             dirs.find((d) => d.petId === projection.petId)?.path ?? null;
@@ -1009,11 +1023,32 @@ function PetsDrivenHostApp() {
                 cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
               }
             : projection.frame;
-          return emitTo(
-            `pet-window-${projection.petId}`,
-            PET_WINDOW_FRAME_EVENT,
-            frame,
+
+          // Idle pets produce byte-identical frames tick after tick; skip the
+          // cross-webview emit for those (modulo the heartbeat re-send).
+          const body = JSON.stringify({ ...frame, sequence: 0 });
+          const lastEmit = adoptedLastEmitByPetIdRef.current.get(
+            projection.petId,
           );
+          if (
+            lastEmit &&
+            lastEmit.body === body &&
+            frame.sequence - lastEmit.sequence < PET_WINDOW_FRAME_HEARTBEAT_TICKS
+          ) {
+            return [];
+          }
+
+          adoptedLastEmitByPetIdRef.current.set(projection.petId, {
+            body,
+            sequence: frame.sequence,
+          });
+          return [
+            emitTo(
+              `pet-window-${projection.petId}`,
+              PET_WINDOW_FRAME_EVENT,
+              frame,
+            ),
+          ];
         }),
       ).finally(() => {
         isBroadcasting = false;
