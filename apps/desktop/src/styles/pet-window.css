@@ -10,6 +10,29 @@ html.pet-window-document body {
   background: transparent;
 }
 
+/* Browser-only preview: the real Tauri window is natively sized to
+   PET_CELL_SIZE (192x268), but a plain browser tab has no such constraint.
+   Pin the surface to that size and add a checkerboard backdrop so the
+   otherwise-transparent pet window is inspectable outside Tauri. */
+html.pet-window-fixture-preview body {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  background:
+    linear-gradient(45deg, #e2e8f0 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(-45deg, #e2e8f0 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(45deg, transparent 75%, #e2e8f0 75%) 0 0 / 20px 20px,
+    linear-gradient(-45deg, transparent 75%, #e2e8f0 75%) 0 0 / 20px 20px,
+    #f8fafc;
+}
+
+html.pet-window-fixture-preview .pet-window-surface {
+  width: 192px;
+  height: 268px;
+  border: 1px dashed rgb(15 23 42 / 30%);
+  border-radius: 8px;
+}
+
 .pet-window-surface {
   position: relative;
   width: 100vw;

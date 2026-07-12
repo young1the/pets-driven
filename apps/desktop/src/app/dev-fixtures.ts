@@ -1,5 +1,6 @@
 import type { AppView } from "@/app/app-navigation";
 import type { MainWindowTab } from "@/app/main-window/main-window";
+import { PET_WINDOW_FIXTURE_IDS } from "@/pet-window/pet-window-fixtures";
 import {
   createAttentivePersonality,
   createCuriousPersonality,
@@ -287,11 +288,30 @@ export function resolveDesktopFixture(
     return null;
   }
 
-  const fixtureId = new URLSearchParams(search).get("fixture");
+  const params = new URLSearchParams(search);
 
-  return (
-    DESKTOP_FIXTURES.find((fixture) => fixture.id === fixtureId) ?? null
+  if (!params.has("fixture")) {
+    return null;
+  }
+
+  const fixtureId = params.get("fixture") ?? "";
+  const exactMatch = DESKTOP_FIXTURES.find(
+    (fixture) => fixture.id === fixtureId,
   );
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  // A known pet-window fixture id (e.g. `?fixture=jumping`) drives that
+  // switcher instead — don't steal it. Anything else (`?fixture=true`, a
+  // typo, an empty value) doesn't need to be remembered exactly: it still
+  // opens the main desktop switcher, seeded with the first fixture.
+  if ((PET_WINDOW_FIXTURE_IDS as readonly string[]).includes(fixtureId)) {
+    return null;
+  }
+
+  return DESKTOP_FIXTURES[0];
 }
 
 function isLoopbackHostname(hostname: string) {

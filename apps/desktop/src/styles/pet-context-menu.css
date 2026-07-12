@@ -8,6 +8,19 @@ html.pet-context-menu-document body {
   background: transparent;
 }
 
+/* Browser-only preview: the real Tauri popup is natively sized per view
+   (menu vs. note), but a plain browser tab has no such constraint. Add a
+   checkerboard backdrop so the transparent surface is easy to spot. */
+html.pet-context-menu-fixture-preview body {
+  min-height: 100vh;
+  background:
+    linear-gradient(45deg, #e2e8f0 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(-45deg, #e2e8f0 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(45deg, transparent 75%, #e2e8f0 75%) 0 0 / 20px 20px,
+    linear-gradient(-45deg, transparent 75%, #e2e8f0 75%) 0 0 / 20px 20px,
+    #f8fafc;
+}
+
 .pet-context-menu-surface {
   width: 100vw;
   height: 100vh;

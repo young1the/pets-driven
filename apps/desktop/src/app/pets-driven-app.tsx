@@ -23,6 +23,7 @@ import {
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
 import { resolveDesktopFixture } from "@/app/dev-fixtures";
+import { pushSearchParams } from "@/app/spa-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
 import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
@@ -77,6 +78,11 @@ import {
 import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { PetWindowView } from "@/pet-window/pet-window-view";
+import { PetWindowFixtureSwitcher } from "@/pet-window/pet-window-fixture-switcher";
+import {
+  PET_WINDOW_FIXTURES,
+  resolvePetWindowFixture,
+} from "@/pet-window/pet-window-fixtures";
 import {
   PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
@@ -130,16 +136,25 @@ function formatCommandError(error: unknown) {
 
 function petWindowRouteParams(): PetWindowRouteParams | null {
   const params = new URLSearchParams(window.location.search);
+  // A bare `?fixture=<pet-window-fixture-id>` (no `surface=pet-window`, no
+  // petId/assetId) should be enough to land on the pet-window tweak menu —
+  // resolvePetWindowFixture already gates this to dev + loopback.
+  const petWindowFixture = resolvePetWindowFixture(window.location.search, {
+    hostname: window.location.hostname,
+    isDev: import.meta.env.DEV,
+  });
 
-  if (params.get("surface") !== "pet-window") {
+  if (params.get("surface") !== "pet-window" && !petWindowFixture) {
     return null;
   }
 
   return {
-    petId: params.get("petId") || "pet-a",
-    assetId: params.get("assetId") || "bloop",
-    windowIndex: Number(params.get("windowIndex") || "1"),
-    name: params.get("name") ?? undefined,
+    petId: params.get("petId") || petWindowFixture?.pet.petId || "pet-a",
+    assetId: params.get("assetId") || petWindowFixture?.pet.assetId || "bloop",
+    windowIndex: params.get("windowIndex")
+      ? Number(params.get("windowIndex"))
+      : (petWindowFixture?.pet.windowIndex ?? 1),
+    name: params.get("name") ?? petWindowFixture?.pet.name ?? undefined,
   };
 }
 
@@ -305,11 +320,53 @@ function cardNote(memo: string | undefined, emptyLabel: string): string {
   return trimmed && trimmed.length > 0 ? trimmed : emptyLabel;
 }
 
-export function PetsDrivenApp() {
+export function PetsDrivenApp({
+  // Defaults to a plain URL update (no forced remount) so call sites outside
+  // main.tsx's Root — tests, mainly — don't need to wire this up.
+  navigateSearchParams = pushSearchParams,
+}: {
+  navigateSearchParams?: (mutate: (params: URLSearchParams) => void) => void;
+}) {
   const petWindowPet = petWindowRouteParams();
 
   if (petWindowPet) {
-    return <PetWindowView pet={petWindowPet} />;
+    const petWindowFixture = resolvePetWindowFixture(window.location.search, {
+      hostname: window.location.hostname,
+      isDev: import.meta.env.DEV,
+    });
+
+    return (
+      <>
+        <PetWindowView
+          pet={petWindowPet}
+          previewPresentation={petWindowFixture?.presentation}
+          previewScale={petWindowFixture?.scale}
+        />
+        {petWindowFixture ? (
+          <PetWindowFixtureSwitcher
+            activeId={petWindowFixture.id}
+            onSelect={(fixtureId) =>
+              navigateSearchParams((params) => {
+                const fixture = PET_WINDOW_FIXTURES.find(
+                  (candidate) => candidate.id === fixtureId,
+                );
+                params.set("fixture", fixtureId);
+                if (fixture) {
+                  params.set("petId", fixture.pet.petId);
+                  params.set("assetId", fixture.pet.assetId);
+                  params.set("windowIndex", String(fixture.pet.windowIndex));
+                  if (fixture.pet.name) {
+                    params.set("name", fixture.pet.name);
+                  } else {
+                    params.delete("name");
+                  }
+                }
+              })
+            }
+          />
+        ) : null}
+      </>
+    );
   }
 
   return <PetsDrivenHostApp />;

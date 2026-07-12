@@ -32,9 +32,17 @@ export function PetContextMenuView({
 
   useEffect(() => {
     document.documentElement.classList.add("pet-context-menu-document");
+    if (!isTauri()) {
+      document.documentElement.classList.add(
+        "pet-context-menu-fixture-preview",
+      );
+    }
 
     return () => {
       document.documentElement.classList.remove("pet-context-menu-document");
+      document.documentElement.classList.remove(
+        "pet-context-menu-fixture-preview",
+      );
     };
   }, []);
 

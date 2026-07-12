@@ -24,3 +24,30 @@ Available fixtures:
 
 Fixture state is in-memory and is only enabled for development builds served
 from a loopback hostname. It does not read or overwrite persisted Tauri state.
+
+## Pet window fixtures
+
+The pet window is a separate 192x268 always-on-top overlay window in the real
+app; in Tauri it's driven entirely by `PET_WINDOW_FRAME_EVENT`s from the main
+window. To inspect it in a plain browser tab, open
+`http://localhost:1420/?surface=pet-window&fixture=<id>` — this seeds the
+sprite/overlay presentation that would otherwise come from the frame stream,
+and pins the page to the real window's fixed size with a checkerboard backdrop
+(the surface itself stays transparent). A fixture selector appears in the
+lower-left corner while a fixture is active.
+
+The quickest way to open it: while any `?fixture=` desktop fixture is active,
+click "Open pet window ↗" in the fixture switcher — it opens the first pet
+window fixture in a new tab.
+
+Available fixtures (`apps/desktop/src/pet-window/pet-window-fixtures.ts`):
+
+- `idle`, `running`, `jumping`: core animation states
+- `speech`, `attention`: overlay badges
+- `chatting`: social session with a partner name in the status card
+- `agent-working`, `agent-failed`: agent-channel overlay states
+- `long-name`: status-card overflow checks
+- `large-scale`: resized above the default scale
+
+Same gating as the main fixtures: development builds served from a loopback
+hostname only.

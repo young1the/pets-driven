@@ -42,9 +42,17 @@ import {
 } from "@/pet-window/pet-window-messages";
 import type { PetWindowHitLayout } from "@/pet-window/pet-window-types";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
+import type { PetWindowFixturePresentation } from "@/pet-window/pet-window-fixtures";
 
 type PetWindowViewProps = {
   pet: PetWindowRouteParams;
+  /**
+   * Browser-fixture only: seeds the presentation/scale that would otherwise
+   * arrive from the Tauri PET_WINDOW_FRAME_EVENT stream, which doesn't exist
+   * outside the real app. Ignored when running inside Tauri.
+   */
+  previewPresentation?: PetWindowFixturePresentation;
+  previewScale?: number;
 };
 
 type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
@@ -151,6 +159,18 @@ function defaultPresentation(index: number): PetWindowPresentation {
   };
 }
 
+// Browser-preview stand-in for the real app's owned context-menu popup
+// window: opens the same `?surface=pet-context-menu` route (see main.tsx) in
+// a new tab, since a plain browser tab can't spawn a borderless owned window.
+function petContextMenuPreviewUrl(petId: string, petName: string) {
+  const url = new URL(window.location.origin);
+  url.searchParams.set("surface", "pet-context-menu");
+  url.searchParams.set("petId", petId);
+  url.searchParams.set("petName", petName);
+  url.searchParams.set("note", "");
+  return url.toString();
+}
+
 function hitLayoutForPresentation(
   presentation: PetWindowPresentation,
 ): PetWindowHitLayout {
@@ -182,7 +202,12 @@ function steadyActivity(
 }
 
 
-export function PetWindowView({ pet }: PetWindowViewProps) {
+export function PetWindowView({
+  pet,
+  previewPresentation,
+  previewScale,
+}: PetWindowViewProps) {
+  const isPreview = !isTauri();
   const surfaceRef = useRef<HTMLElement | null>(null);
   const visualFrameRef = useRef<HTMLSpanElement | null>(null);
   const dragPauseUntilRef = useRef(0);
@@ -210,13 +235,18 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     null,
   );
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [spriteScale, setSpriteScale] = useState(1);
-  const [spritesheetUrl, setSpritesheetUrl] = useState<string | null>(null);
-  const [presentation, setPresentation] = useState<PetWindowPresentation>(() =>
-    defaultPresentation(pet.windowIndex),
+  const [spriteScale, setSpriteScale] = useState(
+    isPreview && previewScale ? clampPetWindowScale(previewScale) : 1,
   );
+  const [spritesheetUrl, setSpritesheetUrl] = useState<string | null>(null);
+  const [presentation, setPresentation] = useState<PetWindowPresentation>(() => ({
+    ...defaultPresentation(pet.windowIndex),
+    ...(isPreview ? previewPresentation : undefined),
+  }));
   const [isBodyHovered, setIsBodyHovered] = useState(false);
-  const [petName, setPetName] = useState<string | null>(null);
+  const [petName, setPetName] = useState<string | null>(
+    isPreview ? (pet.name ?? null) : null,
+  );
   const presentationRef = useRef<PetWindowPresentation>(presentation);
   const shownActivityRef = useRef<ShownActivity>({ value: null, at: 0 });
   const petNameRef = useRef<string | null>(null);
@@ -224,11 +254,15 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
 
   useEffect(() => {
     document.documentElement.classList.add("pet-window-document");
+    if (isPreview) {
+      document.documentElement.classList.add("pet-window-fixture-preview");
+    }
 
     return () => {
       document.documentElement.classList.remove("pet-window-document");
+      document.documentElement.classList.remove("pet-window-fixture-preview");
     };
-  }, []);
+  }, [isPreview]);
 
   useEffect(() => {
     if (!isTauri()) {
@@ -513,9 +547,11 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       appliedSizeRef.current = nextSize;
       resizeAppliedScaleRef.current = newScale;
       setSpriteScale(newScale);
-      void getCurrentWindow().setSize(
-        new LogicalSize(nextSize.width, nextSize.height),
-      );
+      if (isTauri()) {
+        void getCurrentWindow().setSize(
+          new LogicalSize(nextSize.width, nextSize.height),
+        );
+      }
       return;
     }
 
@@ -646,10 +682,12 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
       }
 
       appliedSizeRef.current = petWindowSizeForScale(finalScale);
-      void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_RESIZE_EVENT, {
-        petId: pet.petId,
-        scale: finalScale,
-      } satisfies PetWindowResizeEvent);
+      if (isTauri()) {
+        void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_RESIZE_EVENT, {
+          petId: pet.petId,
+          scale: finalScale,
+        } satisfies PetWindowResizeEvent);
+      }
       return;
     }
 
@@ -702,6 +740,15 @@ export function PetWindowView({ pet }: PetWindowViewProps) {
     event.preventDefault();
     pointerStartRef.current = null;
     void setNativeCursorPassthrough(false);
+
+    if (isPreview) {
+      window.open(
+        petContextMenuPreviewUrl(pet.petId, petName ?? pet.petId),
+        "_blank",
+        "noopener,noreferrer",
+      );
+      return;
+    }
 
     // Pass clientX/Y (CSS pixels relative to this window's content area) rather
     // than screenX/Y, which is unreliable across monitors in WebView2. The host
