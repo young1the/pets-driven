@@ -32,7 +32,12 @@ const PERSONALITY_OCEAN = Object.fromEntries(
 function personalityComponent(
   id: PetPersonalityId | undefined,
 ): PersonalityComponent {
-  return { type: "Personality", ...PERSONALITY_OCEAN[id ?? "playful"] };
+  const catalogId = id ?? "playful";
+  return {
+    type: "Personality",
+    catalogId,
+    ...PERSONALITY_OCEAN[catalogId],
+  };
 }
 
 /**

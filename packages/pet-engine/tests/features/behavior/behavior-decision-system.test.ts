@@ -7,6 +7,7 @@ import {
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 const BOUNDS = { width: 960, height: 540 };
 
@@ -1231,6 +1232,7 @@ describe("BehaviorPlanningSystem — Phase 3 social tokens", () => {
 
 function makeStoreWithDrives(
   prefOverride: Partial<{
+    catalogId: PetPersonalityId;
     openness: number;
     conscientiousness: number;
     extraversion: number;
@@ -1339,6 +1341,31 @@ function selectionProbability(
 }
 
 describe("BehaviorDecisionSystem — Drives-aware scoring", () => {
+  it("applies the Personality Catalog signature to the actual decision trace", () => {
+    const attentive = makeStoreWithDrives({ catalogId: "attentive" });
+    runBehaviorDecisionSystem(
+      attentive,
+      createManualClock(0),
+      createSeededRandom(1),
+      BOUNDS,
+    );
+
+    const aloof = makeStoreWithDrives({ catalogId: "aloof" });
+    runBehaviorDecisionSystem(
+      aloof,
+      createManualClock(0),
+      createSeededRandom(1),
+      BOUNDS,
+    );
+
+    expect(selectionProbability(attentive, "seek-user")).toBeGreaterThan(
+      selectionProbability(aloof, "seek-user"),
+    );
+    expect(selectionProbability(aloof, "beckon")).toBeLessThan(
+      selectionProbability(attentive, "beckon"),
+    );
+  });
+
   it("a lonely pet (social near 1) is far more likely to approach a nearby pet than a satisfied one", () => {
     const lonely = makeNearbyStoreWithDrives({ social: 0.95 });
     runBehaviorDecisionSystem(lonely, createManualClock(0), createSeededRandom(1), BOUNDS);

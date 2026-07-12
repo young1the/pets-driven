@@ -10,6 +10,7 @@ import {
   BEHAVIOR_PRIORITY,
 } from "@pets-driven/pet-engine/features/behavior/components";
 import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
+import { personalitySocialKindScale } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
 import type {
   SocialSessionComponent,
   SocialSessionKind,
@@ -429,24 +430,47 @@ function acceptChance(
  * (chase), warm calm pairs greet, talkative pairs chat. Weighted random keeps
  * it varied rather than deterministic.
  */
+export function socialSessionKindWeights(
+  a: PersonalityComponent,
+  b: PersonalityComponent,
+): Array<{ kind: SocialSessionKind; weight: number }> {
+  const e = (a.extraversion + b.extraversion) / 2;
+  const o = (a.openness + b.openness) / 2;
+  const agr = (a.agreeableness + b.agreeableness) / 2;
+  const n = (a.neuroticism + b.neuroticism) / 2;
+  const aScale = personalitySocialKindScale(a.catalogId);
+  const bScale = personalitySocialKindScale(b.catalogId);
+  const pairScale = (kind: SocialSessionKind) =>
+    Math.sqrt(aScale[kind] * bScale[kind]);
+  return [
+    {
+      kind: "chase",
+      weight: clamp(0.15 + e * 0.6 + o * 0.3 - n * 0.4, 0.02, 2) *
+        pairScale("chase"),
+    },
+    {
+      kind: "greet",
+      weight: clamp(0.3 + agr * 0.4 + (1 - n) * 0.2, 0.02, 2) *
+        pairScale("greet"),
+    },
+    {
+      kind: "chat",
+      weight: clamp(0.25 + e * 0.4 + agr * 0.3, 0.02, 2) *
+        pairScale("chat"),
+    },
+  ];
+}
+
 function pickKind(
   a: PersonalityComponent,
   b: PersonalityComponent,
   random: RandomSource,
 ): SocialSessionKind {
-  const e = (a.extraversion + b.extraversion) / 2;
-  const o = (a.openness + b.openness) / 2;
-  const agr = (a.agreeableness + b.agreeableness) / 2;
-  const n = (a.neuroticism + b.neuroticism) / 2;
-  const weights: Array<{ kind: SocialSessionKind; w: number }> = [
-    { kind: "chase", w: clamp(0.15 + e * 0.6 + o * 0.3 - n * 0.4, 0.02, 2) },
-    { kind: "greet", w: clamp(0.3 + agr * 0.4 + (1 - n) * 0.2, 0.02, 2) },
-    { kind: "chat", w: clamp(0.25 + e * 0.4 + agr * 0.3, 0.02, 2) },
-  ];
-  const total = weights.reduce((s, x) => s + x.w, 0);
+  const weights = socialSessionKindWeights(a, b);
+  const total = weights.reduce((sum, entry) => sum + entry.weight, 0);
   let r = random.next() * total;
   for (const entry of weights) {
-    r -= entry.w;
+    r -= entry.weight;
     if (r <= 0) return entry.kind;
   }
   return "greet";

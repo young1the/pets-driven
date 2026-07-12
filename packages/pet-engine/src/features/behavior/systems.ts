@@ -19,6 +19,11 @@ import {
 } from "@pets-driven/pet-engine/features/drives/systems";
 import { isBumpSocialEligible } from "@pets-driven/pet-engine/features/social/systems";
 import {
+  personalityArrivalDwellScale,
+  personalityIdleDurationScale,
+  signedDecisionScore,
+} from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
+import {
   ARRIVAL_DWELL_REASON,
   BOOKKEEPING_AUTONOMOUS_REASONS,
   IDLE_CONVERSATION_REASON,
@@ -251,9 +256,10 @@ function idleStayDurationMs(
   random: RandomSource,
 ): number {
   return Math.round(
-    IDLE_STAY_BASE_MS +
+    (IDLE_STAY_BASE_MS +
       (1 - p.extraversion) * IDLE_STAY_INTROVERSION_MS +
-      random.next() * IDLE_STAY_JITTER_MS,
+      random.next() * IDLE_STAY_JITTER_MS) *
+      personalityIdleDurationScale(p.catalogId),
   );
 }
 
@@ -264,9 +270,10 @@ function arrivalDwellMs(
 ): number {
   const jitter = random ? random.next() : 0.5;
   return Math.round(
-    ARRIVAL_DWELL_BASE_MS +
+    (ARRIVAL_DWELL_BASE_MS +
       (1 - p.extraversion) * ARRIVAL_DWELL_INTROVERSION_MS +
-      jitter * ARRIVAL_DWELL_JITTER_MS,
+      jitter * ARRIVAL_DWELL_JITTER_MS) *
+      personalityArrivalDwellScale(p.catalogId),
   );
 }
 
@@ -2124,7 +2131,14 @@ export function runBehaviorDecisionSystem(
         });
 
         const reactionSelection = softmaxSample(
-          reactiveCandidates,
+          reactiveCandidates.map((candidate) => ({
+            ...candidate,
+            score: signedDecisionScore(
+              personality.catalogId,
+              candidate.kind,
+              candidate.score,
+            ),
+          })),
           personality.neuroticism,
           random,
         );
@@ -2370,7 +2384,14 @@ export function runBehaviorDecisionSystem(
       // Softmax sampling: temperature scales with neuroticism.
       // High N → higher T → flatter distribution → more erratic behaviour.
       const selection = softmaxSample(
-        candidates,
+        candidates.map((candidate) => ({
+          ...candidate,
+          score: signedDecisionScore(
+            personality.catalogId,
+            candidate.kind,
+            candidate.score,
+          ),
+        })),
         personality.neuroticism,
         random,
       );

@@ -244,6 +244,8 @@ export type PetExpressionStateComponent = {
  */
 export type PersonalityComponent = {
   type: "Personality";
+  /** Catalog identity that supplies categorical behavior signatures. */
+  catalogId?: import("@pets-driven/pet-engine/pets/personalities/registry").PetPersonalityId;
   openness: number;
   conscientiousness: number;
   extraversion: number;

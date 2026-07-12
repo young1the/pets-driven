@@ -5,12 +5,13 @@ import {
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
 import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 function stateWithPet(overrides: {
   id: string;
   archived?: boolean;
   visible?: boolean;
-  personalityId?: "playful" | "attentive" | "reserved" | "curious" | "steady" | "bold";
+  personalityId?: PetPersonalityId;
   agentSourceId?: string;
 }): PetsDrivenState {
   const base = createEmptyPetsDrivenState();
@@ -67,6 +68,7 @@ describe("selectAdoptedPetSimInputs", () => {
         sourceId: "agent-1",
         personality: {
           type: "Personality",
+          catalogId: "reserved",
           openness: 0.22,
           conscientiousness: 0.55,
           extraversion: 0.12,
@@ -91,6 +93,7 @@ describe("selectAdoptedPetSimInputs", () => {
 
     expect(selectAdoptedPetSimInputs(state)[0].personality).toEqual({
       type: "Personality",
+      catalogId: "curious",
       openness: 0.98,
       conscientiousness: 0.35,
       extraversion: 0.45,
