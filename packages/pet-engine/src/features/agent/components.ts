@@ -22,9 +22,10 @@ export type CompletionBehaviorComponent = {
  * Movement hold imposed while a task sits in a freezing status. Added on the
  * freezing transition and removed when the agent moves the pet on to a
  * non-freezing status, or when the user releases the pet by interacting with
- * it. Movement freeze keys on this component's presence — NOT on
- * AgentTaskState.status — so a user release can lift the hold while the
- * agent-reported status stays on the pet.
+ * it. A user release also clears the settled AgentTaskState (and its
+ * agent-task channel badge) — interacting means "acknowledged, back to idle".
+ * Movement freeze keys on this component's presence — NOT on
+ * AgentTaskState.status.
  */
 export type TaskMovementHoldComponent = {
   type: "TaskMovementHold";

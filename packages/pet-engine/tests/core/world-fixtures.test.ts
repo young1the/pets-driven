@@ -1233,14 +1233,14 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    // Interaction lifts the hold but the agent's "waiting" report stays on
-    // the pet.
+    // Interaction lifts the hold and clears the agent's "waiting" report —
+    // the user acknowledged it, so the pet returns to idle.
     expect(
       scenario.world.getComponent("pet-a", "TaskMovementHold"),
     ).toBeUndefined();
     expect(
       scenario.world.getComponent("pet-a", "AgentTaskState"),
-    ).toMatchObject({ status: "waiting" });
+    ).toBeUndefined();
   });
 
   it("clears stale seek-user targets after walking pets reach the resolved stop target", () => {

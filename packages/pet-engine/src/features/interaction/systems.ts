@@ -6,6 +6,7 @@ import type {
   PointerWorldEvent,
 } from "@pets-driven/pet-engine/features/events/world-event";
 import type { WorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
+import { statusFreezesMovement } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
@@ -40,11 +41,11 @@ function handlePointerEvent(
     const controlHit = hitTest(components, event.position, "CanControl");
     const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
     if (target) target.entityId = controlHit?.id ?? null;
-    if (controlHit) releaseTaskHold(components, controlHit.id);
+    if (controlHit) releaseAgentTask(components, controlHit.id);
 
     const dragHit = hitTest(components, event.position, "CanDrag");
     if (!dragHit) return;
-    releaseTaskHold(components, dragHit.id);
+    releaseAgentTask(components, dragHit.id);
 
     components.setComponent(INTERACTION_ENTITY_ID, {
       type: "DragInteraction",
@@ -88,11 +89,21 @@ function handlePointerEvent(
   }
 }
 
-// Interacting with a pet only lifts the movement hold — the agent-reported
-// task state (and its channel badge) stays on the pet. Clicking means "I see
-// it, you can move again", not "erase what the agent reported".
-function releaseTaskHold(components: ComponentStore, id: string): void {
+// Interacting with a pet acknowledges what the agent reported: the movement
+// hold lifts, and a settled status (waiting/failed/completed) clears along
+// with its channel badge — the pet returns to idle. A live "working" status
+// stays; clicking must not erase an agent that is still running.
+function releaseAgentTask(components: ComponentStore, id: string): void {
   components.removeComponent(id, "TaskMovementHold");
+
+  const task = components.getComponent(id, "AgentTaskState");
+  if (!task || !statusFreezesMovement(task.status)) return;
+  components.removeComponent(id, "AgentTaskState");
+
+  const channel = components.getComponent(id, "AgentChannelState");
+  if (channel?.source === "agent-task") {
+    components.removeComponent(id, "AgentChannelState");
+  }
 }
 
 function handleKeyboardEvent(
@@ -258,6 +269,8 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "KeyboardControlTarget",
     "KeyboardInputState",
     "DragInteraction",
+    "AgentTaskState",
+    "AgentChannelState",
   ],
   writes: [
     "KeyboardControlTarget",
@@ -265,6 +278,8 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "DragInteraction",
     "BehaviorDecisionState",
     "TaskMovementHold",
+    "AgentTaskState",
+    "AgentChannelState",
   ],
   update(ctx) {
     runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock);
