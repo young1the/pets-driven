@@ -29,7 +29,8 @@
     "active": true,
     "targets": ["nsis"],
     "resources": {
-      "../../../plugins": "plugins"
+      "../../../plugins": "plugins",
+      "../../../pets": "pets"
     },
     "windows": {
       "nsis": {

@@ -4,6 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use tauri::Manager;
+
 use crate::state_store;
 
 #[derive(serde::Deserialize)]
@@ -147,12 +149,34 @@ fn read_pet_packages_from_roots(roots: &[PathBuf]) -> Vec<CodexPetPackage> {
     packages
 }
 
+/// The built-in pets shipped with the app: a bundled resource in packaged
+/// builds, the repo-root `pets/` checkout when running `tauri dev`. This is what
+/// lets a fresh install show the default pets without a populated
+/// `~/.codex/pets`. Mirrors `claude_plugin::bundled_plugins_dir`.
+fn bundled_pets_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        candidates.push(resource_dir.join("pets"));
+    }
+    candidates.push(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("..")
+            .join("pets"),
+    );
+
+    candidates.into_iter().find(|dir| dir.is_dir())
+}
+
 /// The ordered list of roots to scan: the built-in Codex root first, then the
 /// user's extra `petSourceDirectories` read straight from the persisted state
-/// file. Reading the config here (rather than threading it through every caller)
-/// keeps the frontend and the pet windows unaware of the extra folders while
-/// still resolving their sprites. Order matches `read_pet_packages_from_roots`
-/// so a listed pack and its loaded sprite always resolve to the same file.
+/// file, and finally the pets bundled with the app. Reading the config here
+/// (rather than threading it through every caller) keeps the frontend and the
+/// pet windows unaware of the extra folders while still resolving their sprites.
+/// Order matches `read_pet_packages_from_roots` so a listed pack and its loaded
+/// sprite always resolve to the same file; the bundled defaults come last so a
+/// user's Codex pets or an explicitly added folder win on an id collision.
 fn configured_pet_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = Vec::new();
 
@@ -174,6 +198,10 @@ fn configured_pet_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
                 }
             }
         }
+    }
+
+    if let Some(bundled) = bundled_pets_dir(app) {
+        roots.push(bundled);
     }
 
     roots
@@ -231,6 +259,32 @@ mod tests {
         ));
         fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    // The repo-root pets/ directory bundled into packaged builds. Kept in sync
+    // with bundled_pets_dir's dev fallback.
+    fn repo_root_pets_dir() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("..")
+            .join("pets")
+    }
+
+    #[test]
+    fn bundled_pets_directory_parses_into_the_built_in_packs() {
+        let packages = read_pet_packages(&repo_root_pets_dir())
+            .expect("repo-root pets/ should parse as pet packages");
+
+        // The six pets shipped with the app must each ship a manifest + sheet so
+        // a fresh install (no ~/.codex/pets) still lists and loads them.
+        for id in ["cato", "otto", "mochi", "fenn", "bloop", "pip"] {
+            assert!(
+                packages.iter().any(|package| package.id == id),
+                "built-in pet '{id}' missing from bundled pets/ (got {:?})",
+                packages.iter().map(|p| &p.id).collect::<Vec<_>>(),
+            );
+        }
     }
 
     fn write_pet(root: &Path, dir: &str, manifest: &str, with_sprite: bool) {
