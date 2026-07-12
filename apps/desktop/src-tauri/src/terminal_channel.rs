@@ -50,6 +50,18 @@ fn split_command_line(line: &str) -> Vec<String> {
     tokens
 }
 
+/// wt treats `;` as a tab delimiter even when it arrives inside a quoted
+/// argument (argv parsing strips the quotes before wt splits commands), so a
+/// launch line like `bash -lc "claude; exec bash"` opens a second tab that
+/// tries to run ` exec bash` and fails with 0x80070002. Escaping as `\;`
+/// (wt's documented escape) makes wt pass the semicolon through to the shell.
+/// Only the wt invocation needs this; a directly spawned shell must not see
+/// the backslash.
+#[cfg(any(target_os = "windows", test))]
+fn escape_wt_semicolons(token: &str) -> String {
+    token.replace(';', r"\;")
+}
+
 /// Poll the foreground window until a foreign (not our process), visible,
 /// non-minimised window other than `baseline` appears, or we time out. This is
 /// the shared primitive for both auto-bind-after-launch and connect-mode.
@@ -150,12 +162,15 @@ pub(crate) fn start_session(cwd: String, command: String) -> Result<Option<Forei
     let (program, rest) = tokens.split_first().expect("default line has a program");
 
     // Prefer Windows Terminal's tab UI; fall back to spawning the shell directly
-    // in the pet folder. ponytail: wt treats ';' as a tab delimiter, so a command
-    // like `bash -lc "a; b"` may need the caller to escape it (`\;`).
+    // in the pet folder.
+    let wt_tokens: Vec<String> = tokens
+        .iter()
+        .map(|token| escape_wt_semicolons(token))
+        .collect();
     let spawned = Command::new("wt")
         .arg("-d")
         .arg(&cwd)
-        .args(&tokens)
+        .args(&wt_tokens)
         .spawn()
         .is_ok()
         || Command::new(program)
@@ -188,7 +203,7 @@ pub(crate) fn start_session(
 
 #[cfg(test)]
 mod tests {
-    use super::split_command_line;
+    use super::{escape_wt_semicolons, split_command_line};
 
     #[test]
     fn splits_bare_tokens() {
@@ -205,6 +220,12 @@ mod tests {
                 "claude; exec bash",
             ]
         );
+    }
+
+    #[test]
+    fn escapes_semicolons_for_wt() {
+        assert_eq!(escape_wt_semicolons("claude; exec bash"), r"claude\; exec bash");
+        assert_eq!(escape_wt_semicolons("claude"), "claude");
     }
 
     #[test]
