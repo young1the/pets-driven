@@ -80,7 +80,7 @@
 .pd-app-toast {
   position: fixed;
   left: 50%;
-  bottom: 28px;
+  top: 28px;
   transform: translateX(-50%);
   z-index: 60;
   display: flex;
