@@ -142,6 +142,20 @@ export function createWorld(input: WorldDefinition) {
                 }
               : null;
           })(),
+          mood: (() => {
+            const mood = componentStore.getComponent(entity.id, "MoodState");
+            if (!mood) return null;
+            const memory = componentStore.getComponent(
+              entity.id,
+              "RecentExperienceMemory",
+            );
+            return {
+              valence: mood.valence,
+              arousal: mood.arousal,
+              confidence: mood.confidence,
+              recentExperienceCount: memory?.entries.length ?? 0,
+            };
+          })(),
           decision: decisionState
             ? {
                 source: decisionState.source,

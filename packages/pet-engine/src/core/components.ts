@@ -91,6 +91,12 @@ export type {
 
 export type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 export type {
+  MoodStateComponent,
+  PetExperienceKind,
+  RecentExperience,
+  RecentExperienceMemoryComponent,
+} from "@pets-driven/pet-engine/features/mood/components";
+export type {
   CursorSample,
   CursorStateComponent,
   CursorInputComponent,
@@ -170,6 +176,10 @@ import type {
 } from "@pets-driven/pet-engine/features/interaction/components";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import type {
+  MoodStateComponent,
+  RecentExperienceMemoryComponent,
+} from "@pets-driven/pet-engine/features/mood/components";
+import type {
   CursorStateComponent,
   CursorInputComponent,
 } from "@pets-driven/pet-engine/features/cursor/components";
@@ -213,6 +223,8 @@ export type Component =
   | CursorInputComponent
   | DragInteractionComponent
   | DrivesComponent
+  | MoodStateComponent
+  | RecentExperienceMemoryComponent
   | FlyingTagComponent
   | GroundComponent
   | IdleConversationComponent

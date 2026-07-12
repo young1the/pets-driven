@@ -82,6 +82,13 @@ export type PetSnapshot = {
   activity?: PetActivityKind | null;
   /** Current drive pressures (0..1, higher = more pressing), if the pet has them. */
   drives?: { social: number; energy: number; curiosity: number } | null;
+  /** Short-lived emotional context and number of experiences still in memory. */
+  mood?: {
+    valence: number;
+    arousal: number;
+    confidence: number;
+    recentExperienceCount: number;
+  } | null;
   /** Current behavior decision claim, or null if no active claim. */
   decision: { source: string; reason: string; decidedAt: number } | null;
   /** Active deliberation timer, or null if no pending reaction. */

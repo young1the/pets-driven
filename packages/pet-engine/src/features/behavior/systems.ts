@@ -19,6 +19,10 @@ import {
 } from "@pets-driven/pet-engine/features/drives/systems";
 import { isBumpSocialEligible } from "@pets-driven/pet-engine/features/social/systems";
 import {
+  moodAdjustedDecisionScore,
+  recordPetExperience,
+} from "@pets-driven/pet-engine/features/mood/systems";
+import {
   personalityArrivalDwellScale,
   personalityIdleDurationScale,
   signedDecisionScore,
@@ -587,6 +591,7 @@ export function runPettingDetectionSystem(
         startedAt: now,
         expiresAt: now + PETTING_DURATION_MS,
       });
+      recordPetExperience(components, id, "petted", now);
     },
   );
 }
@@ -727,6 +732,7 @@ export function runAgentTaskEventSystem(
           setSpeech(speech, event.summary ?? speechProfile.taskStarted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.started");
+          recordPetExperience(components, id, "task-started", now);
         }
 
         if (
@@ -741,6 +747,7 @@ export function runAgentTaskEventSystem(
             now,
           );
           claim(components, id, "agent-event", now, event.type);
+          recordPetExperience(components, id, "task-waiting", now);
         }
 
         if (event.type === "task.failed") {
@@ -749,6 +756,7 @@ export function runAgentTaskEventSystem(
           setSpeech(speech, event.summary ?? "Task failed", now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.failed");
+          recordPetExperience(components, id, "task-failed", now);
         }
 
         if (event.type === "task.completed") {
@@ -757,6 +765,7 @@ export function runAgentTaskEventSystem(
           setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
+          recordPetExperience(components, id, "task-completed", now);
         }
       }
     },
@@ -1019,6 +1028,7 @@ export function runCollisionBehaviorSystem(
       }
 
       recordPairReaction(components, entity.id, collision.id, now);
+      recordPetExperience(components, entity.id, "startled", now);
       continue;
     }
     if (isEscapingCollisionFlee(components, entity, collision)) continue;
@@ -1039,6 +1049,7 @@ export function runCollisionBehaviorSystem(
         otherPosition: { x: collision.x, y: collision.y },
       },
     } satisfies PendingReactionComponent);
+    recordPetExperience(components, entity.id, "startled", now);
 
     // Freeze the pet immediately: clear existing MotionTarget and reset intent
     // to idle so locomotion systems see no active goal and the pet stops.
@@ -1982,6 +1993,7 @@ export function runBehaviorDecisionSystem(
       // drives-aware score function below falls back to its original
       // personality-only formula when this is undefined.
       const drives = components.getComponent(id, "Drives");
+      const mood = components.getComponent(id, "MoodState");
 
       // Phase 4: PendingReaction present → claim just expired at reactsAt.
       // Route to the personality-shaped reactive candidate pool instead of
@@ -2133,10 +2145,14 @@ export function runBehaviorDecisionSystem(
         const reactionSelection = softmaxSample(
           reactiveCandidates.map((candidate) => ({
             ...candidate,
-            score: signedDecisionScore(
-              personality.catalogId,
+            score: moodAdjustedDecisionScore(
               candidate.kind,
-              candidate.score,
+              signedDecisionScore(
+                personality.catalogId,
+                candidate.kind,
+                candidate.score,
+              ),
+              mood,
             ),
           })),
           personality.neuroticism,
@@ -2386,10 +2402,14 @@ export function runBehaviorDecisionSystem(
       const selection = softmaxSample(
         candidates.map((candidate) => ({
           ...candidate,
-          score: signedDecisionScore(
-            personality.catalogId,
+          score: moodAdjustedDecisionScore(
             candidate.kind,
-            candidate.score,
+            signedDecisionScore(
+              personality.catalogId,
+              candidate.kind,
+              candidate.score,
+            ),
+            mood,
           ),
         })),
         personality.neuroticism,
@@ -2788,6 +2808,8 @@ export const PettingDetectionSystem: SimulationSystem<WorldStepContext> = {
     "DragInteraction",
     "BehaviorDecisionState",
     "PetExpressionState",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   writes: [
     "BehaviorDecisionState",
@@ -2795,6 +2817,8 @@ export const PettingDetectionSystem: SimulationSystem<WorldStepContext> = {
     "Steering",
     "MotionTarget",
     "PhysicsVelocity",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   update(ctx) {
     runPettingDetectionSystem(ctx.components, ctx.clock, ctx.physics);
@@ -2832,7 +2856,14 @@ export const HoverReactionSystem: SimulationSystem<WorldStepContext> = {
 export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentTaskEventSystem",
   dependsOn: ["PetExpressionExpirationSystem"],
-  reads: ["AgentBinding", "SpeechProfile", "SpeechState", "ActivityState"],
+  reads: [
+    "AgentBinding",
+    "SpeechProfile",
+    "SpeechState",
+    "ActivityState",
+    "MoodState",
+    "RecentExperienceMemory",
+  ],
   writes: [
     "AgentTaskState",
     "AgentChannelState",
@@ -2840,6 +2871,8 @@ export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
     "ActivityState",
     "BehaviorDecisionState",
     "TaskMovementHold",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   update(ctx) {
     runAgentTaskEventSystem(
@@ -2878,6 +2911,8 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "ClimbIntentState",
     "SocialSessionMember",
     "CollisionMemory",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   writes: [
     "PendingReaction",
@@ -2886,6 +2921,8 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
     "Steering",
     "PetExpressionState",
     "CollisionMemory",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   update(ctx) {
     runCollisionBehaviorSystem(ctx.components, ctx.bounds, ctx.clock);
@@ -2931,6 +2968,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "CanWallClimb",
     "ClimbDismountState",
     "Drives",
+    "MoodState",
     "TaskMovementHold",
     // B4: bump-to-greet eligibility (drops collision-engage for social pairs).
     "CanSocialize",

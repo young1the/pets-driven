@@ -208,6 +208,14 @@ _Avoid_: behavior (bare), intent, activity
 Which kind of trigger a **Decision** came from, used to rank competing decisions: user-interaction, agent-event, social, collision, or autonomous (in priority order, highest first).
 _Avoid_: behavior priority (as a domain term)
 
+**Mood**:
+The short-lived emotional context that colors a **Pet**'s next decisions along valence, arousal, and confidence. **Mood** changes after meaningful experiences and gradually returns toward the temperament implied by the **Pet Profile**.
+_Avoid_: personality, drive, expression
+
+**Recent Experience Memory**:
+The bounded, session-local list of recent events that are still shaping a **Pet**'s **Mood**, such as being petted, startled, acknowledged, completing work, or finishing a **Social Session**. It is behavioral context, not durable history or a lasting relationship.
+_Avoid_: Attention History, relationship, audit log
+
 **Locomotion**:
 How a **Pet**'s body moves: its means (walking, climbing, flying) and its gait (an easy amble versus a full-tilt run). Chosen from the **Decision** each frame, before **Steering**, and it gates which **Steering** force may apply (a walking body gets a walking push, a flying body gets a steering push).
 _Avoid_: steering, intent, motion mode
@@ -330,6 +338,10 @@ _Avoid_: cooldown (as a domain term), session
 - A **Pet Status Card** combines **Agent Work State** (as tone and color) with **Activity** (as label) into one indicator.
 - When a **Pet** needs the user (a waiting or failed **Agent Work State**), the **Agent Work State** owns the **Pet Status Card** label; otherwise the **Activity** provides the label.
 - A **Pet**'s motion is produced by a top-down chain each frame: **Drives** and perception feed a **Decision**, the **Decision** sets a **Locomotion**, the **Locomotion** gates **Steering**, and **Steering** hands force to the physics engine; the **Activity** is a read-only label derived from that state.
+- A **Pet**'s **Mood** also shapes candidate **Decisions** after the **Pet Profile** and **Drives** are applied.
+- Meaningful user, agent, collision, and social events append to **Recent Experience Memory** and immediately shift **Mood**.
+- **Mood** recovers toward the **Pet Profile**'s temperament baseline over time.
+- **Recent Experience Memory** is bounded, session-local, and expires automatically; it does not create a lasting **Relationship** between **Pets**.
 - The layer order is Drives → **Decision** → **Locomotion** → **Steering** → physics engine → animation.
 - A **Decision** is ranked by its **Decision Source**: user-interaction > agent-event > social > collision > autonomous.
 - A **Decision** and the **Locomotion** it sets are always published together: applying a new **Decision** rewrites the **Locomotion** in the same step, so a **Pet**'s body never keeps executing a movement that its current **Decision** no longer wants. (Breaking this pairing is what would make a **Pet** keep walking after switching to a standing-still **Decision** such as a chat.)

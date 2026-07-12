@@ -1341,6 +1341,43 @@ function selectionProbability(
 }
 
 describe("BehaviorDecisionSystem — Drives-aware scoring", () => {
+  it("applies Mood after personality and drive scoring", () => {
+    const frightened = makeStoreWithDrives();
+    frightened.setComponent("pet", {
+      type: "MoodState",
+      valence: -0.5,
+      arousal: 1,
+      confidence: 0.1,
+    });
+    runBehaviorDecisionSystem(
+      frightened,
+      createManualClock(0),
+      createSeededRandom(1),
+      BOUNDS,
+    );
+
+    const confident = makeStoreWithDrives();
+    confident.setComponent("pet", {
+      type: "MoodState",
+      valence: 0.3,
+      arousal: 0.35,
+      confidence: 0.9,
+    });
+    runBehaviorDecisionSystem(
+      confident,
+      createManualClock(0),
+      createSeededRandom(1),
+      BOUNDS,
+    );
+
+    expect(selectionProbability(frightened, "wander-far")).toBeLessThan(
+      selectionProbability(confident, "wander-far"),
+    );
+    expect(selectionProbability(frightened, "seek-user")).toBeGreaterThan(
+      selectionProbability(confident, "seek-user"),
+    );
+  });
+
   it("applies the Personality Catalog signature to the actual decision trace", () => {
     const attentive = makeStoreWithDrives({ catalogId: "attentive" });
     runBehaviorDecisionSystem(

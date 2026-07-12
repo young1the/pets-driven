@@ -11,6 +11,7 @@ import {
 } from "@pets-driven/pet-engine/features/behavior/components";
 import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
 import { personalitySocialKindScale } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
+import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
 import type {
   SocialSessionComponent,
   SocialSessionKind,
@@ -738,6 +739,7 @@ function partWithParticipant(
     components.removeComponent(id, "SocialSessionMember");
   }
   refillSocial(components, id, SESSION_SOCIAL_REFILL);
+  recordPetExperience(components, id, "socialized", now);
   // A pet the session lost to a higher-priority claim is owned by that claim;
   // don't stop it or hold an afterglow over the top of it.
   if (!isBlockedByHigherPriority(components, id, now)) {
@@ -1175,6 +1177,8 @@ export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
     "SocialSession",
     "SocialSessionMember",
     "PendingReaction",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   writes: [
     "SocialInvite",
@@ -1187,6 +1191,8 @@ export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
     "SpeechState",
     "Drives",
     "PendingReaction",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   update(ctx) {
     runSocialInteractionSystem(

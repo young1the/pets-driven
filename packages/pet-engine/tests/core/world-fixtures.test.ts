@@ -247,6 +247,7 @@ describe("demo scenario", () => {
       "ClimbAttachmentSystem",
       "MotionTargetSystem",
       "DriveDecaySystem",
+      "MoodRecoverySystem",
       // POST_UPDATE
       "TaskMovementHoldSystem",
       "WalkSystem",
@@ -366,6 +367,12 @@ describe("demo scenario", () => {
       writes: ["Drives"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
+      name: "MoodRecoverySystem",
+      dependsOn: ["DriveDecaySystem"],
+      reads: ["MoodState", "RecentExperienceMemory", "Personality"],
+      writes: ["MoodState", "RecentExperienceMemory"],
+    });
+    expect(scenario.world.systemPlan()).toContainEqual({
       name: "ClimbDismountSystem",
       dependsOn: ["ArrivalBehaviorSystem"],
       reads: [
@@ -402,7 +409,14 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "AgentTaskEventSystem",
       dependsOn: ["PetExpressionExpirationSystem"],
-      reads: ["AgentBinding", "SpeechProfile", "SpeechState", "ActivityState"],
+      reads: [
+        "AgentBinding",
+        "SpeechProfile",
+        "SpeechState",
+        "ActivityState",
+        "MoodState",
+        "RecentExperienceMemory",
+      ],
       writes: [
         "AgentTaskState",
         "AgentChannelState",
@@ -410,6 +424,8 @@ describe("demo scenario", () => {
         "ActivityState",
         "BehaviorDecisionState",
         "TaskMovementHold",
+        "MoodState",
+        "RecentExperienceMemory",
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -430,6 +446,8 @@ describe("demo scenario", () => {
         "ClimbIntentState",
         "SocialSessionMember",
         "CollisionMemory",
+        "MoodState",
+        "RecentExperienceMemory",
       ],
       writes: [
         "PendingReaction",
@@ -438,6 +456,8 @@ describe("demo scenario", () => {
         "Steering",
         "PetExpressionState",
         "CollisionMemory",
+        "MoodState",
+        "RecentExperienceMemory",
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -475,6 +495,7 @@ describe("demo scenario", () => {
         "CanWallClimb",
         "ClimbDismountState",
         "Drives",
+        "MoodState",
         "TaskMovementHold",
         "CanSocialize",
         "SocialSessionMember",

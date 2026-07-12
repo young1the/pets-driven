@@ -10,6 +10,7 @@ import { statusFreezesMovement } from "@pets-driven/pet-engine/features/agent/ag
 import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { personalityAcknowledgeFeedback } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
+import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
 
 const INTERACTION_ENTITY_ID = "user-interaction";
 const DRAG_START_DISTANCE = 4;
@@ -139,6 +140,7 @@ function releaseAgentTask(
       `acknowledge-${task.status}`,
       durationMs,
     );
+    recordPetExperience(components, id, "acknowledged", now);
   }
 }
 
@@ -310,6 +312,8 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "Personality",
     "SpeechState",
     "PetExpressionState",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   writes: [
     "KeyboardControlTarget",
@@ -321,6 +325,8 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "AgentChannelState",
     "SpeechState",
     "PetExpressionState",
+    "MoodState",
+    "RecentExperienceMemory",
   ],
   update(ctx) {
     runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock);

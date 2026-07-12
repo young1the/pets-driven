@@ -17,6 +17,7 @@ import {
 } from "@pets-driven/pet-engine/pets/constants/pet-body";
 import { DEFAULT_PET_SPEECH } from "@pets-driven/pet-engine/pets/constants/pet-speech";
 import { personalitySpeechProfile } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
+import { initialMoodState } from "@pets-driven/pet-engine/features/mood/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { createWorld } from "@pets-driven/pet-engine/core/create-world";
 import {
@@ -193,6 +194,16 @@ export function createFixturePet(input: {
     }
   }
   if (effectivePersonality) {
+    if (!allComponents.some((component) => component.type === "MoodState")) {
+      allComponents.push(initialMoodState(effectivePersonality));
+    }
+    if (
+      !allComponents.some(
+        (component) => component.type === "RecentExperienceMemory",
+      )
+    ) {
+      allComponents.push({ type: "RecentExperienceMemory", entries: [] });
+    }
     const forwardImpulse = deriveJumpForwardImpulse(effectivePersonality);
     for (let index = 0; index < allComponents.length; index += 1) {
       const component = allComponents[index];

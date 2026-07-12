@@ -39,6 +39,7 @@ import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/syste
 import { SocialInteractionSystem } from "@pets-driven/pet-engine/features/social/systems";
 import { PerceptionSystem } from "@pets-driven/pet-engine/features/perception/systems";
 import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
+import { MoodRecoverySystem } from "@pets-driven/pet-engine/features/mood/systems";
 import {
   LocomotionModeSystem,
   ClimbApproachSystem,
@@ -101,6 +102,7 @@ export const SYSTEM_PHASES: Record<
     ClimbAttachmentSystem,
     MotionTargetSystem,
     DriveDecaySystem, // passive drive drift; reads this tick's Steering
+    MoodRecoverySystem, // recent experiences fade back toward personality baseline
   ],
 
   POST_UPDATE: [
