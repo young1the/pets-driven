@@ -80,6 +80,11 @@ export type BehaviorDecisionKind =
   | "keep-watch"
   | "peek"
   | "withdraw"
+  | "inspect"
+  | "follow-routine"
+  | "strut"
+  | "offer-comfort"
+  | "stand-lookout"
   // Expressive idle poses — sustained, stationary gestures that exercise the
   // otherwise agent-only sprite rows (waving / focus / review / waiting /
   // failed) during ordinary autonomous life. Each is personality-shaped.

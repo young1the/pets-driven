@@ -63,22 +63,35 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<
     socialKindScale: { greet: 1.5, chat: 0.7, chase: 0.3 },
   },
   curious: {
-    primaryDecision: "observe",
-    decisionBias: { observe: 0.5, "request-climb": 0.35, "wander-far": 0.25, greet: -0.15 },
+    primaryDecision: "inspect",
+    decisionBias: {
+      inspect: 0.85,
+      observe: 0.25,
+      "request-climb": 0.35,
+      "wander-far": 0.2,
+      greet: -0.15,
+    },
     idleDurationScale: 0.85,
     arrivalDwellScale: 0.8,
     socialKindScale: { greet: 0.7, chat: 1.7, chase: 1.1 },
   },
   steady: {
-    primaryDecision: "groom",
-    decisionBias: { groom: 0.55, "idle-stay": 0.15, "play-romp": -0.35, fret: -0.3 },
+    primaryDecision: "follow-routine",
+    decisionBias: {
+      "follow-routine": 0.9,
+      groom: 0.3,
+      "idle-stay": 0.15,
+      "play-romp": -0.35,
+      fret: -0.3,
+    },
     idleDurationScale: 1.25,
     arrivalDwellScale: 1.35,
     socialKindScale: { greet: 1.5, chat: 1.1, chase: 0.45 },
   },
   bold: {
-    primaryDecision: "collision-unfazed",
+    primaryDecision: "strut",
     decisionBias: {
+      strut: 0.85,
       "collision-unfazed": 0.65,
       "collision-engage": 0.35,
       "wander-far": 0.2,
@@ -90,8 +103,14 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<
     socialKindScale: { greet: 0.7, chat: 0.8, chase: 1.7 },
   },
   gentle: {
-    primaryDecision: "greet",
-    decisionBias: { greet: 0.45, "approach-pet": 0.3, beckon: 0.2, "play-romp": -0.35 },
+    primaryDecision: "offer-comfort",
+    decisionBias: {
+      "offer-comfort": 0.85,
+      greet: 0.3,
+      "approach-pet": 0.3,
+      beckon: 0.2,
+      "play-romp": -0.35,
+    },
     idleDurationScale: 1.1,
     arrivalDwellScale: 1.15,
     socialKindScale: { greet: 2.2, chat: 1.2, chase: 0.35 },
@@ -153,8 +172,9 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<
     socialKindScale: { greet: 1.2, chat: 0.6, chase: 0.35 },
   },
   skittish: {
-    primaryDecision: "collision-flee",
+    primaryDecision: "stand-lookout",
     decisionBias: {
+      "stand-lookout": 0.9,
       "collision-flee": 0.7,
       "flee-from-pet": 0.6,
       fret: 0.5,

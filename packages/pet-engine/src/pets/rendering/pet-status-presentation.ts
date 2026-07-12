@@ -141,6 +141,10 @@ const SIGNATURE_ROW_ACTIVITY: ReadonlySet<PetActivityKind> = new Set([
   "meditating",
   "keepingWatch",
   "peeking",
+  "investigating",
+  "followingRoutine",
+  "offeringComfort",
+  "keepingLookout",
 ]);
 
 /** English localization fallbacks; hosts translate via labelKey (petStatus.*). */
@@ -171,6 +175,11 @@ const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   keepingWatch: "Keeping watch",
   peeking: "Peeking from afar",
   seekingSolitude: "Seeking solitude",
+  investigating: "Investigating",
+  followingRoutine: "Following a routine",
+  strutting: "Strutting",
+  offeringComfort: "Offering comfort",
+  keepingLookout: "Keeping lookout",
 };
 
 function activityEntry(
@@ -208,6 +217,11 @@ const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   keepingWatch: activityEntry("keepingWatch", "love", "heart"),
   peeking: activityEntry("peeking", "thinking", "question"),
   seekingSolitude: activityEntry("seekingSolitude", "thinking", "none"),
+  investigating: activityEntry("investigating", "thinking", "question"),
+  followingRoutine: activityEntry("followingRoutine", "working", "none"),
+  strutting: activityEntry("strutting", "excited", "sparkle"),
+  offeringComfort: activityEntry("offeringComfort", "love", "heart"),
+  keepingLookout: activityEntry("keepingLookout", "confused", "exclaim"),
 };
 
 function presentationFromAgentStatus(

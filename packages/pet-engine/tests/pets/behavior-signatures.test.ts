@@ -94,6 +94,25 @@ describe("Personality Catalog behavior signatures", () => {
     },
   );
 
+  it("gives every remaining catalog entry an exclusive primary action", () => {
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.playful.primaryDecision).toBe(
+      "play-romp",
+    );
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.curious.primaryDecision).toBe(
+      "inspect",
+    );
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.steady.primaryDecision).toBe(
+      "follow-routine",
+    );
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.bold.primaryDecision).toBe("strut");
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.gentle.primaryDecision).toBe(
+      "offer-comfort",
+    );
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.skittish.primaryDecision).toBe(
+      "stand-lookout",
+    );
+  });
+
   it("distinguishes calm personalities by social and solo signatures", () => {
     expect(signedDecisionScore("gentle", "greet", 0)).toBeGreaterThan(
       signedDecisionScore("zen", "greet", 0),

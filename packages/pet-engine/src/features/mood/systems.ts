@@ -112,12 +112,14 @@ export function moodAdjustedDecisionScore(
   switch (kind) {
     case "play-romp":
     case "play-feint":
+    case "strut":
     case "chase-cursor":
     case "greet":
       return baseScore + positive * 0.3 + mood.arousal * 0.12 - negative * 0.2;
     case "seek-user":
     case "beckon":
     case "keep-watch":
+    case "offer-comfort":
       return baseScore + negative * 0.2 + fear * 0.15;
     case "wander-far":
     case "request-climb":
@@ -130,8 +132,10 @@ export function moodAdjustedDecisionScore(
     case "collision-stay":
       return baseScore + mood.confidence * 0.22 - fear * 0.2;
     case "fret":
+    case "stand-lookout":
       return baseScore + negative * 0.4 + fear * 0.25;
     case "peek":
+    case "inspect":
       return baseScore + (1 - mood.confidence) * 0.18 - fear * 0.08;
     case "withdraw":
       return baseScore + negative * 0.2 + mood.confidence * 0.12;
@@ -139,6 +143,7 @@ export function moodAdjustedDecisionScore(
     case "nap":
     case "meditate":
     case "groom":
+    case "follow-routine":
       return baseScore + negative * 0.15 + (1 - mood.arousal) * 0.1;
     default:
       return baseScore;

@@ -34,6 +34,10 @@ const EXPRESSIVE_POSE_ROWS: Partial<Record<string, PetAnimationState>> = {
   meditate: "review",
   "keep-watch": "waiting",
   peek: "review",
+  inspect: "review",
+  "follow-routine": "running",
+  "offer-comfort": "waving",
+  "stand-lookout": "failed",
 };
 
 function getTravelDirection(dx: number): TravelDirection | null {

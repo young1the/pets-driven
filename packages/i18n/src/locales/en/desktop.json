@@ -271,7 +271,12 @@
     "teasing": "Playing a trick",
     "keepingWatch": "Keeping watch",
     "peeking": "Peeking from afar",
-    "seekingSolitude": "Seeking solitude"
+    "seekingSolitude": "Seeking solitude",
+    "investigating": "Investigating",
+    "followingRoutine": "Following a routine",
+    "strutting": "Strutting",
+    "offeringComfort": "Offering comfort",
+    "keepingLookout": "Keeping lookout"
   },
   "toast": {
     "onDesktop": "{{name}} is on the desktop",

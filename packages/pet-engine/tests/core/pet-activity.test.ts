@@ -168,6 +168,11 @@ describe("derivePetActivity", () => {
       ["keep-watch", "keepingWatch"],
       ["peek", "peeking"],
       ["withdraw", "seekingSolitude"],
+      ["inspect", "investigating"],
+      ["follow-routine", "followingRoutine"],
+      ["strut", "strutting"],
+      ["offer-comfort", "offeringComfort"],
+      ["stand-lookout", "keepingLookout"],
     ];
     for (const [reason, expected] of cases) {
       // Stationary (stand) but the pose claim is still live.

@@ -102,6 +102,11 @@ const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
   keepingWatch: "Keeping watch",
   peeking: "Peeking from afar",
   seekingSolitude: "Seeking solitude",
+  investigating: "Investigating",
+  followingRoutine: "Following a routine",
+  strutting: "Strutting",
+  offeringComfort: "Offering comfort",
+  keepingLookout: "Keeping lookout",
 };
 
 const IDLE: PetCardStatus = {

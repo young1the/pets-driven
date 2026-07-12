@@ -181,6 +181,12 @@ describe("presentPetStatus", () => {
     const peek = presentPetStatus("review", null, "peeking");
     expect(peek.labelKey).toBe("peeking");
     expect(peek.mood).toBe("thinking");
+
+    const routine = presentPetStatus("running", null, "followingRoutine");
+    expect(routine.labelKey).toBe("followingRoutine");
+
+    const comfort = presentPetStatus("waving", null, "offeringComfort");
+    expect(comfort.labelKey).toBe("offeringComfort");
   });
 
   it("never lets activity override task-owned intents", () => {

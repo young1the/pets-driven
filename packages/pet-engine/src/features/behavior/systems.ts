@@ -104,6 +104,11 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "keep-watch": 10_000,
   peek: 10_000,
   withdraw: 8_000,
+  inspect: 10_000,
+  "follow-routine": 12_000,
+  strut: 10_000,
+  "offer-comfort": 10_000,
+  "stand-lookout": 8_000,
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
@@ -210,6 +215,9 @@ const FEINT_APPROACH_MS = 1_200;
 const FEINT_RETREAT_BODY_WIDTHS = 5;
 const WITHDRAW_BODY_WIDTHS = 5;
 const WITHDRAW_DURATION_MS = 3_500;
+const STRUT_BODY_WIDTHS = 6;
+const STRUT_DURATION_MS = 4_500;
+const STRUT_SPEED_FACTOR = 0.75;
 
 type ExpressivePoseKind =
   | "greet"
@@ -220,7 +228,11 @@ type ExpressivePoseKind =
   | "nap"
   | "meditate"
   | "keep-watch"
-  | "peek";
+  | "peek"
+  | "inspect"
+  | "follow-routine"
+  | "offer-comfort"
+  | "stand-lookout";
 
 // ── Expressive idle poses ──────────────────────────────────────────────────
 // Sustained, stationary gestures that exercise the otherwise agent-only sprite
@@ -242,6 +254,10 @@ const EXPRESSIVE_POSE_DURATIONS: Record<
   meditate: { base: 5_000, jitter: 3_000 },
   "keep-watch": { base: 4_000, jitter: 2_000 },
   peek: { base: 3_500, jitter: 2_000 },
+  inspect: { base: 3_000, jitter: 2_000 },
+  "follow-routine": { base: 4_000, jitter: 2_000 },
+  "offer-comfort": { base: 3_000, jitter: 1_500 },
+  "stand-lookout": { base: 2_500, jitter: 1_500 },
 };
 
 /** Mood/emote cue attached to each expressive pose (a PetExpressionState). */
@@ -258,6 +274,10 @@ const EXPRESSIVE_POSE_CUES: Record<
   meditate: { mood: "happy", emote: "sparkle" },
   "keep-watch": { mood: "love", emote: "heart" },
   peek: { mood: "thinking", emote: "question" },
+  inspect: { mood: "thinking", emote: "question" },
+  "follow-routine": { mood: "working", emote: "none" },
+  "offer-comfort": { mood: "love", emote: "heart" },
+  "stand-lookout": { mood: "confused", emote: "exclaim" },
 };
 
 function expressivePoseDurationMs(
@@ -1914,6 +1934,36 @@ function scoreWithdraw(p: PersonalityComponent): number {
   return 0.05 + (1 - p.agreeableness) * 0.25 + (1 - p.extraversion) * 0.15;
 }
 
+function scoreInspect(
+  p: PersonalityComponent,
+  drives?: DrivesComponent,
+): number {
+  const base = 0.05 + p.openness * 0.3 + (1 - p.extraversion) * 0.08;
+  if (!drives) return base;
+  return base + driveResponseCurve(drives.curiosity) * 0.35;
+}
+
+function scoreFollowRoutine(p: PersonalityComponent): number {
+  return 0.05 + p.conscientiousness * 0.35 + (1 - p.neuroticism) * 0.1;
+}
+
+function scoreStrut(p: PersonalityComponent): number {
+  return 0.05 + p.extraversion * 0.25 + (1 - p.neuroticism) * 0.2;
+}
+
+function scoreOfferComfort(
+  p: PersonalityComponent,
+  drives?: DrivesComponent,
+): number {
+  const base = 0.05 + p.agreeableness * 0.35 + p.extraversion * 0.08;
+  if (!drives) return base;
+  return base + driveResponseCurve(drives.social) * 0.2;
+}
+
+function scoreStandLookout(p: PersonalityComponent): number {
+  return 0.05 + p.neuroticism * 0.4 + (1 - p.extraversion) * 0.08;
+}
+
 /**
  * Personality-modulated wander radii.
  * "near": high N → tighter range but still meaningfully visible movement.
@@ -2334,7 +2384,12 @@ export function runBehaviorDecisionSystem(
         !isFlying &&
         !components.getComponent(id, "ClimbingTag") &&
         (!contact || contact.grounded);
-      if (canJump && !jumpState && isGroundedWalker) {
+      if (
+        canJump &&
+        !jumpState &&
+        isGroundedWalker &&
+        personality.catalogId === "playful"
+      ) {
         pushCandidate(candidates, components, id, now, {
           kind: "play-romp",
           score: scorePlayRomp(personality, drives),
@@ -2459,6 +2514,18 @@ export function runBehaviorDecisionSystem(
             }),
           });
         }
+        if (isGroundedWalker && personality.catalogId === "gentle") {
+          pushCandidate(candidates, components, id, now, {
+            kind: "offer-comfort",
+            score: scoreOfferComfort(personality, drives),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs(
+                "offer-comfort",
+                random,
+              ),
+            }),
+          });
+        }
         if (isGroundedWalker && personality.catalogId === "aloof") {
           const direction =
             petX === userAnchor.x
@@ -2503,6 +2570,68 @@ export function runBehaviorDecisionSystem(
       }
 
       if (isGroundedWalker) {
+        if (personality.catalogId === "curious") {
+          pushCandidate(candidates, components, id, now, {
+            kind: "inspect",
+            score: scoreInspect(personality, drives),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs("inspect", random),
+            }),
+          });
+        }
+        if (personality.catalogId === "steady") {
+          pushCandidate(candidates, components, id, now, {
+            kind: "follow-routine",
+            score: scoreFollowRoutine(personality),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs(
+                "follow-routine",
+                random,
+              ),
+            }),
+          });
+        }
+        if (personality.catalogId === "bold") {
+          const direction = random.next() < 0.5 ? -1 : 1;
+          const distance = petWidth(components, id) * STRUT_BODY_WIDTHS;
+          const preferredX = clampToBoundsX(
+            petX + direction * distance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          );
+          const alternateX = clampToBoundsX(
+            petX - direction * distance,
+            bounds,
+            COLLISION_TARGET_MARGIN,
+          );
+          const targetX =
+            Math.abs(preferredX - petX) >= Math.abs(alternateX - petX)
+              ? preferredX
+              : alternateX;
+          pushCandidate(candidates, components, id, now, {
+            kind: "strut",
+            score: scoreStrut(personality),
+            build: () => ({
+              targetPosition: {
+                x: targetX,
+                y: petY,
+              },
+              activityDurationMs: STRUT_DURATION_MS,
+            }),
+          });
+        }
+        if (personality.catalogId === "skittish") {
+          pushCandidate(candidates, components, id, now, {
+            kind: "stand-lookout",
+            score: scoreStandLookout(personality),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs(
+                "stand-lookout",
+                random,
+              ),
+            }),
+          });
+        }
         pushCandidate(candidates, components, id, now, {
           kind: "groom",
           score: scoreGroom(personality),
@@ -2728,6 +2857,26 @@ export function runBehaviorPlanningSystem(
         });
         break;
       }
+      case "strut": {
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: null,
+          targetPosition: token.targetPosition!,
+          speedFactor: STRUT_SPEED_FACTOR,
+        });
+        setPetSteering(components, id, "pursue");
+        components.setComponent(id, {
+          type: "PetExpressionState",
+          source: "signature",
+          mood: "excited",
+          emote: "sparkle",
+          label: null,
+          startedAt: token.decidedAt,
+          expiresAt: token.decidedAt + STRUT_DURATION_MS,
+        });
+        adjustDrive(components, id, { energy: -0.05 });
+        break;
+      }
       // Expressive idle poses — stand still and hold a gesture. No motion; the
       // sustained autonomous claim (set in the decision) drives the sprite row.
       // The mood/emote cue and any drive relief run here.
@@ -2739,7 +2888,11 @@ export function runBehaviorPlanningSystem(
       case "nap":
       case "meditate":
       case "keep-watch":
-      case "peek": {
+      case "peek":
+      case "inspect":
+      case "follow-routine":
+      case "offer-comfort":
+      case "stand-lookout": {
         setPetSteering(components, id, "stand");
         clearMotionTarget(components, id);
         const cue = EXPRESSIVE_POSE_CUES[token.kind];
@@ -2773,6 +2926,12 @@ export function runBehaviorPlanningSystem(
           adjustDrive(components, id, { social: -0.2 });
         } else if (token.kind === "peek") {
           adjustDrive(components, id, { curiosity: -0.15 });
+        } else if (token.kind === "inspect") {
+          adjustDrive(components, id, { curiosity: -0.35 });
+        } else if (token.kind === "follow-routine") {
+          adjustDrive(components, id, { energy: 0.08 });
+        } else if (token.kind === "offer-comfort") {
+          adjustDrive(components, id, { social: -0.2 });
         }
         break;
       }

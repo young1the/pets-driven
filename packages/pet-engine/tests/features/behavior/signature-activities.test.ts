@@ -26,6 +26,7 @@ function decisionStore(catalogId: PetPersonalityId, userX = 260) {
         { type: "Transform", position: { x: 200, y: 500 } },
         { type: "PhysicsBody", shape: "rectangle", width: 32, height: 38 },
         { type: "WalkingTag" },
+        { type: "CanJump", impulse: 8 },
         { type: "Steering", mode: "stand" },
         { type: "MotionTarget", targetEntityId: null, targetPosition: null },
         {
@@ -88,7 +89,15 @@ function signatureProbability(
 }
 
 function stationaryActivityStore(
-  kind: "nap" | "meditate" | "keep-watch" | "peek",
+  kind:
+    | "nap"
+    | "meditate"
+    | "keep-watch"
+    | "peek"
+    | "inspect"
+    | "follow-routine"
+    | "offer-comfort"
+    | "stand-lookout",
 ) {
   return createComponentStore([
     {
@@ -130,6 +139,24 @@ describe("personality signature activities", () => {
     );
     expect(signatureProbability("aloof", "withdraw")).toBeGreaterThan(
       signatureProbability("reserved", "withdraw"),
+    );
+    expect(signatureProbability("playful", "play-romp")).toBeGreaterThan(
+      signatureProbability("bold", "play-romp"),
+    );
+    expect(signatureProbability("curious", "inspect")).toBeGreaterThan(
+      signatureProbability("reserved", "inspect"),
+    );
+    expect(signatureProbability("steady", "follow-routine")).toBeGreaterThan(
+      signatureProbability("gentle", "follow-routine"),
+    );
+    expect(signatureProbability("bold", "strut")).toBeGreaterThan(
+      signatureProbability("playful", "strut"),
+    );
+    expect(signatureProbability("gentle", "offer-comfort")).toBeGreaterThan(
+      signatureProbability("attentive", "offer-comfort"),
+    );
+    expect(signatureProbability("skittish", "stand-lookout")).toBeGreaterThan(
+      signatureProbability("reserved", "stand-lookout"),
     );
   });
 
@@ -226,6 +253,69 @@ describe("personality signature activities", () => {
     expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
       mood: "thinking",
       emote: "none",
+    });
+  });
+
+  it.each([
+    ["inspect", "thinking", "question"],
+    ["follow-routine", "working", "none"],
+    ["offer-comfort", "love", "heart"],
+    ["stand-lookout", "confused", "exclaim"],
+  ] as const)("materializes %s as its exclusive held pose", (kind, mood, emote) => {
+    const store = stationaryActivityStore(kind);
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
+    expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
+      mood,
+      emote,
+    });
+  });
+
+  it("lets signature poses satisfy the need expressed by their personality", () => {
+    const inspect = stationaryActivityStore("inspect");
+    runBehaviorPlanningSystem(inspect, createManualClock(0));
+    expect(inspect.getComponent("pet", "Drives")!.curiosity).toBeLessThan(0.2);
+
+    const routine = stationaryActivityStore("follow-routine");
+    runBehaviorPlanningSystem(routine, createManualClock(0));
+    expect(routine.getComponent("pet", "Drives")!.energy).toBeGreaterThan(0.2);
+
+    const comfort = stationaryActivityStore("offer-comfort");
+    runBehaviorPlanningSystem(comfort, createManualClock(0));
+    expect(comfort.getComponent("pet", "Drives")!.social).toBeLessThan(0.3);
+  });
+
+  it("materializes a bold strut as a deliberate slower walk", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Steering", mode: "stand" },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "Drives", social: 0.2, energy: 0.8, curiosity: 0.2 },
+          {
+            type: "BehaviorDecisionToken",
+            kind: "strut",
+            decidedAt: 0,
+            consumed: false,
+            targetPosition: { x: 420, y: 500 },
+            activityDurationMs: 4_500,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
+    expect(store.getComponent("pet", "MotionTarget")).toMatchObject({
+      targetPosition: { x: 420, y: 500 },
+      speedFactor: 0.75,
+    });
+    expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
+      mood: "excited",
+      emote: "sparkle",
     });
   });
 

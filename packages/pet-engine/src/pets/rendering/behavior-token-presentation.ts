@@ -149,6 +149,36 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<
     mood: "thinking",
     tone: "calm",
   },
+  inspect: {
+    emote: "question",
+    label: "Investigating",
+    mood: "thinking",
+    tone: "curious",
+  },
+  "follow-routine": {
+    emote: "none",
+    label: "Following a routine",
+    mood: "working",
+    tone: "calm",
+  },
+  strut: {
+    emote: "sparkle",
+    label: "Strutting",
+    mood: "excited",
+    tone: "spark",
+  },
+  "offer-comfort": {
+    emote: "heart",
+    label: "Offering comfort",
+    mood: "love",
+    tone: "affection",
+  },
+  "stand-lookout": {
+    emote: "exclaim",
+    label: "Keeping lookout",
+    mood: "confused",
+    tone: "alert",
+  },
   greet: {
     emote: "sparkle",
     label: "Saying hi",
