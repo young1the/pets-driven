@@ -44,9 +44,7 @@ describe("SettingsSection", () => {
   it("switches the launch profile", () => {
     const onLaunchProfile = vi.fn();
     setup({ onLaunchProfile });
-    fireEvent.change(screen.getByLabelText("Shell"), {
-      target: { value: "powershell" },
-    });
+    fireEvent.click(screen.getByText("PowerShell"));
     expect(onLaunchProfile).toHaveBeenCalledWith("powershell");
   });
 

@@ -1,0 +1,88 @@
+/* ============================================================
+   App-wide theming — dark mode + accent color.
+
+   Driven by data-theme / data-accent on <html> (set by
+   DesktopThemeProvider). Dark mode remaps the base ink/cream/paper
+   ramp, so every semantic token (--surface-*, --text-*, --border-*)
+   that references it follows automatically. Accent remaps the
+   blossom ramp to another brand ramp, so --color-primary and the
+   rest of the interactive tokens recolor across the whole app.
+   ============================================================ */
+
+:root[data-theme="dark"] {
+  --cream: #1b1827;
+  --paper: #2c2840;
+
+  --ink-950: #f4f1fe;
+  --ink-900: #ece8f7;
+  --ink-800: #dad5ec;
+  --ink-700: #c4beda;
+  --ink-600: #a79fc8;
+  --ink-500: #8b84a8;
+  --ink-400: #6f6890;
+  --ink-300: #565073;
+  --ink-200: #423c5c;
+  --ink-150: #363150;
+  --ink-100: #2c2840;
+  --ink-50: #262239;
+
+  --surface-raised: #322c4d;
+  --surface-inverse: #ece8f7;
+  --surface-overlay: rgba(8, 6, 14, 0.55);
+}
+
+/* The main-window header uses a hardcoded light glass fill. */
+:root[data-theme="dark"] .pd-main__header {
+  background: rgba(27, 24, 39, 0.7);
+}
+
+/* ---- Accent ramps — blossom is the default, so only alternates map. ---- */
+:root[data-accent="lavender"] {
+  --blossom-50: var(--lavender-50);
+  --blossom-100: var(--lavender-100);
+  --blossom-300: var(--lavender-300);
+  --blossom-400: var(--lavender-400);
+  --blossom-500: var(--lavender-500);
+  --blossom-600: var(--lavender-600);
+  --blossom-700: var(--lavender-700);
+}
+
+:root[data-accent="sky"] {
+  --blossom-50: var(--sky-50);
+  --blossom-100: var(--sky-100);
+  --blossom-300: var(--sky-300);
+  --blossom-400: var(--sky-400);
+  --blossom-500: var(--sky-500);
+  --blossom-600: var(--sky-600);
+  --blossom-700: var(--sky-700);
+}
+
+:root[data-accent="coral"] {
+  --blossom-50: var(--coral-50);
+  --blossom-100: var(--coral-100);
+  --blossom-300: var(--coral-300);
+  --blossom-400: var(--coral-400);
+  --blossom-500: var(--coral-500);
+  --blossom-600: var(--coral-600);
+  --blossom-700: var(--coral-600);
+}
+
+:root[data-accent="mint"] {
+  --blossom-50: var(--mint-50);
+  --blossom-100: var(--mint-100);
+  --blossom-300: var(--mint-300);
+  --blossom-400: var(--mint-400);
+  --blossom-500: var(--mint-500);
+  --blossom-600: var(--mint-600);
+  --blossom-700: var(--mint-700);
+}
+
+:root[data-accent="butter"] {
+  --blossom-50: var(--butter-50);
+  --blossom-100: var(--butter-100);
+  --blossom-300: var(--butter-300);
+  --blossom-400: var(--butter-400);
+  --blossom-500: var(--butter-500);
+  --blossom-600: var(--butter-600);
+  --blossom-700: var(--butter-600);
+}

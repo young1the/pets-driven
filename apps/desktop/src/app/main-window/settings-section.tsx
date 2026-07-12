@@ -1,16 +1,13 @@
-import type { ReactNode } from "react";
+import { useState, type CSSProperties } from "react";
 import {
-  Button,
   FolderIcon,
-  IconButton,
-  Input,
-  Select,
-  Switch,
   TerminalPreview,
   TrashIcon,
   type BadgeTone,
 } from "@pets-driven/design-system";
-import { useTranslation } from "@pets-driven/i18n";
+import { localeLabels, useTranslation } from "@pets-driven/i18n";
+import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
+import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 import {
   LAUNCH_PROFILE_OPTIONS,
   type LaunchProfileId,
@@ -30,8 +27,6 @@ export interface SettingsSectionProps {
   petSourceDirectories: string[];
   onAddPetFolder: () => void;
   onRemovePetFolder: (path: string) => void;
-  /** Optional language picker, injected by the app (needs the locale context). */
-  languageSwitcher?: ReactNode;
 }
 
 function folderName(path: string): string {
@@ -40,22 +35,118 @@ function folderName(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
-const uppercaseLabel = {
+// Shared token-driven styles so the whole screen follows the app theme/accent.
+const label: CSSProperties = {
+  display: "block",
+  fontFamily: "var(--font-display)",
+  fontWeight: 600,
+  fontSize: "15.5px",
+  color: "var(--text-strong)",
+  margin: 0,
+};
+const hint: CSSProperties = {
+  fontSize: "12.5px",
+  color: "var(--text-muted)",
+  margin: "4px 0 12px",
+  lineHeight: 1.45,
+};
+const rowStyle = (last = false): CSSProperties => ({
+  padding: "22px 0",
+  borderBottom: last ? "none" : "1px solid var(--border-soft)",
+});
+const toggleRowStyle = (last = false): CSSProperties => ({
+  ...rowStyle(last),
+  display: "flex",
+  alignItems: "center",
+  gap: "14px",
+});
+const segWrap: CSSProperties = {
+  display: "inline-flex",
+  padding: "4px",
+  gap: "4px",
+  borderRadius: "12px",
+  background: "var(--surface-sunken)",
+  flexWrap: "wrap",
+};
+const seg = (active: boolean): CSSProperties => ({
+  border: 0,
+  cursor: "pointer",
+  padding: "7px 16px",
+  borderRadius: "9px",
+  fontFamily: "var(--font-body)",
+  fontWeight: 700,
+  fontSize: "13px",
+  background: active ? "var(--color-primary)" : "transparent",
+  color: active ? "var(--color-on-primary)" : "var(--text-muted)",
+  transition: "background 140ms ease, color 140ms ease",
+});
+const inputStyle: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  boxSizing: "border-box",
+  border: "1.5px solid var(--border-default)",
+  background: "var(--surface-card)",
+  borderRadius: "12px",
+  padding: "11px 14px",
+  fontFamily: "var(--font-mono)",
+  fontSize: "13px",
+  color: "var(--text-strong)",
+  outline: "none",
+};
+const browseStyle: CSSProperties = {
+  border: 0,
+  cursor: "pointer",
+  padding: "11px 18px",
+  borderRadius: "12px",
+  fontFamily: "var(--font-body)",
+  fontWeight: 700,
+  fontSize: "13px",
+  background: "var(--surface-sunken)",
+  color: "var(--text-strong)",
+  whiteSpace: "nowrap",
+};
+const track = (on: boolean): CSSProperties => ({
+  position: "relative",
+  width: "46px",
+  height: "27px",
+  flex: "none",
+  border: 0,
+  cursor: "pointer",
+  borderRadius: "999px",
+  padding: 0,
+  background: on ? "var(--color-primary)" : "var(--border-strong)",
+  transition: "background 160ms ease",
+});
+const knob = (on: boolean): CSSProperties => ({
+  position: "absolute",
+  top: "3px",
+  left: "3px",
+  width: "21px",
+  height: "21px",
+  borderRadius: "999px",
+  background: "#fff",
+  boxShadow: "0 2px 4px rgba(0,0,0,0.25)",
+  transform: `translateX(${on ? "19px" : "0"})`,
+  transition: "transform 180ms cubic-bezier(.22,1,.36,1)",
+});
+const swatch = (hex: string, on: boolean): CSSProperties => ({
+  width: "34px",
+  height: "34px",
+  borderRadius: "999px",
+  cursor: "pointer",
+  background: hex,
+  border: `3px solid ${on ? "var(--text-strong)" : "transparent"}`,
+  boxShadow: on ? "0 0 0 3px var(--surface-card)" : "none",
+  transition: "transform 140ms ease",
+});
+const smallCaps: CSSProperties = {
   display: "block",
   fontSize: "11px",
   fontWeight: 800,
   letterSpacing: "0.06em",
-  textTransform: "uppercase" as const,
-  color: "var(--text-subtle)",
-  marginBottom: "7px",
-};
-
-const cardStyle = {
-  background: "var(--surface-card)",
-  border: "1px solid var(--border-soft)",
-  borderRadius: "22px",
-  boxShadow: "var(--shadow-md)",
-  padding: "22px 24px",
+  textTransform: "uppercase",
+  color: "var(--text-muted)",
+  margin: "0 0 8px",
 };
 
 export function SettingsSection({
@@ -69,261 +160,350 @@ export function SettingsSection({
   petSourceDirectories,
   onAddPetFolder,
   onRemovePetFolder,
-  languageSwitcher,
 }: SettingsSectionProps) {
   const { t } = useTranslation("desktop");
+  const { locale, setLocale } = useDesktopLocale();
+  const { mode, setMode, accent, setAccent } = useDesktopTheme();
+
+  // Notifications, sound and the default folder are not yet backed by persisted
+  // state — they live here as local UI placeholders until wired up.
+  const [notify, setNotify] = useState(true);
+  const [sound, setSound] = useState(true);
+  const [defaultFolder, setDefaultFolder] = useState("~/projects");
+
   const customLaunchLine = launchProfile === "custom";
-  const launchProfileOptions = LAUNCH_PROFILE_OPTIONS.map((option) => ({
-    value: option.value,
-    label: t(`launchProfile.${option.labelKey}`),
-  }));
 
   return (
-    <div style={{ padding: "38px 24px 64px" }}>
-      <div style={{ maxWidth: "840px", margin: "0 auto" }}>
+    <div style={{ padding: "38px 24px 64px", minHeight: "100%" }}>
+      <div style={{ maxWidth: "720px", margin: "0 auto" }}>
         <h2
           style={{
             fontFamily: "var(--font-display)",
             fontWeight: 600,
             fontSize: "24px",
             color: "var(--text-strong)",
-            margin: "0 0 18px",
+            margin: "0 0 3px",
           }}
         >
           {t("settings.title")}
         </h2>
+        <p
+          style={{
+            fontSize: "13.5px",
+            color: "var(--text-muted)",
+            margin: "0 0 22px",
+          }}
+        >
+          {t("settings.subtitle")}
+        </p>
 
-        <div style={{ ...cardStyle, marginBottom: "20px" }}>
-          <h3
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 600,
-              fontSize: "17px",
-              color: "var(--text-strong)",
-              margin: "0 0 5px",
-            }}
-          >
-            {t("settings.doubleClickTitle")}
-          </h3>
-          <p
-            style={{
-              fontSize: "13px",
-              color: "var(--text-muted)",
-              margin: "0 0 18px",
-              lineHeight: 1.45,
-            }}
-          >
-            {t("settings.doubleClickDesc")}
-          </p>
-
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-end",
-                gap: "16px",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <Select
-                  label={t("settings.shell")}
-                  onChange={(event) =>
-                    onLaunchProfile(event.target.value as LaunchProfileId)
-                  }
-                  options={launchProfileOptions}
-                  value={launchProfile}
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: "280px" }}>
-                <Input
-                  label={
-                    customLaunchLine
-                      ? t("settings.launchLine")
-                      : t("settings.command")
-                  }
-                  onChange={(event) =>
-                    customLaunchLine
-                      ? onLaunchLine(event.target.value)
-                      : onCommand(event.target.value)
-                  }
-                  placeholder={
-                    customLaunchLine
-                      ? '"C:\\Program Files\\Git\\bin\\bash.exe" -lc "claude; exec bash"'
-                      : t("settings.commandPlaceholder")
-                  }
-                  value={customLaunchLine ? launchLine : command}
-                />
-              </div>
+        <div
+          style={{
+            background: "var(--surface-card)",
+            border: "1px solid var(--border-soft)",
+            borderRadius: "22px",
+            boxShadow: "var(--shadow-md)",
+            padding: "4px 26px",
+          }}
+        >
+          {/* Command — the agent shell run on double-click. */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.command")}</span>
+            <p style={hint}>{t("settings.doubleClickDesc")}</p>
+            <div style={segWrap}>
+              {LAUNCH_PROFILE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => onLaunchProfile(option.value)}
+                  style={seg(launchProfile === option.value)}
+                  type="button"
+                >
+                  {t(`launchProfile.${option.labelKey}`)}
+                </button>
+              ))}
             </div>
-
+            <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+              <input
+                aria-label={
+                  customLaunchLine
+                    ? t("settings.launchLine")
+                    : t("settings.command")
+                }
+                onChange={(event) =>
+                  customLaunchLine
+                    ? onLaunchLine(event.target.value)
+                    : onCommand(event.target.value)
+                }
+                placeholder={
+                  customLaunchLine
+                    ? '"…/bash.exe" -lc "claude; exec bash"'
+                    : t("settings.commandPlaceholder")
+                }
+                style={inputStyle}
+                value={customLaunchLine ? launchLine : command}
+              />
+            </div>
             {!customLaunchLine && (
-              <details
-                style={{
-                  border: "1px solid var(--border-soft)",
-                  borderRadius: "14px",
-                  padding: "12px 14px",
-                  background: "var(--surface-sunken)",
-                }}
-              >
+              <details style={{ marginTop: "10px" }}>
                 <summary
                   style={{
                     cursor: "pointer",
-                    fontSize: "12.5px",
+                    fontSize: "12px",
                     fontWeight: 800,
                     color: "var(--text-muted)",
                   }}
                 >
                   {t("settings.advancedLaunchLine")}
                 </summary>
-                <div style={{ marginTop: "12px" }}>
-                  <Input
-                    label={t("settings.launchLine")}
-                    onChange={(event) => onLaunchLine(event.target.value)}
-                    value={launchLine}
-                  />
-                </div>
+                <input
+                  aria-label={t("settings.launchLine")}
+                  onChange={(event) => onLaunchLine(event.target.value)}
+                  style={{ ...inputStyle, width: "100%", marginTop: "10px" }}
+                  value={launchLine}
+                />
               </details>
             )}
-
-            <div>
-              <span style={uppercaseLabel}>{t("settings.runsOnDoubleClick")}</span>
+            <div style={{ marginTop: "16px" }}>
+              <span style={smallCaps}>{t("settings.runsOnDoubleClick")}</span>
               <TerminalPreview
                 command={preview.command}
                 cwd={preview.cwd}
                 prompt={preview.prompt}
               />
             </div>
-
           </div>
-        </div>
 
-        <div style={{ ...cardStyle, marginBottom: "20px" }}>
-          <h3
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 600,
-              fontSize: "17px",
-              color: "var(--text-strong)",
-              margin: "0 0 5px",
-            }}
-          >
-            {t("settings.petSourcesTitle")}
-          </h3>
-          <p
-            style={{
-              fontSize: "13px",
-              color: "var(--text-muted)",
-              margin: "0 0 18px",
-              lineHeight: 1.45,
-            }}
-          >
-            {t("settings.petSourcesDesc")}
-          </p>
+          {/* Default working folder (placeholder — not yet persisted). */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.defaultFolderTitle")}</span>
+            <p style={hint}>{t("settings.defaultFolderDesc")}</p>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                onChange={(event) => setDefaultFolder(event.target.value)}
+                style={inputStyle}
+                value={defaultFolder}
+              />
+              <button style={browseStyle} type="button">
+                {t("settings.browse")}
+              </button>
+            </div>
+          </div>
 
-          {petSourceDirectories.length > 0 ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-                marginBottom: "16px",
-              }}
-            >
-              {petSourceDirectories.map((path) => (
-                <div
-                  key={path}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "10px 12px",
-                    border: "1px solid var(--border-soft)",
-                    borderRadius: "14px",
-                    background: "var(--surface-sunken)",
-                  }}
-                >
-                  <FolderIcon />
-                  <span
+          {/* Pet source folders — real, persisted scan roots. */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.petSourcesTitle")}</span>
+            <p style={hint}>{t("settings.petSourcesDesc")}</p>
+            {petSourceDirectories.length > 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                  marginBottom: "12px",
+                }}
+              >
+                {petSourceDirectories.map((path) => (
+                  <div
+                    key={path}
                     style={{
                       display: "flex",
-                      flexDirection: "column",
-                      minWidth: 0,
-                      flex: 1,
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "10px 12px",
+                      border: "1px solid var(--border-soft)",
+                      borderRadius: "14px",
+                      background: "var(--surface-sunken)",
                     }}
                   >
-                    <b style={{ color: "var(--text-strong)" }}>
-                      {folderName(path)}
-                    </b>
-                    <small
+                    <span style={{ color: "var(--text-muted)", display: "flex" }}>
+                      <FolderIcon />
+                    </span>
+                    <span
                       style={{
-                        color: "var(--text-subtle)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        display: "flex",
+                        flexDirection: "column",
+                        minWidth: 0,
+                        flex: 1,
                       }}
                     >
-                      {path}
-                    </small>
-                  </span>
-                  <IconButton
-                    label={t("settings.removePetFolder", {
-                      name: folderName(path),
-                    })}
-                    onClick={() => onRemovePetFolder(path)}
-                    variant="ghost"
-                  >
-                    <TrashIcon />
-                  </IconButton>
-                </div>
+                      <b
+                        style={{ color: "var(--text-strong)", fontSize: "13.5px" }}
+                      >
+                        {folderName(path)}
+                      </b>
+                      <small
+                        style={{
+                          color: "var(--text-muted)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {path}
+                      </small>
+                    </span>
+                    <button
+                      aria-label={t("settings.removePetFolder", {
+                        name: folderName(path),
+                      })}
+                      onClick={() => onRemovePetFolder(path)}
+                      style={{
+                        border: 0,
+                        background: "transparent",
+                        cursor: "pointer",
+                        color: "var(--text-muted)",
+                        display: "flex",
+                        padding: "6px",
+                      }}
+                      type="button"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "var(--text-muted)",
+                  margin: "0 0 12px",
+                }}
+              >
+                {t("settings.noPetFolders")}
+              </p>
+            )}
+            <button
+              onClick={onAddPetFolder}
+              style={{
+                ...browseStyle,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+              type="button"
+            >
+              <FolderIcon />
+              {t("settings.addPetFolder")}
+            </button>
+          </div>
+
+          {/* Appearance — flips the whole-app light/dark/system theme. */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.appearance")}</span>
+            <p style={hint}>{t("settings.appearanceDesc")}</p>
+            <div style={segWrap}>
+              <button
+                onClick={() => setMode("light")}
+                style={seg(mode === "light")}
+                type="button"
+              >
+                ☀ {t("settings.themeLight")}
+              </button>
+              <button
+                onClick={() => setMode("dark")}
+                style={seg(mode === "dark")}
+                type="button"
+              >
+                ☾ {t("settings.themeDark")}
+              </button>
+              <button
+                onClick={() => setMode("system")}
+                style={seg(mode === "system")}
+                type="button"
+              >
+                ◐ {t("settings.themeSystem")}
+              </button>
+            </div>
+          </div>
+
+          {/* App accent color — recolors accents across the whole app. */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.accentColor")}</span>
+            <p style={hint}>{t("settings.accentColorDesc")}</p>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              {ACCENTS.map((color) => (
+                <button
+                  aria-label={color.name}
+                  key={color.id}
+                  onClick={() => setAccent(color.id)}
+                  style={swatch(color.hex, accent === color.id)}
+                  title={color.name}
+                  type="button"
+                />
               ))}
             </div>
-          ) : (
-            <p
-              style={{
-                fontSize: "13px",
-                color: "var(--text-subtle)",
-                margin: "0 0 16px",
-              }}
-            >
-              {t("settings.noPetFolders")}
-            </p>
-          )}
-
-          <Button onClick={onAddPetFolder} variant="neutral">
-            <FolderIcon />
-            {t("settings.addPetFolder")}
-          </Button>
-        </div>
-
-        {languageSwitcher ? (
-          <div style={cardStyle}>
-            <h3
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 600,
-                fontSize: "17px",
-                color: "var(--text-strong)",
-                margin: "0 0 5px",
-              }}
-            >
-              {t("settings.language")}
-            </h3>
-            <p
-              style={{
-                fontSize: "13px",
-                color: "var(--text-muted)",
-                margin: "0 0 18px",
-                lineHeight: 1.45,
-              }}
-            >
-              {t("settings.languageDesc")}
-            </p>
-            <div style={{ maxWidth: "280px" }}>{languageSwitcher}</div>
           </div>
-        ) : null}
+
+          {/* Language — real, persisted locale switch. */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.language")}</span>
+            <div style={{ ...segWrap, marginTop: "11px" }}>
+              {locales.map((value) => (
+                <button
+                  key={value}
+                  onClick={() => setLocale(value)}
+                  style={seg(locale === value)}
+                  type="button"
+                >
+                  {localeLabels[value]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notifications (placeholder toggle). */}
+          <div style={toggleRowStyle()}>
+            <button
+              aria-pressed={notify}
+              onClick={() => setNotify((value) => !value)}
+              style={track(notify)}
+              type="button"
+            >
+              <span style={knob(notify)} />
+            </button>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: "14.5px",
+                  color: "var(--text-strong)",
+                }}
+              >
+                {t("settings.notifications")}
+              </div>
+              <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
+                {t("settings.notificationsDesc")}
+              </div>
+            </div>
+          </div>
+
+          {/* Sound effects (placeholder toggle). */}
+          <div style={toggleRowStyle(true)}>
+            <button
+              aria-pressed={sound}
+              onClick={() => setSound((value) => !value)}
+              style={track(sound)}
+              type="button"
+            >
+              <span style={knob(sound)} />
+            </button>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: "14.5px",
+                  color: "var(--text-strong)",
+                }}
+              >
+                {t("settings.sound")}
+              </div>
+              <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
+                {t("settings.soundDesc")}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

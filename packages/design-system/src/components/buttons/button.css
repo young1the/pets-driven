@@ -40,7 +40,7 @@
 .pd-btn--accent:active { background: var(--teal-600); box-shadow: 0 0 0 var(--teal-700); }
 .pd-btn--mint { background: var(--color-success); --lip: var(--lip-mint); }
 .pd-btn--mint:active { background: var(--mint-700); box-shadow: 0 0 0 var(--mint-700); }
-.pd-btn--neutral { background: #fff; color: var(--text-strong); --lip: var(--lip-neutral); border: 1px solid var(--border-default); }
+.pd-btn--neutral { background: var(--surface-card); color: var(--text-strong); --lip: var(--lip-neutral); border: 1px solid var(--border-default); }
 .pd-btn--neutral:hover { background: var(--ink-50); }
 .pd-btn--neutral:active { box-shadow: 0 0 0 var(--ink-200); }
 .pd-btn--ghost { background: transparent; color: var(--color-primary); box-shadow: none; }

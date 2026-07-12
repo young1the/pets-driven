@@ -9,7 +9,6 @@ import {
   TrashIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import wordmarkUrl from "@pets-driven/design-system/assets/petsdriven-wordmark.svg";
 import {
   desktopGateway,
   type CodexPetPackage,
@@ -130,6 +129,41 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
   ) : null;
 }
 
+// Inlined so the wordmark text follows the theme (a static <img> can't be
+// recolored, leaving the near-black lettering invisible in dark mode). The
+// brand mark keeps its fixed colors; only the text tracks --text-strong.
+function Wordmark({ title }: { title: string }) {
+  return (
+    <svg
+      aria-label={title}
+      className="pd-onb__wordmark"
+      role="img"
+      viewBox="0 0 360 100"
+    >
+      <rect x="6" y="14" width="72" height="72" rx="22" fill="#F95E9E" />
+      <ellipse cx="42" cy="60" rx="14" ry="11.5" fill="#fff" />
+      <ellipse cx="26" cy="49" rx="5.6" ry="7.2" fill="#fff" />
+      <ellipse cx="36" cy="41" rx="5.6" ry="7.6" fill="#fff" />
+      <ellipse cx="48" cy="41" rx="5.6" ry="7.6" fill="#fff" />
+      <ellipse cx="58" cy="49" rx="5.6" ry="7.2" fill="#fff" />
+      <path
+        d="M42 63 C40 59.5 35 60.5 35 64 C35 67 42 70 42 70 C42 70 49 67 49 64 C49 60.5 44 59.5 42 63 Z"
+        fill="#16B8A6"
+      />
+      <text
+        x="96"
+        y="65"
+        fontFamily="Fredoka, Trebuchet MS, sans-serif"
+        fontSize="42"
+        fontWeight="600"
+        fill="var(--text-strong)"
+      >
+        Pets<tspan fill="#F95E9E">-</tspan>Driven
+      </text>
+    </svg>
+  );
+}
+
 function StepHeader({
   step,
   total,
@@ -148,11 +182,7 @@ function StepHeader({
         onClick={onExit}
         type="button"
       >
-        <img
-          alt={t("onboarding.wordmarkAlt")}
-          className="pd-onb__wordmark"
-          src={wordmarkUrl}
-        />
+        <Wordmark title={t("onboarding.wordmarkAlt")} />
       </button>
       <div className="pd-onb__steps">
         <div aria-hidden className="pd-onb__dots-row">
@@ -539,42 +569,36 @@ export function OnboardingFlow({
             </>
           ) : (
             <div className="pd-onb__empty">
-              <span className="pd-onb__paw" aria-hidden>
-                🐾
-              </span>
-              <h1 className="pd-onb__title">{t("onboarding.emptyTitle")}</h1>
-              <p className="pd-onb__lede">{t("onboarding.emptyLede")}</p>
+              <div className="pd-onb__empty-copy">
+                <h1 className="pd-onb__title">{t("onboarding.emptyTitle")}</h1>
+                <p className="pd-onb__lede">{t("onboarding.emptyLede")}</p>
 
-              <div className="pd-onb__empty-actions">
-                <Button
-                  onClick={() => void addSourceFolder()}
-                  size="lg"
-                >
-                  <FolderIcon />
-                  {t("onboarding.emptyChooseFolder")}
-                </Button>
-                <Button
-                  disabled={refreshing}
-                  onClick={() => void loadPackages()}
-                  variant="ghost"
-                >
-                  <RefreshIcon
-                    className={refreshing ? "pd-onb__spin" : undefined}
-                  />
-                  {t("onboarding.refresh")}
-                </Button>
+                <div className="pd-onb__petdex-empty">
+                  <span className="pd-onb__petdex-empty-label">
+                    {t("onboarding.petdexCta")}
+                  </span>
+                  <div className="pd-onb__petdex-empty-row">
+                    <code>npx petdex install boba</code>
+                    <a href={PETDEX_URL} rel="noreferrer" target="_blank">
+                      {t("onboarding.browsePetdex")}
+                    </a>
+                  </div>
+                </div>
+
+                {renderSourceFolders()}
               </div>
-              <p className="pd-onb__fineprint">
-                {t("onboarding.emptyChooseFolderHint")}
-              </p>
 
-              {renderSourceFolders()}
-
-              <div className="pd-onb__petdex-empty">
-                <code>npx petdex install boba</code>
-                <a href={PETDEX_URL} rel="noreferrer" target="_blank">
-                  {t("onboarding.browsePetdex")}
-                </a>
+              {/* "No pets yet" motif — a muted slot with drifting paw prints. */}
+              <div className="pd-onb__empty-art" aria-hidden>
+                <span className="pd-onb__empty-art-paw pd-onb__empty-art-paw--lg">
+                  🐾
+                </span>
+                <span className="pd-onb__empty-art-paw pd-onb__empty-art-paw--sm">
+                  🐾
+                </span>
+                <span className="pd-onb__empty-art-paw pd-onb__empty-art-paw--xs">
+                  🐾
+                </span>
               </div>
             </div>
           )}
@@ -587,9 +611,33 @@ export function OnboardingFlow({
             >
               {t("onboarding.back")}
             </Button>
-            <Button disabled={!assetId} onClick={goToProfile} size="lg">
-              {t("onboarding.continue")}
-            </Button>
+            {packages.length > 0 ? (
+              <Button disabled={!assetId} onClick={goToProfile} size="lg">
+                {t("onboarding.continue")}
+              </Button>
+            ) : (
+              <div className="pd-onb__actions">
+                <Button
+                  disabled={refreshing}
+                  iconLeft={
+                    <RefreshIcon
+                      className={refreshing ? "pd-onb__spin" : undefined}
+                    />
+                  }
+                  onClick={() => void loadPackages()}
+                  variant="ghost"
+                >
+                  {t("onboarding.refresh")}
+                </Button>
+                <Button
+                  iconLeft={<FolderIcon />}
+                  onClick={() => void addSourceFolder()}
+                  size="lg"
+                >
+                  {t("onboarding.emptyChooseFolder")}
+                </Button>
+              </div>
+            )}
           </div>
         </section>
       )}

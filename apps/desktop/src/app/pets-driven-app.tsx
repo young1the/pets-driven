@@ -25,7 +25,6 @@ import { useAppNavigation } from "@/app/app-navigation";
 import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { OnboardingFlow } from "@/app/onboarding/onboarding-flow";
-import { DesktopLanguageSwitcher } from "@/app/i18n/desktop-language-switcher";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import type { HomePetView } from "@/app/main-window/home-section";
@@ -1640,7 +1639,6 @@ function PetsDrivenHostApp() {
         petSourceDirectories: petsDrivenState.petSourceDirectories,
         onAddPetFolder: () => void addPetSourceFolder(),
         onRemovePetFolder: removePetSourceFolder,
-        languageSwitcher: <DesktopLanguageSwitcher />,
       }}
       tab={mainTab}
       toast={toast}

@@ -47,7 +47,22 @@
     "removePetFolder": "Remove {{name}}",
     "noPetFolders": "No extra folders yet. Only the built-in folder is scanned.",
     "language": "Language",
-    "languageDesc": "Choose the language for the Pets-Driven interface."
+    "languageDesc": "Choose the language for the Pets-Driven interface.",
+    "subtitle": "Configure how your pets run and how the app looks.",
+    "defaultFolderTitle": "Default working folder",
+    "defaultFolderDesc": "The starting directory for new pets.",
+    "browse": "Browse",
+    "appearance": "Appearance",
+    "appearanceDesc": "Use a light or dark theme, or follow your system.",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "accentColor": "App accent color",
+    "accentColorDesc": "The color used across the app for highlights and active states.",
+    "notifications": "Notifications",
+    "notificationsDesc": "Get notified when a pet finishes or needs your help.",
+    "sound": "Sound effects",
+    "soundDesc": "Play a short sound with each notification."
   },
   "launchProfile": {
     "cmd": "Command Prompt",

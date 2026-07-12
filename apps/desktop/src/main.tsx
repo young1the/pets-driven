@@ -4,6 +4,7 @@ import { DevFixtureSwitcher } from "./app/dev-fixture-switcher";
 import { resolveDesktopFixture } from "./app/dev-fixtures";
 import { PetsDrivenApp } from "./app/pets-driven-app";
 import { DesktopLocaleProvider } from "./app/i18n/desktop-locale";
+import { DesktopThemeProvider } from "./app/theme/desktop-theme";
 import { PetContextMenuView } from "./pet-window/pet-context-menu-view";
 import "./styles/main.css";
 
@@ -28,9 +29,11 @@ const devFixture = resolveDesktopFixture(window.location.search, {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <DesktopLocaleProvider>
-      {resolveRoot()}
-      {devFixture ? <DevFixtureSwitcher activeId={devFixture.id} /> : null}
-    </DesktopLocaleProvider>
+    <DesktopThemeProvider>
+      <DesktopLocaleProvider>
+        {resolveRoot()}
+        {devFixture ? <DevFixtureSwitcher activeId={devFixture.id} /> : null}
+      </DesktopLocaleProvider>
+    </DesktopThemeProvider>
   </React.StrictMode>,
 );
