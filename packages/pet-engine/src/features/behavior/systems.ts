@@ -56,6 +56,10 @@ const PETTING_MAX_DISPLACEMENT_PX = 60;
 const PETTING_DURATION_MS = 900;
 const PETTING_BODY_PADDING = 8;
 
+// Cursor play — hover (cursor rests over a moving pet: stop + react once).
+const HOVER_BODY_PADDING = 8;
+const HOVER_REACTION_DURATION_MS = 1_200;
+
 const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "wander-near": 750,
   "wander-far": 750,
@@ -575,6 +579,111 @@ export function runPettingDetectionSystem(
         label: null,
         startedAt: now,
         expiresAt: now + PETTING_DURATION_MS,
+      });
+    },
+  );
+}
+
+// ── Cursor play: hover reaction (priority 1, alongside user-interaction) ────
+//
+// When the cursor comes to rest over a pet that is currently moving, the pet
+// stops on the spot and reacts according to its dominant personality trait.
+// One-shot: the claim is NOT extended while the cursor stays put, so petting
+// (which needs an unclaimed pet) can take over once the reaction expires. If
+// the pet starts moving under the cursor again, the reaction re-triggers —
+// hovering effectively holds the pet's attention.
+
+type HoverReaction = {
+  reason: string;
+  mood: PetExpressionMood;
+  emote: PetExpressionEmote;
+};
+
+/**
+ * Dominant-trait reaction. Ties resolve in listed order (anxious pets startle
+ * before sociable pets greet) so the same personality always reacts the same
+ * way. Conscientiousness has no hover pose — it shapes follow-through, not
+ * social reactions.
+ */
+export function hoverReactionFor(
+  personality: PersonalityComponent,
+): HoverReaction {
+  const candidates: Array<{ weight: number; reaction: HoverReaction }> = [
+    {
+      weight: personality.neuroticism,
+      reaction: { reason: "hover-startle", mood: "confused", emote: "exclaim" },
+    },
+    {
+      weight: personality.extraversion,
+      reaction: { reason: "hover-greet", mood: "excited", emote: "sparkle" },
+    },
+    {
+      weight: personality.agreeableness,
+      reaction: { reason: "hover-affection", mood: "love", emote: "heart" },
+    },
+    {
+      weight: personality.openness,
+      reaction: { reason: "hover-observe", mood: "thinking", emote: "question" },
+    },
+  ];
+  let best = candidates[0];
+  for (const candidate of candidates) {
+    if (candidate.weight > best.weight) best = candidate;
+  }
+  return best.reaction;
+}
+
+export function runHoverReactionSystem(
+  components: ComponentStore,
+  clock: Clock,
+  physics?: VelocityWriter,
+): void {
+  const now = clock.now();
+  const cursor = findCursorState(components);
+  if (!cursor?.position) return;
+  const cursorPosition = cursor.position;
+
+  const drag = components.getComponent("user-interaction", "DragInteraction");
+
+  components.forEach(
+    ["Transform", "PhysicsBody", "PetIdentity", "Personality"],
+    (id, [transform, body, , personality]) => {
+      if (drag && drag.entityId === id) return;
+
+      // Only moving pets react — a parked or held pet has nothing to stop.
+      const mode = components.getComponent(id, "Steering")?.mode ?? "stand";
+      if (mode === "stand") return;
+      if (components.getComponent(id, "TaskMovementHold")) return;
+
+      const halfW = body.width / 2 + HOVER_BODY_PADDING;
+      const halfH = body.height / 2 + HOVER_BODY_PADDING;
+      const withinBounds =
+        Math.abs(cursorPosition.x - transform.position.x) <= halfW &&
+        Math.abs(cursorPosition.y - transform.position.y) <= halfH;
+      if (!withinBounds) return;
+
+      if (isClaimedBySameOrHigherPriority(components, id, "user-interaction", now))
+        return;
+
+      const reaction = hoverReactionFor(personality);
+      claim(
+        components,
+        id,
+        "user-interaction",
+        now,
+        reaction.reason,
+        now + HOVER_REACTION_DURATION_MS,
+      );
+      components.setComponent(id, { type: "Steering", mode: "stand" });
+      stopPetMovement(components, physics, id);
+      components.setComponent(id, {
+        type: "PetExpressionState",
+        source: "hover",
+        mood: reaction.mood,
+        emote: reaction.emote,
+        label: null,
+        startedAt: now,
+        expiresAt: now + HOVER_REACTION_DURATION_MS,
       });
     },
   );
@@ -2662,6 +2771,34 @@ export const PettingDetectionSystem: SimulationSystem<WorldStepContext> = {
   ],
   update(ctx) {
     runPettingDetectionSystem(ctx.components, ctx.clock, ctx.physics);
+  },
+};
+
+// Runs after PettingDetectionSystem so a live petting claim wins over the
+// plain hover reaction (both claim at user-interaction priority).
+export const HoverReactionSystem: SimulationSystem<WorldStepContext> = {
+  name: "HoverReactionSystem",
+  dependsOn: ["PettingDetectionSystem"],
+  reads: [
+    "CursorState",
+    "Transform",
+    "PhysicsBody",
+    "PetIdentity",
+    "Personality",
+    "Steering",
+    "TaskMovementHold",
+    "DragInteraction",
+    "BehaviorDecisionState",
+  ],
+  writes: [
+    "BehaviorDecisionState",
+    "PetExpressionState",
+    "Steering",
+    "MotionTarget",
+    "PhysicsVelocity",
+  ],
+  update(ctx) {
+    runHoverReactionSystem(ctx.components, ctx.clock, ctx.physics);
   },
 };
 

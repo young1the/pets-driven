@@ -208,6 +208,7 @@ export type PetExpressionSource =
   | "collision"
   | "chase-cursor"
   | "petting"
+  | "hover"
   | "social"
   | "romp"
   // Expressive idle poses (greet / groom / observe / beckon / fret).

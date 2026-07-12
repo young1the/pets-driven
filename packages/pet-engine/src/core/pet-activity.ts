@@ -40,6 +40,12 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "chase-cursor": "chasingCursor",
   "chase-cursor-success": "caughtCursor",
   petting: "beingPetted",
+  // Hover reactions (cursor over a moving pet); the reason encodes the
+  // personality-selected reaction so the activity label matches the pose.
+  "hover-startle": "startled",
+  "hover-greet": "greeting",
+  "hover-affection": "beckoning",
+  "hover-observe": "observing",
   "approach-pet": "makingFriends",
   "collision-engage": "makingFriends",
   "approach-pet-success": "foundAFriend",

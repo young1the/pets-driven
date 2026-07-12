@@ -32,6 +32,7 @@ import {
   PersonalSpaceSystem,
   ArrivalBehaviorSystem,
   PettingDetectionSystem,
+  HoverReactionSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
 import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
 import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
@@ -77,6 +78,7 @@ export const SYSTEM_PHASES: Record<
   BEHAVIOR: [
     UserInteractionBehaviorSystem, // priority 1: user touch / pointer events
     PettingDetectionSystem, // priority 1: cursor-oscillation petting reaction
+    HoverReactionSystem, // priority 1: cursor over a moving pet → stop + personality reaction
     SpeechExpirationSystem, // clear expired speech before new decisions
     PetExpressionExpirationSystem,
     AgentTaskEventSystem, // priority 2: external agent events → task state

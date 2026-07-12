@@ -226,6 +226,7 @@ describe("demo scenario", () => {
       // BEHAVIOR
       "UserInteractionBehaviorSystem",
       "PettingDetectionSystem",
+      "HoverReactionSystem",
       "SpeechExpirationSystem",
       "PetExpressionExpirationSystem",
       "AgentTaskEventSystem",
