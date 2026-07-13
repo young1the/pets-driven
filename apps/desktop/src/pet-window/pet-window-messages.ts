@@ -10,10 +10,17 @@ export const PET_WINDOW_INPUT_EVENT = "pet-window:input:v1";
 export const PET_WINDOW_BINDING_EVENT = "pet-window:binding:v1";
 export const PET_WINDOW_HOST_LABEL = "main";
 
+/** Label of the pet's own overlay window; mirrors the Rust side. */
+export function petWindowLabel(petId: string) {
+  return `pet-window-${petId}`;
+}
+
 export type PetWindowBindingEvent = {
   petId: string;
   title: string | null;
   isLoading?: boolean;
+  /** True while connect-mode waits for the user to pick a window. */
+  isConnecting?: boolean;
 };
 
 export type PetWindowOverlay = PetSpriteOverlay;
@@ -63,6 +70,7 @@ export type PetWindowInputKind =
   | "menu.pick-folder"
   | "menu.note-save"
   | "menu.start-session"
+  | "menu.find-terminal"
   | "menu.unbind"
   | "menu.request-binding"
   | "overlay.click"

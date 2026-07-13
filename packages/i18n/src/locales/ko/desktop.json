@@ -286,7 +286,13 @@
     "noteHeader": "{{name}}에게 메모",
     "notePlaceholder": "메모를 입력하세요",
     "cancel": "취소",
-    "save": "저장"
+    "save": "저장",
+    "findTerminal": "터미널 찾기"
+  },
+  "petWindow": {
+    "connectPrompt": "연결할 터미널 창을 클릭하세요",
+    "connectedTo": "{{title}} 창에 연결했어요",
+    "connectCancelled": "연결하지 않았어요"
   },
   "petStatus": {
     "idle": "쉬는 중",

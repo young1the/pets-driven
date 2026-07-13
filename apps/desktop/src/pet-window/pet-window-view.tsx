@@ -30,10 +30,12 @@ import {
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import {
   isFreshPetWindowMessage,
+  PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
+  type PetWindowBindingEvent,
   type PetWindowInputKind,
   type PetWindowFrame,
   type PetWindowOverlay,
@@ -207,6 +209,7 @@ export function PetWindowView({
   previewPresentation,
   previewScale,
 }: PetWindowViewProps) {
+  const { t } = useTranslation("desktop");
   const isPreview = !isTauri();
   const surfaceRef = useRef<HTMLElement | null>(null);
   const visualFrameRef = useRef<HTMLSpanElement | null>(null);
@@ -251,6 +254,13 @@ export function PetWindowView({
   const shownActivityRef = useRef<ShownActivity>({ value: null, at: 0 });
   const petNameRef = useRef<string | null>(null);
   const cwdRef = useRef<string | null>(null);
+  // Connect-mode feedback: the prompt while the host waits for a pick, then a
+  // short-lived result notice. Non-connect binding updates stay silent.
+  const [bindingNotice, setBindingNotice] = useState<string | null>(null);
+  const bindingNoticeTimerRef = useRef<number | null>(null);
+  // Title held when connect mode started; a cancelled pick reports the same
+  // binding back, so an unchanged title means nothing new was connected.
+  const connectStartTitleRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     document.documentElement.classList.add("pet-window-document");
@@ -400,6 +410,60 @@ export function PetWindowView({
 
     return () => {
       unlistenFrame?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let unlistenBinding: (() => void) | undefined;
+
+    void listen<PetWindowBindingEvent>(PET_WINDOW_BINDING_EVENT, (event) => {
+      const binding = event.payload;
+
+      if (binding.petId !== pet.petId) {
+        return;
+      }
+
+      if (bindingNoticeTimerRef.current !== null) {
+        window.clearTimeout(bindingNoticeTimerRef.current);
+        bindingNoticeTimerRef.current = null;
+      }
+
+      if (binding.isConnecting) {
+        connectStartTitleRef.current = binding.title;
+        setBindingNotice(t("petWindow.connectPrompt"));
+        return;
+      }
+
+      if (connectStartTitleRef.current === undefined) {
+        return;
+      }
+
+      const isNewBinding =
+        binding.title !== null && binding.title !== connectStartTitleRef.current;
+      connectStartTitleRef.current = undefined;
+      setBindingNotice(
+        isNewBinding
+          ? t("petWindow.connectedTo", { title: binding.title })
+          : t("petWindow.connectCancelled"),
+      );
+      bindingNoticeTimerRef.current = window.setTimeout(() => {
+        bindingNoticeTimerRef.current = null;
+        setBindingNotice(null);
+      }, 2600);
+    }).then((unlisten) => {
+      unlistenBinding = unlisten;
+    });
+
+    return () => {
+      unlistenBinding?.();
+      if (bindingNoticeTimerRef.current !== null) {
+        window.clearTimeout(bindingNoticeTimerRef.current);
+        bindingNoticeTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -820,6 +884,7 @@ export function PetWindowView({
             animationState={presentation.animationState}
             cwd={isBodyHovered ? cwdRef.current : null}
             name={petName}
+            notice={bindingNotice}
             overlay={presentation.overlay}
             spriteHeight={PET_CELL_SIZE.height * spriteScale}
           />
@@ -857,6 +922,8 @@ type PetStatusCardProps = {
   partnerName: string | null;
   overlay: PetWindowOverlay | null;
   cwd: string | null;
+  /** Transient host notice (e.g. connect-mode) that outranks the status message. */
+  notice: string | null;
   spriteHeight: number;
 };
 
@@ -867,6 +934,7 @@ function PetStatusCard({
   partnerName,
   overlay,
   cwd,
+  notice,
   spriteHeight,
 }: PetStatusCardProps) {
   const { t } = useTranslation("desktop");
@@ -877,6 +945,7 @@ function PetStatusCard({
   const label = status.labelKey
     ? t(`petStatus.${status.labelKey}`, status.labelParams)
     : status.label;
+  const message = notice ?? status.message;
 
   return (
     <div
@@ -890,7 +959,7 @@ function PetStatusCard({
       }
     >
       <div
-        className={`pet-window-status-card__inner${cwd || status.message ? " pet-window-status-card__inner--expanded" : ""}`}
+        className={`pet-window-status-card__inner${cwd || message ? " pet-window-status-card__inner--expanded" : ""}`}
       >
         <div className="pet-window-status-card__row">
           <span className="pet-window-status-card__dot" />
@@ -899,10 +968,8 @@ function PetStatusCard({
             <span className="pet-window-status-card__label">{label}</span>
           ) : null}
         </div>
-        {status.message ? (
-          <div className="pet-window-status-card__message">
-            {status.message}
-          </div>
+        {message ? (
+          <div className="pet-window-status-card__message">{message}</div>
         ) : null}
         {cwd ? (
           <div className="pet-window-status-card__cwd">

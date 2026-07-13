@@ -290,7 +290,13 @@
     "noteHeader": "Note to {{name}}",
     "notePlaceholder": "Type a note…",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "findTerminal": "Find terminal"
+  },
+  "petWindow": {
+    "connectPrompt": "Click the terminal window to connect",
+    "connectedTo": "Connected to {{title}}",
+    "connectCancelled": "Nothing connected"
   },
   "petStatus": {
     "idle": "Idle",
