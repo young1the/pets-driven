@@ -2,7 +2,6 @@ import { useState, type CSSProperties } from "react";
 import {
   FolderIcon,
   TerminalPreview,
-  TrashIcon,
   type BadgeTone,
 } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
@@ -29,10 +28,12 @@ export interface SettingsSectionProps {
   pluginBusy: boolean;
   onInstallPlugin: () => void;
   onUninstallPlugin: () => void;
-  /** Extra folders scanned for pet packs alongside the built-in root. */
-  petSourceDirectories: string[];
-  onAddPetFolder: () => void;
-  onRemovePetFolder: (path: string) => void;
+  /** The single folder scanned for pet packs; null = the Petdex default. */
+  petSourceDirectory: string | null;
+  /** The resolved Petdex default path shown when no custom folder is set. */
+  defaultPetSourceDirectory: string | null;
+  onChangePetFolder: () => void;
+  onResetPetFolder: () => void;
 }
 
 function folderName(path: string): string {
@@ -201,9 +202,10 @@ export function SettingsSection({
   pluginBusy,
   onInstallPlugin,
   onUninstallPlugin,
-  petSourceDirectories,
-  onAddPetFolder,
-  onRemovePetFolder,
+  petSourceDirectory,
+  defaultPetSourceDirectory,
+  onChangePetFolder,
+  onResetPetFolder,
 }: SettingsSectionProps) {
   const { t } = useTranslation("desktop");
   const { locale, setLocale } = useDesktopLocale();
@@ -345,92 +347,72 @@ export function SettingsSection({
             </div>
           </div>
 
-          {/* Pet source folders — real, persisted scan roots. */}
+          {/* Pet source folder — the single persisted scan root. */}
           <div style={rowStyle()}>
             <span style={label}>{t("settings.petSourcesTitle")}</span>
             <p style={hint}>{t("settings.petSourcesDesc")}</p>
-            {petSourceDirectories.length > 0 ? (
-              <div
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "10px 12px",
+                border: "1px solid var(--border-soft)",
+                borderRadius: "14px",
+                background: "var(--surface-sunken)",
+                marginBottom: "12px",
+              }}
+            >
+              <span style={{ color: "var(--text-muted)", display: "flex" }}>
+                <FolderIcon />
+              </span>
+              <span
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "10px",
-                  marginBottom: "12px",
+                  minWidth: 0,
+                  flex: 1,
                 }}
               >
-                {petSourceDirectories.map((path) => (
-                  <div
-                    key={path}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      padding: "10px 12px",
-                      border: "1px solid var(--border-soft)",
-                      borderRadius: "14px",
-                      background: "var(--surface-sunken)",
-                    }}
-                  >
-                    <span style={{ color: "var(--text-muted)", display: "flex" }}>
-                      <FolderIcon />
-                    </span>
-                    <span
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        minWidth: 0,
-                        flex: 1,
-                      }}
-                    >
-                      <b
-                        style={{ color: "var(--text-strong)", fontSize: "13.5px" }}
-                      >
-                        {folderName(path)}
-                      </b>
-                      <small
-                        style={{
-                          color: "var(--text-muted)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {path}
-                      </small>
-                    </span>
-                    <button
-                      aria-label={t("settings.removePetFolder", {
-                        name: folderName(path),
-                      })}
-                      onClick={() => onRemovePetFolder(path)}
-                      style={{
-                        border: 0,
-                        background: "transparent",
-                        cursor: "pointer",
-                        color: "var(--text-muted)",
-                        display: "flex",
-                        padding: "6px",
-                      }}
-                      type="button"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "var(--text-muted)",
-                  margin: "0 0 12px",
-                }}
-              >
-                {t("settings.noPetFolders")}
-              </p>
-            )}
+                <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
+                  {petSourceDirectory
+                    ? folderName(petSourceDirectory)
+                    : t("settings.petdexDefaultFolder")}
+                </b>
+                <small
+                  style={{
+                    color: "var(--text-muted)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {petSourceDirectory ??
+                    defaultPetSourceDirectory ??
+                    "~/.petdex/pets"}
+                </small>
+              </span>
+              {petSourceDirectory && (
+                <button
+                  onClick={onResetPetFolder}
+                  style={{
+                    border: 0,
+                    background: "transparent",
+                    cursor: "pointer",
+                    color: "var(--text-muted)",
+                    fontFamily: "inherit",
+                    fontSize: "12.5px",
+                    fontWeight: 700,
+                    padding: "6px",
+                  }}
+                  type="button"
+                >
+                  {t("settings.resetPetFolder")}
+                </button>
+              )}
+            </div>
             <button
-              onClick={onAddPetFolder}
+              onClick={onChangePetFolder}
               style={{
                 ...browseStyle,
                 display: "inline-flex",
@@ -440,7 +422,7 @@ export function SettingsSection({
               type="button"
             >
               <FolderIcon />
-              {t("settings.addPetFolder")}
+              {t("settings.changePetFolder")}
             </button>
           </div>
 

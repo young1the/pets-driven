@@ -53,10 +53,9 @@ import {
   removePet,
 } from "@/app-state/pet-adoption";
 import {
-  addPetSourceDirectory,
   createEmptyPetsDrivenState,
-  removePetSourceDirectory,
   resolveRegisteredWorkingDirectoryForCwd,
+  setPetSourceDirectory,
   type PetRecord,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
@@ -457,7 +456,23 @@ function PetsDrivenHostApp() {
   const [petStatusById, setPetStatusById] = useState<
     Record<string, PetCardStatus>
   >({});
+  const [defaultPetSourceFolder, setDefaultPetSourceFolder] = useState<
+    string | null
+  >(null);
   const toastTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+    void desktopGateway.getDefaultPetSourceDirectory().then((path) => {
+      if (isActive) {
+        setDefaultPetSourceFolder(path);
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   function applyPetsDrivenState(next: PetsDrivenState) {
     petsDrivenStateRef.current = next;
@@ -1541,12 +1556,8 @@ function PetsDrivenHostApp() {
     }
   }
 
-  async function addPetSourceFolder() {
-    const path = await desktopGateway.pickDirectory();
-    if (!path) {
-      return;
-    }
-    const next = addPetSourceDirectory(petsDrivenStateRef.current, path);
+  function applyPetSourceFolder(path: string | null) {
+    const next = setPetSourceDirectory(petsDrivenStateRef.current, path);
     if (next === petsDrivenStateRef.current) {
       return;
     }
@@ -1554,13 +1565,11 @@ function PetsDrivenHostApp() {
     void desktopGateway.writePetsDrivenState(next);
   }
 
-  function removePetSourceFolder(path: string) {
-    const next = removePetSourceDirectory(petsDrivenStateRef.current, path);
-    if (next === petsDrivenStateRef.current) {
-      return;
+  async function changePetSourceFolder() {
+    const path = await desktopGateway.pickDirectory();
+    if (path) {
+      applyPetSourceFolder(path);
     }
-    applyPetsDrivenState(next);
-    void desktopGateway.writePetsDrivenState(next);
   }
 
   function setLaunchProfile(profile: LaunchProfileId) {
@@ -1776,9 +1785,10 @@ function PetsDrivenHostApp() {
         pluginBusy: claudePlugin.busy,
         onInstallPlugin: () => void claudePlugin.install(),
         onUninstallPlugin: () => void claudePlugin.uninstall(),
-        petSourceDirectories: petsDrivenState.petSourceDirectories,
-        onAddPetFolder: () => void addPetSourceFolder(),
-        onRemovePetFolder: removePetSourceFolder,
+        petSourceDirectory: petsDrivenState.petSourceDirectory,
+        defaultPetSourceDirectory: defaultPetSourceFolder,
+        onChangePetFolder: () => void changePetSourceFolder(),
+        onResetPetFolder: () => applyPetSourceFolder(null),
       }}
       tab={mainTab}
       toast={toast}

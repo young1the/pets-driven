@@ -30,9 +30,10 @@ function setup(overrides = {}) {
     pluginBusy: false,
     onInstallPlugin: vi.fn(),
     onUninstallPlugin: vi.fn(),
-    petSourceDirectories: [] as string[],
-    onAddPetFolder: vi.fn(),
-    onRemovePetFolder: vi.fn(),
+    petSourceDirectory: null as string | null,
+    defaultPetSourceDirectory: "C:\\Users\\me\\.petdex\\pets",
+    onChangePetFolder: vi.fn(),
+    onResetPetFolder: vi.fn(),
     ...overrides,
   };
   render(<SettingsSection {...props} />);
@@ -125,34 +126,34 @@ describe("SettingsSection", () => {
     expect(screen.queryByText("Install")).not.toBeInTheDocument();
   });
 
-  it("shows an empty hint when no pet source folders are configured", () => {
+  it("shows the Petdex default folder when no custom folder is set", () => {
     setup();
+
+    expect(screen.getByText("Petdex default folder")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "No extra folders yet. Only the built-in folder is scanned.",
-      ),
+      screen.getByText("C:\\Users\\me\\.petdex\\pets"),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Back to default")).not.toBeInTheDocument();
   });
 
-  it("lists configured pet source folders and removes them", () => {
-    const onRemovePetFolder = vi.fn();
+  it("shows a custom folder and resets it to the default", () => {
+    const onResetPetFolder = vi.fn();
     setup({
-      petSourceDirectories: ["D:\\pets\\mine", "C:\\studio\\pets"],
-      onRemovePetFolder,
+      petSourceDirectory: "D:\\pets\\mine",
+      onResetPetFolder,
     });
 
     expect(screen.getByText("D:\\pets\\mine")).toBeInTheDocument();
-    expect(screen.getByText("C:\\studio\\pets")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText("Remove mine"));
-    expect(onRemovePetFolder).toHaveBeenCalledWith("D:\\pets\\mine");
+    fireEvent.click(screen.getByText("Back to default"));
+    expect(onResetPetFolder).toHaveBeenCalled();
   });
 
-  it("adds a pet source folder", () => {
-    const onAddPetFolder = vi.fn();
-    setup({ onAddPetFolder });
+  it("changes the pet source folder", () => {
+    const onChangePetFolder = vi.fn();
+    setup({ onChangePetFolder });
 
-    fireEvent.click(screen.getByText("Add a folder"));
-    expect(onAddPetFolder).toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Use a different folder"));
+    expect(onChangePetFolder).toHaveBeenCalled();
   });
 });

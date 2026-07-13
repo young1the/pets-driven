@@ -277,9 +277,7 @@
   justify-content: center;
   gap: var(--space-3);
   padding: var(--space-6) 0;
-  max-width: 1040px;
   width: 100%;
-  margin: 0 auto;
 }
 
 .pd-onb__eyebrow {

@@ -47,6 +47,8 @@ export type DesktopGateway = {
   ): Promise<void>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
+  /** The Petdex default pet folder (~/.petdex/pets); null outside Tauri. */
+  getDefaultPetSourceDirectory(): Promise<string | null>;
   getClaudePluginStatus(): Promise<ClaudePluginStatus>;
   installClaudePlugin(): Promise<ClaudePluginStatus>;
   uninstallClaudePlugin(): Promise<ClaudePluginStatus>;
@@ -128,6 +130,18 @@ export const desktopGateway: DesktopGateway = {
     const selection = await open({ directory: true, multiple: false });
 
     return typeof selection === "string" ? selection : null;
+  },
+
+  async getDefaultPetSourceDirectory() {
+    if (!isTauri()) {
+      return null;
+    }
+
+    try {
+      return await invoke<string>("get_default_pet_source_directory");
+    } catch {
+      return null;
+    }
   },
 
   async getClaudePluginStatus() {

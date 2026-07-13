@@ -153,7 +153,7 @@ function createFixtureState(inputs: FixturePetInput[]): PetsDrivenState {
   );
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     registeredWorkingDirectories,
     pets,
     petProfiles: inputs.map((input, index) => ({
@@ -163,7 +163,7 @@ function createFixtureState(inputs: FixturePetInput[]): PetsDrivenState {
       personality: input.personalityFactory(),
     })),
     sessionCommand: "cmd /k codex",
-    petSourceDirectories: ["C:\\Users\\fixture\\.codex\\pets"],
+    petSourceDirectory: "C:\\Users\\fixture\\.petdex\\pets",
   };
 }
 

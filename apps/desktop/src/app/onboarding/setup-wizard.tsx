@@ -6,13 +6,17 @@ import { useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 import { desktopGateway, type DesktopGateway } from "@/app/desktop-gateway";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
+import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
 import {
-  addPetSourceDirectory,
   normalizeWorkingDirectoryPath,
-  removePetSourceDirectory,
+  setPetSourceDirectory,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
+import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+
+const PETDEX_URL = "https://petdex.dev";
 
 type WizardStep = "welcome" | "appearance" | "petsFolder" | "plugin" | "done";
 
@@ -25,7 +29,7 @@ const CHECKLIST_STEPS: WizardStep[] = [
 
 const GUIDE: Record<WizardStep, { pet: PetName; quoteKey: string }> = {
   welcome: { pet: "cato", quoteKey: "setupWizard.guideWelcome" },
-  appearance: { pet: "cato", quoteKey: "setupWizard.guideAppearance" },
+  appearance: { pet: "mochi", quoteKey: "setupWizard.guideAppearance" },
   petsFolder: { pet: "otto", quoteKey: "setupWizard.guidePetsFolder" },
   plugin: { pet: "fenn", quoteKey: "setupWizard.guidePlugin" },
   done: { pet: "cato", quoteKey: "setupWizard.guideDone" },
@@ -46,6 +50,51 @@ function folderName(path: string) {
   const parts = normalized.split(/[\\/]/);
 
   return parts[parts.length - 1] || normalized;
+}
+
+function useAnimationClock() {
+  const [elapsedMs, setElapsedMs] = useState(0);
+
+  useEffect(() => {
+    let isActive = true;
+    let frame = 0;
+
+    const tick = (next: number) => {
+      if (!isActive) {
+        return;
+      }
+
+      setElapsedMs(next);
+      frame = window.requestAnimationFrame(tick);
+    };
+
+    frame = window.requestAnimationFrame(tick);
+
+    return () => {
+      isActive = false;
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  return elapsedMs;
+}
+
+/** The finish-line hero on the "done" step — waves instead of standing still. */
+function DoneHeroPet({ assetId }: { assetId: string }) {
+  const spritesheetUrl = usePetSpritesheetUrl(assetId);
+  const elapsedMs = useAnimationClock();
+
+  return spritesheetUrl ? (
+    <PetSprite
+      alt="Your pet"
+      animationState="waving"
+      elapsedMs={elapsedMs}
+      imageUrl={spritesheetUrl}
+      scale={1.6}
+      showStatusBubble={false}
+      size={PET_CELL_SIZE}
+    />
+  ) : null;
 }
 
 const rail: CSSProperties = {
@@ -144,7 +193,6 @@ const body: CSSProperties = {
   flexDirection: "column",
   justifyContent: "center",
   gap: "10px",
-  maxWidth: "620px",
 };
 const eyebrow: CSSProperties = {
   fontFamily: "var(--font-body)",
@@ -180,6 +228,7 @@ const sectionLabel: CSSProperties = {
 };
 const segWrap: CSSProperties = {
   display: "inline-flex",
+  alignSelf: "flex-start",
   padding: "4px",
   gap: "4px",
   borderRadius: "12px",
@@ -239,7 +288,32 @@ const folderRow: CSSProperties = {
   border: "1px solid var(--border-soft)",
   background: "var(--surface-card)",
 };
-const folderIcon: CSSProperties = { fontSize: "18px", flex: "none" };
+const petdexCard: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "14px",
+  padding: "16px 18px",
+  borderRadius: "16px",
+  border: "2px solid var(--color-primary)",
+  background: "var(--surface-card)",
+  boxShadow: "0 0 0 4px var(--blossom-100)",
+};
+const petdexLink: CSSProperties = {
+  flex: "none",
+  padding: "10px 18px",
+  borderRadius: "999px",
+  background: "var(--color-primary)",
+  color: "var(--color-on-primary)",
+  fontFamily: "var(--font-body)",
+  fontWeight: 700,
+  fontSize: "13.5px",
+  textDecoration: "none",
+};
+const folderIcon: CSSProperties = {
+  fontSize: "18px",
+  flex: "none",
+  color: "var(--text-strong)",
+};
 const folderText: CSSProperties = {
   flex: 1,
   minWidth: 0,
@@ -261,7 +335,7 @@ const pluginCard = (selected: boolean, disabled: boolean): CSSProperties => ({
   border: selected
     ? "2px solid var(--color-primary)"
     : "1px solid var(--border-soft)",
-  background: selected ? "var(--blossom-50)" : "var(--surface-card)",
+  background: "var(--surface-card)",
   boxShadow: selected ? "0 0 0 4px var(--blossom-100)" : "none",
   opacity: disabled ? 0.6 : 1,
 });
@@ -331,42 +405,60 @@ export function SetupWizard({
   const claudePlugin = useClaudePlugin(gateway);
   const [step, setStep] = useState<WizardStep>("welcome");
   const [looksFound, setLooksFound] = useState<number | null>(null);
-  const [scanning, setScanning] = useState(false);
+  const [defaultPetFolder, setDefaultPetFolder] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
-    setScanning(true);
-    void gateway
-      .listPetPackages()
-      .then((packages) => {
-        if (isActive) {
-          setLooksFound(packages.length);
-        }
-      })
-      .catch(() => {
-        if (isActive) {
-          setLooksFound(null);
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setScanning(false);
-        }
-      });
+    void gateway.getDefaultPetSourceDirectory().then((path) => {
+      if (isActive) {
+        setDefaultPetFolder(path);
+      }
+    });
 
     return () => {
       isActive = false;
     };
-  }, [gateway, state.petSourceDirectories]);
+  }, [gateway]);
 
-  async function addSourceFolder() {
-    const picked = await gateway.pickDirectory();
+  // Scan the pet roots for the "N looks found" count. On the pets-folder step
+  // the scan repeats every few seconds, so installing a pet from Petdex and
+  // switching back to the app updates the number without a manual refresh.
+  // Background re-scans keep the last count on screen (no loading flicker);
+  // only the very first scan shows the pulsing "looking…" state.
+  useEffect(() => {
+    let isActive = true;
 
-    if (!picked) {
-      return;
+    async function scan() {
+      try {
+        const packages = await gateway.listPetPackages();
+        if (isActive) {
+          setLooksFound(packages.length);
+        }
+      } catch {
+        if (isActive) {
+          setLooksFound(null);
+        }
+      }
     }
 
-    const nextState = addPetSourceDirectory(state, picked);
+    void scan();
+
+    if (step !== "petsFolder") {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const interval = window.setInterval(() => void scan(), 3000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(interval);
+    };
+  }, [gateway, state.petSourceDirectory, step]);
+
+  async function applyPetSourceDirectory(path: string | null) {
+    const nextState = setPetSourceDirectory(state, path);
 
     if (nextState === state) {
       return;
@@ -376,15 +468,12 @@ export function SetupWizard({
     onStateChange(nextState);
   }
 
-  async function removeSourceFolder(path: string) {
-    const nextState = removePetSourceDirectory(state, path);
+  async function changePetFolder() {
+    const picked = await gateway.pickDirectory();
 
-    if (nextState === state) {
-      return;
+    if (picked) {
+      await applyPetSourceDirectory(picked);
     }
-
-    await gateway.writePetsDrivenState(nextState);
-    onStateChange(nextState);
   }
 
   const guide = GUIDE[step];
@@ -554,7 +643,7 @@ export function SetupWizard({
                   style={textLink}
                   type="button"
                 >
-                  {t("setupWizard.skip")}
+                  {t("setupWizard.skipAppearance")}
                 </button>
                 <Button onClick={() => setStep("petsFolder")} size="lg">
                   {t("setupWizard.continue")}
@@ -569,58 +658,85 @@ export function SetupWizard({
             <span style={eyebrow}>{t("setupWizard.petsFolderEyebrow")}</span>
             <h1 style={title}>{t("setupWizard.petsFolderTitle")}</h1>
             <p style={lede}>{t("setupWizard.petsFolderLede")}</p>
-            <p style={{ ...stepDesc, marginTop: "14px" }}>
-              {scanning || looksFound === null
-                ? t("setupWizard.petsFolderScanning")
-                : t("setupWizard.petsFolderFound", { count: looksFound })}
-            </p>
 
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
-                marginTop: "14px",
+                marginTop: "18px",
               }}
             >
-              {state.petSourceDirectories.map((path) => (
-                <div key={path} style={folderRow}>
-                  <span aria-hidden style={folderIcon}>
-                    📁
-                  </span>
-                  <span style={folderText}>
-                    <b style={{ color: "var(--text-strong)", fontSize: "14px" }}>
-                      {folderName(path)}
-                    </b>
-                    <small style={{ color: "var(--text-muted)" }}>{path}</small>
-                  </span>
-                  <button
-                    onClick={() => void removeSourceFolder(path)}
-                    style={{ ...textLink, textDecoration: "none" }}
-                    type="button"
-                  >
-                    {t("onboarding.removeFolder", { name: folderName(path) })}
-                  </button>
-                </div>
-              ))}
+              <div style={petdexCard}>
+                <span aria-hidden style={{ fontSize: "26px", flex: "none" }}>
+                  🐾
+                </span>
+                <span style={folderText}>
+                  <b style={{ color: "var(--text-strong)", fontSize: "14.5px" }}>
+                    {t("setupWizard.petdexTitle")}
+                  </b>
+                  <small style={{ color: "var(--text-muted)" }}>
+                    {t("setupWizard.petdexBlurb")}
+                  </small>
+                </span>
+                <a
+                  href={PETDEX_URL}
+                  rel="noreferrer"
+                  style={petdexLink}
+                  target="_blank"
+                >
+                  {t("setupWizard.petdexOpen")}
+                </a>
+              </div>
 
-              <button
-                onClick={() => void addSourceFolder()}
-                style={{ ...folderRow, borderStyle: "dashed", cursor: "pointer" }}
-                type="button"
-              >
+              <div style={folderRow}>
                 <span aria-hidden style={folderIcon}>
-                  ＋
+                  📁
                 </span>
                 <span style={folderText}>
                   <b style={{ color: "var(--text-strong)", fontSize: "14px" }}>
-                    {t("onboarding.chooseAnother")}
+                    {state.petSourceDirectory
+                      ? folderName(state.petSourceDirectory)
+                      : t("setupWizard.petdexDefaultFolder")}
                   </b>
                   <small style={{ color: "var(--text-muted)" }}>
-                    {t("onboarding.chooseAnotherHint")}
+                    {state.petSourceDirectory ??
+                      defaultPetFolder ??
+                      "~/.petdex/pets"}
                   </small>
                 </span>
-              </button>
+                {state.petSourceDirectory && (
+                  <button
+                    onClick={() => void applyPetSourceDirectory(null)}
+                    style={{ ...textLink, textDecoration: "none" }}
+                    type="button"
+                  >
+                    {t("setupWizard.resetPetFolder")}
+                  </button>
+                )}
+                <button
+                  onClick={() => void changePetFolder()}
+                  style={{ ...textLink, textDecoration: "none" }}
+                  type="button"
+                >
+                  {t("setupWizard.changePetFolder")}
+                </button>
+              </div>
+
+              <div
+                className={`pd-onb__listen${
+                  looksFound === null ? "" : " pd-onb__listen--ok"
+                }`}
+              >
+                <span
+                  className={`pd-onb__listen-dot${
+                    looksFound === null ? " pd-onb__listen-dot--pulse" : ""
+                  }`}
+                />
+                {looksFound === null
+                  ? t("setupWizard.petsFolderScanning")
+                  : t("setupWizard.petsFolderFound", { count: looksFound })}
+              </div>
             </div>
 
             <div style={footer}>
@@ -633,7 +749,7 @@ export function SetupWizard({
                   style={textLink}
                   type="button"
                 >
-                  {t("setupWizard.skip")}
+                  {t("setupWizard.skipPetsFolder")}
                 </button>
                 <Button onClick={() => setStep("plugin")} size="lg">
                   {t("setupWizard.continue")}
@@ -721,7 +837,7 @@ export function SetupWizard({
         {step === "done" && (
           <section style={{ ...body, alignItems: "center" }}>
             <div style={doneWrap}>
-              <PetAvatar pet="cato" size="xl" />
+              <DoneHeroPet assetId="cato" />
               <span style={{ ...eyebrow, marginTop: "16px" }}>
                 {t("setupWizard.doneEyebrow")}
               </span>

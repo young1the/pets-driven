@@ -29,6 +29,26 @@
   --surface-raised: #322c4d;
   --surface-inverse: #ece8f7;
   --surface-overlay: rgba(8, 6, 14, 0.55);
+
+  /* Soft "-50"/"-100" tints back the selected/tone card states (see
+     .pd-card2--blossom etc). Left at their light-mode values, they stay
+     near-white while --text-strong flips to near-white too, so selected
+     text (e.g. the chosen pet's name) disappears. Darken them here so
+     every accent ramp keeps working as a dark, low-contrast tint. */
+  --blossom-50: #3d2733;
+  --blossom-100: #4a2c3b;
+  --lavender-50: #2e2a45;
+  --lavender-100: #383253;
+  --teal-50: #1c3733;
+  --teal-100: #204540;
+  --mint-50: #1d3328;
+  --mint-100: #1f4232;
+  --sky-50: #202f42;
+  --sky-100: #253c52;
+  --butter-50: #3a3020;
+  --butter-100: #453824;
+  --coral-50: #3a2624;
+  --coral-100: #45302b;
 }
 
 /* The main-window header uses a hardcoded light glass fill. */

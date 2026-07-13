@@ -8,18 +8,18 @@ import {
 describe("working directory registry", () => {
   it("starts with an empty persisted state shape", () => {
     expect(createEmptyPetsDrivenState()).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
       sessionCommand: "cmd /k claude",
-      petSourceDirectories: [],
+      petSourceDirectory: null,
     });
   });
 
   it("resolves a hook cwd to the longest registered working directory ancestor", () => {
     const state: PetsDrivenState = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       registeredWorkingDirectories: [
         {
           id: "wd-cms",
@@ -41,7 +41,7 @@ describe("working directory registry", () => {
       pets: [],
       petProfiles: [],
       sessionCommand: "cmd /k claude",
-      petSourceDirectories: [],
+      petSourceDirectory: null,
     };
 
     expect(

@@ -52,42 +52,60 @@ export type PetsDrivenStateV2 = {
   registeredWorkingDirectories: RegisteredWorkingDirectory[];
   pets: PetRecord[];
   petProfiles: PetProfile[];
-  /** App-wide launch line for "Start new session". See DEFAULT_SESSION_COMMAND. */
   sessionCommand: string;
-  /**
-   * Extra folders to scan for pet packs, in addition to the built-in
-   * `~/.codex/pets` root. Lets users surface pets installed by the Petdex
-   * service into another location. The Rust `list_codex_pet_packages` /
-   * `load_codex_pet_spritesheet` commands read this list from the persisted
-   * state file, so both listing and sprite loading stay folder-aware.
-   */
   petSourceDirectories: string[];
 };
 
+export type PetsDrivenStateV3 = {
+  schemaVersion: 3;
+  registeredWorkingDirectories: RegisteredWorkingDirectory[];
+  pets: PetRecord[];
+  petProfiles: PetProfile[];
+  /** App-wide launch line for "Start new session". See DEFAULT_SESSION_COMMAND. */
+  sessionCommand: string;
+  /**
+   * The single folder scanned for user-installed pet packs. `null` means the
+   * Petdex default (`~/.petdex/pets`, resolved on the Rust side). The bundled
+   * pets always load regardless. The Rust `list_codex_pet_packages` /
+   * `load_codex_pet_spritesheet` commands read this from the persisted state
+   * file, so listing and sprite loading stay folder-aware.
+   */
+  petSourceDirectory: string | null;
+};
+
 /** Canonical state alias — always the latest schema. */
-export type PetsDrivenState = PetsDrivenStateV2;
+export type PetsDrivenState = PetsDrivenStateV3;
 
 export function createEmptyPetsDrivenState(): PetsDrivenState {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     registeredWorkingDirectories: [],
     pets: [],
     petProfiles: [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
-    petSourceDirectories: [],
+    petSourceDirectory: null,
   };
 }
 
-/** Keep only non-blank strings, so a corrupt persisted value cannot crash scans. */
-function sanitizePetSourceDirectories(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
+/**
+ * Collapse a legacy v2 folder list (or a corrupt persisted value) to the single
+ * designated folder: the first non-blank entry wins, `null` falls back to the
+ * Petdex default.
+ */
+function sanitizePetSourceDirectory(value: unknown): string | null {
+  const candidates = Array.isArray(value) ? value : [value];
+
+  for (const entry of candidates) {
+    if (typeof entry === "string" && entry.trim().length > 0) {
+      const normalized = normalizeWorkingDirectoryPath(entry);
+
+      if (normalized) {
+        return normalized;
+      }
+    }
   }
 
-  return value.filter(
-    (entry): entry is string =>
-      typeof entry === "string" && entry.trim().length > 0,
-  );
+  return null;
 }
 
 function defaultPetNameFromAssetId(assetId: string): string {
@@ -98,13 +116,13 @@ function defaultPetNameFromAssetId(assetId: string): string {
   return assetId.charAt(0).toUpperCase() + assetId.slice(1);
 }
 
-function migratePetsDrivenStateV1ToV2(
+function migratePetsDrivenStateV1(
   candidate: Partial<PetsDrivenStateV1>,
 ): PetsDrivenState {
   const pets = Array.isArray(candidate.pets) ? candidate.pets : [];
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     registeredWorkingDirectories: Array.isArray(
       candidate.registeredWorkingDirectories,
     )
@@ -121,7 +139,7 @@ function migratePetsDrivenStateV1ToV2(
       ? candidate.petProfiles
       : [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
-    petSourceDirectories: [],
+    petSourceDirectory: null,
   };
 }
 
@@ -156,34 +174,48 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
     return createEmptyPetsDrivenState();
   }
 
-  const candidate = value as Partial<PetsDrivenStateV1 | PetsDrivenStateV2>;
+  const candidate = value as Partial<
+    PetsDrivenStateV1 | PetsDrivenStateV2 | PetsDrivenStateV3
+  >;
 
   if (candidate.schemaVersion === 1) {
     return repairPetDirectoryLinks(
-      migratePetsDrivenStateV1ToV2(candidate as Partial<PetsDrivenStateV1>),
+      migratePetsDrivenStateV1(candidate as Partial<PetsDrivenStateV1>),
     );
   }
 
-  if (candidate.schemaVersion !== 2) {
+  if (candidate.schemaVersion !== 2 && candidate.schemaVersion !== 3) {
     return createEmptyPetsDrivenState();
   }
 
-  const v2 = candidate as Partial<PetsDrivenStateV2>;
+  // v2 stored a list of extra scan folders; v3 keeps a single designated
+  // folder. sanitizePetSourceDirectory collapses either shape.
+  const persisted = candidate as Partial<PetsDrivenStateV2> &
+    Partial<PetsDrivenStateV3>;
 
   return repairPetDirectoryLinks({
-    schemaVersion: 2,
-    registeredWorkingDirectories: Array.isArray(v2.registeredWorkingDirectories)
-      ? v2.registeredWorkingDirectories
+    schemaVersion: 3,
+    registeredWorkingDirectories: Array.isArray(
+      persisted.registeredWorkingDirectories,
+    )
+      ? persisted.registeredWorkingDirectories
       : [],
-    pets: Array.isArray(v2.pets)
-      ? v2.pets.map((pet) => ({ ...pet, visible: false }))
+    pets: Array.isArray(persisted.pets)
+      ? persisted.pets.map((pet) => ({ ...pet, visible: false }))
       : [],
-    petProfiles: Array.isArray(v2.petProfiles) ? v2.petProfiles : [],
+    petProfiles: Array.isArray(persisted.petProfiles)
+      ? persisted.petProfiles
+      : [],
     sessionCommand:
-      typeof v2.sessionCommand === "string" && v2.sessionCommand.trim()
-        ? v2.sessionCommand
+      typeof persisted.sessionCommand === "string" &&
+      persisted.sessionCommand.trim()
+        ? persisted.sessionCommand
         : DEFAULT_SESSION_COMMAND,
-    petSourceDirectories: sanitizePetSourceDirectories(v2.petSourceDirectories),
+    petSourceDirectory: sanitizePetSourceDirectory(
+      persisted.schemaVersion === 2
+        ? persisted.petSourceDirectories
+        : persisted.petSourceDirectory,
+    ),
   });
 }
 
@@ -225,53 +257,32 @@ function comparableWorkingDirectoryPath(path: string): string {
 }
 
 /**
- * Add a pet-pack source folder, normalising the path and skipping blanks and
- * case-insensitive duplicates. Returns the same state reference when nothing
- * changes so callers can avoid needless persistence.
+ * Point the pet-pack scan at a folder, normalising the path. `null` restores
+ * the Petdex default. Returns the same state reference when nothing changes
+ * so callers can avoid needless persistence.
  */
-export function addPetSourceDirectory(
+export function setPetSourceDirectory(
   state: PetsDrivenState,
-  path: string,
+  path: string | null,
 ): PetsDrivenState {
-  const normalized = normalizeWorkingDirectoryPath(path);
+  const normalized = path === null ? null : normalizeWorkingDirectoryPath(path);
 
-  if (!normalized) {
+  if (normalized !== null && !normalized) {
     return state;
   }
 
-  const comparable = comparableWorkingDirectoryPath(normalized);
-  const alreadyPresent = state.petSourceDirectories.some(
-    (existing) => comparableWorkingDirectoryPath(existing) === comparable,
-  );
+  const currentComparable =
+    state.petSourceDirectory === null
+      ? null
+      : comparableWorkingDirectoryPath(state.petSourceDirectory);
+  const nextComparable =
+    normalized === null ? null : comparableWorkingDirectoryPath(normalized);
 
-  if (alreadyPresent) {
+  if (currentComparable === nextComparable) {
     return state;
   }
 
-  return {
-    ...state,
-    petSourceDirectories: [...state.petSourceDirectories, normalized],
-  };
-}
-
-/**
- * Remove a pet-pack source folder by case-insensitive path match. Returns the
- * same state reference when the folder was not registered.
- */
-export function removePetSourceDirectory(
-  state: PetsDrivenState,
-  path: string,
-): PetsDrivenState {
-  const comparable = comparableWorkingDirectoryPath(path);
-  const next = state.petSourceDirectories.filter(
-    (existing) => comparableWorkingDirectoryPath(existing) !== comparable,
-  );
-
-  if (next.length === state.petSourceDirectories.length) {
-    return state;
-  }
-
-  return { ...state, petSourceDirectories: next };
+  return { ...state, petSourceDirectory: normalized };
 }
 
 function isSameOrAncestorPath(

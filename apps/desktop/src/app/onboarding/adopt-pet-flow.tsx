@@ -6,7 +6,6 @@ import {
   Input,
   RefreshIcon,
   SearchIcon,
-  TrashIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import {
@@ -26,9 +25,8 @@ import { Wordmark } from "@/app/onboarding/wordmark";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
 import { adoptPet, registerWorkingDirectory } from "@/app-state/pet-adoption";
 import {
-  addPetSourceDirectory,
   normalizeWorkingDirectoryPath,
-  removePetSourceDirectory,
+  setPetSourceDirectory,
   type PetsDrivenState,
 } from "@/app-state/pets-driven-state";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
@@ -280,17 +278,17 @@ export function AdoptPetFlow({
     [gateway, loadPackages, onStateChange],
   );
 
-  const addSourceFolder = useCallback(async () => {
+  const changeSourceFolder = useCallback(async () => {
     const picked = await gateway.pickDirectory();
 
     if (!picked) {
       return;
     }
 
-    const nextState = addPetSourceDirectory(stateRef.current, picked);
+    const nextState = setPetSourceDirectory(stateRef.current, picked);
 
-    // Already registered: nothing to persist, but rescan in case the folder
-    // gained pets since it was added.
+    // Same folder picked again: nothing to persist, but rescan in case it
+    // gained pets since the last scan.
     if (nextState === stateRef.current) {
       void loadPackages();
       return;
@@ -298,19 +296,6 @@ export function AdoptPetFlow({
 
     await persistAndRescan(nextState);
   }, [gateway, loadPackages, persistAndRescan]);
-
-  const removeSourceFolder = useCallback(
-    async (path: string) => {
-      const nextState = removePetSourceDirectory(stateRef.current, path);
-
-      if (nextState === stateRef.current) {
-        return;
-      }
-
-      await persistAndRescan(nextState);
-    },
-    [persistAndRescan],
-  );
 
   const normalizedQuery = query.trim().toLowerCase();
   const visiblePackages = normalizedQuery
@@ -429,8 +414,8 @@ export function AdoptPetFlow({
   const totalSteps = STEP_ORDER.length;
   const stepNumber = STEP_ORDER.indexOf(step) + 1;
 
-  function renderSourceFolders() {
-    if (state.petSourceDirectories.length === 0) {
+  function renderSourceFolder() {
+    if (!state.petSourceDirectory) {
       return null;
     }
 
@@ -439,27 +424,15 @@ export function AdoptPetFlow({
         <span className="pd-onb__sources-label">
           {t("onboarding.sourceFoldersLabel")}
         </span>
-        {state.petSourceDirectories.map((path) => (
-          <div className="pd-onb__source" key={path}>
-            <span className="pd-onb__source-icon" aria-hidden>
-              📁
-            </span>
-            <span className="pd-onb__source-text">
-              <b>{folderName(path)}</b>
-              <small>{path}</small>
-            </span>
-            <button
-              aria-label={t("onboarding.removeFolder", {
-                name: folderName(path),
-              })}
-              className="pd-onb__source-remove"
-              onClick={() => void removeSourceFolder(path)}
-              type="button"
-            >
-              <TrashIcon />
-            </button>
-          </div>
-        ))}
+        <div className="pd-onb__source">
+          <span className="pd-onb__source-icon" aria-hidden>
+            📁
+          </span>
+          <span className="pd-onb__source-text">
+            <b>{folderName(state.petSourceDirectory)}</b>
+            <small>{state.petSourceDirectory}</small>
+          </span>
+        </div>
       </div>
     );
   }
@@ -538,14 +511,14 @@ export function AdoptPetFlow({
                 </a>
                 <button
                   className="pd-onb__addfolder"
-                  onClick={() => void addSourceFolder()}
+                  onClick={() => void changeSourceFolder()}
                   type="button"
                 >
                   <FolderIcon />
-                  {t("onboarding.addFolder")}
+                  {t("onboarding.changeFolder")}
                 </button>
               </div>
-              {renderSourceFolders()}
+              {renderSourceFolder()}
             </>
           ) : (
             <div className="pd-onb__empty">
@@ -565,7 +538,7 @@ export function AdoptPetFlow({
                   </div>
                 </div>
 
-                {renderSourceFolders()}
+                {renderSourceFolder()}
               </div>
 
               {/* "No pets yet" motif — a muted slot with drifting paw prints. */}
@@ -606,7 +579,7 @@ export function AdoptPetFlow({
                 </Button>
                 <Button
                   iconLeft={<FolderIcon />}
-                  onClick={() => void addSourceFolder()}
+                  onClick={() => void changeSourceFolder()}
                   size="lg"
                 >
                   {t("onboarding.emptyChooseFolder")}

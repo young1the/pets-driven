@@ -158,7 +158,7 @@ vi.mock("@tauri-apps/api/window", () => ({
 const invokeMock = vi.mocked(invoke);
 const isTauriMock = vi.mocked(isTauri);
 const testPetsDrivenState: PetsDrivenState = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   registeredWorkingDirectories: [
     {
       id: "wd-cms",
@@ -198,7 +198,7 @@ const testPetsDrivenState: PetsDrivenState = {
     },
   ],
   sessionCommand: "claude",
-  petSourceDirectories: [],
+  petSourceDirectory: null,
 };
 
 describe("pet window product route", () => {

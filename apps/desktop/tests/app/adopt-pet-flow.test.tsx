@@ -15,6 +15,7 @@ function createGateway(
     closeAdoptedPetWindow: vi.fn(),
     openPetContextMenu: vi.fn(),
     pickDirectory: vi.fn(),
+    getDefaultPetSourceDirectory: vi.fn().mockResolvedValue(null),
     getClaudePluginStatus: vi.fn().mockResolvedValue({
       state: "not-installed",
       version: null,
@@ -127,13 +128,13 @@ describe("AdoptPetFlow pet source folders", () => {
     await waitFor(() => {
       expect(gateway.writePetsDrivenState).toHaveBeenCalledWith(
         expect.objectContaining({
-          petSourceDirectories: ["D:\\pets\\mine"],
+          petSourceDirectory: "D:\\pets\\mine",
         }),
       );
     });
 
     expect(onStateChange).toHaveBeenCalledWith(
-      expect.objectContaining({ petSourceDirectories: ["D:\\pets\\mine"] }),
+      expect.objectContaining({ petSourceDirectory: "D:\\pets\\mine" }),
     );
     // The pet-pack roots are rescanned once on mount and again after the
     // folder is added, so the new folder's packs surface immediately.

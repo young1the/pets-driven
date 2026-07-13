@@ -42,9 +42,10 @@ const settings = {
   pluginBusy: false,
   onInstallPlugin: vi.fn(),
   onUninstallPlugin: vi.fn(),
-  petSourceDirectories: [] as string[],
-  onAddPetFolder: vi.fn(),
-  onRemovePetFolder: vi.fn(),
+  petSourceDirectory: null as string | null,
+  defaultPetSourceDirectory: null as string | null,
+  onChangePetFolder: vi.fn(),
+  onResetPetFolder: vi.fn(),
 };
 const debug = { groups: [], error: null };
 

@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  addPetSourceDirectory,
   createEmptyPetsDrivenState,
   parsePetsDrivenState,
-  removePetSourceDirectory,
+  setPetSourceDirectory,
 } from "@/app-state/pets-driven-state";
 
 const v1Payload = {
@@ -40,21 +39,21 @@ const v1Payload = {
 };
 
 describe("parsePetsDrivenState", () => {
-  it("creates an empty v2 state", () => {
+  it("creates an empty v3 state", () => {
     expect(createEmptyPetsDrivenState()).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
       sessionCommand: "cmd /k claude",
-      petSourceDirectories: [],
+      petSourceDirectory: null,
     });
   });
 
   it("migrates v1 pets with default name, adoptedAt and nullable link", () => {
     const state = parsePetsDrivenState(v1Payload);
 
-    expect(state.schemaVersion).toBe(2);
+    expect(state.schemaVersion).toBe(3);
     expect(state.pets[0]).toMatchObject({
       id: "pet-1",
       name: "Bloop",
@@ -69,14 +68,14 @@ describe("parsePetsDrivenState", () => {
     });
   });
 
-  it("passes v2 state through unchanged", () => {
-    const v2 = parsePetsDrivenState(v1Payload);
+  it("passes v3 state through unchanged", () => {
+    const v3 = parsePetsDrivenState(v1Payload);
 
-    expect(parsePetsDrivenState(v2)).toEqual(v2);
+    expect(parsePetsDrivenState(v3)).toEqual(v3);
   });
 
 
-  it("returns an empty v2 state for unknown payloads", () => {
+  it("returns an empty v3 state for unknown payloads", () => {
     expect(parsePetsDrivenState(null)).toEqual(createEmptyPetsDrivenState());
     expect(parsePetsDrivenState("junk")).toEqual(createEmptyPetsDrivenState());
     expect(parsePetsDrivenState({ schemaVersion: 99 })).toEqual(
@@ -171,57 +170,81 @@ describe("parsePetsDrivenState", () => {
     expect(state.pets[0].memo).toBe("watch the auth flow");
   });
 
-  it("defaults petSourceDirectories to an empty array when missing", () => {
+  it("defaults petSourceDirectory to null when missing", () => {
     const state = parsePetsDrivenState({
-      schemaVersion: 2,
+      schemaVersion: 3,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
     });
 
-    expect(state.petSourceDirectories).toEqual([]);
+    expect(state.petSourceDirectory).toBeNull();
   });
 
-  it("keeps only non-blank string source directories", () => {
+  it("collapses a legacy v2 folder list to its first non-blank entry", () => {
     const state = parsePetsDrivenState({
       schemaVersion: 2,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
-      petSourceDirectories: ["D:\\pets", "  ", 42, "C:\\more"],
+      petSourceDirectories: ["  ", 42, "D:\\pets", "C:\\more"],
     });
 
-    expect(state.petSourceDirectories).toEqual(["D:\\pets", "C:\\more"]);
+    expect(state.schemaVersion).toBe(3);
+    expect(state.petSourceDirectory).toBe("D:\\pets");
+  });
+
+  it("falls back to null for a v2 list with no usable entry", () => {
+    const state = parsePetsDrivenState({
+      schemaVersion: 2,
+      registeredWorkingDirectories: [],
+      pets: [],
+      petProfiles: [],
+      petSourceDirectories: ["  ", 42],
+    });
+
+    expect(state.petSourceDirectory).toBeNull();
+  });
+
+  it("rejects a corrupt v3 petSourceDirectory value", () => {
+    const state = parsePetsDrivenState({
+      schemaVersion: 3,
+      registeredWorkingDirectories: [],
+      pets: [],
+      petProfiles: [],
+      petSourceDirectory: 42,
+    });
+
+    expect(state.petSourceDirectory).toBeNull();
   });
 });
 
-describe("pet source directory helpers", () => {
-  it("adds a normalized folder and skips case-insensitive duplicates", () => {
+describe("setPetSourceDirectory", () => {
+  it("sets a normalized folder and treats the same folder as a no-op", () => {
     const empty = createEmptyPetsDrivenState();
-    const added = addPetSourceDirectory(empty, "D:/pets/../pets/mine/");
+    const set = setPetSourceDirectory(empty, "D:/pets/../pets/mine/");
 
-    expect(added.petSourceDirectories).toEqual(["D:\\pets\\mine"]);
+    expect(set.petSourceDirectory).toBe("D:\\pets\\mine");
 
     // A path that normalizes to the same folder is a no-op (same reference).
-    const again = addPetSourceDirectory(added, "d:\\pets\\mine");
-    expect(again).toBe(added);
+    expect(setPetSourceDirectory(set, "d:\\pets\\mine")).toBe(set);
   });
 
   it("ignores a blank path", () => {
     const empty = createEmptyPetsDrivenState();
-    expect(addPetSourceDirectory(empty, "   ")).toBe(empty);
+    expect(setPetSourceDirectory(empty, "   ")).toBe(empty);
   });
 
-  it("removes a folder by case-insensitive match", () => {
-    const seeded = addPetSourceDirectory(
+  it("resets to the default with null", () => {
+    const seeded = setPetSourceDirectory(
       createEmptyPetsDrivenState(),
       "D:\\pets\\mine",
     );
-    const removed = removePetSourceDirectory(seeded, "d:/pets/mine");
+    const reset = setPetSourceDirectory(seeded, null);
 
-    expect(removed.petSourceDirectories).toEqual([]);
+    expect(reset.petSourceDirectory).toBeNull();
 
-    // Removing something that is not registered is a no-op.
-    expect(removePetSourceDirectory(removed, "D:\\nope")).toBe(removed);
+    // Resetting an already-default state is a no-op.
+    expect(setPetSourceDirectory(reset, null)).toBe(reset);
   });
 });

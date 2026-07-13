@@ -28,12 +28,14 @@ pub(crate) struct CodexPetPackage {
     spritesheet_path: String,
 }
 
-fn codex_pets_root() -> Result<PathBuf, String> {
-    let home = env::var_os("CODEX_HOME")
+/// The default user pet folder: `~/.petdex/pets`, where the partnered Petdex
+/// service installs pet packs. `PETDEX_HOME` overrides the `~/.petdex` part.
+fn petdex_pets_root() -> Result<PathBuf, String> {
+    let home = env::var_os("PETDEX_HOME")
         .map(PathBuf::from)
-        .or_else(|| env::var_os("USERPROFILE").map(|home| PathBuf::from(home).join(".codex")))
-        .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".codex")))
-        .ok_or_else(|| "Could not resolve the Codex home directory".to_string())?;
+        .or_else(|| env::var_os("USERPROFILE").map(|home| PathBuf::from(home).join(".petdex")))
+        .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".petdex")))
+        .ok_or_else(|| "Could not resolve the Petdex home directory".to_string())?;
 
     Ok(home.join("pets"))
 }
@@ -169,22 +171,22 @@ fn bundled_pets_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
     candidates.into_iter().find(|dir| dir.is_dir())
 }
 
-/// The ordered list of roots to scan: the built-in Codex root first, then the
-/// user's extra `petSourceDirectories` read straight from the persisted state
-/// file, and finally the pets bundled with the app. Reading the config here
-/// (rather than threading it through every caller) keeps the frontend and the
-/// pet windows unaware of the extra folders while still resolving their sprites.
-/// Order matches `read_pet_packages_from_roots` so a listed pack and its loaded
-/// sprite always resolve to the same file; the bundled defaults come last so a
-/// user's Codex pets or an explicitly added folder win on an id collision.
-fn configured_pet_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
-    let mut roots: Vec<PathBuf> = Vec::new();
-
-    if let Ok(root) = codex_pets_root() {
-        roots.push(root);
-    }
-
+/// The single designated user pet folder, read straight from the persisted
+/// state file: the v3 `petSourceDirectory` string when set, else the first
+/// entry of the legacy v2 `petSourceDirectories` list, else the Petdex default
+/// (`~/.petdex/pets`).
+fn designated_pet_source_root(app: &tauri::AppHandle) -> Option<PathBuf> {
     if let Ok(state) = state_store::read_state_pub(app) {
+        if let Some(path) = state
+            .get("petSourceDirectory")
+            .and_then(|value| value.as_str())
+        {
+            let trimmed = path.trim();
+            if !trimmed.is_empty() {
+                return Some(PathBuf::from(trimmed));
+            }
+        }
+
         if let Some(directories) = state
             .get("petSourceDirectories")
             .and_then(|value| value.as_array())
@@ -193,11 +195,28 @@ fn configured_pet_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
                 if let Some(path) = directory.as_str() {
                     let trimmed = path.trim();
                     if !trimmed.is_empty() {
-                        roots.push(PathBuf::from(trimmed));
+                        return Some(PathBuf::from(trimmed));
                     }
                 }
             }
         }
+    }
+
+    petdex_pets_root().ok()
+}
+
+/// The ordered list of roots to scan: the designated user folder (Petdex by
+/// default) first, then the pets bundled with the app. Reading the config here
+/// (rather than threading it through every caller) keeps the frontend and the
+/// pet windows unaware of the folder while still resolving their sprites.
+/// Order matches `read_pet_packages_from_roots` so a listed pack and its loaded
+/// sprite always resolve to the same file; the bundled defaults come last so a
+/// user-installed pack wins on an id collision.
+fn configured_pet_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = Vec::new();
+
+    if let Some(root) = designated_pet_source_root(app) {
+        roots.push(root);
     }
 
     if let Some(bundled) = bundled_pets_dir(app) {
@@ -205,6 +224,13 @@ fn configured_pet_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
     }
 
     roots
+}
+
+/// The Petdex default pet folder as a display string, so the frontend can show
+/// where pets land when no custom folder is designated.
+#[tauri::command]
+pub(crate) fn get_default_pet_source_directory() -> Result<String, String> {
+    Ok(petdex_pets_root()?.display().to_string())
 }
 
 #[tauri::command]
