@@ -20,6 +20,7 @@ import { personalitySpeechProfile } from "@pets-driven/pet-engine/pets/personali
 import { initialMoodState } from "@pets-driven/pet-engine/features/mood/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { createWorld } from "@pets-driven/pet-engine/core/create-world";
+import type { EntityDeclaration } from "@pets-driven/pet-engine/core/component-store";
 import {
   createMonitorBoundaryEntities,
   getWorldViewport,
@@ -563,19 +564,71 @@ export function deriveAdoptedPetLocomotion(
   return { canWalk, canJump, bodyMassScale };
 }
 
+export type AdoptedPetScenarioInput = {
+  id: string;
+  name: string;
+  sourceId: string;
+  personality?: PersonalityComponent;
+};
+
+/**
+ * Shape a single adopted pet into a world entity declaration: a grounded
+ * walker/jumper whose locomotion is derived from its body size and personality.
+ * Shared by the initial scenario build and by the live addPet path so a pet
+ * added mid-simulation is identical to one present from the start.
+ */
+export function buildAdoptedPetEntity(
+  pet: AdoptedPetScenarioInput,
+  options: {
+    position: { x: number; y: number };
+    bodySize?: { width: number; height: number };
+  },
+): EntityDeclaration {
+  const { bodySize } = options;
+  const bodyComponents: Component[] = bodySize
+    ? [
+        {
+          type: "PhysicsBody",
+          shape: "rectangle",
+          width: bodySize.width,
+          height: bodySize.height,
+        },
+      ]
+    : [];
+  const { canWalk, canJump } = deriveAdoptedPetLocomotion(
+    bodySize,
+    pet.personality,
+  );
+  return createFixturePet({
+    id: pet.id,
+    sourceId: pet.sourceId,
+    name: pet.name,
+    x: options.position.x,
+    y: options.position.y,
+    components: [
+      ...bodyComponents,
+      { type: "WalkingTag" },
+      canWalk,
+      canJump,
+      { type: "WandersOnArrival", arrivalRadius: 16 },
+      { type: "CanSocialize" },
+      ...(pet.personality ? [pet.personality] : []),
+    ],
+  });
+}
+
 /**
  * Build a live world seeded with the user's actual adopted pets so they walk,
  * jump and wander on the screen floor exactly like the demo playground pets.
  * Unlike createDemoScenario the roster is dynamic — one grounded walker per
  * adopted pet, evenly spaced, with movement derived from its personality.
+ *
+ * The returned `addPet`/`removePet` reconcile the roster in place so deploying
+ * or sending home one pet never disturbs the others: rebuilding the world would
+ * reset every pet's position and animation, which the host must avoid.
  */
 export function createAdoptedPetsScenario(
-  pets: ReadonlyArray<{
-    id: string;
-    name: string;
-    sourceId: string;
-    personality?: PersonalityComponent;
-  }>,
+  pets: ReadonlyArray<AdoptedPetScenarioInput>,
   options?: {
     petBodySize?: { width: number; height: number };
     petBodySizeByPetId?: Record<string, { width: number; height: number }>;
@@ -588,6 +641,23 @@ export function createAdoptedPetsScenario(
   const initialPlacementMonitors = orderMonitorsForInitialPlacement(monitors);
   const viewport = getWorldViewport(monitors);
   const groundThickness = 48;
+
+  const bodySizeFor = (petId: string, explicit?: { width: number; height: number }) =>
+    explicit ?? options?.petBodySizeByPetId?.[petId] ?? options?.petBodySize;
+
+  const spawnPositionFor = (
+    index: number,
+    total: number,
+    bodySize?: { width: number; height: number },
+  ) =>
+    options?.spawnPoint ??
+    initialPlacementForPet(
+      initialPlacementMonitors,
+      index,
+      total,
+      bodySize?.height ?? DEFAULT_PET_BODY_SIZE.height,
+    );
+
   const world = createWorld({
     width: viewport.width,
     height: viewport.height,
@@ -624,43 +694,52 @@ export function createAdoptedPetsScenario(
         ],
       },
       ...pets.map((pet, index) => {
-        const bodySize =
-          options?.petBodySizeByPetId?.[pet.id] ?? options?.petBodySize;
-        const placement = initialPlacementForPet(
-          initialPlacementMonitors,
-          index,
-          pets.length,
-          bodySize?.height ?? DEFAULT_PET_BODY_SIZE.height,
-        );
-        const initialPosition = options?.spawnPoint ?? placement;
-        const bodyComponents: Component[] = bodySize
-          ? [{ type: "PhysicsBody", shape: "rectangle", width: bodySize.width, height: bodySize.height }]
-          : [];
-        const { canWalk, canJump } = deriveAdoptedPetLocomotion(
+        const bodySize = bodySizeFor(pet.id);
+        return buildAdoptedPetEntity(pet, {
+          position: spawnPositionFor(index, pets.length, bodySize),
           bodySize,
-          pet.personality,
-        );
-        return createFixturePet({
-          id: pet.id,
-          sourceId: pet.sourceId,
-          name: pet.name,
-          x: initialPosition.x,
-          y: initialPosition.y,
-          components: [
-            ...bodyComponents,
-            { type: "WalkingTag" },
-            canWalk,
-            canJump,
-            { type: "WandersOnArrival", arrivalRadius: 16 },
-            { type: "CanSocialize" },
-            ...(pet.personality ? [pet.personality] : []),
-          ],
         });
       }),
     ],
   });
 
-  return { clock, world };
+  // Running count of live pets, used only as a spawn-slot hint for a pet added
+  // later. Never decremented below zero; removals leave gaps that the next add
+  // reuses (a spawn hint, not an identity), then the pet wanders off anyway.
+  let petCount = pets.length;
+
+  return {
+    clock,
+    world,
+    /**
+     * Add one pet to the live world without touching the others. The host calls
+     * this when a pet is deployed while at least one pet is already on screen.
+     */
+    addPet(
+      pet: AdoptedPetScenarioInput,
+      addOptions?: {
+        bodySize?: { width: number; height: number };
+        position?: { x: number; y: number };
+      },
+    ) {
+      if (world.getEntity(pet.id)) {
+        return;
+      }
+      const bodySize = bodySizeFor(pet.id, addOptions?.bodySize);
+      const position =
+        addOptions?.position ?? spawnPositionFor(petCount, petCount + 1, bodySize);
+      world.addEntity(buildAdoptedPetEntity(pet, { position, bodySize }));
+      petCount += 1;
+    },
+    /** Remove one pet from the live world; other pets keep their state. */
+    removePet(id: string) {
+      if (!world.getEntity(id)) {
+        return;
+      }
+      world.removeEntity(id);
+      petCount = Math.max(0, petCount - 1);
+    },
+  };
 }
 
 export const JUMP_PLAYGROUND_PET_IDS = [

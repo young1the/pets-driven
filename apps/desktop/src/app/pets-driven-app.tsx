@@ -507,13 +507,20 @@ function PetsDrivenHostApp() {
     toastTimerRef.current = window.setTimeout(() => setToast(null), 2600);
   }
 
-  // Stable signature of the visible pet roster; the adopted-pet host rebuilds
-  // its world whenever this changes.
+  // Stable signature of the visible pet roster. Roster *membership* changes
+  // (a pet shown, hidden or deleted) are reconciled into the live world in
+  // place — see the roster-reconcile effect — instead of rebuilding it, so one
+  // pet coming or going never resets the others' positions and animation.
   const adoptedSimKey = petsDrivenState.pets
     .filter((pet) => !pet.archived && pet.visible)
     .map((pet) => `${pet.id}:${pet.assetId}`)
     .sort()
     .join(",");
+  // Whether any pet is on screen at all. The world-lifecycle effect keys on
+  // this boundary alone (not the full roster) so it builds when the first pet
+  // appears and tears down when the last leaves, but never rebuilds while pets
+  // are merely added to or removed from an already-running world.
+  const adoptedHasVisiblePets = adoptedSimKey.length > 0;
 
   useEffect(() => {
     if (!isTauri()) {
@@ -1144,7 +1151,68 @@ function PetsDrivenHostApp() {
       window.clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adoptedSimKey, adoptedSimulationResetKey]);
+  }, [adoptedHasVisiblePets, adoptedSimulationResetKey]);
+
+  // Reconcile the live simulation roster in place whenever pets are shown,
+  // hidden or deleted. The world-lifecycle effect above only builds/tears down
+  // on the has-any-pets boundary; membership churn while at least one pet is on
+  // screen is applied here by adding/removing just the affected pet, leaving
+  // every other pet's position and animation untouched.
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    const scenario = adoptedScenarioRef.current;
+    if (!scenario) {
+      // No live world yet (first pet still loading) or it was just torn down.
+      // The lifecycle effect (re)builds from the current roster, so there is
+      // nothing to reconcile incrementally.
+      return;
+    }
+
+    const desired = selectAdoptedPetSimInputs(petsDrivenStateRef.current);
+    const desiredIds = new Set(desired.map((pet) => pet.id));
+    const records = petsDrivenStateRef.current.pets;
+
+    // This effect owns simulation membership only — never the OS pet windows.
+    // The action handlers (showPet / hidePet / deletePet / showAllPets /
+    // hideAllPets) already open and close those. Opening or closing them here
+    // too double-destroys a WebView2 window that hidePet is already tearing
+    // down, which crashes the app with a native access violation.
+
+    // Add pets that became visible.
+    for (const pet of desired) {
+      if (adoptedPetIdsRef.current.has(pet.id)) {
+        continue;
+      }
+      const record = records.find((candidate) => candidate.id === pet.id);
+      const scale = clampPetWindowScale(
+        record?.scale ?? DEFAULT_PET_WINDOW_SCALE,
+      );
+      const bodySize = adoptedPetBodySize(scale);
+      scenario.addPet(pet, { bodySize });
+      adoptedPetIdsRef.current.add(pet.id);
+      adoptedScaleByPetIdRef.current = {
+        ...adoptedScaleByPetIdRef.current,
+        [pet.id]: scale,
+      };
+    }
+
+    // Remove pets that are no longer visible.
+    for (const id of [...adoptedPetIdsRef.current]) {
+      if (desiredIds.has(id)) {
+        continue;
+      }
+      scenario.removePet(id);
+      adoptedPetIdsRef.current.delete(id);
+      adoptedLastEmitByPetIdRef.current.delete(id);
+      const { [id]: _removedScale, ...restScales } =
+        adoptedScaleByPetIdRef.current;
+      adoptedScaleByPetIdRef.current = restScales;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adoptedSimKey]);
 
   if (view === "playground") {
     return (

@@ -15,6 +15,7 @@ export type MatterPhysicsWorld = {
   addCircle(id: string, position: Vector, radius: number): void;
   addRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
   addStaticRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
+  removeBody(id: string): void;
   resizeRectangle(id: string, size: Size): void;
   applyForce(id: string, force: Vector): void;
   setGravityScale(id: string, scale: number): void;
@@ -119,6 +120,21 @@ export function createMatterPhysicsWorld(bounds: {
         restitution: material?.restitution ?? 0,
       });
       addBody(id, body, { shape: "rectangle", isStatic: true, ...size });
+    },
+    removeBody(id) {
+      const body = bodies.get(id);
+      if (!body) return;
+      World.remove(engine.world, body);
+      bodies.delete(id);
+      shapes.delete(id);
+      gravityScales.delete(id);
+      // Drop any live collision pairs that referenced this body so the removed
+      // id never resurfaces in activeCollisions() after teardown.
+      for (const [key, pair] of activeCollisionPairs) {
+        if (pair.bodyAId === id || pair.bodyBId === id) {
+          activeCollisionPairs.delete(key);
+        }
+      }
     },
     resizeRectangle(id, size) {
       const existing = bodies.get(id);

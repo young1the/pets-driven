@@ -96,6 +96,25 @@ describe("matter physics world", () => {
     expect(petB?.x).toBeCloseTo(112, 5);
   });
 
+  it("removes a body from the world and its snapshot", () => {
+    const world = createMatterPhysicsWorld({ width: 800, height: 600 });
+    world.addRectangle("pet-a", { x: 100, y: 100 }, { width: 32, height: 38 });
+    world.addRectangle("pet-b", { x: 300, y: 100 }, { width: 32, height: 38 });
+
+    world.removeBody("pet-a");
+
+    const ids = world.snapshot().bodies.map((body) => body.id);
+    expect(ids).not.toContain("pet-a");
+    expect(ids).toContain("pet-b");
+    // Removal is idempotent; a stale id no-ops instead of throwing.
+    expect(() => world.removeBody("pet-a")).not.toThrow();
+    // A removed body no longer participates in the simulation.
+    world.setPosition("pet-a", { x: 500 });
+    expect(
+      world.snapshot().bodies.find((body) => body.id === "pet-a"),
+    ).toBeUndefined();
+  });
+
   it("supports per-body gravity scale for flyable or low-gravity bodies", () => {
     const world = createMatterPhysicsWorld({ width: 800, height: 600 });
     world.addRectangle("pet-a", { x: 100, y: 100 }, { width: 32, height: 38 });

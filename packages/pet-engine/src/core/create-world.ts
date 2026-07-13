@@ -53,31 +53,30 @@ export function createWorld(input: WorldDefinition) {
 
   function registerPhysicsBodies() {
     for (const entity of components.query("Transform", "PhysicsBody")) {
-      const [transform, body] = entity.components;
-      const material = components.getComponent(entity.id, "PhysicsMaterial");
-      if (body.shape === "rectangle") {
-        const size = { width: body.width, height: body.height };
-        const materialOptions = material
-          ? { friction: material.friction, restitution: material.restitution }
-          : undefined;
-
-        if (components.getComponent(entity.id, "Ground")) {
-          physics.addStaticRectangle(
-            entity.id,
-            transform.position,
-            size,
-            materialOptions,
-          );
-          continue;
-        }
-        physics.addRectangle(
-          entity.id,
-          transform.position,
-          size,
-          materialOptions,
-        );
-      }
+      registerPhysicsBody(entity.id);
     }
+  }
+
+  // Register the Matter body for a single entity from its current Transform +
+  // PhysicsBody components. Shared by the initial bulk pass and by addEntity so
+  // pets spawned mid-simulation get a body the same way the fixture ones do.
+  function registerPhysicsBody(id: string) {
+    const transform = components.getComponent(id, "Transform");
+    const body = components.getComponent(id, "PhysicsBody");
+    if (!transform || !body || body.shape !== "rectangle") {
+      return;
+    }
+    const material = components.getComponent(id, "PhysicsMaterial");
+    const size = { width: body.width, height: body.height };
+    const materialOptions = material
+      ? { friction: material.friction, restitution: material.restitution }
+      : undefined;
+
+    if (components.getComponent(id, "Ground")) {
+      physics.addStaticRectangle(id, transform.position, size, materialOptions);
+      return;
+    }
+    physics.addRectangle(id, transform.position, size, materialOptions);
   }
 
   function getPetSnapshots(componentStore: ComponentStore) {
@@ -394,6 +393,22 @@ export function createWorld(input: WorldDefinition) {
     getEntity(id: string) {
       const entity = components.getEntity(id);
       return entity ? { id: entity.id } : undefined;
+    },
+    // Spawn a new entity into the live world and register its physics body,
+    // matching how the initial fixture entities are hydrated. Lets the desktop
+    // host add a newly deployed pet without rebuilding the whole world (which
+    // would reset every other pet's position and animation).
+    addEntity(declaration: EntityDeclaration) {
+      components.spawn(declaration.id, declaration.components);
+      registerPhysicsBody(declaration.id);
+    },
+    // Tear a single entity out of the live world: drop its physics body first,
+    // then every component it owns. Idempotent — unknown ids no-op. Systems that
+    // still hold a reference (e.g. a social session partner) prune it on their
+    // next pass, since their lookups now miss.
+    removeEntity(id: string) {
+      physics.removeBody(id);
+      components.destroy(id);
     },
     getComponent<TType extends ComponentType>(id: string, type: TType) {
       return components.getComponent(id, type);

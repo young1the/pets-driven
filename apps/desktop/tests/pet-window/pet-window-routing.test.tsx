@@ -497,31 +497,34 @@ describe("pet window product route", () => {
     await screen.findByRole("button", { name: "Open Otto's details" });
     showAllAdoptedPets();
 
-    await waitFor(() => {
-      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
-        "pet-window-pet-a",
-        PET_WINDOW_FRAME_EVENT,
-        expect.objectContaining({
-          sequence: expect.any(Number),
-          petId: "pet-a",
-        }),
+    const lastPetAFrameSequence = () => {
+      const calls = tauriEventMocks.emitTo.mock.calls.filter(
+        ([label, eventName, payload]) =>
+          label === "pet-window-pet-a" &&
+          eventName === PET_WINDOW_FRAME_EVENT &&
+          (payload as { petId?: string }).petId === "pet-a",
       );
+      const last = calls.at(-1)?.[2] as { sequence: number } | undefined;
+      return last?.sequence;
+    };
+
+    await waitFor(() => {
+      expect(lastPetAFrameSequence()).toEqual(expect.any(Number));
     });
 
+    const sequenceBeforeReset = lastPetAFrameSequence()!;
     tauriEventMocks.emitTo.mockClear();
 
     fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Reset simulation" }));
 
+    // Resetting rebuilds the world but must NOT restart the frame sequence:
+    // already-open pet windows reject any frame whose sequence is not greater
+    // than the last they processed, so a reset-to-0 would freeze them. The
+    // counter stays monotonic, so post-reset frames keep climbing.
     await waitFor(() => {
-      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
-        "pet-window-pet-a",
-        PET_WINDOW_FRAME_EVENT,
-        expect.objectContaining({
-          sequence: 1,
-          petId: "pet-a",
-        }),
-      );
+      const sequenceAfterReset = lastPetAFrameSequence();
+      expect(sequenceAfterReset).toBeGreaterThan(sequenceBeforeReset);
     });
   });
 

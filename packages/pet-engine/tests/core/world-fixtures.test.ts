@@ -1986,6 +1986,104 @@ describe("adopted pets scenario", () => {
       otherEntityId: "pet-uuid-1",
     });
   });
+
+  it("adds a pet to the live world without disturbing the others", () => {
+    const scenario = createAdoptedPetsScenario(pets, {
+      petBodySize: { width: 80, height: 100 },
+      monitors: [{ id: "primary", x: 0, y: 0, width: 960, height: 540 }],
+    });
+
+    // Let the existing pets settle into whatever positions they wandered to.
+    for (let frame = 0; frame < 60; frame += 1) {
+      scenario.world.step(16);
+    }
+    const before = new Map(
+      scenario.world.snapshot().pets.map((pet) => [pet.id, { ...pet.position }]),
+    );
+
+    scenario.addPet(
+      { id: "pet-uuid-3", name: "Nori", sourceId: "agent-3" },
+      { bodySize: { width: 80, height: 100 } },
+    );
+
+    const snapshot = scenario.world.snapshot();
+    // The newcomer is a full walker keyed by its real id...
+    expect(snapshot.pets.map((pet) => pet.id)).toContain("pet-uuid-3");
+    expect(scenario.world.getComponent("pet-uuid-3", "WalkingTag")).toEqual({
+      type: "WalkingTag",
+    });
+    expect(
+      snapshot.bodies.find((body) => body.id === "pet-uuid-3"),
+    ).toMatchObject({ width: 80, height: 100 });
+    // ...and every pre-existing pet is exactly where it was — no world rebuild.
+    for (const pet of snapshot.pets) {
+      if (pet.id === "pet-uuid-3") continue;
+      expect(pet.position).toEqual(before.get(pet.id));
+    }
+  });
+
+  it("removes a pet from the live world and leaves the others untouched", () => {
+    const scenario = createAdoptedPetsScenario(pets, {
+      petBodySize: { width: 80, height: 100 },
+      monitors: [{ id: "primary", x: 0, y: 0, width: 960, height: 540 }],
+    });
+
+    for (let frame = 0; frame < 60; frame += 1) {
+      scenario.world.step(16);
+    }
+    const survivorBefore = {
+      ...scenario.world.snapshot().pets.find((pet) => pet.id === "pet-uuid-2")!
+        .position,
+    };
+
+    scenario.removePet("pet-uuid-1");
+
+    const snapshot = scenario.world.snapshot();
+    expect(snapshot.pets.map((pet) => pet.id)).toEqual(["pet-uuid-2"]);
+    expect(scenario.world.getEntity("pet-uuid-1")).toBeUndefined();
+    expect(scenario.world.getComponent("pet-uuid-1", "Transform")).toBeUndefined();
+    // The removed pet's physics body is gone from the simulation too.
+    expect(
+      snapshot.bodies.find((body) => body.id === "pet-uuid-1"),
+    ).toBeUndefined();
+    expect(
+      scenario.world.snapshot().pets.find((pet) => pet.id === "pet-uuid-2")
+        ?.position,
+    ).toEqual(survivorBefore);
+  });
+
+  it("keeps stepping cleanly after a mid-session pet removal", () => {
+    const scenario = createAdoptedPetsScenario(pets, {
+      petBodySize: { width: 80, height: 100 },
+      monitors: [{ id: "primary", x: 0, y: 0, width: 960, height: 540 }],
+    });
+
+    scenario.removePet("pet-uuid-1");
+
+    expect(() => {
+      for (let frame = 0; frame < 120; frame += 1) {
+        scenario.world.step(16);
+      }
+    }).not.toThrow();
+    expect(scenario.world.snapshot().pets.map((pet) => pet.id)).toEqual([
+      "pet-uuid-2",
+    ]);
+  });
+
+  it("ignores adding a pet that already exists and removing an unknown pet", () => {
+    const scenario = createAdoptedPetsScenario(pets);
+
+    scenario.addPet({ id: "pet-uuid-1", name: "Otto", sourceId: "agent-1" });
+    expect(
+      scenario.world.snapshot().pets.filter((pet) => pet.id === "pet-uuid-1"),
+    ).toHaveLength(1);
+
+    expect(() => scenario.removePet("nonexistent")).not.toThrow();
+    expect(scenario.world.snapshot().pets.map((pet) => pet.id)).toEqual([
+      "pet-uuid-1",
+      "pet-uuid-2",
+    ]);
+  });
 });
 
 describe("climb playground scenario", () => {
