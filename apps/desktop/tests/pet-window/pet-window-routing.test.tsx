@@ -964,6 +964,214 @@ describe("pet window product route", () => {
     });
   });
 
+  it("binds the window picked in connect mode when menu.find-terminal arrives", async () => {
+    let resolveConnectWindow:
+      ((window: { hwnd: number; title: string } | null) => void) | undefined;
+
+    invokeMock.mockImplementation(async (command) => {
+      if (command === "list_codex_pet_packages") {
+        return [];
+      }
+      if (command === "get_claude_hook_ingress_status") {
+        return {
+          url: "http://127.0.0.1:43187/claude-hook",
+          state: "listening",
+          error: null,
+        };
+      }
+      if (command === "read_pets_driven_state") {
+        return testPetsDrivenState;
+      }
+      if (command === "connect_window") {
+        return new Promise((resolve) => {
+          resolveConnectWindow = resolve;
+        });
+      }
+      if (command === "focus_window") {
+        return true;
+      }
+
+      return undefined;
+    });
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-context-menu-pet-a",
+          pointerId: 0,
+          kind: "menu.find-terminal",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_BINDING_EVENT,
+        {
+          petId: "pet-a",
+          title: null,
+          isLoading: true,
+          isConnecting: true,
+        },
+      );
+    });
+
+    act(() => {
+      resolveConnectWindow?.({ hwnd: 777, title: "Windows Terminal" });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_BINDING_EVENT,
+        {
+          petId: "pet-a",
+          title: "Windows Terminal",
+          isLoading: false,
+        },
+      );
+    });
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "start_session",
+      expect.anything(),
+    );
+
+    invokeMock.mockClear();
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 2,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "body.focus",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("focus_window", { hwnd: 777 });
+    });
+    expect(invokeMock).not.toHaveBeenCalledWith(
+      "start_session",
+      expect.anything(),
+    );
+  });
+
+  it("keeps the binding when connect mode is cancelled", async () => {
+    invokeMock.mockImplementation(async (command) => {
+      if (command === "list_codex_pet_packages") {
+        return [];
+      }
+      if (command === "get_claude_hook_ingress_status") {
+        return {
+          url: "http://127.0.0.1:43187/claude-hook",
+          state: "listening",
+          error: null,
+        };
+      }
+      if (command === "read_pets_driven_state") {
+        return testPetsDrivenState;
+      }
+      if (command === "start_session") {
+        return { hwnd: 456, title: "Windows Terminal" };
+      }
+      if (command === "connect_window") {
+        return null;
+      }
+
+      return undefined;
+    });
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "menu.start-session",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_BINDING_EVENT,
+        {
+          petId: "pet-a",
+          title: "Windows Terminal",
+          isLoading: false,
+        },
+      );
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 2,
+          petId: "pet-a",
+          windowLabel: "pet-context-menu-pet-a",
+          pointerId: 0,
+          kind: "menu.find-terminal",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    // Cancelled pick: the pet reports its existing binding, not a cleared one.
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_BINDING_EVENT,
+        {
+          petId: "pet-a",
+          title: "Windows Terminal",
+          isLoading: true,
+          isConnecting: true,
+        },
+      );
+    });
+    await waitFor(() => {
+      const bindingCalls = tauriEventMocks.emitTo.mock.calls.filter(
+        ([, eventName]) => eventName === PET_WINDOW_BINDING_EVENT,
+      );
+      expect(bindingCalls.at(-1)?.[2]).toEqual({
+        petId: "pet-a",
+        title: "Windows Terminal",
+        isLoading: false,
+      });
+    });
+  });
+
   it("shows Pet Window command failures in the management surface", async () => {
     invokeMock.mockImplementation(async (command) => {
       if (command === "list_codex_pet_packages") {
@@ -1142,6 +1350,93 @@ describe("pet window product route", () => {
       appliedCallCount,
     );
     expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows connect-mode notices on the Pet Window status card", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?surface=pet-window&petId=pet-a&assetId=bloop",
+    );
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(
+        true,
+      );
+    });
+
+    // The status card only renders once a frame has delivered the pet's name.
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)?.({
+        payload: {
+          ...petWindowFramePayload({
+            sequence: 1,
+            petId: "pet-a",
+            x: 10,
+            y: 20,
+          }),
+          name: "Otto",
+        },
+      });
+    });
+
+    const handleBinding = tauriEventMocks.listeners.get(
+      PET_WINDOW_BINDING_EVENT,
+    )!;
+
+    act(() => {
+      handleBinding({
+        payload: {
+          petId: "pet-a",
+          title: null,
+          isLoading: true,
+          isConnecting: true,
+        },
+      });
+    });
+
+    expect(
+      await screen.findByText("Click the terminal window to connect"),
+    ).toBeInTheDocument();
+
+    act(() => {
+      handleBinding({
+        payload: {
+          petId: "pet-a",
+          title: "Windows Terminal",
+          isLoading: false,
+        },
+      });
+    });
+
+    expect(
+      await screen.findByText("Connected to Windows Terminal"),
+    ).toBeInTheDocument();
+
+    // A cancelled pick reports the unchanged binding back: no "connected".
+    act(() => {
+      handleBinding({
+        payload: {
+          petId: "pet-a",
+          title: "Windows Terminal",
+          isLoading: true,
+          isConnecting: true,
+        },
+      });
+    });
+    act(() => {
+      handleBinding({
+        payload: {
+          petId: "pet-a",
+          title: "Windows Terminal",
+          isLoading: false,
+        },
+      });
+    });
+
+    expect(await screen.findByText("Nothing connected")).toBeInTheDocument();
   });
 
   it("does not re-apply Pet Window positions when rounded coordinates are unchanged", async () => {

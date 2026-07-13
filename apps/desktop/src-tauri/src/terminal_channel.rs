@@ -62,46 +62,134 @@ fn escape_wt_semicolons(token: &str) -> String {
     token.replace(';', r"\;")
 }
 
+/// Build the bindable-window info for `hwnd`, or None when it is not a valid
+/// binding target: null, the desktop shell, one of our own windows, invisible,
+/// or minimised.
+#[cfg(target_os = "windows")]
+fn foreign_window_info(hwnd: *mut core::ffi::c_void) -> Option<ForeignWindow> {
+    use windows_sys::Win32::System::Threading::GetCurrentProcessId;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        GetShellWindow, GetWindowTextW, GetWindowThreadProcessId, IsIconic, IsWindowVisible,
+    };
+
+    if hwnd.is_null()
+        || hwnd == unsafe { GetShellWindow() }
+        || unsafe { IsWindowVisible(hwnd) } == 0
+        || unsafe { IsIconic(hwnd) } != 0
+    {
+        return None;
+    }
+
+    let mut pid = 0u32;
+    unsafe { GetWindowThreadProcessId(hwnd, &mut pid) };
+    if pid == unsafe { GetCurrentProcessId() } {
+        return None;
+    }
+
+    let mut buffer = [0u16; 256];
+    let length = unsafe { GetWindowTextW(hwnd, buffer.as_mut_ptr(), buffer.len() as i32) };
+    Some(ForeignWindow {
+        hwnd: hwnd as isize as i64,
+        title: String::from_utf16_lossy(&buffer[..length.max(0) as usize]),
+    })
+}
+
 /// Poll the foreground window until a foreign (not our process), visible,
 /// non-minimised window other than `baseline` appears, or we time out. This is
 /// the shared primitive for both auto-bind-after-launch and connect-mode.
 #[cfg(target_os = "windows")]
 fn poll_new_foreground_window(baseline: isize, timeout_ms: u64) -> Option<ForeignWindow> {
     use std::{thread::sleep, time::Duration};
-    use windows_sys::Win32::System::Threading::GetCurrentProcessId;
-    use windows_sys::Win32::UI::WindowsAndMessaging::{
-        GetForegroundWindow, GetWindowTextW, GetWindowThreadProcessId, IsIconic, IsWindowVisible,
-    };
+    use windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 
-    let own_pid = unsafe { GetCurrentProcessId() };
     let step_ms = 120u64;
     let mut waited = 0u64;
 
     while waited <= timeout_ms {
         let fg = unsafe { GetForegroundWindow() };
-        let fg_handle = fg as isize;
-        if !fg.is_null()
-            && fg_handle != baseline
-            && unsafe { IsWindowVisible(fg) } != 0
-            && unsafe { IsIconic(fg) } == 0
-        {
-            let mut pid = 0u32;
-            unsafe { GetWindowThreadProcessId(fg, &mut pid) };
-            if pid != own_pid {
-                let mut buffer = [0u16; 256];
-                let length =
-                    unsafe { GetWindowTextW(fg, buffer.as_mut_ptr(), buffer.len() as i32) };
-                let title = String::from_utf16_lossy(&buffer[..length.max(0) as usize]);
-                return Some(ForeignWindow {
-                    hwnd: fg_handle as i64,
-                    title,
-                });
+        if fg as isize != baseline {
+            if let Some(window) = foreign_window_info(fg) {
+                return Some(window);
             }
         }
         sleep(Duration::from_millis(step_ms));
         waited += step_ms;
     }
     None
+}
+
+/// How long connect-mode waits for the user to pick a window.
+#[cfg(target_os = "windows")]
+const CONNECT_MODE_TIMEOUT_MS: u64 = 15_000;
+
+/// Swallow the context-menu-dismiss click and the focus revert it causes
+/// before arming connect-mode, so entering the mode cannot instantly bind
+/// whichever window focus falls back to.
+#[cfg(target_os = "windows")]
+const CONNECT_MODE_GRACE_MS: u64 = 400;
+
+/// Connect mode: wait for the user to pick an existing window and return it so
+/// the caller can bind it as the pet's terminal. A pick is either a left click
+/// on the window (works even when it is already foreground) or bringing it to
+/// the foreground some other way (Alt-Tab, taskbar). Returns None when the
+/// user cancels — Esc, or clicking something unbindable like the desktop or a
+/// pets-driven window — or when nothing is picked before the timeout.
+#[cfg(target_os = "windows")]
+#[tauri::command]
+pub(crate) fn connect_window(timeout_ms: Option<u64>) -> Result<Option<ForeignWindow>, String> {
+    use std::{thread::sleep, time::Duration};
+    use windows_sys::Win32::Foundation::POINT;
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
+        GetAsyncKeyState, VK_ESCAPE, VK_LBUTTON,
+    };
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        GetAncestor, GetCursorPos, GetForegroundWindow, WindowFromPoint, GA_ROOT,
+    };
+
+    fn key_down(key: u16) -> bool {
+        (unsafe { GetAsyncKeyState(key as i32) } as u16) & 0x8000 != 0
+    }
+
+    let timeout_ms = timeout_ms.unwrap_or(CONNECT_MODE_TIMEOUT_MS);
+    let step_ms = 40u64;
+
+    sleep(Duration::from_millis(CONNECT_MODE_GRACE_MS));
+    let mut baseline = unsafe { GetForegroundWindow() } as isize;
+    let mut button_was_down = key_down(VK_LBUTTON);
+
+    let mut waited = 0u64;
+    while waited <= timeout_ms {
+        if key_down(VK_ESCAPE) {
+            return Ok(None);
+        }
+
+        // A fresh left press picks the top-level window under the cursor. This
+        // also covers the already-foreground window, which the foreground
+        // watch below can never see change.
+        let button_is_down = key_down(VK_LBUTTON);
+        if button_is_down && !button_was_down {
+            let mut point = POINT { x: 0, y: 0 };
+            if unsafe { GetCursorPos(&mut point) } != 0 {
+                let root = unsafe { GetAncestor(WindowFromPoint(point), GA_ROOT) };
+                return Ok(foreign_window_info(root));
+            }
+        }
+        button_was_down = button_is_down;
+
+        let fg = unsafe { GetForegroundWindow() };
+        if fg as isize != baseline {
+            if let Some(window) = foreign_window_info(fg) {
+                return Ok(Some(window));
+            }
+            // Focus moved to a non-bindable window (e.g. one of ours); track
+            // it so a later move back out still reads as a fresh pick.
+            baseline = fg as isize;
+        }
+
+        sleep(Duration::from_millis(step_ms));
+        waited += step_ms;
+    }
+    Ok(None)
 }
 
 /// Bring a bound window to the foreground. Returns false when the window no
@@ -199,6 +287,14 @@ pub(crate) fn start_session(
     _command: String,
 ) -> Result<Option<ForeignWindow>, String> {
     Err("start_session is only implemented on Windows".to_string())
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+pub(crate) fn connect_window(
+    _timeout_ms: Option<u64>,
+) -> Result<Option<ForeignWindow>, String> {
+    Err("connect_window is only implemented on Windows".to_string())
 }
 
 #[cfg(test)]

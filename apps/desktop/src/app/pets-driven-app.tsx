@@ -89,6 +89,7 @@ import {
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
+  petWindowLabel,
   type PetWindowBindingEvent,
   type PetWindowInputEvent,
   type PetWindowResizeEvent,
@@ -548,7 +549,7 @@ function PetsDrivenHostApp() {
         const input = event.payload;
 
         if (input.kind === "body.focus") {
-          void focusOrStartSessionForPet(input.petId, input.windowLabel);
+          void focusOrStartSessionForPet(input.petId);
           return;
         }
         if (input.kind === "menu.close") {
@@ -590,15 +591,19 @@ function PetsDrivenHostApp() {
           return;
         }
         if (input.kind === "menu.start-session") {
-          void startSessionForPet(input.petId, input.windowLabel);
+          void startSessionForPet(input.petId);
+          return;
+        }
+        if (input.kind === "menu.find-terminal") {
+          void connectTerminalForPet(input.petId);
           return;
         }
         if (input.kind === "menu.unbind") {
-          unbindPet(input.petId, input.windowLabel);
+          unbindPet(input.petId);
           return;
         }
         if (input.kind === "menu.request-binding") {
-          emitBindingState(input.petId, input.windowLabel);
+          emitBindingState(input.petId);
           return;
         }
 
@@ -1212,38 +1217,31 @@ function PetsDrivenHostApp() {
 
   // Push the pet's current binding (title or null) to its window so its badge,
   // menu, and bubble stay in sync with what the host actually holds.
-  function emitBindingState(
-    petId: string,
-    windowLabel: string,
-    isLoading = false,
-  ) {
+  function emitBindingState(petId: string, isLoading = false, isConnecting = false) {
     const binding = windowBindingsRef.current.get(petId) ?? null;
-    void emitTo(windowLabel, PET_WINDOW_BINDING_EVENT, {
+    void emitTo(petWindowLabel(petId), PET_WINDOW_BINDING_EVENT, {
       petId,
       title: binding ? binding.title : null,
       isLoading,
+      ...(isConnecting ? { isConnecting } : {}),
     } satisfies PetWindowBindingEvent);
   }
 
-  function setBinding(
-    petId: string,
-    windowLabel: string,
-    window: ForeignWindow | null,
-  ) {
+  function setBinding(petId: string, window: ForeignWindow | null) {
     if (window) {
       windowBindingsRef.current.set(petId, window);
     } else {
       windowBindingsRef.current.delete(petId);
     }
-    emitBindingState(petId, windowLabel);
+    emitBindingState(petId);
   }
 
   // Double-click: focus the bound window, or start a new session when no live
   // binding exists.
-  async function focusOrStartSessionForPet(petId: string, windowLabel: string) {
+  async function focusOrStartSessionForPet(petId: string) {
     const binding = windowBindingsRef.current.get(petId);
     if (!binding) {
-      await startSessionForPet(petId, windowLabel);
+      await startSessionForPet(petId);
       return;
     }
     try {
@@ -1253,42 +1251,65 @@ function PetsDrivenHostApp() {
     } catch {
       // Window vanished.
     }
-    setBinding(petId, windowLabel, null);
-    await startSessionForPet(petId, windowLabel);
+    setBinding(petId, null);
+    await startSessionForPet(petId);
   }
 
   // Start a session and auto-bind to the window it launches.
-  async function startSessionForPet(petId: string, windowLabel: string) {
+  async function startSessionForPet(petId: string) {
     if (launchingPetIdsRef.current.has(petId)) {
       return;
     }
     const cwd = cwdForPet(petId);
     if (!cwd) {
-      emitBindingState(petId, windowLabel);
+      emitBindingState(petId);
       return;
     }
     launchingPetIdsRef.current.add(petId);
-    emitBindingState(petId, windowLabel, true);
+    emitBindingState(petId, true);
     try {
       const launched = await invoke<ForeignWindow | null>("start_session", {
         cwd,
         command: petsDrivenStateRef.current.sessionCommand,
       });
       if (launched) {
-        setBinding(petId, windowLabel, launched);
+        setBinding(petId, launched);
       } else {
-        emitBindingState(petId, windowLabel);
+        emitBindingState(petId);
       }
     } catch (error) {
-      emitBindingState(petId, windowLabel);
+      emitBindingState(petId);
       setPetWindowError(formatCommandError(error));
     } finally {
       launchingPetIdsRef.current.delete(petId);
     }
   }
 
-  function unbindPet(petId: string, windowLabel: string) {
-    setBinding(petId, windowLabel, null);
+  // Connect mode: the user picks an existing window (click, Alt-Tab) and it
+  // becomes this pet's bound terminal window.
+  async function connectTerminalForPet(petId: string) {
+    if (launchingPetIdsRef.current.has(petId)) {
+      return;
+    }
+    launchingPetIdsRef.current.add(petId);
+    emitBindingState(petId, true, true);
+    try {
+      const picked = await invoke<ForeignWindow | null>("connect_window");
+      if (picked) {
+        setBinding(petId, picked);
+      } else {
+        emitBindingState(petId);
+      }
+    } catch (error) {
+      emitBindingState(petId);
+      setPetWindowError(formatCommandError(error));
+    } finally {
+      launchingPetIdsRef.current.delete(petId);
+    }
+  }
+
+  function unbindPet(petId: string) {
+    setBinding(petId, null);
   }
 
   // Fire a real hook event at the first adopted pet's folder so the full

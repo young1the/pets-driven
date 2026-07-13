@@ -80,7 +80,8 @@ pub fn run() {
             pet_windows::close_adopted_pet_window,
             pet_windows::open_pet_context_menu,
             terminal_channel::focus_window,
-            terminal_channel::start_session
+            terminal_channel::start_session,
+            terminal_channel::connect_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");
