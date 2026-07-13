@@ -2,22 +2,17 @@
 
 import { useEffect, useRef } from "react";
 import {
-  Button,
   PetAvatar,
   type PetAvatarStatus,
   type PetName,
 } from "@pets-driven/design-system";
-import { Trans, useTranslation } from "@pets-driven/i18n";
-import { DecisionShowcaseApp } from "./DecisionShowcase";
+import { useTranslation } from "@pets-driven/i18n";
 
 /**
  * Pets-Driven Intro — the official homepage.
  * A faithful React port of the "Pets-Driven Intro" scroll-driven design:
  *   ACT I   The Watch — demon eyes in the dark resolve into the pack as light rises
  *   ACT II  Personalities — the desk scene
- *   ACT V   Simulation slot — placeholder for a future interactive component
- *   ACT IV  Plugins — hatch your pet from the terminal
- *   ACT VI  CTA — send the pack
  *
  * The scroll/reveal/hatch logic mirrors the original design controller; CSS
  * custom properties drive the cinematic transitions. Pets and buttons come from
@@ -50,15 +45,6 @@ const CREATURES: Creature[] = [
   { pet: "bloop", status: "thinking", left: "88%", top: "52%", i: 5, color: "#4FC894", rot: -26, eyeW: 128, eyeH: 60, blink: "5.4s", delay: ".2s" },
 ];
 
-const CTA_PETS: { pet: PetName; status: PetAvatarStatus; delay: string }[] = [
-  { pet: "cato", status: "happy", delay: "0s" },
-  { pet: "otto", status: "working", delay: ".2s" },
-  { pet: "mochi", status: "happy", delay: ".4s" },
-  { pet: "fenn", status: "happy", delay: ".6s" },
-  { pet: "bloop", status: "thinking", delay: ".8s" },
-  { pet: "pip", status: "thinking", delay: "1s" },
-];
-
 function EyePair({ c }: { c: Creature }) {
   return (
     <svg
@@ -89,12 +75,6 @@ function EyePair({ c }: { c: Creature }) {
 export default function Intro() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation("landing");
-
-  // The hatch animation builds terminal lines inside a long-lived effect. Keep
-  // the latest `t` in a ref so those closures translate with the current
-  // locale without re-running (and re-binding) the whole effect.
-  const tRef = useRef(t);
-  tRef.current = t;
 
   useEffect(() => {
     const root = rootRef.current;
@@ -148,103 +128,12 @@ export default function Intro() {
       .querySelectorAll<HTMLElement>("[data-reveal]")
       .forEach((el) => io.observe(el));
 
-    // ---- Hatch interaction ----
-    const selected = ["curious", "tidy"];
-    const traitLabel = (id: string) => tRef.current(`setup.hatch.traits.${id}`);
-    const phrase = () => {
-      const s = selected.map(traitLabel);
-      if (s.length === 0) return null;
-      return s.length === 1
-        ? s[0]
-        : s.slice(0, -1).join(", ") +
-            tRef.current("setup.hatch.and") +
-            s[s.length - 1];
-    };
-
-    let hatchTimers: ReturnType<typeof setTimeout>[] = [];
-    const hatch = () => {
-      const out = root.querySelector<HTMLElement>("[data-hatch-out]");
-      const egg = root.querySelector<HTMLElement>("[data-egg]");
-      const hatched = root.querySelector<HTMLElement>("[data-hatched]");
-      if (!out || !egg || !hatched) return;
-      hatchTimers.forEach((t) => clearTimeout(t));
-      hatchTimers = [];
-      out.innerHTML = "";
-      hatched.style.opacity = "0";
-      hatched.style.transform = "scale(.4)";
-      egg.style.opacity = "1";
-      egg.style.animation = "";
-      const ph = phrase();
-      const rows: {
-        p?: string;
-        c?: string;
-        t: string;
-        m?: number;
-        crack?: number;
-        done?: number;
-      }[] = [];
-      rows.push({ p: "$", c: "var(--term-prompt)", t: "/pet-driven:hatch" });
-      rows.push({ t: tRef.current("setup.hatch.reading"), m: 1 });
-      if (selected.length === 0)
-        rows.push({ t: tRef.current("setup.hatch.blank"), m: 1 });
-      else
-        selected.forEach((tr) =>
-          rows.push({ p: "+", c: "var(--term-accent)", t: traitLabel(tr) }),
-        );
-      rows.push({ t: tRef.current("setup.hatch.warming"), m: 1 });
-      rows.push({ t: tRef.current("setup.hatch.cracking"), m: 1, crack: 1 });
-      rows.push({
-        p: "✓",
-        c: "var(--mint-300)",
-        t: tRef.current("setup.hatch.meet") + (ph ? " — " + ph : ""),
-        done: 1,
-      });
-      rows.forEach((r, i) => {
-        hatchTimers.push(
-          setTimeout(() => {
-            const line = document.createElement("div");
-            line.style.opacity = "0";
-            line.style.transform = "translateY(6px)";
-            line.style.transition = "opacity .3s ease, transform .3s ease";
-            const pre = r.p
-              ? '<span style="color:' + r.c + ';">' + r.p + "</span> "
-              : "";
-            line.innerHTML =
-              pre +
-              '<span style="color:' +
-              (r.m ? "var(--term-muted)" : "var(--term-fg)") +
-              ';">' +
-              r.t +
-              "</span>";
-            out.appendChild(line);
-            void line.offsetWidth;
-            line.style.opacity = "1";
-            line.style.transform = "none";
-            if (r.crack) egg.style.animation = "pdShake .5s ease-in-out 2";
-            if (r.done)
-              hatchTimers.push(
-                setTimeout(() => {
-                  egg.style.opacity = "0";
-                  hatched.style.opacity = "1";
-                  hatched.style.transform = "scale(1)";
-                }, 380),
-              );
-          }, 250 + i * 430),
-        );
-      });
-    };
-
-    const hatchBtn = root.querySelector<HTMLButtonElement>("[data-hatch]");
-    hatchBtn?.addEventListener("click", hatch);
-
     update();
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       io.disconnect();
-      hatchTimers.forEach((t) => clearTimeout(t));
-      hatchBtn?.removeEventListener("click", hatch);
     };
   }, []);
 
@@ -710,219 +599,6 @@ export default function Intro() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ===================== ACT V — SIMULATION SLOT ===================== */}
-      <section
-        style={{
-          position: "relative",
-          padding: "120px 6vw 130px",
-          background: "linear-gradient(180deg,#FFFCFD,#F4F1FE)",
-        }}
-      >
-        <div style={{ maxWidth: 1000, margin: "0 auto", textAlign: "center" }}>
-          <div
-            data-reveal
-            style={{
-              opacity: 0,
-              transform: "translateY(26px)",
-              transition:
-                "opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)",
-            }}
-          >
-            <span className="pd-eyebrow" style={{ color: "var(--teal-600)" }}>
-              {t("preview.eyebrow")}
-            </span>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(30px,4vw,54px)", lineHeight: 1.05, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: "12px 0 0" }}>
-              {t("preview.title")}
-            </h2>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: "var(--ink-700)", maxWidth: "50ch", margin: "18px auto 0" }}>
-              {t("preview.body")}
-            </p>
-          </div>
-          {/* Live behavior pipeline — the real decision simulation. */}
-          <div
-            data-reveal
-            data-sim-slot
-            style={{
-              opacity: 0,
-              transform: "translateY(26px)",
-              transition:
-                "opacity .7s cubic-bezier(.22,1,.36,1) .1s, transform .7s cubic-bezier(.22,1,.36,1) .1s",
-              marginTop: 44,
-            }}
-          >
-            <DecisionShowcaseApp />
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== ACT IV — PLUGINS ===================== */}
-      <section style={{ position: "relative", padding: "130px 6vw", background: "#FFFCFD" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div
-            data-reveal
-            style={{
-              textAlign: "center",
-              opacity: 0,
-              transform: "translateY(26px)",
-              transition:
-                "opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)",
-            }}
-          >
-            <span
-              className="pd-eyebrow"
-              style={{ color: "var(--lavender-600)" }}
-            >
-              {t("setup.eyebrow")}
-            </span>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(30px,4vw,54px)", lineHeight: 1.05, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: "12px 0 0" }}>
-              {t("setup.title")}
-            </h2>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: "var(--ink-700)", maxWidth: "54ch", margin: "18px auto 0" }}>
-              {t("setup.body")}
-            </p>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 24, margin: "54px auto 0", maxWidth: 780 }}>
-            <div
-              data-reveal
-              style={{
-                opacity: 0,
-                transform: "translateY(26px)",
-                transition:
-                  "opacity .7s cubic-bezier(.22,1,.36,1) .08s, transform .7s cubic-bezier(.22,1,.36,1) .08s",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--term-bg)", borderRadius: 14, padding: "8px 8px 8px 16px", boxShadow: "0 4px 0 #1b1733" }}>
-                <span style={{ fontFamily: "var(--font-mono)", color: "var(--term-prompt)", fontSize: 14 }}>$</span>
-                <span style={{ fontFamily: "var(--font-mono)", color: "var(--term-fg)", fontSize: 14, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>/pet-driven:hatch</span>
-                <button
-                  data-hatch
-                  style={{
-                    background: "var(--blossom-500)",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 9,
-                    padding: "9px 20px",
-                    fontFamily: "var(--font-body)",
-                    fontWeight: 800,
-                    fontSize: 14,
-                    cursor: "pointer",
-                    transition: "transform .14s ease, background .14s ease",
-                  }}
-                >
-                  {t("setup.run")}
-                </button>
-              </div>
-              <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-500)", margin: "12px 0 0" }}>
-                {t("setup.runHint")}
-              </p>
-            </div>
-
-            <div
-              data-reveal
-              style={{
-                opacity: 0,
-                transform: "translateY(26px)",
-                transition:
-                  "opacity .7s cubic-bezier(.22,1,.36,1) .16s, transform .7s cubic-bezier(.22,1,.36,1) .16s",
-              }}
-            >
-              <div style={{ background: "#fff", borderRadius: 28, border: "1px solid var(--border-soft)", boxShadow: "0 18px 44px rgba(139,127,232,.14)", padding: 18, height: "100%", display: "flex", flexDirection: "column", gap: 18 }}>
-                {/* mini terminal */}
-                <div style={{ background: "var(--term-bg)", borderRadius: 16, overflow: "hidden" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 15px", background: "var(--term-bg-soft)", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 999, background: "#FF7967" }} />
-                    <span style={{ width: 10, height: 10, borderRadius: 999, background: "#FBC24A" }} />
-                    <span style={{ width: 10, height: 10, borderRadius: 999, background: "#4FC894" }} />
-                    <span style={{ marginLeft: 8, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--term-muted)" }}>{t("setup.terminalTitle")}</span>
-                  </div>
-                  <div data-hatch-out style={{ padding: "16px 18px", fontFamily: "var(--font-mono)", fontSize: 13.5, lineHeight: 1.7, color: "var(--term-fg)", minHeight: 178 }}>
-                    <div style={{ color: "var(--term-muted)" }}>
-                      <Trans
-                        i18nKey="setup.terminalHint"
-                        ns="landing"
-                        components={{
-                          cmd: <span style={{ color: "var(--term-pink)" }} />,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                {/* egg / hatched reveal */}
-                <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 152 }}>
-                  <div data-egg style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "opacity .4s ease", transformOrigin: "50% 92%" }}>
-                    <div style={{ width: 60, height: 78, borderRadius: "50% 50% 50% 50% / 62% 62% 38% 38%", background: "linear-gradient(160deg,#FFF6FB,#FFE0EE)", boxShadow: "inset -5px -7px 0 rgba(249,94,158,.1), 0 10px 22px rgba(249,94,158,.16)", position: "relative" }}>
-                      <span style={{ position: "absolute", top: 24, left: 14, width: 6, height: 6, borderRadius: 999, background: "var(--blossom-200)" }} />
-                      <span style={{ position: "absolute", top: 40, left: 34, width: 5, height: 5, borderRadius: 999, background: "var(--blossom-200)" }} />
-                      <span style={{ position: "absolute", top: 54, left: 18, width: 4, height: 4, borderRadius: 999, background: "var(--blossom-200)" }} />
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".04em", color: "var(--ink-400)" }}>{t("setup.waiting")}</div>
-                  </div>
-                  <div data-hatched style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, opacity: 0, transform: "scale(.4)", transition: "transform .55s cubic-bezier(.34,1.56,.64,1), opacity .4s ease" }}>
-                    <PetAvatar pet="cato" size="xl" status="happy" ring />
-                    <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 22, color: "var(--ink-950)" }}>Cato</div>
-                    <p data-summary style={{ fontFamily: "var(--font-body)", fontSize: 15, lineHeight: 1.55, color: "var(--ink-700)", margin: 0, textAlign: "center", maxWidth: "30ch" }}>
-                      {t("setup.summary")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== ACT VI — CTA ===================== */}
-      <section style={{ position: "relative", padding: "30px 6vw 70px", background: "#FFFCFD" }}>
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            background: "linear-gradient(165deg,#FFE0EE 0%,#F4F1FE 100%)",
-            borderRadius: 40,
-            padding: "78px 40px 70px",
-            textAlign: "center",
-            position: "relative",
-            overflow: "hidden",
-            boxShadow: "0 30px 80px rgba(249,94,158,.18)",
-          }}
-        >
-          <div className="pd-dots" style={{ position: "absolute", inset: 0, opacity: 0.45 }} />
-          <div style={{ position: "relative" }}>
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 6, marginBottom: 30, flexWrap: "wrap" }}>
-              {CTA_PETS.map((p) => (
-                <span key={p.pet} style={{ animation: "pdBobY 2.4s ease-in-out infinite", animationDelay: p.delay }}>
-                  <PetAvatar pet={p.pet} size="lg" status={p.status} ring />
-                </span>
-              ))}
-            </div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(34px,5vw,68px)", lineHeight: 1.02, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: 0 }}>
-              {t("cta.title")}
-            </h2>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.5vw,20px)", lineHeight: 1.6, color: "var(--ink-700)", margin: "18px auto 0", maxWidth: "42ch" }}>
-              {t("cta.body")}
-            </p>
-            <div style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 34, flexWrap: "wrap" }}>
-              <Button variant="primary" size="lg">
-                {t("cta.adopt")}
-              </Button>
-              <Button variant="ghost" size="lg">
-                {t("cta.meet")}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ maxWidth: 1100, margin: "46px auto 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, color: "var(--ink-500)" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/petsdriven-mark.svg" alt="" style={{ width: 30, height: "auto" }} />
-          <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 18, color: "var(--ink-800)" }}>
-            Pets<span style={{ color: "var(--lavender-500)" }}>-</span>Driven
-          </span>
-          <span style={{ fontSize: 13 }}>· {t("hero.tagline")}</span>
         </div>
       </section>
     </div>
