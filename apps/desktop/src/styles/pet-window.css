@@ -114,18 +114,6 @@ html.pet-window-fixture-preview .pet-window-surface {
   }
 }
 
-@keyframes pet-window-status-dot {
-  0% {
-    box-shadow: 0 0 0 0 var(--pet-window-dot-color);
-  }
-  70% {
-    box-shadow: 0 0 0 5px transparent;
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-
 .pet-window-status-card {
   position: absolute;
   top: calc(100% - var(--sprite-h) + 8px);
@@ -167,7 +155,6 @@ html.pet-window-fixture-preview .pet-window-surface {
   height: 7px;
   border-radius: 50%;
   background: var(--pet-window-dot-color, var(--sky-400));
-  animation: pet-window-status-dot 1.8s ease-out infinite;
 }
 
 .pet-window-status-card__name {
