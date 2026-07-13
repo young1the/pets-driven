@@ -986,7 +986,12 @@ function PetsDrivenHostApp() {
         spawnPoint: spawnPoint ?? undefined,
       });
       adoptedPetIdsRef.current = new Set(simInputs.map((pet) => pet.id));
-      adoptedHostSequenceRef.current = 0;
+      // Do NOT reset the frame sequence here. It must stay monotonically
+      // increasing across world rebuilds: an already-open pet window rejects any
+      // frame whose sequence is <= the last it processed (isFreshPetWindowMessage).
+      // Rebuilding the world when a second pet is deployed and restarting the
+      // counter at 0 made every frame look stale to the existing window, freezing
+      // it until the counter climbed back past where it had been (~tens of seconds).
       adoptedLastEmitByPetIdRef.current = new Map();
       adoptedScaleByPetIdRef.current = scaleByPetId;
       adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
