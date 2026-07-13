@@ -6,7 +6,9 @@ import {
   Input,
   RefreshIcon,
   SearchIcon,
+  TerminalIcon,
 } from "@pets-driven/design-system";
+import { isTauri } from "@tauri-apps/api/core";
 import { useTranslation } from "@pets-driven/i18n";
 import {
   desktopGateway,
@@ -20,6 +22,7 @@ import {
   type PersonalityOption,
 } from "@/app/onboarding/personality-options";
 import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
+import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
@@ -229,6 +232,7 @@ export function AdoptPetFlow({
   const [packages, setPackages] = useState<CodexPetPackage[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [terminalOpen, setTerminalOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [assetId, setAssetId] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -482,6 +486,13 @@ export function AdoptPetFlow({
                     variant={searchOpen ? "soft" : "ghost"}
                   >
                     <SearchIcon />
+                  </IconButton>
+                  <IconButton
+                    label={t("onboarding.openTerminal")}
+                    onClick={() => setTerminalOpen(true)}
+                    variant="ghost"
+                  >
+                    <TerminalIcon />
                   </IconButton>
                   <IconButton
                     disabled={refreshing}
@@ -822,6 +833,18 @@ export function AdoptPetFlow({
           </div>
         </section>
       )}
+
+      <PetdexTerminalDialog
+        available={isTauri()}
+        cwd={state.petSourceDirectory ?? null}
+        onClose={() => {
+          setTerminalOpen(false);
+          // A petdex install run in the terminal drops new packs into the scan
+          // root; rescan on close so they show up without a manual refresh.
+          void loadPackages();
+        }}
+        open={terminalOpen}
+      />
     </main>
   );
 }

@@ -1,0 +1,80 @@
+/* Widen the shared Dialog into a terminal panel and left-align its body. */
+.pd-petdex-term-dialog.pd-dialog {
+  max-width: 760px;
+}
+
+.pd-petdex-term-dialog .pd-dialog__body {
+  text-align: left;
+}
+
+.pd-petdex-term__hint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.pd-petdex-term__hint code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--surface-sunken);
+  border-radius: 6px;
+  padding: 1px 6px;
+  color: var(--text-strong);
+}
+
+.pd-petdex-term__frame {
+  height: 420px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--term-bg);
+  border: 1px solid var(--border-soft);
+}
+
+.pd-petdex-term__view {
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 10px 12px 6px;
+  overflow: hidden;
+  background: var(--term-bg);
+}
+
+.pd-petdex-term__view .xterm,
+.pd-petdex-term__view .xterm-viewport {
+  height: 100%;
+}
+
+/* Same as terminal-section: kill xterm's always-on scrollbar gutter. */
+.pd-petdex-term__view .xterm-viewport {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(231, 226, 245, 0.22) transparent;
+}
+.pd-petdex-term__view .xterm-viewport::-webkit-scrollbar {
+  width: 9px;
+}
+.pd-petdex-term__view .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pd-petdex-term__view .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(231, 226, 245, 0.2);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.pd-petdex-term__unavailable {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--term-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
