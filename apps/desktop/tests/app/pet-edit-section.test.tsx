@@ -23,6 +23,7 @@ function setup(overrides = {}) {
     onMemo: vi.fn(),
     onPersonalityId: vi.fn(),
     onPickFolder: vi.fn(),
+    onClearFolder: vi.fn(),
     onToggleDeployed: vi.fn(),
     onDelete: vi.fn(),
     onDone: vi.fn(),
@@ -79,5 +80,17 @@ describe("PetEditSection", () => {
     setup({ onToggleDeployed });
     fireEvent.click(screen.getByText("Show on desktop"));
     expect(onToggleDeployed).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the folder via the clear button when a folder is set", () => {
+    const onClearFolder = vi.fn();
+    setup({ onClearFolder });
+    fireEvent.click(screen.getByRole("button", { name: "Clear folder" }));
+    expect(onClearFolder).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides the clear button when no folder is set", () => {
+    setup({ pet: { ...pet, folder: "" } });
+    expect(screen.queryByRole("button", { name: "Clear folder" })).toBeNull();
   });
 });

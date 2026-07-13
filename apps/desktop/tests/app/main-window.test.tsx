@@ -17,6 +17,7 @@ const edit = {
   onMemo: vi.fn(),
   onPersonalityId: vi.fn(),
   onPickFolder: vi.fn(),
+  onClearFolder: vi.fn(),
   onToggleDeployed: vi.fn(),
   onDelete: vi.fn(),
   onDone: vi.fn(),

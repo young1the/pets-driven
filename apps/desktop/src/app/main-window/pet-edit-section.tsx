@@ -1,6 +1,7 @@
 import {
   BackIcon,
   Button,
+  CloseIcon,
   FolderIcon,
   PetShowcaseCard,
   Switch,
@@ -33,6 +34,7 @@ export interface PetEditSectionProps {
   onMemo: (value: string) => void;
   onPersonalityId: (value: PetPersonalityId) => void;
   onPickFolder: () => void;
+  onClearFolder: () => void;
   onToggleDeployed: () => void;
   onDelete: () => void;
   onDone: () => void;
@@ -66,6 +68,7 @@ export function PetEditSection({
   onMemo,
   onPersonalityId,
   onPickFolder,
+  onClearFolder,
   onToggleDeployed,
   onDelete,
   onDone,
@@ -151,43 +154,75 @@ export function PetEditSection({
 
             <div style={{ marginTop: "18px" }}>
               <span style={fieldLabelStyle}>{t("edit.workingFolder")}</span>
-              <button
-                onClick={onPickFolder}
-                aria-label={t("edit.workingFolder")}
+              <div
                 style={{
-                  width: "100%",
                   display: "flex",
                   alignItems: "center",
-                  gap: "9px",
+                  gap: "8px",
                   border: "1.5px solid var(--border-default)",
                   background: "var(--surface-card)",
                   borderRadius: "14px",
                   padding: "11px 12px",
-                  cursor: "pointer",
-                  textAlign: "left",
                 }}
-                type="button"
               >
-                <span
+                <button
+                  onClick={onPickFolder}
+                  aria-label={t("edit.workingFolder")}
                   style={{
-                    color: "var(--text-subtle)",
-                    display: "inline-flex",
-                    flex: "none",
-                  }}
-                >
-                  <FolderIcon size={16} />
-                </span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "13px",
-                    color: "var(--text-strong)",
                     flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "9px",
+                    border: "none",
+                    background: "transparent",
+                    padding: 0,
+                    cursor: "pointer",
+                    textAlign: "left",
                   }}
+                  type="button"
                 >
-                  {pet.folder || t("edit.chooseFolder")}
-                </span>
-              </button>
+                  <span
+                    style={{
+                      color: "var(--text-subtle)",
+                      display: "inline-flex",
+                      flex: "none",
+                    }}
+                  >
+                    <FolderIcon size={16} />
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "13px",
+                      color: "var(--text-strong)",
+                      flex: 1,
+                    }}
+                  >
+                    {pet.folder || t("edit.chooseFolder")}
+                  </span>
+                </button>
+                {pet.folder && (
+                  <button
+                    onClick={onClearFolder}
+                    aria-label={t("edit.clearFolder")}
+                    title={t("edit.clearFolder")}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flex: "none",
+                      border: "none",
+                      background: "transparent",
+                      color: "var(--text-subtle)",
+                      padding: "2px",
+                      cursor: "pointer",
+                    }}
+                    type="button"
+                  >
+                    <CloseIcon size={16} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ marginTop: "18px" }}>

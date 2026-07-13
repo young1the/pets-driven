@@ -48,6 +48,7 @@ import { personalityRoleLabelKey } from "@/app/pet-presentation";
 import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import {
+  clearWorkingDirectoryForPet,
   getWorkingDirectoryForPet,
   registerWorkingDirectory,
   removePet,
@@ -1556,6 +1557,15 @@ function PetsDrivenHostApp() {
     }
   }
 
+  function clearFolderForPet(petId: string) {
+    const next = clearWorkingDirectoryForPet(petsDrivenStateRef.current, petId);
+    if (next === petsDrivenStateRef.current) {
+      return;
+    }
+    applyPetsDrivenState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
   function applyPetSourceFolder(path: string | null) {
     const next = setPetSourceDirectory(petsDrivenStateRef.current, path);
     if (next === petsDrivenStateRef.current) {
@@ -1731,6 +1741,7 @@ function PetsDrivenHostApp() {
         onPersonalityId: (value) =>
           editPetId && setPetPersonality(editPetId, value),
         onPickFolder: () => editPetId && void pickFolderForPet(editPetId),
+        onClearFolder: () => editPetId && clearFolderForPet(editPetId),
         onToggleDeployed: () =>
           editPetId &&
           (editingPet?.visible ? hidePet(editPetId) : showPet(editPetId)),

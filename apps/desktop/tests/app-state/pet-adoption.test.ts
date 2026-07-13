@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   adoptPet,
+  clearWorkingDirectoryForPet,
   getPetForWorkingDirectory,
   getWorkingDirectoryForPet,
   linkPetToWorkingDirectory,
@@ -123,6 +124,62 @@ describe("removePet", () => {
     const state = adopt(createEmptyPetsDrivenState(), "pet-1");
 
     expect(removePet(state, "pet-missing")).toBe(state);
+  });
+});
+
+describe("clearWorkingDirectoryForPet", () => {
+  it("drops the held directory and clears the pet's back-pointer", () => {
+    let state = adopt(createEmptyPetsDrivenState(), "pet-1");
+    const linked = registerWorkingDirectory(state, {
+      petId: "pet-1",
+      path: "D:\\code\\one",
+      workingDirectoryId: "wd-1",
+      agentSourceId: "agent-1",
+      now: 99,
+    });
+    if (linked.status === "linked") state = linked.state;
+
+    const next = clearWorkingDirectoryForPet(state, "pet-1");
+
+    expect(next.registeredWorkingDirectories).toHaveLength(0);
+    expect(next.pets[0].workingDirectoryId).toBeNull();
+  });
+
+  it("leaves other pets' directories intact", () => {
+    let state = adopt(createEmptyPetsDrivenState(), "pet-1");
+    state = adopt(state, "pet-2", "cato");
+    const first = registerWorkingDirectory(state, {
+      petId: "pet-1",
+      path: "D:\\code\\one",
+      workingDirectoryId: "wd-1",
+      agentSourceId: "agent-1",
+      now: 99,
+    });
+    if (first.status === "linked") state = first.state;
+    const second = registerWorkingDirectory(state, {
+      petId: "pet-2",
+      path: "D:\\code\\two",
+      workingDirectoryId: "wd-2",
+      agentSourceId: "agent-2",
+      now: 99,
+    });
+    if (second.status === "linked") state = second.state;
+
+    const next = clearWorkingDirectoryForPet(state, "pet-1");
+
+    expect(next.registeredWorkingDirectories.map((wd) => wd.petId)).toEqual([
+      "pet-2",
+    ]);
+    expect(
+      next.pets.find((pet) => pet.id === "pet-2")?.workingDirectoryId,
+    ).toBe("wd-2");
+  });
+
+  it("returns state unchanged when the pet is missing or holds no directory", () => {
+    const state = adopt(createEmptyPetsDrivenState(), "pet-1");
+
+    expect(clearWorkingDirectoryForPet(state, "pet-missing")).toBe(state);
+    expect(clearWorkingDirectoryForPet(state, "pet-1")).toBe(state);
   });
 });
 

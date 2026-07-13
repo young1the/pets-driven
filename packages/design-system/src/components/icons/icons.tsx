@@ -101,6 +101,15 @@ export function TrashIcon({ size, className }: IconProps) {
   );
 }
 
+export function CloseIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size} strokeWidth={2.4}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </Icon>
+  );
+}
+
 export function SearchIcon({ size, className }: IconProps) {
   return (
     <Icon className={className} size={size} strokeWidth={2.2}>

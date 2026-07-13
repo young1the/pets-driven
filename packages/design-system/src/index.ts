@@ -67,6 +67,7 @@ export {
   BackIcon,
   FolderIcon,
   TrashIcon,
+  CloseIcon,
   SearchIcon,
   RefreshIcon,
   TerminalIcon,

@@ -125,6 +125,35 @@ export function linkPetToWorkingDirectory(
   };
 }
 
+/**
+ * Detach a pet from its working directory — the inverse of registration.
+ * Drops the directory entry the pet holds (a directory always belongs to
+ * exactly one pet, so an unheld entry has no reason to linger) and clears the
+ * pet's back-pointer. Returns the same state reference when the pet does not
+ * exist or holds no directory.
+ */
+export function clearWorkingDirectoryForPet(
+  state: PetsDrivenState,
+  petId: string,
+): PetsDrivenState {
+  const pet = state.pets.find((candidate) => candidate.id === petId);
+  if (!pet || pet.workingDirectoryId === null) {
+    return state;
+  }
+
+  return {
+    ...state,
+    registeredWorkingDirectories: state.registeredWorkingDirectories.filter(
+      (workingDirectory) => workingDirectory.petId !== petId,
+    ),
+    pets: state.pets.map((candidate) =>
+      candidate.id === petId
+        ? { ...candidate, workingDirectoryId: null }
+        : candidate,
+    ),
+  };
+}
+
 export type RegisterWorkingDirectoryInput = {
   petId: string;
   path: string;

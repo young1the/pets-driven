@@ -109,6 +109,7 @@
     "personality": "Personality",
     "workingFolder": "Working folder",
     "chooseFolder": "Choose a folder…",
+    "clearFolder": "Clear folder",
     "note": "Note",
     "notePlaceholder": "Add a note about this pet…",
     "showOnDesktop": "Show on desktop",
