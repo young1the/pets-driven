@@ -1,0 +1,159 @@
+/* Class names are deliberately prefixed `pd-eterm` (embedded terminal) so they
+   do NOT collide with the design system's `.pd-terminal` (TerminalPreview),
+   which is loaded app-wide. The whole tab is a dark "soft terminal" surface
+   built from the --term-* tokens, matching TerminalPreview. */
+.pd-eterm {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  background: var(--surface-app);
+}
+
+.pd-eterm__frame {
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--term-bg);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-md);
+}
+
+.pd-eterm__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--term-bg-soft);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+/* Traffic-light dots, purely decorative, to read as a terminal window. */
+.pd-eterm__dots {
+  display: inline-flex;
+  gap: 7px;
+  margin-right: 4px;
+}
+.pd-eterm__dots span {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  opacity: 0.9;
+}
+.pd-eterm__dots span:nth-child(1) {
+  background: var(--term-pink);
+}
+.pd-eterm__dots span:nth-child(2) {
+  background: #f3d488;
+}
+.pd-eterm__dots span:nth-child(3) {
+  background: var(--term-prompt);
+}
+
+.pd-eterm__folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 55%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  padding: 6px 11px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--term-fg);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 12px;
+  transition: background 130ms ease, border-color 130ms ease;
+}
+.pd-eterm__folder:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pd-eterm__folder-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pd-eterm__restart {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  border: 0;
+  border-radius: 9px;
+  padding: 6px 11px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--term-muted);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12px;
+  transition: color 130ms ease, background 130ms ease;
+}
+.pd-eterm__restart:hover {
+  color: var(--term-fg);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pd-eterm__view {
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 10px 12px 6px;
+  overflow: hidden;
+  background: var(--term-bg);
+}
+
+/* xterm sizes to its parent; make sure the canvas area fills the flex cell. */
+.pd-eterm__view .xterm,
+.pd-eterm__view .xterm-viewport {
+  height: 100%;
+}
+
+/* xterm.css forces `.xterm-viewport { overflow-y: scroll }`, which always
+   reserves a scrollbar gutter. Switch to auto so the bar only appears once
+   there is actual scrollback, and keep it thin + themed when it does. */
+.pd-eterm__view .xterm-viewport {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(231, 226, 245, 0.22) transparent;
+}
+.pd-eterm__view .xterm-viewport::-webkit-scrollbar {
+  width: 9px;
+}
+.pd-eterm__view .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pd-eterm__view .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(231, 226, 245, 0.2);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.pd-eterm__view .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(231, 226, 245, 0.34);
+  background-clip: padding-box;
+}
+
+.pd-eterm__unavailable {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--term-muted);
+  font-size: 13.5px;
+  font-family: var(--font-mono);
+}

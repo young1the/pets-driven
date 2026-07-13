@@ -1,5 +1,6 @@
 mod claude_hook_ingress;
 mod claude_plugin;
+mod embedded_terminal;
 mod pet_assets;
 mod pet_windows;
 mod state_store;
@@ -16,6 +17,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .manage(embedded_terminal::EmbeddedTerminalSessions::default())
         .setup(|app| {
             let claude_hook_ingress_status = claude_hook_ingress::create_status_handle();
             app.manage(claude_hook_ingress::ClaudeHookIngressSharedStatus(
@@ -82,7 +84,11 @@ pub fn run() {
             pet_windows::open_pet_context_menu,
             terminal_channel::focus_window,
             terminal_channel::start_session,
-            terminal_channel::connect_window
+            terminal_channel::connect_window,
+            embedded_terminal::terminal_open,
+            embedded_terminal::terminal_write,
+            embedded_terminal::terminal_resize,
+            embedded_terminal::terminal_close
         ])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");

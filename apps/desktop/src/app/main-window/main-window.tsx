@@ -3,6 +3,7 @@ import {
   GearIcon,
   HomeIcon,
   Tabs,
+  TerminalIcon,
   WrenchIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
@@ -23,9 +24,13 @@ import {
   DebugSection,
   type DebugSectionProps,
 } from "@/app/main-window/debug-section";
+import {
+  TerminalSection,
+  type TerminalSectionProps,
+} from "@/app/main-window/terminal-section";
 import "@/app/main-window/main-window.css";
 
-export type MainWindowTab = "home" | "settings" | "debug";
+export type MainWindowTab = "home" | "terminal" | "settings" | "debug";
 
 export interface MainWindowProps {
   tab: MainWindowTab;
@@ -34,6 +39,7 @@ export interface MainWindowProps {
   home: HomeSectionProps;
   edit: Omit<PetEditSectionProps, "pet">;
   settings: SettingsSectionProps;
+  terminal: TerminalSectionProps;
   debug: DebugSectionProps;
   toast: string | null;
 }
@@ -45,6 +51,7 @@ export function MainWindow({
   home,
   edit,
   settings,
+  terminal,
   debug,
   toast,
 }: MainWindowProps) {
@@ -55,6 +62,11 @@ export function MainWindow({
         <Tabs
           items={[
             { value: "home", label: t("nav.home"), icon: <HomeIcon /> },
+            {
+              value: "terminal",
+              label: t("nav.terminal"),
+              icon: <TerminalIcon />,
+            },
             { value: "settings", label: t("nav.settings"), icon: <GearIcon /> },
             { value: "debug", label: t("nav.debug"), icon: <WrenchIcon /> },
           ]}
@@ -90,6 +102,8 @@ export function MainWindow({
         </div>
       ) : tab === "home" ? (
         <HomeSection {...home} />
+      ) : tab === "terminal" ? (
+        <TerminalSection {...terminal} />
       ) : tab === "settings" ? (
         <div className="pd-main__body">
           <SettingsSection {...settings} />

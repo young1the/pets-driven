@@ -110,6 +110,15 @@ export function SearchIcon({ size, className }: IconProps) {
   );
 }
 
+export function TerminalIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <path d="m4 17 6-6-6-6" />
+      <path d="M12 19h8" />
+    </Icon>
+  );
+}
+
 export function RefreshIcon({ size, className }: IconProps) {
   return (
     <Icon className={className} size={size} strokeWidth={2.2}>

@@ -69,6 +69,7 @@ export {
   TrashIcon,
   SearchIcon,
   RefreshIcon,
+  TerminalIcon,
   type IconProps,
 } from "./components/icons/icons";
 export {

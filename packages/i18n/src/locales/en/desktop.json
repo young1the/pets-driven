@@ -6,11 +6,18 @@
   },
   "nav": {
     "home": "Home",
+    "terminal": "Terminal",
     "settings": "Settings",
     "debug": "Debug",
     "onDesktop": "{{n}} on the desktop",
     "showAll": "Show all",
     "hideAll": "Hide all"
+  },
+  "terminal": {
+    "defaultFolder": "Default folder",
+    "restart": "New terminal",
+    "exited": "[process exited]",
+    "unavailable": "The in-app terminal is only available in the desktop app."
   },
   "home": {
     "eyebrow": "Your pack",

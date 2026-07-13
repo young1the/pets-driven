@@ -48,6 +48,11 @@ const settings = {
   onResetPetFolder: vi.fn(),
 };
 const debug = { groups: [], error: null };
+const terminal = {
+  available: false,
+  pickDirectory: vi.fn().mockResolvedValue(null),
+  initialCwd: null as string | null,
+};
 
 function setup(overrides = {}) {
   const props = {
@@ -57,6 +62,7 @@ function setup(overrides = {}) {
     home,
     edit,
     settings,
+    terminal,
     debug,
     toast: null,
     ...overrides,

@@ -1652,10 +1652,10 @@ function PetsDrivenHostApp() {
     : null;
 
   const previewPet = managedPets[0];
-  const previewDir = previewPet
-    ? (getWorkingDirectoryForPet(petsDrivenState, previewPet.id)?.path ??
-      "core")
-    : "core";
+  const previewWorkingDir = previewPet
+    ? (getWorkingDirectoryForPet(petsDrivenState, previewPet.id)?.path ?? null)
+    : null;
+  const previewDir = previewWorkingDir ?? "core";
   const launchSettings = parseLaunchLine(petsDrivenState.sessionCommand);
 
   return (
@@ -1789,6 +1789,11 @@ function PetsDrivenHostApp() {
         defaultPetSourceDirectory: defaultPetSourceFolder,
         onChangePetFolder: () => void changePetSourceFolder(),
         onResetPetFolder: () => applyPetSourceFolder(null),
+      }}
+      terminal={{
+        available: isTauri(),
+        pickDirectory: () => desktopGateway.pickDirectory(),
+        initialCwd: previewWorkingDir,
       }}
       tab={mainTab}
       toast={toast}

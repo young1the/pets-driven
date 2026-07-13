@@ -6,11 +6,18 @@
   },
   "nav": {
     "home": "홈",
+    "terminal": "터미널",
     "settings": "설정",
     "debug": "디버그",
     "onDesktop": "데스크탑에 {{n}}마리",
     "showAll": "모두 보이기",
     "hideAll": "모두 숨기기"
+  },
+  "terminal": {
+    "defaultFolder": "기본 폴더",
+    "restart": "새 터미널",
+    "exited": "[프로세스가 종료되었습니다]",
+    "unavailable": "인앱 터미널은 데스크탑 앱에서만 사용할 수 있어요."
   },
   "home": {
     "eyebrow": "내 무리",
