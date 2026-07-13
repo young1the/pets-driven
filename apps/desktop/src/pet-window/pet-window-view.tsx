@@ -234,6 +234,7 @@ export function PetWindowView({
   const bodyDownRef = useRef<{ screenX: number; screenY: number } | null>(null);
   const lastTapAtRef = useRef(0);
   const isBodyHoveredRef = useRef(false);
+  const isResizeHoveredRef = useRef(false);
   const [interactionStatus, setInteractionStatus] = useState<string | null>(
     null,
   );
@@ -247,6 +248,11 @@ export function PetWindowView({
     ...(isPreview ? previewPresentation : undefined),
   }));
   const [isBodyHovered, setIsBodyHovered] = useState(false);
+  // Drives the resize button's visibility: shown only while the pointer is
+  // over the pet itself (or the handle it already revealed), not anywhere in
+  // the transparent window around it.
+  const [isResizeAffordanceHovered, setIsResizeAffordanceHovered] =
+    useState(false);
   const [petName, setPetName] = useState<string | null>(
     isPreview ? (pet.name ?? null) : null,
   );
@@ -630,6 +636,12 @@ export function PetWindowView({
       setIsBodyHovered(nextBodyHovered);
     }
 
+    const nextResizeAffordanceHovered = hit.kind === "body" || hit.kind === "resize";
+    if (nextResizeAffordanceHovered !== isResizeHoveredRef.current) {
+      isResizeHoveredRef.current = nextResizeAffordanceHovered;
+      setIsResizeAffordanceHovered(nextResizeAffordanceHovered);
+    }
+
     void setNativeCursorPassthrough(hit.kind === "transparent");
   }
 
@@ -832,7 +844,7 @@ export function PetWindowView({
   return (
     <main
       aria-label={`Pet Window ${pet.petId}`}
-      className="pet-window-surface"
+      className={`pet-window-surface${isResizeAffordanceHovered ? " pet-window-surface--resize-visible" : ""}`}
       onContextMenu={handleContextMenu}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -841,6 +853,11 @@ export function PetWindowView({
         if (isBodyHoveredRef.current) {
           isBodyHoveredRef.current = false;
           setIsBodyHovered(false);
+        }
+
+        if (isResizeHoveredRef.current) {
+          isResizeHoveredRef.current = false;
+          setIsResizeAffordanceHovered(false);
         }
 
         if (
