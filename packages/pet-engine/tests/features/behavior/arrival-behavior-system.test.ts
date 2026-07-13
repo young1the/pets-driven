@@ -365,6 +365,59 @@ describe("arrival behavior system", () => {
     });
   });
 
+  it("abandons a positional wander target it makes no progress toward (jammed at a monitor step)", () => {
+    const store = createComponentStore([{
+      id: "pet-a",
+      components: [
+        { type: "Steering", mode: "pursue" as const },
+        // Wedged against a wall at x=200; the target sits past it at x=100.
+        { type: "Transform", position: { x: 200, y: 100 } },
+        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
+        { type: "WandersOnArrival", arrivalRadius: 16 },
+      ],
+    }]);
+    const clock = createManualClock(0);
+
+    // First tick seeds the no-progress watchdog; target is still held.
+    runArrivalBehaviorSystem(store, clock);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).not.toBeNull();
+
+    // The pet never moves — no horizontal progress. Once the stuck timeout
+    // elapses the unreachable target is dropped and the pet returns to idle.
+    clock.advanceBy(2_501);
+    runArrivalBehaviorSystem(store, clock);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
+  });
+
+  it("keeps a positional target while the pet is still closing the distance", () => {
+    const store = createComponentStore([{
+      id: "pet-a",
+      components: [
+        { type: "Steering", mode: "pursue" as const },
+        { type: "Transform", position: { x: 200, y: 100 } },
+        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
+        { type: "WandersOnArrival", arrivalRadius: 16 },
+      ],
+    }]);
+    const clock = createManualClock(0);
+
+    runArrivalBehaviorSystem(store, clock);
+
+    // Walking closer each tick refreshes the progress timer, so the target
+    // survives well past the stuck timeout as long as distance keeps shrinking.
+    clock.advanceBy(2_000);
+    store.setComponent("pet-a", { type: "Transform", position: { x: 150, y: 100 } });
+    runArrivalBehaviorSystem(store, clock);
+
+    clock.advanceBy(2_000);
+    store.setComponent("pet-a", { type: "Transform", position: { x: 130, y: 100 } });
+    runArrivalBehaviorSystem(store, clock);
+
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).not.toBeNull();
+    expect(store.getComponent("pet-a", "Steering")?.mode).toBe("pursue");
+  });
+
   it("abandons chase-cursor after the chase time limit", () => {
     const store = createComponentStore([
       {

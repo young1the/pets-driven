@@ -188,6 +188,16 @@ const IDLE_STAY_BASE_MS = 3_000;
 const IDLE_STAY_INTROVERSION_MS = 9_000;
 const IDLE_STAY_JITTER_MS = 3_000;
 
+// A positional wander target the pet cannot make progress toward — jammed
+// against a side wall or an interior monitor step (the hidden wall an L-shaped
+// dual-monitor layout leaves at its height step) — is abandoned after this
+// long with no improvement, so the pet returns to idle and re-decides instead
+// of pushing into the wall forever. A shrink smaller than the epsilon counts as
+// no progress, so slow-but-real walking keeps refreshing the timer while pure
+// jitter against a wall does not.
+const WANDER_STUCK_TIMEOUT_MS = 2_500;
+const WANDER_PROGRESS_EPSILON = 2;
+
 // Arriving anywhere earns a beat of stillness before the next decision —
 // a pet that walks somewhere and immediately walks elsewhere reads as
 // aimless pacing. Extraverts dwell briefly; introverts linger.
@@ -1646,7 +1656,31 @@ export function runArrivalBehaviorSystem(
         ? Math.abs(target.y - transform.position.y)
         : Math.abs(target.x - transform.position.x);
 
-      if (delta > wandersOnArrival.arrivalRadius) return;
+      if (delta > wandersOnArrival.arrivalRadius) {
+        // No-progress watchdog (grounded pets only; climbing has its own phase
+        // handling). A walker wedged against an interior monitor step can never
+        // shrink `delta`, so without this it would hold this target forever.
+        if (clock && !climbing) {
+          const now = clock.now();
+          if (
+            motion.progressBest === undefined ||
+            delta < motion.progressBest - WANDER_PROGRESS_EPSILON
+          ) {
+            motion.progressBest = delta;
+            motion.progressAt = now;
+          } else if (
+            motion.progressAt !== undefined &&
+            now - motion.progressAt > WANDER_STUCK_TIMEOUT_MS
+          ) {
+            // Stuck: drop the unreachable target and re-decide next tick. No
+            // arrival dwell — this is a give-up, not a real arrival, so the pet
+            // should immediately pick a fresh (reachable) target.
+            clearMotionTarget(components, id);
+            intent.mode = "stand";
+          }
+        }
+        return;
+      }
       motion.targetEntityId = null;
       motion.targetPosition = null;
       intent.mode = "stand";
