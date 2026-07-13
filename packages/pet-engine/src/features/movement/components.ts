@@ -50,6 +50,18 @@ export type MotionTargetComponent = {
    * reset the gait, which is the desired default.
    */
   speedFactor?: number;
+  /**
+   * No-progress watchdog for positional targets, maintained by the arrival
+   * system: the closest the pet has come to the target and when. A walker that
+   * jams against a side wall or an interior monitor step (an L-shaped dual-
+   * monitor layout has a hidden wall at the height step) can never shrink its
+   * horizontal distance, so it would hold this target forever, never return to
+   * idle, and never re-decide. When no progress is made for the stuck timeout
+   * the target is abandoned. Undefined on a fresh target — writers replace the
+   * whole component, which restarts the watchdog.
+   */
+  progressBest?: number;
+  progressAt?: number;
 };
 
 // ── Capability components ──────────────────────────────────────────────────
