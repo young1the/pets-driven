@@ -64,6 +64,8 @@ type PetWindowPresentation = {
   activity: PetActivityKind | null;
   /** Session partner name for the capsule label, following the shown activity. */
   partnerName: string | null;
+  /** The pet's current spoken line (greet/chat dialogue), or null when quiet. */
+  speech: string | null;
   overlay: PetWindowOverlay | null;
 };
 
@@ -157,6 +159,7 @@ function defaultPresentation(index: number): PetWindowPresentation {
       movementDirectionForWindow(index) >= 0 ? "running-right" : "running-left",
     activity: null,
     partnerName: null,
+    speech: null,
     overlay: { kind: "status", label: "!" },
   };
 }
@@ -332,6 +335,7 @@ export function PetWindowView({
               animationState: presentationRef.current.animationState,
               activity: presentationRef.current.activity,
               partnerName: presentationRef.current.partnerName,
+              speech: presentationRef.current.speech,
             },
             overlay: presentationRef.current.overlay,
           },
@@ -340,6 +344,7 @@ export function PetWindowView({
               ...frame.sprite,
               activity: steadiedActivity,
               partnerName: steadiedPartnerName,
+              speech: frame.sprite.speech ?? null,
             },
             overlay: frame.overlay,
           },
@@ -350,6 +355,7 @@ export function PetWindowView({
           animationState: frame.sprite.animationState,
           activity: steadiedActivity,
           partnerName: steadiedPartnerName,
+          speech: frame.sprite.speech ?? null,
           overlay: frame.overlay,
         };
         setPresentation({
@@ -357,6 +363,7 @@ export function PetWindowView({
           animationState: frame.sprite.animationState,
           activity: steadiedActivity,
           partnerName: steadiedPartnerName,
+          speech: frame.sprite.speech ?? null,
           overlay: frame.overlay,
         });
       }
@@ -898,6 +905,7 @@ export function PetWindowView({
           <PetStatusCard
             activity={presentation.activity}
             partnerName={presentation.partnerName}
+            speech={presentation.speech}
             animationState={presentation.animationState}
             cwd={isBodyHovered ? cwdRef.current : null}
             name={petName}
@@ -937,6 +945,7 @@ type PetStatusCardProps = {
   animationState: PetAnimationState;
   activity: PetActivityKind | null;
   partnerName: string | null;
+  speech: string | null;
   overlay: PetWindowOverlay | null;
   cwd: string | null;
   /** Transient host notice (e.g. connect-mode) that outranks the status message. */
@@ -949,6 +958,7 @@ function PetStatusCard({
   animationState,
   activity,
   partnerName,
+  speech,
   overlay,
   cwd,
   notice,
@@ -962,7 +972,11 @@ function PetStatusCard({
   const label = status.labelKey
     ? t(`petStatus.${status.labelKey}`, status.labelParams)
     : status.label;
-  const message = notice ?? status.message;
+  // The agent-channel overlay owns the message line when present; otherwise the
+  // pet's own spoken line (greet/chat dialogue) fills it, so social sessions
+  // read as a live conversation and not just a "Chatting with…" capsule.
+  const spokenLine = speech?.trim() ? speech : null;
+  const messageLine = status.message ?? spokenLine;
 
   return (
     <div
@@ -976,7 +990,7 @@ function PetStatusCard({
       }
     >
       <div
-        className={`pet-window-status-card__inner${cwd || message ? " pet-window-status-card__inner--expanded" : ""}`}
+        className={`pet-window-status-card__inner${cwd || messageLine ? " pet-window-status-card__inner--expanded" : ""}`}
       >
         <div className="pet-window-status-card__row">
           <span className="pet-window-status-card__dot" />
@@ -985,8 +999,10 @@ function PetStatusCard({
             <span className="pet-window-status-card__label">{label}</span>
           ) : null}
         </div>
-        {message ? (
-          <div className="pet-window-status-card__message">{message}</div>
+        {messageLine ? (
+          <div className="pet-window-status-card__message">
+            {messageLine}
+          </div>
         ) : null}
         {cwd ? (
           <div className="pet-window-status-card__cwd">

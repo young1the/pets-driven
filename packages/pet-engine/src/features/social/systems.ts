@@ -220,16 +220,22 @@ function setExpression(
   });
 }
 
+// How long a spoken line lingers before SpeechExpirationSystem clears it. The
+// default suits a one-shot cue (a chase "Tag!"); greet/chat pass a longer hold
+// so the line stays up for its whole beat instead of blinking out early.
+const SPEECH_LINGER_MS = 1_800;
+
 function setSpeech(
   components: ComponentStore,
   id: string,
   line: string | null,
   now: number,
+  durationMs = SPEECH_LINGER_MS,
 ): void {
   components.setComponent(id, {
     type: "SpeechState",
     speech: line,
-    expiresAt: line ? now + 1_500 : null,
+    expiresAt: line ? now + durationMs : null,
   });
 }
 
@@ -587,8 +593,16 @@ function choreograph(
 
   if (session.kind === "greet") {
     if (!session.greeted) {
+      // The greeting is spoken once (not refreshed per tick), so hold it for
+      // the whole greet play beat rather than letting it vanish after a blink.
       ids.forEach((id, i) =>
-        setSpeech(components, id, pickLine(GREET_LINES, session.startedAt + i), now),
+        setSpeech(
+          components,
+          id,
+          pickLine(GREET_LINES, session.startedAt + i),
+          now,
+          PHASE_DURATIONS.greet.play,
+        ),
       );
       session.greeted = true;
     }
@@ -610,7 +624,15 @@ function choreograph(
   const speakerIndex = ((turn % ids.length) + ids.length) % ids.length;
   ids.forEach((id, i) => {
     if (i === speakerIndex) {
-      setSpeech(components, id, pickLine(CHAT_LINES, session.startedAt + turn), now);
+      // Refreshed every tick of the turn, but give it the turn's length so the
+      // bubble never blinks out between refreshes or at the turn boundary.
+      setSpeech(
+        components,
+        id,
+        pickLine(CHAT_LINES, session.startedAt + turn),
+        now,
+        CHAT_TURN_MS,
+      );
       setExpression(components, id, "thinking", "none", now, 400);
     } else {
       setSpeech(components, id, null, now);

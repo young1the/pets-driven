@@ -24,6 +24,7 @@ export type PetWindowFixturePresentation = {
   animationState: PetAnimationState;
   activity: PetActivityKind | null;
   partnerName: string | null;
+  speech?: string | null;
   overlay: PetWindowOverlay | null;
 };
 
@@ -105,13 +106,14 @@ export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
   {
     id: "chatting",
     label: "Chatting",
-    description: "Social session with a partner name in the status card.",
+    description: "Social session with a partner name and a spoken line.",
     pet: { petId: "fixture-cato", assetId: "cato", windowIndex: 1, name: "Luna" },
     presentation: {
       decisionEmote: null,
       animationState: "idle",
       activity: "chatting",
       partnerName: "Scout",
+      speech: "Guess what?",
       overlay: null,
     },
   },

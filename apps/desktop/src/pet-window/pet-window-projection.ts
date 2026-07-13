@@ -111,6 +111,7 @@ export function projectWorldSnapshotToPetWindows(
             animationState: body.animationState ?? "idle",
             activity: pet.activity ?? null,
             partnerName: pet.social?.partnerName ?? null,
+            speech: pet.speech ?? null,
           },
           overlay: overlayFromPet(pet),
         },
