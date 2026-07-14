@@ -119,7 +119,7 @@ html.pet-window-fixture-preview .pet-window-surface {
   position: absolute;
   top: calc(100% - var(--sprite-h) + 8px);
   left: 50%;
-  width: calc(176px * var(--pet-window-card-scale, 1));
+  width: calc(150px * var(--pet-window-card-scale, 1));
   max-width: calc(100vw - 12px);
   transform: translate(-50%, -100%);
   pointer-events: none;
