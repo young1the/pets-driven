@@ -12,13 +12,12 @@ import { AgentEventPanel } from "./agent-event-panel";
 import { BehaviorLab } from "./behavior-lab";
 import { drawWorld } from "./canvas-renderer";
 import { ClimbPlaygroundApp } from "./climb-playground-app";
-import { DecisionShowcaseApp } from "./decision-showcase-app";
 import { JumpPlaygroundApp } from "./jump-playground-app";
 import { PetStatusList } from "./pet-status-list";
 import { PLAYGROUND_TEXT } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
 
-type PlaygroundViewId = "demo" | "jump" | "climb" | "decision";
+type PlaygroundViewId = "demo" | "jump" | "climb";
 type PlaygroundViewGroup = "Simulation";
 
 type PlaygroundView = {
@@ -32,7 +31,6 @@ const PLAYGROUND_VIEWS: PlaygroundView[] = [
   { id: "demo", group: "Simulation", label: "Demo", Component: DemoPlaygroundView },
   { id: "jump", group: "Simulation", label: "Jump", Component: JumpPlaygroundApp },
   { id: "climb", group: "Simulation", label: "Climb", Component: ClimbPlaygroundApp },
-  { id: "decision", group: "Simulation", label: "Decision", Component: DecisionShowcaseApp },
 ];
 
 const PLAYGROUND_GROUPS: PlaygroundViewGroup[] = ["Simulation"];
