@@ -501,26 +501,64 @@ export function AdoptPetFlow({
               <div className="pd-onb__empty-copy">
                 <h1 className="pd-onb__title">{t("onboarding.emptyTitle")}</h1>
                 <p className="pd-onb__lede">{t("onboarding.emptyLede")}</p>
+              </div>
 
-                <div className="pd-onb__petdex-empty">
-                  <span className="pd-onb__petdex-empty-label">{t("onboarding.petdexCta")}</span>
-                  <div className="pd-onb__petdex-empty-row">
-                    <code>npx petdex install boba</code>
-                    <a href={PETDEX_URL} rel="noreferrer" target="_blank">
-                      {t("onboarding.browsePetdex")}
-                    </a>
-                  </div>
+              {/* No installed looks: spell out the ways to get the first one. */}
+              <span className="pd-onb__empty-steps-label">{t("onboarding.emptyStepsLabel")}</span>
+              <div className="pd-onb__empty-actions">
+                <div className="pd-onb__empty-card pd-onb__empty-card--primary">
+                  <span className="pd-onb__empty-card-icon" aria-hidden>
+                    🐾
+                  </span>
+                  <b className="pd-onb__empty-card-title">{t("onboarding.emptyInstallTitle")}</b>
+                  <p className="pd-onb__empty-card-desc">{t("onboarding.emptyInstallDesc")}</p>
+                  <code className="pd-onb__empty-card-code">npx petdex install boba</code>
+                  <a
+                    className="pd-onb__empty-card-link"
+                    href={PETDEX_URL}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {t("onboarding.browsePetdex")}
+                    <span aria-hidden> ↗</span>
+                  </a>
                 </div>
 
-                {renderSourceFolder()}
+                <button
+                  className="pd-onb__empty-card pd-onb__empty-card--action"
+                  onClick={() => void changeSourceFolder()}
+                  type="button"
+                >
+                  <span className="pd-onb__empty-card-icon" aria-hidden>
+                    <FolderIcon />
+                  </span>
+                  <b className="pd-onb__empty-card-title">{t("onboarding.emptyChooseFolder")}</b>
+                  <p className="pd-onb__empty-card-desc">
+                    {t("onboarding.emptyChooseFolderHint")}
+                  </p>
+                  <span className="pd-onb__empty-card-cue" aria-hidden>
+                    →
+                  </span>
+                </button>
+
+                <button
+                  className="pd-onb__empty-card pd-onb__empty-card--action"
+                  disabled={refreshing}
+                  onClick={() => void loadPackages()}
+                  type="button"
+                >
+                  <span className="pd-onb__empty-card-icon" aria-hidden>
+                    <RefreshIcon className={refreshing ? "pd-onb__spin" : undefined} />
+                  </span>
+                  <b className="pd-onb__empty-card-title">{t("onboarding.emptyRefreshTitle")}</b>
+                  <p className="pd-onb__empty-card-desc">{t("onboarding.emptyRefreshDesc")}</p>
+                  <span className="pd-onb__empty-card-cue" aria-hidden>
+                    →
+                  </span>
+                </button>
               </div>
 
-              {/* "No pets yet" motif — a muted slot with drifting paw prints. */}
-              <div className="pd-onb__empty-art" aria-hidden>
-                <span className="pd-onb__empty-art-paw pd-onb__empty-art-paw--lg">🐾</span>
-                <span className="pd-onb__empty-art-paw pd-onb__empty-art-paw--sm">🐾</span>
-                <span className="pd-onb__empty-art-paw pd-onb__empty-art-paw--xs">🐾</span>
-              </div>
+              {renderSourceFolder()}
             </div>
           )}
           <div className="pd-onb__footer">
@@ -531,25 +569,7 @@ export function AdoptPetFlow({
               <Button disabled={!assetId} onClick={goToProfile} size="lg">
                 {t("onboarding.continue")}
               </Button>
-            ) : (
-              <div className="pd-onb__actions">
-                <Button
-                  disabled={refreshing}
-                  iconLeft={<RefreshIcon className={refreshing ? "pd-onb__spin" : undefined} />}
-                  onClick={() => void loadPackages()}
-                  variant="ghost"
-                >
-                  {t("onboarding.refresh")}
-                </Button>
-                <Button
-                  iconLeft={<FolderIcon />}
-                  onClick={() => void changeSourceFolder()}
-                  size="lg"
-                >
-                  {t("onboarding.emptyChooseFolder")}
-                </Button>
-              </div>
-            )}
+            ) : null}
           </div>
         </section>
       )}
