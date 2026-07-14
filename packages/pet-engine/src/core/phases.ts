@@ -55,6 +55,7 @@ import {
 } from "@pets-driven/pet-engine/features/movement/systems";
 import { PerceptionSystem } from "@pets-driven/pet-engine/features/perception/systems";
 import {
+  AirborneSlipSystem,
   PetCollisionSyncSystem,
   PhysicsIntegrationSystem,
   PhysicsTransformSyncSystemPost,
@@ -118,6 +119,10 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
   ],
 
   SIMULATE: [
+    // Sets each pet's surface friction from its grounded state before the
+    // integration step reads it (thrown pets slide down walls; grounded pets
+    // keep their grip).
+    AirborneSlipSystem,
     PhysicsIntegrationSystem,
     PhysicsTransformSyncSystemPost,
     // Derives per-tick travel displacement from the freshly synced Transform,

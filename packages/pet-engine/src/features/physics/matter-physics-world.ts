@@ -21,6 +21,7 @@ export type MatterPhysicsWorld = {
   setGravityScale(id: string, scale: number): void;
   setPosition(id: string, position: Partial<Vector>): void;
   setVelocity(id: string, velocity: Partial<Vector>): void;
+  setAirborneSlip(id: string, airborne: boolean): void;
   activeCollisions(): Array<{ bodyAId: string; bodyBId: string }>;
   step(deltaMs: number): void;
   snapshot(): WorldSnapshot;
@@ -36,6 +37,9 @@ export function createMatterPhysicsWorld(bounds: {
   engine.gravity.y = bounds.gravity?.y ?? 1;
   const bodies = new Map<string, MatterBody>();
   const shapes = new Map<string, BodyShape>();
+  // The friction a body should have while resting on a surface, so
+  // setAirborneSlip can drop it to 0 mid-air and restore it on landing.
+  const baseFrictions = new Map<string, number | undefined>();
   const gravityScales = new Map<string, number>();
   const activeCollisionPairs = new Map<string, { bodyAId: string; bodyBId: string }>();
 
@@ -109,6 +113,7 @@ export function createMatterPhysicsWorld(bounds: {
         restitution: material?.restitution ?? 0,
       });
       Body.setInertia(body, Infinity);
+      baseFrictions.set(id, material?.friction);
       addBody(id, body, { shape: "rectangle", ...size });
     },
     addStaticRectangle(id, position, size, material) {
@@ -129,6 +134,7 @@ export function createMatterPhysicsWorld(bounds: {
       World.remove(engine.world, body);
       bodies.delete(id);
       shapes.delete(id);
+      baseFrictions.delete(id);
       gravityScales.delete(id);
       // Drop any live collision pairs that referenced this body so the removed
       // id never resurfaces in activeCollisions() after teardown.
@@ -192,6 +198,15 @@ export function createMatterPhysicsWorld(bounds: {
           y: velocity.y ?? body.velocity.y,
         });
       }
+    },
+    setAirborneSlip(id, airborne) {
+      const body = bodies.get(id);
+      if (!body || body.isStatic) return;
+      // Mid-air, drop surface friction to 0 so a thrown pet pressed against a
+      // vertical wall slides down under gravity instead of the wall's Coulomb
+      // friction pinning its fall. On the ground, restore the body's base
+      // friction so walking/parking grip is unchanged.
+      body.friction = airborne ? 0 : (baseFrictions.get(id) as number);
     },
     activeCollisions() {
       return [...activeCollisionPairs.values()];

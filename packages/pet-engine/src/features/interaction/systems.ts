@@ -18,6 +18,12 @@ const DRAG_START_DISTANCE = 4;
 const HIT_TARGET_PADDING = 12;
 const MAX_DRAG_SAMPLES = 6;
 const THROW_VELOCITY_THRESHOLD = 8;
+// Matter.js has no continuous collision detection, so a body that advances more
+// than a wall's thickness (48px, see createMonitorBoundaryEntities) in a single
+// 16ms step tunnels straight through and the pet is lost off-screen. Cap the
+// per-tick throw speed comfortably below that so even a hard flick stays a
+// strong-but-contained throw that hits the wall instead of clearing it.
+const MAX_THROW_SPEED = 40;
 
 export function runUserInteractionBehaviorSystem(
   components: ComponentStore,
@@ -83,10 +89,20 @@ function handlePointerEvent(
   }
 
   if (event.type === "pointer.up") {
-    const velocity = releaseVelocityFromSamples(drag.samples);
+    const velocity = clampThrowSpeed(releaseVelocityFromSamples(drag.samples));
     if (Math.hypot(velocity.x, velocity.y) >= THROW_VELOCITY_THRESHOLD) {
       components.setComponent(drag.entityId, { type: "ThrowImpulse", velocity });
       claimUserInteraction(components, drag.entityId, clock.now(), "throw", 500);
+      // A thrown pet is ballistic, not keyboard-driven. Drop it as the keyboard
+      // control target the pointer.down grab selected, otherwise
+      // KeyboardControlMovementSystem's idle-stop (velocity.x = 0 while no key
+      // is held) zeroes the throw's horizontal velocity every tick and the arc
+      // collapses to a straight drop instead of extending along x.
+      const keyboardTarget = components.getComponent(
+        INTERACTION_ENTITY_ID,
+        "KeyboardControlTarget",
+      );
+      if (keyboardTarget?.entityId === drag.entityId) keyboardTarget.entityId = null;
     }
     components.removeComponent(INTERACTION_ENTITY_ID, "DragInteraction");
   }
@@ -233,6 +249,15 @@ export function releaseVelocityFromSamples(
     x: (last.position.x - first.position.x) / ticks,
     y: (last.position.y - first.position.y) / ticks,
   };
+}
+
+// Scale a release velocity down to MAX_THROW_SPEED while preserving direction,
+// so a hard flick throws far but never fast enough to tunnel through a wall.
+export function clampThrowSpeed(velocity: Vector): Vector {
+  const speed = Math.hypot(velocity.x, velocity.y);
+  if (speed <= MAX_THROW_SPEED) return velocity;
+  const scale = MAX_THROW_SPEED / speed;
+  return { x: velocity.x * scale, y: velocity.y * scale };
 }
 
 export function runThrowImpulseSystem(

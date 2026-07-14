@@ -244,6 +244,7 @@ describe("demo scenario", () => {
       "DraggedEntityKinematicSystem",
       "ThrowImpulseSystem",
       // SIMULATE
+      "AirborneSlipSystem",
       "PhysicsIntegrationSystem",
       "PhysicsTransformSyncSystemPost",
       "TravelTrackingSystem",

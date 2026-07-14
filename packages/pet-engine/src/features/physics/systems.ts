@@ -118,6 +118,20 @@ export function runPetCollisionSyncSystem(components: ComponentStore, clock: Clo
   }
 }
 
+// Keeps each pet's surface friction in sync with whether it is on the ground.
+// Mid-air the friction drops to 0 so a thrown pet pressed against a vertical
+// wall keeps falling under gravity instead of the wall's friction pinning it
+// into a slow crawl; back on the ground the base friction is restored so
+// walking and parking grip is unchanged.
+export function runAirborneSlipSystem(
+  components: ComponentStore,
+  physics: Pick<MatterPhysicsWorld, "setAirborneSlip">,
+): void {
+  components.forEach(["PhysicsBody", "ContactState"], (id, [, contact]) => {
+    physics.setAirborneSlip(id, !contact.grounded);
+  });
+}
+
 // ── System descriptors ─────────────────────────────────────────────────────
 
 export const PhysicsTransformSyncSystemPre: SimulationSystem<WorldStepContext> = {
@@ -149,6 +163,16 @@ export const PhysicsTransformSyncSystemPost: SimulationSystem<WorldStepContext> 
   },
 };
 
+export const AirborneSlipSystem: SimulationSystem<WorldStepContext> = {
+  name: "AirborneSlipSystem",
+  dependsOn: ["ContactSystem"],
+  reads: ["PhysicsBody", "ContactState"],
+  writes: ["PhysicsWorld"],
+  update(ctx) {
+    runAirborneSlipSystem(ctx.components, ctx.physics);
+  },
+};
+
 export const PhysicsIntegrationSystem: SimulationSystem<WorldStepContext> = {
   name: "PhysicsIntegrationSystem",
   dependsOn: [
@@ -158,6 +182,7 @@ export const PhysicsIntegrationSystem: SimulationSystem<WorldStepContext> = {
     "WallClimbSystem",
     "SteeringForceSystem",
     "FlightSystem",
+    "AirborneSlipSystem",
   ],
   reads: ["PhysicsForce"],
   writes: ["PhysicsWorld"],

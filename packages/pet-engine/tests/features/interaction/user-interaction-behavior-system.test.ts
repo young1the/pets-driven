@@ -174,6 +174,91 @@ describe("UserInteractionBehaviorSystem", () => {
     });
   });
 
+  it("throwing a grabbed pet drops it as the keyboard control target", () => {
+    const components = createStore();
+    const events = createWorldEventQueue();
+    const clock = createManualClock(0);
+
+    // Grab the pet: pointer.down selects it as the keyboard control target.
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 3,
+      at: 0,
+      position: { x: 100, y: 100 },
+    });
+    // Flick it to the right fast enough to clear the throw threshold.
+    events.push({
+      kind: "pointer",
+      type: "pointer.move",
+      pointerId: 3,
+      at: 8,
+      position: { x: 150, y: 100 },
+    });
+    events.push({
+      kind: "pointer",
+      type: "pointer.move",
+      pointerId: 3,
+      at: 16,
+      position: { x: 200, y: 100 },
+    });
+    events.push({
+      kind: "pointer",
+      type: "pointer.up",
+      pointerId: 3,
+      at: 16,
+      position: { x: 200, y: 100 },
+    });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    // The throw impulse carries horizontal velocity, and the pet is no longer
+    // the keyboard target — so KeyboardControlMovementSystem's idle-stop can't
+    // zero that velocity every tick and flatten the arc.
+    expect(components.getComponent("pet-a", "ThrowImpulse")?.velocity.x).toBeGreaterThan(0);
+    expect(
+      components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId,
+    ).toBeNull();
+  });
+
+  it("caps a very hard flick so the pet cannot tunnel through a wall", () => {
+    const components = createStore();
+    const events = createWorldEventQueue();
+    const clock = createManualClock(0);
+
+    // A huge pointer jump in a single millisecond yields an enormous raw
+    // release velocity; the throw impulse must be clamped to a safe speed.
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 4,
+      at: 0,
+      position: { x: 100, y: 100 },
+    });
+    events.push({
+      kind: "pointer",
+      type: "pointer.move",
+      pointerId: 4,
+      at: 1,
+      position: { x: 5000, y: 100 },
+    });
+    events.push({
+      kind: "pointer",
+      type: "pointer.up",
+      pointerId: 4,
+      at: 1,
+      position: { x: 5000, y: 100 },
+    });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    const impulse = components.getComponent("pet-a", "ThrowImpulse");
+    expect(impulse).toBeDefined();
+    const speed = Math.hypot(impulse?.velocity.x ?? 0, impulse?.velocity.y ?? 0);
+    // A flick this hard clamps right to the cap (allow float rounding).
+    expect(speed).toBeCloseTo(40, 5);
+    // Still a rightward throw — clamping preserves direction.
+    expect(impulse?.velocity.x).toBeGreaterThan(0);
+  });
+
   it("updates keyboard vector from pressed keys", () => {
     const components = createStore();
     const events = createWorldEventQueue();
