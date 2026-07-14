@@ -119,6 +119,7 @@ html.pet-window-fixture-preview .pet-window-surface {
   position: absolute;
   top: calc(100% - var(--sprite-h) + 8px);
   left: 50%;
+  width: calc(176px * var(--pet-window-card-scale, 1));
   max-width: calc(100vw - 12px);
   transform: translate(-50%, -100%);
   pointer-events: none;
@@ -126,12 +127,12 @@ html.pet-window-fixture-preview .pet-window-surface {
 }
 
 .pet-window-status-card__inner {
-  max-width: 100%;
+  width: 100%;
   box-sizing: border-box;
   background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: 18px;
-  padding: 5px 11px;
+  padding: calc(5px * var(--pet-window-card-scale, 1)) calc(11px * var(--pet-window-card-scale, 1));
   transition:
     border-radius 0.15s var(--ease-out),
     padding 0.15s var(--ease-out);
@@ -139,20 +140,22 @@ html.pet-window-fixture-preview .pet-window-surface {
 
 .pet-window-status-card__inner--expanded {
   border-radius: 13px;
-  padding: 7px 11px 8px;
+  padding:
+    calc(7px * var(--pet-window-card-scale, 1)) calc(11px * var(--pet-window-card-scale, 1))
+    calc(8px * var(--pet-window-card-scale, 1));
 }
 
 .pet-window-status-card__row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: calc(6px * var(--pet-window-card-scale, 1));
   min-width: 0;
 }
 
 .pet-window-status-card__dot {
   flex: none;
-  width: 7px;
-  height: 7px;
+  width: calc(7px * var(--pet-window-card-scale, 1));
+  height: calc(7px * var(--pet-window-card-scale, 1));
   border-radius: 50%;
   background: var(--pet-window-dot-color, var(--sky-400));
 }
@@ -172,7 +175,7 @@ html.pet-window-fixture-preview .pet-window-surface {
 
 .pet-window-status-card__label {
   flex: none;
-  max-width: 80px;
+  max-width: calc(80px * var(--pet-window-card-scale, 1));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -199,9 +202,10 @@ html.pet-window-fixture-preview .pet-window-surface {
 .pet-window-status-card__cwd {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-top: 4px;
-  max-width: 150px;
+  gap: calc(5px * var(--pet-window-card-scale, 1));
+  margin-top: calc(4px * var(--pet-window-card-scale, 1));
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pet-window-status-card__cwd svg {
@@ -209,12 +213,14 @@ html.pet-window-fixture-preview .pet-window-surface {
 }
 
 .pet-window-status-card__cwd span {
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: calc(11.5px * var(--pet-window-card-scale, 1));
   font-weight: 600;
   color: var(--text-subtle);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pet-window-status {

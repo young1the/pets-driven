@@ -15,6 +15,7 @@ export const PET_WINDOW_FIXTURE_IDS = [
   "agent-failed",
   "long-name",
   "large-scale",
+  "small-scale",
 ] as const;
 
 export type PetWindowFixtureId = (typeof PET_WINDOW_FIXTURE_IDS)[number];
@@ -189,6 +190,20 @@ export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
       overlay: null,
     },
     scale: 1.35,
+  },
+  {
+    id: "small-scale",
+    label: "Small scale",
+    description: "Pet window resized to the minimum scale.",
+    pet: { petId: "fixture-fenn", assetId: "fenn", windowIndex: 1, name: "Ember" },
+    presentation: {
+      decisionEmote: null,
+      animationState: "idle",
+      activity: "onTheMove",
+      partnerName: null,
+      overlay: { kind: "status", label: "Away" },
+    },
+    scale: 0.5,
   },
 ];
 

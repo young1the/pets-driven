@@ -862,6 +862,7 @@ export function PetWindowView({ pet, previewPresentation, previewScale }: PetWin
             name={petName}
             notice={bindingNotice}
             overlay={presentation.overlay}
+            scale={spriteScale}
             spriteHeight={PET_CELL_SIZE.height * spriteScale}
           />
         ) : null}
@@ -901,6 +902,9 @@ type PetStatusCardProps = {
   /** Transient host notice (e.g. connect-mode) that outranks the status message. */
   notice: string | null;
   spriteHeight: number;
+  /** Pet window resize scale; shrinks the card's own size at small pet sizes
+   * so it doesn't loom over a tiny sprite, clamped so text stays legible. */
+  scale: number;
 };
 
 function PetStatusCard({
@@ -912,6 +916,7 @@ function PetStatusCard({
   cwd,
   notice,
   spriteHeight,
+  scale,
 }: PetStatusCardProps) {
   const { t } = useTranslation("desktop");
   const status = presentPetStatus(animationState, overlay, activity, partnerName);
@@ -930,6 +935,7 @@ function PetStatusCard({
   const messageLine = rawMessage?.startsWith(`${PET_SPEECH_KEY_PREFIX}.`)
     ? t(rawMessage)
     : rawMessage;
+  const cardScale = Math.max(0.85, Math.min(1, scale));
 
   return (
     <div
@@ -939,6 +945,7 @@ function PetStatusCard({
           "--pet-window-dot-color": accent,
           "--pet-window-label-color": accent,
           "--sprite-h": `${spriteHeight}px`,
+          "--pet-window-card-scale": cardScale,
         } as React.CSSProperties
       }
     >
