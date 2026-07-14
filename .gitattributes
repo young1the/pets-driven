@@ -1,0 +1,20 @@
+# Normalize all text files to LF in the repository and on checkout. This keeps
+# Windows working copies from showing phantom CRLF-only diffs and matches the
+# LF output that Biome produces.
+* text=auto eol=lf
+
+# Binary assets: never normalize line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.mp4 binary
+*.webm binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.wasm binary
