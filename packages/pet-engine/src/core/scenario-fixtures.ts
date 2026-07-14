@@ -121,7 +121,6 @@ export function createFixturePet(input: {
       type: "CompletionBehavior" as const,
       intentAfterCompletion: "stand" as const,
     },
-    { type: "SpeechState" as const, speech: null, expiresAt: null },
     { type: "SpeechProfile" as const, ...DEFAULT_PET_SPEECH },
     // Starting drive pressures: a little lonely, fully rested, mildly curious.
     // Per-pet entries in input.components override this (last-write-wins).

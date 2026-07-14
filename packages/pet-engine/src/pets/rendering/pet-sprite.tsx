@@ -14,8 +14,10 @@ import type { CSSProperties } from "react";
 export type PetSpriteOverlay =
   | {
       kind: "agent-channel";
-      status: AgentChannelStatus;
-      label: string;
+      // Null status is a plain spoken line (social/idle/interaction); the
+      // capsule falls back to the ambient activity label.
+      status: AgentChannelStatus | null;
+      label: string | null;
       message: string | null;
     }
   | {

@@ -2,6 +2,7 @@ import type { ComponentStore } from "@pets-driven/pet-engine/core/component-stor
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
 import { statusFreezesMovement } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
 import type {
   KeyboardWorldEvent,
   PointerWorldEvent,
@@ -111,12 +112,11 @@ function releaseAgentTask(components: ComponentStore, id: string, now: number): 
   }
 
   if (feedback) {
-    const durationMs = 1_800;
-    components.setComponent(id, {
-      type: "SpeechState",
-      speech: feedback.speech,
-      expiresAt: now + durationMs,
-    });
+    const durationMs = 3_000;
+    components.setComponent(
+      id,
+      utteranceChannel({ message: feedback.speech, source: "interaction", now, durationMs }),
+    );
     components.setComponent(id, {
       type: "PetExpressionState",
       source: "acknowledge",
@@ -288,7 +288,6 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "AgentTaskState",
     "AgentChannelState",
     "Personality",
-    "SpeechState",
     "PetExpressionState",
     "MoodState",
     "RecentExperienceMemory",
@@ -301,7 +300,6 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "TaskMovementHold",
     "AgentTaskState",
     "AgentChannelState",
-    "SpeechState",
     "PetExpressionState",
     "MoodState",
     "RecentExperienceMemory",

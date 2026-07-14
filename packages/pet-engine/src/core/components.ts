@@ -9,7 +9,6 @@ export type {
   CompletionIntent,
   IdleConversationComponent,
   SpeechProfileComponent,
-  SpeechStateComponent,
   TaskMovementHoldComponent,
 } from "@pets-driven/pet-engine/features/agent/components";
 export type {
@@ -103,7 +102,6 @@ import type {
   CompletionBehaviorComponent,
   IdleConversationComponent,
   SpeechProfileComponent,
-  SpeechStateComponent,
   TaskMovementHoldComponent,
 } from "@pets-driven/pet-engine/features/agent/components";
 import type {
@@ -221,7 +219,6 @@ export type Component =
   | RompStateComponent
   | FeintStateComponent
   | SpeechProfileComponent
-  | SpeechStateComponent
   | TaskMovementHoldComponent
   | TransformComponent
   | TravelStateComponent

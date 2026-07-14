@@ -54,12 +54,6 @@ export type PetWindowFrameSprite = {
    * session, so the capsule can read "Chatting with Otto". Null otherwise.
    */
   partnerName?: string | null;
-  /**
-   * The pet's current spoken line (greet/chat dialogue, transient mood speech),
-   * or null when it isn't saying anything. Rendered as the status card's speech
-   * bubble line. Distinct from the agent-channel overlay message.
-   */
-  speech?: string | null;
 };
 
 export type PetWindowResizeEvent = {

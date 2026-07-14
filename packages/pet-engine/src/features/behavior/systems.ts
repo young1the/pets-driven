@@ -5,6 +5,7 @@ import {
   type AgentTaskStatus,
   statusFreezesMovement,
 } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
 import type {
@@ -48,7 +49,7 @@ const USER_PROXIMITY_RADIUS = 96;
 const APPROACH_PET_SUCCESS_RADIUS = 64;
 const APPROACH_PET_TIMEOUT_MS = 4_000;
 const APPROACH_PET_SUCCESS_CUE_MS = 1_000;
-const SPEECH_BUBBLE_DURATION_MS = 1_500;
+const SPEECH_BUBBLE_DURATION_MS = 3_000;
 
 // Cursor play — laser-pointer-style chase.
 const CHASE_CURSOR_SUCCESS_RADIUS = 48;
@@ -426,13 +427,12 @@ function claim(
   });
 }
 
-function setSpeech(
-  speech: { speech: string | null; expiresAt?: number | null },
-  line: string | null,
-  now: number,
-): void {
-  speech.speech = line;
-  speech.expiresAt = line ? now + SPEECH_BUBBLE_DURATION_MS : null;
+/** Write a plain spoken line (source "idle") to the pet's channel with a TTL. */
+function setIdleSpeech(components: ComponentStore, id: string, line: string | null, now: number) {
+  components.setComponent(
+    id,
+    utteranceChannel({ message: line, source: "idle", now, durationMs: SPEECH_BUBBLE_DURATION_MS }),
+  );
 }
 
 function clearMotionTarget(components: ComponentStore, id: string): void {
@@ -461,6 +461,8 @@ function setAgentTaskState(
   id: string,
   status: "working" | "waiting" | "completed" | "failed",
   event: { at: number; summary?: string },
+  message: string | null,
+  now: number,
 ): void {
   components.setComponent(id, {
     type: "AgentTaskState",
@@ -473,9 +475,13 @@ function setAgentTaskState(
     source: "agent-task",
     status,
     label: agentTaskChannelLabel(status),
-    message: event.summary ?? null,
+    message,
     updatedAt: event.at,
-    expiresAt: null,
+    // Freezing statuses (waiting/failed/completed) persist until the user
+    // acknowledges the pet by interacting with it. A non-freezing "working"
+    // status lets its spoken line expire on the shared TTL (clock-relative, so
+    // it matches the expiration system) while the status capsule itself stays.
+    expiresAt: statusFreezesMovement(status) ? null : now + SPEECH_BUBBLE_DURATION_MS,
   });
 }
 
@@ -492,14 +498,25 @@ function agentTaskChannelLabel(status: "working" | "waiting" | "completed" | "fa
   }
 }
 
-export function runSpeechExpirationSystem(components: ComponentStore, clock: Clock): void {
+// The pet's spoken line lives on AgentChannelState.message. When its TTL lapses
+// we clear the line; a plain utterance (no agent status) then has nothing left
+// to show, so we drop the whole component and the pet falls quiet. An agent
+// status (e.g. "working") keeps its shell so the capsule persists after the
+// message fades. Freezing statuses carry a null expiry and never land here.
+export function runAgentChannelMessageExpirationSystem(
+  components: ComponentStore,
+  clock: Clock,
+): void {
   const now = clock.now();
-  components.forEach(["SpeechState"], (_id, [speech]) => {
-    if (!speech.speech) return;
-    if (speech.expiresAt == null) return;
-    if (speech.expiresAt > now) return;
-    speech.speech = null;
-    speech.expiresAt = null;
+  components.forEach(["AgentChannelState"], (id, [channel]) => {
+    if (channel.expiresAt == null) return;
+    if (channel.expiresAt > now) return;
+    if (channel.status == null) {
+      components.removeComponent(id, "AgentChannelState");
+      return;
+    }
+    channel.message = null;
+    channel.expiresAt = null;
   });
 }
 
@@ -736,43 +753,60 @@ export function runAgentTaskEventSystem(
   const now = clock.now();
 
   components.forEach(
-    ["AgentBinding", "SpeechProfile", "SpeechState", "ActivityState"],
-    (id, [agent, speechProfile, speech, activity]) => {
+    ["AgentBinding", "SpeechProfile", "ActivityState"],
+    (id, [agent, speechProfile, activity]) => {
       if (isClaimed(components, id, "agent-event", now)) return;
 
       for (const event of agentEvents) {
         if (agent.sourceId !== event.sourceId) continue;
 
         if (event.type === "task.started") {
-          setAgentTaskState(components, id, "working", event);
+          setAgentTaskState(
+            components,
+            id,
+            "working",
+            event,
+            event.summary ?? speechProfile.taskStarted,
+            now,
+          );
           applyTaskMovementHold(components, id, "working", event.at);
-          setSpeech(speech, event.summary ?? speechProfile.taskStarted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.started");
           recordPetExperience(components, id, "task-started", now);
         }
 
         if (event.type === "task.waiting" || event.type === "attention.requested") {
-          setAgentTaskState(components, id, "waiting", event);
+          setAgentTaskState(
+            components,
+            id,
+            "waiting",
+            event,
+            event.summary ?? speechProfile.attentionNeeded,
+            now,
+          );
           applyTaskMovementHold(components, id, "waiting", event.at);
-          setSpeech(speech, event.summary ?? speechProfile.attentionNeeded, now);
           claim(components, id, "agent-event", now, event.type);
           recordPetExperience(components, id, "task-waiting", now);
         }
 
         if (event.type === "task.failed") {
-          setAgentTaskState(components, id, "failed", event);
+          setAgentTaskState(components, id, "failed", event, event.summary ?? "Task failed", now);
           applyTaskMovementHold(components, id, "failed", event.at);
-          setSpeech(speech, event.summary ?? "Task failed", now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.failed");
           recordPetExperience(components, id, "task-failed", now);
         }
 
         if (event.type === "task.completed") {
-          setAgentTaskState(components, id, "completed", event);
+          setAgentTaskState(
+            components,
+            id,
+            "completed",
+            event,
+            event.summary ?? speechProfile.taskCompleted,
+            now,
+          );
           applyTaskMovementHold(components, id, "completed", event.at);
-          setSpeech(speech, event.summary ?? speechProfile.taskCompleted, now);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
           recordPetExperience(components, id, "task-completed", now);
@@ -1226,12 +1260,13 @@ export function runAutonomousBehaviorSystem(components: ComponentStore, clock: C
 
   // Idle conversation — only when no higher-priority claim holds
   components.forEach(
-    ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
-    (id, [idleConversation, speechProfile, speech, activity]) => {
+    ["IdleConversation", "SpeechProfile", "ActivityState"],
+    (id, [idleConversation, speechProfile, activity]) => {
       if (isClaimed(components, id, "autonomous", now)) return;
-      if (speech.speech) return;
+      // Already saying something (social line, agent status, …)? Stay quiet.
+      if (components.getComponent(id, "AgentChannelState")?.message) return;
       if (clock.now() - activity.lastActiveAt >= idleConversation.idleAfterMs) {
-        setSpeech(speech, speechProfile.idleCompanion, now);
+        setIdleSpeech(components, id, speechProfile.idleCompanion, now);
         // Reset the idle timer so the *next* chatter is another full
         // idleAfterMs away. Without this, lastActiveAt stays frozen (it is only
         // otherwise bumped by agent events), the threshold remains crossed, and
@@ -3012,10 +3047,10 @@ function petWidth(components: ComponentStore, id: string): number {
 export const SpeechExpirationSystem: SimulationSystem<WorldStepContext> = {
   name: "SpeechExpirationSystem",
   dependsOn: ["UserInteractionBehaviorSystem"],
-  reads: ["SpeechState"],
-  writes: ["SpeechState"],
+  reads: ["AgentChannelState"],
+  writes: ["AgentChannelState"],
   update(ctx) {
-    runSpeechExpirationSystem(ctx.components, ctx.clock);
+    runAgentChannelMessageExpirationSystem(ctx.components, ctx.clock);
   },
 };
 
@@ -3088,18 +3123,10 @@ export const HoverReactionSystem: SimulationSystem<WorldStepContext> = {
 export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentTaskEventSystem",
   dependsOn: ["PetExpressionExpirationSystem"],
-  reads: [
-    "AgentBinding",
-    "SpeechProfile",
-    "SpeechState",
-    "ActivityState",
-    "MoodState",
-    "RecentExperienceMemory",
-  ],
+  reads: ["AgentBinding", "SpeechProfile", "ActivityState", "MoodState", "RecentExperienceMemory"],
   writes: [
     "AgentTaskState",
     "AgentChannelState",
-    "SpeechState",
     "ActivityState",
     "BehaviorDecisionState",
     "TaskMovementHold",
@@ -3236,8 +3263,8 @@ export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
 export const AutonomousBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AutonomousBehaviorSystem",
   dependsOn: ["BehaviorDecisionSystem"],
-  reads: ["IdleConversation", "SpeechProfile", "SpeechState", "ActivityState"],
-  writes: ["SpeechState", "BehaviorDecisionState"],
+  reads: ["IdleConversation", "SpeechProfile", "AgentChannelState", "ActivityState"],
+  writes: ["AgentChannelState", "BehaviorDecisionState"],
   update(ctx) {
     runAutonomousBehaviorSystem(ctx.components, ctx.clock);
   },

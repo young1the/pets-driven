@@ -369,7 +369,6 @@ describe("demo scenario", () => {
       reads: [
         "AgentBinding",
         "SpeechProfile",
-        "SpeechState",
         "ActivityState",
         "MoodState",
         "RecentExperienceMemory",
@@ -377,7 +376,6 @@ describe("demo scenario", () => {
       writes: [
         "AgentTaskState",
         "AgentChannelState",
-        "SpeechState",
         "ActivityState",
         "BehaviorDecisionState",
         "TaskMovementHold",
@@ -1238,10 +1236,13 @@ describe("demo scenario", () => {
       status: "completed",
     });
     expect(scenario.world.getComponent("pet-a", "TaskMovementHold")).toBeDefined();
-    expect(scenario.world.getComponent("pet-a", "SpeechState")).toMatchObject({
-      type: "SpeechState",
-      speech: "Done",
-      expiresAt: 1_500,
+    // "completed" is a freezing status: its line persists until the user
+    // acknowledges the pet (expiresAt: null), rather than expiring on the TTL.
+    expect(scenario.world.getComponent("pet-a", "AgentChannelState")).toMatchObject({
+      type: "AgentChannelState",
+      status: "completed",
+      message: "Done",
+      expiresAt: null,
     });
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
       type: "MotionTarget",
@@ -1281,26 +1282,29 @@ describe("demo scenario", () => {
     });
   });
 
-  it("clears speech after the speech bubble expires", () => {
+  it("clears a working line after the speech bubble expires but keeps the capsule", () => {
     const scenario = createDemoScenario();
 
     scenario.world.pushEvent({
       kind: "agent",
-      type: "task.completed",
+      type: "task.started",
       sourceId: "agent-a",
       at: 20,
-      summary: "Done",
+      summary: "Running",
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-a", "SpeechState")?.speech).toBe("Done");
+    expect(scenario.world.getComponent("pet-a", "AgentChannelState")?.message).toBe("Running");
 
-    scenario.clock.advanceBy(1_501);
+    scenario.clock.advanceBy(3_001);
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-a", "SpeechState")).toMatchObject({
-      type: "SpeechState",
-      speech: null,
+    // The working line clears on its TTL, but the status capsule shell stays so
+    // the pet keeps reading as "Working" until the next agent event.
+    expect(scenario.world.getComponent("pet-a", "AgentChannelState")).toMatchObject({
+      type: "AgentChannelState",
+      status: "working",
+      message: null,
       expiresAt: null,
     });
   });

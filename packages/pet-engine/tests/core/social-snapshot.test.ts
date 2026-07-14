@@ -9,7 +9,6 @@ function pet(id: string, name: string, x: number) {
       { type: "PetIdentity" as const, name },
       { type: "AgentBinding" as const, sourceId: id },
       { type: "Steering" as const, mode: "stand" as const },
-      { type: "SpeechState" as const, speech: null, expiresAt: null },
       { type: "Transform" as const, position: { x, y: 500 } },
       {
         type: "PhysicsBody" as const,

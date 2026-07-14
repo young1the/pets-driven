@@ -73,21 +73,24 @@ describe("UserInteractionBehaviorSystem", () => {
 
     expect(components.getComponent("pet-a", "TaskMovementHold")).toBeUndefined();
     expect(components.getComponent("pet-a", "AgentTaskState")).toBeUndefined();
-    expect(components.getComponent("pet-a", "AgentChannelState")).toBeUndefined();
-    expect(components.getComponent("pet-a", "SpeechState")).toMatchObject({
-      speech: "Surprise! It actually worked.",
-      expiresAt: 2_300,
+    // The settled agent-task channel clears, and the acknowledge feedback line
+    // takes over the same channel as a status-less interaction utterance.
+    expect(components.getComponent("pet-a", "AgentChannelState")).toMatchObject({
+      source: "interaction",
+      status: null,
+      message: "Surprise! It actually worked.",
+      expiresAt: 3_500,
     });
     expect(components.getComponent("pet-a", "PetExpressionState")).toMatchObject({
       source: "acknowledge",
       mood: "excited",
       emote: "sparkle",
-      expiresAt: 2_300,
+      expiresAt: 3_500,
     });
     expect(components.getComponent("pet-a", "BehaviorDecisionState")).toMatchObject({
       source: "user-interaction",
       reason: "acknowledge-completed",
-      expiresAt: 2_300,
+      expiresAt: 3_500,
     });
   });
 

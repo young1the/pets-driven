@@ -133,7 +133,6 @@ describe("Mood and Recent Experience Memory", () => {
       taskStarted: "start",
       taskCompleted: "done",
     });
-    store.setComponent("pet", { type: "SpeechState", speech: null, expiresAt: null });
     store.setComponent("pet", { type: "ActivityState", lastActiveAt: 0 });
     const before = { ...store.getComponent("pet", "MoodState")! };
 

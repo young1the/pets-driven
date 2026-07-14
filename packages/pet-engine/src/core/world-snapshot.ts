@@ -35,8 +35,10 @@ export type PetExpressionSnapshot = {
 
 export type AgentChannelSnapshot = {
   source: AgentChannelSource;
-  status: AgentChannelStatus;
-  label: string;
+  /** Null for plain utterances (social/idle/interaction) — no agent status. */
+  status: AgentChannelStatus | null;
+  /** Null for plain utterances; the capsule falls back to the ambient label. */
+  label: string | null;
   message: string | null;
   updatedAt: number;
   expiresAt: number | null;
@@ -65,6 +67,11 @@ export type PetSnapshot = {
   locomotion: string;
   /** Current behavior/action overlay, separate from locomotion. */
   action?: string;
+  /**
+   * Derived read-only mirror of `agentChannel.message` (the engine's single
+   * spoken-line source). Kept for playground/showcase convenience; new code
+   * should read the line from `agentChannel.message`.
+   */
   speech: string | null;
   position: {
     x: number;

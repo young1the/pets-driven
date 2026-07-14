@@ -205,11 +205,7 @@ export function DecisionShowcaseApp() {
     if (options.clearPresentation) {
       scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "AgentTaskState");
       scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "TaskMovementHold");
-      const speech = scenarioRef.current.world.getComponent(PRIMARY_PET_ID, "SpeechState");
-      if (speech) {
-        speech.speech = null;
-        speech.expiresAt = null;
-      }
+      scenarioRef.current.world.removeComponent(PRIMARY_PET_ID, "AgentChannelState");
     }
     scenarioRef.current.world.setComponent(PRIMARY_PET_ID, {
       type: "Steering",

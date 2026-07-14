@@ -18,7 +18,6 @@ function makeStore() {
           taskStarted: "working",
           taskCompleted: "done",
         },
-        { type: "SpeechState", speech: null, expiresAt: null },
         { type: "ActivityState", lastActiveAt: 0 },
         { type: "CompletionBehavior", intentAfterCompletion: "arrive" as const },
       ],
@@ -56,9 +55,11 @@ describe("runAgentTaskEventSystem → AgentTaskState", () => {
       source: "agent-task",
       status: "working",
       label: "Working",
-      message: null,
+      // With no event summary the line falls back to the SpeechProfile default.
+      message: "working",
       updatedAt: 100,
-      expiresAt: null,
+      // "working" is non-freezing, so its line rides the shared TTL.
+      expiresAt: 3_100,
     });
   });
 
@@ -94,10 +95,10 @@ describe("runAgentTaskEventSystem → AgentTaskState", () => {
     expect(store.getComponent("pet", "AgentChannelState")?.message).toBe("Fixed the flaky test");
   });
 
-  it("leaves AgentChannelState.message null when the event has no summary", () => {
+  it("falls back to the SpeechProfile line when the event has no summary", () => {
     const store = makeStore();
     const clock = createManualClock(100);
     runAgentTaskEventSystem(store, [agentEvent("task.started")], clock);
-    expect(store.getComponent("pet", "AgentChannelState")?.message).toBeNull();
+    expect(store.getComponent("pet", "AgentChannelState")?.message).toBe("working");
   });
 });

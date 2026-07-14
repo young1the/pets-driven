@@ -1,6 +1,7 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
+import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
 import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
 import {
   BEHAVIOR_PRIORITY,
@@ -208,7 +209,7 @@ function setExpression(
 // How long a spoken line lingers before SpeechExpirationSystem clears it. The
 // default suits a one-shot cue (a chase "Tag!"); greet/chat pass a longer hold
 // so the line stays up for its whole beat instead of blinking out early.
-const SPEECH_LINGER_MS = 1_800;
+const SPEECH_LINGER_MS = 3_000;
 
 function setSpeech(
   components: ComponentStore,
@@ -217,11 +218,19 @@ function setSpeech(
   now: number,
   durationMs = SPEECH_LINGER_MS,
 ): void {
-  components.setComponent(id, {
-    type: "SpeechState",
-    speech: line,
-    expiresAt: line ? now + durationMs : null,
-  });
+  if (!line) {
+    // Clearing our own social line: drop the channel so no empty shell lingers,
+    // unless an agent status currently owns it (never clobber "working").
+    const existing = components.getComponent(id, "AgentChannelState");
+    if (!existing || existing.status == null) {
+      components.removeComponent(id, "AgentChannelState");
+    }
+    return;
+  }
+  components.setComponent(
+    id,
+    utteranceChannel({ message: line, source: "social", now, durationMs }),
+  );
 }
 
 function stop(components: ComponentStore, id: string): void {
@@ -1130,7 +1139,7 @@ export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
     "MotionTarget",
     "Steering",
     "PetExpressionState",
-    "SpeechState",
+    "AgentChannelState",
     "Drives",
     "PendingReaction",
     "MoodState",

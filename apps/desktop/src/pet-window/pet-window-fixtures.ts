@@ -24,7 +24,6 @@ export type PetWindowFixturePresentation = {
   animationState: PetAnimationState;
   activity: PetActivityKind | null;
   partnerName: string | null;
-  speech?: string | null;
   overlay: PetWindowOverlay | null;
 };
 
@@ -113,8 +112,14 @@ export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
       animationState: "idle",
       activity: "chatting",
       partnerName: "Scout",
-      speech: "Guess what?",
-      overlay: null,
+      // The spoken line now flows through the single agent-channel as a
+      // status-less message; the ambient "Chatting with Scout" capsule stays.
+      overlay: {
+        kind: "agent-channel",
+        status: null,
+        label: null,
+        message: "Guess what?",
+      },
     },
   },
   {

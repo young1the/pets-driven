@@ -172,11 +172,11 @@ export function explainDecisionPipeline(input: {
   const agentTask = input.getComponent(input.pet.id, "AgentTaskState");
   const intent = input.getComponent(input.pet.id, "Steering");
   const motion = input.getComponent(input.pet.id, "MotionTarget");
-  const speech = input.getComponent(input.pet.id, "SpeechState");
+  const channel = input.getComponent(input.pet.id, "AgentChannelState");
   const jump = input.getComponent(input.pet.id, "JumpActionState");
   const climb = input.getComponent(input.pet.id, "ClimbIntentState");
   const action = jump?.phase ?? climb?.phase ?? (motion?.targetPosition ? "move" : "none");
-  const presentationValue = agentTask?.status ?? (speech?.speech ? "speech" : "quiet");
+  const presentationValue = agentTask?.status ?? (channel?.message ? "speech" : "quiet");
 
   return {
     selection: token?.selectionTrace
@@ -233,10 +233,10 @@ export function explainDecisionPipeline(input: {
       {
         id: "presentation",
         title: "Presentation",
-        status: agentTask || speech?.speech || input.pet.visualCue ? "complete" : "idle",
+        status: agentTask || channel?.message || input.pet.visualCue ? "complete" : "idle",
         value: presentationValue,
         detail:
-          agentTask?.summary ?? speech?.speech ?? input.pet.visualCue?.label ?? "No visible cue.",
+          agentTask?.summary ?? channel?.message ?? input.pet.visualCue?.label ?? "No visible cue.",
       },
     ],
   };

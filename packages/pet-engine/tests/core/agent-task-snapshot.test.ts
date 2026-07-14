@@ -14,13 +14,15 @@ describe("snapshot surfaces agentTask", () => {
     const pet = world.snapshot().pets.find((p) => p.sourceId === "agent-a");
     expect(pet?.agentTask?.status).toBe("working");
     expect(pet?.agentTask?.label).toBeNull();
+    // With no event summary the working line falls back to the SpeechProfile
+    // default, and its non-freezing status rides the shared TTL.
     expect(pet?.agentChannel).toEqual({
       source: "agent-task",
       status: "working",
       label: "Working",
-      message: null,
+      message: "Working on it.",
       updatedAt: 0,
-      expiresAt: null,
+      expiresAt: 3_000,
     });
   });
 

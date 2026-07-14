@@ -56,7 +56,6 @@ function socialPet(
       climbableSurfaceId: null,
       climbableSurfacePosition: null,
     },
-    { type: "SpeechState", speech: null, expiresAt: null },
     { type: "Drives", social, energy: 1, curiosity: 0.2 },
     personality,
   ];
@@ -228,7 +227,7 @@ describe("SocialInteractionSystem — greet choreography", () => {
       mood: "love",
       emote: "heart",
     });
-    expect(store.getComponent("pet-a", "SpeechState")?.speech).not.toBeNull();
+    expect(store.getComponent("pet-a", "AgentChannelState")?.message).not.toBeNull();
     expect(store.getComponent("sess", "SocialSession")?.greeted).toBe(true);
   });
 
@@ -342,7 +341,7 @@ describe("SocialInteractionSystem — chase choreography", () => {
 
     // pet-a (initiator) caught pet-b → it speaks the tag line, and roles have
     // already flipped so pet-b now chases pet-a.
-    expect(store.getComponent("pet-a", "SpeechState")?.speech).not.toBeNull();
+    expect(store.getComponent("pet-a", "AgentChannelState")?.message).not.toBeNull();
     expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
       mood: "excited",
       emote: "sparkle",
@@ -571,13 +570,13 @@ describe("SocialInteractionSystem — group sessions (B10)", () => {
     // Over successive turns the single speaker rotates across all three.
     const spoke = new Set<string>();
     for (const id of ["pet-a", "pet-b", "pet-c"]) {
-      if (store.getComponent(id, "SpeechState")?.speech) spoke.add(id);
+      if (store.getComponent(id, "AgentChannelState")?.message) spoke.add(id);
     }
     for (let turn = 0; turn < 3; turn += 1) {
       clock.advanceBy(CHAT_TURN_MS);
       runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
       for (const id of ["pet-a", "pet-b", "pet-c"]) {
-        if (store.getComponent(id, "SpeechState")?.speech) spoke.add(id);
+        if (store.getComponent(id, "AgentChannelState")?.message) spoke.add(id);
       }
     }
     expect(spoke).toEqual(new Set(["pet-a", "pet-b", "pet-c"]));

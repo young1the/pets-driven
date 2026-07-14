@@ -291,12 +291,17 @@ export function presentPetStatus(
   }
 
   if (overlay.kind === "agent-channel") {
+    // A null status is a plain spoken line (social/idle/interaction): keep the
+    // ambient activity capsule (mood/label/emote) and just carry the message.
+    if (overlay.status === null) {
+      return { ...base, message: overlay.message ?? null, showCapsule: true };
+    }
     const agentBase = presentationFromAgentStatus(overlay.status);
     return {
       ...agentBase,
       // The host's label wins for display, but the status enum gives us a
       // stable key the presentation layer can localize instead.
-      label: overlay.label,
+      label: overlay.label ?? agentBase.label,
       message: overlay.message ?? null,
       showCapsule: true,
     };

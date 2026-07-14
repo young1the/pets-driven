@@ -32,19 +32,60 @@ export type TaskMovementHoldComponent = {
   since: number;
 };
 
-export type AgentChannelSource = "agent-task" | "agent-hook" | "backend";
+export type AgentChannelSource =
+  // Agent-driven statuses (carry a working/waiting/failed/completed status).
+  | "agent-task"
+  | "agent-hook"
+  | "backend"
+  // Folded-in spoken lines that used to live on SpeechState. These carry no
+  // agent status (status: null) — the capsule falls back to the ambient
+  // activity label ("Chatting with Otto") while `message` holds the line.
+  | "social"
+  | "idle"
+  | "interaction";
 
 export type AgentChannelStatus = "working" | "waiting" | "completed" | "failed";
 
+/**
+ * The pet's single spoken-line channel. `message` is the one line shown in the
+ * status card; `status`/`label` drive the agent capsule when present, or are
+ * null for plain utterances (social/idle/acknowledge). `expiresAt` is the
+ * message's TTL: when it lapses the line clears, and if there is no status the
+ * whole component is removed. Freezing statuses (waiting/failed/completed) keep
+ * `expiresAt: null` so they persist until the user acknowledges the pet.
+ */
 export type AgentChannelStateComponent = {
   type: "AgentChannelState";
   source: AgentChannelSource;
-  status: AgentChannelStatus;
-  label: string;
+  status: AgentChannelStatus | null;
+  label: string | null;
   message: string | null;
   updatedAt: number;
   expiresAt: number | null;
 };
+
+/**
+ * Build a plain spoken-line channel (no agent status) with a TTL — the single
+ * home for the lines that used to live on SpeechState (social/idle/acknowledge).
+ * A null/empty line yields a quiet, non-expiring shell the caller can clear on.
+ */
+export function utteranceChannel(params: {
+  message: string | null;
+  source: AgentChannelSource;
+  now: number;
+  durationMs: number;
+}): AgentChannelStateComponent {
+  const { message, source, now, durationMs } = params;
+  return {
+    type: "AgentChannelState",
+    source,
+    status: null,
+    label: null,
+    message,
+    updatedAt: now,
+    expiresAt: message ? now + durationMs : null,
+  };
+}
 
 /** Default speech lines used when an event does not provide its own summary. */
 export type SpeechProfileComponent = {
@@ -53,13 +94,6 @@ export type SpeechProfileComponent = {
   attentionNeeded: string;
   taskStarted: string | null;
   taskCompleted: string | null;
-};
-
-/** Live speech bubble state. SpeechProfile defines defaults; this stores output. */
-export type SpeechStateComponent = {
-  type: "SpeechState";
-  speech: string | null;
-  expiresAt?: number | null;
 };
 
 /** Runtime capability that triggers speech after the entity has been idle. */

@@ -75,9 +75,9 @@ export function createWorld(input: WorldDefinition) {
 
   function getPetSnapshots(componentStore: ComponentStore) {
     return componentStore
-      .query("PetIdentity", "AgentBinding", "Steering", "SpeechState", "Transform")
+      .query("PetIdentity", "AgentBinding", "Steering", "Transform")
       .map((entity) => {
-        const [identity, agent, steering, speech, transform] = entity.components;
+        const [identity, agent, steering, transform] = entity.components;
         const contactState = componentStore.getComponent(entity.id, "ContactState");
         const decisionState = componentStore.getComponent(entity.id, "BehaviorDecisionState");
         const agentTask = componentStore.getComponent(entity.id, "AgentTaskState");
@@ -90,7 +90,7 @@ export function createWorld(input: WorldDefinition) {
           steering: steering.mode,
           locomotion: getLocomotionLabel(componentStore, entity.id),
           action: getActionLabel(componentStore, entity.id),
-          speech: speech.speech,
+          speech: agentChannel?.message ?? null,
           position: transform.position,
           contact: {
             grounded: contactState?.grounded ?? false,

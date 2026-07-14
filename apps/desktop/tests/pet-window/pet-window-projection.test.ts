@@ -115,7 +115,6 @@ describe("pet window projection", () => {
           animationState: "running-left",
           activity: null,
           partnerName: null,
-          speech: "hello",
         },
         overlay: null,
       },
