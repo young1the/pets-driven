@@ -66,7 +66,6 @@ import {
 } from "@/app-state/pet-card-status";
 import {
   createPetDiagnosticsTracker,
-  formatPetDiagnosticsReport,
   type PetDiagnosticsSnapshot,
   type PetDiagnosticsTracker,
 } from "@/app-state/pet-debug-diagnostics";
@@ -423,8 +422,8 @@ function PetsDrivenHostApp() {
   const [petsDrivenState, setPetsDrivenState] = useState<PetsDrivenState>(
     petsDrivenStateRef.current,
   );
-  const [desktopFixtureWindowCount, setDesktopFixtureWindowCount] = useState(0);
-  const [adoptedSimulationResetKey, setAdoptedSimulationResetKey] = useState(0);
+  const [desktopFixtureWindowCount] = useState(0);
+  const [adoptedSimulationResetKey] = useState(0);
   const [petWindowError, setPetWindowError] = useState<string | null>(null);
   const [claudeHookIngressStatus, setClaudeHookIngressStatus] = useState<ClaudeHookIngressStatus>(
     defaultClaudeHookIngressStatus,
@@ -433,7 +432,7 @@ function PetsDrivenHostApp() {
   const [mainTab, setMainTab] = useState<MainWindowTab>(devFixture?.tab ?? "home");
   const [editPetId, setEditPetId] = useState<string | null>(devFixture?.editPetId ?? null);
   const [toast, setToast] = useState<string | null>(null);
-  const [diagnosticReport, setDiagnosticReport] = useState<string | null>(null);
+  const [diagnosticReport] = useState<string | null>(null);
   const [petStatusById, setPetStatusById] = useState<Record<string, PetCardStatus>>({});
   const [defaultPetSourceFolder, setDefaultPetSourceFolder] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -1186,26 +1185,6 @@ function PetsDrivenHostApp() {
     );
   }
 
-  async function invokePetWindowCommand(command: string, count?: number) {
-    setPetWindowError(null);
-
-    try {
-      if (count === undefined) {
-        await invoke(command);
-      } else {
-        await invoke(command, { count });
-      }
-
-      if (command === "open_pet_window_playground") {
-        setDesktopFixtureWindowCount(count ?? 1);
-      } else if (command === "close_pet_window_playground") {
-        setDesktopFixtureWindowCount(0);
-      }
-    } catch (error) {
-      setPetWindowError(formatCommandError(error));
-    }
-  }
-
   async function emitClaudeHookTestEvent() {
     setPetWindowError(null);
 
@@ -1320,31 +1299,6 @@ function PetsDrivenHostApp() {
     setBinding(petId, null);
   }
 
-  // Fire a real hook event at the first adopted pet's folder so the full
-  // ingress → routing → adopted world path can be verified visually.
-  async function pokeFirstPet() {
-    setPetWindowError(null);
-
-    const directory = petsDrivenStateRef.current.registeredWorkingDirectories.find((candidate) =>
-      petsDrivenStateRef.current.pets.some(
-        (pet) => pet.id === candidate.petId && !pet.archived && pet.visible,
-      ),
-    );
-
-    if (!directory) {
-      setPetWindowError(t("errors.noPetToPoke"));
-      return;
-    }
-
-    try {
-      await invoke("emit_test_claude_hook_ingress_event", {
-        cwd: directory.path,
-      });
-    } catch (error) {
-      setPetWindowError(formatCommandError(error));
-    }
-  }
-
   async function resetPets() {
     setPetWindowError(null);
 
@@ -1357,61 +1311,6 @@ function PetsDrivenHostApp() {
       navigate("onboarding");
     } catch (error) {
       setPetWindowError(formatCommandError(error));
-    }
-  }
-
-  async function openAllPets() {
-    setPetWindowError(null);
-
-    const visiblePets = petsDrivenStateRef.current.pets.filter(
-      (pet) => !pet.archived && pet.visible,
-    );
-
-    try {
-      await Promise.all(
-        visiblePets.map((pet) => desktopGateway.openAdoptedPetWindow(pet.id, pet.assetId)),
-      );
-    } catch (error) {
-      setPetWindowError(formatCommandError(error));
-    }
-  }
-
-  async function closeAllPets() {
-    setPetWindowError(null);
-
-    try {
-      await invoke("close_all_pet_windows");
-    } catch (error) {
-      setPetWindowError(formatCommandError(error));
-    }
-  }
-
-  function resetAdoptedSimulation() {
-    setPetWindowError(null);
-    adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
-    adoptedDiagnosticsRef.current = null;
-    adoptedSnapshotRef.current = null;
-    setAdoptedSimulationResetKey((key) => key + 1);
-  }
-
-  function copyPetDiagnostics() {
-    const snapshot = adoptedSnapshotRef.current;
-    const report = formatPetDiagnosticsReport({
-      capturedAt: new Date().toISOString(),
-      diagnostics: adoptedDiagnosticsRef.current ?? adoptedDiagnosticsTrackerRef.current.current(),
-      reason: "manual-copy",
-      sequence: adoptedHostSequenceRef.current,
-      snapshot,
-    });
-
-    setDiagnosticReport(report);
-    void navigator.clipboard
-      ?.writeText(report)
-      .then(() => flashToast(t("toast.diagnosticsCopied")))
-      .catch(() => flashToast(t("toast.diagnosticsReady")));
-
-    if (!navigator.clipboard) {
-      flashToast(t("toast.diagnosticsReady"));
     }
   }
 
@@ -1650,53 +1549,16 @@ function PetsDrivenHostApp() {
             items: [
               { label: "Adopt a pet", onClick: () => navigate("adopt") },
               { label: "Reset pets", onClick: () => void resetPets() },
-              { label: "Show all pets", onClick: () => void openAllPets() },
-              { label: "Close all pets", onClick: () => void closeAllPets() },
             ],
           },
           {
             title: "Simulation",
             hint: "world & playground",
             items: [
-              { label: "Reset simulation", onClick: resetAdoptedSimulation },
-              { label: "Copy pet diagnostics", onClick: copyPetDiagnostics },
               {
                 label: "Open playground",
                 onClick: () => navigate("playground"),
               },
-            ],
-          },
-          {
-            title: "Pet windows",
-            hint: "overlay fixtures",
-            items: [
-              {
-                label: "Open pet window",
-                onClick: () => void invokePetWindowCommand("open_pet_window_playground", 1),
-              },
-              {
-                label: "Open 3 pet windows",
-                onClick: () => void invokePetWindowCommand("open_pet_window_playground", 3),
-              },
-              {
-                label: "Open fixture windows",
-                onClick: () => void invokePetWindowCommand("open_pet_window_playground", 7),
-              },
-              {
-                label: "Close pet windows",
-                onClick: () => void invokePetWindowCommand("close_pet_window_playground"),
-              },
-            ],
-          },
-          {
-            title: "Claude hook",
-            hint: "ingress testing",
-            items: [
-              {
-                label: "Test event",
-                onClick: () => void emitClaudeHookTestEvent(),
-              },
-              { label: "Poke pet", onClick: () => void pokeFirstPet() },
             ],
           },
         ],
