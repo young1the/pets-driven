@@ -1,7 +1,18 @@
-import { useEffect, useRef, useState } from "react";
 import { Button } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import { isTauri, invoke } from "@tauri-apps/api/core";
+import {
+  getWorldViewport,
+  type MonitorWorkArea,
+} from "@pets-driven/pet-engine/core/monitor-geometry";
+import {
+  createAdoptedPetsScenario,
+  createDemoScenario,
+  deriveAdoptedPetLocomotion,
+} from "@pets-driven/pet-engine/core/scenario-fixtures";
+import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
   availableMonitors,
@@ -10,6 +21,8 @@ import {
   getCurrentWindow,
   type Monitor,
 } from "@tauri-apps/api/window";
+import { useEffect, useRef, useState } from "react";
+import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
 import {
   CLAUDE_HOOK_INGRESS_EVENT,
@@ -20,33 +33,26 @@ import {
   PETS_DRIVEN_STATE_CHANGED_EVENT,
   type PetCommandEvent,
 } from "@/adapters/agent-events/hatch-ingress";
-import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { useAppNavigation } from "@/app/app-navigation";
-import { resolveDesktopFixture } from "@/app/dev-fixtures";
-import { pushSearchParams } from "@/app/spa-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
-import { useClaudePlugin } from "@/app/use-claude-plugin";
-import { SetupWizard } from "@/app/onboarding/setup-wizard";
-import { AdoptPetFlow } from "@/app/onboarding/adopt-pet-flow";
+import { resolveDesktopFixture } from "@/app/dev-fixtures";
+import type { HomePetView } from "@/app/main-window/home-section";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
-import type { HomePetView } from "@/app/main-window/home-section";
+import { AdoptPetFlow } from "@/app/onboarding/adopt-pet-flow";
+import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
+import { SetupWizard } from "@/app/onboarding/setup-wizard";
+import { personalityRoleLabelKey } from "@/app/pet-presentation";
 import {
   buildLaunchLine,
   customizeLaunchLine,
+  type LaunchProfileId,
   parseLaunchLine,
   previewCwdForLaunchProfile,
   promptForLaunchProfile,
-  type LaunchProfileId,
 } from "@/app/session-launch-profile";
-import {
-  petStatusFromSnapshot,
-  createPetCardStatusTracker,
-  type PetCardStatus,
-} from "@/app-state/pet-card-status";
-import { personalityRoleLabelKey } from "@/app/pet-presentation";
-import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
-import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { pushSearchParams } from "@/app/spa-navigation";
+import { useClaudePlugin } from "@/app/use-claude-plugin";
 import {
   clearWorkingDirectoryForPet,
   getWorkingDirectoryForPet,
@@ -54,53 +60,47 @@ import {
   removePet,
 } from "@/app-state/pet-adoption";
 import {
-  createEmptyPetsDrivenState,
-  resolveRegisteredWorkingDirectoryForCwd,
-  setPetSourceDirectory,
-  type PetRecord,
-  type PetsDrivenState,
-} from "@/app-state/pets-driven-state";
+  createPetCardStatusTracker,
+  type PetCardStatus,
+  petStatusFromSnapshot,
+} from "@/app-state/pet-card-status";
 import {
   createPetDiagnosticsTracker,
   formatPetDiagnosticsReport,
   type PetDiagnosticsSnapshot,
   type PetDiagnosticsTracker,
 } from "@/app-state/pet-debug-diagnostics";
-import {
-  createAdoptedPetsScenario,
-  createDemoScenario,
-  deriveAdoptedPetLocomotion,
-} from "@pets-driven/pet-engine/core/scenario-fixtures";
-import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
-import {
-  getWorldViewport,
-  type MonitorWorkArea,
-} from "@pets-driven/pet-engine/core/monitor-geometry";
 import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
-import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
-import { PetWindowView } from "@/pet-window/pet-window-view";
+import {
+  createEmptyPetsDrivenState,
+  type PetRecord,
+  type PetsDrivenState,
+  resolveRegisteredWorkingDirectoryForCwd,
+  setPetSourceDirectory,
+} from "@/app-state/pets-driven-state";
 import { PetWindowFixtureSwitcher } from "@/pet-window/pet-window-fixture-switcher";
 import { PET_WINDOW_FIXTURES, resolvePetWindowFixture } from "@/pet-window/pet-window-fixtures";
-import {
-  PET_WINDOW_BINDING_EVENT,
-  PET_WINDOW_FRAME_EVENT,
-  PET_WINDOW_INPUT_EVENT,
-  PET_WINDOW_RESIZE_EVENT,
-  petWindowLabel,
-  type PetWindowBindingEvent,
-  type PetWindowInputEvent,
-  type PetWindowResizeEvent,
-} from "@/pet-window/pet-window-messages";
 import {
   clampPetWindowScale,
   DEFAULT_PET_WINDOW_SCALE,
   PET_WINDOW_LAYOUT,
 } from "@/pet-window/pet-window-layout";
 import {
+  PET_WINDOW_BINDING_EVENT,
+  PET_WINDOW_FRAME_EVENT,
+  PET_WINDOW_INPUT_EVENT,
+  PET_WINDOW_RESIZE_EVENT,
+  type PetWindowBindingEvent,
+  type PetWindowInputEvent,
+  type PetWindowResizeEvent,
+  petWindowLabel,
+} from "@/pet-window/pet-window-messages";
+import {
   projectScreenPointToWorld,
   projectWorldSnapshotToPetWindows,
 } from "@/pet-window/pet-window-projection";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
+import { PetWindowView } from "@/pet-window/pet-window-view";
 import { PlaygroundApp } from "@/playground/browser/playground-app";
 
 const DESKTOP_FIXTURE_HOST_TICK_MS = 16;
@@ -535,6 +535,7 @@ function PetsDrivenHostApp() {
     };
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once input listener (StrictMode-safe). The handlers it invokes read live state via refs and stable setters, so listing them would only re-register the listener every render and reintroduce duplicate-listener firing.
   useEffect(() => {
     if (!isTauri()) {
       return;
@@ -623,6 +624,7 @@ function PetsDrivenHostApp() {
     };
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once resize listener; its body reads live state via refs, so re-subscribing on handler identity changes would add churn without changing behavior.
   useEffect(() => {
     if (!isTauri()) {
       return;
@@ -667,6 +669,7 @@ function PetsDrivenHostApp() {
     return () => unlisten?.();
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once to load persisted state; applyPetsDrivenState/navigate are ref/setState-based, so listing them would re-run the initial load on every render.
   useEffect(() => {
     if (devFixture) {
       return;
@@ -744,6 +747,7 @@ function PetsDrivenHostApp() {
 
   // The backend owns the hatch write; when it signals a state change, reload
   // the persisted state so the new pet's window opens and it joins the sim.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once listener; applyReloadedPetsDrivenState is ref-based, so listing it would only re-subscribe without changing behavior.
   useEffect(() => {
     if (!isTauri()) {
       return;
@@ -769,6 +773,7 @@ function PetsDrivenHostApp() {
 
   // Backend-triggered show/hide: reload state first so newly hatched pets are
   // in memory before showPet/hidePet run.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once listener; applyReloadedPetsDrivenState/showPet/hidePet are ref/setState-based, so listing them would only re-subscribe without changing behavior.
   useEffect(() => {
     if (!isTauri()) {
       return;
@@ -895,6 +900,7 @@ function PetsDrivenHostApp() {
   // Drive the user's adopted pets the same way the fixture host drives the
   // playground: one shared simulation world, projected onto each pet's overlay
   // window. Rebuilds whenever the visible roster changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: adoptedHasVisiblePets and adoptedSimulationResetKey are intentional rebuild triggers; the body reads state via refs. Removing them would stop the adopted-pet sim from rebuilding when the roster changes or a reset is requested.
   useEffect(() => {
     if (!isTauri()) {
       return;
@@ -1087,6 +1093,7 @@ function PetsDrivenHostApp() {
   // on the has-any-pets boundary; membership churn while at least one pet is on
   // screen is applied here by adding/removing just the affected pet, leaving
   // every other pet's position and animation untouched.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: adoptedSimKey is an intentional rebuild trigger; the body reads state via refs. Removing it would freeze the sim after the first mount.
   useEffect(() => {
     if (!isTauri()) {
       return;
@@ -1581,9 +1588,6 @@ function PetsDrivenHostApp() {
       tone: "neutral",
       dotColor: "var(--ink-300)",
     };
-  const localizedStatusLabel = (status: PetCardStatus): string =>
-    t(`petStatus.${status.labelKey}`, status.labelParams);
-
   const atHome: HomePetView[] = managedPets
     .filter((pet) => !pet.visible)
     .map((pet) => {

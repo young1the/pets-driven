@@ -1,5 +1,5 @@
-import { createInstance, type i18n, type InitOptions } from "i18next";
-import { defaultLocale, namespaces, type Locale } from "./config";
+import { createInstance, type InitOptions, type i18n } from "i18next";
+import { defaultLocale, type Locale, namespaces } from "./config";
 import { resources } from "./resources";
 
 /**

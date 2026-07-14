@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@pets-driven/i18n";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { useEffect, useRef, useState } from "react";
 import {
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
@@ -116,7 +116,7 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
   if (view === "note") {
     return (
       <main className="pet-context-menu-surface">
-        <div
+        <section
           aria-label={t("contextMenu.noteAria", { name: petName })}
           className="pet-context-menu-note"
         >
@@ -124,7 +124,6 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
             {t("contextMenu.noteHeader", { name: petName })}
           </div>
           <textarea
-            autoFocus
             className="pet-context-menu-note__input"
             placeholder={t("contextMenu.notePlaceholder")}
             rows={3}
@@ -146,7 +145,7 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
               {t("contextMenu.save")}
             </button>
           </div>
-        </div>
+        </section>
       </main>
     );
   }

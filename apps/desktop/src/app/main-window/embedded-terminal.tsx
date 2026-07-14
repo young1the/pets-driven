@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { Terminal } from "@xterm/xterm";
+import { useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
 
 // Mirror the Rust payloads from embedded_terminal.rs. `data` arrives as a JSON

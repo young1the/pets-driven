@@ -1,5 +1,5 @@
-import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
 
 /**
  * Translation key for a pet's role label, derived from its personality preset.

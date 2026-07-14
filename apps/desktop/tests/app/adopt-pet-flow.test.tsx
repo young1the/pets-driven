@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { DesktopGateway } from "@/app/desktop-gateway";
 import { AdoptPetFlow } from "@/app/onboarding/adopt-pet-flow";
 import { createEmptyPetsDrivenState } from "@/app-state/pets-driven-state";
-import type { DesktopGateway } from "@/app/desktop-gateway";
 
 function createGateway(
   packages: Awaited<ReturnType<DesktopGateway["listPetPackages"]>>,

@@ -17,7 +17,7 @@ export interface PetEmoteProps extends HTMLAttributes<HTMLDivElement> {
 
 function HeartSvg() {
   return (
-    <svg viewBox="0 0 24 24">
+    <svg aria-hidden="true" viewBox="0 0 24 24">
       <path
         d="M12 21s-7-4.6-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 3.4C19 16.4 12 21 12 21z"
         fill="var(--color-primary)"
@@ -28,7 +28,7 @@ function HeartSvg() {
 
 function SparkSvg() {
   return (
-    <svg viewBox="0 0 24 24">
+    <svg aria-hidden="true" viewBox="0 0 24 24">
       <path
         d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"
         fill="var(--color-accent)"

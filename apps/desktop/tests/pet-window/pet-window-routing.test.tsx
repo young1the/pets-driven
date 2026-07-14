@@ -1,18 +1,18 @@
+import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PetsDrivenApp } from "@/app/pets-driven-app";
 import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-ingress";
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { PetsDrivenApp } from "@/app/pets-driven-app";
+import type { PetsDrivenState } from "@/app-state/pets-driven-state";
+import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import {
-  PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_BINDING_EVENT,
+  PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
 } from "@/pet-window/pet-window-messages";
-import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
-import type { PetsDrivenState } from "@/app-state/pets-driven-state";
-import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 
 type TauriEventHandler = (event: { payload: unknown }) => void;
 

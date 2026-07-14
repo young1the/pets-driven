@@ -1,6 +1,6 @@
 import { loadAtlasImage } from "@pets-driven/pet-engine/pets/assets/atlas-loader";
-import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
 import type { PetAsset } from "@pets-driven/pet-engine/pets/assets/pet-asset";
+import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
 
 export const CODEX_PET_ASSETS: PetAsset[] = [
   {

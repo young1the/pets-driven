@@ -1,6 +1,3 @@
-import type { AppView } from "@/app/app-navigation";
-import type { MainWindowTab } from "@/app/main-window/main-window";
-import { PET_WINDOW_FIXTURE_IDS } from "@/pet-window/pet-window-fixtures";
 import {
   createAttentivePersonality,
   createCuriousPersonality,
@@ -11,12 +8,15 @@ import {
   type PersonalityFactory,
 } from "@pets-driven/pet-engine/pets/personalities/factories";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import type { AppView } from "@/app/app-navigation";
+import type { MainWindowTab } from "@/app/main-window/main-window";
 import {
   createEmptyPetsDrivenState,
   type PetRecord,
   type PetsDrivenState,
   type RegisteredWorkingDirectory,
 } from "@/app-state/pets-driven-state";
+import { PET_WINDOW_FIXTURE_IDS } from "@/pet-window/pet-window-fixtures";
 
 export const DESKTOP_FIXTURE_IDS = [
   "onboarding",

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import "./dialog.css";
 
 /**
@@ -27,24 +27,47 @@ export function Dialog({
   className = "",
   children,
 }: DialogProps) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
   if (!open) {
     return null;
   }
 
   return (
-    <div className="pd-dialog__scrim" onClick={onClose}>
+    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismissal is a pointer-only enhancement; keyboard users close via Escape or the close button.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismissal is a pointer-only enhancement; keyboard users close via Escape or the close button.
+    <div
+      className="pd-dialog__scrim"
+      onClick={(event) => {
+        // Close only when the scrim itself is clicked, not the panel inside it.
+        if (event.target === event.currentTarget) {
+          onClose?.();
+        }
+      }}
+    >
       <div
         aria-modal="true"
         className={["pd-dialog", pet ? "pd-dialog--haspet" : "", className]
           .filter(Boolean)
           .join(" ")}
-        onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
         {pet && <span className="pd-dialog__pet">{pet}</span>}
         {showClose && (
           <button aria-label="Close" className="pd-dialog__close" onClick={onClose} type="button">
             <svg
+              aria-hidden="true"
               fill="none"
               stroke="currentColor"
               strokeLinecap="round"

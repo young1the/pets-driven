@@ -1,9 +1,9 @@
 import enCommon from "./locales/en/common.json";
-import enLanding from "./locales/en/landing.json";
 import enDesktop from "./locales/en/desktop.json";
+import enLanding from "./locales/en/landing.json";
 import koCommon from "./locales/ko/common.json";
-import koLanding from "./locales/ko/landing.json";
 import koDesktop from "./locales/ko/desktop.json";
+import koLanding from "./locales/ko/landing.json";
 
 /**
  * All translation bundles, imported statically. The catalog is small (two

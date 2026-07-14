@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runLocomotionModeSystem } from "@pets-driven/pet-engine/features/movement/systems";
+import { describe, expect, it } from "vitest";
 
 describe("locomotion mode system", () => {
   it("starts climb action without replacing walking locomotion", () => {

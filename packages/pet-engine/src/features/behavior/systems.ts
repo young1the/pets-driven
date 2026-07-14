@@ -1,38 +1,38 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
+import {
+  type AgentTaskStatus,
+  statusFreezesMovement,
+} from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
+import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
 import type {
   AgentWorldEvent,
   WorldEvent,
 } from "@pets-driven/pet-engine/features/events/world-event";
-import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
-import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
-import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
-import {
-  statusFreezesMovement,
-  type AgentTaskStatus,
-} from "@pets-driven/pet-engine/features/agent/agent-task-state";
-import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
-import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
-import { isBumpSocialEligible } from "@pets-driven/pet-engine/features/social/systems";
 import {
   moodAdjustedDecisionScore,
   recordPetExperience,
 } from "@pets-driven/pet-engine/features/mood/systems";
+import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
+import { isBumpSocialEligible } from "@pets-driven/pet-engine/features/social/systems";
 import {
   personalityArrivalDwellScale,
   personalityIdleDurationScale,
   signedDecisionScore,
 } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
+import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import {
   ARRIVAL_DWELL_REASON,
-  BOOKKEEPING_AUTONOMOUS_REASONS,
-  IDLE_CONVERSATION_REASON,
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionKind,
   type BehaviorDecisionSelectionTrace,
   type BehaviorDecisionSource,
   type BehaviorDecisionTokenComponent,
+  BOOKKEEPING_AUTONOMOUS_REASONS,
+  IDLE_CONVERSATION_REASON,
   type PendingReactionComponent,
   type PersonalityComponent,
   type PetExpressionEmote,
@@ -519,9 +519,7 @@ export function runPetExpressionExpirationSystem(components: ComponentStore, clo
 // claims user-interaction with reason "petting" and shows a love reaction.
 // Skips any pet currently being dragged by the same pointer.
 
-function findCursorState(
-  components: ComponentStore,
-): {
+function findCursorState(components: ComponentStore): {
   position: { x: number; y: number } | null;
   samples: Array<{ at: number; position: { x: number; y: number } }>;
 } | null {
@@ -863,7 +861,7 @@ export function runWorkingBehaviorSystem(
 // Priority 3: Collision avoidance (entity overlap).
 export function runCollisionBehaviorSystem(
   components: ComponentStore,
-  bounds: { x?: number; y?: number; width: number; height: number },
+  _bounds: { x?: number; y?: number; width: number; height: number },
   clock: Clock,
 ): void {
   const now = clock.now();
@@ -918,7 +916,7 @@ export function runCollisionBehaviorSystem(
       continue;
     }
     const existing = components.getComponent(entity.id, "BehaviorDecisionState");
-    if (!existing || existing.source !== "collision" || existing.expiresAt <= now) continue;
+    if (existing?.source !== "collision" || existing.expiresAt <= now) continue;
 
     const stillOverlapping =
       !!components.getComponent(entity.id, "PetCollision") ||
@@ -2539,7 +2537,7 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: null,
-          targetPosition: token.targetPosition!,
+          targetPosition: token.targetPosition ?? null,
         });
         setPetSteering(components, id, "pursue");
         break;
@@ -2547,7 +2545,7 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: null,
-          targetPosition: token.targetPosition!,
+          targetPosition: token.targetPosition ?? null,
         });
         setPetSteering(components, id, "pursue");
         // Venturing far resolves some of the pet's need for novelty.
@@ -2574,19 +2572,23 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         break;
       }
       case "request-climb":
-        components.setComponent(id, {
-          type: "ClimbIntentState",
-          phase: "approaching",
-          surfaceEntityId: token.climbSurfaceId!,
-          targetY: token.climbTargetY!,
-          startedAt: token.decidedAt,
-        });
-        setPetSteering(components, id, "pursue");
-        // Climbing costs energy and resolves curiosity, same as wander-far.
-        adjustDrive(components, id, {
-          energy: -CLIMB_ENERGY_COST,
-          curiosity: -CLIMB_CURIOSITY_RELIEF,
-        });
+        // Both climb fields are set together by the decision system; guard so a
+        // malformed token skips materialization rather than climbing to nowhere.
+        if (token.climbSurfaceId != null && token.climbTargetY != null) {
+          components.setComponent(id, {
+            type: "ClimbIntentState",
+            phase: "approaching",
+            surfaceEntityId: token.climbSurfaceId,
+            targetY: token.climbTargetY,
+            startedAt: token.decidedAt,
+          });
+          setPetSteering(components, id, "pursue");
+          // Climbing costs energy and resolves curiosity, same as wander-far.
+          adjustDrive(components, id, {
+            energy: -CLIMB_ENERGY_COST,
+            curiosity: -CLIMB_CURIOSITY_RELIEF,
+          });
+        }
         break;
       case "idle-stay":
         // Intentional no-op: intent stays idle, target stays null.
@@ -2613,14 +2615,16 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
       }
       case "play-feint": {
         const durationMs = token.activityDurationMs ?? FEINT_BASE_MS;
-        components.setComponent(id, {
-          type: "FeintState",
-          phase: "approach",
-          targetEntityId: token.targetEntityId!,
-          startedAt: token.decidedAt,
-          turnsAt: token.decidedAt + FEINT_APPROACH_MS,
-          endsAt: token.decidedAt + durationMs,
-        });
+        if (token.targetEntityId != null) {
+          components.setComponent(id, {
+            type: "FeintState",
+            phase: "approach",
+            targetEntityId: token.targetEntityId,
+            startedAt: token.decidedAt,
+            turnsAt: token.decidedAt + FEINT_APPROACH_MS,
+            endsAt: token.decidedAt + durationMs,
+          });
+        }
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: token.targetEntityId ?? null,
@@ -2642,7 +2646,7 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: null,
-          targetPosition: token.targetPosition!,
+          targetPosition: token.targetPosition ?? null,
         });
         setPetSteering(components, id, "pursue");
         components.setComponent(id, {
@@ -2660,7 +2664,7 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: null,
-          targetPosition: token.targetPosition!,
+          targetPosition: token.targetPosition ?? null,
           speedFactor: STRUT_SPEED_FACTOR,
         });
         setPetSteering(components, id, "pursue");
@@ -2738,7 +2742,7 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: token.targetEntityId ?? null,
-          targetPosition: token.targetPosition!,
+          targetPosition: token.targetPosition ?? null,
         });
         setPetSteering(components, id, "pursue");
         break;
@@ -2746,7 +2750,7 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: null,
-          targetPosition: token.targetPosition!,
+          targetPosition: token.targetPosition ?? null,
         });
         setPetSteering(components, id, "pursue");
         break;
@@ -2756,18 +2760,18 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: token.targetEntityId ?? null,
-          targetPosition: token.targetPosition!,
+          targetPosition: token.targetPosition ?? null,
         });
         setPetSteering(components, id, "pursue");
         break;
       // Phase 4 — collision reactions (position pre-computed in Decision)
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: intentional fallthrough into the shared collision-reaction materialization below.
       case "collision-engage":
         // Engaging with the other pet is a partial, friendlier social fix
         // than a full approach-pet-success catch.
         adjustDrive(components, id, {
           social: -COLLISION_ENGAGE_SOCIAL_REFILL,
         });
-      // Intentional fallthrough into the shared collision-reaction materialization below.
       case "collision-flee":
       case "collision-avoid":
       case "collision-jump":
@@ -2822,7 +2826,7 @@ export function runRompProgressSystem(
     // same instant the romp ends, so an expiry check here would make the
     // graceful-end branch below unreachable. A higher-priority interrupter
     // *overwrites* source/reason, which is what actually revokes ownership.
-    if (!decision || decision.source !== "autonomous" || decision.reason !== "play-romp") {
+    if (decision?.source !== "autonomous" || decision.reason !== "play-romp") {
       components.removeComponent(id, "RompState");
       return;
     }
@@ -2906,7 +2910,7 @@ export function runFeintProgressSystem(
 
   components.forEach(["FeintState", "Transform"], (id, [feint, transform]) => {
     const decision = components.getComponent(id, "BehaviorDecisionState");
-    if (!decision || decision.source !== "autonomous" || decision.reason !== "play-feint") {
+    if (decision?.source !== "autonomous" || decision.reason !== "play-feint") {
       components.removeComponent(id, "FeintState");
       return;
     }

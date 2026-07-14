@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Badge, Button } from "@pets-driven/design-system";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
-import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import { presentBehaviorDecisionToken } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import type {
   BehaviorDecisionKind,
   PersonalityComponent,
 } from "@pets-driven/pet-engine/features/behavior/components";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { presentBehaviorDecisionToken } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyCollisionDecisionStimulus,
   createAgentDecisionStimulus,
-  explainDecisionPipeline,
   type DecisionSelectionExplanation,
   type DecisionStimulus,
+  explainDecisionPipeline,
 } from "./decision-showcase-adapter";
 
 const STEP_MS = 16;
@@ -98,6 +98,7 @@ export function DecisionShowcaseApp() {
     ? scenarioRef.current.world.getComponent(selectedPet.id, "Personality")
     : undefined;
   const personalitySummary = summarizePersonality(personality);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: elapsedMs is an intentional per-frame recompute trigger (the body reads clock.now()), not a value read directly.
   const explanation = useMemo(
     () =>
       selectedPet
@@ -125,6 +126,7 @@ export function DecisionShowcaseApp() {
     }, SLOT_REEL_SETTLED_HOLD_MS);
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps are hand-tuned to primitive selection fields (not the whole `explanation.selection`, which is a fresh object every frame) plus motionSequence, so the probability animation restarts only on a genuinely new decision rather than every frame.
   useEffect(() => {
     if (!explanation.selection) {
       setProbabilityProgress(1);
@@ -242,11 +244,6 @@ export function DecisionShowcaseApp() {
       type: "Transform",
       position,
     });
-  }
-
-  function runStimulusDecisionSelection() {
-    settleFreshInjection();
-    advanceFrame();
   }
 
   function playStageMotion(motion: ShowcaseMotion) {
@@ -537,6 +534,7 @@ function useSelectionReelMotion({
     phase: "preview" as "preview" | "spinning" | "stopping" | "settled",
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: motionSequence is an intentional trigger to replay the reel spin on each new selection; it is not read in the body.
   useEffect(() => {
     let animationFrameId = 0;
     let startedAt: number | null = null;

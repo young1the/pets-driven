@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   FolderIcon,
@@ -8,14 +7,18 @@ import {
   SearchIcon,
   TerminalIcon,
 } from "@pets-driven/design-system";
-import { isTauri } from "@tauri-apps/api/core";
 import { useTranslation } from "@pets-driven/i18n";
-import { desktopGateway, type CodexPetPackage, type DesktopGateway } from "@/app/desktop-gateway";
+import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { isTauri } from "@tauri-apps/api/core";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { type CodexPetPackage, type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
 import {
   PERSONALITY_OPTIONS,
+  type PersonalityOption,
   personalityBlurbKey,
   personalityTitleKey,
-  type PersonalityOption,
 } from "@/app/onboarding/personality-options";
 import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
 import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
@@ -25,12 +28,9 @@ import { useClaudePlugin } from "@/app/use-claude-plugin";
 import { adoptPet, registerWorkingDirectory } from "@/app-state/pet-adoption";
 import {
   normalizeWorkingDirectoryPath,
-  setPetSourceDirectory,
   type PetsDrivenState,
+  setPetSourceDirectory,
 } from "@/app-state/pets-driven-state";
-import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 const PET_NAME_MAX_LENGTH = 24;
 const PETDEX_URL = "https://petdex.dev";
@@ -181,6 +181,7 @@ function StepHeader({ step, total, onExit }: { step: number; total: number; onEx
           {Array.from({ length: total }, (_, index) => (
             <span
               className={`pd-onb__step-dot${index < step ? " pd-onb__step-dot--on" : ""}`}
+              // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key is safe here because the number of steps is fixed and never changes.
               key={index}
             />
           ))}
@@ -578,18 +579,26 @@ export function AdoptPetFlow({
 
             <div className="pd-onb__label">{t("onboarding.personality")}</div>
             <div className="pd-onb__pills" role="radiogroup">
-              {PERSONALITY_OPTIONS.map((option: PersonalityOption) => (
-                <button
-                  aria-checked={personalityId === option.id}
-                  className={`pd-onb__pill${personalityId === option.id ? " pd-onb__pill--on" : ""}`}
-                  key={option.id}
-                  onClick={() => setPersonalityId(option.id)}
-                  role="radio"
-                  type="button"
-                >
-                  {t(personalityTitleKey(option.id))}
-                </button>
-              ))}
+              {PERSONALITY_OPTIONS.map((option: PersonalityOption) => {
+                const isSelected = personalityId === option.id;
+
+                return (
+                  <label
+                    className={`pd-onb__pill${isSelected ? " pd-onb__pill--on" : ""}`}
+                    key={option.id}
+                  >
+                    <input
+                      checked={isSelected}
+                      className="pd-onb__pill-input"
+                      name="personality"
+                      onChange={() => setPersonalityId(option.id)}
+                      type="radio"
+                      value={option.id}
+                    />
+                    <span className="pd-onb__pill-label">{t(personalityTitleKey(option.id))}</span>
+                  </label>
+                );
+              })}
             </div>
             <p className="pd-onb__hint">{t(personalityBlurbKey(personality.id))}</p>
           </div>

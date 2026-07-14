@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import {
   createAdoptedPetsScenario,
   deriveAdoptedPetLocomotion,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { describe, expect, it } from "vitest";
 
 // When the desktop host resizes an adopted pet on the fly it calls
 // world.setBodySize (+ re-derives the mass-tuned walk/jump forces) so the

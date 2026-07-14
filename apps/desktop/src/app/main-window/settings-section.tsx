@@ -1,10 +1,10 @@
-import { useState, type CSSProperties } from "react";
-import { FolderIcon, TerminalPreview, type BadgeTone } from "@pets-driven/design-system";
+import { type BadgeTone, FolderIcon, TerminalPreview } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
+import { type CSSProperties, useState } from "react";
 import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
-import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 import { LAUNCH_PROFILE_OPTIONS, type LaunchProfileId } from "@/app/session-launch-profile";
+import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 
 export interface SettingsSectionProps {
   launchProfile: LaunchProfileId;

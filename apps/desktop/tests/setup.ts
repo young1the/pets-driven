@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
+import { initI18nForTesting } from "@pets-driven/i18n/testing";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
-import { initI18nForTesting } from "@pets-driven/i18n/testing";
 
 // Components under test call `useTranslation` without mounting the app's
 // `DesktopLocaleProvider`, so initialize a global react-i18next instance in the

@@ -1,5 +1,5 @@
-import { createServerInstance } from "./create-instance";
 import type { Locale, Namespace } from "./config";
+import { createServerInstance } from "./create-instance";
 
 /**
  * Translation helper for server components and metadata generation, where the

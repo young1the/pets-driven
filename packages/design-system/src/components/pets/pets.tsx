@@ -1,8 +1,8 @@
-import catoUrl from "../../assets/pets/cato.png";
-import ottoUrl from "../../assets/pets/otto.png";
-import mochiUrl from "../../assets/pets/mochi.png";
-import fennUrl from "../../assets/pets/fenn.png";
 import bloopUrl from "../../assets/pets/bloop.png";
+import catoUrl from "../../assets/pets/cato.png";
+import fennUrl from "../../assets/pets/fenn.png";
+import mochiUrl from "../../assets/pets/mochi.png";
+import ottoUrl from "../../assets/pets/otto.png";
 import pipUrl from "../../assets/pets/pip.png";
 
 /**

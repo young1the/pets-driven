@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 describe("deterministic helpers", () => {
   it("advances a manual clock explicitly", () => {

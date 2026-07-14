@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { petStatusFromSnapshot, createPetCardStatusTracker } from "@/app-state/pet-card-status";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import { describe, expect, it } from "vitest";
+import { createPetCardStatusTracker, petStatusFromSnapshot } from "@/app-state/pet-card-status";
 
 function snapshot(
   agentTask: PetSnapshot["agentTask"],

@@ -1,14 +1,14 @@
-import type { AgentTaskStatus } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import type {
   PetExpressionEmote,
   PetExpressionMood,
   PetExpressionSource,
 } from "@pets-driven/pet-engine/core/components";
+import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import type { AgentTaskStatus } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import type {
   AgentChannelSource,
   AgentChannelStatus,
 } from "@pets-driven/pet-engine/features/agent/components";
-import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import type {
   SocialSessionKind,
   SocialSessionPhase,

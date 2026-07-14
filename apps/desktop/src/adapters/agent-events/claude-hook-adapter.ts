@@ -1,4 +1,4 @@
-import { createAgentEvent, type AgentEvent } from "./agent-event";
+import { type AgentEvent, createAgentEvent } from "./agent-event";
 
 export type ClaudeHookEventName =
   | "UserPromptSubmit"

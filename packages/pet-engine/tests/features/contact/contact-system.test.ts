@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
+import { describe, expect, it } from "vitest";
 
 const GROUND_Y = 540;
 const GROUND_WIDTH = 960;

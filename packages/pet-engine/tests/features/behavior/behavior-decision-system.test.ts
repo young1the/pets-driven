@@ -1,13 +1,13 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import {
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
-import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
-import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
-import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 const BOUNDS = { width: 960, height: 540 };
 
@@ -673,7 +673,6 @@ describe("BehaviorDecisionSystem + BehaviorPlanningSystem (integration via world
       if (f < 700) continue;
 
       const climbing = world.getComponent("pet-c", "ClimbingTag");
-      const decision = world.getComponent("pet-c", "BehaviorDecisionState");
       const motion = world.getComponent("pet-c", "MotionTarget");
 
       // The real invariant: while climbing, MotionTarget must not point at the stale

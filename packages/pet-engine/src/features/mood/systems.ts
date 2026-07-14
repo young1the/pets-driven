@@ -1,13 +1,11 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
-import type { BehaviorDecisionKind } from "@pets-driven/pet-engine/features/behavior/components";
-import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
 import type {
-  MoodStateComponent,
-  PetExperienceKind,
-  RecentExperienceMemoryComponent,
-} from "./components";
+  BehaviorDecisionKind,
+  PersonalityComponent,
+} from "@pets-driven/pet-engine/features/behavior/components";
+import type { MoodStateComponent, PetExperienceKind } from "./components";
 
 const EXPERIENCE_MEMORY_MS = 45_000;
 const EXPERIENCE_MEMORY_LIMIT = 8;

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { describe, expect, it } from "vitest";
 import {
   applyCollisionDecisionStimulus,
   createAgentDecisionStimulus,

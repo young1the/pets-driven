@@ -19,6 +19,7 @@ export function PetSpriteHtml({ imageUrl, frame, alt, className, style }: PetSpr
   return (
     <span
       aria-label={alt}
+      role="img"
       className={className}
       style={{
         ...style,

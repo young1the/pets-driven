@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
 import { createAgentEvent } from "@/adapters/agent-events/agent-event";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
+import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
 
 describe("agent event adapter", () => {
   it.each([

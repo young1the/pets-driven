@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { I18nProvider, defaultLocale, isLocale, locales, type Locale } from "@pets-driven/i18n";
+import { defaultLocale, I18nProvider, isLocale, type Locale, locales } from "@pets-driven/i18n";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 
 const LOCALE_STORAGE_KEY = "pd-locale";
 
@@ -75,4 +75,4 @@ export function useDesktopLocale(): DesktopLocaleControl {
   return control;
 }
 
-export { locales, LOCALE_STORAGE_KEY };
+export { LOCALE_STORAGE_KEY, locales };

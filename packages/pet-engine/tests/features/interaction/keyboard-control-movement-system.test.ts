@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runKeyboardControlMovementSystem } from "@pets-driven/pet-engine/features/interaction/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it, vi } from "vitest";
 
 function createPhysics() {
   return {

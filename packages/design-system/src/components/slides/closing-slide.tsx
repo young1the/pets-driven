@@ -30,6 +30,7 @@ export function ClosingSlide({
       {pets.length > 0 && (
         <div className="pd-slide-closing-pack">
           {pets.map((pet, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static ReactNode list with no stable identity.
             <div className="pd-slide-closing-pack__item pd-slide-art" key={i}>
               {pet}
             </div>

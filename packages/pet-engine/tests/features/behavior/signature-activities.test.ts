@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import {
   runBehaviorDecisionSystem,
@@ -8,6 +7,7 @@ import {
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 const BOUNDS = { x: 0, y: 0, width: 960, height: 540 };
 

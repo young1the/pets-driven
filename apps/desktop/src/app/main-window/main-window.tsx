@@ -7,6 +7,7 @@ import {
   WrenchIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
+import { DebugSection, type DebugSectionProps } from "@/app/main-window/debug-section";
 import { HomeSection, type HomeSectionProps } from "@/app/main-window/home-section";
 import {
   PetEditSection,
@@ -14,7 +15,6 @@ import {
   type PetEditView,
 } from "@/app/main-window/pet-edit-section";
 import { SettingsSection, type SettingsSectionProps } from "@/app/main-window/settings-section";
-import { DebugSection, type DebugSectionProps } from "@/app/main-window/debug-section";
 import { TerminalSection, type TerminalSectionProps } from "@/app/main-window/terminal-section";
 import "@/app/main-window/main-window.css";
 

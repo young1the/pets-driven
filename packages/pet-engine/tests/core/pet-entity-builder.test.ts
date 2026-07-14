@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
 import { buildPersonalityComponents } from "@pets-driven/pet-engine/core/pet-entity-builder";
 import {
-  createPlayfulPersonality,
   createAttentivePersonality,
+  createPlayfulPersonality,
   createReservedPersonality,
 } from "@pets-driven/pet-engine/pets/personalities/factories";
+import { describe, expect, it } from "vitest";
 
 describe("pet entity builder", () => {
   it("converts playful personality to simulation components", () => {

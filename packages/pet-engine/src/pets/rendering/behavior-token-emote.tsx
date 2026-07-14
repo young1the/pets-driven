@@ -11,6 +11,7 @@ export function BehaviorTokenEmote({ presentation }: BehaviorTokenEmoteProps) {
   return (
     <span
       aria-label={`Decision token ${presentation.label}`}
+      role="img"
       data-decision-emote-tone={presentation.tone}
       title={presentation.label}
     >

@@ -1,5 +1,5 @@
-import { isTauri, invoke } from "@tauri-apps/api/core";
 import { getCodexPetSpritesheetUrl } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 
 export type PetWindowSpritesheetUrl = {
   url: string;

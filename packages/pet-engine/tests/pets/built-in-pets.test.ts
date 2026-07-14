@@ -1,8 +1,8 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
 import { CODEX_PET_ASSETS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import { describe, expect, it } from "vitest";
 
 // The repo-root `pets/` directory is the single source of truth for built-in
 // pets (see pets/README.md). CODEX_PET_ASSETS mirrors that metadata for the

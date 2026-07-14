@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { PetEditSection } from "@/app/main-window/pet-edit-section";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { PetEditSection } from "@/app/main-window/pet-edit-section";
 
 const pet = {
   id: "otto",

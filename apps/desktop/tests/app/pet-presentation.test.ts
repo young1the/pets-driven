@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { describe, expect, it } from "vitest";
 import { personalityRoleLabelKey } from "@/app/pet-presentation";
 
 describe("personalityRoleLabelKey", () => {

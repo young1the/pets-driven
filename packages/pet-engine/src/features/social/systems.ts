@@ -1,17 +1,17 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
-import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
-import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
-import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import {
-  BOOKKEEPING_AUTONOMOUS_REASONS,
   BEHAVIOR_PRIORITY,
+  BOOKKEEPING_AUTONOMOUS_REASONS,
 } from "@pets-driven/pet-engine/features/behavior/components";
+import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
-import { personalitySocialKindScale } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
 import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
+import { personalitySocialKindScale } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
+import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { SocialSessionComponent, SocialSessionKind } from "./components";
 
 type Bounds = { x?: number; y?: number; width: number; height: number };
@@ -529,9 +529,9 @@ function choreograph(
     const met = maxPairwiseDistance(pos) <= gap * 1.35;
     const timedOut = now - session.startedAt >= GREET_TIMEOUT_MS;
     if (!met && !timedOut) {
-      ids.forEach((id, i) =>
-        moveToward(components, id, approachStop(pos[i], centre, gap), APPROACH_SPEED_FACTOR),
-      );
+      ids.forEach((id, i) => {
+        moveToward(components, id, approachStop(pos[i], centre, gap), APPROACH_SPEED_FACTOR);
+      });
       return;
     }
     beginPlay(session, now);
@@ -547,15 +547,15 @@ function choreograph(
     if (!session.greeted) {
       // The greeting is spoken once (not refreshed per tick), so hold it for
       // the whole greet play beat rather than letting it vanish after a blink.
-      ids.forEach((id, i) =>
+      ids.forEach((id, i) => {
         setSpeech(
           components,
           id,
           pickLine(GREET_LINES, session.startedAt + i),
           now,
           PHASE_DURATIONS.greet.play,
-        ),
-      );
+        );
+      });
       session.greeted = true;
     }
     const emote = session.phase === "part" ? "sparkle" : "heart";
@@ -599,10 +599,11 @@ function choreographChase(
   // A chase needs no approach ritual — it kicks off the moment everyone joins.
   if (session.phase === "approach") beginPlay(session, now);
   advancePlayPhase(session, now);
-  // One chaser, everyone else runs. The initiator chases first.
-  if (session.chaserId == null || !ids.includes(session.chaserId)) {
-    session.chaserId = ids[0];
-  }
+  // One chaser, everyone else runs. The initiator chases first; fall back to the
+  // first participant when the stored chaser is missing or has left the session.
+  const chaserId =
+    session.chaserId != null && ids.includes(session.chaserId) ? session.chaserId : ids[0];
+  session.chaserId = chaserId;
 
   if (session.phase === "part") {
     for (const id of ids) {
@@ -613,8 +614,7 @@ function choreographChase(
   }
 
   // Detect a catch against the chaser's nearest runner.
-  const chaserIndex = ids.indexOf(session.chaserId!);
-  const chaserPos = pos[chaserIndex];
+  const chaserIndex = ids.indexOf(chaserId);
   const nearestRunner = nearestOther(pos, chaserIndex);
   const cueCooledDown =
     now - (session.lastCatchAt ?? Number.NEGATIVE_INFINITY) >= CHASE_CATCH_COOLDOWN_MS;
@@ -623,8 +623,9 @@ function choreographChase(
 
   const swapReference = session.lastChaseSwapAt ?? session.playStartedAt ?? session.startedAt;
 
+  // The active chaser may change this tick (a catch or a timed swap).
+  let activeChaserId = chaserId;
   if (caught) {
-    const chaserId = session.chaserId!;
     const caughtId = ids[nearestRunner.index];
     // The chaser tags a runner: a quick excited cue, spoken by the catcher.
     setSpeech(components, chaserId, pickLine(CHASE_CATCH_LINES, now), now);
@@ -633,21 +634,24 @@ function choreographChase(
     session.lastCatchAt = now;
     // The caught runner becomes the new chaser (tag!).
     session.chaserId = caughtId;
+    activeChaserId = caughtId;
     session.chaseSwaps = (session.chaseSwaps ?? 0) + 1;
     session.lastChaseSwapAt = now;
   } else if (now - swapReference >= CHASE_SWAP_MS) {
     // Timer swap: hand the role round-robin to the next participant.
-    session.chaserId = ids[(chaserIndex + 1) % ids.length];
+    const nextChaserId = ids[(chaserIndex + 1) % ids.length];
+    session.chaserId = nextChaserId;
+    activeChaserId = nextChaserId;
     session.chaseSwaps = (session.chaseSwaps ?? 0) + 1;
     session.lastChaseSwapAt = now;
   }
 
   // Movement uses the (possibly updated) chaser: it pursues its nearest runner
   // and everyone else flees from it.
-  const activeChaserIndex = ids.indexOf(session.chaserId!);
+  const activeChaserIndex = ids.indexOf(activeChaserId);
   const activeChaserPos = pos[activeChaserIndex];
   const target = nearestOther(pos, activeChaserIndex);
-  moveToward(components, session.chaserId!, { ...pos[target.index] }, CHASE_SPEED_FACTOR);
+  moveToward(components, activeChaserId, { ...pos[target.index] }, CHASE_SPEED_FACTOR);
   ids.forEach((id, i) => {
     if (i === activeChaserIndex) return;
     const fleeDistance = bodyWidth(components, id) * 6;
@@ -661,7 +665,7 @@ function choreographChase(
   // The catch cue owns the expressions this tick; otherwise everyone just
   // looks excited (the chaser with a sparkle).
   if (!caught) {
-    ids.forEach((id, i) =>
+    ids.forEach((id, i) => {
       setExpression(
         components,
         id,
@@ -669,8 +673,8 @@ function choreographChase(
         i === activeChaserIndex ? "sparkle" : "none",
         now,
         400,
-      ),
-    );
+      );
+    });
   }
 }
 

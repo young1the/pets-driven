@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import wordmark from "../src/assets/petsdriven-wordmark.svg";
 import {
   BackIcon,
   Badge,
@@ -19,6 +20,7 @@ import {
   PET_MOODS,
   PetAvatar,
   PetEmote,
+  type PetMood,
   PetShowcaseCard,
   PetSpeechBubble,
   PlusIcon,
@@ -38,14 +40,12 @@ import {
   Tooltip,
   TrashIcon,
   WrenchIcon,
-  type PetMood,
 } from "../src/index";
-import wordmark from "../src/assets/petsdriven-wordmark.svg";
 
 /* A scalable placeholder for pet artwork (the real sprites live in the app). */
 function Pet({ emoji, bg = "var(--lavender-200)" }: { emoji: string; bg?: string }) {
   return (
-    <svg viewBox="0 0 100 100" width="100%" height="100%">
+    <svg aria-hidden="true" viewBox="0 0 100 100" width="100%" height="100%">
       <circle cx="50" cy="50" r="48" fill={bg} />
       <text x="50" y="52" fontSize="52" textAnchor="middle" dominantBaseline="central">
         {emoji}
@@ -230,6 +230,7 @@ export function Gallery() {
           <PetAvatar pet="otto" showStatus status="confused" />
         </Cell>
         <Cell label="PetShowcaseCard">
+          {/* biome-ignore lint/a11y/useValidAriaRole: `role` is a PetShowcaseCard prop (the pet's job title), not an ARIA role. */}
           <PetShowcaseCard
             note="Ready to plan"
             role="The Planner"
@@ -341,7 +342,7 @@ export function Gallery() {
               </>
             }
             subtitle="Give a task and watch a little pack of pets do the work."
-            pets={PETS.slice(0, 4).map((e) => <Pet emoji={e} />)}
+            pets={PETS.slice(0, 4).map((e) => <Pet key={e} emoji={e} />)}
           />
         </SlideCell>
         <SlideCell label="SectionSlide">
@@ -410,7 +411,7 @@ export function Gallery() {
         </SlideCell>
         <SlideCell label="ClosingSlide">
           <ClosingSlide
-            pets={PETS.map((e) => <Pet emoji={e} bg="rgba(255,255,255,.12)" />)}
+            pets={PETS.map((e) => <Pet key={e} emoji={e} bg="rgba(255,255,255,.12)" />)}
             title="Bring home your pack."
             subtitle="Free while they nap. Adopt as many as you need."
             cta="✨ petsdriven.dev"

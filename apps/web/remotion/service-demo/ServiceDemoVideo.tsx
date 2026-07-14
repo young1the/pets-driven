@@ -1,6 +1,6 @@
+import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { CSSProperties } from "react";
 import { AbsoluteFill, interpolate, staticFile, useCurrentFrame } from "remotion";
-import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import {
   Callout,
   Caption,
@@ -403,6 +403,7 @@ export function ServiceDemoVideo() {
               transform: `translateY(${lerp(26, 0, easeOutCubic(closingP))}px)`,
             }}
           >
+            {/* biome-ignore lint/performance/noImgElement: Remotion renders outside Next.js, so next/image is unavailable here. */}
             <img alt="" src={staticFile("petsdriven-mark.svg")} />
             <h2>
               Pets<span className="pd-video-closing__hyphen">-</span>Driven

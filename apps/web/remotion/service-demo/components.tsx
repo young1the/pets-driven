@@ -1,12 +1,12 @@
-import type { CSSProperties, ReactNode } from "react";
-import { staticFile, useCurrentFrame } from "remotion";
-import { PET_MOODS, PetShowcaseCard, type PetMood } from "@pets-driven/design-system";
-import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import { PET_MOODS, type PetMood, PetShowcaseCard } from "@pets-driven/design-system";
 import {
   PET_CELL_SIZE,
   type PetAnimationState,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import type { CSSProperties, ReactNode } from "react";
+import { staticFile, useCurrentFrame } from "remotion";
 import type { DemoPet, DemoPetStatus } from "./fixtures";
 
 export function DemoWindow({
@@ -133,6 +133,7 @@ export function Caption({ children, style }: { children: ReactNode; style?: CSSP
           return (
             <span
               className="pd-video-caption__sparkle"
+              // biome-ignore lint/suspicious/noArrayIndexKey: static positional decoration array that never reorders.
               key={index}
               style={{
                 background: s.color,
@@ -169,6 +170,7 @@ export function Callout({
 export function DemoCursor({ scale = 1, x, y }: { scale?: number; x: number; y: number }) {
   return (
     <svg
+      aria-hidden="true"
       className="pd-video-cursor"
       height={42 * scale}
       style={{ left: x, top: y }}
@@ -201,7 +203,7 @@ export function ClickBurst({ progress: p, x, y }: { progress: number; x: number;
         transform: `translate(-50%, -50%) scale(${scale})`,
       }}
     >
-      <svg height="164" viewBox="-82 -82 164 164" width="164">
+      <svg aria-hidden="true" height="164" viewBox="-82 -82 164 164" width="164">
         {Array.from({ length: spikes }).map((_, index) => {
           const angle = (index / spikes) * Math.PI * 2;
           const long = index % 2 === 0;
@@ -209,6 +211,7 @@ export function ClickBurst({ progress: p, x, y }: { progress: number; x: number;
           const outer = long ? 66 : 52;
           return (
             <line
+              // biome-ignore lint/suspicious/noArrayIndexKey: static positional decoration array that never reorders.
               key={index}
               stroke="#181326"
               strokeLinecap="round"
@@ -256,6 +259,7 @@ export function PoofBurst({ progress: p, x, y }: { progress: number; x: number; 
       {POOF_PARTICLES.map((particle, index) => (
         <span
           className="pd-video-poof__particle"
+          // biome-ignore lint/suspicious/noArrayIndexKey: static positional decoration array that never reorders.
           key={index}
           style={{
             background: particle.color,
@@ -306,6 +310,7 @@ export function DesktopBackdrop() {
         {DESKTOP_DOCK_APPS.map((app, index) => (
           <span
             className="pd-video-desktop__app"
+            // biome-ignore lint/suspicious/noArrayIndexKey: static positional decoration array that never reorders.
             key={index}
             style={{ background: `linear-gradient(158deg, ${app.from}, ${app.to})` }}
           />

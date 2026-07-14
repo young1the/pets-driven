@@ -1,8 +1,8 @@
+import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { describe, expect, it } from "vitest";
 import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
 import { createEmptyPetsDrivenState, type PetsDrivenState } from "@/app-state/pets-driven-state";
-import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
-import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 function stateWithPet(overrides: {
   id: string;

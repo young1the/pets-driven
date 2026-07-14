@@ -1,8 +1,8 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
-import type { MatterPhysicsWorld } from "./matter-physics-world";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import type { MatterPhysicsWorld } from "./matter-physics-world";
 
 export type Force = {
   id: string;

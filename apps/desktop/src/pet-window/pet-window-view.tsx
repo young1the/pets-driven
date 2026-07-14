@@ -1,46 +1,44 @@
-import { useEffect, useRef, useState } from "react";
+import { IconButton, PET_MOODS } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import { isTauri } from "@tauri-apps/api/core";
-import { emitTo, listen } from "@tauri-apps/api/event";
-import { getCurrentWindow, LogicalSize, LogicalPosition } from "@tauri-apps/api/window";
+import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import { FALLBACK_CODEX_PET_SPRITESHEET_URL } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import {
   msUntilNextAtlasFrame,
   PET_CELL_SIZE,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
-import { IconButton, PET_MOODS } from "@pets-driven/design-system";
-import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import { isTauri } from "@tauri-apps/api/core";
+import { emitTo, listen } from "@tauri-apps/api/event";
+import { getCurrentWindow, LogicalPosition, LogicalSize } from "@tauri-apps/api/window";
+import { useEffect, useRef, useState } from "react";
+import type { PetWindowFixturePresentation } from "@/pet-window/pet-window-fixtures";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import {
   clampPetWindowScale,
   PET_WINDOW_BUBBLE_OVERHEAD,
-  PET_WINDOW_MAX_RESIZE_WIDTH,
   PET_WINDOW_LAYOUT,
+  PET_WINDOW_MAX_RESIZE_WIDTH,
   petWindowSizeForScale,
 } from "@/pet-window/pet-window-layout";
-
-import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import {
   isFreshPetWindowMessage,
+  isSamePetWindowPresentation,
   PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_HOST_LABEL,
   PET_WINDOW_INPUT_EVENT,
   PET_WINDOW_RESIZE_EVENT,
   type PetWindowBindingEvent,
-  type PetWindowInputKind,
   type PetWindowFrame,
+  type PetWindowInputKind,
   type PetWindowOverlay,
   type PetWindowResizeEvent,
-  isSamePetWindowPresentation,
 } from "@/pet-window/pet-window-messages";
-import type { PetWindowHitLayout } from "@/pet-window/pet-window-types";
-import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
-import type { PetWindowFixturePresentation } from "@/pet-window/pet-window-fixtures";
+import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
+import type { PetWindowHitLayout, PetWindowRouteParams } from "@/pet-window/pet-window-types";
 
 type PetWindowViewProps = {
   pet: PetWindowRouteParams;
@@ -397,7 +395,7 @@ export function PetWindowView({ pet, previewPresentation, previewScale }: PetWin
     return () => {
       unlistenFrame?.();
     };
-  }, []);
+  }, [pet.petId]);
 
   useEffect(() => {
     if (!isTauri()) {
@@ -450,7 +448,7 @@ export function PetWindowView({ pet, previewPresentation, previewScale }: PetWin
         bindingNoticeTimerRef.current = null;
       }
     };
-  }, []);
+  }, [pet.petId, t]);
 
   useEffect(() => {
     let isActive = true;
@@ -936,7 +934,7 @@ function PetStatusCard({
   // pet's own spoken line (greet/chat dialogue) fills it, so social sessions
   // read as a live conversation and not just a "Chatting with…" capsule.
   const spokenLine = speech?.trim() ? speech : null;
-  const messageLine = status.message ?? spokenLine;
+  const messageLine = notice ?? status.message ?? spokenLine;
 
   return (
     <div

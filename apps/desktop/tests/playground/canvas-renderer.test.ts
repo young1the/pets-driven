@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_PET_BODY_SIZE } from "@pets-driven/pet-engine/pets/constants/pet-body";
+import { describe, expect, it, vi } from "vitest";
 import { drawWorld } from "@/playground/browser/canvas-renderer";
 
 describe("canvas renderer", () => {

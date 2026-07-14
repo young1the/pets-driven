@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runSteeringForceSystem } from "@pets-driven/pet-engine/features/movement/systems";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
+import { describe, expect, it } from "vitest";
 
 function makeFlyer(
   mode: "stand" | "pursue" | "arrive",

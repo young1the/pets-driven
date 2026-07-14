@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
 import { defaultLocale, isLocale, locales } from "@pets-driven/i18n/config";
+import { type NextRequest, NextResponse } from "next/server";
 
 const LOCALE_COOKIE = "pd-locale";
 

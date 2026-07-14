@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
+import { describe, expect, it } from "vitest";
 
 describe("presentPetStatus", () => {
   it("hides the capsule when no agent channel overlay is present", () => {

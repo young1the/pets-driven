@@ -1,6 +1,6 @@
+import type { PersonalityFactory } from "@pets-driven/pet-engine/pets/personalities/factories";
 import { PERSONALITY_REGISTRY } from "@pets-driven/pet-engine/pets/personalities/registry";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
-import type { PersonalityFactory } from "@pets-driven/pet-engine/pets/personalities/factories";
 
 export type PersonalityOption = {
   id: PetPersonalityId;

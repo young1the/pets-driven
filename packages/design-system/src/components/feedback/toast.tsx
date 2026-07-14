@@ -47,6 +47,7 @@ export function Toast({
       {onClose && (
         <button aria-label="Dismiss" className="pd-toast__close" onClick={onClose} type="button">
           <svg
+            aria-hidden="true"
             fill="none"
             stroke="currentColor"
             strokeLinecap="round"

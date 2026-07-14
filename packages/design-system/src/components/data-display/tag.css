@@ -39,6 +39,9 @@
   justify-content: center;
   width: 16px;
   height: 16px;
+  padding: 0;
+  border: none;
+  background: none;
   border-radius: 50%;
   cursor: pointer;
   color: var(--text-subtle);

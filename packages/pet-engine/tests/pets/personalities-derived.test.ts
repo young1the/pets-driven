@@ -1,16 +1,16 @@
-import { describe, expect, it } from "vitest";
+import type {
+  CanJumpComponent,
+  IdleConversationComponent,
+  MovementProfileComponent,
+  PersonalityComponent,
+} from "@pets-driven/pet-engine/core/components";
 import {
   createFixturePet,
-  deriveMovementProfile,
   deriveIdleConversation,
   deriveJumpForwardImpulse,
+  deriveMovementProfile,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
-import type {
-  PersonalityComponent,
-  MovementProfileComponent,
-  IdleConversationComponent,
-  CanJumpComponent,
-} from "@pets-driven/pet-engine/core/components";
+import { describe, expect, it } from "vitest";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

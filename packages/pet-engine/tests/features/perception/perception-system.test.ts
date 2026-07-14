@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runPerceptionSystem } from "@pets-driven/pet-engine/features/perception/systems";
+import { describe, expect, it } from "vitest";
 
 describe("PerceptionSystem", () => {
   it("aggregates user anchor, nearby pets, and climbable surfaces per pet", () => {

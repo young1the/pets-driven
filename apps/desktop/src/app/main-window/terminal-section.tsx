@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { FolderIcon, RefreshIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
+import { useState } from "react";
 import { EmbeddedTerminal } from "@/app/main-window/embedded-terminal";
 import "@/app/main-window/terminal-section.css";
 

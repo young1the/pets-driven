@@ -1,9 +1,9 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
+import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
-import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 

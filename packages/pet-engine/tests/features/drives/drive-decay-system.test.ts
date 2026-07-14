@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import {
   clampDrive,
   driveResponseCurve,
   runDriveDecaySystem,
 } from "@pets-driven/pet-engine/features/drives/systems";
+import { describe, expect, it } from "vitest";
 
 function makeStore(
   mode: "stand" | "pursue" | "arrive",

@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import { runUserInteractionBehaviorSystem } from "@pets-driven/pet-engine/features/interaction/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 function createStore() {
   return createComponentStore([
@@ -193,11 +193,11 @@ describe("UserInteractionBehaviorSystem", () => {
     runUserInteractionBehaviorSystem(components, events, clock);
 
     expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector.x).toBeCloseTo(
-      0.707,
+      Math.SQRT1_2,
       2,
     );
     expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector.y).toBeCloseTo(
-      -0.707,
+      -Math.SQRT1_2,
       2,
     );
   });

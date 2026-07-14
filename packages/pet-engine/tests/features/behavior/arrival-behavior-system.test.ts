@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runArrivalBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 describe("arrival behavior system", () => {
   it("clears position target and resets intent to idle when walk pet arrives within x radius", () => {

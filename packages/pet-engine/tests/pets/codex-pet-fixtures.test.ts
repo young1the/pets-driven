@@ -1,12 +1,12 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import * as codexPetFixtures from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import {
   CODEX_PET_ASSETS,
   FALLBACK_CODEX_PET_SPRITESHEET_URL,
-  PLAYGROUND_PET_ASSET_BY_ENTITY_ID,
   getCodexPetSpritesheetUrl,
   loadPlaygroundPetAssetCatalog,
+  PLAYGROUND_PET_ASSET_BY_ENTITY_ID,
 } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
-import * as codexPetFixtures from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => {
   vi.restoreAllMocks();

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import type { EntityDeclaration } from "@pets-driven/pet-engine/core/component-store";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import { describe, expect, it } from "vitest";
 
 describe("component store", () => {
   it("hydrates declarations into entity ids and component tables", () => {

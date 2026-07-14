@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Button, PetShowcaseCard, PlusIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 
 export type HomePetView = {
@@ -316,6 +316,7 @@ export function HomeSection({
           };
 
           return (
+            // biome-ignore lint/a11y/useSemanticElements: this is a pointer-draggable card that also acts as a button; a native <button> would conflict with the drag interaction. Keyboard access is provided via tabIndex + onKeyDown.
             <div
               className={["pd-home__fan-card", dragging ? "pd-home__fan-card--dragging" : ""]
                 .filter(Boolean)

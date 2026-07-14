@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
 import { socialSessionKindWeights } from "@pets-driven/pet-engine/features/social/systems";
 import {
@@ -9,6 +8,7 @@ import {
 } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
 import { PERSONALITY_REGISTRY } from "@pets-driven/pet-engine/pets/personalities/registry";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { describe, expect, it } from "vitest";
 
 function personality(catalogId: PetPersonalityId): PersonalityComponent {
   const factory = PERSONALITY_REGISTRY.find((entry) => entry.id === catalogId)?.factory;

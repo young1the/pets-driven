@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runClimbApproachSystem } from "@pets-driven/pet-engine/features/movement/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 function approachingPet(startedAt?: number) {
   return createComponentStore([

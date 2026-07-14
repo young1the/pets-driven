@@ -1,8 +1,8 @@
 import { ink, paper, semantic } from "@pets-driven/design-system/tokens";
 import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import {
-  drawPetSpriteCanvas,
   type AssetCatalog,
+  drawPetSpriteCanvas,
 } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
 import { resolvePetSpriteFrame } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-frame";
 import {

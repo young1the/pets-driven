@@ -1,11 +1,11 @@
+import { CODEX_PET_ASSETS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
   createEmptyPetsDrivenState,
-  parsePetsDrivenState,
   type PetsDrivenState,
+  parsePetsDrivenState,
 } from "@/app-state/pets-driven-state";
-import { CODEX_PET_ASSETS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 
 export type CodexPetPackage = {
   id: string;

@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runWallClimbSystem } from "@pets-driven/pet-engine/features/movement/systems";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
+import { describe, expect, it, vi } from "vitest";
 
 function makeClimber(posY: number, targetY: number | null) {
   return createComponentStore([

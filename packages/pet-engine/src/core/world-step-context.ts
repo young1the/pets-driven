@@ -1,7 +1,7 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import type { WorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
-import type { WorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { ManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 

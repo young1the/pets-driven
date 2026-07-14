@@ -10,7 +10,7 @@ export interface TagProps extends HTMLAttributes<HTMLSpanElement> {
   /** Selected (filled) state. @default false */
   selected?: boolean;
   /** Show a remove × and call this when clicked. */
-  onRemove?: (event: MouseEvent<HTMLSpanElement>) => void;
+  onRemove?: (event: MouseEvent<HTMLButtonElement>) => void;
   children?: ReactNode;
 }
 
@@ -34,20 +34,40 @@ export function Tag({
     .join(" ");
 
   return (
-    <span className={cls} onClick={onClick} {...rest}>
+    // biome-ignore lint/a11y/noStaticElementInteractions: role, tabIndex, and the keyboard handler are all applied together whenever the tag is clickable (clickable === Boolean(onClick)); the analyzer can't correlate those conditionals.
+    <span
+      className={cls}
+      onClick={onClick}
+      onKeyDown={
+        clickable
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                // Route keyboard activation through the native click path so
+                // consumers only need to wire up `onClick`.
+                event.currentTarget.click();
+              }
+            }
+          : undefined
+      }
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      {...rest}
+    >
       {color && <span className="pd-tag__dot" style={{ background: color }} />}
       {children}
       {onRemove && (
-        <span
+        <button
           aria-label="Remove"
           className="pd-tag__x"
           onClick={(event) => {
             event.stopPropagation();
             onRemove(event);
           }}
-          role="button"
+          type="button"
         >
           <svg
+            aria-hidden="true"
             fill="none"
             stroke="currentColor"
             strokeLinecap="round"
@@ -56,7 +76,7 @@ export function Tag({
           >
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
-        </span>
+        </button>
       )}
     </span>
   );

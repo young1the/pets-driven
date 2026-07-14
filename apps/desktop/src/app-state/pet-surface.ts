@@ -1,7 +1,7 @@
-import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 import type { PersonalityComponent } from "@pets-driven/pet-engine/core/components";
 import { PERSONALITY_REGISTRY } from "@pets-driven/pet-engine/pets/personalities/registry";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 
 export type AdoptedPetSimInput = {
   id: string;

@@ -1,8 +1,8 @@
 import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
-import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 
 /**
  * Pure mapping from simulation-side presentation data (the sprite's current

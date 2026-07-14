@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   createEmptyPetsDrivenState,
-  resolveRegisteredWorkingDirectoryForCwd,
   type PetsDrivenState,
+  resolveRegisteredWorkingDirectoryForCwd,
 } from "@/app-state/pets-driven-state";
 
 describe("working directory registry", () => {

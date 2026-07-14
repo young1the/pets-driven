@@ -1,9 +1,8 @@
-import { describe, expect, it } from "vitest";
-import type { Component, PersonalityComponent } from "@pets-driven/pet-engine/core/components";
 import {
-  createComponentStore,
   type ComponentStore,
+  createComponentStore,
 } from "@pets-driven/pet-engine/core/component-store";
+import type { Component, PersonalityComponent } from "@pets-driven/pet-engine/core/components";
 import {
   CHASE_SWAP_MS,
   CHAT_TURN_MS,
@@ -11,8 +10,9 @@ import {
   PHASE_DURATIONS,
   runSocialInteractionSystem,
 } from "@pets-driven/pet-engine/features/social/systems";
-import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 const BOUNDS = { x: 0, y: 0, width: 960, height: 540 };
 
@@ -39,7 +39,7 @@ const RESERVED: PersonalityComponent = {
 };
 
 function socialPet(
-  id: string,
+  _id: string,
   x: number,
   personality: PersonalityComponent,
   social = 0.5,
@@ -530,7 +530,7 @@ describe("SocialInteractionSystem — bump-to-greet (B4)", () => {
 });
 
 describe("SocialInteractionSystem — group sessions (B10)", () => {
-  function agentBusy(id: string): Component {
+  function agentBusy(_id: string): Component {
     return {
       type: "BehaviorDecisionState",
       source: "agent-event",

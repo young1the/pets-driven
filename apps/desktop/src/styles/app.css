@@ -616,6 +616,9 @@
 }
 
 .pd-onb__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 11px 22px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-default);
@@ -625,6 +628,18 @@
   font-size: var(--text-md);
   color: var(--text-body);
   cursor: pointer;
+}
+
+.pd-onb__pill-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pd-onb__pill-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pd-onb__pill--on {

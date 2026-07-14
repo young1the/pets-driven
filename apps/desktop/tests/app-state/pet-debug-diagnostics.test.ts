@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import { describe, expect, it } from "vitest";
 import {
   createPetDiagnosticsTracker,
   formatPetDiagnosticsReport,

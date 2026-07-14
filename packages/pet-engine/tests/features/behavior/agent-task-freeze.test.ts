@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runTaskMovementHoldSystem } from "@pets-driven/pet-engine/features/behavior/systems";
+import { describe, expect, it } from "vitest";
 
 function makeStore(held: boolean) {
   return createComponentStore([

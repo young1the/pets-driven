@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import {
   releaseVelocityFromSamples,
   runDraggedEntityKinematicSystem,
 } from "@pets-driven/pet-engine/features/interaction/systems";
+import { describe, expect, it } from "vitest";
 
 function createPhysicsSpy() {
   return {

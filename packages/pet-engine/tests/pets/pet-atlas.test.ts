@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import {
   getAtlasFrame,
   msUntilNextAtlasFrame,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { describe, expect, it } from "vitest";
 
 describe("pet atlas", () => {
   it("selects frames using the fixed hatch-pet row layout", () => {

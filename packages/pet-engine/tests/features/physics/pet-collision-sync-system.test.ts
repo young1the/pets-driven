@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
-import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { runPetCollisionSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
+import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 function pet(id: string, x: number, y = 100) {
   return {

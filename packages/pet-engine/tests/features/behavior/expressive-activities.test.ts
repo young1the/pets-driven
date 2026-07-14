@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import {
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
-import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 const BOUNDS = { width: 960, height: 540 };
 

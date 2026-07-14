@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
 import { PERSONALITY_REGISTRY } from "@pets-driven/pet-engine/pets/personalities/registry";
 import {
   PERSONALITY_VOICE_PROFILES,
   personalityAcknowledgeFeedback,
   personalitySpeechProfile,
 } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
+import { describe, expect, it } from "vitest";
 
 describe("Personality Catalog voice profiles", () => {
   it("defines one voice for every catalog entry", () => {

@@ -26,6 +26,7 @@ export function Checkbox({
       <input disabled={disabled} type="checkbox" {...rest} />
       <span className="pd-check__box">
         <svg
+          aria-hidden="true"
           fill="none"
           stroke="currentColor"
           strokeLinecap="round"

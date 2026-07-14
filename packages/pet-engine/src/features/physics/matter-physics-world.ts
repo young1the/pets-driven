@@ -1,5 +1,5 @@
-import { Bodies, Body, Engine, Events, World, type Body as MatterBody } from "matter-js";
 import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import { Bodies, Body, Engine, Events, type Body as MatterBody, World } from "matter-js";
 
 export type Vector = { x: number; y: number };
 type Size = { width: number; height: number };

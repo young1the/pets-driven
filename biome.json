@@ -12,6 +12,10 @@
     "enabled": true
   },
 
+  "assist": {
+    "enabled": true
+  },
+
   "javascript": {
     "formatter": {
       "quoteStyle": "double",
@@ -22,5 +26,18 @@
 
   "files": {
     "includes": ["apps/**", "packages/**", "!**/dist", "!**/build", "!**/.next", "!**/coverage"]
-  }
+  },
+
+  "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "**/tests/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    }
+  ]
 }

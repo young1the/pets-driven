@@ -1,16 +1,16 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
+import { statusFreezesMovement } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import type {
   KeyboardWorldEvent,
   PointerWorldEvent,
 } from "@pets-driven/pet-engine/features/events/world-event";
 import type { WorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
-import { statusFreezesMovement } from "@pets-driven/pet-engine/features/agent/agent-task-state";
-import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
-import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
-import { personalityAcknowledgeFeedback } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
+import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
+import { personalityAcknowledgeFeedback } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
+import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
 const INTERACTION_ENTITY_ID = "user-interaction";
 const DRAG_START_DISTANCE = 4;
@@ -208,7 +208,7 @@ export function runDraggedEntityKinematicSystem(
   physics: KinematicPhysics,
 ): void {
   const drag = components.getComponent(INTERACTION_ENTITY_ID, "DragInteraction");
-  if (!drag || drag.phase !== "dragging") return;
+  if (drag?.phase !== "dragging") return;
 
   const nextPosition = {
     x: drag.pointerPosition.x + drag.grabOffset.x,

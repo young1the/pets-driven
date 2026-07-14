@@ -1,24 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
-import {
-  createAgentEventFromClaudeHook,
-  type ClaudeHookEventName,
-} from "@/adapters/agent-events/claude-hook-adapter";
-import { createAgentEvent, type AgentEvent } from "@/adapters/agent-events/agent-event";
+import { loadPlaygroundPetAssetCatalog } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { type AgentEvent, createAgentEvent } from "@/adapters/agent-events/agent-event";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
+import {
+  type ClaudeHookEventName,
+  createAgentEventFromClaudeHook,
+} from "@/adapters/agent-events/claude-hook-adapter";
 import { AgentEventPanel } from "./agent-event-panel";
 import { BehaviorLab } from "./behavior-lab";
+import { drawWorld } from "./canvas-renderer";
 import { ClimbPlaygroundApp } from "./climb-playground-app";
 import { DecisionShowcaseApp } from "./decision-showcase-app";
-import { drawWorld } from "./canvas-renderer";
 import { JumpPlaygroundApp } from "./jump-playground-app";
 import { PetStatusList } from "./pet-status-list";
 import { PLAYGROUND_TEXT } from "./playground-text";
 import { ScenarioControls } from "./scenario-controls";
-import { loadPlaygroundPetAssetCatalog } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
-import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
-
-type Snapshot = ReturnType<ReturnType<typeof createDemoScenario>["world"]["snapshot"]>;
 
 type PlaygroundViewId = "demo" | "jump" | "climb" | "decision";
 type PlaygroundViewGroup = "Simulation";

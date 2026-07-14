@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
+import { describe, expect, it } from "vitest";
 
 describe("world event queue", () => {
   it("drains agent, pointer, and keyboard events in insertion order", () => {

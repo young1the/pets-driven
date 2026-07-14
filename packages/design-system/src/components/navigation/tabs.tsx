@@ -1,5 +1,5 @@
-import { useState } from "react";
 import type { HTMLAttributes, ReactNode } from "react";
+import { useState } from "react";
 import "./tabs.css";
 
 export interface TabItem {

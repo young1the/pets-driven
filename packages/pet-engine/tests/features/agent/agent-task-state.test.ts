@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import {
-  statusFreezesMovement,
   agentTaskBadgeLabel,
+  statusFreezesMovement,
 } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import { describe, expect, it } from "vitest";
 
 describe("statusFreezesMovement", () => {
   it("freezes only waiting, failed, completed", () => {

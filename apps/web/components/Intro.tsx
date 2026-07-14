@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { PetAvatar, type PetAvatarStatus, type PetName } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
+import { useEffect, useRef } from "react";
 
 /**
  * Pets-Driven Intro — the official homepage.
@@ -116,6 +116,7 @@ const CREATURES: Creature[] = [
 function EyePair({ c }: { c: Creature }) {
   return (
     <svg
+      aria-hidden="true"
       viewBox="0 0 150 70"
       width={c.eyeW}
       height={c.eyeH}
@@ -152,7 +153,7 @@ export default function Intro() {
     const pins = Array.from(root.querySelectorAll<HTMLElement>("[data-pin]"));
     pins.forEach((sec) => {
       const len = parseFloat(sec.getAttribute("data-len") || "300") || 300;
-      sec.style.height = len + "vh";
+      sec.style.height = `${len}vh`;
     });
 
     let ticking = false;
@@ -191,7 +192,9 @@ export default function Intro() {
       },
       { threshold: 0.18 },
     );
-    root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => io.observe(el));
+    root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
+      io.observe(el);
+    });
 
     update();
 
@@ -389,6 +392,7 @@ export default function Intro() {
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
+            {/* biome-ignore lint/performance/noImgElement: inline SVG wordmark; next/image adds no benefit for a static SVG. */}
             <img
               src="/petsdriven-mark.svg"
               alt=""

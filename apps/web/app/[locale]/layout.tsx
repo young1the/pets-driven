@@ -1,8 +1,8 @@
+import { I18nProvider } from "@pets-driven/i18n";
+import { isLocale, type Locale, locales } from "@pets-driven/i18n/config";
+import { getServerTranslation } from "@pets-driven/i18n/server";
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
-import { I18nProvider } from "@pets-driven/i18n";
-import { getServerTranslation } from "@pets-driven/i18n/server";
-import { isLocale, locales, type Locale } from "@pets-driven/i18n/config";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import "../globals.css";
 

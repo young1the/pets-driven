@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { createAdoptedPetsScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { describe, expect, it } from "vitest";
 
 // The desktop app scales an adopted pet's physics body up to roughly the
 // rendered sprite size (~156×156), far larger than the engine-default 32×38

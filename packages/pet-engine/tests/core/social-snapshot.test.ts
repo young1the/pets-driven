@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createWorld } from "@pets-driven/pet-engine/core/create-world";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 function pet(id: string, name: string, x: number) {
   return {

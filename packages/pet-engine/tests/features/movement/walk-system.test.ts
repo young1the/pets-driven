@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runWalkSystem } from "@pets-driven/pet-engine/features/movement/systems";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
+import { describe, expect, it } from "vitest";
 
 function makeWalker(posX: number, targetX: number | null, grounded: boolean) {
   return createComponentStore([

@@ -1,9 +1,9 @@
 import type {
-  ComponentOf,
   Component,
+  ComponentOf,
   ComponentType,
 } from "@pets-driven/pet-engine/core/components";
-import type { EntityId, Entity } from "./entity";
+import type { Entity, EntityId } from "./entity";
 import { createEntity } from "./entity";
 
 /**

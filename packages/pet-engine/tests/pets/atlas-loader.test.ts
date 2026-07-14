@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import { loadAtlasImage } from "@pets-driven/pet-engine/pets/assets/atlas-loader";
+import { describe, expect, it, vi } from "vitest";
 
 describe("atlas loader", () => {
   it("resolves after the browser loads the image", async () => {

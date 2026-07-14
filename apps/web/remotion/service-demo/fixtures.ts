@@ -1,6 +1,6 @@
+import type { PetMood } from "@pets-driven/design-system";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import type { PetMood } from "@pets-driven/design-system";
 
 export type DemoPet = {
   id: string;

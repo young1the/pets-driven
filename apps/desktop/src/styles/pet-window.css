@@ -33,6 +33,7 @@ html.pet-window-fixture-preview .pet-window-surface {
   border-radius: 8px;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: base rule intentionally follows the higher-specificity fixture-preview override above; the override wins by specificity regardless of order. */
 .pet-window-surface {
   position: relative;
   width: 100vw;

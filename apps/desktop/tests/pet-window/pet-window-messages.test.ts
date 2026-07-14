@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  PET_WINDOW_FRAME_EVENT,
   isFreshPetWindowMessage,
   isSamePetWindowPresentation,
+  PET_WINDOW_FRAME_EVENT,
   PET_WINDOW_INPUT_EVENT,
   type PetWindowFrame,
 } from "@/pet-window/pet-window-messages";

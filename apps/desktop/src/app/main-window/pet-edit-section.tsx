@@ -8,9 +8,9 @@ import {
   TrashIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 import { PERSONALITY_OPTIONS, personalityTitleKey } from "@/app/onboarding/personality-options";
-import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 export interface PetEditView {
   id: string;
@@ -222,6 +222,7 @@ export function PetEditSection({
                 {PERSONALITY_OPTIONS.map((option) => {
                   const active = pet.personalityId === option.id;
                   return (
+                    // biome-ignore lint/a11y/useSemanticElements: styled segmented control using the ARIA radiogroup pattern; native <input type="radio"> cannot carry this custom pill styling.
                     <button
                       aria-checked={active}
                       key={option.id}

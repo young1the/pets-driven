@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { resolvePetSpriteFrame } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-frame";
-import { drawPetSpriteCanvas } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
-import { PetSpriteHtml } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-html";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { drawPetSpriteCanvas } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
+import { resolvePetSpriteFrame } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-frame";
+import { PetSpriteHtml } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-html";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 describe("pet sprite rendering", () => {
   it("resolves an animation row to its source rectangle and draw size", () => {

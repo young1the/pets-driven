@@ -1,23 +1,23 @@
-import type { Component, ComponentType } from "@pets-driven/pet-engine/core/components";
 import {
-  createComponentStore,
   type ComponentStore,
+  createComponentStore,
   type EntityDeclaration,
 } from "@pets-driven/pet-engine/core/component-store";
-import { createMatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
-import { getPetAnimationState } from "@pets-driven/pet-engine/features/behavior/pet-animation-state";
+import type { Component, ComponentType } from "@pets-driven/pet-engine/core/components";
 import type { MonitorWorkArea, WorldViewport } from "@pets-driven/pet-engine/core/monitor-geometry";
-import type { WorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
-import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
-import { runPhysicsTransformSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
-import type { PetVisualCue } from "@pets-driven/pet-engine/core/world-snapshot";
-import { agentTaskBadgeLabel } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import { derivePetActivity } from "@pets-driven/pet-engine/core/pet-activity";
+import { STEP_SYSTEMS } from "@pets-driven/pet-engine/core/phases";
 import {
   describeSimulationSystems,
   runSimulationSystems,
 } from "@pets-driven/pet-engine/core/simulation-system";
-import { STEP_SYSTEMS } from "@pets-driven/pet-engine/core/phases";
+import type { PetVisualCue } from "@pets-driven/pet-engine/core/world-snapshot";
+import { agentTaskBadgeLabel } from "@pets-driven/pet-engine/features/agent/agent-task-state";
+import { getPetAnimationState } from "@pets-driven/pet-engine/features/behavior/pet-animation-state";
+import type { WorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
+import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
+import { createMatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
+import { runPhysicsTransformSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
 import {
   createSeededRandom,
   type RandomSource,

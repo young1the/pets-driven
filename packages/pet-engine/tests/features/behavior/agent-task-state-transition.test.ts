@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runAgentTaskEventSystem } from "@pets-driven/pet-engine/features/behavior/systems";
-import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { AgentWorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
+import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 function makeStore() {
   return createComponentStore([

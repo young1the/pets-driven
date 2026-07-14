@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { PetWindowView } from "@/pet-window/pet-window-view";
 import { PET_WINDOW_FIXTURES } from "@/pet-window/pet-window-fixtures";
+import { PetWindowView } from "@/pet-window/pet-window-view";
 
 // Preview mode (isTauri() === false) drives the presentation straight from the
 // fixture, so the Tauri modules only need to resolve — none of them is called.

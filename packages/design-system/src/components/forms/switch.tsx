@@ -32,6 +32,7 @@ export function Switch({
         .filter(Boolean)
         .join(" ")}
     >
+      {/* biome-ignore lint/a11y/useAriaPropsForRole: native checkbox input derives aria-checked from its `checked` state; role="switch" only refines how assistive tech announces it. */}
       <input disabled={disabled} role="switch" type="checkbox" {...rest} />
       <span className="pd-switch__track">
         <span className="pd-switch__thumb" />

@@ -1,7 +1,7 @@
 import { createInstance, type i18n } from "i18next";
 import { initReactI18next } from "react-i18next";
-import { baseInitOptions } from "./create-instance";
 import { defaultLocale, type Locale } from "./config";
+import { baseInitOptions } from "./create-instance";
 
 /**
  * Initialize a global react-i18next instance for tests that render translated

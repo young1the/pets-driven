@@ -1,7 +1,7 @@
-import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 
 export const PET_WINDOW_FRAME_EVENT = "pet-window:frame:v1";
 export const PET_WINDOW_RESIZE_EVENT = "pet-window:resize:v1";

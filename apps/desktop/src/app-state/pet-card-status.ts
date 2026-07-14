@@ -1,6 +1,6 @@
 import type { BadgeTone } from "@pets-driven/design-system";
-import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 
 /**
  * Labels for a pet living its life autonomously (the "behavior" axis). These

@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import { runUserInteractionBehaviorSystem } from "@pets-driven/pet-engine/features/interaction/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 function pressAt(x: number, y: number) {
   const events = createWorldEventQueue();

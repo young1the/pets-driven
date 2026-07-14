@@ -1,6 +1,6 @@
-import react from "@vitejs/plugin-react";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, URL } from "node:url";
+import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;

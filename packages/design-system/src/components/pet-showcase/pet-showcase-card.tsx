@@ -64,6 +64,7 @@ export function PetShowcaseCard({
             type="button"
           >
             <svg
+              aria-hidden="true"
               fill="none"
               height="14"
               stroke="currentColor"
@@ -89,7 +90,7 @@ export function PetShowcaseCard({
         {portrait}
         <div className="pd-pet-card__footer">
           {cwd ? (
-            <div className="pd-pet-card__cwd" aria-label={`Working directory: ${cwd}`}>
+            <div className="pd-pet-card__cwd" role="img" aria-label={`Working directory: ${cwd}`}>
               <svg
                 aria-hidden="true"
                 fill="none"

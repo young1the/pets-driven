@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampPetWindowScale,
   DEFAULT_PET_WINDOW_SCALE,
   PET_WINDOW_MIN_SCALE,
-  clampPetWindowScale,
   petWindowSizeForScale,
 } from "@/pet-window/pet-window-layout";
 

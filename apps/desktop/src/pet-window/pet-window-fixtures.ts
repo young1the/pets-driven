@@ -1,5 +1,5 @@
-import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetWindowOverlay } from "@/pet-window/pet-window-messages";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runMotionTargetSystem } from "@pets-driven/pet-engine/features/movement/systems";
+import { describe, expect, it } from "vitest";
 
 describe("motion target system", () => {
   it("falls back to the user anchor position when seeking pet has no Transform", () => {

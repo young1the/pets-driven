@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { presentPetExpression } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetExpressionSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import { presentPetExpression } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import { describe, expect, it } from "vitest";
 
 function expressionFixture(overrides: Partial<PetExpressionSnapshot> = {}): PetExpressionSnapshot {
   return {

@@ -1,15 +1,15 @@
-import type { CSSProperties } from "react";
 import { PetSpeechBubble } from "@pets-driven/design-system";
-import { type PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
+import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { BehaviorTokenEmote } from "@pets-driven/pet-engine/pets/rendering/behavior-token-emote";
+import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import {
-  resolvePetSpriteFrame,
   type PetSpriteSize,
+  resolvePetSpriteFrame,
 } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-frame";
 import { PetSpriteHtml } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-html";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
-import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import { BehaviorTokenEmote } from "@pets-driven/pet-engine/pets/rendering/behavior-token-emote";
-import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
+import type { CSSProperties } from "react";
 
 export type PetSpriteOverlay =
   | {
@@ -100,6 +100,7 @@ export function PetSprite({
       {status.showCapsule && showStatusBubble ? (
         <span
           aria-label={`Pet ${overlay?.kind ?? "status"} overlay`}
+          role="img"
           className={overlayClassName}
           style={{
             boxSizing: "border-box",

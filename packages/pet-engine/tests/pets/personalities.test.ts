@@ -1,18 +1,18 @@
-import { describe, expect, it } from "vitest";
 import {
-  createPlayfulPersonality,
-  createAttentivePersonality,
-  createReservedPersonality,
-  createCuriousPersonality,
-  createSteadyPersonality,
-  createBoldPersonality,
-  createGentlePersonality,
-  createMischievousPersonality,
-  createLazyPersonality,
-  createZenPersonality,
   createAloofPersonality,
+  createAttentivePersonality,
+  createBoldPersonality,
+  createCuriousPersonality,
+  createGentlePersonality,
+  createLazyPersonality,
+  createMischievousPersonality,
+  createPlayfulPersonality,
+  createReservedPersonality,
   createSkittishPersonality,
+  createSteadyPersonality,
+  createZenPersonality,
 } from "@pets-driven/pet-engine/pets/personalities/factories";
+import { describe, expect, it } from "vitest";
 
 describe("personality factories — OCEAN axes", () => {
   it("playful has extreme extraversion, low neuroticism", () => {

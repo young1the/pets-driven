@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
-import { runClimbDismountSystem } from "@pets-driven/pet-engine/features/movement/systems";
 import type { Component } from "@pets-driven/pet-engine/core/components";
+import { runClimbDismountSystem } from "@pets-driven/pet-engine/features/movement/systems";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import { describe, expect, it } from "vitest";
 
 function makeCompletedClimber(extraComponents: Component[] = []) {
   return createComponentStore([

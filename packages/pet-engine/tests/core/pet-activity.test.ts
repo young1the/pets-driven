@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { Component } from "@pets-driven/pet-engine/core/components";
 import { derivePetActivity } from "@pets-driven/pet-engine/core/pet-activity";
+import { describe, expect, it } from "vitest";
 
 function storeWith(components: Component[]) {
   const hasIntent = components.some((c) => c.type === "Steering");

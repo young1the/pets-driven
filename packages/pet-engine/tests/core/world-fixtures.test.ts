@@ -1,8 +1,7 @@
-import { describe, expect, it } from "vitest";
 import {
   createAdoptedPetsScenario,
-  createDemoScenario,
   createClimbPlaygroundScenario,
+  createDemoScenario,
   createJumpPlaygroundScenario,
   deriveJumpForwardImpulse,
   deriveMovementProfile,
@@ -13,6 +12,7 @@ import {
   DEFAULT_PET_JUMP_IMPULSE,
   DEFAULT_PET_WALK_FORCE,
 } from "@pets-driven/pet-engine/pets/constants/pet-body";
+import { describe, expect, it } from "vitest";
 
 const playfulPersonality = {
   type: "Personality" as const,

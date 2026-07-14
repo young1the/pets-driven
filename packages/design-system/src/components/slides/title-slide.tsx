@@ -42,6 +42,7 @@ export function TitleSlide({
       {pets.length > 0 && (
         <div className="pd-slide-pack">
           {pets.map((pet, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static ReactNode list with no stable identity.
             <div className="pd-slide-pack__item pd-slide-art" key={i}>
               {pet}
             </div>

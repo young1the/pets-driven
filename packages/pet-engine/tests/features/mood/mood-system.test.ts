@@ -1,7 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
-import { runAgentTaskEventSystem } from "@pets-driven/pet-engine/features/behavior/systems";
 import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
+import { runAgentTaskEventSystem } from "@pets-driven/pet-engine/features/behavior/systems";
 import {
   initialMoodState,
   moodAdjustedDecisionScore,
@@ -9,6 +8,7 @@ import {
   runMoodRecoverySystem,
 } from "@pets-driven/pet-engine/features/mood/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 const CALM: PersonalityComponent = {
   type: "Personality",

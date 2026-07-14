@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runPersonalSpaceSystem } from "@pets-driven/pet-engine/features/behavior/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
+import { describe, expect, it } from "vitest";
 
 const BOUNDS = { x: 0, y: 0, width: 960, height: 540 };
 
@@ -35,7 +35,7 @@ function idlePet(id: string, x: number, extra: Record<string, unknown>[] = []) {
   };
 }
 
-function overlap(id: string, otherId: string, otherX: number) {
+function overlap(_id: string, otherId: string, otherX: number) {
   return {
     type: "PetCollision" as const,
     otherEntityId: otherId,

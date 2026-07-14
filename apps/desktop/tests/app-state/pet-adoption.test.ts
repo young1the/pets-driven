@@ -1,3 +1,4 @@
+import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 import { describe, expect, it } from "vitest";
 import {
   adoptPet,
@@ -9,7 +10,6 @@ import {
   removePet,
 } from "@/app-state/pet-adoption";
 import { createEmptyPetsDrivenState, type PetsDrivenState } from "@/app-state/pets-driven-state";
-import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 
 function adopt(state: PetsDrivenState, id: string, assetId = "bloop") {
   return adoptPet(state, {

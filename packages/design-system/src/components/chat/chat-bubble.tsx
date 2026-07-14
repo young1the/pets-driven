@@ -42,7 +42,7 @@ export function ChatBubble({
         {!isUser && name && <span className="pd-chat__name">{name}</span>}
         <div className="pd-chat__bubble">
           {typing ? (
-            <span aria-label="typing" className="pd-chat__typing">
+            <span aria-label="typing" role="img" className="pd-chat__typing">
               <i />
               <i />
               <i />

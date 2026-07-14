@@ -1,3 +1,4 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: flagged pairs target different component subtrees (e.g. .decision-showcase__* vs .pet-status-list) that only share a trailing element name, so they never overlap in the DOM. */
 /* Playground (simulation lab) styles. */
 
 .playground-shell {
@@ -434,6 +435,7 @@
 }
 
 .decision-showcase__collider-sprite {
+  /* biome-ignore lint/complexity/noImportantStyles: overrides PetSprite's inline position: relative. */
   position: absolute !important;
   right: -34px;
   bottom: 22px;

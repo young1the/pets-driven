@@ -34,6 +34,7 @@ export function ComparisonSlide({
         <div className="pd-slide-col pd-slide-col--old">
           <span className="pd-slide-col__tag">{oldLabel}</span>
           {oldItems.map((item, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static ReactNode list with no stable identity.
             <div className="pd-slide-row" key={i}>
               <span className="pd-slide-row__ic pd-slide-row__ic--x">✕</span>
               {item}
@@ -46,6 +47,7 @@ export function ComparisonSlide({
             <b>{newLabel}</b>
           </div>
           {newItems.map((item, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static ReactNode list with no stable identity.
             <div className="pd-slide-row" key={i}>
               <span className="pd-slide-row__ic pd-slide-row__ic--c">✓</span>
               {item}

@@ -13,54 +13,54 @@
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
 import {
+  AgentTaskEventSystem,
+  ArrivalBehaviorSystem,
+  AutonomousBehaviorSystem,
+  BehaviorDecisionSystem,
+  BehaviorPlanningSystem,
+  CollisionBehaviorSystem,
+  FeintProgressSystem,
+  HoverReactionSystem,
+  PersonalSpaceSystem,
+  PetExpressionExpirationSystem,
+  PettingDetectionSystem,
+  RompProgressSystem,
+  SpeechExpirationSystem,
+  TaskMovementHoldSystem,
+  WorkingBehaviorSystem,
+} from "@pets-driven/pet-engine/features/behavior/systems";
+import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
+import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
+import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
+import {
   DraggedEntityKinematicSystem,
   KeyboardControlMovementSystem,
   ThrowImpulseSystem,
   UserInteractionBehaviorSystem,
 } from "@pets-driven/pet-engine/features/interaction/systems";
-import {
-  SpeechExpirationSystem,
-  PetExpressionExpirationSystem,
-  AgentTaskEventSystem,
-  TaskMovementHoldSystem,
-  CollisionBehaviorSystem,
-  WorkingBehaviorSystem,
-  BehaviorDecisionSystem,
-  AutonomousBehaviorSystem,
-  BehaviorPlanningSystem,
-  RompProgressSystem,
-  FeintProgressSystem,
-  PersonalSpaceSystem,
-  ArrivalBehaviorSystem,
-  PettingDetectionSystem,
-  HoverReactionSystem,
-} from "@pets-driven/pet-engine/features/behavior/systems";
-import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
-import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
-import { SocialInteractionSystem } from "@pets-driven/pet-engine/features/social/systems";
-import { PerceptionSystem } from "@pets-driven/pet-engine/features/perception/systems";
-import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
 import { MoodRecoverySystem } from "@pets-driven/pet-engine/features/mood/systems";
 import {
-  LocomotionModeSystem,
   ClimbApproachSystem,
-  ClimbDismountSystem,
-  LocomotionActiveStateSystem,
   ClimbAttachmentSystem,
-  MotionTargetSystem,
-  WalkSystem,
-  JumpSystem,
-  WallClimbSystem,
-  SteeringForceSystem,
+  ClimbDismountSystem,
   FlightSystem,
+  JumpSystem,
+  LocomotionActiveStateSystem,
+  LocomotionModeSystem,
+  MotionTargetSystem,
+  SteeringForceSystem,
   TravelTrackingSystem,
+  WalkSystem,
+  WallClimbSystem,
 } from "@pets-driven/pet-engine/features/movement/systems";
+import { PerceptionSystem } from "@pets-driven/pet-engine/features/perception/systems";
 import {
-  PhysicsTransformSyncSystemPre,
   PetCollisionSyncSystem,
-  PhysicsTransformSyncSystemPost,
   PhysicsIntegrationSystem,
+  PhysicsTransformSyncSystemPost,
+  PhysicsTransformSyncSystemPre,
 } from "@pets-driven/pet-engine/features/physics/systems";
+import { SocialInteractionSystem } from "@pets-driven/pet-engine/features/social/systems";
 
 export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
 

@@ -38,6 +38,7 @@ export function ContentSlide({
         {eyebrow && <div className="pd-slide__eyebrow">{eyebrow}</div>}
         <h1 className="pd-slide__title">{title}</h1>
         {points.map((pt, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static ReactNode list with no stable identity.
           <div className="pd-slide-point" key={i}>
             <div className="pd-slide-point__art pd-slide-art">{pt.art}</div>
             <div>

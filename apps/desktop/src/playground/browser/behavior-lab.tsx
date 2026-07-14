@@ -1,6 +1,6 @@
+import { Button } from "@pets-driven/design-system";
 import type { ComponentOf, ComponentType } from "@pets-driven/pet-engine/core/components";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
-import { Button } from "@pets-driven/design-system";
 import { useMemo, useState } from "react";
 import { PLAYGROUND_TEXT } from "./playground-text";
 
@@ -39,6 +39,26 @@ type BehaviorLabProps = {
 
 export function BehaviorLab({ pets, selectedPetId, onSelectPet, getComponent }: BehaviorLabProps) {
   const selectedPet = pets.find((pet) => pet.id === selectedPetId) ?? pets[0];
+
+  // Hooks must run before the early return below, so they stay unconditional
+  // across renders even when there is no pet to inspect.
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [isStateListVisible, setIsStateListVisible] = useState(true);
+  const componentTypes = selectedPet
+    ? INSPECTED_COMPONENTS.filter((type) => getComponent(selectedPet.id, type))
+    : [];
+  const clipboardPayload = useMemo(
+    () => ({
+      pet: selectedPet,
+      components: selectedPet
+        ? Object.fromEntries(
+            componentTypes.map((type) => [type, getComponent(selectedPet.id, type)]),
+          )
+        : {},
+    }),
+    [componentTypes, getComponent, selectedPet],
+  );
+
   if (!selectedPet) {
     return null;
   }
@@ -51,18 +71,6 @@ export function BehaviorLab({ pets, selectedPetId, onSelectPet, getComponent }: 
   const personality = getComponent(selectedPet.id, "Personality");
   const decisionToken = getComponent(selectedPet.id, "BehaviorDecisionToken");
   const pendingReaction = getComponent(selectedPet.id, "PendingReaction");
-  const componentTypes = INSPECTED_COMPONENTS.filter((type) => getComponent(selectedPet.id, type));
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
-  const [isStateListVisible, setIsStateListVisible] = useState(true);
-  const clipboardPayload = useMemo(
-    () => ({
-      pet: selectedPet,
-      components: Object.fromEntries(
-        componentTypes.map((type) => [type, getComponent(selectedPet.id, type)]),
-      ),
-    }),
-    [componentTypes, getComponent, selectedPet],
-  );
 
   async function copyStateToClipboard() {
     try {

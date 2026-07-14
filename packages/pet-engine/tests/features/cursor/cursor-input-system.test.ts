@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runCursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
+import { describe, expect, it } from "vitest";
 
 describe("CursorInputSystem", () => {
   it("creates CursorState from the first CursorInput and syncs the Transform", () => {

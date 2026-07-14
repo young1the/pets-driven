@@ -18,11 +18,12 @@ const PET_WINDOW_BODY_ANCHOR_OFFSET =
     PET_WINDOW_LAYOUT.body.height / 2 -
     PET_CELL_SIZE.height / 2) *
   2;
-import type { PetWindowFrame, PetWindowOverlay } from "@/pet-window/pet-window-messages";
+
 import {
   presentBehaviorDecisionToken,
   presentPetExpression,
 } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import type { PetWindowFrame, PetWindowOverlay } from "@/pet-window/pet-window-messages";
 
 export type PetWindowProjection = {
   petId: string;

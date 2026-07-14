@@ -1,14 +1,14 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
 import {
   defaultLocale,
   isLocale,
+  type Locale,
   localeLabels,
   locales,
   useTranslation,
-  type Locale,
 } from "@pets-driven/i18n";
+import { usePathname, useRouter } from "next/navigation";
 
 const LOCALE_COOKIE = "pd-locale";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
@@ -29,11 +29,13 @@ export function LanguageSwitcher() {
     if (next === current) return;
     segments[1] = next;
     const nextPath = segments.join("/") || `/${next}`;
+    // biome-ignore lint/suspicious/noDocumentCookie: direct document.cookie keeps broad browser support for the locale preference cookie; CookieStore is not universally available.
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
     router.push(nextPath);
   }
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: role="group" labels a cluster of switch buttons; there is no fitting native grouping element (<fieldset> is for form controls).
     <div
       aria-label={t("language.switchLabel")}
       role="group"

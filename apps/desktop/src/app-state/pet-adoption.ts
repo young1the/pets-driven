@@ -1,11 +1,11 @@
+import type { PetPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
+import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import {
   normalizeWorkingDirectoryPath,
   type PetRecord,
   type PetsDrivenState,
   type RegisteredWorkingDirectory,
 } from "@/app-state/pets-driven-state";
-import type { PetPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
-import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 export type AdoptPetInput = {
   id: string;

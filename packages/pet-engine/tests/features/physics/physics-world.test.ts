@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { createMatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
+import { describe, expect, it } from "vitest";
 
 describe("matter physics world", () => {
   it("moves a rectangle body after an applied force and returns a snapshot", () => {

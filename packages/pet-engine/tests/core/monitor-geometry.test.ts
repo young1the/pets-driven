@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import {
   createMonitorBoundaryEntities,
   getWorldViewport,
   type MonitorWorkArea,
 } from "@pets-driven/pet-engine/core/monitor-geometry";
+import { describe, expect, it } from "vitest";
 
 describe("monitor geometry", () => {
   const singleMonitor: MonitorWorkArea[] = [

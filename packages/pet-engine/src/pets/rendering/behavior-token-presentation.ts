@@ -1,7 +1,7 @@
-import type { BehaviorDecisionKind } from "@pets-driven/pet-engine/features/behavior/components";
 import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
 import type { PetExpressionMood } from "@pets-driven/pet-engine/core/components";
 import type { PetExpressionSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import type { BehaviorDecisionKind } from "@pets-driven/pet-engine/features/behavior/components";
 
 export type BehaviorTokenTone = "affection" | "alert" | "calm" | "curious" | "motion" | "spark";
 

@@ -1,20 +1,20 @@
-import { useEffect, useState, type CSSProperties } from "react";
-import { Button, PetAvatar } from "@pets-driven/design-system";
 import type { PetName } from "@pets-driven/design-system";
+import { Button, PetAvatar } from "@pets-driven/design-system";
 import { localeLabels, locales, useTranslation } from "@pets-driven/i18n";
-import { useDesktopLocale } from "@/app/i18n/desktop-locale";
-import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
-import { desktopGateway, type DesktopGateway } from "@/app/desktop-gateway";
-import { useClaudePlugin } from "@/app/use-claude-plugin";
-import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
-import { Wordmark } from "@/app/onboarding/wordmark";
-import {
-  normalizeWorkingDirectoryPath,
-  setPetSourceDirectory,
-  type PetsDrivenState,
-} from "@/app-state/pets-driven-state";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { type CSSProperties, useEffect, useState } from "react";
+import { type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
+import { useDesktopLocale } from "@/app/i18n/desktop-locale";
+import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
+import { Wordmark } from "@/app/onboarding/wordmark";
+import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
+import { useClaudePlugin } from "@/app/use-claude-plugin";
+import {
+  normalizeWorkingDirectoryPath,
+  type PetsDrivenState,
+  setPetSourceDirectory,
+} from "@/app-state/pets-driven-state";
 
 const PETDEX_URL = "https://petdex.dev";
 
@@ -417,6 +417,7 @@ export function SetupWizard({
   // switching back to the app updates the number without a manual refresh.
   // Background re-scans keep the last count on screen (no loading flicker);
   // only the very first scan shows the pulsing "looking…" state.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: state.petSourceDirectory is an intentional re-scan trigger — it is not read in the body, but changing the pet folder must refresh the count immediately rather than waiting for the interval.
   useEffect(() => {
     let isActive = true;
 

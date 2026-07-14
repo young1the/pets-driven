@@ -19,6 +19,7 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
 function Chevron() {
   return (
     <svg
+      aria-hidden="true"
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"

@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
 import { createInstance, type i18n } from "i18next";
+import { type ReactNode, useMemo } from "react";
 import { I18nextProvider, initReactI18next } from "react-i18next";
-import { baseInitOptions } from "./create-instance";
 import type { Locale } from "./config";
+import { baseInitOptions } from "./create-instance";
 
 /** i18next instance wired to the react-i18next binding (client only). */
 function createClientInstance(locale: Locale): i18n {

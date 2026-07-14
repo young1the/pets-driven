@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 
 vi.mock("@tauri-apps/api/core", () => ({
