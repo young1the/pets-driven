@@ -13,10 +13,7 @@ export type PetBehaviorLabelKey = PetActivityKind;
  * Partner-aware variants of the social activity labels: when the pet is in a
  * live session, the chip names its partner ("Chatting with Otto").
  */
-export type PetCardSocialLabelKey =
-  | "chattingWith"
-  | "playingWith"
-  | "makingFriendsWith";
+export type PetCardSocialLabelKey = "chattingWith" | "playingWith" | "makingFriendsWith";
 
 /** Stable key for a card status label, so the UI can localize it. */
 export type PetCardStatusLabelKey =
@@ -138,9 +135,7 @@ const WORKING: PetCardStatus = {
  * with claim-expiry checks in the simulation — this layer no longer guesses
  * from decision/action/intent fields.
  */
-export function petStatusFromSnapshot(
-  snapshot: PetSnapshot | undefined,
-): PetCardStatus {
+export function petStatusFromSnapshot(snapshot: PetSnapshot | undefined): PetCardStatus {
   if (!snapshot) {
     return IDLE;
   }
@@ -217,9 +212,7 @@ const BASE_LABEL_KEYS: ReadonlySet<PetCardStatusLabelKey> = new Set([
   "done",
 ]);
 
-export function createPetCardStatusTracker(
-  minDisplayMs: number = DEFAULT_MIN_DISPLAY_MS,
-) {
+export function createPetCardStatusTracker(minDisplayMs: number = DEFAULT_MIN_DISPLAY_MS) {
   const shown = new Map<string, { status: PetCardStatus; shownAt: number }>();
 
   return {
@@ -237,8 +230,7 @@ export function createPetCardStatusTracker(
       }
 
       const upgradeFromBase =
-        BASE_LABEL_KEYS.has(current.status.labelKey) &&
-        !BASE_LABEL_KEYS.has(next.labelKey);
+        BASE_LABEL_KEYS.has(current.status.labelKey) && !BASE_LABEL_KEYS.has(next.labelKey);
       const heldLongEnough = now - current.shownAt >= minDisplayMs;
 
       if (toneChanged || upgradeFromBase || heldLongEnough) {
@@ -254,6 +246,4 @@ export function createPetCardStatusTracker(
   };
 }
 
-export type PetCardStatusTracker = ReturnType<
-  typeof createPetCardStatusTracker
->;
+export type PetCardStatusTracker = ReturnType<typeof createPetCardStatusTracker>;

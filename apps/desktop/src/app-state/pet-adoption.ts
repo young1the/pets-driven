@@ -18,10 +18,7 @@ export type AdoptPetInput = {
 };
 
 /** Append a new pet record + profile atomically. No directory link yet. */
-export function adoptPet(
-  state: PetsDrivenState,
-  input: AdoptPetInput,
-): PetsDrivenState {
+export function adoptPet(state: PetsDrivenState, input: AdoptPetInput): PetsDrivenState {
   return {
     ...state,
     pets: [
@@ -54,10 +51,7 @@ export function adoptPet(
  * Other pets' directory links are left untouched. Returns the same state
  * reference when the pet does not exist.
  */
-export function removePet(
-  state: PetsDrivenState,
-  petId: string,
-): PetsDrivenState {
+export function removePet(state: PetsDrivenState, petId: string): PetsDrivenState {
   const target = state.pets.find((pet) => pet.id === petId);
   if (!target) {
     return state;
@@ -66,9 +60,7 @@ export function removePet(
   return {
     ...state,
     pets: state.pets.filter((pet) => pet.id !== petId),
-    petProfiles: state.petProfiles.filter(
-      (profile) => profile.id !== target.profileId,
-    ),
+    petProfiles: state.petProfiles.filter((profile) => profile.id !== target.profileId),
     registeredWorkingDirectories: state.registeredWorkingDirectories.filter(
       (workingDirectory) => workingDirectory.petId !== petId,
     ),
@@ -103,8 +95,7 @@ export function linkPetToWorkingDirectory(
       // found first by `getWorkingDirectoryForPet` and the change wouldn't stick.
       .filter(
         (workingDirectory) =>
-          workingDirectory.id === workingDirectoryId ||
-          workingDirectory.petId !== petId,
+          workingDirectory.id === workingDirectoryId || workingDirectory.petId !== petId,
       )
       .map((workingDirectory) =>
         workingDirectory.id === workingDirectoryId
@@ -147,9 +138,7 @@ export function clearWorkingDirectoryForPet(
       (workingDirectory) => workingDirectory.petId !== petId,
     ),
     pets: state.pets.map((candidate) =>
-      candidate.id === petId
-        ? { ...candidate, workingDirectoryId: null }
-        : candidate,
+      candidate.id === petId ? { ...candidate, workingDirectoryId: null } : candidate,
     ),
   };
 }
@@ -182,8 +171,7 @@ export function registerWorkingDirectory(
 ): RegisterWorkingDirectoryResult {
   const normalizedPath = normalizeWorkingDirectoryPath(input.path);
   const existing = state.registeredWorkingDirectories.find(
-    (workingDirectory) =>
-      comparablePath(workingDirectory.path) === comparablePath(normalizedPath),
+    (workingDirectory) => comparablePath(workingDirectory.path) === comparablePath(normalizedPath),
   );
 
   if (existing && existing.petId !== input.petId) {
@@ -214,11 +202,7 @@ export function registerWorkingDirectory(
 
   return {
     status: "linked",
-    state: linkPetToWorkingDirectory(
-      withDirectory,
-      input.petId,
-      workingDirectoryId,
-    ),
+    state: linkPetToWorkingDirectory(withDirectory, input.petId, workingDirectoryId),
     workingDirectoryId,
   };
 }

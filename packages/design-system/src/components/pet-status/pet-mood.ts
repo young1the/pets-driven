@@ -5,22 +5,9 @@
  * the sprite art itself lives in the app, not here.
  */
 
-export type PetMood =
-  | "working"
-  | "happy"
-  | "love"
-  | "excited"
-  | "thinking"
-  | "sleepy"
-  | "confused";
+export type PetMood = "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";
 
-export type PetEmoteKind =
-  | "none"
-  | "heart"
-  | "zzz"
-  | "sparkle"
-  | "question"
-  | "exclaim";
+export type PetEmoteKind = "none" | "heart" | "zzz" | "sparkle" | "question" | "exclaim";
 
 type PetMoodSpec = {
   face: string;

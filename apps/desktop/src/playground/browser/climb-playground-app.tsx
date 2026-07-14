@@ -16,15 +16,18 @@ export function ClimbPlaygroundApp() {
   const [frameNumber, setFrameNumber] = useState(0);
   const [assets, setAssets] = useState<AssetCatalog>({});
 
-  const drawSnapshot = useCallback((scenario: ClimbScenario) => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d");
-    const nextSnapshot = scenario.world.snapshot();
-    if (canvas && context && typeof context.clearRect === "function") {
-      drawWorld(context, nextSnapshot, assets, scenario.clock.now());
-    }
-    return nextSnapshot;
-  }, [assets]);
+  const drawSnapshot = useCallback(
+    (scenario: ClimbScenario) => {
+      const canvas = canvasRef.current;
+      const context = canvas?.getContext("2d");
+      const nextSnapshot = scenario.world.snapshot();
+      if (canvas && context && typeof context.clearRect === "function") {
+        drawWorld(context, nextSnapshot, assets, scenario.clock.now());
+      }
+      return nextSnapshot;
+    },
+    [assets],
+  );
 
   const advanceFrame = useCallback(() => {
     const scenario = scenarioRef.current;
@@ -76,8 +79,12 @@ export function ClimbPlaygroundApp() {
         <Button size="sm" onClick={() => setIsAnimationPlaying((prev) => !prev)}>
           {isAnimationPlaying ? "Pause animation" : "Resume animation"}
         </Button>
-        <Button size="sm" variant="neutral" onClick={advanceFrame}>Play next frame</Button>
-        <Button size="sm" variant="ghost" onClick={resetScenario}>Reset climbs</Button>
+        <Button size="sm" variant="neutral" onClick={advanceFrame}>
+          Play next frame
+        </Button>
+        <Button size="sm" variant="ghost" onClick={resetScenario}>
+          Reset climbs
+        </Button>
         <p>Frame: {frameNumber}</p>
       </section>
       <div className="climb-playground-stage">

@@ -14,11 +14,7 @@ import {
   DesktopPet,
   PoofBurst,
 } from "./components";
-import {
-  DEMO_PETS,
-  type DemoPet,
-  type PetMotionKeyframe,
-} from "./fixtures";
+import { DEMO_PETS, type DemoPet, type PetMotionKeyframe } from "./fixtures";
 import { easeOutCubic, lerp, progress } from "./timeline";
 import "./service-demo.css";
 
@@ -411,9 +407,7 @@ export function ServiceDemoVideo() {
             <h2>
               Pets<span className="pd-video-closing__hyphen">-</span>Driven
             </h2>
-            <p className="pd-video-closing__eyebrow">
-              a cute way to develop with AI agents
-            </p>
+            <p className="pd-video-closing__eyebrow">a cute way to develop with AI agents</p>
           </div>
         </section>
 
@@ -428,11 +422,7 @@ export function ServiceDemoVideo() {
         ) : null}
 
         {cursor && workSceneExitOpacity > 0 ? (
-          <DemoCursor
-            scale={cursor.scale}
-            x={cursor.x}
-            y={cursor.y}
-          />
+          <DemoCursor scale={cursor.scale} x={cursor.x} y={cursor.y} />
         ) : null}
       </main>
     </AbsoluteFill>
@@ -464,7 +454,11 @@ function cursorPosition(
   if (frame < CURSOR_TO_OTTO_END_FRAME) {
     // Sweep across to the leftmost pet to compare it too.
     const p = easeOutCubic(
-      progress(frame, CURSOR_PIP_HOVER_END_FRAME, CURSOR_TO_OTTO_END_FRAME - CURSOR_PIP_HOVER_END_FRAME),
+      progress(
+        frame,
+        CURSOR_PIP_HOVER_END_FRAME,
+        CURSOR_TO_OTTO_END_FRAME - CURSOR_PIP_HOVER_END_FRAME,
+      ),
     );
     return {
       scale: CURSOR_BASE_SCALE,
@@ -479,7 +473,11 @@ function cursorPosition(
   if (frame < CURSOR_TO_CATO_END_FRAME) {
     // Moves to Cato, the eventual pick — but doesn't grab it yet.
     const p = easeOutCubic(
-      progress(frame, CURSOR_OTTO_HOVER_END_FRAME, CURSOR_TO_CATO_END_FRAME - CURSOR_OTTO_HOVER_END_FRAME),
+      progress(
+        frame,
+        CURSOR_OTTO_HOVER_END_FRAME,
+        CURSOR_TO_CATO_END_FRAME - CURSOR_OTTO_HOVER_END_FRAME,
+      ),
     );
     return {
       scale: CURSOR_BASE_SCALE,
@@ -529,10 +527,7 @@ function cursorPosition(
 const DESKTOP_ROAM_Y = 785;
 const DESKTOP_WORK_Y = 830;
 
-function roamingPetPose(
-  petId: string,
-  frame: number,
-): PetMotionKeyframe {
+function roamingPetPose(petId: string, frame: number): PetMotionKeyframe {
   const local = Math.max(0, frame - MULTI_SCENE_START_FRAME);
   const configs = {
     bloop: {
@@ -566,8 +561,7 @@ function roamingPetPose(
   const config = configs[petId as keyof typeof configs];
   const wave = local / 26 + config.phase;
   const roamX = config.baseX + Math.sin(wave) * config.arc;
-  const roamY =
-    config.baseY + Math.cos(local / 16 + config.phase) * config.vertical;
+  const roamY = config.baseY + Math.cos(local / 16 + config.phase) * config.vertical;
   const roamFacing = Math.cos(wave) >= 0 ? "right" : "left";
   const settleP = easeOutCubic(progress(local, 48, 30));
   const workingP = progress(local, 84, 12);
@@ -576,8 +570,7 @@ function roamingPetPose(
 
   if (settleP < 1) {
     return {
-      animationState:
-        roamFacing === "left" ? "running-left" : "running-right",
+      animationState: roamFacing === "left" ? "running-left" : "running-right",
       frame,
       x: settledBaseX,
       y: settledBaseY,
@@ -641,14 +634,9 @@ function roamingPetPose(
   const jumpP = easeOutCubic(progress(jumpCycle, 0, 18));
   const landingP = progress(jumpCycle, 18, 18);
   const jumpLift =
-    jumpCycle < 18
-      ? lerp(0, -34, jumpP)
-      : jumpCycle < 36
-        ? lerp(-34, 0, landingP)
-        : 0;
+    jumpCycle < 18 ? lerp(0, -34, jumpP) : jumpCycle < 36 ? lerp(-34, 0, landingP) : 0;
   return {
-    animationState:
-      jumpCycle < 36 && workingP > 0 ? "jumping" : "waiting",
+    animationState: jumpCycle < 36 && workingP > 0 ? "jumping" : "waiting",
     decisionEmote:
       jumpCycle < 18
         ? { emote: "heart", label: "Filed", mood: "love", tone: "affection" }
@@ -671,14 +659,9 @@ function roamingPetPose(
   };
 }
 
-function summonedPetPose(
-  frame: number,
-  dropP: number,
-): PetMotionKeyframe {
+function summonedPetPose(frame: number, dropP: number): PetMotionKeyframe {
   if (frame >= PET_EXIT_MOVE_START_FRAME) {
-    const moveP = easeOutCubic(
-      progress(frame, PET_EXIT_MOVE_START_FRAME, PET_EXIT_MOVE_DURATION),
-    );
+    const moveP = easeOutCubic(progress(frame, PET_EXIT_MOVE_START_FRAME, PET_EXIT_MOVE_DURATION));
     return {
       animationState: "running-right",
       frame,
@@ -689,11 +672,7 @@ function summonedPetPose(
 
   return {
     animationState:
-      dropP < 0.82
-        ? "waving"
-        : frame >= TERMINAL_TYPING_DONE_FRAME
-          ? "running"
-          : "idle",
+      dropP < 0.82 ? "waving" : frame >= TERMINAL_TYPING_DONE_FRAME ? "running" : "idle",
     frame,
     x: 960,
     y: lerp(602, 1008, dropP),

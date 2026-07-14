@@ -13,8 +13,7 @@ export interface TabItem {
  * A soft pill tab bar. Controlled (`value` + `onChange`) or uncontrolled
  * (`defaultValue`).
  */
-export interface TabsProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "onChange"> {
+export interface TabsProps extends Omit<HTMLAttributes<HTMLDivElement>, "onChange"> {
   items?: TabItem[];
   /** Controlled active value. */
   value?: string;
@@ -67,9 +66,7 @@ export function Tabs({
         >
           {item.icon}
           {item.label}
-          {item.badge != null && (
-            <span className="pd-tab__badge">{item.badge}</span>
-          )}
+          {item.badge != null && <span className="pd-tab__badge">{item.badge}</span>}
         </button>
       ))}
     </div>

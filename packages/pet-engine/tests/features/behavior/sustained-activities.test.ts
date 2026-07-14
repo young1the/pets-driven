@@ -270,8 +270,6 @@ describe("play-romp", () => {
     // The interrupter keeps ownership: no motion target or intent written.
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
     expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
-    expect(
-      store.getComponent("pet", "BehaviorDecisionState")?.source,
-    ).toBe("collision");
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.source).toBe("collision");
   });
 });

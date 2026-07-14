@@ -87,17 +87,12 @@ describe("pet collision sync system (geometric overlap)", () => {
     runPetCollisionSyncSystem(store, createManualClock(0));
 
     // Ground overlaps pet-a but has no PetIdentity — never a collision.
-    expect(
-      store.getComponent("pet-a", "PetCollision")?.otherEntityId,
-    ).toBe("pet-b");
+    expect(store.getComponent("pet-a", "PetCollision")?.otherEntityId).toBe("pet-b");
     expect(store.getComponent("ground", "PetCollision")).toBeUndefined();
   });
 
   it("pets stacked vertically apart do not register", () => {
-    const store = createComponentStore([
-      pet("pet-a", 100, 100),
-      pet("pet-b", 100, 200),
-    ]);
+    const store = createComponentStore([pet("pet-a", 100, 100), pet("pet-b", 100, 200)]);
 
     runPetCollisionSyncSystem(store, createManualClock(0));
 

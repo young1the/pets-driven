@@ -254,7 +254,4 @@ export type Component =
 
 export type ComponentType = Component["type"];
 
-export type ComponentOf<TType extends ComponentType> = Extract<
-  Component,
-  { type: TType }
->;
+export type ComponentOf<TType extends ComponentType> = Extract<Component, { type: TType }>;

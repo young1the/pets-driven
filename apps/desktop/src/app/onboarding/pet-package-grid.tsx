@@ -92,11 +92,7 @@ function PetPackageCard({
   );
 }
 
-export function PetPackageGrid({
-  packages,
-  selectedAssetId,
-  onSelect,
-}: PetPackageGridProps) {
+export function PetPackageGrid({ packages, selectedAssetId, onSelect }: PetPackageGridProps) {
   const elapsedMs = useAnimationClock();
 
   return (

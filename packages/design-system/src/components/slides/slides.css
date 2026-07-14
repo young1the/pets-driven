@@ -15,10 +15,7 @@
 .pd-slide__dots {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(
-    var(--dot-color, var(--ink-200)) 2px,
-    transparent 2px
-  );
+  background-image: radial-gradient(var(--dot-color, var(--ink-200)) 2px, transparent 2px);
   background-size: var(--dot-size, 34px) var(--dot-size, 34px);
   opacity: var(--dot-opacity, 0.5);
 }
@@ -50,7 +47,10 @@
   gap: 14px;
   z-index: 2;
 }
-.pd-slide--title .pd-slide__brand :where(img, svg) { height: 46px; width: auto; }
+.pd-slide--title .pd-slide__brand :where(img, svg) {
+  height: 46px;
+  width: auto;
+}
 .pd-slide--title .pd-slide__eyebrow {
   position: relative;
   z-index: 2;
@@ -82,7 +82,9 @@
   line-height: 1.5;
   color: var(--text-muted);
 }
-.pd-slide__hl { color: var(--color-primary); }
+.pd-slide__hl {
+  color: var(--color-primary);
+}
 .pd-slide-pack {
   position: absolute;
   right: 96px;
@@ -101,7 +103,9 @@
   border-radius: 50%;
   box-shadow: var(--shadow-lg);
 }
-.pd-slide-pack__item:nth-child(odd) { transform: translateY(-22px); }
+.pd-slide-pack__item:nth-child(odd) {
+  transform: translateY(-22px);
+}
 
 /* ============================================================
    Section slide — divider
@@ -239,7 +243,10 @@
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-lg);
 }
-.pd-slide-aside__art { width: 200px; height: 200px; }
+.pd-slide-aside__art {
+  width: 200px;
+  height: 200px;
+}
 .pd-slide-aside__caption {
   font-family: var(--font-display);
   font-weight: var(--weight-semibold);
@@ -313,7 +320,10 @@
   gap: 12px;
   margin-bottom: 26px;
 }
-.pd-slide-col__pethead .pd-slide-art { width: 54px; height: 54px; }
+.pd-slide-col__pethead .pd-slide-art {
+  width: 54px;
+  height: 54px;
+}
 .pd-slide-col__pethead b {
   font-family: var(--font-display);
   font-weight: var(--weight-semibold);
@@ -345,8 +355,14 @@
   font-weight: var(--weight-extra);
   font-size: 17px;
 }
-.pd-slide-row__ic--x { background: var(--coral-100); color: var(--coral-600); }
-.pd-slide-row__ic--c { background: var(--mint-100); color: var(--mint-700); }
+.pd-slide-row__ic--x {
+  background: var(--coral-100);
+  color: var(--coral-600);
+}
+.pd-slide-row__ic--c {
+  background: var(--mint-100);
+  color: var(--mint-700);
+}
 
 /* ============================================================
    Big quote slide
@@ -369,7 +385,9 @@
   letter-spacing: var(--tracking-snug);
   color: var(--text-strong);
 }
-.pd-slide__quote-mark { color: var(--color-accent); }
+.pd-slide__quote-mark {
+  color: var(--color-accent);
+}
 .pd-slide-by {
   position: relative;
   z-index: 2;
@@ -394,7 +412,10 @@
   font-size: 24px;
   color: var(--text-strong);
 }
-.pd-slide-by__meta { font-size: 18px; color: var(--text-muted); }
+.pd-slide-by__meta {
+  font-size: 18px;
+  color: var(--text-muted);
+}
 .pd-slide__bigpet {
   position: absolute;
   right: -60px;
@@ -437,7 +458,9 @@
   background: rgba(255, 255, 255, 0.08);
   border-radius: 50%;
 }
-.pd-slide-closing-pack__item:nth-child(even) { transform: translateY(-14px); }
+.pd-slide-closing-pack__item:nth-child(even) {
+  transform: translateY(-14px);
+}
 .pd-slide--closing .pd-slide__title {
   position: relative;
   z-index: 2;

@@ -74,13 +74,10 @@ describe("parsePetsDrivenState", () => {
     expect(parsePetsDrivenState(v3)).toEqual(v3);
   });
 
-
   it("returns an empty v3 state for unknown payloads", () => {
     expect(parsePetsDrivenState(null)).toEqual(createEmptyPetsDrivenState());
     expect(parsePetsDrivenState("junk")).toEqual(createEmptyPetsDrivenState());
-    expect(parsePetsDrivenState({ schemaVersion: 99 })).toEqual(
-      createEmptyPetsDrivenState(),
-    );
+    expect(parsePetsDrivenState({ schemaVersion: 99 })).toEqual(createEmptyPetsDrivenState());
   });
 
   it("repairs pet back-pointers from the directory registry", () => {
@@ -236,10 +233,7 @@ describe("setPetSourceDirectory", () => {
   });
 
   it("resets to the default with null", () => {
-    const seeded = setPetSourceDirectory(
-      createEmptyPetsDrivenState(),
-      "D:\\pets\\mine",
-    );
+    const seeded = setPetSourceDirectory(createEmptyPetsDrivenState(), "D:\\pets\\mine");
     const reset = setPetSourceDirectory(seeded, null);
 
     expect(reset.petSourceDirectory).toBeNull();

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  petStatusFromSnapshot,
-  createPetCardStatusTracker,
-} from "@/app-state/pet-card-status";
+import { petStatusFromSnapshot, createPetCardStatusTracker } from "@/app-state/pet-card-status";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 
 function snapshot(
@@ -34,24 +31,23 @@ describe("petStatusFromSnapshot", () => {
     expect(petStatusFromSnapshot(snapshot(null)).label).toBe("Idle");
   });
   it("working agentTask is Working — the original bug fix", () => {
-    expect(
-      petStatusFromSnapshot(snapshot({ status: "working", label: null })).label,
-    ).toBe("Working");
+    expect(petStatusFromSnapshot(snapshot({ status: "working", label: null })).label).toBe(
+      "Working",
+    );
   });
   it("waiting/failed are Needs you; completed is Done", () => {
-    expect(
-      petStatusFromSnapshot(snapshot({ status: "waiting", label: "WAIT" }))
-        .label,
-    ).toBe("Needs you");
-    expect(petStatusFromSnapshot(snapshot({ status: "failed", label: "FAIL" })).tone).toBe("danger");
-    expect(
-      petStatusFromSnapshot(snapshot({ status: "failed", label: "FAIL" }))
-        .label,
-    ).toBe("Needs you");
-    expect(
-      petStatusFromSnapshot(snapshot({ status: "completed", label: "DONE" }))
-        .label,
-    ).toBe("Done");
+    expect(petStatusFromSnapshot(snapshot({ status: "waiting", label: "WAIT" })).label).toBe(
+      "Needs you",
+    );
+    expect(petStatusFromSnapshot(snapshot({ status: "failed", label: "FAIL" })).tone).toBe(
+      "danger",
+    );
+    expect(petStatusFromSnapshot(snapshot({ status: "failed", label: "FAIL" })).label).toBe(
+      "Needs you",
+    );
+    expect(petStatusFromSnapshot(snapshot({ status: "completed", label: "DONE" })).label).toBe(
+      "Done",
+    );
   });
 
   it("surfaces the engine activity for a working pet", () => {
@@ -64,19 +60,18 @@ describe("petStatusFromSnapshot", () => {
   });
 
   it("surfaces the engine activity for an idle pet", () => {
-    expect(
-      petStatusFromSnapshot(snapshot(null, { activity: "headingOver" })).label,
-    ).toBe("Heading over");
+    expect(petStatusFromSnapshot(snapshot(null, { activity: "headingOver" })).label).toBe(
+      "Heading over",
+    );
   });
 
   it("covers the cursor-play activities", () => {
-    expect(
-      petStatusFromSnapshot(snapshot(null, { activity: "chasingCursor" }))
-        .label,
-    ).toBe("Chasing the cursor");
-    expect(
-      petStatusFromSnapshot(snapshot(null, { activity: "beingPetted" })).label,
-    ).toBe("Being petted");
+    expect(petStatusFromSnapshot(snapshot(null, { activity: "chasingCursor" })).label).toBe(
+      "Chasing the cursor",
+    );
+    expect(petStatusFromSnapshot(snapshot(null, { activity: "beingPetted" })).label).toBe(
+      "Being petted",
+    );
   });
 
   it("keeps Needs you for waiting even with an activity", () => {
@@ -109,14 +104,26 @@ describe("petStatusFromSnapshot", () => {
     const playing = petStatusFromSnapshot(
       snapshot(null, {
         activity: "playing",
-        social: { kind: "chase", phase: "play", role: "responder", partnerId: "p", partnerName: "Bo" },
+        social: {
+          kind: "chase",
+          phase: "play",
+          role: "responder",
+          partnerId: "p",
+          partnerName: "Bo",
+        },
       }),
     );
     expect(playing.labelKey).toBe("playingWith");
     const greeting = petStatusFromSnapshot(
       snapshot(null, {
         activity: "makingFriends",
-        social: { kind: "greet", phase: "approach", role: "initiator", partnerId: "p", partnerName: "Bo" },
+        social: {
+          kind: "greet",
+          phase: "approach",
+          role: "initiator",
+          partnerId: "p",
+          partnerName: "Bo",
+        },
       }),
     );
     expect(greeting.labelKey).toBe("makingFriendsWith");
@@ -126,7 +133,13 @@ describe("petStatusFromSnapshot", () => {
     const status = petStatusFromSnapshot(
       snapshot(null, {
         activity: "chatting",
-        social: { kind: "chat", phase: "play", role: "initiator", partnerId: "p", partnerName: null },
+        social: {
+          kind: "chat",
+          phase: "play",
+          role: "initiator",
+          partnerId: "p",
+          partnerName: null,
+        },
       }),
     );
     expect(status.labelKey).toBe("chatting");
@@ -137,7 +150,13 @@ describe("petStatusFromSnapshot", () => {
     const status = petStatusFromSnapshot(
       snapshot(null, {
         activity: "exploring",
-        social: { kind: "chat", phase: "play", role: "initiator", partnerId: "p", partnerName: "Otto" },
+        social: {
+          kind: "chat",
+          phase: "play",
+          role: "initiator",
+          partnerId: "p",
+          partnerName: "Otto",
+        },
       }),
     );
     expect(status.labelKey).toBe("exploring");
@@ -147,13 +166,9 @@ describe("petStatusFromSnapshot", () => {
 
 describe("createPetCardStatusTracker", () => {
   const idle = petStatusFromSnapshot(snapshot(null));
-  const exploring = petStatusFromSnapshot(
-    snapshot(null, { activity: "exploring" }),
-  );
+  const exploring = petStatusFromSnapshot(snapshot(null, { activity: "exploring" }));
   const hopping = petStatusFromSnapshot(snapshot(null, { activity: "hopping" }));
-  const needsYou = petStatusFromSnapshot(
-    snapshot({ status: "waiting", label: "WAIT" }),
-  );
+  const needsYou = petStatusFromSnapshot(snapshot({ status: "waiting", label: "WAIT" }));
 
   it("upgrades from a base label to a behavior label immediately", () => {
     const tracker = createPetCardStatusTracker(1_500);

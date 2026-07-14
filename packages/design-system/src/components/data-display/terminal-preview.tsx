@@ -11,12 +11,7 @@ export interface TerminalPreviewProps {
   className?: string;
 }
 
-export function TerminalPreview({
-  cwd,
-  prompt,
-  command,
-  className = "",
-}: TerminalPreviewProps) {
+export function TerminalPreview({ cwd, prompt, command, className = "" }: TerminalPreviewProps) {
   return (
     <div className={["pd-terminal", className].filter(Boolean).join(" ")}>
       <div className="pd-terminal__cwd">{cwd}</div>

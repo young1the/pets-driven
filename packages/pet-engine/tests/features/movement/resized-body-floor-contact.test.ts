@@ -34,7 +34,10 @@ function buildScenario(bodySize: { width: number; height: number }) {
   );
 }
 
-function settle(world: ReturnType<typeof buildScenario>["world"], clock: ReturnType<typeof buildScenario>["clock"]) {
+function settle(
+  world: ReturnType<typeof buildScenario>["world"],
+  clock: ReturnType<typeof buildScenario>["clock"],
+) {
   for (let step = 0; step < 120; step += 1) {
     clock.advanceBy(16);
     world.step(16);

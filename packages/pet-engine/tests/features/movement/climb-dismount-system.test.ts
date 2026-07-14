@@ -6,23 +6,30 @@ import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 
 function makeCompletedClimber(extraComponents: Component[] = []) {
-  return createComponentStore([{
-    id: "pet-a",
-    components: [
-      { type: "ClimbingTag" as const },
-      { type: "CanWalk" as const, force: 0.01 },
-      { type: "CanWallClimb" as const, velocity: 1.1 },
-      {
-        type: "ContactState" as const,
-        grounded: false,
-        climbableSurfaceId: "wall-1",
-        climbableSurfacePosition: { x: 280, y: 200 },
-      },
-      { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
-      { type: "ClimbIntentState" as const, phase: "attached", surfaceEntityId: "wall-1", targetY: 120 },
-      ...extraComponents,
-    ],
-  }]);
+  return createComponentStore([
+    {
+      id: "pet-a",
+      components: [
+        { type: "ClimbingTag" as const },
+        { type: "CanWalk" as const, force: 0.01 },
+        { type: "CanWallClimb" as const, velocity: 1.1 },
+        {
+          type: "ContactState" as const,
+          grounded: false,
+          climbableSurfaceId: "wall-1",
+          climbableSurfacePosition: { x: 280, y: 200 },
+        },
+        { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+        {
+          type: "ClimbIntentState" as const,
+          phase: "attached",
+          surfaceEntityId: "wall-1",
+          targetY: 120,
+        },
+        ...extraComponents,
+      ],
+    },
+  ]);
 }
 
 describe("climb dismount system", () => {
@@ -39,9 +46,7 @@ describe("climb dismount system", () => {
   });
 
   it("creates jump and dismount actions when a jump-capable pet detaches", () => {
-    const store = makeCompletedClimber([
-      { type: "CanJump" as const, impulse: 0.009 },
-    ]);
+    const store = makeCompletedClimber([{ type: "CanJump" as const, impulse: 0.009 }]);
 
     runClimbDismountSystem(store, 16, [], leftRandom);
 
@@ -115,19 +120,21 @@ describe("climb dismount system", () => {
   });
 
   it("removes dismount state after landing cooldown completes", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        {
-          type: "ContactState" as const,
-          grounded: true,
-          climbableSurfaceId: null,
-          climbableSurfacePosition: null,
-        },
-        { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
-        { type: "ClimbDismountState" as const, phase: "coolingDown", cooldownMs: 16 },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          {
+            type: "ContactState" as const,
+            grounded: true,
+            climbableSurfaceId: null,
+            climbableSurfacePosition: null,
+          },
+          { type: "MotionTarget" as const, targetEntityId: null, targetPosition: null },
+          { type: "ClimbDismountState" as const, phase: "coolingDown", cooldownMs: 16 },
+        ],
+      },
+    ]);
 
     runClimbDismountSystem(store, 16, [], leftRandom);
 

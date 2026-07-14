@@ -77,12 +77,8 @@ describe("personal space system (make-room shuffle)", () => {
     runPersonalSpaceSystem(store, createManualClock(0), BOUNDS);
 
     // Lexicographically smaller id steps left, the other right.
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x,
-    ).toBeLessThan(400);
-    expect(
-      store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x,
-    ).toBeGreaterThan(400);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x).toBeLessThan(400);
+    expect(store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x).toBeGreaterThan(400);
   });
 
   it("ignores pets that merely touch at the edges (not stacked)", () => {
@@ -117,9 +113,7 @@ describe("personal space system (make-room shuffle)", () => {
     runPersonalSpaceSystem(store, createManualClock(100), BOUNDS);
 
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe(
-      "session-chat",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("session-chat");
   });
 
   it("does not shuffle a non-overlapping pet", () => {

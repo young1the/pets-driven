@@ -25,10 +25,7 @@ const NEUTRAL_SOCIAL_SCALE: Record<SocialSessionKind, number> = {
  * decision biases are intentionally large enough to survive softmax sampling;
  * tiny trait-only nudges made distinct catalog entries converge in practice.
  */
-export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<
-  PetPersonalityId,
-  BehaviorSignature
-> = {
+export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorSignature> = {
   playful: {
     primaryDecision: "play-romp",
     decisionBias: { "play-romp": 0.55, "chase-cursor": 0.25, "idle-stay": -0.25 },
@@ -201,15 +198,11 @@ export function signedDecisionScore(
   return baseScore + (behaviorSignature(catalogId)?.decisionBias[kind] ?? 0);
 }
 
-export function personalityIdleDurationScale(
-  catalogId: PetPersonalityId | undefined,
-): number {
+export function personalityIdleDurationScale(catalogId: PetPersonalityId | undefined): number {
   return behaviorSignature(catalogId)?.idleDurationScale ?? 1;
 }
 
-export function personalityArrivalDwellScale(
-  catalogId: PetPersonalityId | undefined,
-): number {
+export function personalityArrivalDwellScale(catalogId: PetPersonalityId | undefined): number {
   return behaviorSignature(catalogId)?.arrivalDwellScale ?? 1;
 }
 

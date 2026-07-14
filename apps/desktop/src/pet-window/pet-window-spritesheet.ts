@@ -17,9 +17,7 @@ export async function loadPetWindowSpritesheetUrl(
   }
 
   const bytes = await loadPetWindowSpritesheetBytes(assetId);
-  const objectUrl = URL.createObjectURL(
-    new Blob([bytes], { type: "image/webp" }),
-  );
+  const objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/webp" }));
 
   return {
     url: objectUrl,
@@ -28,10 +26,9 @@ export async function loadPetWindowSpritesheetUrl(
 }
 
 async function loadPetWindowSpritesheetBytes(assetId: string) {
-  const response = await invoke<ArrayBuffer | Uint8Array | number[]>(
-    "load_codex_pet_spritesheet",
-    { assetId },
-  );
+  const response = await invoke<ArrayBuffer | Uint8Array | number[]>("load_codex_pet_spritesheet", {
+    assetId,
+  });
 
   if (response instanceof ArrayBuffer) {
     return response;

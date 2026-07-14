@@ -20,12 +20,7 @@ const PETDEX_URL = "https://petdex.dev";
 
 type WizardStep = "welcome" | "appearance" | "petsFolder" | "plugin" | "done";
 
-const CHECKLIST_STEPS: WizardStep[] = [
-  "welcome",
-  "appearance",
-  "petsFolder",
-  "plugin",
-];
+const CHECKLIST_STEPS: WizardStep[] = ["welcome", "appearance", "petsFolder", "plugin"];
 
 const GUIDE: Record<WizardStep, { pet: PetName; quoteKey: string }> = {
   welcome: { pet: "cato", quoteKey: "setupWizard.guideWelcome" },
@@ -125,8 +120,7 @@ const stepBadge = (state: "done" | "active" | "upcoming"): CSSProperties => ({
   fontFamily: "var(--font-display)",
   fontWeight: 600,
   fontSize: "13px",
-  background:
-    state === "upcoming" ? "var(--surface-card)" : "var(--color-primary)",
+  background: state === "upcoming" ? "var(--surface-card)" : "var(--color-primary)",
   color: state === "upcoming" ? "var(--text-muted)" : "var(--color-on-primary)",
   border: state === "upcoming" ? "2px solid var(--border-default)" : "none",
   boxShadow: state === "active" ? "0 0 0 4px var(--blossom-100)" : "none",
@@ -332,9 +326,7 @@ const pluginCard = (selected: boolean, disabled: boolean): CSSProperties => ({
   gap: "12px",
   padding: "14px 16px",
   borderRadius: "14px",
-  border: selected
-    ? "2px solid var(--color-primary)"
-    : "1px solid var(--border-soft)",
+  border: selected ? "2px solid var(--color-primary)" : "1px solid var(--border-soft)",
   background: "var(--surface-card)",
   boxShadow: selected ? "0 0 0 4px var(--blossom-100)" : "none",
   opacity: disabled ? 0.6 : 1,
@@ -478,8 +470,7 @@ export function SetupWizard({
 
   const guide = GUIDE[step];
   const languageLabel = localeLabels[locale];
-  const accentLabel =
-    ACCENTS.find((candidate) => candidate.id === accent)?.name ?? "";
+  const accentLabel = ACCENTS.find((candidate) => candidate.id === accent)?.name ?? "";
   const modeLabel =
     mode === "light"
       ? t("settings.themeLight")
@@ -503,7 +494,11 @@ export function SetupWizard({
       style={{ display: "flex", minHeight: "100vh", background: "var(--cream)" }}
     >
       <aside style={rail}>
-        <Wordmark className="pd-onb__wordmark" style={railLogo} title={t("onboarding.wordmarkAlt")} />
+        <Wordmark
+          className="pd-onb__wordmark"
+          style={railLogo}
+          title={t("onboarding.wordmarkAlt")}
+        />
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {CHECKLIST_STEPS.map((checklistStep, index) => {
             const currentIndex = CHECKLIST_STEPS.indexOf(step);
@@ -516,16 +511,10 @@ export function SetupWizard({
 
             return (
               <div key={checklistStep} style={stepRow(rowState)}>
-                <span style={stepBadge(rowState)}>
-                  {rowState === "done" ? "✓" : index + 1}
-                </span>
+                <span style={stepBadge(rowState)}>{rowState === "done" ? "✓" : index + 1}</span>
                 <div>
-                  <div style={stepTitle}>
-                    {t(`setupWizard.checklist.${checklistStep}.title`)}
-                  </div>
-                  <div style={stepDesc}>
-                    {t(`setupWizard.checklist.${checklistStep}.desc`)}
-                  </div>
+                  <div style={stepTitle}>{t(`setupWizard.checklist.${checklistStep}.title`)}</div>
+                  <div style={stepDesc}>{t(`setupWizard.checklist.${checklistStep}.desc`)}</div>
                 </div>
               </div>
             );
@@ -534,9 +523,7 @@ export function SetupWizard({
         <div style={guideCard}>
           <PetAvatar pet={guide.pet} size="md" />
           <div>
-            <div style={guideName}>
-              {t(`setupWizard.guideName.${guide.pet}`)}
-            </div>
+            <div style={guideName}>{t(`setupWizard.guideName.${guide.pet}`)}</div>
             <div style={guideQuote}>“{t(guide.quoteKey)}”</div>
           </div>
         </div>
@@ -582,18 +569,10 @@ export function SetupWizard({
 
             <div style={sectionLabel}>{t("settings.appearance")}</div>
             <div style={segWrap}>
-              <button
-                onClick={() => setMode("light")}
-                style={seg(mode === "light")}
-                type="button"
-              >
+              <button onClick={() => setMode("light")} style={seg(mode === "light")} type="button">
                 ☀ {t("settings.themeLight")}
               </button>
-              <button
-                onClick={() => setMode("dark")}
-                style={seg(mode === "dark")}
-                type="button"
-              >
+              <button onClick={() => setMode("dark")} style={seg(mode === "dark")} type="button">
                 ☾ {t("settings.themeDark")}
               </button>
               <button
@@ -638,11 +617,7 @@ export function SetupWizard({
                 {t("onboarding.back")}
               </Button>
               <div style={footerActions}>
-                <button
-                  onClick={() => setStep("petsFolder")}
-                  style={textLink}
-                  type="button"
-                >
+                <button onClick={() => setStep("petsFolder")} style={textLink} type="button">
                   {t("setupWizard.skipAppearance")}
                 </button>
                 <Button onClick={() => setStep("petsFolder")} size="lg">
@@ -679,12 +654,7 @@ export function SetupWizard({
                     {t("setupWizard.petdexBlurb")}
                   </small>
                 </span>
-                <a
-                  href={PETDEX_URL}
-                  rel="noreferrer"
-                  style={petdexLink}
-                  target="_blank"
-                >
+                <a href={PETDEX_URL} rel="noreferrer" style={petdexLink} target="_blank">
                   {t("setupWizard.petdexOpen")}
                 </a>
               </div>
@@ -700,9 +670,7 @@ export function SetupWizard({
                       : t("setupWizard.petdexDefaultFolder")}
                   </b>
                   <small style={{ color: "var(--text-muted)" }}>
-                    {state.petSourceDirectory ??
-                      defaultPetFolder ??
-                      "~/.petdex/pets"}
+                    {state.petSourceDirectory ?? defaultPetFolder ?? "~/.petdex/pets"}
                   </small>
                 </span>
                 {state.petSourceDirectory && (
@@ -723,11 +691,7 @@ export function SetupWizard({
                 </button>
               </div>
 
-              <div
-                className={`pd-onb__listen${
-                  looksFound === null ? "" : " pd-onb__listen--ok"
-                }`}
-              >
+              <div className={`pd-onb__listen${looksFound === null ? "" : " pd-onb__listen--ok"}`}>
                 <span
                   className={`pd-onb__listen-dot${
                     looksFound === null ? " pd-onb__listen-dot--pulse" : ""
@@ -744,11 +708,7 @@ export function SetupWizard({
                 {t("onboarding.back")}
               </Button>
               <div style={footerActions}>
-                <button
-                  onClick={() => setStep("plugin")}
-                  style={textLink}
-                  type="button"
-                >
+                <button onClick={() => setStep("plugin")} style={textLink} type="button">
                   {t("setupWizard.skipPetsFolder")}
                 </button>
                 <Button onClick={() => setStep("plugin")} size="lg">
@@ -796,15 +756,9 @@ export function SetupWizard({
                 <small>{pluginHint}</small>
               </span>
               {claudePlugin.status?.state === "installed" ? (
-                <span className="pd-onb__connect-ok">
-                  ✓ {t("claudePlugin.installed")}
-                </span>
-              ) : claudePlugin.status &&
-                claudePlugin.status.state !== "cli-missing" ? (
-                <Button
-                  disabled={claudePlugin.busy}
-                  onClick={() => void claudePlugin.install()}
-                >
+                <span className="pd-onb__connect-ok">✓ {t("claudePlugin.installed")}</span>
+              ) : claudePlugin.status && claudePlugin.status.state !== "cli-missing" ? (
+                <Button disabled={claudePlugin.busy} onClick={() => void claudePlugin.install()}>
                   {claudePlugin.busy
                     ? t("claudePlugin.installing")
                     : claudePlugin.status.state === "error"
@@ -819,11 +773,7 @@ export function SetupWizard({
                 {t("onboarding.back")}
               </Button>
               <div style={footerActions}>
-                <button
-                  onClick={() => setStep("done")}
-                  style={textLink}
-                  type="button"
-                >
+                <button onClick={() => setStep("done")} style={textLink} type="button">
                   {t("setupWizard.connectLater")}
                 </button>
                 <Button onClick={() => setStep("done")} size="lg">
@@ -838,9 +788,7 @@ export function SetupWizard({
           <section style={{ ...body, alignItems: "center" }}>
             <div style={doneWrap}>
               <DoneHeroPet assetId="cato" />
-              <span style={{ ...eyebrow, marginTop: "16px" }}>
-                {t("setupWizard.doneEyebrow")}
-              </span>
+              <span style={{ ...eyebrow, marginTop: "16px" }}>{t("setupWizard.doneEyebrow")}</span>
               <h1 style={title}>{t("setupWizard.doneTitle")}</h1>
               <div style={doneChips}>
                 <span style={doneChip}>

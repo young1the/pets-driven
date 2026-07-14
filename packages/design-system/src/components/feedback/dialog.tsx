@@ -43,12 +43,7 @@ export function Dialog({
       >
         {pet && <span className="pd-dialog__pet">{pet}</span>}
         {showClose && (
-          <button
-            aria-label="Close"
-            className="pd-dialog__close"
-            onClick={onClose}
-            type="button"
-          >
+          <button aria-label="Close" className="pd-dialog__close" onClick={onClose} type="button">
             <svg
               fill="none"
               stroke="currentColor"

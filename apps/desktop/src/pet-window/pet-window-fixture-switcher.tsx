@@ -1,7 +1,4 @@
-import {
-  PET_WINDOW_FIXTURES,
-  type PetWindowFixtureId,
-} from "@/pet-window/pet-window-fixtures";
+import { PET_WINDOW_FIXTURES, type PetWindowFixtureId } from "@/pet-window/pet-window-fixtures";
 import "@/pet-window/pet-window-fixture-switcher.css";
 
 function contextMenuPreviewUrl(petId: string, petName: string) {
@@ -20,15 +17,10 @@ export function PetWindowFixtureSwitcher({
   activeId: PetWindowFixtureId;
   onSelect: (fixtureId: string) => void;
 }) {
-  const activeFixture = PET_WINDOW_FIXTURES.find(
-    (fixture) => fixture.id === activeId,
-  );
+  const activeFixture = PET_WINDOW_FIXTURES.find((fixture) => fixture.id === activeId);
 
   return (
-    <aside
-      className="pet-window-fixture-switcher"
-      aria-label="Pet window fixture selector"
-    >
+    <aside className="pet-window-fixture-switcher" aria-label="Pet window fixture selector">
       <label htmlFor="pet-window-fixture-select">Fixture</label>
       <select
         id="pet-window-fixture-select"

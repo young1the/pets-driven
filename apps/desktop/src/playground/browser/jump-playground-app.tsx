@@ -24,17 +24,20 @@ export function JumpPlaygroundApp() {
   const [frameNumber, setFrameNumber] = useState(0);
   const [assets, setAssets] = useState<AssetCatalog>({});
 
-  const drawSnapshot = useCallback((scenario: JumpScenario) => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d");
-    if (!canvas || !context || typeof context.clearRect !== "function") {
-      return scenario.world.snapshot();
-    }
+  const drawSnapshot = useCallback(
+    (scenario: JumpScenario) => {
+      const canvas = canvasRef.current;
+      const context = canvas?.getContext("2d");
+      if (!canvas || !context || typeof context.clearRect !== "function") {
+        return scenario.world.snapshot();
+      }
 
-    const nextSnapshot = scenario.world.snapshot();
-    drawWorld(context, nextSnapshot, assets, scenario.clock.now());
-    return nextSnapshot;
-  }, [assets]);
+      const nextSnapshot = scenario.world.snapshot();
+      drawWorld(context, nextSnapshot, assets, scenario.clock.now());
+      return nextSnapshot;
+    },
+    [assets],
+  );
 
   const advanceFrame = useCallback(() => {
     const scenario = scenarioRef.current;
@@ -95,8 +98,12 @@ export function JumpPlaygroundApp() {
         <Button size="sm" onClick={() => setIsAnimationPlaying((prev) => !prev)}>
           {isAnimationPlaying ? "Pause animation" : "Resume animation"}
         </Button>
-        <Button size="sm" variant="neutral" onClick={advanceFrame}>Play next frame</Button>
-        <Button size="sm" variant="ghost" onClick={resetScenario}>Reset jumps</Button>
+        <Button size="sm" variant="neutral" onClick={advanceFrame}>
+          Play next frame
+        </Button>
+        <Button size="sm" variant="ghost" onClick={resetScenario}>
+          Reset jumps
+        </Button>
         <p>Frame: {frameNumber}</p>
       </section>
       <div className="jump-playground-stage">

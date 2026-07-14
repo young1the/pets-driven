@@ -12,10 +12,7 @@ import {
 import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
 import { personalitySocialKindScale } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
 import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
-import type {
-  SocialSessionComponent,
-  SocialSessionKind,
-} from "./components";
+import type { SocialSessionComponent, SocialSessionKind } from "./components";
 
 type Bounds = { x?: number; y?: number; width: number; height: number };
 type Vec = { x: number; y: number };
@@ -59,10 +56,7 @@ export const GREET_TIMEOUT_MS = 5_000;
 // play/part lengths per kind (ms). `play` is the payload; `part` is a short
 // wind-down before teardown. These run on the tens-of-seconds scale — a chat
 // is a real conversation to watch, not a blink.
-export const PHASE_DURATIONS: Record<
-  SocialSessionKind,
-  { play: number; part: number }
-> = {
+export const PHASE_DURATIONS: Record<SocialSessionKind, { play: number; part: number }> = {
   greet: { play: 2_500, part: 800 },
   chat: { play: 9_000, part: 800 },
   chase: { play: 7_500, part: 800 },
@@ -142,11 +136,7 @@ function positionOf(components: ComponentStore, id: string): Vec | null {
 }
 
 /** A claim from a source that outranks `social` and is still live blocks us. */
-function isBlockedByHigherPriority(
-  components: ComponentStore,
-  id: string,
-  now: number,
-): boolean {
+function isBlockedByHigherPriority(components: ComponentStore, id: string, now: number): boolean {
   const decision = components.getComponent(id, "BehaviorDecisionState");
   if (decision && decision.expiresAt > now) {
     if (BEHAVIOR_PRIORITY[decision.source] < BEHAVIOR_PRIORITY.social) {
@@ -172,8 +162,7 @@ function claimSocial(
   // Look through bookkeeping claims (arrival dwell, idle speech) at the last
   // genuine autonomous decision, mirroring features/behavior/systems.ts.
   const existingIsRealAutonomous =
-    existing?.source === "autonomous" &&
-    !BOOKKEEPING_AUTONOMOUS_REASONS.has(existing.reason);
+    existing?.source === "autonomous" && !BOOKKEEPING_AUTONOMOUS_REASONS.has(existing.reason);
   const lastAutonomousReason = existingIsRealAutonomous
     ? existing.reason
     : (existing?.lastAutonomousReason ?? null);
@@ -192,11 +181,7 @@ function claimSocial(
 }
 
 /** Let the current social claim lapse now so lower priorities can take over. */
-function releaseSocialClaim(
-  components: ComponentStore,
-  id: string,
-  now: number,
-): void {
+function releaseSocialClaim(components: ComponentStore, id: string, now: number): void {
   const decision = components.getComponent(id, "BehaviorDecisionState");
   if (decision?.source === "social") decision.expiresAt = now;
 }
@@ -294,10 +279,7 @@ function fleeTarget(self: Vec, from: Vec, distance: number, bounds: Bounds): Vec
 
 /** Arithmetic centre of a set of points. */
 function centroidOf(points: Vec[]): Vec {
-  const sum = points.reduce(
-    (acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }),
-    { x: 0, y: 0 },
-  );
+  const sum = points.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
   return { x: sum.x / points.length, y: sum.y / points.length };
 }
 
@@ -319,12 +301,7 @@ function maxPairwiseDistance(points: Vec[]): number {
  * spaced row (keeping left-to-right order so nobody crosses through a friend);
  * otherwise they just stop where they are.
  */
-function standSpaced(
-  components: ComponentStore,
-  ids: string[],
-  pos: Vec[],
-  bounds: Bounds,
-): void {
+function standSpaced(components: ComponentStore, ids: string[], pos: Vec[], bounds: Bounds): void {
   if (ids.length < 2) {
     for (const id of ids) stop(components, id);
     return;
@@ -352,28 +329,18 @@ function standSpaced(
     .map((id, index) => ({ id, index }))
     .sort((l, r) => pos[l.index].x - pos[r.index].x);
   order.forEach(({ id, index }, rank) => {
-    const targetX = clamp(
-      centreX + (rank - (order.length - 1) / 2) * spacing,
-      minX,
-      maxX,
-    );
+    const targetX = clamp(centreX + (rank - (order.length - 1) / 2) * spacing, minX, maxX);
     moveToward(components, id, { x: targetX, y: pos[index].y }, APPROACH_SPEED_FACTOR);
   });
 }
 
 /** The point nearest to `fromIndex` among the others (there is always one). */
-function nearestOther(
-  points: Vec[],
-  fromIndex: number,
-): { index: number; distance: number } {
+function nearestOther(points: Vec[], fromIndex: number): { index: number; distance: number } {
   let index = -1;
   let distance = Number.POSITIVE_INFINITY;
   for (let i = 0; i < points.length; i += 1) {
     if (i === fromIndex) continue;
-    const d = Math.hypot(
-      points[i].x - points[fromIndex].x,
-      points[i].y - points[fromIndex].y,
-    );
+    const d = Math.hypot(points[i].x - points[fromIndex].x, points[i].y - points[fromIndex].y);
     if (d < distance) {
       distance = d;
       index = i;
@@ -394,10 +361,7 @@ function socialDrive(drives: DrivesComponent | undefined): number {
  * anxious pets almost never strike up a conversation, while extraverts drive
  * most of the social life.
  */
-function initiateScore(
-  p: PersonalityComponent,
-  drives: DrivesComponent | undefined,
-): number {
+function initiateScore(p: PersonalityComponent, drives: DrivesComponent | undefined): number {
   return clamp(
     0.05 +
       p.extraversion * 0.6 +
@@ -417,10 +381,7 @@ function initiateScore(
  * readily. Loneliness (social drive) can coax a reluctant pet out, but only so
  * far.
  */
-function acceptChance(
-  p: PersonalityComponent,
-  drives: DrivesComponent | undefined,
-): number {
+function acceptChance(p: PersonalityComponent, drives: DrivesComponent | undefined): number {
   return clamp(
     0.1 +
       p.agreeableness * 0.55 +
@@ -447,23 +408,19 @@ export function socialSessionKindWeights(
   const n = (a.neuroticism + b.neuroticism) / 2;
   const aScale = personalitySocialKindScale(a.catalogId);
   const bScale = personalitySocialKindScale(b.catalogId);
-  const pairScale = (kind: SocialSessionKind) =>
-    Math.sqrt(aScale[kind] * bScale[kind]);
+  const pairScale = (kind: SocialSessionKind) => Math.sqrt(aScale[kind] * bScale[kind]);
   return [
     {
       kind: "chase",
-      weight: clamp(0.15 + e * 0.6 + o * 0.3 - n * 0.4, 0.02, 2) *
-        pairScale("chase"),
+      weight: clamp(0.15 + e * 0.6 + o * 0.3 - n * 0.4, 0.02, 2) * pairScale("chase"),
     },
     {
       kind: "greet",
-      weight: clamp(0.3 + agr * 0.4 + (1 - n) * 0.2, 0.02, 2) *
-        pairScale("greet"),
+      weight: clamp(0.3 + agr * 0.4 + (1 - n) * 0.2, 0.02, 2) * pairScale("greet"),
     },
     {
       kind: "chat",
-      weight: clamp(0.25 + e * 0.4 + agr * 0.3, 0.02, 2) *
-        pairScale("chat"),
+      weight: clamp(0.25 + e * 0.4 + agr * 0.3, 0.02, 2) * pairScale("chat"),
     },
   ];
 }
@@ -517,8 +474,8 @@ function advanceSessions(components: ComponentStore, now: number, bounds: Bounds
     // points here and nothing more urgent has grabbed them.
     const remaining = session.participantIds.filter(
       (id) =>
-        components.getComponent(id, "SocialSessionMember")?.sessionId ===
-          sessionId && !isBlockedByHigherPriority(components, id, now),
+        components.getComponent(id, "SocialSessionMember")?.sessionId === sessionId &&
+        !isBlockedByHigherPriority(components, id, now),
     );
 
     // A group survives a drop-out; a pair does not (nobody left to play with).
@@ -573,12 +530,7 @@ function choreograph(
     const timedOut = now - session.startedAt >= GREET_TIMEOUT_MS;
     if (!met && !timedOut) {
       ids.forEach((id, i) =>
-        moveToward(
-          components,
-          id,
-          approachStop(pos[i], centre, gap),
-          APPROACH_SPEED_FACTOR,
-        ),
+        moveToward(components, id, approachStop(pos[i], centre, gap), APPROACH_SPEED_FACTOR),
       );
       return;
     }
@@ -626,13 +578,7 @@ function choreograph(
     if (i === speakerIndex) {
       // Refreshed every tick of the turn, but give it the turn's length so the
       // bubble never blinks out between refreshes or at the turn boundary.
-      setSpeech(
-        components,
-        id,
-        pickLine(CHAT_LINES, session.startedAt + turn),
-        now,
-        CHAT_TURN_MS,
-      );
+      setSpeech(components, id, pickLine(CHAT_LINES, session.startedAt + turn), now, CHAT_TURN_MS);
       setExpression(components, id, "thinking", "none", now, 400);
     } else {
       setSpeech(components, id, null, now);
@@ -671,14 +617,11 @@ function choreographChase(
   const chaserPos = pos[chaserIndex];
   const nearestRunner = nearestOther(pos, chaserIndex);
   const cueCooledDown =
-    now - (session.lastCatchAt ?? Number.NEGATIVE_INFINITY) >=
-    CHASE_CATCH_COOLDOWN_MS;
-  const catchRadius =
-    bodyWidth(components, ids[nearestRunner.index]) * CHASE_CATCH_BODY_WIDTHS;
+    now - (session.lastCatchAt ?? Number.NEGATIVE_INFINITY) >= CHASE_CATCH_COOLDOWN_MS;
+  const catchRadius = bodyWidth(components, ids[nearestRunner.index]) * CHASE_CATCH_BODY_WIDTHS;
   const caught = nearestRunner.distance <= catchRadius && cueCooledDown;
 
-  const swapReference =
-    session.lastChaseSwapAt ?? session.playStartedAt ?? session.startedAt;
+  const swapReference = session.lastChaseSwapAt ?? session.playStartedAt ?? session.startedAt;
 
   if (caught) {
     const chaserId = session.chaserId!;
@@ -755,9 +698,7 @@ function partWithParticipant(
   id: string,
   now: number,
 ): void {
-  if (
-    components.getComponent(id, "SocialSessionMember")?.sessionId === sessionId
-  ) {
+  if (components.getComponent(id, "SocialSessionMember")?.sessionId === sessionId) {
     components.removeComponent(id, "SocialSessionMember");
   }
   refillSocial(components, id, SESSION_SOCIAL_REFILL);
@@ -772,25 +713,17 @@ function partWithParticipant(
 }
 
 /** Point each member's representative partnerId at a current co-participant. */
-function refreshPartnerIds(
-  components: ComponentStore,
-  session: SocialSessionComponent,
-): void {
+function refreshPartnerIds(components: ComponentStore, session: SocialSessionComponent): void {
   for (const id of session.participantIds) {
     const member = components.getComponent(id, "SocialSessionMember");
     if (member?.sessionId) {
-      member.partnerId =
-        session.participantIds.find((p) => p !== id) ?? id;
+      member.partnerId = session.participantIds.find((p) => p !== id) ?? id;
     }
   }
 }
 
 // Pass 2 — accept or decline every pending invite.
-function resolveInvites(
-  components: ComponentStore,
-  now: number,
-  random: RandomSource,
-): void {
+function resolveInvites(components: ComponentStore, now: number, random: RandomSource): void {
   const targetIds = [...components.components("SocialInvite").keys()];
   for (const targetId of targetIds) {
     const invite = components.getComponent(targetId, "SocialInvite");
@@ -817,8 +750,7 @@ function resolveInvites(
 
     const personality = components.getComponent(targetId, "Personality");
     const drives = components.getComponent(targetId, "Drives");
-    const accepts =
-      !!personality && random.next() < acceptChance(personality, drives);
+    const accepts = !!personality && random.next() < acceptChance(personality, drives);
 
     if (accepts) {
       createSession(components, [fromId, targetId], invite.kind, now);
@@ -897,10 +829,7 @@ function setSessionMember(
 const BUMP_GREET_BIAS = 0.6;
 
 /** Personality/drive-weighted chance a matured bump turns into an invite. */
-function bumpInviteChance(
-  p: PersonalityComponent,
-  drives: DrivesComponent | undefined,
-): number {
+function bumpInviteChance(p: PersonalityComponent, drives: DrivesComponent | undefined): number {
   return clamp(
     0.2 +
       p.extraversion * 0.35 +
@@ -931,10 +860,7 @@ export function isBumpSocialEligible(
       return false;
     }
     if (components.getComponent(participant, "TaskMovementHold")) return false;
-    if (
-      components.getComponent(participant, "AgentTaskState")?.status ===
-      "working"
-    ) {
+    if (components.getComponent(participant, "AgentTaskState")?.status === "working") {
       return false;
     }
     if (isBlockedByHigherPriority(components, participant, now)) return false;
@@ -986,10 +912,7 @@ function convertBumpsToInvites(
       continue;
     }
 
-    const otherPersonality = components.getComponent(
-      bump.otherId,
-      "Personality",
-    );
+    const otherPersonality = components.getComponent(bump.otherId, "Personality");
     const kind: SocialSessionKind =
       random.next() < BUMP_GREET_BIAS || !otherPersonality
         ? "greet"
@@ -1007,10 +930,7 @@ function convertBumpsToInvites(
     setExpression(components, bump.id, "happy", "heart", now, 500);
     components.removeComponent(bump.id, "PendingReaction");
     // The friendly turn defuses the partner's own startle about this bump.
-    const otherReaction = components.getComponent(
-      bump.otherId,
-      "PendingReaction",
-    );
+    const otherReaction = components.getComponent(bump.otherId, "PendingReaction");
     if (otherReaction?.context.otherEntityId === bump.id) {
       components.removeComponent(bump.otherId, "PendingReaction");
     }
@@ -1023,11 +943,7 @@ function convertBumpsToInvites(
 // Joining is session-scoped (no pet-to-pet handshake): the huddle is open, so
 // an eligible pet close to its centre and willing (personality/drive-weighted)
 // simply joins. Gated to the play phase and capped at MAX_GROUP_SIZE.
-function emitJoins(
-  components: ComponentStore,
-  now: number,
-  random: RandomSource,
-): void {
+function emitJoins(components: ComponentStore, now: number, random: RandomSource): void {
   const sessionIds = [...components.components("SocialSession").keys()];
   for (const sessionId of sessionIds) {
     const session = components.getComponent(sessionId, "SocialSession");
@@ -1217,12 +1133,6 @@ export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
     "RecentExperienceMemory",
   ],
   update(ctx) {
-    runSocialInteractionSystem(
-      ctx.components,
-      ctx.clock,
-      ctx.random,
-      ctx.bounds,
-      ctx.deltaMs,
-    );
+    runSocialInteractionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds, ctx.deltaMs);
   },
 };

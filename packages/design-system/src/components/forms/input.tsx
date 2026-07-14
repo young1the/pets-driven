@@ -5,8 +5,7 @@ import "./input.css";
  * A soft, gently sunken text field with optional leading icon, label,
  * hint and error states.
  */
-export interface InputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
   /** Field label rendered above the input. */
   label?: string;
   /** Helper text below the input (turns red when `error`). */
@@ -32,14 +31,11 @@ export function Input({
   className = "",
   ...rest
 }: InputProps) {
-  const fieldId =
-    id || (label ? `pd-${label.toLowerCase().replace(/\s+/g, "-")}` : undefined);
+  const fieldId = id || (label ? `pd-${label.toLowerCase().replace(/\s+/g, "-")}` : undefined);
 
   return (
     <div
-      className={["pd-field", error ? "pd-field--error" : "", className]
-        .filter(Boolean)
-        .join(" ")}
+      className={["pd-field", error ? "pd-field--error" : "", className].filter(Boolean).join(" ")}
     >
       {label && (
         <label className="pd-field__label" htmlFor={fieldId}>
@@ -51,11 +47,7 @@ export function Input({
         {icon && <span className="pd-inputwrap__icon">{icon}</span>}
         <input
           aria-invalid={error || undefined}
-          className={[
-            "pd-input",
-            `pd-input--${size}`,
-            icon ? "pd-input--hasicon" : "",
-          ]
+          className={["pd-input", `pd-input--${size}`, icon ? "pd-input--hasicon" : ""]
             .filter(Boolean)
             .join(" ")}
           id={fieldId}

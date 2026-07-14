@@ -56,9 +56,7 @@ describe("AdoptPetFlow Petdex CTA", () => {
       />,
     );
 
-    expect(
-      await screen.findByText("No pet looks installed yet."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("No pet looks installed yet.")).toBeInTheDocument();
     expect(screen.queryByText("Get started →")).not.toBeInTheDocument();
   });
 
@@ -80,30 +78,27 @@ describe("AdoptPetFlow Petdex CTA", () => {
       expect(petName).toBeTruthy();
     });
 
-    const petdexCopy = screen.getByText(
-      "Want more looks? Install pets from Petdex.",
-    );
+    const petdexCopy = screen.getByText("Want more looks? Install pets from Petdex.");
     expect(petdexCopy).toBeTruthy();
     expect(
-      Boolean(
-        petName!.compareDocumentPosition(petdexCopy) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ),
+      Boolean(petName!.compareDocumentPosition(petdexCopy) & Node.DOCUMENT_POSITION_FOLLOWING),
     ).toBe(true);
-    expect(screen.getByRole("link", { name: "Open Petdex" }).getAttribute("href")).toBe("https://petdex.dev");
+    expect(screen.getByRole("link", { name: "Open Petdex" }).getAttribute("href")).toBe(
+      "https://petdex.dev",
+    );
   });
 
   it("shows a Petdex install command when no local pet packs exist", async () => {
     renderOnboarding(createGateway([]));
 
     await waitFor(() => {
-      expect(
-        screen.getByText("No pet looks installed yet."),
-      ).toBeTruthy();
+      expect(screen.getByText("No pet looks installed yet.")).toBeTruthy();
     });
 
     expect(screen.getByText("npx petdex install boba")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Browse Petdex" }).getAttribute("href")).toBe("https://petdex.dev");
+    expect(screen.getByRole("link", { name: "Browse Petdex" }).getAttribute("href")).toBe(
+      "https://petdex.dev",
+    );
   });
 });
 
@@ -159,9 +154,7 @@ describe("AdoptPetFlow Claude Code connect", () => {
     fireEvent.click(screen.getByText("Looks good →"));
     fireEvent.click(screen.getByText("Adopt without a folder →"));
 
-    expect(
-      await screen.findByText("Connect Claude Code"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Connect Claude Code")).toBeInTheDocument();
 
     fireEvent.click(await screen.findByText("Install"));
 

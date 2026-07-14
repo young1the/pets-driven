@@ -23,9 +23,7 @@ function makeStore(options?: {
   claim?: { source: "user-interaction" | "autonomous"; expiresAt: number };
 }) {
   const cursorPosition =
-    options?.cursorPosition === undefined
-      ? { x: 200, y: 200 }
-      : options.cursorPosition;
+    options?.cursorPosition === undefined ? { x: 200, y: 200 } : options.cursorPosition;
   const steeringMode = options?.steeringMode ?? "arrive";
 
   return createComponentStore([
@@ -171,9 +169,7 @@ describe("runHoverReactionSystem", () => {
     // The pet is parked: steering stands, the motion target is cleared, and
     // velocity is zeroed.
     expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
-    ).toBeNull();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
     expect(velocities).toContainEqual({ x: 0, y: 0 });
 
     const expression = store.getComponent("pet-a", "PetExpressionState");
@@ -222,9 +218,7 @@ describe("runHoverReactionSystem", () => {
 
     runHoverReactionSystem(store, createManualClock(1_000));
 
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe(
-      "existing",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("existing");
   });
 
   it("overrides a lower-priority autonomous claim", () => {
@@ -235,26 +229,19 @@ describe("runHoverReactionSystem", () => {
 
     runHoverReactionSystem(store, createManualClock(1_000));
 
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe(
-      "hover-observe",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("hover-observe");
   });
 
   it("does not re-extend its own claim while the cursor keeps hovering", () => {
     const store = makeStore();
 
     runHoverReactionSystem(store, createManualClock(1_000));
-    const firstExpiresAt = store.getComponent(
-      "pet-a",
-      "BehaviorDecisionState",
-    )?.expiresAt;
+    const firstExpiresAt = store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt;
 
     // Pet now stands; a later tick with the cursor still on it must not
     // refresh the claim — petting needs the claim to expire to take over.
     runHoverReactionSystem(store, createManualClock(1_500));
 
-    expect(
-      store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt,
-    ).toBe(firstExpiresAt);
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBe(firstExpiresAt);
   });
 });

@@ -42,8 +42,7 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
     allPets.push({ id, x: transform.position.x, y: transform.position.y });
   });
 
-  const effectiveNow =
-    now ?? cursorEntry?.samples[cursorEntry.samples.length - 1]?.at ?? 0;
+  const effectiveNow = now ?? cursorEntry?.samples[cursorEntry.samples.length - 1]?.at ?? 0;
   const cursorSpeed = cursorEntry?.position
     ? computeCursorSpeed(cursorEntry.samples, effectiveNow)
     : 0;
@@ -91,13 +90,7 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
   );
 }
 
-function buildEntry(
-  id: string,
-  ex: number,
-  ey: number,
-  px: number,
-  py: number,
-): PerceivedEntity {
+function buildEntry(id: string, ex: number, ey: number, px: number, py: number): PerceivedEntity {
   return {
     id,
     position: { x: ex, y: ey },

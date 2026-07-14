@@ -9,9 +9,7 @@ export class PlaygroundPage {
   }
 
   async expectReady() {
-    await expect(
-      this.page.getByRole("heading", { name: PLAYGROUND_TEXT.title }),
-    ).toBeVisible();
+    await expect(this.page.getByRole("heading", { name: PLAYGROUND_TEXT.title })).toBeVisible();
     await expect(this.page.getByTestId("world-canvas")).toBeVisible();
     await expect(
       this.page.getByRole("heading", { name: PLAYGROUND_TEXT.behaviorLabTitle }),
@@ -47,9 +45,7 @@ export class PlaygroundPage {
   }
 
   async expectLastEventType(type: string) {
-    await expect(
-      this.page.getByText(new RegExp(`"type": "${type}"`)),
-    ).toBeVisible();
+    await expect(this.page.getByText(new RegExp(`"type": "${type}"`))).toBeVisible();
   }
 
   async expectPetStatus(name: string, intent: string, speech: string) {
@@ -82,8 +78,9 @@ export class PlaygroundPage {
   }
 
   async expectSelectedBehaviorPet(name: string) {
-    await expect(
-      this.page.getByRole("button", { name, exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
+    await expect(this.page.getByRole("button", { name, exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   }
 }

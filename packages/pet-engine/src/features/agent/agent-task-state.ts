@@ -1,9 +1,4 @@
-export type AgentTaskStatus =
-  | "idle"
-  | "working"
-  | "waiting"
-  | "completed"
-  | "failed";
+export type AgentTaskStatus = "idle" | "working" | "waiting" | "completed" | "failed";
 
 /** Single source of truth for an agent's task lifecycle. Absent = idle. */
 export type AgentTaskStateComponent = {
@@ -13,11 +8,7 @@ export type AgentTaskStateComponent = {
   summary?: string;
 };
 
-const FREEZING_STATUSES: ReadonlySet<AgentTaskStatus> = new Set([
-  "waiting",
-  "failed",
-  "completed",
-]);
+const FREEZING_STATUSES: ReadonlySet<AgentTaskStatus> = new Set(["waiting", "failed", "completed"]);
 
 /** waiting/failed/completed hold the pet still; working/idle move freely. */
 export function statusFreezesMovement(status: AgentTaskStatus): boolean {
@@ -25,9 +16,7 @@ export function statusFreezesMovement(status: AgentTaskStatus): boolean {
 }
 
 /** Overlay badge text; working/idle show no badge. */
-export function agentTaskBadgeLabel(
-  status: AgentTaskStatus,
-): "WAIT" | "FAIL" | "DONE" | null {
+export function agentTaskBadgeLabel(status: AgentTaskStatus): "WAIT" | "FAIL" | "DONE" | null {
   switch (status) {
     case "waiting":
       return "WAIT";

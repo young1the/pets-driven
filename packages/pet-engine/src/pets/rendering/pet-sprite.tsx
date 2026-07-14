@@ -152,11 +152,6 @@ export function PetSprite({
   );
 }
 
-function scaleOverlayValue(
-  value: number,
-  frame: ReturnType<typeof resolvePetSpriteFrame>,
-) {
-  return Number(
-    (value * (frame.drawSize.width / frame.source.width)).toFixed(10),
-  );
+function scaleOverlayValue(value: number, frame: ReturnType<typeof resolvePetSpriteFrame>) {
+  return Number((value * (frame.drawSize.width / frame.source.width)).toFixed(10));
 }

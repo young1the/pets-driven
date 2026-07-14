@@ -58,7 +58,9 @@ export function runContactSystem(components: ComponentStore): void {
         const horizontallyOverlaps =
           pos.x + entityHalfWidth >= ground.position.x - groundHalfWidth &&
           pos.x - entityHalfWidth <= ground.position.x + groundHalfWidth;
-        return horizontallyOverlaps && Math.abs(entityBottom - groundTop) <= GROUND_CONTACT_TOLERANCE;
+        return (
+          horizontallyOverlaps && Math.abs(entityBottom - groundTop) <= GROUND_CONTACT_TOLERANCE
+        );
       });
     },
   );

@@ -13,8 +13,7 @@ import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet
 function personality(catalogId: PetPersonalityId): PersonalityComponent {
   const factory = PERSONALITY_REGISTRY.find((entry) => entry.id === catalogId)?.factory;
   if (!factory) throw new Error(`Missing personality factory for ${catalogId}`);
-  const { openness, conscientiousness, extraversion, agreeableness, neuroticism } =
-    factory();
+  const { openness, conscientiousness, extraversion, agreeableness, neuroticism } = factory();
   return {
     type: "Personality",
     catalogId,
@@ -58,9 +57,7 @@ describe("Personality Catalog behavior signatures", () => {
     expect(signedDecisionScore("playful", "play-romp", 0)).toBeGreaterThan(
       signedDecisionScore("bold", "play-romp", 0),
     );
-    expect(
-      signedDecisionScore("bold", "collision-unfazed", 0),
-    ).toBeGreaterThan(
+    expect(signedDecisionScore("bold", "collision-unfazed", 0)).toBeGreaterThan(
       signedDecisionScore("playful", "collision-unfazed", 0),
     );
   });
@@ -72,45 +69,24 @@ describe("Personality Catalog behavior signatures", () => {
     expect(personalityArrivalDwellScale("reserved")).toBeGreaterThan(
       personalityArrivalDwellScale("skittish"),
     );
-    expect(
-      signedDecisionScore("skittish", "collision-flee", 0),
-    ).toBeGreaterThan(
+    expect(signedDecisionScore("skittish", "collision-flee", 0)).toBeGreaterThan(
       signedDecisionScore("reserved", "collision-flee", 0),
     );
   });
 
-  it(
-    "assigns distinct user-distance signatures to attentive, reserved, and aloof",
-    () => {
-      expect(PERSONALITY_BEHAVIOR_SIGNATURES.attentive.primaryDecision).toBe(
-        "keep-watch",
-      );
-      expect(PERSONALITY_BEHAVIOR_SIGNATURES.reserved.primaryDecision).toBe(
-        "peek",
-      );
-      expect(PERSONALITY_BEHAVIOR_SIGNATURES.aloof.primaryDecision).toBe(
-        "withdraw",
-      );
-    },
-  );
+  it("assigns distinct user-distance signatures to attentive, reserved, and aloof", () => {
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.attentive.primaryDecision).toBe("keep-watch");
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.reserved.primaryDecision).toBe("peek");
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.aloof.primaryDecision).toBe("withdraw");
+  });
 
   it("gives every remaining catalog entry an exclusive primary action", () => {
-    expect(PERSONALITY_BEHAVIOR_SIGNATURES.playful.primaryDecision).toBe(
-      "play-romp",
-    );
-    expect(PERSONALITY_BEHAVIOR_SIGNATURES.curious.primaryDecision).toBe(
-      "inspect",
-    );
-    expect(PERSONALITY_BEHAVIOR_SIGNATURES.steady.primaryDecision).toBe(
-      "follow-routine",
-    );
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.playful.primaryDecision).toBe("play-romp");
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.curious.primaryDecision).toBe("inspect");
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.steady.primaryDecision).toBe("follow-routine");
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.bold.primaryDecision).toBe("strut");
-    expect(PERSONALITY_BEHAVIOR_SIGNATURES.gentle.primaryDecision).toBe(
-      "offer-comfort",
-    );
-    expect(PERSONALITY_BEHAVIOR_SIGNATURES.skittish.primaryDecision).toBe(
-      "stand-lookout",
-    );
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.gentle.primaryDecision).toBe("offer-comfort");
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.skittish.primaryDecision).toBe("stand-lookout");
   });
 
   it("distinguishes calm personalities by social and solo signatures", () => {
@@ -120,9 +96,7 @@ describe("Personality Catalog behavior signatures", () => {
     expect(signedDecisionScore("steady", "groom", 0)).toBeGreaterThan(
       signedDecisionScore("gentle", "groom", 0),
     );
-    expect(
-      signedDecisionScore("zen", "collision-unfazed", 0),
-    ).toBeGreaterThan(
+    expect(signedDecisionScore("zen", "collision-unfazed", 0)).toBeGreaterThan(
       signedDecisionScore("steady", "collision-unfazed", 0),
     );
   });

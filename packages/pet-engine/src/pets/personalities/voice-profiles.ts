@@ -6,10 +6,7 @@ import type {
 } from "@pets-driven/pet-engine/features/behavior/components";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/personalities/registry";
 
-type AcknowledgedTaskStatus = Extract<
-  AgentTaskStatus,
-  "waiting" | "failed" | "completed"
->;
+type AcknowledgedTaskStatus = Extract<AgentTaskStatus, "waiting" | "failed" | "completed">;
 
 export type AcknowledgeFeedback = {
   speech: string;
@@ -22,10 +19,7 @@ type PersonalityVoiceProfile = Omit<SpeechProfileComponent, "type"> & {
 };
 
 /** Distinct voice and acknowledgement beats for every Personality Catalog entry. */
-export const PERSONALITY_VOICE_PROFILES: Record<
-  PetPersonalityId,
-  PersonalityVoiceProfile
-> = {
+export const PERSONALITY_VOICE_PROFILES: Record<PetPersonalityId, PersonalityVoiceProfile> = {
   playful: {
     idleCompanion: "Anything fun yet?",
     attentionNeeded: "Hey! I need you over here.",
@@ -182,8 +176,6 @@ export function personalityAcknowledgeFeedback(
   return PERSONALITY_VOICE_PROFILES[catalogId].acknowledge[status];
 }
 
-function statusFreezesForFeedback(
-  status: AgentTaskStatus,
-): status is AcknowledgedTaskStatus {
+function statusFreezesForFeedback(status: AgentTaskStatus): status is AcknowledgedTaskStatus {
   return status === "waiting" || status === "failed" || status === "completed";
 }

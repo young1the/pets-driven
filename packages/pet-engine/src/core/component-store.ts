@@ -22,9 +22,7 @@ export type ComponentStore = {
     id: EntityId,
     type: TType,
   ): ComponentOf<TType> | undefined;
-  components<TType extends ComponentType>(
-    type: TType,
-  ): ReadonlyMap<EntityId, ComponentOf<TType>>;
+  components<TType extends ComponentType>(type: TType): ReadonlyMap<EntityId, ComponentOf<TType>>;
   setComponent(componentOwnerId: EntityId, component: Component): void;
   removeComponent(componentOwnerId: EntityId, type: ComponentType): void;
 
@@ -59,10 +57,7 @@ export type ComponentStore = {
    */
   forEach<TTypes extends ComponentType[]>(
     types: [...TTypes],
-    callback: (
-      id: EntityId,
-      components: { [K in keyof TTypes]: ComponentOf<TTypes[K]> },
-    ) => void,
+    callback: (id: EntityId, components: { [K in keyof TTypes]: ComponentOf<TTypes[K]> }) => void,
   ): void;
 };
 
@@ -95,7 +90,9 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
     table.set(id, component);
   }
 
-  function queryArray<TTypes extends ComponentType[]>(types: TTypes): Array<{
+  function queryArray<TTypes extends ComponentType[]>(
+    types: TTypes,
+  ): Array<{
     id: EntityId;
     components: { [Index in keyof TTypes]: ComponentOf<TTypes[Index]> };
   }> {
@@ -114,10 +111,12 @@ export function createComponentStore(declarations: EntityDeclaration[]): Compone
       if (comps.some((c) => c === undefined)) {
         return [];
       }
-      return [{
-        id,
-        components: comps as { [Index in keyof TTypes]: ComponentOf<TTypes[Index]> },
-      }];
+      return [
+        {
+          id,
+          components: comps as { [Index in keyof TTypes]: ComponentOf<TTypes[Index]> },
+        },
+      ];
     });
   }
 

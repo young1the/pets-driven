@@ -224,9 +224,7 @@ const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   keepingLookout: activityEntry("keepingLookout", "confused", "exclaim"),
 };
 
-function presentationFromAgentStatus(
-  status: AgentChannelStatus,
-): IntentPresentation {
+function presentationFromAgentStatus(status: AgentChannelStatus): IntentPresentation {
   switch (status) {
     case "working":
       return {

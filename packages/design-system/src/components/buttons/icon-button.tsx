@@ -4,8 +4,7 @@ import "./icon-button.css";
 /**
  * A circular, icon-only button. Always pass a `label` for accessibility.
  */
-export interface IconButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. @default "ghost" */
   variant?: "ghost" | "soft" | "solid";
   /** Size. @default "md" */
@@ -24,12 +23,7 @@ export function IconButton({
   children,
   ...rest
 }: IconButtonProps) {
-  const cls = [
-    "pd-iconbtn",
-    `pd-iconbtn--${variant}`,
-    `pd-iconbtn--${size}`,
-    className,
-  ]
+  const cls = ["pd-iconbtn", `pd-iconbtn--${variant}`, `pd-iconbtn--${size}`, className]
     .filter(Boolean)
     .join(" ");
 

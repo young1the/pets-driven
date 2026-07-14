@@ -8,7 +8,10 @@
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-soft);
 }
-.pd-tabs--block { display: flex; width: 100%; }
+.pd-tabs--block {
+  display: flex;
+  width: 100%;
+}
 .pd-tab {
   flex: 1;
   display: inline-flex;
@@ -30,10 +33,22 @@
     background-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
-.pd-tab:hover { color: var(--text-strong); }
-.pd-tab svg { width: 16px; height: 16px; }
-.pd-tab--active { color: var(--color-primary); background: var(--surface-card); box-shadow: var(--shadow-sm); }
-.pd-tab:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.pd-tab:hover {
+  color: var(--text-strong);
+}
+.pd-tab svg {
+  width: 16px;
+  height: 16px;
+}
+.pd-tab--active {
+  color: var(--color-primary);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+.pd-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
 .pd-tab__badge {
   font-size: var(--text-3xs);
   font-weight: 800;
@@ -42,4 +57,7 @@
   padding: 1px 7px;
   border-radius: var(--radius-pill);
 }
-.pd-tab--active .pd-tab__badge { background: var(--color-primary); color: #fff; }
+.pd-tab--active .pd-tab__badge {
+  background: var(--color-primary);
+  color: #fff;
+}

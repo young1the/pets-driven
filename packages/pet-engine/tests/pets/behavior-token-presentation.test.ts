@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import { presentPetExpression } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetExpressionSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 
-function expressionFixture(
-  overrides: Partial<PetExpressionSnapshot> = {},
-): PetExpressionSnapshot {
+function expressionFixture(overrides: Partial<PetExpressionSnapshot> = {}): PetExpressionSnapshot {
   return {
     source: "collision",
     mood: "confused",
@@ -22,9 +20,7 @@ describe("behavior token presentation", () => {
   });
 
   it("does not present pet expressions with no emote", () => {
-    expect(
-      presentPetExpression(expressionFixture({ emote: "none" })),
-    ).toBeNull();
+    expect(presentPetExpression(expressionFixture({ emote: "none" }))).toBeNull();
   });
 
   it("uses a fallback label when an expression label is absent", () => {

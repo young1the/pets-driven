@@ -47,14 +47,24 @@ describe("pet window message contract", () => {
       isSamePetWindowPresentation(
         {
           sprite: {
-            decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
+            decisionEmote: {
+              emote: "sparkle",
+              label: "Jump request",
+              mood: "excited",
+              tone: "spark",
+            },
             animationState: "running-left",
           },
           overlay: { kind: "status", label: "!" },
         },
         {
           sprite: {
-            decisionEmote: { emote: "sparkle", label: "Jump request", mood: "excited", tone: "spark" },
+            decisionEmote: {
+              emote: "sparkle",
+              label: "Jump request",
+              mood: "excited",
+              tone: "spark",
+            },
             animationState: "running-left",
           },
           overlay: { kind: "status", label: "!" },
@@ -74,7 +84,12 @@ describe("pet window message contract", () => {
         { sprite: { decisionEmote: null, animationState: "idle" }, overlay: null },
         {
           sprite: {
-            decisionEmote: { emote: "heart", label: "Approaching pet", mood: "love", tone: "affection" },
+            decisionEmote: {
+              emote: "heart",
+              label: "Approaching pet",
+              mood: "love",
+              tone: "affection",
+            },
             animationState: "idle",
           },
           overlay: null,

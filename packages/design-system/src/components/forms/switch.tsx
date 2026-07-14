@@ -5,8 +5,7 @@ import "./switch.css";
  * A squishy pill toggle. Controlled via `checked` + `onChange`, or
  * uncontrolled with `defaultChecked`.
  */
-export interface SwitchProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "size"> {
+export interface SwitchProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "size"> {
   /** Label text rendered next to the track. */
   label?: string;
   /** Size. @default "md" */

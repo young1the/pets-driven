@@ -5,8 +5,7 @@ import "./card.css";
  * The soft surface container: rounded, hairline border, puffy shadow.
  * Optional `interactive` adds a hover lift; `tone` tints the surface.
  */
-export interface CardProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
+export interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   /** Surface tint. @default "default" */
   tone?: "default" | "lavender" | "teal" | "mint" | "blossom";
   /** Inner padding. @default "md" */

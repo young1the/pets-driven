@@ -12,7 +12,14 @@
   z-index: 1000;
   animation: pd-fade var(--dur-base) var(--ease-out);
 }
-@keyframes pd-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pd-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .pd-dialog {
   position: relative;
   width: 100%;
@@ -23,7 +30,12 @@
   padding: 28px;
   animation: pd-pop-in var(--dur-slow) var(--ease-spring);
 }
-.pd-dialog__pet { position: absolute; top: -34px; left: 50%; transform: translateX(-50%); }
+.pd-dialog__pet {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+}
 .pd-dialog__close {
   position: absolute;
   top: 16px;
@@ -40,8 +52,14 @@
   justify-content: center;
   transition: background-color var(--dur-fast);
 }
-.pd-dialog__close:hover { background: var(--ink-150); color: var(--text-strong); }
-.pd-dialog__close svg { width: 16px; height: 16px; }
+.pd-dialog__close:hover {
+  background: var(--ink-150);
+  color: var(--text-strong);
+}
+.pd-dialog__close svg {
+  width: 16px;
+  height: 16px;
+}
 .pd-dialog__title {
   font-family: var(--font-display);
   font-weight: 600;
@@ -50,6 +68,18 @@
   margin: 0 0 6px;
   text-align: center;
 }
-.pd-dialog__body { color: var(--text-body); font-size: var(--text-base); line-height: 1.5; text-align: center; }
-.pd-dialog__footer { display: flex; gap: 10px; justify-content: center; margin-top: 22px; }
-.pd-dialog--haspet { padding-top: 42px; }
+.pd-dialog__body {
+  color: var(--text-body);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  text-align: center;
+}
+.pd-dialog__footer {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 22px;
+}
+.pd-dialog--haspet {
+  padding-top: 42px;
+}

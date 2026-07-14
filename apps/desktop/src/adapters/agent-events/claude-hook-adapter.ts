@@ -55,7 +55,7 @@ export function createAgentEventFromClaudeHook(
   return createAgentEvent({
     type: toAgentEventType(hook.hook_event_name),
     sourceId,
-    at: Number.isFinite(hook.timestamp) ? hook.timestamp as number : options.now ?? Date.now(),
+    at: Number.isFinite(hook.timestamp) ? (hook.timestamp as number) : (options.now ?? Date.now()),
     summary: summaryForHook(hook),
   });
 }

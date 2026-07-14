@@ -47,13 +47,7 @@ function Pet({ emoji, bg = "var(--lavender-200)" }: { emoji: string; bg?: string
   return (
     <svg viewBox="0 0 100 100" width="100%" height="100%">
       <circle cx="50" cy="50" r="48" fill={bg} />
-      <text
-        x="50"
-        y="52"
-        fontSize="52"
-        textAnchor="middle"
-        dominantBaseline="central"
-      >
+      <text x="50" y="52" fontSize="52" textAnchor="middle" dominantBaseline="central">
         {emoji}
       </text>
     </svg>
@@ -318,7 +312,14 @@ export function Gallery() {
           <PetEmote kind="exclaim" />
         </Cell>
         <Cell label="Speech bubble">
-          <PetSpeechBubble mood="happy" message={<>All tests passing — <b>good girl!</b></>} />
+          <PetSpeechBubble
+            mood="happy"
+            message={
+              <>
+                All tests passing — <b>good girl!</b>
+              </>
+            }
+          />
         </Cell>
         <Cell label="Chat">
           <ChatBubble from="pet" name="Cato" avatar={<Pet emoji="🐱" />}>
@@ -340,9 +341,7 @@ export function Gallery() {
               </>
             }
             subtitle="Give a task and watch a little pack of pets do the work."
-            pets={PETS.slice(0, 4).map((e) => (
-              <Pet emoji={e} />
-            ))}
+            pets={PETS.slice(0, 4).map((e) => <Pet emoji={e} />)}
           />
         </SlideCell>
         <SlideCell label="SectionSlide">
@@ -364,9 +363,21 @@ export function Gallery() {
             eyebrow="How the pack works"
             title="Every step has a pet."
             points={[
-              { art: <Pet emoji="🐱" />, title: "Cato plans", description: "Maps the change and assigns each step." },
-              { art: <Pet emoji="🦊" />, title: "Fenn debugs", description: "Sniffs out the gnarly bugs." },
-              { art: <Pet emoji="🫧" />, title: "Bloop tests", description: "Keeps everything green." },
+              {
+                art: <Pet emoji="🐱" />,
+                title: "Cato plans",
+                description: "Maps the change and assigns each step.",
+              },
+              {
+                art: <Pet emoji="🦊" />,
+                title: "Fenn debugs",
+                description: "Sniffs out the gnarly bugs.",
+              },
+              {
+                art: <Pet emoji="🫧" />,
+                title: "Bloop tests",
+                description: "Keeps everything green.",
+              },
             ]}
             asideArt={<Pet emoji="🦊" />}
             asideCaption="Fenn"
@@ -399,9 +410,7 @@ export function Gallery() {
         </SlideCell>
         <SlideCell label="ClosingSlide">
           <ClosingSlide
-            pets={PETS.map((e) => (
-              <Pet emoji={e} bg="rgba(255,255,255,.12)" />
-            ))}
+            pets={PETS.map((e) => <Pet emoji={e} bg="rgba(255,255,255,.12)" />)}
             title="Bring home your pack."
             subtitle="Free while they nap. Adopt as many as you need."
             cta="✨ petsdriven.dev"

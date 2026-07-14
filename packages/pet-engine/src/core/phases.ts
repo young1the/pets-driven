@@ -62,13 +62,9 @@ import {
   PhysicsIntegrationSystem,
 } from "@pets-driven/pet-engine/features/physics/systems";
 
-export type PhaseName =
-  "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
+export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
 
-export const SYSTEM_PHASES: Record<
-  PhaseName,
-  Array<SimulationSystem<WorldStepContext>>
-> = {
+export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepContext>>> = {
   PRE_UPDATE: [
     PhysicsTransformSyncSystemPre,
     PetCollisionSyncSystem,
@@ -139,5 +135,6 @@ export const PHASE_ORDER: PhaseName[] = [
 ];
 
 /** Flattened per-tick pipeline in execution order. Single source of truth. */
-export const STEP_SYSTEMS: Array<SimulationSystem<WorldStepContext>> =
-  PHASE_ORDER.flatMap((phase) => SYSTEM_PHASES[phase]);
+export const STEP_SYSTEMS: Array<SimulationSystem<WorldStepContext>> = PHASE_ORDER.flatMap(
+  (phase) => SYSTEM_PHASES[phase],
+);

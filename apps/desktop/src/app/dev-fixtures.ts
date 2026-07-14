@@ -293,9 +293,7 @@ export function resolveDesktopFixture(
   }
 
   const fixtureId = params.get("fixture") ?? "";
-  const exactMatch = DESKTOP_FIXTURES.find(
-    (fixture) => fixture.id === fixtureId,
-  );
+  const exactMatch = DESKTOP_FIXTURES.find((fixture) => fixture.id === fixtureId);
 
   if (exactMatch) {
     return exactMatch;

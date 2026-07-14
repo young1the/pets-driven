@@ -1,18 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  I18nProvider,
-  defaultLocale,
-  isLocale,
-  locales,
-  type Locale,
-} from "@pets-driven/i18n";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { I18nProvider, defaultLocale, isLocale, locales, type Locale } from "@pets-driven/i18n";
 
 const LOCALE_STORAGE_KEY = "pd-locale";
 
@@ -32,10 +19,7 @@ function detectDesktopLocale(): Locale {
     return stored as Locale;
   }
 
-  const candidates = [
-    ...(navigator.languages ?? []),
-    navigator.language,
-  ].filter(Boolean);
+  const candidates = [...(navigator.languages ?? []), navigator.language].filter(Boolean);
   for (const tag of candidates) {
     const base = tag.split("-")[0]?.toLowerCase();
     if (isLocale(base)) {
@@ -68,10 +52,7 @@ export function DesktopLocaleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const control = useMemo<DesktopLocaleControl>(
-    () => ({ locale, setLocale }),
-    [locale, setLocale],
-  );
+  const control = useMemo<DesktopLocaleControl>(() => ({ locale, setLocale }), [locale, setLocale]);
 
   return (
     <DesktopLocaleContext.Provider value={control}>

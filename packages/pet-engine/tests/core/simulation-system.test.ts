@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
-import { describeSimulationSystems, runSimulationSystems } from "@pets-driven/pet-engine/core/simulation-system";
+import {
+  describeSimulationSystems,
+  runSimulationSystems,
+} from "@pets-driven/pet-engine/core/simulation-system";
 
 describe("simulation system runner", () => {
   it("runs systems with one shared context in declaration order", () => {

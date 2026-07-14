@@ -11,11 +11,7 @@ import "./styles/main.css";
 
 type NavigateSearchParams = (mutate: (params: URLSearchParams) => void) => void;
 
-function RootSurface({
-  navigateSearchParams,
-}: {
-  navigateSearchParams: NavigateSearchParams;
-}) {
+function RootSurface({ navigateSearchParams }: { navigateSearchParams: NavigateSearchParams }) {
   const params = new URLSearchParams(window.location.search);
 
   if (params.get("surface") === "pet-context-menu") {

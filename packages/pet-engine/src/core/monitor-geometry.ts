@@ -55,9 +55,19 @@ export function createMonitorBoundaryEntities(
     const vertical = { start: monitor.y, end: monitor.y + monitor.height };
     const horizontal = { start: monitor.x, end: monitor.x + monitor.width };
     const leftCuts = touchingVerticalSegments(monitors, monitor.x, "right", vertical);
-    const rightCuts = touchingVerticalSegments(monitors, monitor.x + monitor.width, "left", vertical);
+    const rightCuts = touchingVerticalSegments(
+      monitors,
+      monitor.x + monitor.width,
+      "left",
+      vertical,
+    );
     const topCuts = touchingHorizontalSegments(monitors, monitor.y, "bottom", horizontal);
-    const bottomCuts = touchingHorizontalSegments(monitors, monitor.y + monitor.height, "top", horizontal);
+    const bottomCuts = touchingHorizontalSegments(
+      monitors,
+      monitor.y + monitor.height,
+      "top",
+      horizontal,
+    );
 
     for (const [index, segment] of subtractSegments(horizontal, bottomCuts).entries()) {
       entities.push(createHorizontalBoundary(monitor, "ground", segment, index, thickness));
@@ -151,9 +161,7 @@ function createHorizontalBoundary(
   thickness: number,
 ): EntityDeclaration {
   const y =
-    edge === "ground"
-      ? monitor.y + monitor.height + thickness / 2
-      : monitor.y - thickness / 2;
+    edge === "ground" ? monitor.y + monitor.height + thickness / 2 : monitor.y - thickness / 2;
 
   return createBoundaryEntity({
     id: boundaryId(monitor.id, edge, segment, index, {
@@ -175,9 +183,7 @@ function createVerticalBoundary(
   thickness: number,
 ): EntityDeclaration {
   const x =
-    edge === "left-wall"
-      ? monitor.x - thickness / 2
-      : monitor.x + monitor.width + thickness / 2;
+    edge === "left-wall" ? monitor.x - thickness / 2 : monitor.x + monitor.width + thickness / 2;
 
   return createBoundaryEntity({
     id: boundaryId(monitor.id, edge, segment, index, {
@@ -198,9 +204,8 @@ function boundaryId(
   index: number,
   fullSegment: Segment,
 ) {
-  const suffix = segment.start === fullSegment.start && segment.end === fullSegment.end
-    ? ""
-    : `-${index}`;
+  const suffix =
+    segment.start === fullSegment.start && segment.end === fullSegment.end ? "" : `-${index}`;
   return `${monitorId}-${edge}${suffix}`;
 }
 

@@ -8,10 +8,7 @@ import {
   registerWorkingDirectory,
   removePet,
 } from "@/app-state/pet-adoption";
-import {
-  createEmptyPetsDrivenState,
-  type PetsDrivenState,
-} from "@/app-state/pets-driven-state";
+import { createEmptyPetsDrivenState, type PetsDrivenState } from "@/app-state/pets-driven-state";
 import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 
 function adopt(state: PetsDrivenState, id: string, assetId = "bloop") {
@@ -26,11 +23,7 @@ function adopt(state: PetsDrivenState, id: string, assetId = "bloop") {
   });
 }
 
-function withDirectory(
-  state: PetsDrivenState,
-  id: string,
-  petId = "",
-): PetsDrivenState {
+function withDirectory(state: PetsDrivenState, id: string, petId = ""): PetsDrivenState {
   return {
     ...state,
     registeredWorkingDirectories: [
@@ -87,9 +80,7 @@ describe("removePet", () => {
     const next = removePet(state, "pet-1");
 
     expect(next.pets.map((pet) => pet.id)).toEqual(["pet-2"]);
-    expect(next.petProfiles.map((profile) => profile.id)).toEqual([
-      "profile-pet-2",
-    ]);
+    expect(next.petProfiles.map((profile) => profile.id)).toEqual(["profile-pet-2"]);
     expect(next.registeredWorkingDirectories).toHaveLength(0);
   });
 
@@ -115,9 +106,7 @@ describe("removePet", () => {
 
     const next = removePet(state, "pet-1");
 
-    expect(next.registeredWorkingDirectories.map((wd) => wd.petId)).toEqual([
-      "pet-2",
-    ]);
+    expect(next.registeredWorkingDirectories.map((wd) => wd.petId)).toEqual(["pet-2"]);
   });
 
   it("returns state unchanged when the pet is missing", () => {
@@ -167,12 +156,8 @@ describe("clearWorkingDirectoryForPet", () => {
 
     const next = clearWorkingDirectoryForPet(state, "pet-1");
 
-    expect(next.registeredWorkingDirectories.map((wd) => wd.petId)).toEqual([
-      "pet-2",
-    ]);
-    expect(
-      next.pets.find((pet) => pet.id === "pet-2")?.workingDirectoryId,
-    ).toBe("wd-2");
+    expect(next.registeredWorkingDirectories.map((wd) => wd.petId)).toEqual(["pet-2"]);
+    expect(next.pets.find((pet) => pet.id === "pet-2")?.workingDirectoryId).toBe("wd-2");
   });
 
   it("returns state unchanged when the pet is missing or holds no directory", () => {
@@ -203,12 +188,8 @@ describe("linkPetToWorkingDirectory", () => {
 
     const stolen = linkPetToWorkingDirectory(state, "pet-2", "wd-1");
 
-    expect(
-      stolen.pets.find((pet) => pet.id === "pet-1")?.workingDirectoryId,
-    ).toBeNull();
-    expect(
-      stolen.pets.find((pet) => pet.id === "pet-2")?.workingDirectoryId,
-    ).toBe("wd-1");
+    expect(stolen.pets.find((pet) => pet.id === "pet-1")?.workingDirectoryId).toBeNull();
+    expect(stolen.pets.find((pet) => pet.id === "pet-2")?.workingDirectoryId).toBe("wd-1");
     expect(getPetForWorkingDirectory(stolen, "wd-1")?.id).toBe("pet-2");
   });
 
@@ -221,9 +202,7 @@ describe("linkPetToWorkingDirectory", () => {
     const moved = linkPetToWorkingDirectory(state, "pet-1", "wd-2");
 
     expect(moved.pets[0].workingDirectoryId).toBe("wd-2");
-    expect(
-      moved.registeredWorkingDirectories.find((wd) => wd.id === "wd-2")?.petId,
-    ).toBe("pet-1");
+    expect(moved.registeredWorkingDirectories.find((wd) => wd.id === "wd-2")?.petId).toBe("pet-1");
   });
 
   it("returns state unchanged when pet or directory is missing", () => {

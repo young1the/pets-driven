@@ -66,34 +66,20 @@ describe("runAgentTaskEventSystem → AgentTaskState", () => {
     const store = makeStore();
     const clock = createManualClock(100);
     runAgentTaskEventSystem(store, [agentEvent("task.completed")], clock);
-    expect(store.getComponent("pet", "AgentTaskState")?.status).toBe(
-      "completed",
-    );
+    expect(store.getComponent("pet", "AgentTaskState")?.status).toBe("completed");
     expect(store.getComponent("pet", "TaskMovementHold")).toBeDefined();
     expect(store.getComponent("pet", "AgentChannelState")?.label).toBe("Done");
   });
 
   it("task.waiting and task.failed set status and hold movement", () => {
     const waitStore = makeStore();
-    runAgentTaskEventSystem(
-      waitStore,
-      [agentEvent("task.waiting")],
-      createManualClock(100),
-    );
-    expect(waitStore.getComponent("pet", "AgentTaskState")?.status).toBe(
-      "waiting",
-    );
+    runAgentTaskEventSystem(waitStore, [agentEvent("task.waiting")], createManualClock(100));
+    expect(waitStore.getComponent("pet", "AgentTaskState")?.status).toBe("waiting");
     expect(waitStore.getComponent("pet", "TaskMovementHold")).toBeDefined();
 
     const failStore = makeStore();
-    runAgentTaskEventSystem(
-      failStore,
-      [agentEvent("task.failed")],
-      createManualClock(100),
-    );
-    expect(failStore.getComponent("pet", "AgentTaskState")?.status).toBe(
-      "failed",
-    );
+    runAgentTaskEventSystem(failStore, [agentEvent("task.failed")], createManualClock(100));
+    expect(failStore.getComponent("pet", "AgentTaskState")?.status).toBe("failed");
     expect(failStore.getComponent("pet", "TaskMovementHold")).toBeDefined();
   });
 
@@ -105,9 +91,7 @@ describe("runAgentTaskEventSystem → AgentTaskState", () => {
       [{ ...agentEvent("task.completed"), summary: "Fixed the flaky test" }],
       clock,
     );
-    expect(store.getComponent("pet", "AgentChannelState")?.message).toBe(
-      "Fixed the flaky test",
-    );
+    expect(store.getComponent("pet", "AgentChannelState")?.message).toBe("Fixed the flaky test");
   });
 
   it("leaves AgentChannelState.message null when the event has no summary", () => {

@@ -239,10 +239,15 @@ export type PetExpressionSource =
   | "expressive";
 
 export type PetExpressionMood =
-  "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";
+  | "working"
+  | "happy"
+  | "love"
+  | "excited"
+  | "thinking"
+  | "sleepy"
+  | "confused";
 
-export type PetExpressionEmote =
-  "none" | "heart" | "zzz" | "sparkle" | "question" | "exclaim";
+export type PetExpressionEmote = "none" | "heart" | "zzz" | "sparkle" | "question" | "exclaim";
 
 export type PetExpressionStateComponent = {
   type: "PetExpressionState";

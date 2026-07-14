@@ -96,10 +96,18 @@ describe("UserInteractionBehaviorSystem", () => {
     const events = createWorldEventQueue();
     const clock = createManualClock(0);
 
-    events.push({ kind: "pointer", type: "pointer.down", pointerId: 1, at: 0, position: { x: 100, y: 100 } });
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 1,
+      at: 0,
+      position: { x: 100, y: 100 },
+    });
     runUserInteractionBehaviorSystem(components, events, clock);
 
-    expect(components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId).toBe("pet-a");
+    expect(components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId).toBe(
+      "pet-a",
+    );
   });
 
   it("selects CanControl entities from a padded hit area", () => {
@@ -107,10 +115,18 @@ describe("UserInteractionBehaviorSystem", () => {
     const events = createWorldEventQueue();
     const clock = createManualClock(0);
 
-    events.push({ kind: "pointer", type: "pointer.down", pointerId: 1, at: 0, position: { x: 128, y: 100 } });
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 1,
+      at: 0,
+      position: { x: 128, y: 100 },
+    });
     runUserInteractionBehaviorSystem(components, events, clock);
 
-    expect(components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId).toBe("pet-a");
+    expect(components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId).toBe(
+      "pet-a",
+    );
   });
 
   it("does not select entities without CanControl", () => {
@@ -118,10 +134,18 @@ describe("UserInteractionBehaviorSystem", () => {
     const events = createWorldEventQueue();
     const clock = createManualClock(0);
 
-    events.push({ kind: "pointer", type: "pointer.down", pointerId: 1, at: 0, position: { x: 200, y: 100 } });
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 1,
+      at: 0,
+      position: { x: 200, y: 100 },
+    });
     runUserInteractionBehaviorSystem(components, events, clock);
 
-    expect(components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId).toBeNull();
+    expect(
+      components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId,
+    ).toBeNull();
   });
 
   it("starts a pending drag only for CanDrag entities", () => {
@@ -129,7 +153,13 @@ describe("UserInteractionBehaviorSystem", () => {
     const events = createWorldEventQueue();
     const clock = createManualClock(0);
 
-    events.push({ kind: "pointer", type: "pointer.down", pointerId: 7, at: 0, position: { x: 110, y: 90 } });
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 7,
+      at: 0,
+      position: { x: 110, y: 90 },
+    });
     runUserInteractionBehaviorSystem(components, events, clock);
 
     expect(components.getComponent("user-interaction", "DragInteraction")).toMatchObject({
@@ -146,11 +176,29 @@ describe("UserInteractionBehaviorSystem", () => {
     const events = createWorldEventQueue();
     const clock = createManualClock(0);
 
-    events.push({ kind: "keyboard", type: "keyboard.down", key: "ArrowRight", code: "ArrowRight", at: 0 });
-    events.push({ kind: "keyboard", type: "keyboard.down", key: "ArrowUp", code: "ArrowUp", at: 1 });
+    events.push({
+      kind: "keyboard",
+      type: "keyboard.down",
+      key: "ArrowRight",
+      code: "ArrowRight",
+      at: 0,
+    });
+    events.push({
+      kind: "keyboard",
+      type: "keyboard.down",
+      key: "ArrowUp",
+      code: "ArrowUp",
+      at: 1,
+    });
     runUserInteractionBehaviorSystem(components, events, clock);
 
-    expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector.x).toBeCloseTo(0.707, 2);
-    expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector.y).toBeCloseTo(-0.707, 2);
+    expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector.x).toBeCloseTo(
+      0.707,
+      2,
+    );
+    expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector.y).toBeCloseTo(
+      -0.707,
+      2,
+    );
   });
 });

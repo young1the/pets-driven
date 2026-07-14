@@ -3,21 +3,28 @@ import { createComponentStore } from "@pets-driven/pet-engine/core/component-sto
 import { runWalkSystem } from "@pets-driven/pet-engine/features/movement/systems";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
 
-function makeWalker(
-  posX: number,
-  targetX: number | null,
-  grounded: boolean,
-) {
-  return createComponentStore([{
-    id: "pet-a",
-    components: [
-      { type: "Transform" as const, position: { x: posX, y: 500 } },
-      { type: "WalkingTag" },
-      { type: "ContactState" as const, grounded, climbableSurfaceId: null, climbableSurfacePosition: null },
-      { type: "CanWalk" as const, force: 0.001 },
-      { type: "MotionTarget" as const, targetEntityId: null, targetPosition: targetX !== null ? { x: targetX, y: 500 } : null },
-    ],
-  }]);
+function makeWalker(posX: number, targetX: number | null, grounded: boolean) {
+  return createComponentStore([
+    {
+      id: "pet-a",
+      components: [
+        { type: "Transform" as const, position: { x: posX, y: 500 } },
+        { type: "WalkingTag" },
+        {
+          type: "ContactState" as const,
+          grounded,
+          climbableSurfaceId: null,
+          climbableSurfacePosition: null,
+        },
+        { type: "CanWalk" as const, force: 0.001 },
+        {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: targetX !== null ? { x: targetX, y: 500 } : null,
+        },
+      ],
+    },
+  ]);
 }
 
 describe("walk system", () => {
@@ -48,5 +55,4 @@ describe("walk system", () => {
     runWalkSystem(store, forceGroups);
     expect(forceGroups).toHaveLength(0);
   });
-
 });

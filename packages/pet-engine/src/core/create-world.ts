@@ -1,7 +1,4 @@
-import type {
-  Component,
-  ComponentType,
-} from "@pets-driven/pet-engine/core/components";
+import type { Component, ComponentType } from "@pets-driven/pet-engine/core/components";
 import {
   createComponentStore,
   type ComponentStore,
@@ -9,10 +6,7 @@ import {
 } from "@pets-driven/pet-engine/core/component-store";
 import { createMatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import { getPetAnimationState } from "@pets-driven/pet-engine/features/behavior/pet-animation-state";
-import type {
-  MonitorWorkArea,
-  WorldViewport,
-} from "@pets-driven/pet-engine/core/monitor-geometry";
+import type { MonitorWorkArea, WorldViewport } from "@pets-driven/pet-engine/core/monitor-geometry";
 import type { WorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import { runPhysicsTransformSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
@@ -81,35 +75,14 @@ export function createWorld(input: WorldDefinition) {
 
   function getPetSnapshots(componentStore: ComponentStore) {
     return componentStore
-      .query(
-        "PetIdentity",
-        "AgentBinding",
-        "Steering",
-        "SpeechState",
-        "Transform",
-      )
+      .query("PetIdentity", "AgentBinding", "Steering", "SpeechState", "Transform")
       .map((entity) => {
         const [identity, agent, steering, speech, transform] = entity.components;
-        const contactState = componentStore.getComponent(
-          entity.id,
-          "ContactState",
-        );
-        const decisionState = componentStore.getComponent(
-          entity.id,
-          "BehaviorDecisionState",
-        );
-        const agentTask = componentStore.getComponent(
-          entity.id,
-          "AgentTaskState",
-        );
-        const agentChannel = componentStore.getComponent(
-          entity.id,
-          "AgentChannelState",
-        );
-        const expression = componentStore.getComponent(
-          entity.id,
-          "PetExpressionState",
-        );
+        const contactState = componentStore.getComponent(entity.id, "ContactState");
+        const decisionState = componentStore.getComponent(entity.id, "BehaviorDecisionState");
+        const agentTask = componentStore.getComponent(entity.id, "AgentTaskState");
+        const agentChannel = componentStore.getComponent(entity.id, "AgentChannelState");
+        const expression = componentStore.getComponent(entity.id, "PetExpressionState");
         return {
           id: entity.id,
           sourceId: agent.sourceId,
@@ -124,13 +97,8 @@ export function createWorld(input: WorldDefinition) {
             climbableSurfaceId: contactState?.climbableSurfaceId ?? null,
           },
           motionTarget:
-            componentStore.getComponent(entity.id, "MotionTarget")
-              ?.targetPosition ?? null,
-          activity: derivePetActivity(
-            componentStore,
-            entity.id,
-            input.clock.now(),
-          ),
+            componentStore.getComponent(entity.id, "MotionTarget")?.targetPosition ?? null,
+          activity: derivePetActivity(componentStore, entity.id, input.clock.now()),
           drives: (() => {
             const drives = componentStore.getComponent(entity.id, "Drives");
             return drives
@@ -144,10 +112,7 @@ export function createWorld(input: WorldDefinition) {
           mood: (() => {
             const mood = componentStore.getComponent(entity.id, "MoodState");
             if (!mood) return null;
-            const memory = componentStore.getComponent(
-              entity.id,
-              "RecentExperienceMemory",
-            );
+            const memory = componentStore.getComponent(entity.id, "RecentExperienceMemory");
             return {
               valence: mood.valence,
               arousal: mood.arousal,
@@ -163,10 +128,7 @@ export function createWorld(input: WorldDefinition) {
               }
             : null,
           pendingReaction: (() => {
-            const pr = componentStore.getComponent(
-              entity.id,
-              "PendingReaction",
-            );
+            const pr = componentStore.getComponent(entity.id, "PendingReaction");
             return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
           })(),
           agentTask: agentTask
@@ -206,31 +168,20 @@ export function createWorld(input: WorldDefinition) {
   function getSocialSnapshot(componentStore: ComponentStore, id: string) {
     const member = componentStore.getComponent(id, "SocialSessionMember");
     if (!member) return null;
-    const session = componentStore.getComponent(
-      member.sessionId,
-      "SocialSession",
-    );
+    const session = componentStore.getComponent(member.sessionId, "SocialSession");
     if (!session) return null;
     return {
       kind: session.kind,
       phase: session.phase,
       role: member.role,
       partnerId: member.partnerId,
-      partnerName:
-        componentStore.getComponent(member.partnerId, "PetIdentity")?.name ??
-        null,
+      partnerName: componentStore.getComponent(member.partnerId, "PetIdentity")?.name ?? null,
     };
   }
 
   function getInteractionSnapshot(componentStore: ComponentStore, id: string) {
-    const drag = componentStore.getComponent(
-      "user-interaction",
-      "DragInteraction",
-    );
-    const target = componentStore.getComponent(
-      "user-interaction",
-      "KeyboardControlTarget",
-    );
+    const drag = componentStore.getComponent("user-interaction", "DragInteraction");
+    const target = componentStore.getComponent("user-interaction", "KeyboardControlTarget");
     const controllable = !!componentStore.getComponent(id, "CanControl");
     const dragged = drag?.entityId === id && drag.phase === "dragging";
     const controlled = target?.entityId === id;
@@ -246,10 +197,7 @@ export function createWorld(input: WorldDefinition) {
     };
   }
 
-  function getPetVisualCue(
-    componentStore: ComponentStore,
-    id: string,
-  ): PetVisualCue | null {
+  function getPetVisualCue(componentStore: ComponentStore, id: string): PetVisualCue | null {
     const pendingReaction = componentStore.getComponent(id, "PendingReaction");
     if (pendingReaction?.source === "collision") {
       return {
@@ -259,10 +207,7 @@ export function createWorld(input: WorldDefinition) {
       };
     }
 
-    const decisionState = componentStore.getComponent(
-      id,
-      "BehaviorDecisionState",
-    );
+    const decisionState = componentStore.getComponent(id, "BehaviorDecisionState");
     switch (decisionState?.reason) {
       case "approach-pet-success":
         return {
@@ -359,10 +304,7 @@ export function createWorld(input: WorldDefinition) {
 
     const climbIntent = componentStore.getComponent(id, "ClimbIntentState");
     if (climbIntent?.phase === "approaching") return "climb-approaching";
-    if (
-      climbIntent?.phase === "attached" ||
-      componentStore.getComponent(id, "ClimbingTag")
-    ) {
+    if (climbIntent?.phase === "attached" || componentStore.getComponent(id, "ClimbingTag")) {
       return "climb-attached";
     }
 
@@ -375,12 +317,10 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {
-    return componentStore
-      .query("Transform", "ClimbableSurface")
-      .map((entity) => {
-        const [transform] = entity.components;
-        return { id: entity.id, position: transform.position };
-      });
+    return componentStore.query("Transform", "ClimbableSurface").map((entity) => {
+      const [transform] = entity.components;
+      return { id: entity.id, position: transform.position };
+    });
   }
 
   return {
@@ -416,10 +356,7 @@ export function createWorld(input: WorldDefinition) {
     setComponent(id: string, component: Component) {
       components.setComponent(id, component);
     },
-    setPhysicsPosition(
-      id: string,
-      position: Partial<{ x: number; y: number }>,
-    ) {
+    setPhysicsPosition(id: string, position: Partial<{ x: number; y: number }>) {
       physics.setPosition(id, position);
       const transform = components.getComponent(id, "Transform");
       if (transform) {
@@ -429,10 +366,7 @@ export function createWorld(input: WorldDefinition) {
         };
       }
     },
-    setPhysicsVelocity(
-      id: string,
-      velocity: Partial<{ x: number; y: number }>,
-    ) {
+    setPhysicsVelocity(id: string, velocity: Partial<{ x: number; y: number }>) {
       physics.setVelocity(id, velocity);
     },
     // Resize a live rectangle body (and its PhysicsBody component) in place,
@@ -496,10 +430,7 @@ export function createWorld(input: WorldDefinition) {
       });
     },
     snapshot() {
-      const physicsSnapshot = runPhysicsTransformSyncSystem(
-        components,
-        physics,
-      );
+      const physicsSnapshot = runPhysicsTransformSyncSystem(components, physics);
       const bodies = physicsSnapshot.bodies.map((body) => ({
         ...body,
         animationState: getPetAnimationState(components, body.id),

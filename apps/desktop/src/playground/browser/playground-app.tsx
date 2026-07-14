@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
-import { createAgentEventFromClaudeHook, type ClaudeHookEventName } from "@/adapters/agent-events/claude-hook-adapter";
+import {
+  createAgentEventFromClaudeHook,
+  type ClaudeHookEventName,
+} from "@/adapters/agent-events/claude-hook-adapter";
 import { createAgentEvent, type AgentEvent } from "@/adapters/agent-events/agent-event";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { AgentEventPanel } from "./agent-event-panel";
@@ -15,9 +18,7 @@ import { ScenarioControls } from "./scenario-controls";
 import { loadPlaygroundPetAssetCatalog } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
 
-type Snapshot = ReturnType<
-  ReturnType<typeof createDemoScenario>["world"]["snapshot"]
->;
+type Snapshot = ReturnType<ReturnType<typeof createDemoScenario>["world"]["snapshot"]>;
 
 type PlaygroundViewId = "demo" | "jump" | "climb" | "decision";
 type PlaygroundViewGroup = "Simulation";
@@ -48,9 +49,7 @@ function isPlaygroundViewId(value: string): value is PlaygroundViewId {
 }
 
 export function PlaygroundApp() {
-  const [activeViewId, setActiveViewId] = useState<PlaygroundViewId>(() =>
-    getViewFromHash(),
-  );
+  const [activeViewId, setActiveViewId] = useState<PlaygroundViewId>(() => getViewFromHash());
   const activeView =
     PLAYGROUND_VIEWS.find((view) => view.id === activeViewId) ?? PLAYGROUND_VIEWS[0];
   const ActiveView = activeView.Component;
@@ -118,9 +117,7 @@ export function DemoPlaygroundView() {
   const scenarioRef = useRef(createDemoScenario());
   const [monitorLayout, setMonitorLayout] = useState<"single" | "dual-horizontal">("single");
   const [selectedPetId, setSelectedPetId] = useState("pet-a");
-  const [snapshot, setSnapshot] = useState(() =>
-    scenarioRef.current.world.snapshot(),
-  );
+  const [snapshot, setSnapshot] = useState(() => scenarioRef.current.world.snapshot());
   const [isAnimationPlaying, setIsAnimationPlaying] = useState(true);
   const [frameNumber, setFrameNumber] = useState(0);
   const [assets, setAssets] = useState<AssetCatalog>({});
@@ -182,10 +179,7 @@ export function DemoPlaygroundView() {
   }, [advanceFrame, isAnimationPlaying]);
 
   useEffect(() => {
-    function pushKeyboardEvent(
-      event: KeyboardEvent,
-      type: "keyboard.down" | "keyboard.up",
-    ) {
+    function pushKeyboardEvent(event: KeyboardEvent, type: "keyboard.down" | "keyboard.up") {
       scenarioRef.current.world.pushEvent({
         kind: "keyboard",
         type,
@@ -213,35 +207,43 @@ export function DemoPlaygroundView() {
     setAgentEventError(null);
   }, []);
 
-  const handleClaudeHookPayload = useCallback((payload: unknown) => {
-    try {
-      const agentEvent = createAgentEventFromClaudeHook(payload, {
-        defaultSourceId: selectedPetId === "pet-b" ? "agent-b" : "agent-a",
-        now: scenarioRef.current.clock.now(),
-      });
-      setLastHookName(
-        (payload as { hook_event_name?: ClaudeHookEventName }).hook_event_name ?? null,
-      );
-      pushAgentEvent(agentEvent);
-    } catch (error) {
-      setAgentEventError(error instanceof Error ? error.message : String(error));
-    }
-  }, [pushAgentEvent, selectedPetId]);
+  const handleClaudeHookPayload = useCallback(
+    (payload: unknown) => {
+      try {
+        const agentEvent = createAgentEventFromClaudeHook(payload, {
+          defaultSourceId: selectedPetId === "pet-b" ? "agent-b" : "agent-a",
+          now: scenarioRef.current.clock.now(),
+        });
+        setLastHookName(
+          (payload as { hook_event_name?: ClaudeHookEventName }).hook_event_name ?? null,
+        );
+        pushAgentEvent(agentEvent);
+      } catch (error) {
+        setAgentEventError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [pushAgentEvent, selectedPetId],
+  );
 
-  const handleAgentEventInput = useCallback((input: unknown) => {
-    try {
-      const agentEvent = createAgentEvent(input as {
-        type: string;
-        sourceId: string;
-        at: number;
-        summary?: string;
-      });
-      setLastHookName(null);
-      pushAgentEvent(agentEvent);
-    } catch (error) {
-      setAgentEventError(error instanceof Error ? error.message : String(error));
-    }
-  }, [pushAgentEvent]);
+  const handleAgentEventInput = useCallback(
+    (input: unknown) => {
+      try {
+        const agentEvent = createAgentEvent(
+          input as {
+            type: string;
+            sourceId: string;
+            at: number;
+            summary?: string;
+          },
+        );
+        setLastHookName(null);
+        pushAgentEvent(agentEvent);
+      } catch (error) {
+        setAgentEventError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [pushAgentEvent],
+  );
 
   useEffect(() => {
     const handleClaudeHook = (event: Event) => {
@@ -334,9 +336,7 @@ export function DemoPlaygroundView() {
             pets={snapshot.pets}
             selectedPetId={selectedPetId}
             onSelectPet={setSelectedPetId}
-            getComponent={(id, type) =>
-              scenarioRef.current.world.getComponent(id, type)
-            }
+            getComponent={(id, type) => scenarioRef.current.world.getComponent(id, type)}
           />
         </aside>
       </div>

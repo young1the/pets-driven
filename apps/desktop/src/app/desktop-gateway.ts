@@ -14,11 +14,7 @@ export type CodexPetPackage = {
   spritesheetPath: string;
 };
 
-export type ClaudePluginState =
-  | "cli-missing"
-  | "not-installed"
-  | "installed"
-  | "error";
+export type ClaudePluginState = "cli-missing" | "not-installed" | "installed" | "error";
 
 /** Install state of the bundled Claude Code plugin, as reported by the CLI. */
 export type ClaudePluginStatus = {

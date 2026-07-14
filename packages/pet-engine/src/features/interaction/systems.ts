@@ -96,20 +96,13 @@ function handlePointerEvent(
 // with its channel badge. Catalog personalities then play a brief
 // acknowledgement beat before returning to autonomous life. A live "working"
 // status stays; clicking must not erase an agent that is still running.
-function releaseAgentTask(
-  components: ComponentStore,
-  id: string,
-  now: number,
-): void {
+function releaseAgentTask(components: ComponentStore, id: string, now: number): void {
   components.removeComponent(id, "TaskMovementHold");
 
   const task = components.getComponent(id, "AgentTaskState");
   if (!task || !statusFreezesMovement(task.status)) return;
   const personality = components.getComponent(id, "Personality");
-  const feedback = personalityAcknowledgeFeedback(
-    personality?.catalogId,
-    task.status,
-  );
+  const feedback = personalityAcknowledgeFeedback(personality?.catalogId, task.status);
   components.removeComponent(id, "AgentTaskState");
 
   const channel = components.getComponent(id, "AgentChannelState");
@@ -133,21 +126,12 @@ function releaseAgentTask(
       startedAt: now,
       expiresAt: now + durationMs,
     });
-    claimUserInteraction(
-      components,
-      id,
-      now,
-      `acknowledge-${task.status}`,
-      durationMs,
-    );
+    claimUserInteraction(components, id, now, `acknowledge-${task.status}`, durationMs);
     recordPetExperience(components, id, "acknowledged", now);
   }
 }
 
-function handleKeyboardEvent(
-  components: ComponentStore,
-  event: KeyboardWorldEvent,
-): void {
+function handleKeyboardEvent(components: ComponentStore, event: KeyboardWorldEvent): void {
   const input = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardInputState");
   if (!input) return;
 
@@ -286,13 +270,7 @@ export function runKeyboardControlMovementSystem(
   }
 
   physics.setVelocity(target.entityId, velocity);
-  claimUserInteraction(
-    components,
-    target.entityId,
-    clock.now(),
-    "keyboard-control",
-    250,
-  );
+  claimUserInteraction(components, target.entityId, clock.now(), "keyboard-control", 250);
 }
 
 export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> = {

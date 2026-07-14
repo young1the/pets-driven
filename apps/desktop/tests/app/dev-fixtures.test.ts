@@ -1,15 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-  DESKTOP_FIXTURE_IDS,
-  DESKTOP_FIXTURES,
-  resolveDesktopFixture,
-} from "@/app/dev-fixtures";
+import { DESKTOP_FIXTURE_IDS, DESKTOP_FIXTURES, resolveDesktopFixture } from "@/app/dev-fixtures";
 
 describe("desktop development fixtures", () => {
   it("exposes every fixture id exactly once", () => {
-    expect(DESKTOP_FIXTURES.map((fixture) => fixture.id)).toEqual(
-      DESKTOP_FIXTURE_IDS,
-    );
+    expect(DESKTOP_FIXTURES.map((fixture) => fixture.id)).toEqual(DESKTOP_FIXTURE_IDS);
   });
 
   it("resolves fixtures only on a loopback development URL", () => {
@@ -50,9 +44,7 @@ describe("desktop development fixtures", () => {
   });
 
   it("includes an onboarding state with no installed Pet Assets", () => {
-    const fixture = DESKTOP_FIXTURES.find(
-      (candidate) => candidate.id === "onboarding-empty",
-    );
+    const fixture = DESKTOP_FIXTURES.find((candidate) => candidate.id === "onboarding-empty");
 
     expect(fixture?.state.pets).toEqual([]);
     expect(fixture?.petPackages).toBe("empty");

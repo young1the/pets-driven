@@ -7,27 +7,15 @@ import {
   WrenchIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import {
-  HomeSection,
-  type HomeSectionProps,
-} from "@/app/main-window/home-section";
+import { HomeSection, type HomeSectionProps } from "@/app/main-window/home-section";
 import {
   PetEditSection,
   type PetEditSectionProps,
   type PetEditView,
 } from "@/app/main-window/pet-edit-section";
-import {
-  SettingsSection,
-  type SettingsSectionProps,
-} from "@/app/main-window/settings-section";
-import {
-  DebugSection,
-  type DebugSectionProps,
-} from "@/app/main-window/debug-section";
-import {
-  TerminalSection,
-  type TerminalSectionProps,
-} from "@/app/main-window/terminal-section";
+import { SettingsSection, type SettingsSectionProps } from "@/app/main-window/settings-section";
+import { DebugSection, type DebugSectionProps } from "@/app/main-window/debug-section";
+import { TerminalSection, type TerminalSectionProps } from "@/app/main-window/terminal-section";
 import "@/app/main-window/main-window.css";
 
 export type MainWindowTab = "home" | "terminal" | "settings" | "debug";

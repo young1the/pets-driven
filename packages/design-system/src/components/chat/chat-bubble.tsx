@@ -36,12 +36,7 @@ export function ChatBubble({
   const isUser = from === "user";
 
   return (
-    <div
-      className={["pd-chat", `pd-chat--${from}`, className]
-        .filter(Boolean)
-        .join(" ")}
-      {...rest}
-    >
+    <div className={["pd-chat", `pd-chat--${from}`, className].filter(Boolean).join(" ")} {...rest}>
       {!isUser && avatar}
       <div className="pd-chat__col">
         {!isUser && name && <span className="pd-chat__name">{name}</span>}

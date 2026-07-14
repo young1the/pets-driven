@@ -97,10 +97,7 @@ export type PetWindowInputEvent = {
   at: number;
 };
 
-export function isFreshPetWindowMessage(
-  lastSequence: number,
-  nextSequence: number,
-) {
+export function isFreshPetWindowMessage(lastSequence: number, nextSequence: number) {
   return nextSequence > lastSequence;
 }
 

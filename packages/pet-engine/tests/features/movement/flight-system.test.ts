@@ -4,14 +4,16 @@ import { runFlightSystem } from "@pets-driven/pet-engine/features/movement/syste
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 
 function makeFlyer(gravityScale: number, hoverStrength: number) {
-  return createComponentStore([{
-    id: "pet-a",
-    components: [
-      { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 32 },
-      { type: "FlyingTag" },
-      { type: "CanFly" as const, gravityScale, hoverStrength },
-    ],
-  }]);
+  return createComponentStore([
+    {
+      id: "pet-a",
+      components: [
+        { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 32 },
+        { type: "FlyingTag" },
+        { type: "CanFly" as const, gravityScale, hoverStrength },
+      ],
+    },
+  ]);
 }
 
 function makePhysicsMock() {

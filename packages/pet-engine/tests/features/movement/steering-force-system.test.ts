@@ -3,17 +3,32 @@ import { createComponentStore } from "@pets-driven/pet-engine/core/component-sto
 import { runSteeringForceSystem } from "@pets-driven/pet-engine/features/movement/systems";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
 
-function makeFlyer(mode: "stand" | "pursue" | "arrive", targetX: number | null, targetY: number | null) {
-  return createComponentStore([{
-    id: "pet-a",
-    components: [
-      { type: "Transform" as const, position: { x: 100, y: 100 } },
-      { type: "FlyingTag" },
-      { type: "MovementProfile" as const, standForce: 0.001, pursueForce: 0.002, arriveForce: 0.003 },
-      { type: "Steering" as const, mode },
-      { type: "MotionTarget" as const, targetEntityId: null, targetPosition: targetX !== null ? { x: targetX, y: targetY! } : null },
-    ],
-  }]);
+function makeFlyer(
+  mode: "stand" | "pursue" | "arrive",
+  targetX: number | null,
+  targetY: number | null,
+) {
+  return createComponentStore([
+    {
+      id: "pet-a",
+      components: [
+        { type: "Transform" as const, position: { x: 100, y: 100 } },
+        { type: "FlyingTag" },
+        {
+          type: "MovementProfile" as const,
+          standForce: 0.001,
+          pursueForce: 0.002,
+          arriveForce: 0.003,
+        },
+        { type: "Steering" as const, mode },
+        {
+          type: "MotionTarget" as const,
+          targetEntityId: null,
+          targetPosition: targetX !== null ? { x: targetX, y: targetY! } : null,
+        },
+      ],
+    },
+  ]);
 }
 
 describe("steering force system", () => {

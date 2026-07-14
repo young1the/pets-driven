@@ -33,9 +33,7 @@ export const EXPERIENCE_IMPACT: Record<PetExperienceKind, MoodImpact> = {
   played: { valence: 0.3, arousal: 0.12, confidence: 0.15 },
 };
 
-export function initialMoodState(
-  personality: PersonalityComponent,
-): MoodStateComponent {
+export function initialMoodState(personality: PersonalityComponent): MoodStateComponent {
   return {
     type: "MoodState",
     valence: 0,
@@ -80,20 +78,10 @@ export function runMoodRecoverySystem(
   components.forEach(
     ["MoodState", "RecentExperienceMemory", "Personality"],
     (_id, [mood, memory, personality]) => {
-      memory.entries = memory.entries.filter(
-        (entry) => now - entry.at < EXPERIENCE_MEMORY_MS,
-      );
+      memory.entries = memory.entries.filter((entry) => now - entry.at < EXPERIENCE_MEMORY_MS);
       mood.valence = approach(mood.valence, 0, recovery);
-      mood.arousal = approach(
-        mood.arousal,
-        baselineArousal(personality),
-        recovery,
-      );
-      mood.confidence = approach(
-        mood.confidence,
-        baselineConfidence(personality),
-        recovery,
-      );
+      mood.arousal = approach(mood.arousal, baselineArousal(personality), recovery);
+      mood.confidence = approach(mood.confidence, baselineConfidence(personality), recovery);
     },
   );
 }
@@ -151,19 +139,11 @@ export function moodAdjustedDecisionScore(
 }
 
 function baselineArousal(personality: PersonalityComponent): number {
-  return clamp(
-    0.15 + personality.extraversion * 0.25 + personality.neuroticism * 0.2,
-    0,
-    1,
-  );
+  return clamp(0.15 + personality.extraversion * 0.25 + personality.neuroticism * 0.2, 0, 1);
 }
 
 function baselineConfidence(personality: PersonalityComponent): number {
-  return clamp(
-    0.3 + (1 - personality.neuroticism) * 0.5 + personality.extraversion * 0.1,
-    0,
-    1,
-  );
+  return clamp(0.3 + (1 - personality.neuroticism) * 0.5 + personality.extraversion * 0.1, 0, 1);
 }
 
 function approach(value: number, target: number, amount: number): number {
@@ -183,4 +163,3 @@ export const MoodRecoverySystem: SimulationSystem<WorldStepContext> = {
     runMoodRecoverySystem(ctx.components, ctx.clock.now(), ctx.deltaMs);
   },
 };
-

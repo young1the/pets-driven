@@ -22,16 +22,11 @@ const PERSONALITY_OCEAN = Object.fromEntries(
   PERSONALITY_REGISTRY.map((entry) => {
     const { openness, conscientiousness, extraversion, agreeableness, neuroticism } =
       entry.factory();
-    return [
-      entry.id,
-      { openness, conscientiousness, extraversion, agreeableness, neuroticism },
-    ];
+    return [entry.id, { openness, conscientiousness, extraversion, agreeableness, neuroticism }];
   }),
 ) as Record<PetPersonalityId, Omit<PersonalityComponent, "type">>;
 
-function personalityComponent(
-  id: PetPersonalityId | undefined,
-): PersonalityComponent {
+function personalityComponent(id: PetPersonalityId | undefined): PersonalityComponent {
   const catalogId = id ?? "playful";
   return {
     type: "Personality",
@@ -46,15 +41,11 @@ function personalityComponent(
  * the simulated snapshot keeps a stable identity; movement comes from the
  * personality preset.
  */
-export function selectAdoptedPetSimInputs(
-  state: PetsDrivenState,
-): AdoptedPetSimInput[] {
+export function selectAdoptedPetSimInputs(state: PetsDrivenState): AdoptedPetSimInput[] {
   return state.pets
     .filter((pet) => !pet.archived && pet.visible)
     .map((pet) => {
-      const profile = state.petProfiles.find(
-        (candidate) => candidate.id === pet.profileId,
-      );
+      const profile = state.petProfiles.find((candidate) => candidate.id === pet.profileId);
       const directory = state.registeredWorkingDirectories.find(
         (candidate) => candidate.petId === pet.id,
       );

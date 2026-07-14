@@ -1,9 +1,6 @@
 import { Select } from "@pets-driven/design-system";
 import { localeLabels, useTranslation, type Locale } from "@pets-driven/i18n";
-import {
-  locales,
-  useDesktopLocale,
-} from "@/app/i18n/desktop-locale";
+import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
 
 /**
  * Language picker for the settings surface. Flips the active desktop locale

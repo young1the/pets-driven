@@ -38,10 +38,7 @@ const PET_ANIMATION_DURATIONS: Record<PetAnimationState, number[]> = {
   review: [150, 150, 150, 150, 150, 280],
 };
 
-export function getAtlasFrame(
-  animationState: PetAnimationState,
-  elapsedMs: number,
-) {
+export function getAtlasFrame(animationState: PetAnimationState, elapsedMs: number) {
   const durations = PET_ANIMATION_DURATIONS[animationState];
   const loopDuration = durations.reduce((sum, duration) => sum + duration, 0);
   let remaining = elapsedMs % loopDuration;
@@ -67,10 +64,7 @@ export function getAtlasFrame(
  * flips to the next one. Lets renderers wake up exactly at frame boundaries
  * instead of polling every display refresh.
  */
-export function msUntilNextAtlasFrame(
-  animationState: PetAnimationState,
-  elapsedMs: number,
-) {
+export function msUntilNextAtlasFrame(animationState: PetAnimationState, elapsedMs: number) {
   const durations = PET_ANIMATION_DURATIONS[animationState];
   const loopDuration = durations.reduce((sum, duration) => sum + duration, 0);
   let remaining = elapsedMs % loopDuration;

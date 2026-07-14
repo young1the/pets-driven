@@ -25,9 +25,7 @@ export function runCursorInputSystem(components: ComponentStore): void {
     }
 
     const cutoff = input.at - CURSOR_SAMPLE_WINDOW_MS;
-    const trimmed = samples
-      .filter((sample) => sample.at >= cutoff)
-      .slice(-CURSOR_MAX_SAMPLES);
+    const trimmed = samples.filter((sample) => sample.at >= cutoff).slice(-CURSOR_MAX_SAMPLES);
 
     components.setComponent(id, {
       type: "CursorState",

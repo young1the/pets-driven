@@ -35,4 +35,3 @@ export type RecentExperienceMemoryComponent = {
   type: "RecentExperienceMemory";
   entries: RecentExperience[];
 };
-

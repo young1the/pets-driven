@@ -20,14 +20,8 @@ export function ScenarioControls({
 }: ScenarioControlsProps) {
   return (
     <section className="scenario-controls">
-      <Button
-        aria-pressed={isAnimationPlaying}
-        onClick={onToggleAnimation}
-        size="sm"
-      >
-        {isAnimationPlaying
-          ? PLAYGROUND_TEXT.pauseAnimation
-          : PLAYGROUND_TEXT.resumeAnimation}
+      <Button aria-pressed={isAnimationPlaying} onClick={onToggleAnimation} size="sm">
+        {isAnimationPlaying ? PLAYGROUND_TEXT.pauseAnimation : PLAYGROUND_TEXT.resumeAnimation}
       </Button>
       <Button onClick={onPlayNextFrame} size="sm" variant="neutral">
         {PLAYGROUND_TEXT.playNextFrame}
@@ -52,9 +46,7 @@ export function ScenarioControls({
         {PLAYGROUND_TEXT.frameCounterPrefix} {frameNumber}
       </p>
       <p>
-        {monitorLayout === "dual-horizontal"
-          ? "Dual monitor: left + primary"
-          : "Single monitor"}
+        {monitorLayout === "dual-horizontal" ? "Dual monitor: left + primary" : "Single monitor"}
       </p>
     </section>
   );

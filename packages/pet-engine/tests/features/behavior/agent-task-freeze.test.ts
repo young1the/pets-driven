@@ -8,9 +8,7 @@ function makeStore(held: boolean) {
       id: "pet",
       components: [
         { type: "AgentTaskState", status: "waiting" as const, since: 0 },
-        ...(held
-          ? [{ type: "TaskMovementHold" as const, since: 0 }]
-          : []),
+        ...(held ? [{ type: "TaskMovementHold" as const, since: 0 }] : []),
         {
           type: "MotionTarget",
           targetEntityId: null,
@@ -28,9 +26,7 @@ describe("runTaskMovementHoldSystem freezes by hold component", () => {
     runTaskMovementHoldSystem(store, {
       setVelocity: (_id, v) => velocities.push({ x: v.x ?? 0, y: v.y ?? 0 }),
     });
-    expect(
-      store.getComponent("pet", "MotionTarget")?.targetPosition,
-    ).toBeNull();
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
   });
 
   it("does not freeze a released pet whose status still reads waiting", () => {

@@ -17,9 +17,7 @@ const TERMINAL_EXIT_EVENT = "embedded-terminal-exit";
 // xterm renders into a canvas, so `var(--...)` font/color tokens must be
 // resolved to concrete values before they reach it.
 function readToken(name: string, fallback: string): string {
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return value || fallback;
 }
 
@@ -74,12 +72,7 @@ export interface EmbeddedTerminalProps {
  * one PTY session; changing `cwd`/`shell` tears down and restarts it (the
  * parent also keys us to force a clean remount).
  */
-export function EmbeddedTerminal({
-  cwd,
-  shell,
-  exitedLabel,
-  className,
-}: EmbeddedTerminalProps) {
+export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: EmbeddedTerminalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -97,10 +90,7 @@ export function EmbeddedTerminal({
 
     const term = new Terminal({
       cursorBlink: true,
-      fontFamily: readToken(
-        "--font-mono",
-        'Menlo, Consolas, "Courier New", monospace',
-      ),
+      fontFamily: readToken("--font-mono", 'Menlo, Consolas, "Courier New", monospace'),
       fontSize: 13,
       theme: readXtermTheme(),
     });

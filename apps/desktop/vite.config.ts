@@ -13,9 +13,7 @@ function syncPetAssets(): Plugin {
   return {
     name: "sync-pet-assets",
     config() {
-      const script = fileURLToPath(
-        new URL("../../scripts/sync-pet-assets.mjs", import.meta.url),
-      );
+      const script = fileURLToPath(new URL("../../scripts/sync-pet-assets.mjs", import.meta.url));
       execFileSync(process.execPath, [script, "desktop"], {
         stdio: "inherit",
       });
@@ -51,8 +49,7 @@ export default defineConfig(({ mode }) => {
     },
     envPrefix: ["VITE_", "TAURI_ENV_*"],
     build: {
-      target:
-        process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
+      target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
       minify: process.env.TAURI_ENV_DEBUG ? false : "esbuild",
       sourcemap: Boolean(process.env.TAURI_ENV_DEBUG),
       rollupOptions: {

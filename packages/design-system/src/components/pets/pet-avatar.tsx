@@ -8,13 +8,7 @@ import "./pet-avatar.css";
  */
 
 export type PetAvatarSize = "sm" | "md" | "lg" | "xl";
-export type PetAvatarStatus =
-  | "idle"
-  | "working"
-  | "happy"
-  | "thinking"
-  | "napping"
-  | "confused";
+export type PetAvatarStatus = "idle" | "working" | "happy" | "thinking" | "napping" | "confused";
 
 const STATUS_COLOR: Record<PetAvatarStatus, string> = {
   working: "var(--mint-500)",
@@ -25,8 +19,7 @@ const STATUS_COLOR: Record<PetAvatarStatus, string> = {
   idle: "var(--ink-300)",
 };
 
-export interface PetAvatarProps
-  extends Omit<HTMLAttributes<HTMLSpanElement>, "style"> {
+export interface PetAvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, "style"> {
   /** Which pet to show. @default "cato" */
   pet?: PetName;
   /** Badge size. @default "md" */
@@ -53,12 +46,7 @@ export function PetAvatar({
   style,
   ...rest
 }: PetAvatarProps) {
-  const cls = [
-    "pd-pet",
-    `pd-pet--${size}`,
-    `pd-pet--${status}`,
-    className,
-  ]
+  const cls = ["pd-pet", `pd-pet--${size}`, `pd-pet--${status}`, className]
     .filter(Boolean)
     .join(" ");
 
@@ -67,8 +55,7 @@ export function PetAvatar({
     ...style,
   } as CSSProperties;
   const petImage = PETS[pet] ?? PETS.cato;
-  const petImageSrc =
-    typeof petImage === "string" ? petImage : petImage.src;
+  const petImageSrc = typeof petImage === "string" ? petImage : petImage.src;
 
   return (
     <span
@@ -78,12 +65,7 @@ export function PetAvatar({
       aria-label={label ?? `${pet} (${status})`}
       {...rest}
     >
-      <img
-        className="pd-pet__art"
-        src={petImageSrc}
-        alt=""
-        aria-hidden="true"
-      />
+      <img className="pd-pet__art" src={petImageSrc} alt="" aria-hidden="true" />
       {showStatus ? <span className="pd-pet__status" /> : null}
     </span>
   );

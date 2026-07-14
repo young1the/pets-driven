@@ -110,9 +110,7 @@ describe("matter physics world", () => {
     expect(() => world.removeBody("pet-a")).not.toThrow();
     // A removed body no longer participates in the simulation.
     world.setPosition("pet-a", { x: 500 });
-    expect(
-      world.snapshot().bodies.find((body) => body.id === "pet-a"),
-    ).toBeUndefined();
+    expect(world.snapshot().bodies.find((body) => body.id === "pet-a")).toBeUndefined();
   });
 
   it("supports per-body gravity scale for flyable or low-gravity bodies", () => {

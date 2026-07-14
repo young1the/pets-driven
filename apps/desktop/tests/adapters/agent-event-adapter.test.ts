@@ -4,25 +4,27 @@ import { createAgentEvent } from "@/adapters/agent-events/agent-event";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 
 describe("agent event adapter", () => {
-  it.each(["task.started", "task.waiting", "task.completed", "task.failed"] as const)(
-    "maps %s into the matching agent world event",
-    (type) => {
-      const event = createAgentEvent({
-        type,
-        sourceId: "agent-a",
-        at: 10,
-        summary: "Lifecycle update",
-      });
+  it.each([
+    "task.started",
+    "task.waiting",
+    "task.completed",
+    "task.failed",
+  ] as const)("maps %s into the matching agent world event", (type) => {
+    const event = createAgentEvent({
+      type,
+      sourceId: "agent-a",
+      at: 10,
+      summary: "Lifecycle update",
+    });
 
-      expect(toWorldEvent(event)).toEqual({
-        kind: "agent",
-        type,
-        sourceId: "agent-a",
-        at: 10,
-        summary: "Lifecycle update",
-      });
-    },
-  );
+    expect(toWorldEvent(event)).toEqual({
+      kind: "agent",
+      type,
+      sourceId: "agent-a",
+      at: 10,
+      summary: "Lifecycle update",
+    });
+  });
 
   it.each([
     ["UserPromptSubmit", "task.started", "New prompt received"],
@@ -35,25 +37,22 @@ describe("agent event adapter", () => {
     ["StopFailure", "task.failed", "Task failed"],
     ["Stop", "task.completed", "Task completed"],
     ["TaskCompleted", "task.completed", "Task completed"],
-  ] as const)(
-    "maps Claude %s hooks into %s agent events",
-    (hookEventName, type, summary) => {
-      expect(
-        createAgentEventFromClaudeHook(
-          {
-            hook_event_name: hookEventName,
-            tool_name: hookEventName.includes("Tool") ? "Bash" : undefined,
-          },
-          { defaultSourceId: "agent-a", now: 10 },
-        ),
-      ).toEqual({
-        type,
-        sourceId: "agent-a",
-        at: 10,
-        summary,
-      });
-    },
-  );
+  ] as const)("maps Claude %s hooks into %s agent events", (hookEventName, type, summary) => {
+    expect(
+      createAgentEventFromClaudeHook(
+        {
+          hook_event_name: hookEventName,
+          tool_name: hookEventName.includes("Tool") ? "Bash" : undefined,
+        },
+        { defaultSourceId: "agent-a", now: 10 },
+      ),
+    ).toEqual({
+      type,
+      sourceId: "agent-a",
+      at: 10,
+      summary,
+    });
+  });
 
   it("prefers explicit Claude hook source and summary fields", () => {
     expect(
@@ -105,8 +104,8 @@ describe("agent event adapter", () => {
   });
 
   it("rejects unsupported Claude hook events", () => {
-    expect(() =>
-      createAgentEventFromClaudeHook({ hook_event_name: "SessionStart" }),
-    ).toThrow("Unsupported Claude hook event: SessionStart");
+    expect(() => createAgentEventFromClaudeHook({ hook_event_name: "SessionStart" })).toThrow(
+      "Unsupported Claude hook event: SessionStart",
+    );
   });
 });

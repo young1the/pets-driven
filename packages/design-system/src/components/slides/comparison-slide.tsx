@@ -5,10 +5,7 @@ import "./slides.css";
  * Two-column comparison: a muted "old way" column of crosses against a
  * highlighted "Pets-Driven way" column of checks, headed by a pet.
  */
-export interface ComparisonSlideProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "title"
-> {
+export interface ComparisonSlideProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   title: ReactNode;
   /** Tag label for the left column. @default "The old way" */
   oldLabel?: ReactNode;
@@ -31,10 +28,7 @@ export function ComparisonSlide({
   ...rest
 }: ComparisonSlideProps) {
   return (
-    <div
-      className={`pd-slide pd-slide--comparison ${className}`.trim()}
-      {...rest}
-    >
+    <div className={`pd-slide pd-slide--comparison ${className}`.trim()} {...rest}>
       <h1 className="pd-slide__title">{title}</h1>
       <div className="pd-slide-cols">
         <div className="pd-slide-col pd-slide-col--old">

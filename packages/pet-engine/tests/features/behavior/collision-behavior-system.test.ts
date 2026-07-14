@@ -78,9 +78,7 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
-      "collision",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
   });
 
   it("clears existing MotionTarget and resets intent to idle on collision (pet truly freezes)", () => {
@@ -132,12 +130,8 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     // PendingReaction written
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
     // MotionTarget cleared so locomotion systems see no target → pet stops
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
-    ).toBeNull();
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetEntityId,
-    ).toBeNull();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
     // Intent reset to idle
     expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
   });
@@ -185,16 +179,10 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
     runCollisionBehaviorSystem(store, BOUNDS, createManualClock(200));
 
-    expect(store.getComponent("pet-a", "AgentTaskState")?.status).toBe(
-      "working",
-    );
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
-    ).toBeNull();
+    expect(store.getComponent("pet-a", "AgentTaskState")?.status).toBe("working");
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(
-      store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt,
-    ).toBe(200);
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBe(200);
     expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
       source: "collision",
       mood: "confused",
@@ -258,12 +246,8 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, createManualClock(200));
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
-    ).toBeNull();
-    expect(
-      store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt,
-    ).toBe(200);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBe(200);
     expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
       source: "collision",
       mood: "confused",
@@ -317,12 +301,8 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, createManualClock(200));
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
-    ).toBeNull();
-    expect(
-      store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt,
-    ).toBe(200);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBe(200);
     expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
       source: "collision",
       mood: "confused",
@@ -366,9 +346,7 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
     runCollisionBehaviorSystem(irritated, BOUNDS, createManualClock(1000));
 
-    expect(
-      irritated.getComponent("pet-a", "PetExpressionState")?.expiresAt,
-    ).toBe(1900);
+    expect(irritated.getComponent("pet-a", "PetExpressionState")?.expiresAt).toBe(1900);
 
     const steady = createComponentStore([
       {
@@ -403,9 +381,7 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
     runCollisionBehaviorSystem(steady, BOUNDS, createManualClock(1000));
 
-    expect(steady.getComponent("pet-a", "PetExpressionState")?.expiresAt).toBe(
-      1350,
-    );
+    expect(steady.getComponent("pet-a", "PetExpressionState")?.expiresAt).toBe(1350);
   });
 
   it("does not react when entities are far apart", () => {
@@ -418,12 +394,8 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetPosition,
-    ).toBeNull();
-    expect(
-      store.getComponent("pet-a", "BehaviorDecisionState"),
-    ).toBeUndefined();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
   });
 
   it("uses Matter-derived PetCollision even when bodies no longer overlap by AABB", () => {
@@ -503,12 +475,8 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
-      "agent-event",
-    );
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBe(
-      "user-anchor",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("agent-event");
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBe("user-anchor");
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
   });
 
@@ -528,12 +496,8 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     // PendingReaction and claim must be unchanged
-    expect(store.getComponent("pet-a", "PendingReaction")).toEqual(
-      firstReaction,
-    );
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toEqual(
-      firstDecision,
-    );
+    expect(store.getComponent("pet-a", "PendingReaction")).toEqual(firstReaction);
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toEqual(firstDecision);
   });
 
   it("does not write PendingReaction for a climbing entity", () => {
@@ -564,12 +528,8 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(
-      { x: 100, y: 280 },
-    );
-    expect(
-      store.getComponent("pet-a", "BehaviorDecisionState"),
-    ).toBeUndefined();
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual({ x: 100, y: 280 });
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
   });
 
   it("does not freeze a non-flying airborne entity during overlap", () => {
@@ -618,13 +578,9 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(
-      { x: 240, y: 430 },
-    );
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual({ x: 240, y: 430 });
     expect(store.getComponent("pet-a", "Steering")?.mode).toBe("pursue");
-    expect(
-      store.getComponent("pet-a", "BehaviorDecisionState"),
-    ).toBeUndefined();
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toBeUndefined();
   });
 
   it("expires the collision claim as soon as overlap ends", () => {
@@ -635,9 +591,7 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     ]);
 
     runCollisionBehaviorSystem(store, BOUNDS, clock);
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
-      "collision",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
 
     store.setComponent("pet-b", {
       type: "Transform",
@@ -686,9 +640,7 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
 
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
-      "collision",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("collision");
     expect(store.getComponent("pet-a", "PendingReaction")).toBeDefined();
   });
 
@@ -729,13 +681,9 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(
-      fleeTarget,
-    );
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toEqual(fleeTarget);
     expect(store.getComponent("pet-a", "Steering")?.mode).toBe("pursue");
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe(
-      "collision-flee",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("collision-flee");
   });
 
   it("restarts collision when a stale collision-flee target crosses the current collider", () => {
@@ -782,13 +730,9 @@ describe("collision behavior system (Phase 4: PendingReaction)", () => {
     runCollisionBehaviorSystem(store, BOUNDS, clock);
 
     expect(store.getComponent("pet-c", "PendingReaction")).toBeDefined();
-    expect(
-      store.getComponent("pet-c", "MotionTarget")?.targetPosition,
-    ).toBeNull();
+    expect(store.getComponent("pet-c", "MotionTarget")?.targetPosition).toBeNull();
     expect(store.getComponent("pet-c", "Steering")?.mode).toBe("stand");
-    expect(store.getComponent("pet-c", "BehaviorDecisionState")?.source).toBe(
-      "collision",
-    );
+    expect(store.getComponent("pet-c", "BehaviorDecisionState")?.source).toBe("collision");
   });
 });
 
@@ -933,29 +877,17 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     ]);
 
     // Tick with now = 1300 (< reactsAt 1400) — claim still active
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1300),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1300), createSeededRandom(1), BOUNDS);
 
     expect(store.getComponent("pet", "BehaviorDecisionToken")).toBeUndefined();
     expect(store.getComponent("pet", "PendingReaction")).toBeDefined();
-    expect(
-      store.getComponent("pet", "MotionTarget")?.targetPosition,
-    ).toBeNull();
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
   });
 
   it("at reactsAt, Decision emits a collision-* token and removes PendingReaction", () => {
     // now = reactsAt = 1400 → claim expired → reactive pool fires
     const store = makeReactionStore(0.5, 0.5, 0.5);
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toMatch(/^collision-/);
@@ -966,15 +898,8 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
   it("high-N low-A pet selects collision-flee at reactsAt (seed 1)", () => {
     // N=0.9, A=0.1: scoreFleeFromPet = 0.2+0.9*0.7-0.1*0.5 = 0.78 (dominant)
     const store = makeReactionStore(0.5, 0.9, 0.1);
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
-      "collision-flee",
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-flee");
   });
 
   it("grounded walking pets can pick collision-jump when still trapped in contact", () => {
@@ -1004,25 +929,16 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       climbableSurfacePosition: null,
     });
 
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
     runBehaviorPlanningSystem(store, createManualClock(1400));
 
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
-      "collision-jump",
-    );
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-jump");
     expect(store.getComponent("pet", "JumpActionState")).toEqual({
       type: "JumpActionState",
       phase: "requested",
       cooldownMs: 0,
     });
-    expect(
-      store.getComponent("pet", "MotionTarget")?.targetPosition?.x,
-    ).toBeLessThan(100);
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition?.x).toBeLessThan(100);
   });
 
   it("collision-flee target is far enough to escape the collision area", () => {
@@ -1038,12 +954,7 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       height: 38,
     });
 
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("collision-flee");
@@ -1053,15 +964,8 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
   it("high-E high-A low-N pet selects collision-engage at reactsAt (seed 1)", () => {
     // E=0.9, A=0.9, N=0.1: scoreCollisionEngage = 0.2+0.9*0.5+0.9*0.5-0.1*0.4 = 1.06 (dominant)
     const store = makeReactionStore(0.9, 0.1, 0.9);
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
-      "collision-engage",
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-engage");
   });
 
   // Regression: engageTarget must sit BETWEEN self and other, not on the far
@@ -1075,12 +979,7 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     // Correct engage target: other + away*80 = (200-80, 500) = (120, 500).
     // Buggy target would be (280, 500) — past the other pet.
     const store = makeReactionStore(0.9, 0.1, 0.9, { x: 200, y: 500 });
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("collision-engage");
@@ -1097,12 +996,7 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     // Buggy: target = other - away*80 = (380, 500) — past the other pet,
     //   would force the pet to walk through other and re-collide forever.
     const store = makeReactionStore(0.9, 0.1, 0.9, { x: 300, y: 500 });
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("collision-engage");
@@ -1168,18 +1062,11 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       },
     ]);
 
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
 
     const token = store.getComponent("pet", "BehaviorDecisionToken");
     expect(token?.kind).toBe("collision-flee");
-    expect(
-      Math.abs((token?.targetPosition?.x ?? 100) - 100),
-    ).toBeGreaterThanOrEqual(90);
+    expect(Math.abs((token?.targetPosition?.x ?? 100) - 100)).toBeGreaterThanOrEqual(90);
   });
 
   it("collision-flee Planning: MotionTarget points away from otherPosition", () => {
@@ -1218,9 +1105,7 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
     const motion = store.getComponent("pet", "MotionTarget");
     expect(motion?.targetPosition).toEqual({ x: 48, y: 500 });
     expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(
-      true,
-    );
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 
   it("collision-engage Planning: MotionTarget points toward otherPosition", () => {
@@ -1341,16 +1226,9 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
   it("calm agreeable pet can select collision-stay at reactsAt", () => {
     const store = makeReactionStore(0.1, 0.1, 0.95);
 
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
 
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
-      "collision-stay",
-    );
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("collision-stay");
   });
 
   it("does not select collision-stay while the colliding bodies still overlap", () => {
@@ -1427,16 +1305,9 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       },
     ]);
 
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(1400),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(1400), createSeededRandom(1), BOUNDS);
 
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).not.toBe(
-      "collision-stay",
-    );
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).not.toBe("collision-stay");
   });
 
   it("collision-stay Planning keeps the pet idle without a target", () => {
@@ -1476,9 +1347,7 @@ describe("Phase 4 — collision reaction latency and personality-shaped response
       targetPosition: null,
     });
     expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
-    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(
-      true,
-    );
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
   });
 });
 
@@ -1508,8 +1377,7 @@ describe("Phase 4 — reactive candidate distribution (1000 samples)", () => {
         createSeededRandom(seed * 1013 + 7),
         BOUNDS,
       );
-      const kind =
-        store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
+      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
     // Theoretical flee ≈ 477; generous band to account for sampling variance
@@ -1537,8 +1405,7 @@ describe("Phase 4 — reactive candidate distribution (1000 samples)", () => {
         createSeededRandom(seed * 1013 + 7),
         BOUNDS,
       );
-      const kind =
-        store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
+      const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
     // Theoretical engage ≈ 802; generous lower bound
@@ -1565,10 +1432,7 @@ describe("Phase 4 — reactive outcomes are reachable", () => {
         createSeededRandom(seed * 1013),
         BOUNDS,
       );
-      if (
-        store.getComponent("pet", "BehaviorDecisionToken")?.kind ===
-        "collision-avoid"
-      ) {
+      if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "collision-avoid") {
         found = true;
       }
     }
@@ -1591,10 +1455,7 @@ describe("Phase 4 — reactive outcomes are reachable", () => {
         createSeededRandom(seed * 1013),
         BOUNDS,
       );
-      if (
-        store.getComponent("pet", "BehaviorDecisionToken")?.kind ===
-        "collision-unfazed"
-      ) {
+      if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "collision-unfazed") {
         found = true;
       }
     }
@@ -1623,14 +1484,10 @@ describe("collision vs social priority (B1: social outranks collision)", () => {
 
     // The session member shrugs the bump off entirely...
     expect(store.getComponent("pet-a", "PendingReaction")).toBeUndefined();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
-      "social",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("social");
     // ...while the unclaimed other pet still reacts normally.
     expect(store.getComponent("pet-b", "PendingReaction")).toBeDefined();
-    expect(store.getComponent("pet-b", "BehaviorDecisionState")?.source).toBe(
-      "collision",
-    );
+    expect(store.getComponent("pet-b", "BehaviorDecisionState")?.source).toBe("collision");
   });
 });
 
@@ -1732,9 +1589,7 @@ describe("per-pair collision reaction cooldown (B3)", () => {
     store.spawn("pet-c", makePet("pet-c", 108, "stand").components);
     runCollisionBehaviorSystem(store, BOUNDS, createManualClock(3_000));
 
-    expect(
-      store.getComponent("pet-a", "PendingReaction")?.context.otherEntityId,
-    ).toBe("pet-c");
+    expect(store.getComponent("pet-a", "PendingReaction")?.context.otherEntityId).toBe("pet-c");
   });
 });
 

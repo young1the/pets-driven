@@ -10,7 +10,12 @@
   color: var(--text-body);
   user-select: none;
 }
-.pd-radio input { position: absolute; opacity: 0; width: 0; height: 0; }
+.pd-radio input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
 .pd-radio__dot {
   width: 22px;
   height: 22px;
@@ -34,9 +39,22 @@
   transform: scale(0);
   transition: transform var(--dur-fast) var(--ease-spring);
 }
-.pd-radio:hover .pd-radio__dot { border-color: var(--color-primary); }
-.pd-radio input:checked + .pd-radio__dot { border-color: var(--color-primary); }
-.pd-radio input:checked + .pd-radio__dot::after { transform: scale(1); }
-.pd-radio input:active + .pd-radio__dot { transform: scale(0.88); }
-.pd-radio input:focus-visible + .pd-radio__dot { box-shadow: var(--ring-focus); }
-.pd-radio--disabled { opacity: 0.5; cursor: not-allowed; }
+.pd-radio:hover .pd-radio__dot {
+  border-color: var(--color-primary);
+}
+.pd-radio input:checked + .pd-radio__dot {
+  border-color: var(--color-primary);
+}
+.pd-radio input:checked + .pd-radio__dot::after {
+  transform: scale(1);
+}
+.pd-radio input:active + .pd-radio__dot {
+  transform: scale(0.88);
+}
+.pd-radio input:focus-visible + .pd-radio__dot {
+  box-shadow: var(--ring-focus);
+}
+.pd-radio--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

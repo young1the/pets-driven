@@ -39,41 +39,36 @@ export function runLocomotionModeSystem(components: ComponentStore): void {
     }
   });
 
-  components.forEach(
-    ["ContactState", "MotionTarget"],
-    (id, [contact, motion]) => {
-      const climbDismount = components.getComponent(id, "ClimbDismountState");
-      if (climbDismount && climbDismount.phase !== "ready") {
-        components.removeComponent(id, "ClimbingTag");
-        if (!components.getComponent(id, "FlyingTag")) {
-          components.setComponent(id, { type: "WalkingTag" });
-        }
-        return;
+  components.forEach(["ContactState", "MotionTarget"], (id, [contact, motion]) => {
+    const climbDismount = components.getComponent(id, "ClimbDismountState");
+    if (climbDismount && climbDismount.phase !== "ready") {
+      components.removeComponent(id, "ClimbingTag");
+      if (!components.getComponent(id, "FlyingTag")) {
+        components.setComponent(id, { type: "WalkingTag" });
       }
+      return;
+    }
 
-      const wallClimb = components.getComponent(id, "CanWallClimb");
-      if (!wallClimb) return;
+    const wallClimb = components.getComponent(id, "CanWallClimb");
+    if (!wallClimb) return;
 
-      const climbIntent = components.getComponent(id, "ClimbIntentState");
-      const climbing = components.getComponent(id, "ClimbingTag");
-      const occupiedByAnother =
-        !!contact.climbableSurfaceId &&
-        !climbing &&
-        occupiedSurfaces.has(contact.climbableSurfaceId);
+    const climbIntent = components.getComponent(id, "ClimbIntentState");
+    const climbing = components.getComponent(id, "ClimbingTag");
+    const occupiedByAnother =
+      !!contact.climbableSurfaceId && !climbing && occupiedSurfaces.has(contact.climbableSurfaceId);
 
-      if (!occupiedByAnother && canEnterClimb(contact, motion, climbIntent)) {
-        components.setComponent(id, { type: "ClimbingTag" });
-        if (contact.climbableSurfaceId) {
-          occupiedSurfaces.add(contact.climbableSurfaceId);
-        }
-      } else if (climbing && !contact.climbableSurfaceId) {
-        components.removeComponent(id, "ClimbingTag");
-        if (!components.getComponent(id, "FlyingTag")) {
-          components.setComponent(id, { type: "WalkingTag" });
-        }
+    if (!occupiedByAnother && canEnterClimb(contact, motion, climbIntent)) {
+      components.setComponent(id, { type: "ClimbingTag" });
+      if (contact.climbableSurfaceId) {
+        occupiedSurfaces.add(contact.climbableSurfaceId);
       }
-    },
-  );
+    } else if (climbing && !contact.climbableSurfaceId) {
+      components.removeComponent(id, "ClimbingTag");
+      if (!components.getComponent(id, "FlyingTag")) {
+        components.setComponent(id, { type: "WalkingTag" });
+      }
+    }
+  });
 }
 
 // An approach that cannot complete — the pet reaches the surface x but the
@@ -82,10 +77,7 @@ export function runLocomotionModeSystem(components: ComponentStore): void {
 // decision layer (with its request-climb repeat cooldown) try again later.
 const CLIMB_APPROACH_TIMEOUT_MS = 6_000;
 
-export function runClimbApproachSystem(
-  components: ComponentStore,
-  clock?: Clock,
-): void {
+export function runClimbApproachSystem(components: ComponentStore, clock?: Clock): void {
   type SurfaceEntry = { id: string; position: Vector };
   const surfaces: SurfaceEntry[] = [];
 
@@ -117,10 +109,7 @@ export function runClimbApproachSystem(
         // would immediately re-pick the same unclimbable surface and loop.
         if (now !== undefined) {
           const decision = components.getComponent(id, "BehaviorDecisionState");
-          if (
-            decision?.source === "autonomous" &&
-            decision.reason === "request-climb"
-          ) {
+          if (decision?.source === "autonomous" && decision.reason === "request-climb") {
             decision.decidedAt = now;
           } else if (decision?.lastAutonomousReason === "request-climb") {
             decision.lastAutonomousAt = now;
@@ -174,73 +163,70 @@ export function runClimbDismountSystem(
 ): void {
   const forces: Force[] = [];
 
-  components.forEach(
-    ["MotionTarget", "ContactState"],
-    (id, [motion, contact]) => {
-      const climbDismount = components.getComponent(id, "ClimbDismountState");
+  components.forEach(["MotionTarget", "ContactState"], (id, [motion, contact]) => {
+    const climbDismount = components.getComponent(id, "ClimbDismountState");
 
-      if (climbDismount?.phase === "airborne") {
-        if (contact.grounded) {
-          climbDismount.phase = "coolingDown";
-          climbDismount.cooldownMs = CLIMB_DISMOUNT_COOLDOWN_MS;
-        }
-        return;
+    if (climbDismount?.phase === "airborne") {
+      if (contact.grounded) {
+        climbDismount.phase = "coolingDown";
+        climbDismount.cooldownMs = CLIMB_DISMOUNT_COOLDOWN_MS;
       }
+      return;
+    }
 
-      if (climbDismount?.phase === "coolingDown") {
-        climbDismount.cooldownMs = Math.max(0, climbDismount.cooldownMs - deltaMs);
-        if (climbDismount.cooldownMs === 0) {
-          components.removeComponent(id, "ClimbDismountState");
-        }
-        return;
+    if (climbDismount?.phase === "coolingDown") {
+      climbDismount.cooldownMs = Math.max(0, climbDismount.cooldownMs - deltaMs);
+      if (climbDismount.cooldownMs === 0) {
+        components.removeComponent(id, "ClimbDismountState");
       }
+      return;
+    }
 
-      const climbing = components.getComponent(id, "ClimbingTag");
-      const climbIntent = components.getComponent(id, "ClimbIntentState");
+    const climbing = components.getComponent(id, "ClimbingTag");
+    const climbIntent = components.getComponent(id, "ClimbIntentState");
 
-      if (
-        !climbing ||
-        !contact.climbableSurfaceId ||
-        climbIntent?.phase === "approaching" ||
-        motion.targetPosition
-      ) {
-        return;
-      }
+    if (
+      !climbing ||
+      !contact.climbableSurfaceId ||
+      climbIntent?.phase === "approaching" ||
+      motion.targetPosition
+    ) {
+      return;
+    }
 
-      components.removeComponent(id, "ClimbingTag");
-      components.removeComponent(id, "ClimbIntentState");
-      if (components.getComponent(id, "CanWalk")) {
-        components.setComponent(id, { type: "WalkingTag" });
-      }
+    components.removeComponent(id, "ClimbingTag");
+    components.removeComponent(id, "ClimbIntentState");
+    if (components.getComponent(id, "CanWalk")) {
+      components.setComponent(id, { type: "WalkingTag" });
+    }
 
-      const canJump = components.getComponent(id, "CanJump");
-      const canWallClimb = components.getComponent(id, "CanWallClimb");
-      if (canJump) {
-        components.setComponent(id, {
-          type: "JumpActionState",
-          phase: "falling",
-          cooldownMs: 0,
-        });
-        components.setComponent(id, {
-          type: "ClimbDismountState",
-          phase: "airborne",
-          cooldownMs: 0,
-        });
-        const impulse = canWallClimb?.dismountImpulse;
-        if (impulse) {
-          const min = Math.min(impulse.min, impulse.max);
-          const max = Math.max(impulse.min, impulse.max);
-          if (min < 0 || max < 0) {
-            forces.push({ id, x: min + random.next() * (max - min), y: 0 });
-          } else {
-            const direction = random.next() < 0.5 ? -1 : 1;
-            const magnitude = min + random.next() * (max - min);
-            forces.push({ id, x: direction * magnitude, y: 0 });
-          }
+    const canJump = components.getComponent(id, "CanJump");
+    const canWallClimb = components.getComponent(id, "CanWallClimb");
+    if (canJump) {
+      components.setComponent(id, {
+        type: "JumpActionState",
+        phase: "falling",
+        cooldownMs: 0,
+      });
+      components.setComponent(id, {
+        type: "ClimbDismountState",
+        phase: "airborne",
+        cooldownMs: 0,
+      });
+      const impulse = canWallClimb?.dismountImpulse;
+      if (impulse) {
+        const min = Math.min(impulse.min, impulse.max);
+        const max = Math.max(impulse.min, impulse.max);
+        if (min < 0 || max < 0) {
+          forces.push({ id, x: min + random.next() * (max - min), y: 0 });
+        } else {
+          const direction = random.next() < 0.5 ? -1 : 1;
+          const magnitude = min + random.next() * (max - min);
+          forces.push({ id, x: direction * magnitude, y: 0 });
         }
       }
-    },
-  );
+    }
+  });
 
   if (forces.length > 0) forceGroups.push(forces);
 }
@@ -406,8 +392,7 @@ export function runJumpSystem(
         const target = motion?.targetPosition;
         if (transform && target && target.x !== transform.position.x) {
           const magnitude =
-            forwardImpulse.min +
-            random.next() * (forwardImpulse.max - forwardImpulse.min);
+            forwardImpulse.min + random.next() * (forwardImpulse.max - forwardImpulse.min);
           x = Math.sign(target.x - transform.position.x) * magnitude;
         }
       }
@@ -419,10 +404,7 @@ export function runJumpSystem(
   if (forces.length > 0) forceGroups.push(forces);
 }
 
-export function runWallClimbSystem(
-  components: ComponentStore,
-  physics: MatterPhysicsWorld,
-): void {
+export function runWallClimbSystem(components: ComponentStore, physics: MatterPhysicsWorld): void {
   components.forEach(
     ["Transform", "ClimbingTag", "CanWallClimb", "MotionTarget", "ContactState"],
     (id, [transform, , canWallClimb, motion, contact]) => {
@@ -438,10 +420,7 @@ export function runWallClimbSystem(
   );
 }
 
-export function runSteeringForceSystem(
-  components: ComponentStore,
-  forceGroups: Force[][],
-): void {
+export function runSteeringForceSystem(components: ComponentStore, forceGroups: Force[][]): void {
   const forces: Force[] = [];
 
   components.forEach(
@@ -482,10 +461,7 @@ export function runSteeringForceSystem(
   if (forces.length > 0) forceGroups.push(forces);
 }
 
-export function runFlightSystem(
-  components: ComponentStore,
-  physics: MatterPhysicsWorld,
-): void {
+export function runFlightSystem(components: ComponentStore, physics: MatterPhysicsWorld): void {
   components.forEach(["PhysicsBody", "FlyingTag", "CanFly"], (id, [, , canFly]) => {
     physics.setGravityScale(id, canFly.gravityScale);
     if (canFly.hoverStrength > 0) {
@@ -517,7 +493,10 @@ export function runTravelTrackingSystem(components: ComponentStore): void {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function canEnterClimb(
-  contact: { climbableSurfaceId: string | null; climbableSurfacePosition: { x: number; y: number } | null },
+  contact: {
+    climbableSurfaceId: string | null;
+    climbableSurfacePosition: { x: number; y: number } | null;
+  },
   motion: { targetPosition: { x: number } | null },
   climbIntent: { phase: string; surfaceEntityId: string } | undefined,
 ): boolean {
@@ -529,7 +508,8 @@ function canEnterClimb(
   if (climbIntent && contact.climbableSurfaceId !== climbIntent.surfaceEntityId) return false;
   if (!motion.targetPosition) return true;
   return (
-    Math.abs(motion.targetPosition.x - contact.climbableSurfacePosition.x) <= CLIMB_TARGET_X_TOLERANCE
+    Math.abs(motion.targetPosition.x - contact.climbableSurfacePosition.x) <=
+    CLIMB_TARGET_X_TOLERANCE
   );
 }
 
@@ -560,7 +540,8 @@ function requestJumpWhenWalkingTargetIsAbove(
   if (!transform || !body || !contact?.grounded || !canJump) return;
   if (components.getComponent(id, "JumpActionState")) return;
   if (!components.getComponent(id, "WalkingTag")) return;
-  if (components.getComponent(id, "FlyingTag") || components.getComponent(id, "ClimbingTag")) return;
+  if (components.getComponent(id, "FlyingTag") || components.getComponent(id, "ClimbingTag"))
+    return;
 
   const dx = Math.abs(targetPosition.x - transform.position.x);
   const upwardGap = transform.position.y - targetPosition.y;
@@ -579,7 +560,16 @@ function requestJumpWhenWalkingTargetIsAbove(
 export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
   name: "LocomotionModeSystem",
   dependsOn: ["BehaviorPlanningSystem"],
-  reads: ["ContactState", "MotionTarget", "WalkingTag", "ClimbingTag", "FlyingTag", "ClimbIntentState", "CanWallClimb", "ClimbDismountState"],
+  reads: [
+    "ContactState",
+    "MotionTarget",
+    "WalkingTag",
+    "ClimbingTag",
+    "FlyingTag",
+    "ClimbIntentState",
+    "CanWallClimb",
+    "ClimbDismountState",
+  ],
   writes: ["WalkingTag", "ClimbingTag", "FlyingTag"],
   update(ctx) {
     runLocomotionModeSystem(ctx.components);
@@ -589,7 +579,16 @@ export const LocomotionModeSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbApproachSystem",
   dependsOn: ["LocomotionModeSystem"],
-  reads: ["ClimbingTag", "Transform", "MotionTarget", "ClimbIntentState", "CanWallClimb", "ClimbableSurface", "Steering", "BehaviorDecisionState"],
+  reads: [
+    "ClimbingTag",
+    "Transform",
+    "MotionTarget",
+    "ClimbIntentState",
+    "CanWallClimb",
+    "ClimbableSurface",
+    "Steering",
+    "BehaviorDecisionState",
+  ],
   writes: ["MotionTarget", "ClimbIntentState", "Steering", "BehaviorDecisionState"],
   update(ctx) {
     runClimbApproachSystem(ctx.components, ctx.clock);
@@ -599,7 +598,17 @@ export const ClimbApproachSystem: SimulationSystem<WorldStepContext> = {
 export const ClimbDismountSystem: SimulationSystem<WorldStepContext> = {
   name: "ClimbDismountSystem",
   dependsOn: ["ArrivalBehaviorSystem"],
-  reads: ["ClimbingTag", "MotionTarget", "ContactState", "CanWalk", "CanJump", "CanWallClimb", "JumpActionState", "ClimbDismountState", "ClimbIntentState"],
+  reads: [
+    "ClimbingTag",
+    "MotionTarget",
+    "ContactState",
+    "CanWalk",
+    "CanJump",
+    "CanWallClimb",
+    "JumpActionState",
+    "ClimbDismountState",
+    "ClimbIntentState",
+  ],
   writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState", "PhysicsForce"],
   update(ctx) {
     runClimbDismountSystem(ctx.components, ctx.deltaMs, ctx.forceGroups, ctx.random);
@@ -629,7 +638,20 @@ export const ClimbAttachmentSystem: SimulationSystem<WorldStepContext> = {
 export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
   name: "MotionTargetSystem",
   dependsOn: ["ClimbAttachmentSystem"],
-  reads: ["Steering", "MotionTarget", "Transform", "Perception", "Personality", "WalkingTag", "FlyingTag", "ClimbingTag", "PhysicsBody", "ContactState", "CanJump", "JumpActionState"],
+  reads: [
+    "Steering",
+    "MotionTarget",
+    "Transform",
+    "Perception",
+    "Personality",
+    "WalkingTag",
+    "FlyingTag",
+    "ClimbingTag",
+    "PhysicsBody",
+    "ContactState",
+    "CanJump",
+    "JumpActionState",
+  ],
   writes: ["MotionTarget", "JumpActionState"],
   update(ctx) {
     runMotionTargetSystem(ctx.components, ctx.random, ctx.bounds);

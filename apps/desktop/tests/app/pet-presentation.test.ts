@@ -10,8 +10,6 @@ describe("personalityRoleLabelKey", () => {
 
   it("falls back to the generic role key for an unknown or missing personality", () => {
     expect(personalityRoleLabelKey(undefined)).toBe("personality.role");
-    expect(personalityRoleLabelKey("legacy" as PetPersonalityId)).toBe(
-      "personality.role",
-    );
+    expect(personalityRoleLabelKey("legacy" as PetPersonalityId)).toBe("personality.role");
   });
 });

@@ -36,9 +36,7 @@ describe("PlaygroundApp", () => {
   it("renders the simulation canvas shell", () => {
     renderPlayground();
 
-    expect(
-      screen.getByRole("heading", { name: PLAYGROUND_TEXT.title }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: PLAYGROUND_TEXT.title })).toBeInTheDocument();
     expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: PLAYGROUND_TEXT.behaviorLabTitle }),
@@ -49,7 +47,9 @@ describe("PlaygroundApp", () => {
     renderPlayground();
 
     expect(screen.getByRole("tablist", { name: "Simulation playgrounds" })).toBeInTheDocument();
-    expect(screen.queryByRole("tablist", { name: "Prototype playgrounds" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("tablist", { name: "Prototype playgrounds" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Demo" })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByRole("tab", { name: "Design" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Behavior" })).not.toBeInTheDocument();
@@ -148,12 +148,8 @@ describe("PlaygroundApp", () => {
     expect(screen.getByRole("button", { name: "Prompt" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Waiting" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Failed" })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Walk Alice" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Action timeline" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Walk Alice" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Action timeline" })).not.toBeInTheDocument();
   });
 
   it("routes sample Claude hooks through the adapter into the playground panel", () => {
@@ -211,49 +207,40 @@ describe("PlaygroundApp", () => {
   });
 
   it("keeps animation controls available", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {
-        beginPath: vi.fn(),
-        clearRect: vi.fn(),
-        ellipse: vi.fn(),
-        fill: vi.fn(),
-        fillRect: vi.fn(),
-        fillText: vi.fn(),
-        lineTo: vi.fn(),
-        moveTo: vi.fn(),
-        rect: vi.fn(),
-        stroke: vi.fn(),
-        strokeRect: vi.fn(),
-      } as unknown as CanvasRenderingContext2D,
-    );
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      beginPath: vi.fn(),
+      clearRect: vi.fn(),
+      ellipse: vi.fn(),
+      fill: vi.fn(),
+      fillRect: vi.fn(),
+      fillText: vi.fn(),
+      lineTo: vi.fn(),
+      moveTo: vi.fn(),
+      rect: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }));
+    expect(screen.getByRole("button", { name: PLAYGROUND_TEXT.resumeAnimation })).toHaveAttribute(
+      "aria-pressed",
+      "false",
     );
-    expect(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.resumeAnimation }),
-    ).toHaveAttribute("aria-pressed", "false");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),
-    );
-    expect(
-      screen.getByText(`${PLAYGROUND_TEXT.frameCounterPrefix} 1`),
-    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }));
+    expect(screen.getByText(`${PLAYGROUND_TEXT.frameCounterPrefix} 1`)).toBeInTheDocument();
   });
 
   it("can switch the playground into a dual-monitor verification scenario", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {
-        clearRect: vi.fn(),
-        fillRect: vi.fn(),
-        restore: vi.fn(),
-        save: vi.fn(),
-        translate: vi.fn(),
-      } as unknown as CanvasRenderingContext2D,
-    );
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      restore: vi.fn(),
+      save: vi.fn(),
+      translate: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
 
     render(<PlaygroundApp />);
 
@@ -276,18 +263,14 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.copyStateToClipboard }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.copyStateToClipboard }));
 
     expect(writeText).toHaveBeenCalledTimes(1);
     const copied = JSON.parse(writeText.mock.calls[0][0]);
     expect(copied.pet.id).toBe("pet-a");
     expect(copied.components.Transform.position).toEqual({ x: 600, y: 1040 });
     expect(copied.components.MotionTarget.targetPosition).toBeNull();
-    expect(
-      await screen.findByText(PLAYGROUND_TEXT.copyStateCopied),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(PLAYGROUND_TEXT.copyStateCopied)).toBeInTheDocument();
   });
 
   it("runs the decision showcase with agent and collision stimuli", () => {
@@ -407,13 +390,8 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    expect(
-      screen.getByText(PLAYGROUND_TEXT.selectedPetLabel),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Alice" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByText(PLAYGROUND_TEXT.selectedPetLabel)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Alice" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Components")).toBeInTheDocument();
     expect(screen.getByText("CanWalk")).toBeInTheDocument();
     expect(screen.getByText("CanJump")).toBeInTheDocument();
@@ -423,10 +401,7 @@ describe("PlaygroundApp", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Eve" }));
 
-    expect(screen.getByRole("button", { name: "Eve" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: "Eve" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("CanFly")).toBeInTheDocument();
   });
 
@@ -485,9 +460,7 @@ describe("PlaygroundApp", () => {
 
     render(<PlaygroundApp />);
 
-    expect(
-      screen.getByText(PLAYGROUND_TEXT.oceanTitle),
-    ).toBeInTheDocument();
+    expect(screen.getByText(PLAYGROUND_TEXT.oceanTitle)).toBeInTheDocument();
     // Five axis labels must each appear at least once
     for (const label of ["O", "C", "E", "A", "N"]) {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
@@ -495,35 +468,27 @@ describe("PlaygroundApp", () => {
   });
 
   it("shows last-decision token kind in BehaviorLab after stepping a frame", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {
-        beginPath: vi.fn(),
-        clearRect: vi.fn(),
-        ellipse: vi.fn(),
-        fill: vi.fn(),
-        fillRect: vi.fn(),
-        fillText: vi.fn(),
-        lineTo: vi.fn(),
-        moveTo: vi.fn(),
-        rect: vi.fn(),
-        stroke: vi.fn(),
-        strokeRect: vi.fn(),
-      } as unknown as CanvasRenderingContext2D,
-    );
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      beginPath: vi.fn(),
+      clearRect: vi.fn(),
+      ellipse: vi.fn(),
+      fill: vi.fn(),
+      fillRect: vi.fn(),
+      fillText: vi.fn(),
+      lineTo: vi.fn(),
+      moveTo: vi.fn(),
+      rect: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
 
     render(<PlaygroundApp />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.pauseAnimation }));
+    fireEvent.click(screen.getByRole("button", { name: PLAYGROUND_TEXT.playNextFrame }));
 
     // BehaviorDecisionSystem emits a token for Alice (selected pet) each tick.
     // BehaviorLab should display the label and the consumed token's kind.
-    expect(
-      screen.getByText(PLAYGROUND_TEXT.decisionTokenLabel),
-    ).toBeInTheDocument();
+    expect(screen.getByText(PLAYGROUND_TEXT.decisionTokenLabel)).toBeInTheDocument();
   });
 });

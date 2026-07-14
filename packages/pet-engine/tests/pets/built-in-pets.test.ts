@@ -19,9 +19,7 @@ type PetManifest = {
 };
 
 function readManifest(id: string): PetManifest {
-  return JSON.parse(
-    readFileSync(join(PETS_DIR, id, "pet.json"), "utf8"),
-  ) as PetManifest;
+  return JSON.parse(readFileSync(join(PETS_DIR, id, "pet.json"), "utf8")) as PetManifest;
 }
 
 function petDirIds(): string[] {

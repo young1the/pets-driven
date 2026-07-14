@@ -72,7 +72,9 @@
   font-family: var(--font-mono);
   font-weight: 600;
   font-size: 12px;
-  transition: background 130ms ease, border-color 130ms ease;
+  transition:
+    background 130ms ease,
+    border-color 130ms ease;
 }
 .pd-eterm__folder:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -99,7 +101,9 @@
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 12px;
-  transition: color 130ms ease, background 130ms ease;
+  transition:
+    color 130ms ease,
+    background 130ms ease;
 }
 .pd-eterm__restart:hover {
   color: var(--term-fg);

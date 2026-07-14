@@ -6,10 +6,7 @@ describe("component store", () => {
   it("hydrates declarations into entity ids and component tables", () => {
     const declaration: EntityDeclaration = {
       id: "user-anchor",
-      components: [
-        { type: "UserAnchor" },
-        { type: "Transform", position: { x: 480, y: 500 } },
-      ],
+      components: [{ type: "UserAnchor" }, { type: "Transform", position: { x: 480, y: 500 } }],
     };
 
     const store = createComponentStore([declaration]);
@@ -38,10 +35,7 @@ describe("component store", () => {
       },
       {
         id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          { type: "Transform", position: { x: 10, y: 10 } },
-        ],
+        components: [{ type: "UserAnchor" }, { type: "Transform", position: { x: 10, y: 10 } }],
       },
     ]);
 
@@ -62,10 +56,7 @@ describe("component store", () => {
     const store = createComponentStore([
       {
         id: "pet-a",
-        components: [
-          { type: "CanWalk", force: 0.01 },
-          { type: "WalkingTag" },
-        ],
+        components: [{ type: "CanWalk", force: 0.01 }, { type: "WalkingTag" }],
       },
     ]);
 
@@ -99,9 +90,7 @@ describe("component store", () => {
   });
 
   it("rejects spawning an id that already exists", () => {
-    const store = createComponentStore([
-      { id: "pet-a", components: [{ type: "WalkingTag" }] },
-    ]);
+    const store = createComponentStore([{ id: "pet-a", components: [{ type: "WalkingTag" }] }]);
 
     expect(() => store.spawn("pet-a", [])).toThrow(/already exists/);
   });
@@ -110,10 +99,7 @@ describe("component store", () => {
     const store = createComponentStore([
       {
         id: "pet-a",
-        components: [
-          { type: "Transform", position: { x: 0, y: 0 } },
-          { type: "WalkingTag" },
-        ],
+        components: [{ type: "Transform", position: { x: 0, y: 0 } }, { type: "WalkingTag" }],
       },
     ]);
 

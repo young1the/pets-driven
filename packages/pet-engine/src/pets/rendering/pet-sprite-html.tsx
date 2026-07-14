@@ -10,13 +10,7 @@ type PetSpriteHtmlProps = {
   style?: CSSProperties;
 };
 
-export function PetSpriteHtml({
-  imageUrl,
-  frame,
-  alt,
-  className,
-  style,
-}: PetSpriteHtmlProps) {
+export function PetSpriteHtml({ imageUrl, frame, alt, className, style }: PetSpriteHtmlProps) {
   const scaleX = frame.drawSize.width / frame.source.width;
   const scaleY = frame.drawSize.height / frame.source.height;
   const backgroundWidth = PET_CELL_SIZE.width * 8 * scaleX;

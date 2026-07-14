@@ -77,9 +77,7 @@ describe("MainWindow", () => {
     setup();
     // The greeting line itself is time-of-day based and randomized, so assert
     // on the stable trailing name that always renders alongside it.
-    expect(
-      screen.getByText("Trainer!", { exact: false }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Trainer!", { exact: false })).toBeInTheDocument();
   });
 
   it("switches tab via the nav", () => {

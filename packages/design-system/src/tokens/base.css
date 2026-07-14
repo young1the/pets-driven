@@ -4,9 +4,15 @@
    Tokens are defined in tokens/*.css (imported before this).
    ============================================================ */
 
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
@@ -17,7 +23,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4, h5 {
+h1,
+h2,
+h3,
+h4,
+h5 {
   margin: 0;
   color: var(--text-strong);
   font-family: var(--font-display);
@@ -26,16 +36,35 @@ h1, h2, h3, h4, h5 {
   letter-spacing: var(--tracking-snug);
 }
 
-p { margin: 0; text-wrap: pretty; }
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
 
-a { color: var(--text-link); text-decoration: none; }
-a:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
+a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
 
-code, pre, kbd { font-family: var(--font-mono); }
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
 
-button { font-family: inherit; }
+button {
+  font-family: inherit;
+}
 
-::selection { background: var(--lavender-200); color: var(--ink-900); }
+::selection {
+  background: var(--lavender-200);
+  color: var(--ink-900);
+}
 
 :focus-visible {
   outline: none;

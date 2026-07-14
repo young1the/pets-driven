@@ -60,11 +60,9 @@ export const PLAYGROUND_PET_ENTITY_IDS = Object.keys(
   PLAYGROUND_PET_ASSET_BY_ENTITY_ID,
 ) as PlaygroundPetEntityId[];
 
-export type PlaygroundPetEntityId =
-  keyof typeof PLAYGROUND_PET_ASSET_BY_ENTITY_ID;
+export type PlaygroundPetEntityId = keyof typeof PLAYGROUND_PET_ASSET_BY_ENTITY_ID;
 
-export const FALLBACK_CODEX_PET_SPRITESHEET_URL =
-  "/fallback-pets/bloop/spritesheet.webp";
+export const FALLBACK_CODEX_PET_SPRITESHEET_URL = "/fallback-pets/bloop/spritesheet.webp";
 
 export function getCodexPetSpritesheetUrl(assetId: string) {
   return `/codex-pets/${assetId}/spritesheet.webp`;
@@ -82,12 +80,13 @@ export async function loadPlaygroundPetAssetCatalog(
 ): Promise<AssetCatalog> {
   const entries = await Promise.all(
     Object.entries(PLAYGROUND_PET_ASSET_BY_ENTITY_ID).map(
-      async ([entityId, assetId]) => [
-        entityId,
-        await loadCodexPetImage(assetId, loadImage).catch(() =>
-          loadImage(FALLBACK_CODEX_PET_SPRITESHEET_URL),
-        ),
-      ] as const,
+      async ([entityId, assetId]) =>
+        [
+          entityId,
+          await loadCodexPetImage(assetId, loadImage).catch(() =>
+            loadImage(FALLBACK_CODEX_PET_SPRITESHEET_URL),
+          ),
+        ] as const,
     ),
   );
 

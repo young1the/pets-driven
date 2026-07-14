@@ -10,7 +10,12 @@
   color: var(--text-body);
   user-select: none;
 }
-.pd-check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.pd-check input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
 .pd-check__box {
   width: 22px;
   height: 22px;
@@ -36,9 +41,24 @@
     opacity var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-spring);
 }
-.pd-check:hover .pd-check__box { border-color: var(--color-primary); }
-.pd-check input:checked + .pd-check__box { background: var(--color-primary); border-color: var(--color-primary); }
-.pd-check input:checked + .pd-check__box svg { opacity: 1; transform: scale(1); }
-.pd-check input:active + .pd-check__box { transform: scale(0.88); }
-.pd-check input:focus-visible + .pd-check__box { box-shadow: var(--ring-focus); }
-.pd-check--disabled { opacity: 0.5; cursor: not-allowed; }
+.pd-check:hover .pd-check__box {
+  border-color: var(--color-primary);
+}
+.pd-check input:checked + .pd-check__box {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.pd-check input:checked + .pd-check__box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+.pd-check input:active + .pd-check__box {
+  transform: scale(0.88);
+}
+.pd-check input:focus-visible + .pd-check__box {
+  box-shadow: var(--ring-focus);
+}
+.pd-check--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

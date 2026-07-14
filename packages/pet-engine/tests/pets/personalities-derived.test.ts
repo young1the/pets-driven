@@ -53,7 +53,7 @@ type ComponentLike = { type: string; [key: string]: unknown };
 describe("deriveMovementProfile", () => {
   it("high-E speeds exceed low-E speeds (same N)", () => {
     const highE = deriveMovementProfile(p({ extraversion: 0.9, neuroticism: 0.1 }));
-    const lowE  = deriveMovementProfile(p({ extraversion: 0.1, neuroticism: 0.1 }));
+    const lowE = deriveMovementProfile(p({ extraversion: 0.1, neuroticism: 0.1 }));
     expect(highE.pursueForce).toBeGreaterThan(lowE.pursueForce);
     expect(highE.standForce).toBeGreaterThan(lowE.standForce);
     expect(highE.arriveForce).toBeGreaterThan(lowE.arriveForce);
@@ -61,12 +61,12 @@ describe("deriveMovementProfile", () => {
 
   it("high-N speeds are slower than low-N (same E)", () => {
     const highN = deriveMovementProfile(p({ extraversion: 0.5, neuroticism: 0.9 }));
-    const lowN  = deriveMovementProfile(p({ extraversion: 0.5, neuroticism: 0.0 }));
+    const lowN = deriveMovementProfile(p({ extraversion: 0.5, neuroticism: 0.0 }));
     expect(highN.pursueForce).toBeLessThan(lowN.pursueForce);
   });
 
   it("exact values for E=0.9, N=0.1 — energy = 0.6 + 0.9×0.5 − 0.1×0.2 = 1.03", () => {
-    const energy = 0.6 + 0.9 * 0.5 - 0.1 * 0.2;        // 1.03
+    const energy = 0.6 + 0.9 * 0.5 - 0.1 * 0.2; // 1.03
     const mp = deriveMovementProfile(p({ extraversion: 0.9, neuroticism: 0.1 }));
     expect(mp.standForce).toBeCloseTo(0.0005 * energy, 10);
     expect(mp.pursueForce).toBeCloseTo(0.0012 * energy, 10);
@@ -83,7 +83,7 @@ describe("deriveMovementProfile", () => {
 describe("deriveIdleConversation", () => {
   it("high-E produces shorter interval (more talkative)", () => {
     const highE = deriveIdleConversation(p({ extraversion: 0.9 }));
-    const lowE  = deriveIdleConversation(p({ extraversion: 0.1 }));
+    const lowE = deriveIdleConversation(p({ extraversion: 0.1 }));
     expect(highE.idleAfterMs).toBeLessThan(lowE.idleAfterMs);
   });
 
@@ -175,11 +175,13 @@ describe("createFixturePet — Personality-derived components", () => {
   });
 
   it("pet with CanJump gets forward impulse derived from Personality", () => {
-    const personality = p({ openness: 0.7, conscientiousness: 0.4, extraversion: 0.85, neuroticism: 0.1 });
-    const { components } = buildPet([
-      personality,
-      { type: "CanJump", impulse: 0.03 },
-    ]);
+    const personality = p({
+      openness: 0.7,
+      conscientiousness: 0.4,
+      extraversion: 0.85,
+      neuroticism: 0.1,
+    });
+    const { components } = buildPet([personality, { type: "CanJump", impulse: 0.03 }]);
     const jump = last<CanJumpComponent>(components, "CanJump");
 
     expect(jump!.forwardImpulse).toEqual(deriveJumpForwardImpulse(personality));
@@ -199,7 +201,7 @@ describe("createFixturePet — Personality-derived components", () => {
     // Default: E=0.5, N=0.2 → energy = 0.6 + 0.5×0.5 − 0.2×0.2 = 0.81
     const { components } = buildPet([]);
     const mp = last<MovementProfileComponent>(components, "MovementProfile");
-    const energy = 0.6 + 0.5 * 0.5 - 0.2 * 0.2;        // 0.81
+    const energy = 0.6 + 0.5 * 0.5 - 0.2 * 0.2; // 0.81
     expect(mp).toBeDefined();
     expect(mp!.pursueForce).toBeCloseTo(0.0012 * energy, 10);
   });

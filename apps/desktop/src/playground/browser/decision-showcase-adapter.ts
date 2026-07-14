@@ -208,7 +208,7 @@ export function explainDecisionPipeline(input: {
         value: pendingReaction?.source ?? decision?.source ?? "none",
         detail: pendingReaction
           ? `reacts at ${Math.max(0, pendingReaction.reactsAt - input.now)}ms`
-          : decision?.reason ?? "No active claim.",
+          : (decision?.reason ?? "No active claim."),
       },
       {
         id: "decision",
@@ -218,7 +218,9 @@ export function explainDecisionPipeline(input: {
         detail: pendingReaction
           ? "Collision reaction latency is holding the pet before choosing a token."
           : token
-            ? (token.consumed ? "Token consumed by planning." : "Token is pending planning.")
+            ? token.consumed
+              ? "Token consumed by planning."
+              : "Token is pending planning."
             : "No token emitted yet.",
       },
       {
@@ -233,16 +235,14 @@ export function explainDecisionPipeline(input: {
         title: "Presentation",
         status: agentTask || speech?.speech || input.pet.visualCue ? "complete" : "idle",
         value: presentationValue,
-        detail: agentTask?.summary ?? speech?.speech ?? input.pet.visualCue?.label ?? "No visible cue.",
+        detail:
+          agentTask?.summary ?? speech?.speech ?? input.pet.visualCue?.label ?? "No visible cue.",
       },
     ],
   };
 }
 
-function formatPlanningDetail(
-  action: string,
-  motion: ComponentOf<"MotionTarget"> | undefined,
-) {
+function formatPlanningDetail(action: string, motion: ComponentOf<"MotionTarget"> | undefined) {
   if (motion?.targetEntityId) {
     return `${action} toward ${motion.targetEntityId}`;
   }

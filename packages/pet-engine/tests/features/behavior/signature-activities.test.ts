@@ -15,10 +15,7 @@ function decisionStore(catalogId: PetPersonalityId, userX = 260) {
   return createComponentStore([
     {
       id: "user-anchor",
-      components: [
-        { type: "UserAnchor" },
-        { type: "Transform", position: { x: userX, y: 500 } },
-      ],
+      components: [{ type: "UserAnchor" }, { type: "Transform", position: { x: userX, y: 500 } }],
     },
     {
       id: "pet",
@@ -61,30 +58,17 @@ function decisionStore(catalogId: PetPersonalityId, userX = 260) {
   ]);
 }
 
-function probability(
-  store: ReturnType<typeof decisionStore>,
-  kind: string,
-): number {
+function probability(store: ReturnType<typeof decisionStore>, kind: string): number {
   return (
     store
       .getComponent("pet", "BehaviorDecisionToken")
-      ?.selectionTrace?.candidates.find((candidate) => candidate.kind === kind)
-      ?.probability ?? 0
+      ?.selectionTrace?.candidates.find((candidate) => candidate.kind === kind)?.probability ?? 0
   );
 }
 
-function signatureProbability(
-  catalogId: PetPersonalityId,
-  kind: string,
-  userX = 260,
-) {
+function signatureProbability(catalogId: PetPersonalityId, kind: string, userX = 260) {
   const store = decisionStore(catalogId, userX);
-  runBehaviorDecisionSystem(
-    store,
-    createManualClock(0),
-    createSeededRandom(1),
-    BOUNDS,
-  );
+  runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), BOUNDS);
   return probability(store, kind);
 }
 
@@ -187,9 +171,7 @@ describe("personality signature activities", () => {
       mood: "happy",
       emote: "sparkle",
     });
-    expect(store.getComponent("pet", "MoodState")!.arousal).toBeLessThan(
-      arousalBefore,
-    );
+    expect(store.getComponent("pet", "MoodState")!.arousal).toBeLessThan(arousalBefore);
     expect(store.getComponent("pet", "RecentExperienceMemory")?.entries.at(-1)?.kind).toBe(
       "self-soothed",
     );
@@ -204,9 +186,7 @@ describe("personality signature activities", () => {
       mood: "love",
       emote: "heart",
     });
-    expect(store.getComponent("pet", "Drives")!.social).toBeLessThan(
-      socialBefore,
-    );
+    expect(store.getComponent("pet", "Drives")!.social).toBeLessThan(socialBefore);
   });
 
   it("lets a reserved pet peek without approaching", () => {
@@ -219,9 +199,7 @@ describe("personality signature activities", () => {
       mood: "thinking",
       emote: "question",
     });
-    expect(store.getComponent("pet", "Drives")!.curiosity).toBeLessThan(
-      curiosityBefore,
-    );
+    expect(store.getComponent("pet", "Drives")!.curiosity).toBeLessThan(curiosityBefore);
   });
 
   it("moves an aloof pet away without presenting the retreat as fear", () => {
@@ -359,17 +337,13 @@ describe("personality signature activities", () => {
 
     runBehaviorPlanningSystem(store, clock);
     expect(store.getComponent("pet", "FeintState")?.phase).toBe("approach");
-    expect(store.getComponent("pet", "MotionTarget")?.targetEntityId).toBe(
-      "user-anchor",
-    );
+    expect(store.getComponent("pet", "MotionTarget")?.targetEntityId).toBe("user-anchor");
 
     clock.advanceBy(1_200);
     runFeintProgressSystem(store, clock, BOUNDS);
     expect(store.getComponent("pet", "FeintState")?.phase).toBe("retreat");
     expect(store.getComponent("pet", "MotionTarget")?.targetEntityId).toBeNull();
-    expect(store.getComponent("pet", "MotionTarget")?.targetPosition?.x).toBeLessThan(
-      200,
-    );
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition?.x).toBeLessThan(200);
     expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
       source: "signature",
       mood: "excited",
@@ -385,4 +359,3 @@ describe("personality signature activities", () => {
     );
   });
 });
-

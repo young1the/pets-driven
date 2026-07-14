@@ -44,11 +44,7 @@ describe("user interaction releases the agent task state", () => {
       },
     ]);
 
-    runUserInteractionBehaviorSystem(
-      components,
-      pressAt(0, 0),
-      createManualClock(0),
-    );
+    runUserInteractionBehaviorSystem(components, pressAt(0, 0), createManualClock(0));
 
     expect(components.getComponent("pet", "TaskMovementHold")).toBeUndefined();
     expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
@@ -76,11 +72,7 @@ describe("user interaction releases the agent task state", () => {
       },
     ]);
 
-    runUserInteractionBehaviorSystem(
-      components,
-      pressAt(100, 100),
-      createManualClock(0),
-    );
+    runUserInteractionBehaviorSystem(components, pressAt(100, 100), createManualClock(0));
 
     expect(components.getComponent("pet", "TaskMovementHold")).toBeUndefined();
     expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
@@ -112,18 +104,10 @@ describe("user interaction releases the agent task state", () => {
       },
     ]);
 
-    runUserInteractionBehaviorSystem(
-      components,
-      pressAt(0, 0),
-      createManualClock(0),
-    );
+    runUserInteractionBehaviorSystem(components, pressAt(0, 0), createManualClock(0));
 
-    expect(components.getComponent("pet", "AgentTaskState")?.status).toBe(
-      "working",
-    );
-    expect(components.getComponent("pet", "AgentChannelState")?.label).toBe(
-      "Working",
-    );
+    expect(components.getComponent("pet", "AgentTaskState")?.status).toBe("working");
+    expect(components.getComponent("pet", "AgentChannelState")?.label).toBe("Working");
   });
 
   it("leaves a non-agent-task channel badge in place when clearing", () => {
@@ -153,15 +137,9 @@ describe("user interaction releases the agent task state", () => {
       },
     ]);
 
-    runUserInteractionBehaviorSystem(
-      components,
-      pressAt(0, 0),
-      createManualClock(0),
-    );
+    runUserInteractionBehaviorSystem(components, pressAt(0, 0), createManualClock(0));
 
     expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
-    expect(components.getComponent("pet", "AgentChannelState")?.source).toBe(
-      "agent-hook",
-    );
+    expect(components.getComponent("pet", "AgentChannelState")?.source).toBe("agent-hook");
   });
 });

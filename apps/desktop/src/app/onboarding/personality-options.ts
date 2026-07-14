@@ -12,12 +12,10 @@ export type PersonalityOption = {
  * stored here — they live in the `personality.*` keys of the desktop
  * translation bundle and are resolved at render time from the `id`.
  */
-export const PERSONALITY_OPTIONS: PersonalityOption[] = PERSONALITY_REGISTRY.map(
-  (entry) => ({
-    id: entry.id as PetPersonalityId,
-    factory: entry.factory,
-  }),
-);
+export const PERSONALITY_OPTIONS: PersonalityOption[] = PERSONALITY_REGISTRY.map((entry) => ({
+  id: entry.id as PetPersonalityId,
+  factory: entry.factory,
+}));
 
 /** Translation key for a personality's short title. */
 export function personalityTitleKey(id: PetPersonalityId): string {

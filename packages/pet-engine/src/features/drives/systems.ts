@@ -35,25 +35,18 @@ const CURIOSITY_RISE_PER_MS = 1 / (2.5 * 60 * 1000); // 0 -> 1 over ~2.5 min wit
  * Satisfaction hooks (approach-pet-success, collision-engage, wander-far,
  * request-jump/climb) live next to their triggers in behavior/systems.ts.
  */
-export function runDriveDecaySystem(
-  components: ComponentStore,
-  deltaMs: number,
-): void {
+export function runDriveDecaySystem(components: ComponentStore, deltaMs: number): void {
   components.forEach(["Drives", "Steering"], (_id, [drives, intent]) => {
     const isPursuingGoal = intent.mode === "pursue" || intent.mode === "arrive";
 
     drives.social = clampDrive(drives.social + SOCIAL_RISE_PER_MS * deltaMs);
 
     drives.energy = clampDrive(
-      drives.energy +
-        (isPursuingGoal ? -ENERGY_DRAIN_PER_MS : ENERGY_RECOVERY_PER_MS) *
-          deltaMs,
+      drives.energy + (isPursuingGoal ? -ENERGY_DRAIN_PER_MS : ENERGY_RECOVERY_PER_MS) * deltaMs,
     );
 
     if (!isPursuingGoal) {
-      drives.curiosity = clampDrive(
-        drives.curiosity + CURIOSITY_RISE_PER_MS * deltaMs,
-      );
+      drives.curiosity = clampDrive(drives.curiosity + CURIOSITY_RISE_PER_MS * deltaMs);
     }
   });
 }

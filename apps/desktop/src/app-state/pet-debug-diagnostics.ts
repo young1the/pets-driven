@@ -49,11 +49,7 @@ export type PetDiagnosticsSnapshot = {
 };
 
 export type PetDiagnosticsTracker = {
-  record(input: {
-    now: number;
-    sequence: number;
-    snapshot: WorldSnapshot;
-  }): PetDiagnosticsSnapshot;
+  record(input: { now: number; sequence: number; snapshot: WorldSnapshot }): PetDiagnosticsSnapshot;
   current(): PetDiagnosticsSnapshot;
 };
 
@@ -73,10 +69,8 @@ export function createPetDiagnosticsTracker(
 ): PetDiagnosticsTracker {
   const stallAfterMs = options.stallAfterMs ?? DEFAULT_STALL_AFTER_MS;
   const stillDistancePx = options.stillDistancePx ?? DEFAULT_STILL_DISTANCE_PX;
-  const stillSpeedPxPerMs =
-    options.stillSpeedPxPerMs ?? DEFAULT_STILL_SPEED_PX_PER_MS;
-  const maxRecentSamples =
-    options.maxRecentSamples ?? DEFAULT_MAX_RECENT_SAMPLES;
+  const stillSpeedPxPerMs = options.stillSpeedPxPerMs ?? DEFAULT_STILL_SPEED_PX_PER_MS;
+  const maxRecentSamples = options.maxRecentSamples ?? DEFAULT_MAX_RECENT_SAMPLES;
   const stateByPetId = new Map<string, PetTrackerState>();
   let latest: PetDiagnosticsSnapshot = {
     capturedAtMs: 0,
@@ -98,14 +92,10 @@ export function createPetDiagnosticsTracker(
           recentSamples: [],
         };
         const movedDistance = state.lastSample
-          ? Math.hypot(
-              sample.x - state.lastSample.x,
-              sample.y - state.lastSample.y,
-            )
+          ? Math.hypot(sample.x - state.lastSample.x, sample.y - state.lastSample.y)
           : 0;
         const isStill =
-          movedDistance <= stillDistancePx &&
-          Math.hypot(sample.vx, sample.vy) <= stillSpeedPxPerMs;
+          movedDistance <= stillDistancePx && Math.hypot(sample.vx, sample.vy) <= stillSpeedPxPerMs;
 
         if (!isStill) {
           state.stationarySince = now;
@@ -114,9 +104,7 @@ export function createPetDiagnosticsTracker(
         }
 
         state.lastSample = sample;
-        state.recentSamples = [...state.recentSamples, sample].slice(
-          -maxRecentSamples,
-        );
+        state.recentSamples = [...state.recentSamples, sample].slice(-maxRecentSamples);
         stateByPetId.set(pet.id, state);
 
         return buildPetDiagnosticEntry({
@@ -125,8 +113,7 @@ export function createPetDiagnosticsTracker(
           recentSamples: state.recentSamples,
           speedPxPerMs: Math.hypot(sample.vx, sample.vy),
           stallAfterMs,
-          stationaryForMs:
-            state.stationarySince === null ? 0 : now - state.stationarySince,
+          stationaryForMs: state.stationarySince === null ? 0 : now - state.stationarySince,
         });
       });
 
@@ -179,16 +166,10 @@ function buildPetDiagnosticEntry(input: {
   const { body, pet, recentSamples, speedPxPerMs, stallAfterMs } = input;
   const signals = diagnosticSignals(pet, body, speedPxPerMs);
   const expectedHold = signals.some((signal) =>
-    [
-      "agent-task-hold",
-      "no-motion-target",
-      "target-reached",
-      "pending-reaction",
-    ].includes(signal),
+    ["agent-task-hold", "no-motion-target", "target-reached", "pending-reaction"].includes(signal),
   );
   const shouldMove =
-    !expectedHold &&
-    (pet.steering === "pursue" || pet.steering === "arrive" || !!pet.motionTarget);
+    !expectedHold && (pet.steering === "pursue" || pet.steering === "arrive" || !!pet.motionTarget);
   const stationaryForMs = input.stationaryForMs;
   const stall: PetStallDiagnostic =
     shouldMove && stationaryForMs >= stallAfterMs
@@ -250,10 +231,7 @@ function diagnosticSignals(
   return signals;
 }
 
-function targetDistance(
-  pet: PetSnapshot,
-  body: BodySnapshot | null,
-): number | null {
+function targetDistance(pet: PetSnapshot, body: BodySnapshot | null): number | null {
   if (!pet.motionTarget) return null;
   const x = body?.x ?? pet.position.x;
   const y = body?.y ?? pet.position.y;

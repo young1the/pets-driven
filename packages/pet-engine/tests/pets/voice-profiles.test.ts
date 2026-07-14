@@ -14,9 +14,7 @@ describe("Personality Catalog voice profiles", () => {
   });
 
   it("gives every personality a distinct idle voice", () => {
-    const lines = Object.values(PERSONALITY_VOICE_PROFILES).map(
-      (profile) => profile.idleCompanion,
-    );
+    const lines = Object.values(PERSONALITY_VOICE_PROFILES).map((profile) => profile.idleCompanion);
     expect(new Set(lines).size).toBe(PERSONALITY_REGISTRY.length);
   });
 

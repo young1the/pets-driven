@@ -3,8 +3,7 @@ import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
 import type { PetExpressionMood } from "@pets-driven/pet-engine/core/components";
 import type { PetExpressionSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 
-export type BehaviorTokenTone =
-  "affection" | "alert" | "calm" | "curious" | "motion" | "spark";
+export type BehaviorTokenTone = "affection" | "alert" | "calm" | "curious" | "motion" | "spark";
 
 export type BehaviorTokenPresentation = {
   emote: PetEmoteKind;
@@ -13,10 +12,7 @@ export type BehaviorTokenPresentation = {
   tone: BehaviorTokenTone;
 };
 
-const BEHAVIOR_TOKEN_PRESENTATION: Record<
-  BehaviorDecisionKind,
-  BehaviorTokenPresentation
-> = {
+const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPresentation> = {
   "wander-near": {
     emote: "question",
     label: "Nearby wander",

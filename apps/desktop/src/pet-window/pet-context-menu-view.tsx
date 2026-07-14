@@ -20,11 +20,7 @@ type MenuView = "menu" | "note";
 const MENU_WINDOW_SIZE = { width: 192, height: 206 };
 const NOTE_WINDOW_SIZE = { width: 228, height: 192 };
 
-export function PetContextMenuView({
-  petId,
-  petName,
-  note,
-}: PetContextMenuViewProps) {
+export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewProps) {
   const { t } = useTranslation("desktop");
   const [view, setView] = useState<MenuView>("menu");
   const [noteText, setNoteText] = useState(note);
@@ -33,16 +29,12 @@ export function PetContextMenuView({
   useEffect(() => {
     document.documentElement.classList.add("pet-context-menu-document");
     if (!isTauri()) {
-      document.documentElement.classList.add(
-        "pet-context-menu-fixture-preview",
-      );
+      document.documentElement.classList.add("pet-context-menu-fixture-preview");
     }
 
     return () => {
       document.documentElement.classList.remove("pet-context-menu-document");
-      document.documentElement.classList.remove(
-        "pet-context-menu-fixture-preview",
-      );
+      document.documentElement.classList.remove("pet-context-menu-fixture-preview");
     };
   }, []);
 
@@ -90,8 +82,7 @@ export function PetContextMenuView({
       return;
     }
 
-    const { width, height } =
-      view === "note" ? NOTE_WINDOW_SIZE : MENU_WINDOW_SIZE;
+    const { width, height } = view === "note" ? NOTE_WINDOW_SIZE : MENU_WINDOW_SIZE;
 
     void getCurrentWindow().setSize(new LogicalSize(width, height));
   }, [view]);
@@ -141,11 +132,7 @@ export function PetContextMenuView({
             onChange={(e) => setNoteText(e.target.value)}
           />
           <div className="pet-context-menu-note__actions">
-            <button
-              className="pet-context-menu-note__cancel"
-              type="button"
-              onClick={closeWindow}
-            >
+            <button className="pet-context-menu-note__cancel" type="button" onClick={closeWindow}>
               {t("contextMenu.cancel")}
             </button>
             <button

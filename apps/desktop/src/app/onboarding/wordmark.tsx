@@ -13,13 +13,7 @@ export function Wordmark({
   style?: CSSProperties;
 }) {
   return (
-    <svg
-      aria-label={title}
-      className={className}
-      role="img"
-      style={style}
-      viewBox="0 0 360 100"
-    >
+    <svg aria-label={title} className={className} role="img" style={style} viewBox="0 0 360 100">
       <rect x="6" y="14" width="72" height="72" rx="22" fill="#F95E9E" />
       <ellipse cx="42" cy="60" rx="14" ry="11.5" fill="#fff" />
       <ellipse cx="26" cy="49" rx="5.6" ry="7.2" fill="#fff" />

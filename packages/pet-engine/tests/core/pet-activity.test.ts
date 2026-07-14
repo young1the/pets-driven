@@ -9,9 +9,7 @@ function storeWith(components: Component[]) {
     {
       id: "pet",
       components: [
-        ...(hasIntent
-          ? []
-          : [{ type: "Steering", mode: "stand" } as const]),
+        ...(hasIntent ? [] : [{ type: "Steering", mode: "stand" } as const]),
         ...components,
       ],
     },
@@ -89,11 +87,7 @@ describe("derivePetActivity", () => {
   });
 
   it("physical action outranks the decision claim", () => {
-    const store = storeWith([
-      { type: "ClimbingTag" },
-      steering("pursue"),
-      decision("wander-far"),
-    ]);
+    const store = storeWith([{ type: "ClimbingTag" }, steering("pursue"), decision("wander-far")]);
     expect(derivePetActivity(store, "pet", 100)).toBe("climbing");
   });
 
@@ -111,9 +105,7 @@ describe("derivePetActivity", () => {
         0,
       ),
     ).toBe("hopping");
-    expect(
-      derivePetActivity(storeWith([{ type: "AirborneTag" }]), "pet", 0),
-    ).toBe("midAir");
+    expect(derivePetActivity(storeWith([{ type: "AirborneTag" }]), "pet", 0)).toBe("midAir");
   });
 
   it("maps the cursor-play decisions", () => {
@@ -122,19 +114,13 @@ describe("derivePetActivity", () => {
   });
 
   it("keeps the decision label while the movement is still executing, even after the claim expires", () => {
-    const store = storeWith([
-      steering("pursue"),
-      decision("wander-far", { expiresAt: 500 }),
-    ]);
+    const store = storeWith([steering("pursue"), decision("wander-far", { expiresAt: 500 })]);
     // Claim expired at 500, but the walk it started is still running.
     expect(derivePetActivity(store, "pet", 3_000)).toBe("exploring");
   });
 
   it("drops a stale decision once the pet is idle again", () => {
-    const store = storeWith([
-      steering("stand"),
-      decision("collision-flee", { expiresAt: 500 }),
-    ]);
+    const store = storeWith([steering("stand"), decision("collision-flee", { expiresAt: 500 })]);
     // Fled seconds ago and now stands still: no more "keeping distance".
     expect(derivePetActivity(store, "pet", 3_000)).toBeNull();
   });
@@ -150,9 +136,7 @@ describe("derivePetActivity", () => {
   it("falls back to coarse intent for unmapped reasons", () => {
     const store = storeWith([steering("pursue"), decision("collision-stay")]);
     expect(derivePetActivity(store, "pet", 100)).toBe("onTheMove");
-    expect(
-      derivePetActivity(storeWith([steering("arrive")]), "pet", 100),
-    ).toBe("headingOver");
+    expect(derivePetActivity(storeWith([steering("arrive")]), "pet", 100)).toBe("headingOver");
   });
 
   it("maps the expressive idle poses from their sustained standing claim", () => {
@@ -189,7 +173,15 @@ describe("derivePetActivity", () => {
     // tick, so the social claim stays unexpired and owns the Activity.
     const store = storeWith([
       steering("stand"),
-      { type: "BehaviorDecisionState", source: "social", decidedAt: 0, expiresAt: 250, reason: "session-chat", lastAutonomousReason: null, lastAutonomousAt: null },
+      {
+        type: "BehaviorDecisionState",
+        source: "social",
+        decidedAt: 0,
+        expiresAt: 250,
+        reason: "session-chat",
+        lastAutonomousReason: null,
+        lastAutonomousAt: null,
+      },
     ]);
     expect(derivePetActivity(store, "pet", 100)).toBe("chatting");
   });
@@ -204,7 +196,15 @@ describe("derivePetActivity", () => {
     for (const [reason, expected] of cases) {
       const store = storeWith([
         steering("stand"),
-        { type: "BehaviorDecisionState", source: "social", decidedAt: 0, expiresAt: 1_000, reason, lastAutonomousReason: null, lastAutonomousAt: null },
+        {
+          type: "BehaviorDecisionState",
+          source: "social",
+          decidedAt: 0,
+          expiresAt: 1_000,
+          reason,
+          lastAutonomousReason: null,
+          lastAutonomousAt: null,
+        },
       ]);
       expect(derivePetActivity(store, "pet", 200)).toBe(expected);
     }

@@ -96,12 +96,7 @@ export type CanJumpComponent = {
   };
 };
 
-export type JumpActionPhase =
-  | "ready"
-  | "requested"
-  | "rising"
-  | "falling"
-  | "landingCooldown";
+export type JumpActionPhase = "ready" | "requested" | "rising" | "falling" | "landingCooldown";
 
 export type JumpActionStateComponent = {
   type: "JumpActionState";

@@ -14,11 +14,7 @@ export function BehaviorTokenEmote({ presentation }: BehaviorTokenEmoteProps) {
       data-decision-emote-tone={presentation.tone}
       title={presentation.label}
     >
-      <PetEmote
-        accent={PET_MOODS[presentation.mood]?.accent}
-        kind={presentation.emote}
-        size="sm"
-      />
+      <PetEmote accent={PET_MOODS[presentation.mood]?.accent} kind={presentation.emote} size="sm" />
     </span>
   );
 }

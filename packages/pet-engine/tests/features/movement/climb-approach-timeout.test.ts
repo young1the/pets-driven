@@ -55,9 +55,7 @@ describe("climb approach timeout", () => {
     expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
     // The repeat cooldown restarts from the cancellation, so the pet does not
     // immediately re-pick the same unclimbable surface.
-    expect(
-      store.getComponent("pet", "BehaviorDecisionState")?.decidedAt,
-    ).toBe(7_000);
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.decidedAt).toBe(7_000);
   });
 
   it("keeps steering toward the surface before the timeout", () => {

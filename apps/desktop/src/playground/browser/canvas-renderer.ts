@@ -19,7 +19,12 @@ export function drawWorld(
   elapsedMs = 0,
 ) {
   context.clearRect(0, 0, snapshot.width, snapshot.height);
-  const viewport = snapshot.viewport ?? { x: 0, y: 0, width: snapshot.width, height: snapshot.height };
+  const viewport = snapshot.viewport ?? {
+    x: 0,
+    y: 0,
+    width: snapshot.width,
+    height: snapshot.height,
+  };
   const projectsVirtualDesktop = !!snapshot.viewport || !!snapshot.monitors?.length;
   if (projectsVirtualDesktop) {
     context.save?.();
@@ -42,19 +47,28 @@ export function drawWorld(
       });
       const { width: drawWidth, height: drawHeight } = frame.drawSize;
 
-      drawPetSpriteCanvas(
+      drawPetSpriteCanvas(context, sprite, frame, { x: body.x, y: body.y });
+      drawAgentTaskState(
         context,
-        sprite,
-        frame,
-        { x: body.x, y: body.y },
+        body.x,
+        body.y,
+        drawWidth,
+        drawHeight,
+        matchingAgentTask(snapshot, body.id),
       );
-      drawAgentTaskState(context, body.x, body.y, drawWidth, drawHeight, matchingAgentTask(snapshot, body.id));
       drawInteractionOutline(context, body.x, body.y, drawWidth, drawHeight, body.interaction);
       continue;
     }
 
     drawDebugBody(context, body);
-    drawAgentTaskState(context, body.x, body.y, body.width, body.height, matchingAgentTask(snapshot, body.id));
+    drawAgentTaskState(
+      context,
+      body.x,
+      body.y,
+      body.width,
+      body.height,
+      matchingAgentTask(snapshot, body.id),
+    );
     drawInteractionOutline(context, body.x, body.y, body.width, body.height, body.interaction);
   }
 
@@ -113,10 +127,7 @@ function matchingAgentTask(snapshot: WorldSnapshot, id: string) {
   return snapshot.pets.find((pet) => pet.id === id)?.agentTask ?? null;
 }
 
-function formatPetOverlayText(
-  visualCueIcon: string | undefined,
-  speech: string | null,
-) {
+function formatPetOverlayText(visualCueIcon: string | undefined, speech: string | null) {
   return visualCueIcon ?? speech ?? null;
 }
 
@@ -140,12 +151,7 @@ function drawAgentTaskState(
   context.save?.();
   context.lineWidth = 4;
   context.strokeStyle = color;
-  context.strokeRect(
-    x - width / 2 - 7,
-    y - height / 2 - 7,
-    width + 14,
-    height + 14,
-  );
+  context.strokeRect(x - width / 2 - 7, y - height / 2 - 7, width + 14, height + 14);
 
   context.font = "800 11px Nunito, system-ui, sans-serif";
   context.textAlign = "center";
@@ -167,9 +173,16 @@ function drawInteractionOutline(
   y: number,
   width: number,
   height: number,
-  interaction: { controllable?: boolean; selected?: boolean; controlled?: boolean; dragged?: boolean } | undefined,
+  interaction:
+    | { controllable?: boolean; selected?: boolean; controlled?: boolean; dragged?: boolean }
+    | undefined,
 ) {
-  if (!interaction?.controllable && !interaction?.selected && !interaction?.controlled && !interaction?.dragged) {
+  if (
+    !interaction?.controllable &&
+    !interaction?.selected &&
+    !interaction?.controlled &&
+    !interaction?.dragged
+  ) {
     return;
   }
 
@@ -177,11 +190,6 @@ function drawInteractionOutline(
   context.save?.();
   context.lineWidth = isActive ? 3 : 1.5;
   context.strokeStyle = isActive ? semantic.info : ink[400];
-  context.strokeRect(
-    x - width / 2 - 4,
-    y - height / 2 - 4,
-    width + 8,
-    height + 8,
-  );
+  context.strokeRect(x - width / 2 - 4, y - height / 2 - 4, width + 8, height + 8);
   context.restore?.();
 }

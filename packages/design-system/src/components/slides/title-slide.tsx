@@ -7,10 +7,7 @@ import "./slides.css";
  * so the deck stays art-agnostic. Wrap the highlighted part of the title in
  * `<span className="pd-slide__hl">…</span>` (exported as `SlideHighlight`).
  */
-export interface TitleSlideProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "title"
-> {
+export interface TitleSlideProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   /** Brand logo / wordmark node (rendered ~46px tall). */
   brand?: ReactNode;
   /** Small uppercase kicker above the title. */

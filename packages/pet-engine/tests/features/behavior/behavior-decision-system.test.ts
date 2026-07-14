@@ -23,20 +23,19 @@ function distanceFrom(
  * Minimal store: one pet with OCEAN personality, a user anchor in Perception,
  * and no jump/climb capabilities. Perfect for testing seek-user / wander selection.
  */
-function makeStore(prefOverride: Partial<{
-  openness: number;
-  conscientiousness: number;
-  extraversion: number;
-  agreeableness: number;
-  neuroticism: number;
-}> = {}) {
+function makeStore(
+  prefOverride: Partial<{
+    openness: number;
+    conscientiousness: number;
+    extraversion: number;
+    agreeableness: number;
+    neuroticism: number;
+  }> = {},
+) {
   return createComponentStore([
     {
       id: "user-anchor",
-      components: [
-        { type: "UserAnchor" },
-        { type: "Transform", position: { x: 480, y: 500 } },
-      ],
+      components: [{ type: "UserAnchor" }, { type: "Transform", position: { x: 480, y: 500 } }],
     },
     {
       id: "pet",
@@ -75,21 +74,21 @@ function makeStore(prefOverride: Partial<{
  * Store with one nearby pet in Perception.nearbyPets.
  * userAnchor is null to isolate Phase 3 social candidates from seek-user.
  */
-function makeNearbyStore(prefOverride: Partial<{
-  openness: number;
-  conscientiousness: number;
-  extraversion: number;
-  agreeableness: number;
-  neuroticism: number;
-}> = {}) {
+function makeNearbyStore(
+  prefOverride: Partial<{
+    openness: number;
+    conscientiousness: number;
+    extraversion: number;
+    agreeableness: number;
+    neuroticism: number;
+  }> = {},
+) {
   // other-pet is at distance 150 so the "approach-pet" candidate is included
   // and we can verify selection.
   return createComponentStore([
     {
       id: "other-pet",
-      components: [
-        { type: "Transform", position: { x: 350, y: 200 } },
-      ],
+      components: [{ type: "Transform", position: { x: 350, y: 200 } }],
     },
     {
       id: "pet",
@@ -244,7 +243,9 @@ describe("BehaviorDecisionSystem", () => {
 
     expect(normal.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("wander-far");
     expect(large.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("wander-far");
-    expect(distanceFrom(origin, largeTarget)).toBeGreaterThan(distanceFrom(origin, normalTarget) * 1.8);
+    expect(distanceFrom(origin, largeTarget)).toBeGreaterThan(
+      distanceFrom(origin, normalTarget) * 1.8,
+    );
   });
 
   it("keeps wander targets in negative virtual-desktop coordinates", () => {
@@ -276,12 +277,12 @@ describe("BehaviorDecisionSystem", () => {
       },
     ]);
 
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(0),
-      createSeededRandom(1),
-      { x: -640, y: 0, width: 1600, height: 540 },
-    );
+    runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(1), {
+      x: -640,
+      y: 0,
+      width: 1600,
+      height: 540,
+    });
 
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe("wander-far");
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.targetPosition?.x).toBeLessThan(0);
@@ -321,10 +322,7 @@ describe("BehaviorDecisionSystem", () => {
     const store = createComponentStore([
       {
         id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          { type: "Transform", position: { x: 480, y: 500 } },
-        ],
+        components: [{ type: "UserAnchor" }, { type: "Transform", position: { x: 480, y: 500 } }],
       },
       {
         id: "wall-a",
@@ -345,7 +343,9 @@ describe("BehaviorDecisionSystem", () => {
             type: "Perception" as const,
             userAnchor: null, // excluded so climb can win
             nearbyPets: [{ id: "pet-2", position: { x: 140, y: 500 }, distance: 40 }],
-            nearbyClimbables: [{ id: "wall-a", position: { x: 120, y: 300 }, distance: Math.hypot(20, 200) }],
+            nearbyClimbables: [
+              { id: "wall-a", position: { x: 120, y: 300 }, distance: Math.hypot(20, 200) },
+            ],
             self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           climbPersonality,
@@ -363,7 +363,9 @@ describe("BehaviorDecisionSystem", () => {
             type: "Perception" as const,
             userAnchor: null, // excluded so climb can win
             nearbyPets: [{ id: "pet-1", position: { x: 100, y: 500 }, distance: 40 }],
-            nearbyClimbables: [{ id: "wall-a", position: { x: 120, y: 300 }, distance: Math.hypot(20, 200) }],
+            nearbyClimbables: [
+              { id: "wall-a", position: { x: 120, y: 300 }, distance: Math.hypot(20, 200) },
+            ],
             self: { grounded: false, climbing: false, mode: "stand" as const },
           },
           climbPersonality,
@@ -420,10 +422,12 @@ describe("BehaviorDecisionSystem", () => {
     runBehaviorDecisionSystem(a, createManualClock(0), createSeededRandom(42), BOUNDS);
     runBehaviorDecisionSystem(b, createManualClock(0), createSeededRandom(42), BOUNDS);
 
-    expect(a.getComponent("pet", "BehaviorDecisionToken")?.kind)
-      .toBe(b.getComponent("pet", "BehaviorDecisionToken")?.kind);
-    expect(a.getComponent("pet", "BehaviorDecisionState")?.reason)
-      .toBe(b.getComponent("pet", "BehaviorDecisionState")?.reason);
+    expect(a.getComponent("pet", "BehaviorDecisionToken")?.kind).toBe(
+      b.getComponent("pet", "BehaviorDecisionToken")?.kind,
+    );
+    expect(a.getComponent("pet", "BehaviorDecisionState")?.reason).toBe(
+      b.getComponent("pet", "BehaviorDecisionState")?.reason,
+    );
   });
 });
 
@@ -440,7 +444,11 @@ describe("BehaviorPlanningSystem", () => {
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           {
             type: "Perception" as const,
-            userAnchor: { id: "user-anchor", position: { x: 480, y: 500 }, distance: Math.hypot(280, 300) },
+            userAnchor: {
+              id: "user-anchor",
+              position: { x: 480, y: 500 },
+              distance: Math.hypot(280, 300),
+            },
             nearbyPets: [],
             nearbyClimbables: [],
             self: { grounded: false, climbing: false, mode: "stand" as const },
@@ -730,7 +738,12 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
       const store = makeThreeCandidateStore();
       // Multiply by 1013 (odd, coprime to 2^32) so consecutive seeds produce first PRNG
       // values spread uniformly across [0,1] rather than clustering in a narrow band.
-      runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed * 1013 + 7), BOUNDS);
+      runBehaviorDecisionSystem(
+        store,
+        createManualClock(0),
+        createSeededRandom(seed * 1013 + 7),
+        BOUNDS,
+      );
       const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
@@ -738,8 +751,8 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
     // T=0.4; theoretical softmax probabilities (calculated from scores above)
     const theoretical: Record<string, number> = {
       "wander-near": 338,
-      "wander-far":  393,
-      "idle-stay":   270,
+      "wander-far": 393,
+      "idle-stay": 270,
     };
     const tolerance = SAMPLES * 0.05; // ±50
 
@@ -752,12 +765,7 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
   it("stores the softmax roll trace on the emitted decision token", () => {
     const store = makeThreeCandidateStore();
 
-    runBehaviorDecisionSystem(
-      store,
-      createManualClock(0),
-      { next: () => 0.35 },
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(store, createManualClock(0), { next: () => 0.35 }, BOUNDS);
 
     const trace = store.getComponent("pet", "BehaviorDecisionToken")?.selectionTrace;
 
@@ -772,9 +780,9 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
     expect(
       trace?.candidates.reduce((sum, candidate) => sum + candidate.probability, 0),
     ).toBeCloseTo(1);
-    expect(
-      trace?.candidates.find((candidate) => candidate.kind === "wander-far")?.selected,
-    ).toBe(true);
+    expect(trace?.candidates.find((candidate) => candidate.kind === "wander-far")?.selected).toBe(
+      true,
+    );
   });
 
   it("high-neuroticism pets show more uniform distribution than low-neuroticism", () => {
@@ -809,14 +817,19 @@ describe("BehaviorDecisionSystem — softmax sampling (Phase 2)", () => {
           },
         ]);
         // Multiply by 1013 to spread seeds uniformly across the PRNG's output range.
-        runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed * 1013 + 7), BOUNDS);
+        runBehaviorDecisionSystem(
+          store,
+          createManualClock(0),
+          createSeededRandom(seed * 1013 + 7),
+          BOUNDS,
+        );
         const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
         counts[kind] = (counts[kind] ?? 0) + 1;
       }
       return Math.max(...Object.values(counts));
     }
 
-    const lowN = dominantCount(0.0);  // T=0.25 → more concentrated
+    const lowN = dominantCount(0.0); // T=0.25 → more concentrated
     const highN = dominantCount(1.0); // T=0.55 → more uniform
 
     // Higher neuroticism → flatter distribution → lower dominant-choice count
@@ -944,8 +957,11 @@ describe("BehaviorDecisionSystem — Phase 3 social candidates", () => {
           },
           {
             type: "Personality" as const,
-            openness: 0.5, conscientiousness: 0.4,
-            extraversion: 0.9, agreeableness: 0.9, neuroticism: 0.1,
+            openness: 0.5,
+            conscientiousness: 0.4,
+            extraversion: 0.9,
+            agreeableness: 0.9,
+            neuroticism: 0.1,
           },
         ],
       },
@@ -969,7 +985,12 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
    * wander-near / wander-far / idle-stay.
    */
   function makeChaseCursorStore(
-    cursor: { position: { x: number; y: number }; distance: number; speed: number; isPlayful: boolean } | null,
+    cursor: {
+      position: { x: number; y: number };
+      distance: number;
+      speed: number;
+      isPlayful: boolean;
+    } | null,
     prefOverride: Partial<{
       openness: number;
       conscientiousness: number;
@@ -981,10 +1002,7 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
     return createComponentStore([
       {
         id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          { type: "Transform", position: { x: 220, y: 200 } },
-        ],
+        components: [{ type: "UserAnchor" }, { type: "Transform", position: { x: 220, y: 200 } }],
       },
       {
         id: "pet",
@@ -1025,7 +1043,11 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
   it("is never a candidate when Perception.cursor is null", () => {
     let found = false;
     for (let seed = 0; seed < 200; seed++) {
-      const store = makeChaseCursorStore(null, { extraversion: 0.95, openness: 0.9, neuroticism: 0.05 });
+      const store = makeChaseCursorStore(null, {
+        extraversion: 0.95,
+        openness: 0.9,
+        neuroticism: 0.05,
+      });
       runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed), BOUNDS);
       if (store.getComponent("pet", "BehaviorDecisionToken")?.kind === "chase-cursor") {
         found = true;
@@ -1058,7 +1080,12 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
         openness: 1,
         neuroticism: 0,
       });
-      runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed * 1013 + 7), BOUNDS);
+      runBehaviorDecisionSystem(
+        store,
+        createManualClock(0),
+        createSeededRandom(seed * 1013 + 7),
+        BOUNDS,
+      );
       const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
@@ -1078,7 +1105,12 @@ describe("BehaviorDecisionSystem — chase-cursor candidate", () => {
         openness: 0.2,
         neuroticism: 1,
       });
-      runBehaviorDecisionSystem(store, createManualClock(0), createSeededRandom(seed * 1013 + 7), BOUNDS);
+      runBehaviorDecisionSystem(
+        store,
+        createManualClock(0),
+        createSeededRandom(seed * 1013 + 7),
+        BOUNDS,
+      );
       const kind = store.getComponent("pet", "BehaviorDecisionToken")?.kind ?? "none";
       counts[kind] = (counts[kind] ?? 0) + 1;
     }
@@ -1244,10 +1276,7 @@ function makeStoreWithDrives(
   return createComponentStore([
     {
       id: "user-anchor",
-      components: [
-        { type: "UserAnchor" },
-        { type: "Transform", position: { x: 480, y: 500 } },
-      ],
+      components: [{ type: "UserAnchor" }, { type: "Transform", position: { x: 480, y: 500 } }],
     },
     {
       id: "pet",
@@ -1332,10 +1361,7 @@ function makeNearbyStoreWithDrives(
 }
 
 /** Fraction of total selection weight assigned to `kind`, from the trace. */
-function selectionProbability(
-  store: ReturnType<typeof makeStoreWithDrives>,
-  kind: string,
-) {
+function selectionProbability(store: ReturnType<typeof makeStoreWithDrives>, kind: string) {
   const trace = store.getComponent("pet", "BehaviorDecisionToken")?.selectionTrace;
   return trace?.candidates.find((c) => c.kind === kind)?.probability ?? 0;
 }
@@ -1349,12 +1375,7 @@ describe("BehaviorDecisionSystem — Drives-aware scoring", () => {
       arousal: 1,
       confidence: 0.1,
     });
-    runBehaviorDecisionSystem(
-      frightened,
-      createManualClock(0),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(frightened, createManualClock(0), createSeededRandom(1), BOUNDS);
 
     const confident = makeStoreWithDrives();
     confident.setComponent("pet", {
@@ -1363,12 +1384,7 @@ describe("BehaviorDecisionSystem — Drives-aware scoring", () => {
       arousal: 0.35,
       confidence: 0.9,
     });
-    runBehaviorDecisionSystem(
-      confident,
-      createManualClock(0),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(confident, createManualClock(0), createSeededRandom(1), BOUNDS);
 
     expect(selectionProbability(frightened, "wander-far")).toBeLessThan(
       selectionProbability(confident, "wander-far"),
@@ -1380,20 +1396,10 @@ describe("BehaviorDecisionSystem — Drives-aware scoring", () => {
 
   it("applies the Personality Catalog signature to the actual decision trace", () => {
     const attentive = makeStoreWithDrives({ catalogId: "attentive" });
-    runBehaviorDecisionSystem(
-      attentive,
-      createManualClock(0),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(attentive, createManualClock(0), createSeededRandom(1), BOUNDS);
 
     const aloof = makeStoreWithDrives({ catalogId: "aloof" });
-    runBehaviorDecisionSystem(
-      aloof,
-      createManualClock(0),
-      createSeededRandom(1),
-      BOUNDS,
-    );
+    runBehaviorDecisionSystem(aloof, createManualClock(0), createSeededRandom(1), BOUNDS);
 
     expect(selectionProbability(attentive, "seek-user")).toBeGreaterThan(
       selectionProbability(aloof, "seek-user"),

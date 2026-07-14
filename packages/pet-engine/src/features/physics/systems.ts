@@ -71,26 +71,20 @@ export function runPhysicsIntegrationSystem(
  * solver-separation blinking, and it feeds the same PetCollision component
  * the behavior layer (startle, bump-to-greet, pair cooldown) already reads.
  */
-export function runPetCollisionSyncSystem(
-  components: ComponentStore,
-  clock: Clock,
-): void {
+export function runPetCollisionSyncSystem(components: ComponentStore, clock: Clock): void {
   const now = clock.now();
 
   type PetBody = { id: string; x: number; y: number; halfW: number; halfH: number };
   const pets: PetBody[] = [];
-  components.forEach(
-    ["Transform", "PhysicsBody", "PetIdentity"],
-    (id, [transform, body]) => {
-      pets.push({
-        id,
-        x: transform.position.x,
-        y: transform.position.y,
-        halfW: body.width / 2,
-        halfH: body.height / 2,
-      });
-    },
-  );
+  components.forEach(["Transform", "PhysicsBody", "PetIdentity"], (id, [transform, body]) => {
+    pets.push({
+      id,
+      x: transform.position.x,
+      y: transform.position.y,
+      halfW: body.width / 2,
+      halfH: body.height / 2,
+    });
+  });
 
   for (const pet of pets) {
     let nearest: PetBody | null = null;
@@ -118,8 +112,7 @@ export function runPetCollisionSyncSystem(
       type: "PetCollision",
       otherEntityId: nearest.id,
       otherPosition: { x: nearest.x, y: nearest.y },
-      startedAt:
-        existing?.otherEntityId === nearest.id ? existing.startedAt : now,
+      startedAt: existing?.otherEntityId === nearest.id ? existing.startedAt : now,
       lastSeenAt: now,
     });
   }
@@ -158,7 +151,14 @@ export const PhysicsTransformSyncSystemPost: SimulationSystem<WorldStepContext> 
 
 export const PhysicsIntegrationSystem: SimulationSystem<WorldStepContext> = {
   name: "PhysicsIntegrationSystem",
-  dependsOn: ["WalkSystem", "CollisionEscapeSystem", "JumpSystem", "WallClimbSystem", "SteeringForceSystem", "FlightSystem"],
+  dependsOn: [
+    "WalkSystem",
+    "CollisionEscapeSystem",
+    "JumpSystem",
+    "WallClimbSystem",
+    "SteeringForceSystem",
+    "FlightSystem",
+  ],
   reads: ["PhysicsForce"],
   writes: ["PhysicsWorld"],
   update(ctx) {

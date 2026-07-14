@@ -50,10 +50,7 @@ export function DemoAppFrame({
   title?: string;
 }) {
   return (
-    <section
-      className={["pd-video-app-frame", className].filter(Boolean).join(" ")}
-      style={style}
-    >
+    <section className={["pd-video-app-frame", className].filter(Boolean).join(" ")} style={style}>
       <header className="pd-video-app-frame__bar">
         <div className="pd-video-app-frame__controls" aria-hidden="true">
           <span />
@@ -78,21 +75,51 @@ const CAPTION_SPARKLES: {
   x: number;
   y: number;
 }[] = [
-  { amp: 11, color: "var(--blossom-400)", phase: 0.4, size: 14, speed: 28, spin: 0.9, x: -150, y: 46 },
-  { amp: 13, color: "var(--lavender-400)", phase: 2.1, size: 12, speed: 33, spin: -0.7, x: 156, y: 40 },
-  { amp: 9, color: "var(--blossom-500)", phase: 3.6, size: 9, speed: 24, spin: 1.2, x: -74, y: -54 },
-  { amp: 10, color: "var(--lavender-300)", phase: 1.2, size: 11, speed: 26, spin: -1.0, x: 92, y: -50 },
+  {
+    amp: 11,
+    color: "var(--blossom-400)",
+    phase: 0.4,
+    size: 14,
+    speed: 28,
+    spin: 0.9,
+    x: -150,
+    y: 46,
+  },
+  {
+    amp: 13,
+    color: "var(--lavender-400)",
+    phase: 2.1,
+    size: 12,
+    speed: 33,
+    spin: -0.7,
+    x: 156,
+    y: 40,
+  },
+  {
+    amp: 9,
+    color: "var(--blossom-500)",
+    phase: 3.6,
+    size: 9,
+    speed: 24,
+    spin: 1.2,
+    x: -74,
+    y: -54,
+  },
+  {
+    amp: 10,
+    color: "var(--lavender-300)",
+    phase: 1.2,
+    size: 11,
+    speed: 26,
+    spin: -1.0,
+    x: 92,
+    y: -50,
+  },
   { amp: 8, color: "var(--sky-300)", phase: 4.7, size: 8, speed: 22, spin: 0.8, x: 4, y: 60 },
   { amp: 12, color: "var(--mint-300)", phase: 5.5, size: 8, speed: 31, spin: 1.1, x: 214, y: -12 },
 ];
 
-export function Caption({
-  children,
-  style,
-}: {
-  children: ReactNode;
-  style?: CSSProperties;
-}) {
+export function Caption({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   const frame = useCurrentFrame();
   return (
     <div className="pd-video-caption" style={style}>
@@ -133,24 +160,13 @@ export function Callout({
   style?: CSSProperties;
 }) {
   return (
-    <div
-      className={["pd-video-callout", className].filter(Boolean).join(" ")}
-      style={style}
-    >
+    <div className={["pd-video-callout", className].filter(Boolean).join(" ")} style={style}>
       {children}
     </div>
   );
 }
 
-export function DemoCursor({
-  scale = 1,
-  x,
-  y,
-}: {
-  scale?: number;
-  x: number;
-  y: number;
-}) {
+export function DemoCursor({ scale = 1, x, y }: { scale?: number; x: number; y: number }) {
   return (
     <svg
       className="pd-video-cursor"
@@ -170,15 +186,7 @@ export function DemoCursor({
   );
 }
 
-export function ClickBurst({
-  progress: p,
-  x,
-  y,
-}: {
-  progress: number;
-  x: number;
-  y: number;
-}) {
+export function ClickBurst({ progress: p, x, y }: { progress: number; x: number; y: number }) {
   const ease = 1 - (1 - p) ** 3;
   const scale = 0.38 + ease * 0.98;
   const opacity = p < 0.14 ? p / 0.14 : 1 - (p - 0.14) / 0.86;
@@ -228,15 +236,7 @@ const POOF_PARTICLES: { angle: number; color: string; size: number }[] = [
   { angle: (7 * Math.PI) / 4, color: "var(--mint-300)", size: 8 },
 ];
 
-export function PoofBurst({
-  progress: p,
-  x,
-  y,
-}: {
-  progress: number;
-  x: number;
-  y: number;
-}) {
+export function PoofBurst({ progress: p, x, y }: { progress: number; x: number; y: number }) {
   const ease = 1 - (1 - p) ** 2;
   const cloudScale = 0.4 + ease * 1.1;
   const cloudOpacity = p < 0.45 ? p / 0.45 : Math.max(0, 1 - (p - 0.45) / 0.55);
@@ -315,13 +315,7 @@ export function DesktopBackdrop() {
   );
 }
 
-export function DemoPetCard({
-  featured = false,
-  pet,
-}: {
-  featured?: boolean;
-  pet: DemoPet;
-}) {
+export function DemoPetCard({ featured = false, pet }: { featured?: boolean; pet: DemoPet }) {
   return (
     <PetShowcaseCard
       cwd={pet.cwd}
@@ -424,22 +418,14 @@ export function DemoPetStatusCard({
           <span className="pd-video-status-card__name">{name}</span>
           <span className="pd-video-status-card__label">{label}</span>
         </div>
-        {message ? (
-          <div className="pd-video-status-card__message">{message}</div>
-        ) : null}
+        {message ? <div className="pd-video-status-card__message">{message}</div> : null}
         {cwd ? <div className="pd-video-status-card__cwd">{cwd}</div> : null}
       </div>
     </div>
   );
 }
 
-export function DemoTerminal({
-  className = "",
-  cwd,
-}: {
-  className?: string;
-  cwd: string;
-}) {
+export function DemoTerminal({ className = "", cwd }: { className?: string; cwd: string }) {
   const frame = useCurrentFrame();
   const command = "codex --workdir D:/pets-driven";
   const attach = "attached to Cato";
@@ -458,43 +444,30 @@ export function DemoTerminal({
           <span className="pd-video-terminal-shell__dot pd-video-terminal-shell__dot--red" />
           <span className="pd-video-terminal-shell__dot pd-video-terminal-shell__dot--yellow" />
           <span className="pd-video-terminal-shell__dot pd-video-terminal-shell__dot--green" />
-          <span className="pd-video-terminal-shell__title">
-            your terminal - pets-driven
-          </span>
+          <span className="pd-video-terminal-shell__title">your terminal - pets-driven</span>
         </div>
         <div className="pd-video-terminal-shell__body" data-hatch-out="true">
           <div className="pd-video-terminal-shell__cwd">{cwd}</div>
           <div className="pd-video-terminal-shell__line">
             <span className="pd-video-terminal-shell__prompt">$</span>{" "}
             <span className="pd-video-terminal-shell__command">{commandText}</span>
-            {showCommandCursor ? (
-              <span className="pd-video-terminal-shell__cursor" />
-            ) : null}
+            {showCommandCursor ? <span className="pd-video-terminal-shell__cursor" /> : null}
           </div>
-          <div
-            className="pd-video-terminal-shell__line"
-            style={{ opacity: frame >= 452 ? 1 : 0 }}
-          >
+          <div className="pd-video-terminal-shell__line" style={{ opacity: frame >= 452 ? 1 : 0 }}>
             <span className="pd-video-terminal-shell__hint">&gt; </span>
             <span className="pd-video-terminal-shell__text">{attachText}</span>
-            {showAttachCursor ? (
-              <span className="pd-video-terminal-shell__cursor" />
-            ) : null}
+            {showAttachCursor ? <span className="pd-video-terminal-shell__cursor" /> : null}
           </div>
-          <div
-            className="pd-video-terminal-shell__line"
-            style={{ opacity: frame >= 490 ? 1 : 0 }}
-          >
+          <div className="pd-video-terminal-shell__line" style={{ opacity: frame >= 490 ? 1 : 0 }}>
             <span className="pd-video-terminal-shell__hint">-&gt; run </span>
             <span className="pd-video-terminal-shell__accent">{hatchText}</span>
-            {showHatchCursor ? (
-              <span className="pd-video-terminal-shell__cursor" />
-            ) : null}
+            {showHatchCursor ? <span className="pd-video-terminal-shell__cursor" /> : null}
             <span
               className="pd-video-terminal-shell__text"
               style={{ opacity: frame > 528 ? 1 : 0 }}
             >
-              {" "}to hatch your pet
+              {" "}
+              to hatch your pet
             </span>
           </div>
           <div
@@ -512,12 +485,7 @@ export function DemoTerminal({
   );
 }
 
-function revealText(
-  text: string,
-  frame: number,
-  startFrame: number,
-  charsPerFrame: number,
-) {
+function revealText(text: string, frame: number, startFrame: number, charsPerFrame: number) {
   const count = Math.max(0, Math.floor((frame - startFrame) * charsPerFrame));
   return text.slice(0, Math.min(text.length, count));
 }

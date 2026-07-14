@@ -13,7 +13,10 @@ export function buildPersonalityComponents(personality: PetPersonality): Compone
   if (personality.idleConversationMs !== undefined) {
     components.push({ type: "IdleConversation", idleAfterMs: personality.idleConversationMs });
   }
-  components.push({ type: "CompletionBehavior", intentAfterCompletion: personality.completionIntent });
+  components.push({
+    type: "CompletionBehavior",
+    intentAfterCompletion: personality.completionIntent,
+  });
   components.push({
     type: "Personality",
     openness: personality.openness,

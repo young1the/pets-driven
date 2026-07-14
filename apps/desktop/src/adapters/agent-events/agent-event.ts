@@ -1,8 +1,4 @@
-export type AgentEventType =
-  | "task.started"
-  | "task.waiting"
-  | "task.completed"
-  | "task.failed";
+export type AgentEventType = "task.started" | "task.waiting" | "task.completed" | "task.failed";
 
 export type AgentEvent = {
   type: AgentEventType;

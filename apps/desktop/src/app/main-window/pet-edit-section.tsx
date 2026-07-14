@@ -9,10 +9,7 @@ import {
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
-import {
-  PERSONALITY_OPTIONS,
-  personalityTitleKey,
-} from "@/app/onboarding/personality-options";
+import { PERSONALITY_OPTIONS, personalityTitleKey } from "@/app/onboarding/personality-options";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 
 export interface PetEditView {
@@ -74,18 +71,12 @@ export function PetEditSection({
   onDone,
 }: PetEditSectionProps) {
   const { t } = useTranslation("desktop");
-  const previewNote =
-    pet.memo.trim().length > 0 ? pet.memo : t("common.noNote");
+  const previewNote = pet.memo.trim().length > 0 ? pet.memo : t("common.noNote");
 
   return (
     <div style={{ padding: "26px 24px 48px" }}>
       <div style={{ maxWidth: "860px", margin: "0 auto" }}>
-        <Button
-          iconLeft={<BackIcon />}
-          onClick={onDone}
-          size="sm"
-          variant="neutral"
-        >
+        <Button iconLeft={<BackIcon />} onClick={onDone} size="sm" variant="neutral">
           {t("edit.back")}
         </Button>
 
@@ -227,10 +218,7 @@ export function PetEditSection({
 
             <div style={{ marginTop: "18px" }}>
               <span style={fieldLabelStyle}>{t("edit.personality")}</span>
-              <div
-                role="radiogroup"
-                style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
-              >
+              <div role="radiogroup" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {PERSONALITY_OPTIONS.map((option) => {
                   const active = pet.personalityId === option.id;
                   return (
@@ -244,9 +232,7 @@ export function PetEditSection({
                         border: active
                           ? "1.5px solid var(--color-primary)"
                           : "1.5px solid var(--border-default)",
-                        background: active
-                          ? "var(--color-primary)"
-                          : "var(--surface-card)",
+                        background: active ? "var(--color-primary)" : "var(--surface-card)",
                         color: active ? "#fff" : "var(--text-strong)",
                         fontWeight: 700,
                         fontSize: "13px",
@@ -303,9 +289,7 @@ export function PetEditSection({
                   >
                     {t("edit.showOnDesktop")}
                   </div>
-                  <div
-                    style={{ fontSize: "12.5px", color: "var(--text-muted)" }}
-                  >
+                  <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
                     {t("edit.showOnDesktopHint")}
                   </div>
                 </div>

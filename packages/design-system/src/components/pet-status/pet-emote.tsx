@@ -52,9 +52,7 @@ export function PetEmote({
   const cls = ["pd-emote", size === "sm" ? "pd-emote--sm" : "", className]
     .filter(Boolean)
     .join(" ");
-  const rootStyle = accent
-    ? ({ "--comp-accent": accent, ...style } as CSSProperties)
-    : style;
+  const rootStyle = accent ? ({ "--comp-accent": accent, ...style } as CSSProperties) : style;
 
   return (
     <div aria-hidden="true" className={cls} style={rootStyle} {...rest}>

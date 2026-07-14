@@ -1,7 +1,4 @@
-import type {
-  PetSnapshot,
-  WorldSnapshot,
-} from "@pets-driven/pet-engine/core/world-snapshot";
+import type { PetSnapshot, WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import {
   clampPetWindowScale,
@@ -21,10 +18,7 @@ const PET_WINDOW_BODY_ANCHOR_OFFSET =
     PET_WINDOW_LAYOUT.body.height / 2 -
     PET_CELL_SIZE.height / 2) *
   2;
-import type {
-  PetWindowFrame,
-  PetWindowOverlay,
-} from "@/pet-window/pet-window-messages";
+import type { PetWindowFrame, PetWindowOverlay } from "@/pet-window/pet-window-messages";
 import {
   presentBehaviorDecisionToken,
   presentPetExpression,
@@ -64,14 +58,11 @@ export function projectWorldSnapshotToPetWindows(
       return [];
     }
 
-    const petScale = clampPetWindowScale(
-      scaleByPetId?.[pet.id] ?? DEFAULT_PET_WINDOW_SCALE,
-    );
+    const petScale = clampPetWindowScale(scaleByPetId?.[pet.id] ?? DEFAULT_PET_WINDOW_SCALE);
     // The sprite frame scales with petScale; width/height below drive the
     // sprite's rendered size.
     const windowWidth = PET_CELL_SIZE.width * petScale;
-    const windowHeight =
-      (PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD) * petScale;
+    const windowHeight = (PET_CELL_SIZE.height + PET_WINDOW_BUBBLE_OVERHEAD) * petScale;
     // The desktop pet window is created at this fixed size (see
     // open_adopted_pet_window / open_pet_window_playground: inner_size 192×268)
     // and never shrinks — it is non-resizable, so setSize is a no-op and the

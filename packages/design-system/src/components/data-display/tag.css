@@ -16,10 +16,23 @@
     border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out);
 }
-.pd-tag--clickable { cursor: pointer; }
-.pd-tag--clickable:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
-.pd-tag--selected { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
-.pd-tag__dot { width: 8px; height: 8px; border-radius: 50%; }
+.pd-tag--clickable {
+  cursor: pointer;
+}
+.pd-tag--clickable:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.pd-tag--selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+.pd-tag__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
 .pd-tag__x {
   display: inline-flex;
   align-items: center;
@@ -31,6 +44,15 @@
   color: var(--text-subtle);
   margin-right: -3px;
 }
-.pd-tag__x:hover { background: var(--ink-150); color: var(--text-strong); }
-.pd-tag--selected .pd-tag__x:hover { background: rgba(255, 255, 255, 0.25); color: #fff; }
-.pd-tag__x svg { width: 11px; height: 11px; }
+.pd-tag__x:hover {
+  background: var(--ink-150);
+  color: var(--text-strong);
+}
+.pd-tag--selected .pd-tag__x:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+.pd-tag__x svg {
+  width: 11px;
+  height: 11px;
+}

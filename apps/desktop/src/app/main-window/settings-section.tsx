@@ -1,17 +1,10 @@
 import { useState, type CSSProperties } from "react";
-import {
-  FolderIcon,
-  TerminalPreview,
-  type BadgeTone,
-} from "@pets-driven/design-system";
+import { FolderIcon, TerminalPreview, type BadgeTone } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
 import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
-import {
-  LAUNCH_PROFILE_OPTIONS,
-  type LaunchProfileId,
-} from "@/app/session-launch-profile";
+import { LAUNCH_PROFILE_OPTIONS, type LaunchProfileId } from "@/app/session-launch-profile";
 
 export interface SettingsSectionProps {
   launchProfile: LaunchProfileId;
@@ -282,11 +275,7 @@ export function SettingsSection({
             </div>
             <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
               <input
-                aria-label={
-                  customLaunchLine
-                    ? t("settings.launchLine")
-                    : t("settings.command")
-                }
+                aria-label={customLaunchLine ? t("settings.launchLine") : t("settings.command")}
                 onChange={(event) =>
                   customLaunchLine
                     ? onLaunchLine(event.target.value)
@@ -387,9 +376,7 @@ export function SettingsSection({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {petSourceDirectory ??
-                    defaultPetSourceDirectory ??
-                    "~/.petdex/pets"}
+                  {petSourceDirectory ?? defaultPetSourceDirectory ?? "~/.petdex/pets"}
                 </small>
               </span>
               {petSourceDirectory && (
@@ -434,9 +421,7 @@ export function SettingsSection({
             <div style={connectionCard}>
               <span aria-hidden style={statusDot(hook.tone)} />
               <span style={connectionText}>
-                <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
-                  {hook.label}
-                </b>
+                <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>{hook.label}</b>
                 <small
                   style={{
                     color: "var(--text-muted)",
@@ -458,9 +443,7 @@ export function SettingsSection({
                 <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
                   {t("claudePlugin.title")}
                 </b>
-                <small style={{ color: "var(--text-muted)" }}>
-                  {pluginHintText}
-                </small>
+                <small style={{ color: "var(--text-muted)" }}>{pluginHintText}</small>
               </span>
               {plugin?.state === "installed" ? (
                 <>
@@ -470,9 +453,7 @@ export function SettingsSection({
                     style={smallAction}
                     type="button"
                   >
-                    {pluginBusy
-                      ? t("claudePlugin.installing")
-                      : t("claudePlugin.reinstall")}
+                    {pluginBusy ? t("claudePlugin.installing") : t("claudePlugin.reinstall")}
                   </button>
                   <button
                     disabled={pluginBusy}
@@ -509,18 +490,10 @@ export function SettingsSection({
             <span style={label}>{t("settings.appearance")}</span>
             <p style={hint}>{t("settings.appearanceDesc")}</p>
             <div style={segWrap}>
-              <button
-                onClick={() => setMode("light")}
-                style={seg(mode === "light")}
-                type="button"
-              >
+              <button onClick={() => setMode("light")} style={seg(mode === "light")} type="button">
                 ☀ {t("settings.themeLight")}
               </button>
-              <button
-                onClick={() => setMode("dark")}
-                style={seg(mode === "dark")}
-                type="button"
-              >
+              <button onClick={() => setMode("dark")} style={seg(mode === "dark")} type="button">
                 ☾ {t("settings.themeDark")}
               </button>
               <button

@@ -90,13 +90,15 @@ describe("motion target system", () => {
   });
 
   it("clears entity target and picks a waypoint when pet stops seeking", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "stand" as const },
-        { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: null },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "stand" as const },
+          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: null },
+        ],
+      },
+    ]);
 
     runMotionTargetSystem(store, { next: () => 0.5 }, { width: 960, height: 540 });
 
@@ -106,13 +108,15 @@ describe("motion target system", () => {
   });
 
   it("chooses deterministic waypoints by random values", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "stand" as const },
-        { type: "MotionTarget", targetEntityId: null, targetPosition: null },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "stand" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+        ],
+      },
+    ]);
     const values = [0.25, 0.25];
 
     runMotionTargetSystem(store, { next: () => values.shift() ?? 0 }, { width: 960, height: 540 });
@@ -121,13 +125,15 @@ describe("motion target system", () => {
   });
 
   it("does not overwrite an existing target position", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "stand" as const },
-        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 300, y: 200 } },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "stand" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 300, y: 200 } },
+        ],
+      },
+    ]);
 
     runMotionTargetSystem(store, { next: () => 0.5 }, { width: 960, height: 540 });
 
@@ -135,28 +141,30 @@ describe("motion target system", () => {
   });
 
   it("updates active pet entity targets from nearby pet perception", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "pursue" as const },
-        { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 300, y: 200 } },
-        {
-          type: "Perception" as const,
-          userAnchor: null,
-          nearbyPets: [{ id: "pet-b", position: { x: 360, y: 210 }, distance: 120 }],
-          nearbyClimbables: [],
-          self: { grounded: true, climbing: false, mode: "pursue" as const },
-        },
-        {
-          type: "Personality" as const,
-          openness: 0.5,
-          conscientiousness: 0.5,
-          extraversion: 0.8,
-          agreeableness: 0.8,
-          neuroticism: 0.1,
-        },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "pursue" as const },
+          { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 300, y: 200 } },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [{ id: "pet-b", position: { x: 360, y: 210 }, distance: 120 }],
+            nearbyClimbables: [],
+            self: { grounded: true, climbing: false, mode: "pursue" as const },
+          },
+          {
+            type: "Personality" as const,
+            openness: 0.5,
+            conscientiousness: 0.5,
+            extraversion: 0.8,
+            agreeableness: 0.8,
+            neuroticism: 0.1,
+          },
+        ],
+      },
+    ]);
 
     runMotionTargetSystem(store, { next: () => 0.5 }, { width: 960, height: 540 });
 
@@ -170,20 +178,26 @@ describe("motion target system", () => {
     // must keep following it via Perception.userAnchor the same way it follows
     // nearbyPets for approach-pet, since CursorInputSystem moves the anchor's
     // Transform to the live cursor position every tick.
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "pursue" as const },
-        { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 300, y: 200 } },
-        {
-          type: "Perception" as const,
-          userAnchor: { id: "user-anchor", position: { x: 420, y: 260 }, distance: 120 },
-          nearbyPets: [],
-          nearbyClimbables: [],
-          self: { grounded: true, climbing: false, mode: "pursue" as const },
-        },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "pursue" as const },
+          {
+            type: "MotionTarget",
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 300, y: 200 },
+          },
+          {
+            type: "Perception" as const,
+            userAnchor: { id: "user-anchor", position: { x: 420, y: 260 }, distance: 120 },
+            nearbyPets: [],
+            nearbyClimbables: [],
+            self: { grounded: true, climbing: false, mode: "pursue" as const },
+          },
+        ],
+      },
+    ]);
 
     runMotionTargetSystem(store, { next: () => 0.5 }, { width: 960, height: 540 });
 
@@ -193,26 +207,33 @@ describe("motion target system", () => {
   });
 
   it("projects active pet targets onto the walker lane and requests jump when target is above", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Transform", position: { x: 356, y: 500 } },
-        { type: "PhysicsBody", shape: "rectangle" as const, width: 32, height: 32 },
-        { type: "WalkingTag" },
-        { type: "CanWalk", force: 0.001 },
-        { type: "CanJump", impulse: 0.009 },
-        { type: "ContactState" as const, grounded: true, climbableSurfaceId: null, climbableSurfacePosition: null },
-        { type: "Steering", mode: "pursue" as const },
-        { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 300, y: 500 } },
-        {
-          type: "Perception" as const,
-          userAnchor: null,
-          nearbyPets: [{ id: "pet-b", position: { x: 360, y: 360 }, distance: 140 }],
-          nearbyClimbables: [],
-          self: { grounded: true, climbing: false, mode: "pursue" as const },
-        },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform", position: { x: 356, y: 500 } },
+          { type: "PhysicsBody", shape: "rectangle" as const, width: 32, height: 32 },
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: 0.001 },
+          { type: "CanJump", impulse: 0.009 },
+          {
+            type: "ContactState" as const,
+            grounded: true,
+            climbableSurfaceId: null,
+            climbableSurfacePosition: null,
+          },
+          { type: "Steering", mode: "pursue" as const },
+          { type: "MotionTarget", targetEntityId: "pet-b", targetPosition: { x: 300, y: 500 } },
+          {
+            type: "Perception" as const,
+            userAnchor: null,
+            nearbyPets: [{ id: "pet-b", position: { x: 360, y: 360 }, distance: 140 }],
+            nearbyClimbables: [],
+            self: { grounded: true, climbing: false, mode: "pursue" as const },
+          },
+        ],
+      },
+    ]);
 
     runMotionTargetSystem(store, { next: () => 0.5 }, { width: 960, height: 540 });
 

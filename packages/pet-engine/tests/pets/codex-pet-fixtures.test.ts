@@ -34,9 +34,7 @@ describe("codex pet fixtures", () => {
   });
 
   it("uses the Codex pets route for spritesheets without rewriting pet packages", () => {
-    expect(getCodexPetSpritesheetUrl("cato")).toBe(
-      "/codex-pets/cato/spritesheet.webp",
-    );
+    expect(getCodexPetSpritesheetUrl("cato")).toBe("/codex-pets/cato/spritesheet.webp");
   });
 
   it("loads a canvas asset catalog keyed by world entity id", async () => {

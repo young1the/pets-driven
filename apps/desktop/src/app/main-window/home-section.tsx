@@ -84,13 +84,9 @@ export function HomeSection({
     returnObjects: true,
   }) as unknown as string[];
   const greeting = Array.isArray(greetingVariants)
-    ? (greetingVariants[greetingPick.index] ??
-      greetingVariants[0] ??
-      t("home.greeting"))
+    ? (greetingVariants[greetingPick.index] ?? greetingVariants[0] ?? t("home.greeting"))
     : t("home.greeting");
-  const dragRef = useRef<{ id: string; startX: number; startY: number } | null>(
-    null,
-  );
+  const dragRef = useRef<{ id: string; startX: number; startY: number } | null>(null);
   const [dragVisual, setDragVisual] = useState<{
     id: string;
     dx: number;
@@ -148,10 +144,7 @@ export function HomeSection({
     };
   }, []);
 
-  function handleCardPointerDown(
-    event: React.PointerEvent<HTMLDivElement>,
-    petId: string,
-  ) {
+  function handleCardPointerDown(event: React.PointerEvent<HTMLDivElement>, petId: string) {
     if (event.button !== 0) {
       return;
     }
@@ -319,19 +312,12 @@ export function HomeSection({
               : hovered
                 ? `translateX(-50%) translateY(${ty - 60}px) rotate(0deg) scale(1.06)`
                 : `translateX(-50%) translateY(${ty}px) rotate(${d * rotX}deg)`,
-            zIndex: dragging
-              ? 300
-              : hovered
-                ? 200
-                : 60 - Math.round(Math.abs(d) * 6),
+            zIndex: dragging ? 300 : hovered ? 200 : 60 - Math.round(Math.abs(d) * 6),
           };
 
           return (
             <div
-              className={[
-                "pd-home__fan-card",
-                dragging ? "pd-home__fan-card--dragging" : "",
-              ]
+              className={["pd-home__fan-card", dragging ? "pd-home__fan-card--dragging" : ""]
                 .filter(Boolean)
                 .join(" ")}
               key={pet.id}
@@ -346,9 +332,7 @@ export function HomeSection({
                 }
               }}
               onMouseEnter={() => setHoverId(pet.id)}
-              onMouseLeave={() =>
-                setHoverId((current) => (current === pet.id ? null : current))
-              }
+              onMouseLeave={() => setHoverId((current) => (current === pet.id ? null : current))}
               style={wrapStyle}
             >
               <PetShowcaseCard

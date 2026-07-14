@@ -13,12 +13,7 @@ type PetPortraitProps = {
  * A static idle-frame portrait of a pet, sized to fill a showcase card's art
  * slot. Renders the real spritesheet so the home mirrors the desktop pet.
  */
-export function PetPortrait({
-  assetId,
-  name,
-  width = 192,
-  height = 208,
-}: PetPortraitProps) {
+export function PetPortrait({ assetId, name, width = 192, height = 208 }: PetPortraitProps) {
   const spritesheetUrl = usePetSpritesheetUrl(assetId);
   const scale = width / PET_CELL_SIZE.width;
 

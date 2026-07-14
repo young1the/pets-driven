@@ -2,11 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@pets-driven/i18n";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
-import {
-  getCurrentWindow,
-  LogicalSize,
-  LogicalPosition,
-} from "@tauri-apps/api/window";
+import { getCurrentWindow, LogicalSize, LogicalPosition } from "@tauri-apps/api/window";
 import { FALLBACK_CODEX_PET_SPRITESHEET_URL } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import {
   msUntilNextAtlasFrame,
@@ -71,10 +67,7 @@ type PetWindowPresentation = {
 
 let restoreCursorEventsTimer: number | null = null;
 
-function surfacePointFromEvent(
-  element: HTMLElement,
-  event: React.MouseEvent<HTMLElement>,
-) {
+function surfacePointFromEvent(element: HTMLElement, event: React.MouseEvent<HTMLElement>) {
   const rect = element.getBoundingClientRect();
   const nativeEvent = event.nativeEvent as PointerEvent & {
     offsetX?: number;
@@ -92,10 +85,7 @@ function surfacePointFromEvent(
     };
   }
 
-  if (
-    Number.isFinite(nativeEvent.offsetX) &&
-    Number.isFinite(nativeEvent.offsetY)
-  ) {
+  if (Number.isFinite(nativeEvent.offsetX) && Number.isFinite(nativeEvent.offsetY)) {
     return {
       x: nativeEvent.offsetX ?? 0,
       y: nativeEvent.offsetY ?? 0,
@@ -155,8 +145,7 @@ function canApplyResizeScale(scale: number) {
 function defaultPresentation(index: number): PetWindowPresentation {
   return {
     decisionEmote: null,
-    animationState:
-      movementDirectionForWindow(index) >= 0 ? "running-right" : "running-left",
+    animationState: movementDirectionForWindow(index) >= 0 ? "running-right" : "running-left",
     activity: null,
     partnerName: null,
     speech: null,
@@ -176,9 +165,7 @@ function petContextMenuPreviewUrl(petId: string, petName: string) {
   return url.toString();
 }
 
-function hitLayoutForPresentation(
-  presentation: PetWindowPresentation,
-): PetWindowHitLayout {
+function hitLayoutForPresentation(presentation: PetWindowPresentation): PetWindowHitLayout {
   return {
     ...PET_WINDOW_LAYOUT,
     overlay: presentation.overlay ? PET_WINDOW_LAYOUT.overlay : null,
@@ -206,12 +193,7 @@ function steadyActivity(
   return shown.value;
 }
 
-
-export function PetWindowView({
-  pet,
-  previewPresentation,
-  previewScale,
-}: PetWindowViewProps) {
+export function PetWindowView({ pet, previewPresentation, previewScale }: PetWindowViewProps) {
   const { t } = useTranslation("desktop");
   const isPreview = !isTauri();
   const surfaceRef = useRef<HTMLElement | null>(null);
@@ -238,9 +220,7 @@ export function PetWindowView({
   const lastTapAtRef = useRef(0);
   const isBodyHoveredRef = useRef(false);
   const isResizeHoveredRef = useRef(false);
-  const [interactionStatus, setInteractionStatus] = useState<string | null>(
-    null,
-  );
+  const [interactionStatus, setInteractionStatus] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(
     isPreview && previewScale ? clampPetWindowScale(previewScale) : 1,
@@ -254,11 +234,8 @@ export function PetWindowView({
   // Drives the resize button's visibility: shown only while the pointer is
   // over the pet itself (or the handle it already revealed), not anywhere in
   // the transparent window around it.
-  const [isResizeAffordanceHovered, setIsResizeAffordanceHovered] =
-    useState(false);
-  const [petName, setPetName] = useState<string | null>(
-    isPreview ? (pet.name ?? null) : null,
-  );
+  const [isResizeAffordanceHovered, setIsResizeAffordanceHovered] = useState(false);
+  const [petName, setPetName] = useState<string | null>(isPreview ? (pet.name ?? null) : null);
   const presentationRef = useRef<PetWindowPresentation>(presentation);
   const shownActivityRef = useRef<ShownActivity>({ value: null, at: 0 });
   const petNameRef = useRef<string | null>(null);
@@ -368,9 +345,7 @@ export function PetWindowView({
         });
       }
 
-      const frameScale = clampPetWindowScale(
-        frame.window.width / PET_CELL_SIZE.width,
-      );
+      const frameScale = clampPetWindowScale(frame.window.width / PET_CELL_SIZE.width);
       const nextSize = petWindowSizeForScale(frameScale);
       if (
         !appliedSizeRef.current ||
@@ -379,9 +354,7 @@ export function PetWindowView({
       ) {
         appliedSizeRef.current = nextSize;
         setSpriteScale(frameScale);
-        void currentWindow.setSize(
-          new LogicalSize(nextSize.width, nextSize.height),
-        );
+        void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
       }
 
       const nextPosition = {
@@ -455,8 +428,7 @@ export function PetWindowView({
         return;
       }
 
-      const isNewBinding =
-        binding.title !== null && binding.title !== connectStartTitleRef.current;
+      const isNewBinding = binding.title !== null && binding.title !== connectStartTitleRef.current;
       connectStartTitleRef.current = undefined;
       setBindingNotice(
         isNewBinding
@@ -612,9 +584,7 @@ export function PetWindowView({
           event.screenY -
           resizeStartRef.current.screenY) /
         2;
-      const newScale = clampPetWindowScale(
-        resizeStartRef.current.scale + delta / 100,
-      );
+      const newScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
 
       if (!canApplyResizeScale(newScale)) {
         return;
@@ -625,9 +595,7 @@ export function PetWindowView({
       resizeAppliedScaleRef.current = newScale;
       setSpriteScale(newScale);
       if (isTauri()) {
-        void getCurrentWindow().setSize(
-          new LogicalSize(nextSize.width, nextSize.height),
-        );
+        void getCurrentWindow().setSize(new LogicalSize(nextSize.width, nextSize.height));
       }
       return;
     }
@@ -749,9 +717,7 @@ export function PetWindowView({
           event.screenY -
           resizeStartRef.current.screenY) /
         2;
-      const requestedScale = clampPetWindowScale(
-        resizeStartRef.current.scale + delta / 100,
-      );
+      const requestedScale = clampPetWindowScale(resizeStartRef.current.scale + delta / 100);
       const finalScale = canApplyResizeScale(requestedScale)
         ? requestedScale
         : resizeAppliedScaleRef.current;
@@ -784,10 +750,7 @@ export function PetWindowView({
       const down = bodyDownRef.current;
       bodyDownRef.current = null;
       if (down) {
-        const moved = Math.hypot(
-          event.screenX - down.screenX,
-          event.screenY - down.screenY,
-        );
+        const moved = Math.hypot(event.screenX - down.screenX, event.screenY - down.screenY);
         if (moved < 6) {
           const now = Date.now();
           if (now - lastTapAtRef.current < 400) {
@@ -867,10 +830,7 @@ export function PetWindowView({
           setIsResizeAffordanceHovered(false);
         }
 
-        if (
-          pointerStartRef.current === "body" ||
-          pointerStartRef.current === "resize"
-        ) {
+        if (pointerStartRef.current === "body" || pointerStartRef.current === "resize") {
           void setNativeCursorPassthrough(false);
           return;
         }
@@ -995,15 +955,9 @@ function PetStatusCard({
         <div className="pet-window-status-card__row">
           <span className="pet-window-status-card__dot" />
           <span className="pet-window-status-card__name">{name}</span>
-          {label ? (
-            <span className="pet-window-status-card__label">{label}</span>
-          ) : null}
+          {label ? <span className="pet-window-status-card__label">{label}</span> : null}
         </div>
-        {messageLine ? (
-          <div className="pet-window-status-card__message">
-            {messageLine}
-          </div>
-        ) : null}
+        {messageLine ? <div className="pet-window-status-card__message">{messageLine}</div> : null}
         {cwd ? (
           <div className="pet-window-status-card__cwd">
             <svg

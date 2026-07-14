@@ -6,11 +6,14 @@ import {
   runDriveDecaySystem,
 } from "@pets-driven/pet-engine/features/drives/systems";
 
-function makeStore(mode: "stand" | "pursue" | "arrive", drives?: Partial<{
-  social: number;
-  energy: number;
-  curiosity: number;
-}>) {
+function makeStore(
+  mode: "stand" | "pursue" | "arrive",
+  drives?: Partial<{
+    social: number;
+    energy: number;
+    curiosity: number;
+  }>,
+) {
   return createComponentStore([
     {
       id: "pet",

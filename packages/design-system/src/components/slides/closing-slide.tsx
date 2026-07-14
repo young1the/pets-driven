@@ -5,10 +5,7 @@ import "./slides.css";
  * Closing / CTA slide on dark ink: the full pack, a title, subtitle, a pill
  * CTA and a footer (brand mark + tagline).
  */
-export interface ClosingSlideProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "title"
-> {
+export interface ClosingSlideProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   /** Pet art nodes for the full pack. */
   pets?: ReactNode[];
   title: ReactNode;

@@ -13,7 +13,12 @@ function makePet(posX: number, posY: number) {
     components: [
       { type: "Transform" as const, position: { x: posX, y: posY } },
       { type: "PhysicsBody" as const, shape: "rectangle" as const, width: 32, height: 38 },
-      { type: "ContactState" as const, grounded: false, climbableSurfaceId: null, climbableSurfacePosition: null },
+      {
+        type: "ContactState" as const,
+        grounded: false,
+        climbableSurfaceId: null,
+        climbableSurfacePosition: null,
+      },
     ],
   };
 }
@@ -23,7 +28,12 @@ function makeGround() {
     id: "ground",
     components: [
       { type: "Transform" as const, position: { x: 480, y: GROUND_Y } },
-      { type: "PhysicsBody" as const, shape: "rectangle" as const, width: GROUND_WIDTH, height: GROUND_HEIGHT },
+      {
+        type: "PhysicsBody" as const,
+        shape: "rectangle" as const,
+        width: GROUND_WIDTH,
+        height: GROUND_HEIGHT,
+      },
       { type: "Ground" as const },
     ],
   };

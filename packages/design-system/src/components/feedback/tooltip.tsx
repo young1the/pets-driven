@@ -4,8 +4,7 @@ import "./tooltip.css";
 /**
  * A small soft tooltip on hover/focus. Wraps a single child.
  */
-export interface TooltipProps
-  extends Omit<HTMLAttributes<HTMLSpanElement>, "content"> {
+export interface TooltipProps extends Omit<HTMLAttributes<HTMLSpanElement>, "content"> {
   content: ReactNode;
   /** Placement. @default "top" */
   side?: "top" | "bottom";

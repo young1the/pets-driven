@@ -30,11 +30,7 @@ export function PetSpeechBubble({
   ...rest
 }: PetSpeechBubbleProps) {
   const spec = PET_MOODS[mood] ?? PET_MOODS.working;
-  const cls = [
-    "pd-bubble",
-    animateIn ? "pd-bubble--animate-in" : "",
-    className,
-  ]
+  const cls = ["pd-bubble", animateIn ? "pd-bubble--animate-in" : "", className]
     .filter(Boolean)
     .join(" ");
 
@@ -45,9 +41,7 @@ export function PetSpeechBubble({
       {...rest}
     >
       <div className="pd-bubble__statusrow">
-        <span className="pd-bubble__work">
-          {work ?? spec.defaultLabel}
-        </span>
+        <span className="pd-bubble__work">{work ?? spec.defaultLabel}</span>
         {showFace && (
           <span aria-label={mood} className="pd-bubble__mood" role="img">
             {spec.face}

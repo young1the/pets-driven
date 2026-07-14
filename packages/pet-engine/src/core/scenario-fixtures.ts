@@ -34,9 +34,7 @@ import {
  * High E moves faster; high N moves slower (cautious).
  * energy = 0.6 + E×0.5 − N×0.2
  */
-export function deriveMovementProfile(
-  p: PersonalityComponent,
-): MovementProfileComponent {
+export function deriveMovementProfile(p: PersonalityComponent): MovementProfileComponent {
   const energy = 0.6 + p.extraversion * 0.5 - p.neuroticism * 0.2;
   return {
     type: "MovementProfile",
@@ -51,9 +49,7 @@ export function deriveMovementProfile(
  * High E → short interval (talkative). Range ≈ 3 s..15 s.
  * interval = 14000 − E×11000 ms
  */
-export function deriveIdleConversation(
-  p: PersonalityComponent,
-): IdleConversationComponent {
+export function deriveIdleConversation(p: PersonalityComponent): IdleConversationComponent {
   const interval = 14_000 - p.extraversion * 11_000;
   return { type: "IdleConversation", idleAfterMs: Math.round(interval) };
 }
@@ -65,21 +61,14 @@ export function deriveIdleConversation(
 export function deriveJumpForwardImpulse(
   p: PersonalityComponent,
 ): NonNullable<CanJumpComponent["forwardImpulse"]> {
-  const energy = clamp(
-    0.6 + p.extraversion * 0.55 - p.neuroticism * 0.25,
-    0.25,
-    1.25,
-  );
+  const energy = clamp(0.6 + p.extraversion * 0.55 - p.neuroticism * 0.25, 0.25, 1.25);
   const variance = clamp(
     0.85 + p.openness * 0.45 - p.conscientiousness * 0.2 - p.neuroticism * 0.1,
     0.6,
     1.35,
   );
   const min = DEFAULT_PET_FORWARD_JUMP_IMPULSE_MIN * energy;
-  const max = Math.max(
-    min,
-    DEFAULT_PET_FORWARD_JUMP_IMPULSE_MAX * energy * variance,
-  );
+  const max = Math.max(min, DEFAULT_PET_FORWARD_JUMP_IMPULSE_MAX * energy * variance);
 
   return {
     min,
@@ -169,12 +158,8 @@ export function createFixturePet(input: {
     .reverse()
     .find((c): c is PersonalityComponent => c.type === "Personality");
 
-  const hasMovementProfile = allComponents.some(
-    (c) => c.type === "MovementProfile",
-  );
-  const hasIdleConversation = allComponents.some(
-    (c) => c.type === "IdleConversation",
-  );
+  const hasMovementProfile = allComponents.some((c) => c.type === "MovementProfile");
+  const hasIdleConversation = allComponents.some((c) => c.type === "IdleConversation");
   const hasExplicitSpeechProfile = input.components.some(
     (component) => component.type === "SpeechProfile",
   );
@@ -198,20 +183,13 @@ export function createFixturePet(input: {
     if (!allComponents.some((component) => component.type === "MoodState")) {
       allComponents.push(initialMoodState(effectivePersonality));
     }
-    if (
-      !allComponents.some(
-        (component) => component.type === "RecentExperienceMemory",
-      )
-    ) {
+    if (!allComponents.some((component) => component.type === "RecentExperienceMemory")) {
       allComponents.push({ type: "RecentExperienceMemory", entries: [] });
     }
     const forwardImpulse = deriveJumpForwardImpulse(effectivePersonality);
     for (let index = 0; index < allComponents.length; index += 1) {
       const component = allComponents[index];
-      if (
-        component.type === "CanJump" &&
-        component.forwardImpulse === undefined
-      ) {
+      if (component.type === "CanJump" && component.forwardImpulse === undefined) {
         allComponents[index] = {
           ...component,
           forwardImpulse,
@@ -595,10 +573,7 @@ export function buildAdoptedPetEntity(
         },
       ]
     : [];
-  const { canWalk, canJump } = deriveAdoptedPetLocomotion(
-    bodySize,
-    pet.personality,
-  );
+  const { canWalk, canJump } = deriveAdoptedPetLocomotion(bodySize, pet.personality);
   return createFixturePet({
     id: pet.id,
     sourceId: pet.sourceId,
@@ -726,8 +701,7 @@ export function createAdoptedPetsScenario(
         return;
       }
       const bodySize = bodySizeFor(pet.id, addOptions?.bodySize);
-      const position =
-        addOptions?.position ?? spawnPositionFor(petCount, petCount + 1, bodySize);
+      const position = addOptions?.position ?? spawnPositionFor(petCount, petCount + 1, bodySize);
       world.addEntity(buildAdoptedPetEntity(pet, { position, bodySize }));
       petCount += 1;
     },
@@ -841,10 +815,7 @@ export function nextJumpPlaygroundTarget(
   if ("wallX" in pet) {
     const wallTopY = jumpPlaygroundWallTopY(pet.wallHeight);
     const wallCenterTargetY = wallTopY - JUMP_PLAYGROUND_BODY_SIZE.height / 2;
-    if (
-      Math.abs(currentX - pet.wallTargetX) > 16 ||
-      Math.abs(currentY - wallCenterTargetY) > 16
-    ) {
+    if (Math.abs(currentX - pet.wallTargetX) > 16 || Math.abs(currentY - wallCenterTargetY) > 16) {
       return {
         x: pet.wallTargetX,
         y: wallCenterTargetY,
@@ -866,9 +837,7 @@ function jumpPlaygroundWallTopY(height: number) {
   return 1080 - height;
 }
 
-export function createJumpPlaygroundScenario(options?: {
-  startJumping?: boolean;
-}) {
+export function createJumpPlaygroundScenario(options?: { startJumping?: boolean }) {
   const clock = createManualClock(0);
   const monitors = resolveMonitorLayout("single");
   const viewport = getWorldViewport(monitors);
@@ -968,13 +937,7 @@ export function createJumpPlaygroundScenario(options?: {
   return { clock, world };
 }
 
-export const CLIMB_PLAYGROUND_PET_IDS = [
-  "pet-a",
-  "pet-b",
-  "pet-c",
-  "pet-d",
-  "pet-e",
-] as const;
+export const CLIMB_PLAYGROUND_PET_IDS = ["pet-a", "pet-b", "pet-c", "pet-d", "pet-e"] as const;
 
 const CLIMB_PLAYGROUND_PETS = [
   {
@@ -1137,9 +1100,7 @@ export function createClimbPlaygroundScenario() {
   return { clock, world };
 }
 
-function resolveMonitorLayout(
-  layout: "single" | "dual-horizontal",
-): MonitorWorkArea[] {
+function resolveMonitorLayout(layout: "single" | "dual-horizontal"): MonitorWorkArea[] {
   if (layout === "dual-horizontal") {
     return [
       { id: "left", x: -1280, y: 0, width: 1280, height: 960 },
@@ -1150,12 +1111,8 @@ function resolveMonitorLayout(
   return [{ id: "monitor", x: 0, y: 0, width: 1920, height: 1080 }];
 }
 
-function orderMonitorsForInitialPlacement(
-  monitors: MonitorWorkArea[],
-): MonitorWorkArea[] {
-  return [...monitors].sort(
-    (a, b) => monitorOriginDistance(a) - monitorOriginDistance(b),
-  );
+function orderMonitorsForInitialPlacement(monitors: MonitorWorkArea[]): MonitorWorkArea[] {
+  return [...monitors].sort((a, b) => monitorOriginDistance(a) - monitorOriginDistance(b));
 }
 
 function monitorOriginDistance(monitor: MonitorWorkArea): number {

@@ -6,146 +6,146 @@
 :root {
   /* ---- Brand pastels (base ramps) ---- */
   /* Lavender — the primary "agent" color (Pets-Driven purple) */
-  --lavender-50:  #F4F1FE;
-  --lavender-100: #E9E3FD;
-  --lavender-200: #D6CCFA;
-  --lavender-300: #BCABF5;
-  --lavender-400: #A189EE;
-  --lavender-500: #8B7FE8; /* primary */
-  --lavender-600: #6F5FD6;
-  --lavender-700: #5A49B8;
-  --lavender-800: #463A8F;
-  --lavender-900: #332B66;
+  --lavender-50: #f4f1fe;
+  --lavender-100: #e9e3fd;
+  --lavender-200: #d6ccfa;
+  --lavender-300: #bcabf5;
+  --lavender-400: #a189ee;
+  --lavender-500: #8b7fe8; /* primary */
+  --lavender-600: #6f5fd6;
+  --lavender-700: #5a49b8;
+  --lavender-800: #463a8f;
+  --lavender-900: #332b66;
 
   /* Blossom — the playful pink PRIMARY */
-  --blossom-50:  #FFF1F7;
-  --blossom-100: #FFE0EE;
-  --blossom-200: #FFC4DD;
-  --blossom-300: #FF9FC7;
-  --blossom-400: #FF7FB4;
-  --blossom-500: #F95E9E; /* primary */
-  --blossom-600: #E03D84;
-  --blossom-700: #B82B69;
+  --blossom-50: #fff1f7;
+  --blossom-100: #ffe0ee;
+  --blossom-200: #ffc4dd;
+  --blossom-300: #ff9fc7;
+  --blossom-400: #ff7fb4;
+  --blossom-500: #f95e9e; /* primary */
+  --blossom-600: #e03d84;
+  --blossom-700: #b82b69;
 
   /* Teal — the fresh ACCENT (pink's complement) */
-  --teal-50:  #E7FAF7;
-  --teal-100: #C7F2EC;
-  --teal-200: #95E6DA;
-  --teal-300: #5FD6C5;
-  --teal-400: #2EC3AE;
-  --teal-500: #16B8A6; /* accent */
-  --teal-600: #0E8C7E;
-  --teal-700: #0B6E63;
-  --teal-800: #0A574E;
+  --teal-50: #e7faf7;
+  --teal-100: #c7f2ec;
+  --teal-200: #95e6da;
+  --teal-300: #5fd6c5;
+  --teal-400: #2ec3ae;
+  --teal-500: #16b8a6; /* accent */
+  --teal-600: #0e8c7e;
+  --teal-700: #0b6e63;
+  --teal-800: #0a574e;
 
   /* Mint — fresh green (success / "happy pet") */
-  --mint-50:  #ECFBF4;
-  --mint-100: #D3F6E5;
-  --mint-200: #A8ECCB;
-  --mint-300: #7BD9B0;
-  --mint-400: #4FC894;
-  --mint-500: #2FB67E;
-  --mint-600: #1E9468;
+  --mint-50: #ecfbf4;
+  --mint-100: #d3f6e5;
+  --mint-200: #a8eccb;
+  --mint-300: #7bd9b0;
+  --mint-400: #4fc894;
+  --mint-500: #2fb67e;
+  --mint-600: #1e9468;
   --mint-700: #177451;
 
   /* Sky — calm blue (info) */
-  --sky-50:  #ECF7FE;
-  --sky-100: #D4EDFC;
-  --sky-200: #AEDDF8;
-  --sky-300: #8ECAF2;
-  --sky-400: #5FB2EA;
-  --sky-500: #3E97DC;
-  --sky-600: #2A78BE;
-  --sky-700: #205F98;
+  --sky-50: #ecf7fe;
+  --sky-100: #d4edfc;
+  --sky-200: #aeddf8;
+  --sky-300: #8ecaf2;
+  --sky-400: #5fb2ea;
+  --sky-500: #3e97dc;
+  --sky-600: #2a78be;
+  --sky-700: #205f98;
 
   /* Butter — warm yellow (warning / treats) */
-  --butter-50:  #FFF8E6;
-  --butter-100: #FFEFC2;
-  --butter-200: #FFE093;
-  --butter-300: #FFD479;
-  --butter-400: #FBC24A;
-  --butter-500: #F0A91F;
-  --butter-600: #C9870D;
+  --butter-50: #fff8e6;
+  --butter-100: #ffefc2;
+  --butter-200: #ffe093;
+  --butter-300: #ffd479;
+  --butter-400: #fbc24a;
+  --butter-500: #f0a91f;
+  --butter-600: #c9870d;
 
   /* Coral — soft red (danger / "needs attention") */
-  --coral-50:  #FFF0EE;
-  --coral-100: #FFDED9;
-  --coral-200: #FFBDB3;
-  --coral-300: #FF9A8C;
-  --coral-400: #FF7967;
-  --coral-500: #F65440;
-  --coral-600: #D63A28;
+  --coral-50: #fff0ee;
+  --coral-100: #ffded9;
+  --coral-200: #ffbdb3;
+  --coral-300: #ff9a8c;
+  --coral-400: #ff7967;
+  --coral-500: #f65440;
+  --coral-600: #d63a28;
 
   /* ---- Warm-neutral ink & surfaces (slight lavender tint) ---- */
-  --ink-950: #221F2E; /* near-black, warm */
-  --ink-900: #2C2840;
-  --ink-800: #3A3552;
-  --ink-700: #4E4869;
-  --ink-600: #635D80;
-  --ink-500: #807A98;
-  --ink-400: #A29DB4;
-  --ink-300: #C4C0D2;
-  --ink-200: #DFDCE9;
-  --ink-150: #EAE7F2;
-  --ink-100: #F1EFF7;
-  --ink-50:  #F8F6FC;
-  --cream:   #FFFCFD; /* app background, near-white w/ faint pink warmth */
-  --paper:   #FFFFFF;
+  --ink-950: #221f2e; /* near-black, warm */
+  --ink-900: #2c2840;
+  --ink-800: #3a3552;
+  --ink-700: #4e4869;
+  --ink-600: #635d80;
+  --ink-500: #807a98;
+  --ink-400: #a29db4;
+  --ink-300: #c4c0d2;
+  --ink-200: #dfdce9;
+  --ink-150: #eae7f2;
+  --ink-100: #f1eff7;
+  --ink-50: #f8f6fc;
+  --cream: #fffcfd; /* app background, near-white w/ faint pink warmth */
+  --paper: #ffffff;
 
   /* ============================================================
      Semantic aliases — reference these in components
      ============================================================ */
 
   /* Brand / interactive */
-  --color-primary:        var(--blossom-500);
-  --color-primary-hover:  var(--blossom-600);
-  --color-primary-press:  var(--blossom-700);
-  --color-primary-soft:   var(--blossom-100);
-  --color-primary-ring:   var(--blossom-300);
-  --color-on-primary:     #FFFFFF;
+  --color-primary: var(--blossom-500);
+  --color-primary-hover: var(--blossom-600);
+  --color-primary-press: var(--blossom-700);
+  --color-primary-soft: var(--blossom-100);
+  --color-primary-ring: var(--blossom-300);
+  --color-on-primary: #ffffff;
 
-  --color-accent:         var(--teal-500);
-  --color-accent-soft:    var(--teal-100);
-  --color-on-accent:      #FFFFFF;
+  --color-accent: var(--teal-500);
+  --color-accent-soft: var(--teal-100);
+  --color-on-accent: #ffffff;
 
   /* Status */
-  --color-success:        var(--mint-500);
-  --color-success-soft:   var(--mint-100);
-  --color-info:           var(--sky-500);
-  --color-info-soft:      var(--sky-100);
-  --color-warning:        var(--butter-500);
-  --color-warning-soft:   var(--butter-100);
-  --color-danger:         var(--coral-500);
-  --color-danger-soft:    var(--coral-100);
+  --color-success: var(--mint-500);
+  --color-success-soft: var(--mint-100);
+  --color-info: var(--sky-500);
+  --color-info-soft: var(--sky-100);
+  --color-warning: var(--butter-500);
+  --color-warning-soft: var(--butter-100);
+  --color-danger: var(--coral-500);
+  --color-danger-soft: var(--coral-100);
 
   /* Text */
-  --text-strong:   var(--ink-950);
-  --text-body:     var(--ink-800);
-  --text-muted:    var(--ink-600);
-  --text-subtle:   var(--ink-500);
-  --text-on-dark:  #FFFFFF;
-  --text-link:     var(--blossom-600);
+  --text-strong: var(--ink-950);
+  --text-body: var(--ink-800);
+  --text-muted: var(--ink-600);
+  --text-subtle: var(--ink-500);
+  --text-on-dark: #ffffff;
+  --text-link: var(--blossom-600);
 
   /* Surfaces */
-  --surface-app:      var(--cream);
-  --surface-card:     var(--paper);
-  --surface-sunken:   var(--ink-50);
-  --surface-raised:   #FFFFFF;
-  --surface-inverse:  var(--ink-900);
-  --surface-overlay:  rgba(44, 40, 64, 0.42);
+  --surface-app: var(--cream);
+  --surface-card: var(--paper);
+  --surface-sunken: var(--ink-50);
+  --surface-raised: #ffffff;
+  --surface-inverse: var(--ink-900);
+  --surface-overlay: rgba(44, 40, 64, 0.42);
 
   /* Borders & lines */
-  --border-soft:    var(--ink-150);
+  --border-soft: var(--ink-150);
   --border-default: var(--ink-200);
-  --border-strong:  var(--ink-300);
-  --border-focus:   var(--blossom-400);
+  --border-strong: var(--ink-300);
+  --border-focus: var(--blossom-400);
 
   /* Terminal (the "soft terminal") */
-  --term-bg:      #2A2540;
-  --term-bg-soft: #332D4D;
-  --term-fg:      #E7E2F5;
-  --term-muted:   #A79FC8;
-  --term-prompt:  var(--mint-300);
-  --term-accent:  var(--teal-300);
-  --term-pink:    var(--blossom-300);
+  --term-bg: #2a2540;
+  --term-bg-soft: #332d4d;
+  --term-fg: #e7e2f5;
+  --term-muted: #a79fc8;
+  --term-prompt: var(--mint-300);
+  --term-accent: var(--teal-300);
+  --term-pink: var(--blossom-300);
 }

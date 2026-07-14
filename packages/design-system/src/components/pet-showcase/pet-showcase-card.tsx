@@ -41,11 +41,7 @@ export function PetShowcaseCard({
 }: PetShowcaseCardProps) {
   return (
     <div
-      className={[
-        "pd-pet-card",
-        featured ? "pd-pet-card--featured" : "",
-        className,
-      ]
+      className={["pd-pet-card", featured ? "pd-pet-card--featured" : "", className]
         .filter(Boolean)
         .join(" ")}
       style={{
@@ -93,10 +89,7 @@ export function PetShowcaseCard({
         {portrait}
         <div className="pd-pet-card__footer">
           {cwd ? (
-            <div
-              className="pd-pet-card__cwd"
-              aria-label={`Working directory: ${cwd}`}
-            >
+            <div className="pd-pet-card__cwd" aria-label={`Working directory: ${cwd}`}>
               <svg
                 aria-hidden="true"
                 fill="none"
@@ -115,14 +108,8 @@ export function PetShowcaseCard({
           ) : null}
           {status ? (
             <div className="pd-pet-card__status">
-              <span
-                className="pd-pet-card__status-dot"
-                style={{ background: status.dotColor }}
-              />
-              <span
-                className="pd-pet-card__status-label"
-                style={{ color: status.dotColor }}
-              >
+              <span className="pd-pet-card__status-dot" style={{ background: status.dotColor }} />
+              <span className="pd-pet-card__status-label" style={{ color: status.dotColor }}>
                 {status.label}
               </span>
             </div>

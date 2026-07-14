@@ -95,9 +95,7 @@ describe("Mood and Recent Experience Memory", () => {
 
     expect(store.getComponent("pet", "RecentExperienceMemory")!.entries).toEqual([]);
     expect(Math.abs(mood.valence)).toBeLessThan(0.8);
-    expect(Math.abs(mood.arousal - baseline.arousal)).toBeLessThan(
-      Math.abs(1 - baseline.arousal),
-    );
+    expect(Math.abs(mood.arousal - baseline.arousal)).toBeLessThan(Math.abs(1 - baseline.arousal));
     expect(Math.abs(mood.confidence - baseline.confidence)).toBeLessThan(
       Math.abs(0.05 - baseline.confidence),
     );
@@ -117,12 +115,12 @@ describe("Mood and Recent Experience Memory", () => {
       confidence: 0.9,
     };
 
-    expect(
-      moodAdjustedDecisionScore("collision-flee", 0, frightened),
-    ).toBeGreaterThan(moodAdjustedDecisionScore("collision-flee", 0, confident));
-    expect(
-      moodAdjustedDecisionScore("wander-far", 0, frightened),
-    ).toBeLessThan(moodAdjustedDecisionScore("wander-far", 0, confident));
+    expect(moodAdjustedDecisionScore("collision-flee", 0, frightened)).toBeGreaterThan(
+      moodAdjustedDecisionScore("collision-flee", 0, confident),
+    );
+    expect(moodAdjustedDecisionScore("wander-far", 0, frightened)).toBeLessThan(
+      moodAdjustedDecisionScore("wander-far", 0, confident),
+    );
   });
 
   it("records agent failures as negative, activating experiences", () => {
@@ -163,10 +161,7 @@ describe("Mood and Recent Experience Memory", () => {
 
   it("is backward compatible with pets that have no mood components", () => {
     const store = createComponentStore([{ id: "legacy", components: [CALM] }]);
-    expect(() =>
-      recordPetExperience(store, "legacy", "petted", 0),
-    ).not.toThrow();
+    expect(() => recordPetExperience(store, "legacy", "petted", 0)).not.toThrow();
     expect(moodAdjustedDecisionScore("play-romp", 0.4, undefined)).toBe(0.4);
   });
 });
-

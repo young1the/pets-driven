@@ -67,8 +67,6 @@ describe("working directory registry", () => {
       ],
     };
 
-    expect(
-      resolveRegisteredWorkingDirectoryForCwd(state, "D:\\cms-other"),
-    ).toBeNull();
+    expect(resolveRegisteredWorkingDirectoryForCwd(state, "D:\\cms-other")).toBeNull();
   });
 });

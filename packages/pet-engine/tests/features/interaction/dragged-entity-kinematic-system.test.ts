@@ -49,12 +49,8 @@ describe("DraggedEntityKinematicSystem", () => {
       x: 125,
       y: 80,
     });
-    expect(physics.positions).toEqual([
-      { id: "pet-a", position: { x: 125, y: 80 } },
-    ]);
-    expect(physics.velocities).toEqual([
-      { id: "pet-a", velocity: { x: 0, y: 0 } },
-    ]);
+    expect(physics.positions).toEqual([{ id: "pet-a", position: { x: 125, y: 80 } }]);
+    expect(physics.velocities).toEqual([{ id: "pet-a", velocity: { x: 0, y: 0 } }]);
   });
 
   it("computes release velocity from recent samples in pixels per 16ms tick", () => {

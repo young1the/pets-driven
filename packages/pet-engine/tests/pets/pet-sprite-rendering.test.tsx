@@ -7,11 +7,13 @@ import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 
 describe("pet sprite rendering", () => {
   it("resolves an animation row to its source rectangle and draw size", () => {
-    expect(resolvePetSpriteFrame({
-      animationState: "running-right",
-      elapsedMs: 0,
-      size: { width: 32, height: 38 },
-    })).toMatchObject({
+    expect(
+      resolvePetSpriteFrame({
+        animationState: "running-right",
+        elapsedMs: 0,
+        size: { width: 32, height: 38 },
+      }),
+    ).toMatchObject({
       animationState: "running-right",
       frameIndex: 0,
       rowIndex: 1,
@@ -21,10 +23,12 @@ describe("pet sprite rendering", () => {
   });
 
   it("defaults the animation-state input to idle", () => {
-    expect(resolvePetSpriteFrame({
-      elapsedMs: 0,
-      size: { width: 32, height: 38 },
-    })).toMatchObject({
+    expect(
+      resolvePetSpriteFrame({
+        elapsedMs: 0,
+        size: { width: 32, height: 38 },
+      }),
+    ).toMatchObject({
       animationState: "idle",
       frameIndex: 0,
       rowIndex: 0,
@@ -34,12 +38,14 @@ describe("pet sprite rendering", () => {
   });
 
   it("scales draw size without changing atlas source size", () => {
-    expect(resolvePetSpriteFrame({
-      animationState: "waiting",
-      elapsedMs: 320,
-      size: { width: 40, height: 50 },
-      scale: 1.12,
-    })).toMatchObject({
+    expect(
+      resolvePetSpriteFrame({
+        animationState: "waiting",
+        elapsedMs: 320,
+        size: { width: 40, height: 50 },
+        scale: 1.12,
+      }),
+    ).toMatchObject({
       animationState: "waiting",
       frameIndex: 2,
       rowIndex: 6,
@@ -67,17 +73,7 @@ describe("pet sprite rendering", () => {
     drawPetSpriteCanvas(canvasContext, image, frame, { x: 100, y: 80 });
 
     expect(context.scale).not.toHaveBeenCalled();
-    expect(context.drawImage).toHaveBeenCalledWith(
-      image,
-      0,
-      832,
-      192,
-      208,
-      84,
-      61,
-      32,
-      38,
-    );
+    expect(context.drawImage).toHaveBeenCalledWith(image, 0, 832, 192, 208, 84, 61, 32, 38);
   });
 
   it("renders a resolved frame as clipped HTML", () => {

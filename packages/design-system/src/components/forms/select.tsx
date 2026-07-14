@@ -6,8 +6,7 @@ export type SelectOption = string | { value: string; label: string };
 /**
  * A styled native <select> with a soft chevron and label support.
  */
-export interface SelectProps
-  extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> {
+export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> {
   /** Field label rendered above the select. */
   label?: string;
   /** Control height. @default "md" */
@@ -41,9 +40,7 @@ export function Select({
   children,
   ...rest
 }: SelectProps) {
-  const fieldId =
-    id ||
-    (label ? `pd-sel-${label.toLowerCase().replace(/\s+/g, "-")}` : undefined);
+  const fieldId = id || (label ? `pd-sel-${label.toLowerCase().replace(/\s+/g, "-")}` : undefined);
 
   return (
     <div className={["pd-select-field", className].filter(Boolean).join(" ")}>
@@ -53,11 +50,7 @@ export function Select({
         </label>
       )}
       <div className="pd-select-wrap">
-        <select
-          className={["pd-select", `pd-select--${size}`].join(" ")}
-          id={fieldId}
-          {...rest}
-        >
+        <select className={["pd-select", `pd-select--${size}`].join(" ")} id={fieldId} {...rest}>
           {children ||
             options.map((option) => {
               const value = typeof option === "string" ? option : option.value;

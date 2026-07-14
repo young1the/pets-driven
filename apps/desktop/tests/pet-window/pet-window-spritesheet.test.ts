@@ -31,9 +31,7 @@ describe("pet window spritesheet loading", () => {
   it("loads Codex pet spritesheets through Tauri and revokes object URLs", async () => {
     isTauriMock.mockReturnValue(true);
     invokeMock.mockResolvedValue(new Uint8Array([1, 2, 3]).buffer);
-    URL.createObjectURL = vi.fn<typeof URL.createObjectURL>().mockReturnValue(
-      "blob:codex-pet",
-    );
+    URL.createObjectURL = vi.fn<typeof URL.createObjectURL>().mockReturnValue("blob:codex-pet");
     URL.revokeObjectURL = vi.fn<typeof URL.revokeObjectURL>();
 
     const spritesheet = await loadPetWindowSpritesheetUrl("cato");

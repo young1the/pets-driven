@@ -80,10 +80,7 @@ export function getPetAnimationState(
     const decision = componentStore.getComponent(id, "BehaviorDecisionState");
     if (decision?.reason === "task.failed") return "failed";
     if (decision?.reason === "task.completed") return "review";
-    if (
-      decision?.reason === "task.waiting" ||
-      decision?.reason === "attention.requested"
-    ) {
+    if (decision?.reason === "task.waiting" || decision?.reason === "attention.requested") {
       return "waiting";
     }
   }

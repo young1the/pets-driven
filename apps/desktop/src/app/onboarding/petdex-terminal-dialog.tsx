@@ -18,12 +18,7 @@ export interface PetdexTerminalDialogProps {
  * The terminal mounts only while open — the Dialog unmounts its children on
  * close, which tears down the PTY session.
  */
-export function PetdexTerminalDialog({
-  open,
-  onClose,
-  cwd,
-  available,
-}: PetdexTerminalDialogProps) {
+export function PetdexTerminalDialog({ open, onClose, cwd, available }: PetdexTerminalDialogProps) {
   const { t } = useTranslation("desktop");
 
   return (
@@ -42,9 +37,7 @@ export function PetdexTerminalDialog({
             exitedLabel={t("terminal.exited")}
           />
         ) : (
-          <div className="pd-petdex-term__unavailable">
-            {t("terminal.unavailable")}
-          </div>
+          <div className="pd-petdex-term__unavailable">{t("terminal.unavailable")}</div>
         )}
       </div>
     </Dialog>

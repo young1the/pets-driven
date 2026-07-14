@@ -12,10 +12,7 @@ export interface ContentSlidePoint {
  * Body slide: eyebrow + title with pet-bulleted points on the left, and a
  * featured pet card aside on the right.
  */
-export interface ContentSlideProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "title"
-> {
+export interface ContentSlideProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   eyebrow?: ReactNode;
   title: ReactNode;
   points: ContentSlidePoint[];
@@ -52,12 +49,8 @@ export function ContentSlide({
       </div>
       {(asideArt || asideCaption || asideRole) && (
         <div className="pd-slide-aside">
-          {asideArt && (
-            <div className="pd-slide-aside__art pd-slide-art">{asideArt}</div>
-          )}
-          {asideCaption && (
-            <div className="pd-slide-aside__caption">{asideCaption}</div>
-          )}
+          {asideArt && <div className="pd-slide-aside__art pd-slide-art">{asideArt}</div>}
+          {asideCaption && <div className="pd-slide-aside__caption">{asideCaption}</div>}
           {asideRole && <div className="pd-slide-aside__role">{asideRole}</div>}
         </div>
       )}

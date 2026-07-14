@@ -119,9 +119,7 @@ describe("SettingsSection", () => {
     });
 
     expect(
-      screen.getByText(
-        "Claude Code CLI not found. Install Claude Code first, then come back.",
-      ),
+      screen.getByText("Claude Code CLI not found. Install Claude Code first, then come back."),
     ).toBeInTheDocument();
     expect(screen.queryByText("Install")).not.toBeInTheDocument();
   });
@@ -130,9 +128,7 @@ describe("SettingsSection", () => {
     setup();
 
     expect(screen.getByText("Petdex default folder")).toBeInTheDocument();
-    expect(
-      screen.getByText("C:\\Users\\me\\.petdex\\pets"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("C:\\Users\\me\\.petdex\\pets")).toBeInTheDocument();
     expect(screen.queryByText("Back to default")).not.toBeInTheDocument();
   });
 

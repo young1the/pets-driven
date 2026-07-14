@@ -5,10 +5,7 @@ import "./slides.css";
  * Section divider: teal field, a kicker number, big title and one bobbing pet
  * on the right.
  */
-export interface SectionSlideProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "title"
-> {
+export interface SectionSlideProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   /** Kicker, e.g. "01 — Meet the pack". */
   kicker?: ReactNode;
   title: ReactNode;

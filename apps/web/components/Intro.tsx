@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import {
-  PetAvatar,
-  type PetAvatarStatus,
-  type PetName,
-} from "@pets-driven/design-system";
+import { PetAvatar, type PetAvatarStatus, type PetName } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 
 /**
@@ -37,12 +33,84 @@ type Creature = {
 };
 
 const CREATURES: Creature[] = [
-  { pet: "cato", status: "working", left: "15%", top: "33%", i: 0, color: "#A189EE", rot: 36, eyeW: 140, eyeH: 65, blink: "4.4s", delay: ".1s" },
-  { pet: "pip", status: "thinking", left: "84%", top: "26%", i: 1, color: "#5FB2EA", rot: -30, eyeW: 116, eyeH: 54, blink: "5.1s", delay: ".7s" },
-  { pet: "mochi", status: "happy", left: "62%", top: "15%", i: 2, color: "#FF7FB4", rot: 28, eyeW: 124, eyeH: 58, blink: "3.8s", delay: "1.3s" },
-  { pet: "fenn", status: "happy", left: "78%", top: "64%", i: 3, color: "#FF7967", rot: -38, eyeW: 132, eyeH: 62, blink: "4.7s", delay: ".4s" },
-  { pet: "otto", status: "working", left: "24%", top: "71%", i: 4, color: "#FBC24A", rot: 34, eyeW: 138, eyeH: 64, blink: "4.1s", delay: "1s" },
-  { pet: "bloop", status: "thinking", left: "88%", top: "52%", i: 5, color: "#4FC894", rot: -26, eyeW: 128, eyeH: 60, blink: "5.4s", delay: ".2s" },
+  {
+    pet: "cato",
+    status: "working",
+    left: "15%",
+    top: "33%",
+    i: 0,
+    color: "#A189EE",
+    rot: 36,
+    eyeW: 140,
+    eyeH: 65,
+    blink: "4.4s",
+    delay: ".1s",
+  },
+  {
+    pet: "pip",
+    status: "thinking",
+    left: "84%",
+    top: "26%",
+    i: 1,
+    color: "#5FB2EA",
+    rot: -30,
+    eyeW: 116,
+    eyeH: 54,
+    blink: "5.1s",
+    delay: ".7s",
+  },
+  {
+    pet: "mochi",
+    status: "happy",
+    left: "62%",
+    top: "15%",
+    i: 2,
+    color: "#FF7FB4",
+    rot: 28,
+    eyeW: 124,
+    eyeH: 58,
+    blink: "3.8s",
+    delay: "1.3s",
+  },
+  {
+    pet: "fenn",
+    status: "happy",
+    left: "78%",
+    top: "64%",
+    i: 3,
+    color: "#FF7967",
+    rot: -38,
+    eyeW: 132,
+    eyeH: 62,
+    blink: "4.7s",
+    delay: ".4s",
+  },
+  {
+    pet: "otto",
+    status: "working",
+    left: "24%",
+    top: "71%",
+    i: 4,
+    color: "#FBC24A",
+    rot: 34,
+    eyeW: 138,
+    eyeH: 64,
+    blink: "4.1s",
+    delay: "1s",
+  },
+  {
+    pet: "bloop",
+    status: "thinking",
+    left: "88%",
+    top: "52%",
+    i: 5,
+    color: "#4FC894",
+    rot: -26,
+    eyeW: 128,
+    eyeH: 60,
+    blink: "5.4s",
+    delay: ".2s",
+  },
 ];
 
 function EyePair({ c }: { c: Creature }) {
@@ -95,8 +163,7 @@ export default function Intro() {
         const len = sc.offsetHeight - vh;
         let pr = len > 0 ? -r.top / len : r.top < 0 ? 1 : 0;
         pr = Math.max(0, Math.min(1, pr));
-        const stage =
-          sc.querySelector<HTMLElement>(".stage") || (sc as HTMLElement);
+        const stage = sc.querySelector<HTMLElement>(".stage") || (sc as HTMLElement);
         stage.style.setProperty("--p", pr.toFixed(4));
       }
     };
@@ -124,9 +191,7 @@ export default function Intro() {
       },
       { threshold: 0.18 },
     );
-    root
-      .querySelectorAll<HTMLElement>("[data-reveal]")
-      .forEach((el) => io.observe(el));
+    root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => io.observe(el));
 
     update();
 
@@ -177,8 +242,7 @@ export default function Intro() {
             style={{
               position: "absolute",
               inset: 0,
-              background:
-                "radial-gradient(125% 95% at 50% 8%, #FFF1F7, #FFFCFD 62%)",
+              background: "radial-gradient(125% 95% at 50% 8%, #FFF1F7, #FFFCFD 62%)",
               opacity: "var(--pLight,0)",
             }}
           />
@@ -225,8 +289,7 @@ export default function Intro() {
                   height: "170px",
                   "--i": c.i,
                   color: c.color,
-                  "--away":
-                    "clamp(0, calc((var(--p,0) - (0.60 + (var(--i) * 0.035))) / 0.18), 1)",
+                  "--away": "clamp(0, calc((var(--p,0) - (0.60 + (var(--i) * 0.035))) / 0.18), 1)",
                   transform:
                     "translate(-50%, calc(-50% - var(--away,0) * 118vh)) rotate(calc(var(--away,0) * " +
                     c.rot +
@@ -240,8 +303,7 @@ export default function Intro() {
                     position: "absolute",
                     left: "50%",
                     top: "50%",
-                    transform:
-                      "translate(-50%,-50%) scale(calc(0.62 + var(--pEyes,1) * 0.38))",
+                    transform: "translate(-50%,-50%) scale(calc(0.62 + var(--pEyes,1) * 0.38))",
                     opacity: "var(--pEyes,1)",
                   }}
                 >
@@ -252,8 +314,7 @@ export default function Intro() {
                     position: "absolute",
                     left: "50%",
                     top: "50%",
-                    transform:
-                      "translate(-50%,-50%) scale(calc(0.68 + var(--pPet,0) * 0.32))",
+                    transform: "translate(-50%,-50%) scale(calc(0.68 + var(--pPet,0) * 0.32))",
                     opacity: "var(--pPet,0)",
                   }}
                 >
@@ -351,10 +412,7 @@ export default function Intro() {
             >
               Pets<span style={{ color: "var(--lavender-500)" }}>-</span>Driven
             </h2>
-            <p
-              className="pd-eyebrow"
-              style={{ marginTop: 16, color: "var(--ink-500)" }}
-            >
+            <p className="pd-eyebrow" style={{ marginTop: 16, color: "var(--ink-500)" }}>
               {t("hero.tagline")}
             </p>
           </div>
@@ -407,10 +465,29 @@ export default function Intro() {
             <span className="pd-eyebrow" style={{ color: "var(--teal-600)" }}>
               {t("demo.eyebrow")}
             </span>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(30px,4vw,54px)", lineHeight: 1.05, letterSpacing: "-0.02em", color: "var(--ink-950)", margin: "12px 0 0" }}>
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 600,
+                fontSize: "clamp(30px,4vw,54px)",
+                lineHeight: 1.05,
+                letterSpacing: "-0.02em",
+                color: "var(--ink-950)",
+                margin: "12px 0 0",
+              }}
+            >
               {t("demo.title")}
             </h2>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: "var(--ink-700)", maxWidth: "52ch", margin: "18px auto 0" }}>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "clamp(16px,1.4vw,19px)",
+                lineHeight: 1.6,
+                color: "var(--ink-700)",
+                maxWidth: "52ch",
+                margin: "18px auto 0",
+              }}
+            >
               {t("demo.body")}
             </p>
           </div>
@@ -458,10 +535,7 @@ export default function Intro() {
             alignItems: "center",
           }}
         >
-          <div
-            className="pd-dots"
-            style={{ position: "absolute", inset: 0, opacity: 0.5 }}
-          />
+          <div className="pd-dots" style={{ position: "absolute", inset: 0, opacity: 0.5 }} />
           <div
             style={{
               position: "relative",
@@ -484,10 +558,7 @@ export default function Intro() {
                   "opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)",
               }}
             >
-              <span
-                className="pd-eyebrow"
-                style={{ color: "var(--blossom-600)" }}
-              >
+              <span className="pd-eyebrow" style={{ color: "var(--blossom-600)" }}>
                 {t("personalities.eyebrow")}
               </span>
               <h2
@@ -524,16 +595,68 @@ export default function Intro() {
                   marginTop: 28,
                 }}
               >
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 999, background: "var(--butter-100)", color: "var(--butter-600)", fontWeight: 700, fontSize: 13 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--butter-500)" }} />
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "8px 14px",
+                    borderRadius: 999,
+                    background: "var(--butter-100)",
+                    color: "var(--butter-600)",
+                    fontWeight: 700,
+                    fontSize: 13,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      background: "var(--butter-500)",
+                    }}
+                  />
                   {t("personalities.tags.otto")}
                 </span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 999, background: "var(--sky-100)", color: "var(--sky-700)", fontWeight: 700, fontSize: 13 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--sky-500)" }} />
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "8px 14px",
+                    borderRadius: 999,
+                    background: "var(--sky-100)",
+                    color: "var(--sky-700)",
+                    fontWeight: 700,
+                    fontSize: 13,
+                  }}
+                >
+                  <span
+                    style={{ width: 8, height: 8, borderRadius: 999, background: "var(--sky-500)" }}
+                  />
                   {t("personalities.tags.pip")}
                 </span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 999, background: "var(--blossom-100)", color: "var(--blossom-700)", fontWeight: 700, fontSize: 13 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--blossom-500)" }} />
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "8px 14px",
+                    borderRadius: 999,
+                    background: "var(--blossom-100)",
+                    color: "var(--blossom-700)",
+                    fontWeight: 700,
+                    fontSize: 13,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      background: "var(--blossom-500)",
+                    }}
+                  />
                   {t("personalities.tags.mochi")}
                 </span>
               </div>
@@ -551,50 +674,178 @@ export default function Intro() {
               }}
             >
               {/* desk shadow */}
-              <div style={{ position: "absolute", left: "50%", bottom: 46, transform: "translateX(-50%)", width: 300, height: 26, borderRadius: 999, background: "rgba(99,93,128,.16)", filter: "blur(8px)" }} />
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  bottom: 46,
+                  transform: "translateX(-50%)",
+                  width: 300,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "rgba(99,93,128,.16)",
+                  filter: "blur(8px)",
+                }}
+              />
               {/* monitor */}
-              <div style={{ position: "absolute", left: "50%", bottom: 64, transform: "translateX(-50%)", width: 340, zIndex: 2 }}>
-                <div style={{ height: 208, borderRadius: 20, background: "var(--term-bg)", border: "7px solid #fff", boxShadow: "0 18px 44px rgba(34,31,46,.18), inset 0 0 0 1px var(--border-soft)", padding: 18, overflow: "hidden" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.7, color: "var(--term-muted)" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  bottom: 64,
+                  transform: "translateX(-50%)",
+                  width: 340,
+                  zIndex: 2,
+                }}
+              >
+                <div
+                  style={{
+                    height: 208,
+                    borderRadius: 20,
+                    background: "var(--term-bg)",
+                    border: "7px solid #fff",
+                    boxShadow: "0 18px 44px rgba(34,31,46,.18), inset 0 0 0 1px var(--border-soft)",
+                    padding: 18,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      lineHeight: 1.7,
+                      color: "var(--term-muted)",
+                    }}
+                  >
                     <div>
-                      <span style={{ color: "var(--term-prompt)" }}>~</span> {t("personalities.terminal.den")}
+                      <span style={{ color: "var(--term-prompt)" }}>~</span>{" "}
+                      {t("personalities.terminal.den")}
                     </div>
-                    <div style={{ color: "var(--term-accent)" }}>{t("personalities.terminal.ready")}</div>
-                    <div style={{ color: "var(--term-pink)" }}>{t("personalities.terminal.sniffing")}</div>
+                    <div style={{ color: "var(--term-accent)" }}>
+                      {t("personalities.terminal.ready")}
+                    </div>
+                    <div style={{ color: "var(--term-pink)" }}>
+                      {t("personalities.terminal.sniffing")}
+                    </div>
                     <div style={{ height: 8 }} />
                     <div style={{ opacity: 0.6 }}>{t("personalities.terminal.idle")}</div>
                   </div>
                 </div>
-                <div style={{ width: 78, height: 24, margin: "0 auto", background: "#fff", boxShadow: "inset 0 0 0 1px var(--border-soft)" }} />
-                <div style={{ width: 140, height: 12, margin: "0 auto", borderRadius: 999, background: "#fff", boxShadow: "0 6px 14px rgba(34,31,46,.1), inset 0 0 0 1px var(--border-soft)" }} />
+                <div
+                  style={{
+                    width: 78,
+                    height: 24,
+                    margin: "0 auto",
+                    background: "#fff",
+                    boxShadow: "inset 0 0 0 1px var(--border-soft)",
+                  }}
+                />
+                <div
+                  style={{
+                    width: 140,
+                    height: 12,
+                    margin: "0 auto",
+                    borderRadius: 999,
+                    background: "#fff",
+                    boxShadow: "0 6px 14px rgba(34,31,46,.1), inset 0 0 0 1px var(--border-soft)",
+                  }}
+                />
               </div>
 
               {/* Mochi peeking behind monitor */}
-              <div style={{ position: "absolute", left: "64%", top: "30%", zIndex: 1, animation: "pdPeek 5.2s ease-in-out infinite" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "64%",
+                  top: "30%",
+                  zIndex: 1,
+                  animation: "pdPeek 5.2s ease-in-out infinite",
+                }}
+              >
                 <PetAvatar pet="mochi" size="lg" status="thinking" />
               </div>
               {/* Otto jumping top-left */}
-              <div style={{ position: "absolute", left: "20%", top: "18%", zIndex: 3, animation: "pdJump 1.5s ease-in-out infinite" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "20%",
+                  top: "18%",
+                  zIndex: 3,
+                  animation: "pdJump 1.5s ease-in-out infinite",
+                }}
+              >
                 <PetAvatar pet="otto" size="lg" status="working" />
               </div>
               {/* Cato sitting top-right */}
-              <div style={{ position: "absolute", left: "66%", top: "14%", zIndex: 3, animation: "pdBobY 2.6s ease-in-out infinite" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "66%",
+                  top: "14%",
+                  zIndex: 3,
+                  animation: "pdBobY 2.6s ease-in-out infinite",
+                }}
+              >
                 <PetAvatar pet="cato" size="lg" status="happy" />
               </div>
               {/* Pip flying */}
-              <div style={{ position: "absolute", left: "34%", top: "4%", zIndex: 4, animation: "pdFly 7.5s ease-in-out infinite" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "34%",
+                  top: "4%",
+                  zIndex: 4,
+                  animation: "pdFly 7.5s ease-in-out infinite",
+                }}
+              >
                 <PetAvatar pet="pip" size="md" status="thinking" />
               </div>
               {/* Fenn on the desk */}
-              <div style={{ position: "absolute", left: "8%", top: "66%", zIndex: 3, animation: "pdBobY 3.1s ease-in-out infinite" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "8%",
+                  top: "66%",
+                  zIndex: 3,
+                  animation: "pdBobY 3.1s ease-in-out infinite",
+                }}
+              >
                 <PetAvatar pet="fenn" size="lg" status="happy" />
               </div>
 
               {/* floating captions */}
-              <div style={{ position: "absolute", left: "6%", top: "6%", padding: "6px 11px", borderRadius: 999, background: "#fff", boxShadow: "0 8px 20px rgba(34,31,46,.1)", fontSize: 12, fontWeight: 700, color: "var(--butter-600)", animation: "pdFloat 4s ease-in-out infinite" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "6%",
+                  top: "6%",
+                  padding: "6px 11px",
+                  borderRadius: 999,
+                  background: "#fff",
+                  boxShadow: "0 8px 20px rgba(34,31,46,.1)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--butter-600)",
+                  animation: "pdFloat 4s ease-in-out infinite",
+                }}
+              >
                 {t("personalities.captions.jumps")}
               </div>
-              <div style={{ position: "absolute", left: "80%", top: "38%", padding: "6px 11px", borderRadius: 999, background: "#fff", boxShadow: "0 8px 20px rgba(34,31,46,.1)", fontSize: 12, fontWeight: 700, color: "var(--blossom-600)", animation: "pdFloat 4.6s ease-in-out infinite" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "80%",
+                  top: "38%",
+                  padding: "6px 11px",
+                  borderRadius: 999,
+                  background: "#fff",
+                  boxShadow: "0 8px 20px rgba(34,31,46,.1)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--blossom-600)",
+                  animation: "pdFloat 4.6s ease-in-out infinite",
+                }}
+              >
                 {t("personalities.captions.shy")}
               </div>
             </div>

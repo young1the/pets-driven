@@ -46,10 +46,7 @@ function extractBashCommand(line: string): string | null {
   return commandOrDefault(stripBashKeepAlive(match[1]));
 }
 
-export function buildLaunchLine(
-  profile: LaunchProfileId,
-  command: string,
-): string {
+export function buildLaunchLine(profile: LaunchProfileId, command: string): string {
   const innerCommand = commandOrDefault(command);
 
   if (profile === "cmd") {
@@ -77,9 +74,7 @@ export function customizeLaunchLine(settings: SessionLaunchSettings): string {
   }
 
   if (settings.profile === "git-bash") {
-    return `"${GIT_BASH_PROGRAM}" --login -i -c "${commandOrDefault(
-      settings.command,
-    )}; exec bash"`;
+    return `"${GIT_BASH_PROGRAM}" --login -i -c "${commandOrDefault(settings.command)}; exec bash"`;
   }
 
   return settings.launchLine;
@@ -88,10 +83,7 @@ export function customizeLaunchLine(settings: SessionLaunchSettings): string {
 export function parseLaunchLine(line: string): SessionLaunchSettings {
   // Only fall back to the default when the line is blank; keep it verbatim
   // otherwise so a trailing space typed by the user survives the round trip.
-  const launchLine =
-    line.trim().length > 0
-      ? line
-      : buildLaunchLine("cmd", DEFAULT_LAUNCH_COMMAND);
+  const launchLine = line.trim().length > 0 ? line : buildLaunchLine("cmd", DEFAULT_LAUNCH_COMMAND);
 
   const cmdMatch = launchLine.match(/^cmd(?:\.exe)?\s+\/k\s+(.+)$/i);
   if (cmdMatch) {
@@ -147,10 +139,7 @@ export function promptForLaunchProfile(profile: LaunchProfileId): string {
   return "C:\\>";
 }
 
-export function previewCwdForLaunchProfile(
-  profile: LaunchProfileId,
-  path: string,
-): string {
+export function previewCwdForLaunchProfile(profile: LaunchProfileId, path: string): string {
   if (profile === "git-bash") {
     return `~/${path}`;
   }

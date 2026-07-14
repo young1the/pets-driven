@@ -10,11 +10,7 @@ export interface DebugSectionProps {
   diagnosticReport?: string | null;
 }
 
-export function DebugSection({
-  groups,
-  error,
-  diagnosticReport,
-}: DebugSectionProps) {
+export function DebugSection({ groups, error, diagnosticReport }: DebugSectionProps) {
   const { t } = useTranslation("desktop");
   return (
     <div style={{ padding: "38px 24px 64px" }}>
@@ -106,18 +102,11 @@ export function DebugSection({
                 >
                   {group.title}
                 </h3>
-                <span style={{ fontSize: "12px", color: "var(--text-subtle)" }}>
-                  {group.hint}
-                </span>
+                <span style={{ fontSize: "12px", color: "var(--text-subtle)" }}>{group.hint}</span>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {group.items.map((item) => (
-                  <Button
-                    key={item.label}
-                    onClick={item.onClick}
-                    size="sm"
-                    variant="neutral"
-                  >
+                  <Button key={item.label} onClick={item.onClick} size="sm" variant="neutral">
                     {item.label}
                   </Button>
                 ))}

@@ -325,8 +325,7 @@ describe("pet window projection", () => {
       );
       const frameHeight = OS_WINDOW_HEIGHT * scale;
       const centeringOffsetY = (OS_WINDOW_HEIGHT - frameHeight) / 2;
-      const feetScreenY =
-        projection.frame.window.y + centeringOffsetY + FEET_IN_FRAME * scale;
+      const feetScreenY = projection.frame.window.y + centeringOffsetY + FEET_IN_FRAME * scale;
       return (feetScreenY - floorWorldY) / scale;
     };
 

@@ -38,9 +38,7 @@ export function BigQuoteSlide({
           {pet && <div className="pd-slide-by__art pd-slide-art">{pet}</div>}
           <div>
             {authorName && <b className="pd-slide-by__name">{authorName}</b>}
-            {authorMeta && (
-              <span className="pd-slide-by__meta">{authorMeta}</span>
-            )}
+            {authorMeta && <span className="pd-slide-by__meta">{authorMeta}</span>}
           </div>
         </div>
       )}

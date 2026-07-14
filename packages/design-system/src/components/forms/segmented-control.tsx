@@ -24,20 +24,14 @@ export function SegmentedControl({
   className = "",
 }: SegmentedControlProps) {
   return (
-    <div
-      className={["pd-segmented", className].filter(Boolean).join(" ")}
-      role="tablist"
-    >
+    <div className={["pd-segmented", className].filter(Boolean).join(" ")} role="tablist">
       {options.map((option) => {
         const active = option.value === value;
 
         return (
           <button
             aria-selected={active}
-            className={[
-              "pd-segmented__item",
-              active ? "pd-segmented__item--active" : "",
-            ]
+            className={["pd-segmented__item", active ? "pd-segmented__item--active" : ""]
               .filter(Boolean)
               .join(" ")}
             key={option.value}

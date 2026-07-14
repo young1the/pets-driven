@@ -74,9 +74,7 @@ export function TerminalSection({
             key={`${cwd ?? ""}:${restartNonce}`}
           />
         ) : (
-          <div className="pd-eterm__unavailable">
-            {t("terminal.unavailable")}
-          </div>
+          <div className="pd-eterm__unavailable">{t("terminal.unavailable")}</div>
         )}
       </div>
     </div>

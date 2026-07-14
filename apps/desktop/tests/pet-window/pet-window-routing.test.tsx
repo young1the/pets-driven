@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PetsDrivenApp } from "@/app/pets-driven-app";
 import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-ingress";
@@ -289,18 +283,12 @@ describe("pet window product route", () => {
   });
 
   it("renders a Pet Window surface from route parameters instead of the management surface", () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
     expect(screen.getByLabelText("Pet Window pet-a")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Pets Driven" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Pets Driven" })).not.toBeInTheDocument();
     expect(tauriEventMocks.listen).not.toHaveBeenCalledWith(
       PET_WINDOW_INPUT_EVENT,
       expect.any(Function),
@@ -309,11 +297,7 @@ describe("pet window product route", () => {
 
   it("waits for the Pet Window spritesheet before rendering the shared HTML sprite", async () => {
     isTauriMock.mockReturnValue(false);
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -324,9 +308,7 @@ describe("pet window product route", () => {
     expect(sprite).toHaveStyle({
       backgroundImage: "url(/codex-pets/bloop/spritesheet.webp)",
     });
-    expect(
-      document.querySelector("canvas.pet-window-canvas"),
-    ).not.toBeInTheDocument();
+    expect(document.querySelector("canvas.pet-window-canvas")).not.toBeInTheDocument();
   });
 
   it("opens and closes playground Pet Windows from the management surface", () => {
@@ -335,9 +317,7 @@ describe("pet window product route", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
     fireEvent.click(screen.getByRole("button", { name: "Open 3 pet windows" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Open fixture windows" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Open fixture windows" }));
     fireEvent.click(screen.getByRole("button", { name: "Close pet windows" }));
 
     expect(invokeMock).toHaveBeenCalledWith("open_pet_window_playground", {
@@ -356,9 +336,7 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Open fixture windows" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Open fixture windows" }));
 
     await waitFor(() => {
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
@@ -546,13 +524,9 @@ describe("pet window product route", () => {
     });
 
     fireEvent.click(screen.getByRole("tab", { name: "Debug" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Copy pet diagnostics" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Copy pet diagnostics" }));
 
-    const report = screen.getByLabelText(
-      "Pet diagnostics report",
-    ) as HTMLTextAreaElement;
+    const report = screen.getByLabelText("Pet diagnostics report") as HTMLTextAreaElement;
     expect(report.value).toContain("Pets-Driven Pet Diagnostics");
     expect(report.value).toContain("pet-a (Otto)");
   });
@@ -564,9 +538,7 @@ describe("pet window product route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(
-        true,
-      );
+      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
         "pet-window-playground-1",
         PET_WINDOW_FRAME_EVENT,
@@ -610,9 +582,7 @@ describe("pet window product route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Test event" }));
 
     await waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith(
-        "emit_test_claude_hook_ingress_event",
-      );
+      expect(invokeMock).toHaveBeenCalledWith("emit_test_claude_hook_ingress_event");
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
         "pet-window-playground-1",
         PET_WINDOW_FRAME_EVENT,
@@ -749,9 +719,7 @@ describe("pet window product route", () => {
         }),
       );
       expect(
-        invokeMock.mock.calls.filter(
-          ([command]) => command === "write_pets_driven_state",
-        ),
+        invokeMock.mock.calls.filter(([command]) => command === "write_pets_driven_state"),
       ).toHaveLength(1);
     });
   });
@@ -805,10 +773,7 @@ describe("pet window product route", () => {
         command: "claude",
       });
     });
-    expect(invokeMock).not.toHaveBeenCalledWith(
-      "focus_window",
-      expect.anything(),
-    );
+    expect(invokeMock).not.toHaveBeenCalledWith("focus_window", expect.anything());
   });
 
   it("focuses the bound terminal channel from body focus", async () => {
@@ -884,15 +849,11 @@ describe("pet window product route", () => {
     await waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith("focus_window", { hwnd: 456 });
     });
-    expect(invokeMock).not.toHaveBeenCalledWith(
-      "start_session",
-      expect.anything(),
-    );
+    expect(invokeMock).not.toHaveBeenCalledWith("start_session", expect.anything());
   });
 
   it("publishes a loading binding state while starting a terminal channel", async () => {
-    let resolveStartSession:
-      ((window: { hwnd: number; title: string }) => void) | undefined;
+    let resolveStartSession: ((window: { hwnd: number; title: string }) => void) | undefined;
 
     invokeMock.mockImplementation(async (command) => {
       if (command === "list_codex_pet_packages") {
@@ -969,7 +930,8 @@ describe("pet window product route", () => {
 
   it("binds the window picked in connect mode when menu.find-terminal arrives", async () => {
     let resolveConnectWindow:
-      ((window: { hwnd: number; title: string } | null) => void) | undefined;
+      | ((window: { hwnd: number; title: string } | null) => void)
+      | undefined;
 
     invokeMock.mockImplementation(async (command) => {
       if (command === "list_codex_pet_packages") {
@@ -1046,10 +1008,7 @@ describe("pet window product route", () => {
         },
       );
     });
-    expect(invokeMock).not.toHaveBeenCalledWith(
-      "start_session",
-      expect.anything(),
-    );
+    expect(invokeMock).not.toHaveBeenCalledWith("start_session", expect.anything());
 
     invokeMock.mockClear();
 
@@ -1071,10 +1030,7 @@ describe("pet window product route", () => {
     await waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith("focus_window", { hwnd: 777 });
     });
-    expect(invokeMock).not.toHaveBeenCalledWith(
-      "start_session",
-      expect.anything(),
-    );
+    expect(invokeMock).not.toHaveBeenCalledWith("start_session", expect.anything());
   });
 
   it("keeps the binding when connect mode is cancelled", async () => {
@@ -1200,18 +1156,12 @@ describe("pet window product route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open pet window" }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText("window creation deadlocked"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("window creation deadlocked")).toBeInTheDocument();
     });
   });
 
   it("toggles native cursor events from Pet Window hit regions", () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
     const canvas = screen.getByLabelText("Pet Window pet-a");
@@ -1239,11 +1189,7 @@ describe("pet window product route", () => {
 
   it("restores cursor events after a temporary transparent passthrough", () => {
     vi.useFakeTimers();
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
     const canvas = screen.getByLabelText("Pet Window pet-a");
@@ -1265,11 +1211,7 @@ describe("pet window product route", () => {
   });
 
   it("starts native Pet Window dragging only from the body", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
     const canvas = screen.getByLabelText("Pet Window pet-a");
@@ -1303,11 +1245,7 @@ describe("pet window product route", () => {
   });
 
   it("applies fresh Pet Window frames and drops stale ones", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -1349,25 +1287,17 @@ describe("pet window product route", () => {
       });
     });
 
-    expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(
-      appliedCallCount,
-    );
+    expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(appliedCallCount);
     expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
   });
 
   it("shows connect-mode notices on the Pet Window status card", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(
-        true,
-      );
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(true);
     });
 
     // The status card only renders once a frame has delivered the pet's name.
@@ -1385,9 +1315,7 @@ describe("pet window product route", () => {
       });
     });
 
-    const handleBinding = tauriEventMocks.listeners.get(
-      PET_WINDOW_BINDING_EVENT,
-    )!;
+    const handleBinding = tauriEventMocks.listeners.get(PET_WINDOW_BINDING_EVENT)!;
 
     act(() => {
       handleBinding({
@@ -1400,9 +1328,7 @@ describe("pet window product route", () => {
       });
     });
 
-    expect(
-      await screen.findByText("Click the terminal window to connect"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Click the terminal window to connect")).toBeInTheDocument();
 
     act(() => {
       handleBinding({
@@ -1414,9 +1340,7 @@ describe("pet window product route", () => {
       });
     });
 
-    expect(
-      await screen.findByText("Connected to Windows Terminal"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Connected to Windows Terminal")).toBeInTheDocument();
 
     // A cancelled pick reports the unchanged binding back: no "connected".
     act(() => {
@@ -1443,11 +1367,7 @@ describe("pet window product route", () => {
   });
 
   it("does not re-apply Pet Window positions when rounded coordinates are unchanged", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -1487,11 +1407,7 @@ describe("pet window product route", () => {
   });
 
   it("ignores frames for other pets before checking freshness", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-b&assetId=otto",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-b&assetId=otto");
 
     render(<PetsDrivenApp />);
 
@@ -1531,11 +1447,7 @@ describe("pet window product route", () => {
   });
 
   it("keeps a Pet Window hidden until its own first position update is applied", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-b&assetId=otto",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-b&assetId=otto");
 
     render(<PetsDrivenApp />);
 
@@ -1580,11 +1492,7 @@ describe("pet window product route", () => {
   });
 
   it("forwards host-driven body drag input instead of starting native window dragging", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -1663,11 +1571,7 @@ describe("pet window product route", () => {
   });
 
   it("keeps cursor events active when a host-driven body drag leaves the moving window", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -1710,17 +1614,11 @@ describe("pet window product route", () => {
     });
 
     expect(tauriWindowMocks.setIgnoreCursorEvents).toHaveBeenCalledWith(false);
-    expect(tauriWindowMocks.setIgnoreCursorEvents).not.toHaveBeenCalledWith(
-      true,
-    );
+    expect(tauriWindowMocks.setIgnoreCursorEvents).not.toHaveBeenCalledWith(true);
   });
 
   it("renders the resize affordance as a small design-system icon button", () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -1737,21 +1635,17 @@ describe("pet window product route", () => {
   });
 
   it("uses the visual pet frame for resize hit testing when the native surface is still large", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
-    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
-      function getRect(this: HTMLElement) {
-        if (this.classList.contains("pet-window-visual-frame")) {
-          return domRect({ left: 200, top: 100, width: 96, height: 134 });
-        }
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(function getRect(
+      this: HTMLElement,
+    ) {
+      if (this.classList.contains("pet-window-visual-frame")) {
+        return domRect({ left: 200, top: 100, width: 96, height: 134 });
+      }
 
-        return domRect({ left: 0, top: 0, width: 400, height: 400 });
-      },
-    );
+      return domRect({ left: 0, top: 0, width: 400, height: 400 });
+    });
 
     render(<PetsDrivenApp />);
 
@@ -1808,21 +1702,17 @@ describe("pet window product route", () => {
   });
 
   it("starts resizing from the visible resize button after the Pet Window is shrunk", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
-    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
-      function getRect(this: HTMLElement) {
-        if (this.classList.contains("pet-window-visual-frame")) {
-          return domRect({ left: 200, top: 100, width: 96, height: 134 });
-        }
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(function getRect(
+      this: HTMLElement,
+    ) {
+      if (this.classList.contains("pet-window-visual-frame")) {
+        return domRect({ left: 200, top: 100, width: 96, height: 134 });
+      }
 
-        return domRect({ left: 0, top: 0, width: 96, height: 134 });
-      },
-    );
+      return domRect({ left: 0, top: 0, width: 96, height: 134 });
+    });
 
     render(<PetsDrivenApp />);
 
@@ -1886,11 +1776,7 @@ describe("pet window product route", () => {
   });
 
   it("does not resize when the current pet width is already at least 200px", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -1960,11 +1846,7 @@ describe("pet window product route", () => {
   });
 
   it("ignores resize moves that would push the pet width to 200px or larger", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -2020,11 +1902,7 @@ describe("pet window product route", () => {
     );
   });
   it("ignores host frame geometry while a Pet Window resize drag is active", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 
@@ -2097,11 +1975,7 @@ describe("pet window product route", () => {
   });
 
   it("routes overlay clicks without starting Pet Window dragging", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
     const canvas = screen.getByLabelText("Pet Window pet-a");
@@ -2150,11 +2024,7 @@ describe("pet window product route", () => {
   });
 
   it("routes body right-clicks to the Pet Context Menu input", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
     const canvas = screen.getByLabelText("Pet Window pet-a");
@@ -2185,11 +2055,7 @@ describe("pet window product route", () => {
   });
 
   it("routes overlay right-clicks to the Pet Overlay Menu input", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
     const canvas = screen.getByLabelText("Pet Window pet-a");
@@ -2220,11 +2086,7 @@ describe("pet window product route", () => {
   });
 
   it("treats the overlay region as transparent when presentation has no overlay", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?surface=pet-window&petId=pet-a&assetId=bloop",
-    );
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
 

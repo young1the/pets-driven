@@ -3,8 +3,7 @@ import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtur
 
 function petBodyAnimationState(id: string) {
   const scenario = createDemoScenario();
-  const bodySnapshot = () =>
-    scenario.world.snapshot().bodies.find((body) => body.id === id);
+  const bodySnapshot = () => scenario.world.snapshot().bodies.find((body) => body.id === id);
 
   // Directional running is a function of the pet's per-tick displacement
   // (TravelState), which the engine derives from Transform — not from the
@@ -55,8 +54,7 @@ describe("pet animation state", () => {
   });
 
   it("does not infer left or right when the pet is not moving", () => {
-    const { scenario, setTravel, animationState } =
-      petBodyAnimationState("pet-a");
+    const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
       type: "ContactState",
@@ -142,8 +140,7 @@ describe("pet animation state", () => {
   });
 
   it("keeps jumping while airborne with leftward momentum", () => {
-    const { scenario, setTravel, animationState } =
-      petBodyAnimationState("pet-a");
+    const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
 
     setTravel(-4, 0);
     scenario.world.setComponent("pet-a", {
@@ -156,8 +153,7 @@ describe("pet animation state", () => {
   });
 
   it("shows travel animation when a working pet is moving", () => {
-    const { scenario, setTravel, animationState } =
-      petBodyAnimationState("pet-a");
+    const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
       type: "AgentTaskState",
@@ -172,8 +168,7 @@ describe("pet animation state", () => {
   });
 
   it("shows running animation when a working pet is not moving", () => {
-    const { scenario, setTravel, animationState } =
-      petBodyAnimationState("pet-a");
+    const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
       type: "AgentTaskState",
@@ -198,33 +193,28 @@ describe("pet animation state", () => {
     ["follow-routine", "running"],
     ["offer-comfort", "waving"],
     ["stand-lookout", "failed"],
-  ] as const)(
-    "shows the %s expressive pose on its sprite row",
-    (reason, expected) => {
-      const { scenario, setTravel, animationState } =
-        petBodyAnimationState("pet-a");
+  ] as const)("shows the %s expressive pose on its sprite row", (reason, expected) => {
+    const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
 
-      // A held expressive pose: standing still with the sustained autonomous
-      // claim naming the gesture.
-      setTravel(0, 0);
-      scenario.world.setComponent("pet-a", { type: "Steering", mode: "stand" });
-      scenario.world.setComponent("pet-a", {
-        type: "BehaviorDecisionState",
-        source: "autonomous",
-        decidedAt: 0,
-        expiresAt: 5_000,
-        reason,
-        lastAutonomousReason: reason,
-        lastAutonomousAt: 0,
-      });
+    // A held expressive pose: standing still with the sustained autonomous
+    // claim naming the gesture.
+    setTravel(0, 0);
+    scenario.world.setComponent("pet-a", { type: "Steering", mode: "stand" });
+    scenario.world.setComponent("pet-a", {
+      type: "BehaviorDecisionState",
+      source: "autonomous",
+      decidedAt: 0,
+      expiresAt: 5_000,
+      reason,
+      lastAutonomousReason: reason,
+      lastAutonomousAt: 0,
+    });
 
-      expect(animationState()).toBe(expected);
-    },
-  );
+    expect(animationState()).toBe(expected);
+  });
 
   it("keeps travel over an expressive pose while the pet is moving", () => {
-    const { scenario, setTravel, animationState } =
-      petBodyAnimationState("pet-a");
+    const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
 
     scenario.world.setComponent("pet-a", {
       type: "BehaviorDecisionState",

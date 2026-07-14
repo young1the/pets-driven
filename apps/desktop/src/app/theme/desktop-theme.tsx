@@ -1,20 +1,7 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type ThemeMode = "light" | "dark" | "system";
-export type AccentId =
-  | "blossom"
-  | "lavender"
-  | "sky"
-  | "coral"
-  | "mint"
-  | "butter";
+export type AccentId = "blossom" | "lavender" | "sky" | "coral" | "mint" | "butter";
 
 /** The six brand accents, matching the `data-accent` ramps in theme.css. */
 export const ACCENTS: { id: AccentId; hex: string; name: string }[] = [
@@ -43,9 +30,7 @@ function readMode(): ThemeMode {
     return "system";
   }
   const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
-  return stored === "light" || stored === "dark" || stored === "system"
-    ? stored
-    : "system";
+  return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
 }
 
 function readAccent(): AccentId {
@@ -53,9 +38,7 @@ function readAccent(): AccentId {
     return "blossom";
   }
   const stored = window.localStorage.getItem(ACCENT_STORAGE_KEY);
-  return ACCENTS.some((accent) => accent.id === stored)
-    ? (stored as AccentId)
-    : "blossom";
+  return ACCENTS.some((accent) => accent.id === stored) ? (stored as AccentId) : "blossom";
 }
 
 /**
@@ -74,8 +57,7 @@ export function DesktopThemeProvider({ children }: { children: ReactNode }) {
     // "system" tracks the OS preference live; light/dark are fixed.
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
-      const resolved =
-        mode === "system" ? (media.matches ? "dark" : "light") : mode;
+      const resolved = mode === "system" ? (media.matches ? "dark" : "light") : mode;
       document.documentElement.setAttribute("data-theme", resolved);
     };
 
@@ -99,9 +81,7 @@ export function DesktopThemeProvider({ children }: { children: ReactNode }) {
     [mode, accent],
   );
 
-  return (
-    <ThemeContext.Provider value={control}>{children}</ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={control}>{children}</ThemeContext.Provider>;
 }
 
 /**

@@ -34,11 +34,7 @@ export type TaskMovementHoldComponent = {
 
 export type AgentChannelSource = "agent-task" | "agent-hook" | "backend";
 
-export type AgentChannelStatus =
-  | "working"
-  | "waiting"
-  | "completed"
-  | "failed";
+export type AgentChannelStatus = "working" | "waiting" | "completed" | "failed";
 
 export type AgentChannelStateComponent = {
   type: "AgentChannelState";

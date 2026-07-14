@@ -4,8 +4,7 @@ import "./checkbox.css";
 /**
  * A soft rounded checkbox with a springy check-in animation.
  */
-export interface CheckboxProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
+export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   /** Label text rendered next to the box. */
   label?: string;
   children?: ReactNode;
@@ -20,11 +19,7 @@ export function Checkbox({
 }: CheckboxProps) {
   return (
     <label
-      className={[
-        "pd-check",
-        disabled ? "pd-check--disabled" : "",
-        className,
-      ]
+      className={["pd-check", disabled ? "pd-check--disabled" : "", className]
         .filter(Boolean)
         .join(" ")}
     >

@@ -29,9 +29,7 @@ export type PetSpriteFrame = {
   drawSize: PetSpriteSize;
 };
 
-export function resolvePetSpriteFrame(
-  input: PetSpriteFrameInput,
-): PetSpriteFrame {
+export function resolvePetSpriteFrame(input: PetSpriteFrameInput): PetSpriteFrame {
   const animationState = input.animationState ?? "idle";
   const atlasFrame = getAtlasFrame(animationState, input.elapsedMs);
   const scale = input.scale ?? 1;

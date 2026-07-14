@@ -21,11 +21,7 @@ describe("session launch profiles", () => {
   });
 
   it("keeps unmatched launch lines as custom", () => {
-    expect(
-      parseLaunchLine(
-        '"C:\\Tools\\Git\\bin\\bash.exe" -lc "claude; exec bash"',
-      ),
-    ).toEqual({
+    expect(parseLaunchLine('"C:\\Tools\\Git\\bin\\bash.exe" -lc "claude; exec bash"')).toEqual({
       profile: "custom",
       command: "claude",
       launchLine: '"C:\\Tools\\Git\\bin\\bash.exe" -lc "claude; exec bash"',
@@ -46,9 +42,7 @@ describe("session launch profiles", () => {
   });
 
   it("turns a preset launch line into an equivalent custom line", () => {
-    const customLine = customizeLaunchLine(
-      parseLaunchLine("cmd /k claude --resume"),
-    );
+    const customLine = customizeLaunchLine(parseLaunchLine("cmd /k claude --resume"));
 
     expect(customLine).toBe('"cmd" /k claude --resume');
     expect(parseLaunchLine(customLine).profile).toBe("custom");

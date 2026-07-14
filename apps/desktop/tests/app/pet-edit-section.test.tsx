@@ -52,12 +52,9 @@ describe("PetEditSection", () => {
   it("edits the memo", () => {
     const onMemo = vi.fn();
     setup({ onMemo });
-    fireEvent.change(
-      screen.getByPlaceholderText("Add a note about this pet…"),
-      {
-        target: { value: "watch auth" },
-      },
-    );
+    fireEvent.change(screen.getByPlaceholderText("Add a note about this pet…"), {
+      target: { value: "watch auth" },
+    });
     expect(onMemo).toHaveBeenCalledWith("watch auth");
   });
 

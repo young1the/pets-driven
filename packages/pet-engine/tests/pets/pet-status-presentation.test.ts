@@ -38,10 +38,7 @@ describe("presentPetStatus", () => {
   });
 
   it("lets an attention overlay override mood, label and emote", () => {
-    const presentation = presentPetStatus(
-      "running",
-      { kind: "attention", label: "WAIT" },
-    );
+    const presentation = presentPetStatus("running", { kind: "attention", label: "WAIT" });
 
     expect(presentation).toEqual({
       mood: "confused",
@@ -54,15 +51,12 @@ describe("presentPetStatus", () => {
   });
 
   it("shows agent channel status in the speech bubble", () => {
-    const presentation = presentPetStatus(
-      "idle",
-      {
-        kind: "agent-channel",
-        status: "working",
-        label: "Working",
-        message: null,
-      },
-    );
+    const presentation = presentPetStatus("idle", {
+      kind: "agent-channel",
+      status: "working",
+      label: "Working",
+      message: null,
+    });
 
     expect(presentation).toEqual({
       mood: "working",
@@ -75,10 +69,7 @@ describe("presentPetStatus", () => {
   });
 
   it("keeps the intent mood for status overlays and shows their label", () => {
-    const presentation = presentPetStatus(
-      "idle",
-      { kind: "status", label: "!" },
-    );
+    const presentation = presentPetStatus("idle", { kind: "status", label: "!" });
 
     expect(presentation.mood).toBe("sleepy");
     expect(presentation.label).toBe("!");
@@ -87,12 +78,7 @@ describe("presentPetStatus", () => {
   });
 
   it("names the session partner on the ambient social label", () => {
-    const presentation = presentPetStatus(
-      "running-right",
-      null,
-      "chatting",
-      "Otto",
-    );
+    const presentation = presentPetStatus("running-right", null, "chatting", "Otto");
 
     expect(presentation.labelKey).toBe("chattingWith");
     expect(presentation.label).toBe("Chatting with Otto");
@@ -100,31 +86,25 @@ describe("presentPetStatus", () => {
   });
 
   it("maps playing and making-friends to their partner-aware variants", () => {
-    expect(
-      presentPetStatus("running-right", null, "playing", "Bo").labelKey,
-    ).toBe("playingWith");
-    expect(
-      presentPetStatus("running-right", null, "makingFriends", "Bo").labelKey,
-    ).toBe("makingFriendsWith");
+    expect(presentPetStatus("running-right", null, "playing", "Bo").labelKey).toBe("playingWith");
+    expect(presentPetStatus("running-right", null, "makingFriends", "Bo").labelKey).toBe(
+      "makingFriendsWith",
+    );
   });
 
   it("leaves the plain label when there is no partner or the activity is non-social", () => {
-    expect(
-      presentPetStatus("running-right", null, "chatting", null).labelKey,
-    ).toBe("chatting");
-    expect(
-      presentPetStatus("running-right", null, "exploring", "Otto").labelKey,
-    ).toBe("exploring");
+    expect(presentPetStatus("running-right", null, "chatting", null).labelKey).toBe("chatting");
+    expect(presentPetStatus("running-right", null, "exploring", "Otto").labelKey).toBe("exploring");
     expect(
       presentPetStatus("running-right", null, "exploring", "Otto").labelParams,
     ).toBeUndefined();
   });
 
   it("carries speech overlay text into the capsule label", () => {
-    const presentation = presentPetStatus(
-      "running-right",
-      { kind: "speech", label: "Otto's on it…" },
-    );
+    const presentation = presentPetStatus("running-right", {
+      kind: "speech",
+      label: "Otto's on it…",
+    });
 
     expect(presentation.label).toBe("Otto's on it…");
     expect(presentation.mood).toBe("working");
@@ -132,10 +112,7 @@ describe("presentPetStatus", () => {
   });
 
   it("does not show a status capsule just because a pet is traveling", () => {
-    const presentation = presentPetStatus(
-      "running-right",
-      null,
-    );
+    const presentation = presentPetStatus("running-right", null);
 
     expect(presentation.mood).toBe("working");
     expect(presentation.label).toBeNull();
@@ -153,11 +130,7 @@ describe("presentPetStatus", () => {
   });
 
   it("lets the canonical activity label ambient intents", () => {
-    const presentation = presentPetStatus(
-      "running-right",
-      null,
-      "chasingCursor",
-    );
+    const presentation = presentPetStatus("running-right", null, "chasingCursor");
 
     expect(presentation.label).toBe("Chasing the cursor");
     expect(presentation.labelKey).toBe("chasingCursor");

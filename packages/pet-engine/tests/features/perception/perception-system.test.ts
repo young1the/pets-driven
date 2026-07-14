@@ -7,10 +7,7 @@ describe("PerceptionSystem", () => {
     const store = createComponentStore([
       {
         id: "user-anchor",
-        components: [
-          { type: "UserAnchor" },
-          { type: "Transform", position: { x: 480, y: 500 } },
-        ],
+        components: [{ type: "UserAnchor" }, { type: "Transform", position: { x: 480, y: 500 } }],
       },
       {
         id: "wall",

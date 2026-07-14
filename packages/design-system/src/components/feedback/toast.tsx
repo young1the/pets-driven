@@ -5,8 +5,7 @@ import "./toast.css";
  * A soft notification card with a message and optional action.
  * Presentational: render a stack of these in a fixed corner container.
  */
-export interface ToastProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
+export interface ToastProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   /** Accent color role. @default "primary" */
   tone?: "primary" | "success" | "danger" | "warning" | "info";
   title?: ReactNode;
@@ -31,9 +30,7 @@ export function Toast({
 }: ToastProps) {
   return (
     <div
-      className={["pd-toast", `pd-toast--${tone}`, className]
-        .filter(Boolean)
-        .join(" ")}
+      className={["pd-toast", `pd-toast--${tone}`, className].filter(Boolean).join(" ")}
       role="status"
       {...rest}
     >
@@ -48,12 +45,7 @@ export function Toast({
         )}
       </div>
       {onClose && (
-        <button
-          aria-label="Dismiss"
-          className="pd-toast__close"
-          onClick={onClose}
-          type="button"
-        >
+        <button aria-label="Dismiss" className="pd-toast__close" onClick={onClose} type="button">
           <svg
             fill="none"
             stroke="currentColor"

@@ -71,17 +71,7 @@ describe("canvas renderer", () => {
       320,
     );
 
-    expect(context.drawImage).toHaveBeenCalledWith(
-      image,
-      384,
-      1248,
-      192,
-      208,
-      84,
-      61,
-      32,
-      38,
-    );
+    expect(context.drawImage).toHaveBeenCalledWith(image, 384, 1248, 192, 208, 84, 61, 32, 38);
   });
 
   it("scales dragged pet sprites around their center", () => {
@@ -270,17 +260,7 @@ describe("canvas renderer", () => {
     );
 
     expect(context.scale).not.toHaveBeenCalled();
-    expect(context.drawImage).toHaveBeenCalledWith(
-      image,
-      0,
-      832,
-      192,
-      208,
-      84,
-      61,
-      32,
-      38,
-    );
+    expect(context.drawImage).toHaveBeenCalledWith(image, 0, 832, 192, 208, 84, 61, 32, 38);
   });
 
   it("draws directional running rows without mirroring", () => {
@@ -319,17 +299,7 @@ describe("canvas renderer", () => {
     );
 
     expect(context.scale).not.toHaveBeenCalled();
-    expect(context.drawImage).toHaveBeenCalledWith(
-      image,
-      0,
-      208,
-      192,
-      208,
-      84,
-      61,
-      32,
-      38,
-    );
+    expect(context.drawImage).toHaveBeenCalledWith(image, 0, 208, 192, 208, 84, 61, 32, 38);
   });
 
   it("draws pet names and intents from the world snapshot", () => {
@@ -580,15 +550,7 @@ describe("canvas renderer", () => {
       0,
     );
 
-    expect(context.ellipse).toHaveBeenCalledWith(
-      100,
-      127,
-      12,
-      4,
-      0,
-      0,
-      Math.PI * 2,
-    );
+    expect(context.ellipse).toHaveBeenCalledWith(100, 127, 12, 4, 0, 0, Math.PI * 2);
   });
 
   it("draws a motion target marker when a pet has a motion target", () => {

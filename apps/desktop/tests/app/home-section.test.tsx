@@ -156,9 +156,7 @@ describe("HomeSection", () => {
       />,
     );
 
-    expect(
-      screen.queryByRole("button", { name: "Edit pet" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit pet" })).not.toBeInTheDocument();
   });
 
   it("recalls a pet when its field chip is clicked", () => {

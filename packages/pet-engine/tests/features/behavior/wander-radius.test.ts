@@ -29,7 +29,7 @@ describe("wanderRadius — near", () => {
 
   it("high-N max < low-N max (tighter circle for anxious pets)", () => {
     const [, highNMax] = wanderRadius(p({ neuroticism: 0.9 }), "near");
-    const [, lowNMax]  = wanderRadius(p({ neuroticism: 0.1 }), "near");
+    const [, lowNMax] = wanderRadius(p({ neuroticism: 0.1 }), "near");
     expect(highNMax).toBeLessThan(lowNMax);
   });
 
@@ -70,7 +70,7 @@ describe("wanderRadius — far", () => {
 
   it("high-O max > low-O max (curious pets explore further)", () => {
     const [, highOMax] = wanderRadius(p({ openness: 0.9 }), "far");
-    const [, lowOMax]  = wanderRadius(p({ openness: 0.1 }), "far");
+    const [, lowOMax] = wanderRadius(p({ openness: 0.1 }), "far");
     expect(highOMax).toBeGreaterThan(lowOMax);
   });
 

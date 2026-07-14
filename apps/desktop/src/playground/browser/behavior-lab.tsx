@@ -1,7 +1,4 @@
-import type {
-  ComponentOf,
-  ComponentType,
-} from "@pets-driven/pet-engine/core/components";
+import type { ComponentOf, ComponentType } from "@pets-driven/pet-engine/core/components";
 import type { PetSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import { Button } from "@pets-driven/design-system";
 import { useMemo, useState } from "react";
@@ -40,12 +37,7 @@ type BehaviorLabProps = {
   getComponent: ComponentReader;
 };
 
-export function BehaviorLab({
-  pets,
-  selectedPetId,
-  onSelectPet,
-  getComponent,
-}: BehaviorLabProps) {
+export function BehaviorLab({ pets, selectedPetId, onSelectPet, getComponent }: BehaviorLabProps) {
   const selectedPet = pets.find((pet) => pet.id === selectedPetId) ?? pets[0];
   if (!selectedPet) {
     return null;
@@ -59,21 +51,14 @@ export function BehaviorLab({
   const personality = getComponent(selectedPet.id, "Personality");
   const decisionToken = getComponent(selectedPet.id, "BehaviorDecisionToken");
   const pendingReaction = getComponent(selectedPet.id, "PendingReaction");
-  const componentTypes = INSPECTED_COMPONENTS.filter((type) =>
-    getComponent(selectedPet.id, type),
-  );
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
-    "idle",
-  );
+  const componentTypes = INSPECTED_COMPONENTS.filter((type) => getComponent(selectedPet.id, type));
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [isStateListVisible, setIsStateListVisible] = useState(true);
   const clipboardPayload = useMemo(
     () => ({
       pet: selectedPet,
       components: Object.fromEntries(
-        componentTypes.map((type) => [
-          type,
-          getComponent(selectedPet.id, type),
-        ]),
+        componentTypes.map((type) => [type, getComponent(selectedPet.id, type)]),
       ),
     }),
     [componentTypes, getComponent, selectedPet],
@@ -81,9 +66,7 @@ export function BehaviorLab({
 
   async function copyStateToClipboard() {
     try {
-      await navigator.clipboard.writeText(
-        JSON.stringify(clipboardPayload, null, 2),
-      );
+      await navigator.clipboard.writeText(JSON.stringify(clipboardPayload, null, 2));
       setCopyStatus("copied");
     } catch {
       setCopyStatus("failed");
@@ -172,8 +155,7 @@ export function BehaviorLab({
             <div>
               <dt>{PLAYGROUND_TEXT.pendingReactionLabel}</dt>
               <dd>
-                {pendingReaction.source} — reacts at{" "}
-                {pendingReaction.reactsAt}ms
+                {pendingReaction.source} — reacts at {pendingReaction.reactsAt}ms
               </dd>
             </div>
           )}
@@ -227,14 +209,9 @@ export function BehaviorLab({
               {componentTypes.map((type) => {
                 const comp = getComponent(selectedPet.id, type);
                 if (!comp) return null;
-                const fields = Object.entries(comp).filter(
-                  ([key]) => key !== "type",
-                );
+                const fields = Object.entries(comp).filter(([key]) => key !== "type");
                 return (
-                  <details
-                    key={type}
-                    className="behavior-lab__component-detail"
-                  >
+                  <details key={type} className="behavior-lab__component-detail">
                     <summary>{type}</summary>
                     {fields.length > 0 && (
                       <dl className="behavior-lab__component-fields">
@@ -257,9 +234,7 @@ export function BehaviorLab({
   );
 }
 
-function formatClimbIntent(
-  climbIntent: ComponentOf<"ClimbIntentState"> | undefined,
-) {
+function formatClimbIntent(climbIntent: ComponentOf<"ClimbIntentState"> | undefined) {
   if (!climbIntent) {
     return "none";
   }
@@ -275,9 +250,7 @@ function formatComponentValue(value: unknown): string {
   return String(value);
 }
 
-function formatMotionTarget(
-  motion: ComponentOf<"MotionTarget"> | undefined,
-) {
+function formatMotionTarget(motion: ComponentOf<"MotionTarget"> | undefined) {
   if (!motion) {
     return "none";
   }
@@ -287,9 +260,7 @@ function formatMotionTarget(
   }
 
   if (motion.targetPosition) {
-    return `${Math.round(motion.targetPosition.x)}, ${Math.round(
-      motion.targetPosition.y,
-    )}`;
+    return `${Math.round(motion.targetPosition.x)}, ${Math.round(motion.targetPosition.y)}`;
   }
 
   return "none";

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type {
-  Component,
-  PersonalityComponent,
-} from "@pets-driven/pet-engine/core/components";
+import type { Component, PersonalityComponent } from "@pets-driven/pet-engine/core/components";
 import {
   createComponentStore,
   type ComponentStore,
@@ -53,7 +50,12 @@ function socialPet(
     { type: "PhysicsBody", shape: "rectangle", width: 32, height: 38 },
     { type: "Steering", mode: "stand" },
     { type: "MotionTarget", targetEntityId: null, targetPosition: null },
-    { type: "ContactState", grounded: true, climbableSurfaceId: null, climbableSurfacePosition: null },
+    {
+      type: "ContactState",
+      grounded: true,
+      climbableSurfaceId: null,
+      climbableSurfacePosition: null,
+    },
     { type: "SpeechState", speech: null, expiresAt: null },
     { type: "Drives", social, energy: 1, curiosity: 0.2 },
     personality,
@@ -319,17 +321,13 @@ describe("SocialInteractionSystem — chase choreography", () => {
     clock.advanceBy(100);
     runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x).toBe(300); // toward pet-b
-    expect(
-      store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x,
-    ).toBeGreaterThan(300); // fleeing right, away from pet-a
+    expect(store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x).toBeGreaterThan(300); // fleeing right, away from pet-a
 
     // After a swap window, roles flip: pet-b chases pet-a.
     clock.advanceBy(CHASE_SWAP_MS + 100);
     runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
     expect(store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x).toBe(100); // toward pet-a
-    expect(
-      store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x,
-    ).toBeLessThan(100); // fleeing left
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x).toBeLessThan(100); // fleeing left
   });
 
   it("catching the runner swaps roles early and fires a one-shot tag cue", () => {
@@ -419,9 +417,7 @@ describe("SocialInteractionSystem — collision no longer interrupts (B1)", () =
     expect(sessionCount(store)).toBe(1);
     expect(store.getComponent("pet-a", "SocialSessionMember")).toBeDefined();
     // The session re-claims the pet, replacing the collision claim.
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe(
-      "social",
-    );
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.source).toBe("social");
   });
 
   it("drops an invite while the target is frozen in collision deliberation", () => {
@@ -570,9 +566,7 @@ describe("SocialInteractionSystem — group sessions (B10)", () => {
       "pet-b",
       "pet-c",
     ]);
-    expect(store.getComponent("pet-c", "SocialSessionMember")?.sessionId).toBe(
-      "sess",
-    );
+    expect(store.getComponent("pet-c", "SocialSessionMember")?.sessionId).toBe("sess");
 
     // Over successive turns the single speaker rotates across all three.
     const spoke = new Set<string>();
@@ -605,10 +599,7 @@ describe("SocialInteractionSystem — group sessions (B10)", () => {
     runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
 
     expect(sessionCount(store)).toBe(1);
-    expect(store.getComponent("sess", "SocialSession")?.participantIds).toEqual([
-      "pet-a",
-      "pet-b",
-    ]);
+    expect(store.getComponent("sess", "SocialSession")?.participantIds).toEqual(["pet-a", "pet-b"]);
     expect(store.getComponent("pet-c", "SocialSessionMember")).toBeUndefined();
 
     // pet-b leaves too → only one left → the session ends.
@@ -635,9 +626,7 @@ describe("SocialInteractionSystem — group sessions (B10)", () => {
     clock.advanceBy(100);
     runSocialInteractionSystem(store, clock, ALWAYS, BOUNDS, 16);
 
-    expect(
-      store.getComponent("sess", "SocialSession")?.participantIds,
-    ).toHaveLength(4);
+    expect(store.getComponent("sess", "SocialSession")?.participantIds).toHaveLength(4);
     expect(store.getComponent("pet-e", "SocialSessionMember")).toBeUndefined();
   });
 });

@@ -13,22 +13,68 @@
   border-radius: var(--radius-pill);
   white-space: nowrap;
 }
-.pd-badge__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.pd-badge svg { width: 13px; height: 13px; }
+.pd-badge__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pd-badge svg {
+  width: 13px;
+  height: 13px;
+}
 
-.pd-badge--soft.pd-badge--primary { background: var(--color-primary-soft); color: var(--blossom-700); }
-.pd-badge--soft.pd-badge--accent { background: var(--color-accent-soft); color: var(--teal-700); }
-.pd-badge--soft.pd-badge--success { background: var(--color-success-soft); color: var(--mint-700); }
-.pd-badge--soft.pd-badge--info { background: var(--color-info-soft); color: var(--sky-700); }
-.pd-badge--soft.pd-badge--warning { background: var(--color-warning-soft); color: var(--butter-600); }
-.pd-badge--soft.pd-badge--danger { background: var(--color-danger-soft); color: var(--coral-600); }
-.pd-badge--soft.pd-badge--neutral { background: var(--ink-100); color: var(--ink-700); }
+.pd-badge--soft.pd-badge--primary {
+  background: var(--color-primary-soft);
+  color: var(--blossom-700);
+}
+.pd-badge--soft.pd-badge--accent {
+  background: var(--color-accent-soft);
+  color: var(--teal-700);
+}
+.pd-badge--soft.pd-badge--success {
+  background: var(--color-success-soft);
+  color: var(--mint-700);
+}
+.pd-badge--soft.pd-badge--info {
+  background: var(--color-info-soft);
+  color: var(--sky-700);
+}
+.pd-badge--soft.pd-badge--warning {
+  background: var(--color-warning-soft);
+  color: var(--butter-600);
+}
+.pd-badge--soft.pd-badge--danger {
+  background: var(--color-danger-soft);
+  color: var(--coral-600);
+}
+.pd-badge--soft.pd-badge--neutral {
+  background: var(--ink-100);
+  color: var(--ink-700);
+}
 
-.pd-badge--solid { color: #fff; }
-.pd-badge--solid.pd-badge--primary { background: var(--color-primary); }
-.pd-badge--solid.pd-badge--accent { background: var(--color-accent); }
-.pd-badge--solid.pd-badge--success { background: var(--color-success); }
-.pd-badge--solid.pd-badge--info { background: var(--color-info); }
-.pd-badge--solid.pd-badge--warning { background: var(--color-warning); color: var(--ink-900); }
-.pd-badge--solid.pd-badge--danger { background: var(--color-danger); }
-.pd-badge--solid.pd-badge--neutral { background: var(--ink-700); }
+.pd-badge--solid {
+  color: #fff;
+}
+.pd-badge--solid.pd-badge--primary {
+  background: var(--color-primary);
+}
+.pd-badge--solid.pd-badge--accent {
+  background: var(--color-accent);
+}
+.pd-badge--solid.pd-badge--success {
+  background: var(--color-success);
+}
+.pd-badge--solid.pd-badge--info {
+  background: var(--color-info);
+}
+.pd-badge--solid.pd-badge--warning {
+  background: var(--color-warning);
+  color: var(--ink-900);
+}
+.pd-badge--solid.pd-badge--danger {
+  background: var(--color-danger);
+}
+.pd-badge--solid.pd-badge--neutral {
+  background: var(--ink-700);
+}

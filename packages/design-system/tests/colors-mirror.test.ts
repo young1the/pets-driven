@@ -8,9 +8,7 @@ const colorsCss = readFileSync(
 );
 
 function cssVariableValue(name: string) {
-  const match = colorsCss.match(
-    new RegExp(`--${name}:\\s*(#[0-9A-Fa-f]{6})\\b`),
-  );
+  const match = colorsCss.match(new RegExp(`--${name}:\\s*(#[0-9A-Fa-f]{6})\\b`));
 
   return match ? match[1].toUpperCase() : null;
 }

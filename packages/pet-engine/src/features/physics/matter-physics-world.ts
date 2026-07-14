@@ -54,14 +54,16 @@ export function createMatterPhysicsWorld(bounds: {
   Events.on(engine, "collisionStart", (event) => {
     for (const pair of event.pairs) {
       const activePair = collisionPairFromBodies(pair.bodyA, pair.bodyB);
-      if (activePair) activeCollisionPairs.set(pairKey(activePair.bodyAId, activePair.bodyBId), activePair);
+      if (activePair)
+        activeCollisionPairs.set(pairKey(activePair.bodyAId, activePair.bodyBId), activePair);
     }
   });
 
   Events.on(engine, "collisionActive", (event) => {
     for (const pair of event.pairs) {
       const activePair = collisionPairFromBodies(pair.bodyA, pair.bodyB);
-      if (activePair) activeCollisionPairs.set(pairKey(activePair.bodyAId, activePair.bodyBId), activePair);
+      if (activePair)
+        activeCollisionPairs.set(pairKey(activePair.bodyAId, activePair.bodyBId), activePair);
     }
   });
 
@@ -139,12 +141,7 @@ export function createMatterPhysicsWorld(bounds: {
     resizeRectangle(id, size) {
       const existing = bodies.get(id);
       const shape = shapes.get(id);
-      if (
-        !existing ||
-        existing.isStatic ||
-        !shape ||
-        shape.shape !== "rectangle"
-      ) {
+      if (!existing || existing.isStatic || !shape || shape.shape !== "rectangle") {
         return;
       }
       // Keep the body's bottom edge fixed so a grounded pet's feet stay on the

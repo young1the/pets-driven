@@ -58,9 +58,7 @@ const AGENT_STIMULI = [
 
 export function DecisionShowcaseApp() {
   const scenarioRef = useRef(createDemoScenario());
-  const [snapshot, setSnapshot] = useState(() =>
-    scenarioRef.current.world.snapshot(),
-  );
+  const [snapshot, setSnapshot] = useState(() => scenarioRef.current.world.snapshot());
   const [elapsedMs, setElapsedMs] = useState(0);
   const [lastStimulus, setLastStimulus] = useState<DecisionStimulus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -95,8 +93,7 @@ export function DecisionShowcaseApp() {
     [],
   );
 
-  const selectedPet =
-    snapshot.pets.find((pet) => pet.id === PRIMARY_PET_ID) ?? snapshot.pets[0];
+  const selectedPet = snapshot.pets.find((pet) => pet.id === PRIMARY_PET_ID) ?? snapshot.pets[0];
   const personality = selectedPet
     ? scenarioRef.current.world.getComponent(selectedPet.id, "Personality")
     : undefined;
@@ -169,11 +166,7 @@ export function DecisionShowcaseApp() {
         window.cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [
-    explanation.selection?.randomRoll,
-    explanation.selection?.selectedKind,
-    motionSequence,
-  ]);
+  }, [explanation.selection?.randomRoll, explanation.selection?.selectedKind, motionSequence]);
 
   function advanceFrame(count = 1) {
     for (let index = 0; index < count; index += 1) {
@@ -187,10 +180,7 @@ export function DecisionShowcaseApp() {
   function advanceUntilSelection(maxFrames = MAX_SELECTION_ADVANCE_FRAMES) {
     let frames = 0;
     while (frames < maxFrames) {
-      const token = scenarioRef.current.world.getComponent(
-        PRIMARY_PET_ID,
-        "BehaviorDecisionToken",
-      );
+      const token = scenarioRef.current.world.getComponent(PRIMARY_PET_ID, "BehaviorDecisionToken");
       if (token?.selectionTrace) break;
       scenarioRef.current.clock.advanceBy(STEP_MS);
       scenarioRef.current.world.step(STEP_MS);
@@ -378,10 +368,7 @@ export function DecisionShowcaseApp() {
             />
             {stageMotion === "collision" ? (
               <>
-                <span
-                  data-testid="decision-collider-sprite"
-                  key={`collider-${motionSequence}`}
-                >
+                <span data-testid="decision-collider-sprite" key={`collider-${motionSequence}`}>
                   <PetSprite
                     alt="Bob collider sprite"
                     animationState="running-left"
@@ -430,8 +417,7 @@ export function DecisionShowcaseApp() {
             <div>
               <dt>Position</dt>
               <dd>
-                {Math.round(selectedPet.position.x)},{" "}
-                {Math.round(selectedPet.position.y)}
+                {Math.round(selectedPet.position.x)}, {Math.round(selectedPet.position.y)}
               </dd>
             </div>
           </dl>
@@ -459,7 +445,6 @@ export function DecisionShowcaseApp() {
               </Button>
             </div>
           </div>
-
         </section>
       </div>
     </section>
@@ -545,8 +530,7 @@ function useSelectionReelMotion({
 }) {
   const stepWidth = SLOT_CARD_WIDTH + SLOT_REEL_GAP;
   const cycleWidth = itemCount * stepWidth;
-  const baseOffset =
-    cycleWidth * (SLOT_REEL_ORIGINAL_SET_INDEX - 2) + selectedIndex * stepWidth;
+  const baseOffset = cycleWidth * (SLOT_REEL_ORIGINAL_SET_INDEX - 2) + selectedIndex * stepWidth;
   const selectedOffset = cycleWidth * SLOT_REEL_ORIGINAL_SET_INDEX + selectedIndex * stepWidth;
   const [motion, setMotion] = useState({
     offset: baseOffset,

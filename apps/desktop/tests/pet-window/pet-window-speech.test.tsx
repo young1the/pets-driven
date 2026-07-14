@@ -28,9 +28,7 @@ describe("pet window speech line", () => {
   it("renders the pet's spoken line in the status card", () => {
     const chatting = PET_WINDOW_FIXTURES.find((f) => f.id === "chatting")!;
 
-    render(
-      <PetWindowView pet={chatting.pet} previewPresentation={chatting.presentation} />,
-    );
+    render(<PetWindowView pet={chatting.pet} previewPresentation={chatting.presentation} />);
 
     // The greet/chat dialogue surfaces as the status card's message line,
     // alongside the "Chatting with Scout" capsule label.
@@ -40,9 +38,7 @@ describe("pet window speech line", () => {
   it("shows no message line when the pet is quiet", () => {
     const idle = PET_WINDOW_FIXTURES.find((f) => f.id === "idle")!;
 
-    render(
-      <PetWindowView pet={idle.pet} previewPresentation={idle.presentation} />,
-    );
+    render(<PetWindowView pet={idle.pet} previewPresentation={idle.presentation} />);
 
     expect(screen.queryByText("Guess what?")).not.toBeInTheDocument();
   });

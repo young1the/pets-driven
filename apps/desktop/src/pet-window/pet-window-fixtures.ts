@@ -200,9 +200,7 @@ export function resolvePetWindowFixture(
   // Only an exact pet-window fixture id opens this switcher. An unmatched
   // `?fixture=` value defaults to the main desktop switcher instead — see
   // `resolveDesktopFixture` in dev-fixtures.ts.
-  return (
-    PET_WINDOW_FIXTURES.find((fixture) => fixture.id === fixtureId) ?? null
-  );
+  return PET_WINDOW_FIXTURES.find((fixture) => fixture.id === fixtureId) ?? null;
 }
 
 function isLoopbackHostname(hostname: string) {

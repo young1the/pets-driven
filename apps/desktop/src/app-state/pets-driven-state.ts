@@ -33,10 +33,7 @@ export type PetRecord = {
   memo?: string;
 };
 
-type PetRecordV1 = Omit<
-  PetRecord,
-  "workingDirectoryId" | "name" | "adoptedAt"
-> & {
+type PetRecordV1 = Omit<PetRecord, "workingDirectoryId" | "name" | "adoptedAt"> & {
   workingDirectoryId: string;
 };
 
@@ -116,16 +113,12 @@ function defaultPetNameFromAssetId(assetId: string): string {
   return assetId.charAt(0).toUpperCase() + assetId.slice(1);
 }
 
-function migratePetsDrivenStateV1(
-  candidate: Partial<PetsDrivenStateV1>,
-): PetsDrivenState {
+function migratePetsDrivenStateV1(candidate: Partial<PetsDrivenStateV1>): PetsDrivenState {
   const pets = Array.isArray(candidate.pets) ? candidate.pets : [];
 
   return {
     schemaVersion: 3,
-    registeredWorkingDirectories: Array.isArray(
-      candidate.registeredWorkingDirectories,
-    )
+    registeredWorkingDirectories: Array.isArray(candidate.registeredWorkingDirectories)
       ? candidate.registeredWorkingDirectories
       : [],
     pets: pets.map((pet) => ({
@@ -135,9 +128,7 @@ function migratePetsDrivenStateV1(
       adoptedAt: 0,
       visible: false,
     })),
-    petProfiles: Array.isArray(candidate.petProfiles)
-      ? candidate.petProfiles
-      : [],
+    petProfiles: Array.isArray(candidate.petProfiles) ? candidate.petProfiles : [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
     petSourceDirectory: null,
   };
@@ -174,9 +165,7 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
     return createEmptyPetsDrivenState();
   }
 
-  const candidate = value as Partial<
-    PetsDrivenStateV1 | PetsDrivenStateV2 | PetsDrivenStateV3
-  >;
+  const candidate = value as Partial<PetsDrivenStateV1 | PetsDrivenStateV2 | PetsDrivenStateV3>;
 
   if (candidate.schemaVersion === 1) {
     return repairPetDirectoryLinks(
@@ -190,31 +179,23 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
 
   // v2 stored a list of extra scan folders; v3 keeps a single designated
   // folder. sanitizePetSourceDirectory collapses either shape.
-  const persisted = candidate as Partial<PetsDrivenStateV2> &
-    Partial<PetsDrivenStateV3>;
+  const persisted = candidate as Partial<PetsDrivenStateV2> & Partial<PetsDrivenStateV3>;
 
   return repairPetDirectoryLinks({
     schemaVersion: 3,
-    registeredWorkingDirectories: Array.isArray(
-      persisted.registeredWorkingDirectories,
-    )
+    registeredWorkingDirectories: Array.isArray(persisted.registeredWorkingDirectories)
       ? persisted.registeredWorkingDirectories
       : [],
     pets: Array.isArray(persisted.pets)
       ? persisted.pets.map((pet) => ({ ...pet, visible: false }))
       : [],
-    petProfiles: Array.isArray(persisted.petProfiles)
-      ? persisted.petProfiles
-      : [],
+    petProfiles: Array.isArray(persisted.petProfiles) ? persisted.petProfiles : [],
     sessionCommand:
-      typeof persisted.sessionCommand === "string" &&
-      persisted.sessionCommand.trim()
+      typeof persisted.sessionCommand === "string" && persisted.sessionCommand.trim()
         ? persisted.sessionCommand
         : DEFAULT_SESSION_COMMAND,
     petSourceDirectory: sanitizePetSourceDirectory(
-      persisted.schemaVersion === 2
-        ? persisted.petSourceDirectories
-        : persisted.petSourceDirectory,
+      persisted.schemaVersion === 2 ? persisted.petSourceDirectories : persisted.petSourceDirectory,
     ),
   });
 }
@@ -245,9 +226,7 @@ export function normalizeWorkingDirectoryPath(path: string): string {
   }
 
   const [firstPart, ...restParts] = normalizedParts;
-  const root = /^[a-z]:$/i.test(firstPart)
-    ? firstPart.toUpperCase()
-    : firstPart;
+  const root = /^[a-z]:$/i.test(firstPart) ? firstPart.toUpperCase() : firstPart;
 
   return [root, ...restParts].join(separator);
 }
@@ -275,8 +254,7 @@ export function setPetSourceDirectory(
     state.petSourceDirectory === null
       ? null
       : comparableWorkingDirectoryPath(state.petSourceDirectory);
-  const nextComparable =
-    normalized === null ? null : comparableWorkingDirectoryPath(normalized);
+  const nextComparable = normalized === null ? null : comparableWorkingDirectoryPath(normalized);
 
   if (currentComparable === nextComparable) {
     return state;
@@ -285,10 +263,7 @@ export function setPetSourceDirectory(
   return { ...state, petSourceDirectory: normalized };
 }
 
-function isSameOrAncestorPath(
-  ancestorPath: string,
-  childPath: string,
-): boolean {
+function isSameOrAncestorPath(ancestorPath: string, childPath: string): boolean {
   if (!ancestorPath || !childPath) {
     return false;
   }
@@ -309,9 +284,7 @@ export function resolveRegisteredWorkingDirectoryForCwd(
   let matchLength = -1;
 
   for (const workingDirectory of state.registeredWorkingDirectories) {
-    const normalizedRegisteredPath = comparableWorkingDirectoryPath(
-      workingDirectory.path,
-    );
+    const normalizedRegisteredPath = comparableWorkingDirectoryPath(workingDirectory.path);
 
     if (
       isSameOrAncestorPath(normalizedRegisteredPath, normalizedCwd) &&

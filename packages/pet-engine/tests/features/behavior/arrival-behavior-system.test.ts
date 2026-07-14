@@ -5,15 +5,17 @@ import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-cl
 
 describe("arrival behavior system", () => {
   it("clears position target and resets intent to idle when walk pet arrives within x radius", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "pursue" as const },
-        { type: "Transform", position: { x: 108, y: 100 } },
-        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
-        { type: "WandersOnArrival", arrivalRadius: 16 },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "pursue" as const },
+          { type: "Transform", position: { x: 108, y: 100 } },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+        ],
+      },
+    ]);
 
     runArrivalBehaviorSystem(store);
 
@@ -22,15 +24,17 @@ describe("arrival behavior system", () => {
   });
 
   it("does not clear position target when outside x radius", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "stand" as const },
-        { type: "Transform", position: { x: 200, y: 100 } },
-        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
-        { type: "WandersOnArrival", arrivalRadius: 16 },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "stand" as const },
+          { type: "Transform", position: { x: 200, y: 100 } },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+        ],
+      },
+    ]);
 
     runArrivalBehaviorSystem(store);
 
@@ -38,16 +42,23 @@ describe("arrival behavior system", () => {
   });
 
   it("keeps approach target while a pet is climbing toward a surface", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "stand" as const },
-        { type: "Transform", position: { x: 124, y: 500 } },
-        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 500 } },
-        { type: "WandersOnArrival", arrivalRadius: 16 },
-        { type: "ClimbIntentState", phase: "approaching", surfaceEntityId: "wall-1", targetY: 120 },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "stand" as const },
+          { type: "Transform", position: { x: 124, y: 500 } },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 500 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          {
+            type: "ClimbIntentState",
+            phase: "approaching",
+            surfaceEntityId: "wall-1",
+            targetY: 120,
+          },
+        ],
+      },
+    ]);
 
     runArrivalBehaviorSystem(store);
 
@@ -55,16 +66,18 @@ describe("arrival behavior system", () => {
   });
 
   it("clears position target when climb pet arrives within y radius", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "stand" as const },
-        { type: "ClimbingTag" },
-        { type: "Transform", position: { x: 280, y: 108 } },
-        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 700, y: 100 } },
-        { type: "WandersOnArrival", arrivalRadius: 16 },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "stand" as const },
+          { type: "ClimbingTag" },
+          { type: "Transform", position: { x: 280, y: 108 } },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 700, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+        ],
+      },
+    ]);
 
     runArrivalBehaviorSystem(store);
 
@@ -78,7 +91,11 @@ describe("arrival behavior system", () => {
         components: [
           { type: "Steering", mode: "arrive" as const },
           { type: "Transform", position: { x: 108, y: 100 } },
-          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 100, y: 100 } },
+          {
+            type: "MotionTarget",
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 100, y: 100 },
+          },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
             type: "Perception" as const,
@@ -107,11 +124,19 @@ describe("arrival behavior system", () => {
         components: [
           { type: "Steering", mode: "arrive" as const },
           { type: "Transform", position: { x: 108, y: 521 } },
-          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 100, y: 500 } },
+          {
+            type: "MotionTarget",
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 100, y: 500 },
+          },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
             type: "Perception" as const,
-            userAnchor: { id: "user-anchor", position: { x: 100, y: 500 }, distance: Math.hypot(8, 21) },
+            userAnchor: {
+              id: "user-anchor",
+              position: { x: 100, y: 500 },
+              distance: Math.hypot(8, 21),
+            },
             nearbyPets: [],
             nearbyClimbables: [],
             self: { grounded: false, climbing: false, mode: "arrive" as const },
@@ -133,11 +158,19 @@ describe("arrival behavior system", () => {
         components: [
           { type: "Steering", mode: "arrive" as const },
           { type: "Transform", position: { x: 452, y: 521 } },
-          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 440, y: 500 } },
+          {
+            type: "MotionTarget",
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 440, y: 500 },
+          },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
             type: "Perception" as const,
-            userAnchor: { id: "user-anchor", position: { x: 360, y: 500 }, distance: Math.hypot(92, 21) },
+            userAnchor: {
+              id: "user-anchor",
+              position: { x: 360, y: 500 },
+              distance: Math.hypot(92, 21),
+            },
             nearbyPets: [],
             nearbyClimbables: [],
             self: { grounded: true, climbing: false, mode: "arrive" as const },
@@ -220,7 +253,9 @@ describe("arrival behavior system", () => {
     expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
     expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("approach-pet-success");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe(
+      "approach-pet-success",
+    );
   });
 
   it("refills social substantially when approach-pet succeeds (Drives satisfaction hook)", () => {
@@ -308,7 +343,9 @@ describe("arrival behavior system", () => {
     expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
     expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBeLessThanOrEqual(5101);
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBeLessThanOrEqual(
+      5101,
+    );
   });
 
   it("marks chase-cursor successful when it catches the cursor-tracking anchor", () => {
@@ -318,7 +355,11 @@ describe("arrival behavior system", () => {
         components: [
           { type: "Steering", mode: "pursue" as const },
           { type: "Transform", position: { x: 100, y: 100 } },
-          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 140, y: 100 } },
+          {
+            type: "MotionTarget",
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 140, y: 100 },
+          },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
             type: "Perception" as const,
@@ -353,7 +394,9 @@ describe("arrival behavior system", () => {
     expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
     expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("chase-cursor-success");
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe(
+      "chase-cursor-success",
+    );
     expect(store.getComponent("pet-a", "PetExpressionState")).toEqual({
       type: "PetExpressionState",
       source: "chase-cursor",
@@ -366,16 +409,18 @@ describe("arrival behavior system", () => {
   });
 
   it("abandons a positional wander target it makes no progress toward (jammed at a monitor step)", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "pursue" as const },
-        // Wedged against a wall at x=200; the target sits past it at x=100.
-        { type: "Transform", position: { x: 200, y: 100 } },
-        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
-        { type: "WandersOnArrival", arrivalRadius: 16 },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "pursue" as const },
+          // Wedged against a wall at x=200; the target sits past it at x=100.
+          { type: "Transform", position: { x: 200, y: 100 } },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+        ],
+      },
+    ]);
     const clock = createManualClock(0);
 
     // First tick seeds the no-progress watchdog; target is still held.
@@ -391,15 +436,17 @@ describe("arrival behavior system", () => {
   });
 
   it("keeps a positional target while the pet is still closing the distance", () => {
-    const store = createComponentStore([{
-      id: "pet-a",
-      components: [
-        { type: "Steering", mode: "pursue" as const },
-        { type: "Transform", position: { x: 200, y: 100 } },
-        { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
-        { type: "WandersOnArrival", arrivalRadius: 16 },
-      ],
-    }]);
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "Steering", mode: "pursue" as const },
+          { type: "Transform", position: { x: 200, y: 100 } },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 100, y: 100 } },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+        ],
+      },
+    ]);
     const clock = createManualClock(0);
 
     runArrivalBehaviorSystem(store, clock);
@@ -425,7 +472,11 @@ describe("arrival behavior system", () => {
         components: [
           { type: "Steering", mode: "pursue" as const },
           { type: "Transform", position: { x: 100, y: 100 } },
-          { type: "MotionTarget", targetEntityId: "user-anchor", targetPosition: { x: 500, y: 100 } },
+          {
+            type: "MotionTarget",
+            targetEntityId: "user-anchor",
+            targetPosition: { x: 500, y: 100 },
+          },
           { type: "WandersOnArrival", arrivalRadius: 16 },
           {
             type: "Perception" as const,
@@ -460,7 +511,9 @@ describe("arrival behavior system", () => {
     expect(store.getComponent("pet-a", "Steering")?.mode).toBe("stand");
     expect(store.getComponent("pet-a", "MotionTarget")?.targetEntityId).toBeNull();
     expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
-    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBeLessThanOrEqual(5101);
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")?.expiresAt).toBeLessThanOrEqual(
+      5101,
+    );
     expect(store.getComponent("pet-a", "PetExpressionState")).toBeUndefined();
   });
 });

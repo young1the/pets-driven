@@ -24,11 +24,7 @@
     "greeting": "Hello,",
     "greetings": {
       "morning": ["Good morning,", "Rise and shine,", "Morning,"],
-      "afternoon": [
-        "Good afternoon,",
-        "Hope your day's going well,",
-        "Afternoon,"
-      ],
+      "afternoon": ["Good afternoon,", "Hope your day's going well,", "Afternoon,"],
       "evening": ["Good evening,", "Winding down for the day,", "Evening,"],
       "night": ["Working late,", "Burning the midnight oil,", "Still up,"]
     },
