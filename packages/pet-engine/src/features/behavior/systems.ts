@@ -23,6 +23,8 @@ import {
   personalityIdleDurationScale,
   signedDecisionScore,
 } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
+import { resolveSpeechVariant } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
+import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import {
@@ -746,6 +748,7 @@ export function runAgentTaskEventSystem(
   components: ComponentStore,
   events: WorldEvent[],
   clock: Clock,
+  random: RandomSource = createSeededRandom(1),
 ): void {
   if (events.length === 0) return;
   const agentEvents = events.filter((event): event is AgentWorldEvent => event.kind === "agent");
@@ -766,7 +769,7 @@ export function runAgentTaskEventSystem(
             id,
             "working",
             event,
-            event.summary ?? speechProfile.taskStarted,
+            event.summary ?? resolveSpeechVariant(speechProfile.taskStarted, random),
             now,
           );
           applyTaskMovementHold(components, id, "working", event.at);
@@ -781,7 +784,7 @@ export function runAgentTaskEventSystem(
             id,
             "waiting",
             event,
-            event.summary ?? speechProfile.attentionNeeded,
+            event.summary ?? resolveSpeechVariant(speechProfile.attentionNeeded, random),
             now,
           );
           applyTaskMovementHold(components, id, "waiting", event.at);
@@ -803,7 +806,7 @@ export function runAgentTaskEventSystem(
             id,
             "completed",
             event,
-            event.summary ?? speechProfile.taskCompleted,
+            event.summary ?? resolveSpeechVariant(speechProfile.taskCompleted, random),
             now,
           );
           applyTaskMovementHold(components, id, "completed", event.at);
@@ -1255,7 +1258,11 @@ function isPendingReactionStillOverlapping(
 }
 
 // Priority 4: Autonomous idle behaviors (speech, wandering).
-export function runAutonomousBehaviorSystem(components: ComponentStore, clock: Clock): void {
+export function runAutonomousBehaviorSystem(
+  components: ComponentStore,
+  clock: Clock,
+  random: RandomSource = createSeededRandom(1),
+): void {
   const now = clock.now();
 
   // Idle conversation — only when no higher-priority claim holds
@@ -1266,7 +1273,7 @@ export function runAutonomousBehaviorSystem(components: ComponentStore, clock: C
       // Already saying something (social line, agent status, …)? Stay quiet.
       if (components.getComponent(id, "AgentChannelState")?.message) return;
       if (clock.now() - activity.lastActiveAt >= idleConversation.idleAfterMs) {
-        setIdleSpeech(components, id, speechProfile.idleCompanion, now);
+        setIdleSpeech(components, id, resolveSpeechVariant(speechProfile.idleCompanion, random), now);
         // Reset the idle timer so the *next* chatter is another full
         // idleAfterMs away. Without this, lastActiveAt stays frozen (it is only
         // otherwise bumped by agent events), the threshold remains crossed, and
@@ -3138,6 +3145,7 @@ export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
       ctx.components,
       ctx.events.drainWhere((event) => event.kind === "agent"),
       ctx.clock,
+      ctx.random,
     );
   },
 };
@@ -3266,7 +3274,7 @@ export const AutonomousBehaviorSystem: SimulationSystem<WorldStepContext> = {
   reads: ["IdleConversation", "SpeechProfile", "AgentChannelState", "ActivityState"],
   writes: ["AgentChannelState", "BehaviorDecisionState"],
   update(ctx) {
-    runAutonomousBehaviorSystem(ctx.components, ctx.clock);
+    runAutonomousBehaviorSystem(ctx.components, ctx.clock, ctx.random);
   },
 };
 

@@ -5,175 +5,179 @@ import type {
   PetExpressionMood,
 } from "@pets-driven/pet-engine/features/behavior/components";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/personalities/registry";
+import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 
 type AcknowledgedTaskStatus = Extract<AgentTaskStatus, "waiting" | "failed" | "completed">;
 
 export type AcknowledgeFeedback = {
+  /** i18n key (petSpeech.*) resolved to a concrete variant; localized at render. */
   speech: string;
   mood: PetExpressionMood;
   emote: PetExpressionEmote;
 };
 
-type PersonalityVoiceProfile = Omit<SpeechProfileComponent, "type"> & {
-  acknowledge: Record<AcknowledgedTaskStatus, AcknowledgeFeedback>;
+/**
+ * The spoken lines themselves live in the desktop i18n bundle under
+ * `petSpeech.<personality>.<slot>.<variant>` (see packages/i18n). The engine
+ * only holds the expression cues (mood/emote) that drive the sprite face, plus
+ * the machinery to build and randomly pick a localized speech key. Every slot
+ * has {@link PET_SPEECH_VARIANT_COUNT} interchangeable variants.
+ */
+type PersonalityVoiceProfile = {
+  acknowledge: Record<AcknowledgedTaskStatus, { mood: PetExpressionMood; emote: PetExpressionEmote }>;
 };
 
-/** Distinct voice and acknowledgement beats for every Personality Catalog entry. */
+/** Key prefix the render layer recognizes as a localizable speech line (vs. free text). */
+export const PET_SPEECH_KEY_PREFIX = "petSpeech";
+
+/** Interchangeable line variants each speech slot carries in the i18n bundle. */
+export const PET_SPEECH_VARIANT_COUNT = 4;
+
+/** i18n slot names that pair with each SpeechProfile field / acknowledge status. */
+const ACKNOWLEDGE_SLOT: Record<AcknowledgedTaskStatus, string> = {
+  waiting: "ackWaiting",
+  failed: "ackFailed",
+  completed: "ackCompleted",
+};
+
+/** Base (variant-less) speech key for a personality slot, e.g. `petSpeech.playful.idle`. */
+function baseSpeechKey(catalogId: PetPersonalityId, slot: string): string {
+  return `${PET_SPEECH_KEY_PREFIX}.${catalogId}.${slot}`;
+}
+
+/** Pick a variant index within a slot's pool. */
+export function randomSpeechVariant(random: RandomSource): number {
+  return Math.floor(random.next() * PET_SPEECH_VARIANT_COUNT);
+}
+
+/**
+ * Turn a base speech key into a concrete, randomly chosen variant key. Free
+ * text (agent-supplied summaries) and `null` pass through untouched, so this is
+ * safe to wrap around any candidate message line.
+ */
+export function resolveSpeechVariant(line: string | null, random: RandomSource): string | null {
+  if (!line?.startsWith(`${PET_SPEECH_KEY_PREFIX}.`)) return line;
+  return `${line}.${randomSpeechVariant(random)}`;
+}
+
+/** Expression cue (mood/emote) for every Personality Catalog acknowledgement beat. */
 export const PERSONALITY_VOICE_PROFILES: Record<PetPersonalityId, PersonalityVoiceProfile> = {
   playful: {
-    idleCompanion: "Anything fun yet?",
-    attentionNeeded: "Hey! I need you over here.",
-    taskStarted: "On it. Race you!",
-    taskCompleted: "Done! Play time?",
     acknowledge: {
-      waiting: { speech: "Thanks! Let us go!", mood: "excited", emote: "sparkle" },
-      failed: { speech: "Again! We have got this.", mood: "excited", emote: "sparkle" },
-      completed: { speech: "You found it! Ta-da!", mood: "happy", emote: "sparkle" },
+      waiting: { mood: "excited", emote: "sparkle" },
+      failed: { mood: "excited", emote: "sparkle" },
+      completed: { mood: "happy", emote: "sparkle" },
     },
   },
   attentive: {
-    idleCompanion: "I am right here with you.",
-    attentionNeeded: "Could you take a look?",
-    taskStarted: "I am on it.",
-    taskCompleted: "All done. I kept watch.",
     acknowledge: {
-      waiting: { speech: "Thank you. I can continue now.", mood: "love", emote: "heart" },
-      failed: { speech: "Thanks for checking on me.", mood: "love", emote: "heart" },
-      completed: { speech: "I was waiting for you.", mood: "love", emote: "heart" },
+      waiting: { mood: "love", emote: "heart" },
+      failed: { mood: "love", emote: "heart" },
+      completed: { mood: "love", emote: "heart" },
     },
   },
   reserved: {
-    idleCompanion: "I will be here.",
-    attentionNeeded: "When you have a moment...",
-    taskStarted: "I will start quietly.",
-    taskCompleted: "It is finished.",
     acknowledge: {
-      waiting: { speech: "That is enough. Thank you.", mood: "happy", emote: "none" },
-      failed: { speech: "I will try once more.", mood: "thinking", emote: "question" },
-      completed: { speech: "You noticed. Thank you.", mood: "happy", emote: "none" },
+      waiting: { mood: "happy", emote: "none" },
+      failed: { mood: "thinking", emote: "question" },
+      completed: { mood: "happy", emote: "none" },
     },
   },
   curious: {
-    idleCompanion: "I wonder what is over there.",
-    attentionNeeded: "Come see what I found!",
-    taskStarted: "Let me investigate.",
-    taskCompleted: "Mystery solved!",
     acknowledge: {
-      waiting: { speech: "Oh! That explains it.", mood: "thinking", emote: "question" },
-      failed: { speech: "Interesting. What did we miss?", mood: "thinking", emote: "question" },
-      completed: { speech: "Want to see what I found?", mood: "excited", emote: "sparkle" },
+      waiting: { mood: "thinking", emote: "question" },
+      failed: { mood: "thinking", emote: "question" },
+      completed: { mood: "excited", emote: "sparkle" },
     },
   },
   steady: {
-    idleCompanion: "Everything is in order.",
-    attentionNeeded: "I need your decision.",
-    taskStarted: "Proceeding now.",
-    taskCompleted: "Task complete.",
     acknowledge: {
-      waiting: { speech: "Confirmed. Continuing.", mood: "working", emote: "none" },
-      failed: { speech: "Understood. I will adjust.", mood: "working", emote: "none" },
-      completed: { speech: "Acknowledged. Ready for the next task.", mood: "happy", emote: "none" },
+      waiting: { mood: "working", emote: "none" },
+      failed: { mood: "working", emote: "none" },
+      completed: { mood: "happy", emote: "none" },
     },
   },
   bold: {
-    idleCompanion: "What is next?",
-    attentionNeeded: "Your call. Right now.",
-    taskStarted: "I am going in.",
-    taskCompleted: "Handled.",
     acknowledge: {
-      waiting: { speech: "Good. Moving on.", mood: "excited", emote: "exclaim" },
-      failed: { speech: "No problem. Another run.", mood: "excited", emote: "exclaim" },
-      completed: { speech: "Told you I had it.", mood: "happy", emote: "sparkle" },
+      waiting: { mood: "excited", emote: "exclaim" },
+      failed: { mood: "excited", emote: "exclaim" },
+      completed: { mood: "happy", emote: "sparkle" },
     },
   },
   gentle: {
-    idleCompanion: "Take your time. I am here.",
-    attentionNeeded: "Could you help me, please?",
-    taskStarted: "I will take care of it.",
-    taskCompleted: "All done for you.",
     acknowledge: {
-      waiting: { speech: "Thank you for helping.", mood: "love", emote: "heart" },
-      failed: { speech: "It is okay. We can try together.", mood: "love", emote: "heart" },
-      completed: { speech: "I am glad you came by.", mood: "love", emote: "heart" },
+      waiting: { mood: "love", emote: "heart" },
+      failed: { mood: "love", emote: "heart" },
+      completed: { mood: "love", emote: "heart" },
     },
   },
   mischievous: {
-    idleCompanion: "I am definitely behaving.",
-    attentionNeeded: "Psst. Come look at this.",
-    taskStarted: "Leave it to me. Probably.",
-    taskCompleted: "Done. Nothing suspicious happened.",
     acknowledge: {
-      waiting: { speech: "Perfect. The plan continues.", mood: "excited", emote: "sparkle" },
-      failed: { speech: "That was the practice run.", mood: "happy", emote: "sparkle" },
-      completed: { speech: "Surprise! It actually worked.", mood: "excited", emote: "sparkle" },
+      waiting: { mood: "excited", emote: "sparkle" },
+      failed: { mood: "happy", emote: "sparkle" },
+      completed: { mood: "excited", emote: "sparkle" },
     },
   },
   lazy: {
-    idleCompanion: "I am conserving energy.",
-    attentionNeeded: "Could you come over here?",
-    taskStarted: "Okay... starting.",
-    taskCompleted: "Finished. Nap time.",
     acknowledge: {
-      waiting: { speech: "Thanks. That saved me a trip.", mood: "sleepy", emote: "zzz" },
-      failed: { speech: "Maybe after a tiny rest.", mood: "sleepy", emote: "zzz" },
-      completed: { speech: "Great. Wake me for the next one.", mood: "sleepy", emote: "zzz" },
+      waiting: { mood: "sleepy", emote: "zzz" },
+      failed: { mood: "sleepy", emote: "zzz" },
+      completed: { mood: "sleepy", emote: "zzz" },
     },
   },
   zen: {
-    idleCompanion: "There is no need to hurry.",
-    attentionNeeded: "A quiet decision is needed.",
-    taskStarted: "I will begin.",
-    taskCompleted: "It is complete.",
     acknowledge: {
-      waiting: { speech: "Thank you. The way is clear.", mood: "happy", emote: "sparkle" },
-      failed: { speech: "We learned where the path bends.", mood: "thinking", emote: "none" },
-      completed: { speech: "A good place to pause.", mood: "happy", emote: "sparkle" },
+      waiting: { mood: "happy", emote: "sparkle" },
+      failed: { mood: "thinking", emote: "none" },
+      completed: { mood: "happy", emote: "sparkle" },
     },
   },
   aloof: {
-    idleCompanion: "I was fine on my own.",
-    attentionNeeded: "I require one thing.",
-    taskStarted: "I will handle it.",
-    taskCompleted: "It is done.",
     acknowledge: {
-      waiting: { speech: "That will do.", mood: "working", emote: "none" },
-      failed: { speech: "I will deal with it.", mood: "thinking", emote: "none" },
-      completed: { speech: "Yes, I finished it.", mood: "happy", emote: "none" },
+      waiting: { mood: "working", emote: "none" },
+      failed: { mood: "thinking", emote: "none" },
+      completed: { mood: "happy", emote: "none" },
     },
   },
   skittish: {
-    idleCompanion: "Was that something moving?",
-    attentionNeeded: "Please come quickly!",
-    taskStarted: "Okay. Carefully now.",
-    taskCompleted: "It is done... right?",
     acknowledge: {
-      waiting: { speech: "Oh! You are here. Good.", mood: "happy", emote: "sparkle" },
-      failed: { speech: "I knew something felt wrong!", mood: "confused", emote: "exclaim" },
-      completed: { speech: "You startled me! But it is done.", mood: "confused", emote: "exclaim" },
+      waiting: { mood: "happy", emote: "sparkle" },
+      failed: { mood: "confused", emote: "exclaim" },
+      completed: { mood: "confused", emote: "exclaim" },
     },
   },
 };
 
+/**
+ * SpeechProfile carrying *base* speech keys for a catalog personality. The
+ * emitting systems resolve a random variant at speak time via
+ * {@link resolveSpeechVariant}; the render layer localizes the result.
+ */
 export function personalitySpeechProfile(
   catalogId: PetPersonalityId | undefined,
 ): SpeechProfileComponent | null {
   if (!catalogId) return null;
-  const profile = PERSONALITY_VOICE_PROFILES[catalogId];
   return {
     type: "SpeechProfile",
-    idleCompanion: profile.idleCompanion,
-    attentionNeeded: profile.attentionNeeded,
-    taskStarted: profile.taskStarted,
-    taskCompleted: profile.taskCompleted,
+    idleCompanion: baseSpeechKey(catalogId, "idle"),
+    attentionNeeded: baseSpeechKey(catalogId, "attention"),
+    taskStarted: baseSpeechKey(catalogId, "started"),
+    taskCompleted: baseSpeechKey(catalogId, "completed"),
   };
 }
 
 export function personalityAcknowledgeFeedback(
   catalogId: PetPersonalityId | undefined,
   status: AgentTaskStatus,
+  random: RandomSource,
 ): AcknowledgeFeedback | null {
   if (!catalogId || !statusFreezesForFeedback(status)) return null;
-  return PERSONALITY_VOICE_PROFILES[catalogId].acknowledge[status];
+  const cue = PERSONALITY_VOICE_PROFILES[catalogId].acknowledge[status];
+  return {
+    speech: `${baseSpeechKey(catalogId, ACKNOWLEDGE_SLOT[status])}.${randomSpeechVariant(random)}`,
+    mood: cue.mood,
+    emote: cue.emote,
+  };
 }
 
 function statusFreezesForFeedback(status: AgentTaskStatus): status is AcknowledgedTaskStatus {

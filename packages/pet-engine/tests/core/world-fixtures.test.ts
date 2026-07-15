@@ -1604,12 +1604,15 @@ describe("adopted pets scenario", () => {
       },
     ]);
 
+    // Catalog personalities carry localizable base speech keys; the spoken text
+    // lives in the desktop i18n bundle and is resolved to a random variant at
+    // speak time (see personalitySpeechProfile / resolveSpeechVariant).
     expect(scenario.world.getComponent("reserved-pet", "SpeechProfile")).toEqual({
       type: "SpeechProfile",
-      idleCompanion: "I will be here.",
-      attentionNeeded: "When you have a moment...",
-      taskStarted: "I will start quietly.",
-      taskCompleted: "It is finished.",
+      idleCompanion: "petSpeech.reserved.idle",
+      attentionNeeded: "petSpeech.reserved.attention",
+      taskStarted: "petSpeech.reserved.started",
+      taskCompleted: "petSpeech.reserved.completed",
     });
   });
 

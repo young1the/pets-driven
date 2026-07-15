@@ -7,6 +7,7 @@ import {
   msUntilNextAtlasFrame,
   PET_CELL_SIZE,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import { PET_SPEECH_KEY_PREFIX } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
@@ -922,8 +923,13 @@ function PetStatusCard({
     : status.label;
   // The agent-channel overlay owns the single message line: social/idle/greet
   // dialogue arrives here as a null-status channel message, agent lines as a
-  // status-bearing one. A transient host notice still outranks it.
-  const messageLine = notice ?? status.message;
+  // status-bearing one. A transient host notice still outranks it. Personality
+  // dialogue arrives as a `petSpeech.*` i18n key (localized here); agent-supplied
+  // summaries are free text and show verbatim.
+  const rawMessage = notice ?? status.message;
+  const messageLine = rawMessage?.startsWith(`${PET_SPEECH_KEY_PREFIX}.`)
+    ? t(rawMessage)
+    : rawMessage;
 
   return (
     <div

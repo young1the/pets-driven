@@ -42,4 +42,18 @@ describe("pet window speech line", () => {
 
     expect(screen.queryByText("Guess what?")).not.toBeInTheDocument();
   });
+
+  it("localizes a petSpeech.* dialogue key to its bundle text", () => {
+    const chatting = PET_WINDOW_FIXTURES.find((f) => f.id === "chatting")!;
+    const presentation = {
+      ...chatting.presentation,
+      overlay: { kind: "agent-channel", status: null, message: "petSpeech.playful.idle.0" },
+    } as typeof chatting.presentation;
+
+    render(<PetWindowView pet={chatting.pet} previewPresentation={presentation} />);
+
+    // The key resolves to variant 0 of the playful idle pool (default en bundle).
+    expect(screen.getByText("Anything fun yet?")).toBeInTheDocument();
+    expect(screen.queryByText("petSpeech.playful.idle.0")).not.toBeInTheDocument();
+  });
 });
