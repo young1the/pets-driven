@@ -56,7 +56,11 @@ export function MainWindow({
               icon: <TerminalIcon />,
             },
             { value: "settings", label: t("nav.settings"), icon: <GearIcon /> },
-            { value: "debug", label: t("nav.debug"), icon: <WrenchIcon /> },
+            // The debug tab is a dev-only surface (see the "devOnly" badge in
+            // DebugSection); hide it entirely from production builds.
+            ...(import.meta.env.DEV
+              ? [{ value: "debug", label: t("nav.debug"), icon: <WrenchIcon /> }]
+              : []),
           ]}
           onChange={(value) => onTab(value as MainWindowTab)}
           value={editPet ? "" : tab}

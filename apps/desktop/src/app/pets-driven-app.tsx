@@ -9,7 +9,6 @@ import {
   createDemoScenario,
   deriveAdoptedPetLocomotion,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
-import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { invoke, isTauri } from "@tauri-apps/api/core";
@@ -64,11 +63,6 @@ import {
   type PetCardStatus,
   petStatusFromSnapshot,
 } from "@/app-state/pet-card-status";
-import {
-  createPetDiagnosticsTracker,
-  type PetDiagnosticsSnapshot,
-  type PetDiagnosticsTracker,
-} from "@/app-state/pet-debug-diagnostics";
 import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
 import {
   createEmptyPetsDrivenState,
@@ -383,12 +377,9 @@ function PetsDrivenHostApp() {
     height: number;
   } | null>(null);
   const adoptedScenarioRef = useRef<ReturnType<typeof createAdoptedPetsScenario> | null>(null);
-  const adoptedDiagnosticsTrackerRef = useRef<PetDiagnosticsTracker>(createPetDiagnosticsTracker());
   // Display hysteresis for the card status chip — autonomous decisions churn
   // every 500ms-2s, so raw per-tick labels are unreadable without it.
   const adoptedStatusTrackerRef = useRef(createPetCardStatusTracker());
-  const adoptedDiagnosticsRef = useRef<PetDiagnosticsSnapshot | null>(null);
-  const adoptedSnapshotRef = useRef<WorldSnapshot | null>(null);
   const adoptedPetIdsRef = useRef<Set<string>>(new Set());
   // petId -> the window this pet is bound to. In-memory only; HWNDs go stale
   // across restarts, so a dead focus just clears the binding.
@@ -433,7 +424,6 @@ function PetsDrivenHostApp() {
   const [mainTab, setMainTab] = useState<MainWindowTab>(devFixture?.tab ?? "home");
   const [editPetId, setEditPetId] = useState<string | null>(devFixture?.editPetId ?? null);
   const [toast, setToast] = useState<string | null>(null);
-  const [diagnosticReport] = useState<string | null>(null);
   const [petStatusById, setPetStatusById] = useState<Record<string, PetCardStatus>>({});
   const [defaultPetSourceFolder, setDefaultPetSourceFolder] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -910,10 +900,7 @@ function PetsDrivenHostApp() {
 
     if (simInputs.length === 0) {
       adoptedScenarioRef.current = null;
-      adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
       adoptedStatusTrackerRef.current = createPetCardStatusTracker();
-      adoptedDiagnosticsRef.current = null;
-      adoptedSnapshotRef.current = null;
       adoptedPetIdsRef.current = new Set();
       adoptedLastEmitByPetIdRef.current = new Map();
       return;
@@ -967,10 +954,7 @@ function PetsDrivenHostApp() {
       // it until the counter climbed back past where it had been (~tens of seconds).
       adoptedLastEmitByPetIdRef.current = new Map();
       adoptedScaleByPetIdRef.current = scaleByPetId;
-      adoptedDiagnosticsTrackerRef.current = createPetDiagnosticsTracker();
       adoptedStatusTrackerRef.current = createPetCardStatusTracker();
-      adoptedDiagnosticsRef.current = null;
-      adoptedSnapshotRef.current = null;
     });
 
     const intervalId = window.setInterval(() => {
@@ -1010,12 +994,6 @@ function PetsDrivenHostApp() {
       adoptedHostSequenceRef.current += 1;
 
       const snapshot = scenario.world.snapshot();
-      adoptedSnapshotRef.current = snapshot;
-      adoptedDiagnosticsRef.current = adoptedDiagnosticsTrackerRef.current.record({
-        now: scenario.clock.now(),
-        sequence: adoptedHostSequenceRef.current,
-        snapshot,
-      });
 
       const nextStatuses: Record<string, PetCardStatus> = {};
       for (const petSnapshot of snapshot.pets) {
@@ -1563,7 +1541,6 @@ function PetsDrivenHostApp() {
             ],
           },
         ],
-        diagnosticReport,
       }}
       edit={{
         onName: (value) => editPetId && patchPet(editPetId, { name: value }),

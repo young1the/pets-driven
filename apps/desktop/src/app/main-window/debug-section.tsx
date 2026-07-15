@@ -7,10 +7,9 @@ export type DebugGroup = { title: string; hint: string; items: DebugAction[] };
 export interface DebugSectionProps {
   groups: DebugGroup[];
   error: string | null;
-  diagnosticReport?: string | null;
 }
 
-export function DebugSection({ groups, error, diagnosticReport }: DebugSectionProps) {
+export function DebugSection({ groups, error }: DebugSectionProps) {
   const { t } = useTranslation("desktop");
   return (
     <div style={{ padding: "38px 24px 64px" }}>
@@ -113,50 +112,6 @@ export function DebugSection({ groups, error, diagnosticReport }: DebugSectionPr
               </div>
             </div>
           ))}
-          {diagnosticReport ? (
-            <div
-              style={{
-                background: "var(--surface-card)",
-                border: "1px solid var(--border-soft)",
-                borderRadius: "18px",
-                boxShadow: "var(--shadow-sm)",
-                padding: "18px 20px",
-              }}
-            >
-              <label
-                htmlFor="pet-diagnostics-report"
-                style={{
-                  display: "block",
-                  fontFamily: "var(--font-display)",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  marginBottom: "10px",
-                  color: "var(--text-strong)",
-                }}
-              >
-                {t("debug.reportLabel")}
-              </label>
-              <textarea
-                id="pet-diagnostics-report"
-                readOnly
-                value={diagnosticReport}
-                style={{
-                  boxSizing: "border-box",
-                  width: "100%",
-                  minHeight: "280px",
-                  resize: "vertical",
-                  border: "1px solid var(--border-soft)",
-                  borderRadius: "10px",
-                  padding: "12px",
-                  color: "var(--text-strong)",
-                  background: "var(--surface-raised)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "12px",
-                  lineHeight: 1.5,
-                }}
-              />
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

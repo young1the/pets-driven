@@ -132,8 +132,7 @@
   "debug": {
     "title": "Developer tools",
     "devOnly": "dev only",
-    "subtitle": "Fixtures and playground actions, kept out of the everyday flow.",
-    "reportLabel": "Pet diagnostics report"
+    "subtitle": "Fixtures and playground actions, kept out of the everyday flow."
   },
   "onboarding": {
     "pageAria": "Pet onboarding",

@@ -132,8 +132,7 @@
   "debug": {
     "title": "개발자 도구",
     "devOnly": "개발 전용",
-    "subtitle": "일상 흐름에서 분리해 둔 픽스처와 플레이그라운드 동작이에요.",
-    "reportLabel": "펫 진단 리포트"
+    "subtitle": "일상 흐름에서 분리해 둔 픽스처와 플레이그라운드 동작이에요."
   },
   "onboarding": {
     "pageAria": "펫 온보딩",
