@@ -130,7 +130,7 @@ describe("demo scenario", () => {
     const scenario = createDemoScenario();
     const snapshot = scenario.world.snapshot();
 
-    expect(snapshot.bodies.filter((body) => body.id.startsWith("pet-"))).toHaveLength(7);
+    expect(snapshot.bodies.filter((body) => body.id.startsWith("pet-"))).toHaveLength(12);
     expect(snapshot.bodies.some((body) => body.id === "monitor-ground")).toBe(true);
   });
 
@@ -593,10 +593,10 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.getComponent("pet-a", "SpeechProfile")).toEqual({
       type: "SpeechProfile",
-      idleCompanion: "Still here with you.",
-      attentionNeeded: "I need you.",
-      taskStarted: "Working on it.",
-      taskCompleted: "Done.",
+      idleCompanion: "petSpeech.playful.idle",
+      attentionNeeded: "petSpeech.playful.attention",
+      taskStarted: "petSpeech.playful.started",
+      taskCompleted: "petSpeech.playful.completed",
     });
     expect(scenario.world.getComponent("pet-a", "IdleConversation")).toEqual({
       type: "IdleConversation",
@@ -882,6 +882,11 @@ describe("demo scenario", () => {
       "Eve",
       "Finn",
       "Gwen",
+      "Hugo",
+      "Ivy",
+      "Juno",
+      "Kai",
+      "Lena",
     ]);
     expect(snapshot.pets.map((pet) => pet.locomotion)).toEqual([
       "walk",
@@ -891,10 +896,20 @@ describe("demo scenario", () => {
       "fly",
       "fly",
       "fly",
+      "walk",
+      "walk",
+      "walk",
+      "walk",
+      "walk",
     ]);
     expect(snapshot.pets.map((pet) => pet.action)).toEqual([
       "none",
       "jump-requested",
+      "none",
+      "none",
+      "none",
+      "none",
+      "none",
       "none",
       "none",
       "none",

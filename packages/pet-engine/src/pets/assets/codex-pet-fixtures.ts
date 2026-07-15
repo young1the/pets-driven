@@ -55,6 +55,11 @@ export const PLAYGROUND_PET_ASSET_BY_ENTITY_ID = {
   "pet-e": "bloop",
   "pet-f": "pip",
   "pet-g": "cato",
+  "pet-h": "otto",
+  "pet-i": "mochi",
+  "pet-j": "fenn",
+  "pet-k": "bloop",
+  "pet-l": "pip",
 } as const;
 export const PLAYGROUND_PET_ENTITY_IDS = Object.keys(
   PLAYGROUND_PET_ASSET_BY_ENTITY_ID,

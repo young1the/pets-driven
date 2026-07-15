@@ -295,6 +295,7 @@ export function createDemoScenario(options?: {
           // playful: high openness + extraversion, low neuroticism
           {
             type: "Personality",
+            catalogId: "playful",
             openness: 0.7,
             conscientiousness: 0.4,
             extraversion: 0.85,
@@ -334,6 +335,7 @@ export function createDemoScenario(options?: {
           // attentive: high extraversion + agreeableness
           {
             type: "Personality",
+            catalogId: "attentive",
             openness: 0.3,
             conscientiousness: 0.6,
             extraversion: 0.8,
@@ -389,9 +391,10 @@ export function createDemoScenario(options?: {
                 },
               ]
             : []),
-          // playful + climb tendency: high openness + extraversion
+          // curious climber: high openness + extraversion
           {
             type: "Personality",
+            catalogId: "curious",
             openness: 0.7,
             conscientiousness: 0.4,
             extraversion: 0.85,
@@ -415,6 +418,7 @@ export function createDemoScenario(options?: {
           // reserved: high neuroticism, low extraversion
           {
             type: "Personality",
+            catalogId: "reserved",
             openness: 0.3,
             conscientiousness: 0.5,
             extraversion: 0.2,
@@ -434,8 +438,10 @@ export function createDemoScenario(options?: {
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
+          // zen: calm, warm, unflappable
           {
             type: "Personality",
+            catalogId: "zen",
             openness: 0.6,
             conscientiousness: 0.5,
             extraversion: 0.6,
@@ -455,8 +461,10 @@ export function createDemoScenario(options?: {
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
+          // gentle: hyper-agreeable, unhurried
           {
             type: "Personality",
+            catalogId: "gentle",
             openness: 0.4,
             conscientiousness: 0.7,
             extraversion: 0.5,
@@ -476,13 +484,133 @@ export function createDemoScenario(options?: {
           { type: "FlyingTag" },
           { type: "CanFly", gravityScale: 0, hoverStrength: 0 },
           { type: "WandersOnArrival", arrivalRadius: 16 },
+          // steady: disciplined, grounded, sticks to routine
           {
             type: "Personality",
+            catalogId: "steady",
             openness: 0.55,
             conscientiousness: 0.45,
             extraversion: 0.65,
             agreeableness: 0.55,
             neuroticism: 0.2,
+          },
+        ],
+      }),
+      // Five ground walkers rounding out the twelve-personality roster, spread
+      // across the primary monitor floor. Same locomotion so the playground
+      // isolates how each catalog personality *behaves and speaks*.
+      createFixturePet({
+        id: "pet-h",
+        sourceId: "agent-h",
+        name: "Hugo",
+        x: 950,
+        y: floorPetY,
+        components: [
+          ...petBodyComponents,
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          // bold: fearless extravert, low agreeableness
+          {
+            type: "Personality",
+            catalogId: "bold",
+            openness: 0.7,
+            conscientiousness: 0.35,
+            extraversion: 0.92,
+            agreeableness: 0.28,
+            neuroticism: 0.05,
+          },
+        ],
+      }),
+      createFixturePet({
+        id: "pet-i",
+        sourceId: "agent-i",
+        name: "Ivy",
+        x: 1150,
+        y: floorPetY,
+        components: [
+          ...petBodyComponents,
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          // mischievous: impulsive, undisciplined, contrary
+          {
+            type: "Personality",
+            catalogId: "mischievous",
+            openness: 0.9,
+            conscientiousness: 0.1,
+            extraversion: 0.82,
+            agreeableness: 0.32,
+            neuroticism: 0.35,
+          },
+        ],
+      }),
+      createFixturePet({
+        id: "pet-j",
+        sourceId: "agent-j",
+        name: "Juno",
+        x: 1350,
+        y: floorPetY,
+        components: [
+          ...petBodyComponents,
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          // lazy: barely budges, content doing nothing
+          {
+            type: "Personality",
+            catalogId: "lazy",
+            openness: 0.28,
+            conscientiousness: 0.18,
+            extraversion: 0.1,
+            agreeableness: 0.55,
+            neuroticism: 0.18,
+          },
+        ],
+      }),
+      createFixturePet({
+        id: "pet-k",
+        sourceId: "agent-k",
+        name: "Kai",
+        x: 1550,
+        y: floorPetY,
+        components: [
+          ...petBodyComponents,
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          // aloof: prickly loner, ignores the user
+          {
+            type: "Personality",
+            catalogId: "aloof",
+            openness: 0.4,
+            conscientiousness: 0.6,
+            extraversion: 0.15,
+            agreeableness: 0.08,
+            neuroticism: 0.3,
+          },
+        ],
+      }),
+      createFixturePet({
+        id: "pet-l",
+        sourceId: "agent-l",
+        name: "Lena",
+        x: 1750,
+        y: floorPetY,
+        components: [
+          ...petBodyComponents,
+          { type: "WalkingTag" },
+          { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
+          { type: "WandersOnArrival", arrivalRadius: 16 },
+          // skittish: jittery, high-strung, spooks easily
+          {
+            type: "Personality",
+            catalogId: "skittish",
+            openness: 0.3,
+            conscientiousness: 0.4,
+            extraversion: 0.25,
+            agreeableness: 0.5,
+            neuroticism: 0.95,
           },
         ],
       }),

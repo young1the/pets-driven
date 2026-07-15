@@ -30,6 +30,11 @@ describe("codex pet fixtures", () => {
       "pet-e",
       "pet-f",
       "pet-g",
+      "pet-h",
+      "pet-i",
+      "pet-j",
+      "pet-k",
+      "pet-l",
     ]);
   });
 
@@ -52,9 +57,14 @@ describe("codex pet fixtures", () => {
       "pet-e",
       "pet-f",
       "pet-g",
+      "pet-h",
+      "pet-i",
+      "pet-j",
+      "pet-k",
+      "pet-l",
     ]);
     expect(catalog["pet-a"].src).toBe("/codex-pets/cato/spritesheet.webp");
-    expect(loadedUrls).toHaveLength(7);
+    expect(loadedUrls).toHaveLength(12);
   });
 
   it("falls back to the bundled Bloop spritesheet when a Codex pet is missing", async () => {

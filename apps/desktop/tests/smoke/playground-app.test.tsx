@@ -20,10 +20,6 @@ describe("PlaygroundApp", () => {
     render(<PlaygroundApp />);
   }
 
-  function selectView(name: string) {
-    fireEvent.click(screen.getByRole("tab", { name }));
-  }
-
   function petStatusList() {
     const heading = screen.getByRole("heading", {
       name: PLAYGROUND_TEXT.petStatusTitle,
@@ -33,7 +29,7 @@ describe("PlaygroundApp", () => {
     return within(section as HTMLElement);
   }
 
-  it("renders the simulation canvas shell", () => {
+  it("renders the demo simulation directly without a tab hub", () => {
     renderPlayground();
 
     expect(screen.getByRole("heading", { name: PLAYGROUND_TEXT.title })).toBeInTheDocument();
@@ -41,61 +37,8 @@ describe("PlaygroundApp", () => {
     expect(
       screen.getByRole("heading", { name: PLAYGROUND_TEXT.behaviorLabTitle }),
     ).toBeInTheDocument();
-  });
-
-  it("renders simulation playgrounds from the unified grouped tab shell", () => {
-    renderPlayground();
-
-    expect(screen.getByRole("tablist", { name: "Simulation playgrounds" })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("tablist", { name: "Prototype playgrounds" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Demo" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.queryByRole("tab", { name: "Design" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Behavior" })).not.toBeInTheDocument();
-
-    selectView("Jump");
-    expect(screen.getByRole("heading", { name: "Jump playground" })).toBeInTheDocument();
-    expect(screen.getByTestId("jump-world-canvas")).toBeInTheDocument();
-    expect(screen.getByText("Alice")).toBeInTheDocument();
-    expect(screen.getByText("Gwen")).toBeInTheDocument();
-
-    selectView("Climb");
-    expect(screen.getByRole("heading", { name: "Climb playground" })).toBeInTheDocument();
-    expect(screen.getByTestId("climb-world-canvas")).toBeInTheDocument();
-    expect(screen.getByText("Alice")).toBeInTheDocument();
-    expect(screen.getByText("Eve")).toBeInTheDocument();
-  });
-
-  it("defaults removed prototype hashes to demo and updates the hash when tabs change", () => {
-    window.history.replaceState(null, "", "/playground.html#behavior");
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-      {} as CanvasRenderingContext2D,
-    );
-
-    render(<PlaygroundApp />);
-
-    expect(screen.getByRole("tab", { name: "Demo" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByTestId("world-canvas")).toBeInTheDocument();
-
-    selectView("Climb");
-
-    expect(window.location.hash).toBe("#climb");
-    expect(screen.getByRole("tab", { name: "Climb" })).toHaveAttribute("aria-selected", "true");
-  });
-
-  it("remounts playground views when switching tabs", () => {
-    renderPlayground();
-
-    selectView("Jump");
-    fireEvent.click(screen.getByRole("button", { name: "Pause animation" }));
-    fireEvent.click(screen.getByRole("button", { name: "Play next frame" }));
-    expect(screen.getByText("Frame: 1")).toBeInTheDocument();
-
-    selectView("Climb");
-    selectView("Jump");
-
-    expect(screen.getByText("Frame: 0")).toBeInTheDocument();
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
   });
 
   it("forwards pointer events from the canvas to the world", () => {
@@ -193,13 +136,22 @@ describe("PlaygroundApp", () => {
     render(<PlaygroundApp />);
 
     const petStatus = petStatusList();
-    expect(petStatus.getByText("Alice")).toBeInTheDocument();
-    expect(petStatus.getByText("Bob")).toBeInTheDocument();
-    expect(petStatus.getByText("Charlie")).toBeInTheDocument();
-    expect(petStatus.getByText("Dana")).toBeInTheDocument();
-    expect(petStatus.getByText("Eve")).toBeInTheDocument();
-    expect(petStatus.getByText("Finn")).toBeInTheDocument();
-    expect(petStatus.getByText("Gwen")).toBeInTheDocument();
+    for (const name of [
+      "Alice",
+      "Bob",
+      "Charlie",
+      "Dana",
+      "Eve",
+      "Finn",
+      "Gwen",
+      "Hugo",
+      "Ivy",
+      "Juno",
+      "Kai",
+      "Lena",
+    ]) {
+      expect(petStatus.getByText(name)).toBeInTheDocument();
+    }
   });
 
   it("keeps animation controls available", () => {
@@ -229,7 +181,7 @@ describe("PlaygroundApp", () => {
     expect(screen.getByText(`${PLAYGROUND_TEXT.frameCounterPrefix} 1`)).toBeInTheDocument();
   });
 
-  it("can switch the playground into a dual-monitor verification scenario", () => {
+  it("runs the demo in the dual-monitor verification scenario", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       clearRect: vi.fn(),
       fillRect: vi.fn(),
@@ -239,8 +191,6 @@ describe("PlaygroundApp", () => {
     } as unknown as CanvasRenderingContext2D);
 
     render(<PlaygroundApp />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Dual monitor" }));
 
     const canvas = screen.getByTestId("world-canvas");
     expect(canvas).toHaveAttribute("width", "3200");

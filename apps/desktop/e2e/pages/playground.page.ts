@@ -16,10 +16,6 @@ export class PlaygroundPage {
     ).toBeVisible();
   }
 
-  async selectPlaygroundView(name: "Demo" | "Jump" | "Climb") {
-    await this.page.getByRole("tab", { name, exact: true }).click();
-  }
-
   async sendStartedEvent() {
     await this.page.getByRole("button", { name: "Prompt" }).click();
   }
@@ -30,18 +26,6 @@ export class PlaygroundPage {
 
   async sendCompletedEvent() {
     await this.page.getByRole("button", { name: "Done" }).click();
-  }
-
-  async startWalkDemo() {
-    await this.selectPlaygroundView("Demo");
-  }
-
-  async startJumpDemo() {
-    await this.selectPlaygroundView("Jump");
-  }
-
-  async startWallClimbDemo() {
-    await this.selectPlaygroundView("Climb");
   }
 
   async expectLastEventType(type: string) {

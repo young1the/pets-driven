@@ -31,25 +31,9 @@ test("walk demo exposes locomotion state in the playground", async ({ page }) =>
 
   await playground.goto();
   await playground.expectReady();
-  await playground.startWalkDemo();
 
   await playground.expectPetLocomotion("Alice", "walk");
   await playground.expectPetStatus("Alice", "idle", "Walking to the right");
-});
-
-test("jump and wall-climb demos expose locomotion state in the playground", async ({ page }) => {
-  const playground = new PlaygroundPage(page);
-
-  await playground.goto();
-  await playground.expectReady();
-
-  await playground.startJumpDemo();
-  await playground.expectPetLocomotion("Alice", "walk");
-  await playground.expectPetStatus("Alice", "idle", "Jumping up");
-
-  await playground.startWallClimbDemo();
-  await playground.expectPetLocomotion("Alice", "climb");
-  await playground.expectPetStatus("Alice", "idle", "Climbing the wall");
 });
 
 test("behavior lab inspects pet movement components", async ({ page }) => {
