@@ -12,8 +12,9 @@ use tauri::Manager;
 
 const PETS_DRIVEN_STATE_FILE_NAME: &str = "state.v1.json";
 
-/// Serialises concurrent hatch read-modify-write cycles against the state file.
-static HATCH_LOCK: Mutex<()> = Mutex::new(());
+/// Serialises concurrent read-modify-write cycles against the state file
+/// (hatch, pet update, pet delete).
+static STATE_MUTATION_LOCK: Mutex<()> = Mutex::new(());
 static ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn empty_pets_driven_state() -> serde_json::Value {
@@ -101,7 +102,22 @@ pub(crate) enum HatchError {
 
 // coupling: keep these in sync with the factories in
 // packages/pet-engine/src/pets/personalities/factories.ts
-fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
+pub(crate) const PERSONALITY_IDS: [&str; 12] = [
+    "playful",
+    "attentive",
+    "reserved",
+    "curious",
+    "steady",
+    "bold",
+    "gentle",
+    "mischievous",
+    "lazy",
+    "zen",
+    "aloof",
+    "skittish",
+];
+
+pub(crate) fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
     match personality_id {
         "playful" => Some(serde_json::json!({
             "standForce": 0.0008,
@@ -109,70 +125,141 @@ fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
             "arriveForce": 0.002,
             "idleConversationMs": 9000,
             "completionIntent": "arrive",
-            "openness": 0.7,
-            "conscientiousness": 0.4,
-            "extraversion": 0.85,
-            "agreeableness": 0.5,
-            "neuroticism": 0.1
+            "openness": 0.75,
+            "conscientiousness": 0.3,
+            "extraversion": 0.95,
+            "agreeableness": 0.55,
+            "neuroticism": 0.08
         })),
         "attentive" => Some(serde_json::json!({
             "standForce": 0.0005,
             "pursueForce": 0.001,
             "arriveForce": 0.0016,
-            "idleConversationMs": 12000,
+            "idleConversationMs": 11000,
             "completionIntent": "arrive",
-            "openness": 0.3,
-            "conscientiousness": 0.6,
-            "extraversion": 0.8,
-            "agreeableness": 0.8,
-            "neuroticism": 0.2
+            "openness": 0.25,
+            "conscientiousness": 0.72,
+            "extraversion": 0.72,
+            "agreeableness": 0.95,
+            "neuroticism": 0.15
         })),
         "reserved" => Some(serde_json::json!({
             "standForce": 0.0004,
             "pursueForce": 0.0008,
             "arriveForce": 0.001,
             "completionIntent": "stand",
-            "openness": 0.3,
-            "conscientiousness": 0.5,
-            "extraversion": 0.2,
-            "agreeableness": 0.4,
-            "neuroticism": 0.75
+            "openness": 0.22,
+            "conscientiousness": 0.55,
+            "extraversion": 0.12,
+            "agreeableness": 0.38,
+            "neuroticism": 0.82
         })),
         "curious" => Some(serde_json::json!({
             "standForce": 0.0007,
             "pursueForce": 0.0013,
             "arriveForce": 0.0015,
-            "idleConversationMs": 14000,
+            "idleConversationMs": 13000,
             "completionIntent": "arrive",
-            "openness": 0.9,
+            "openness": 0.98,
             "conscientiousness": 0.35,
-            "extraversion": 0.55,
-            "agreeableness": 0.6,
-            "neuroticism": 0.25
+            "extraversion": 0.45,
+            "agreeableness": 0.55,
+            "neuroticism": 0.3
         })),
         "steady" => Some(serde_json::json!({
             "standForce": 0.00045,
             "pursueForce": 0.0009,
             "arriveForce": 0.0012,
-            "idleConversationMs": 18000,
+            "idleConversationMs": 20000,
             "completionIntent": "stand",
-            "openness": 0.45,
-            "conscientiousness": 0.85,
-            "extraversion": 0.45,
+            "openness": 0.35,
+            "conscientiousness": 0.95,
+            "extraversion": 0.4,
             "agreeableness": 0.7,
-            "neuroticism": 0.15
+            "neuroticism": 0.06
         })),
         "bold" => Some(serde_json::json!({
             "standForce": 0.0009,
             "pursueForce": 0.0018,
             "arriveForce": 0.0022,
+            "idleConversationMs": 9000,
+            "completionIntent": "arrive",
+            "openness": 0.7,
+            "conscientiousness": 0.35,
+            "extraversion": 0.92,
+            "agreeableness": 0.28,
+            "neuroticism": 0.05
+        })),
+        "gentle" => Some(serde_json::json!({
+            "standForce": 0.0004,
+            "pursueForce": 0.0008,
+            "arriveForce": 0.001,
+            "idleConversationMs": 14000,
+            "completionIntent": "arrive",
+            "openness": 0.45,
+            "conscientiousness": 0.65,
+            "extraversion": 0.3,
+            "agreeableness": 0.98,
+            "neuroticism": 0.12
+        })),
+        "mischievous" => Some(serde_json::json!({
+            "standForce": 0.001,
+            "pursueForce": 0.002,
+            "arriveForce": 0.0025,
             "idleConversationMs": 8000,
             "completionIntent": "arrive",
-            "openness": 0.8,
-            "conscientiousness": 0.45,
-            "extraversion": 0.9,
+            "openness": 0.9,
+            "conscientiousness": 0.1,
+            "extraversion": 0.82,
+            "agreeableness": 0.32,
+            "neuroticism": 0.35
+        })),
+        "lazy" => Some(serde_json::json!({
+            "standForce": 0.0002,
+            "pursueForce": 0.0005,
+            "arriveForce": 0.0007,
+            "idleConversationMs": 30000,
+            "completionIntent": "stand",
+            "openness": 0.28,
+            "conscientiousness": 0.18,
+            "extraversion": 0.1,
             "agreeableness": 0.55,
-            "neuroticism": 0.12
+            "neuroticism": 0.18
+        })),
+        "zen" => Some(serde_json::json!({
+            "standForce": 0.00035,
+            "pursueForce": 0.0007,
+            "arriveForce": 0.0009,
+            "idleConversationMs": 22000,
+            "completionIntent": "stand",
+            "openness": 0.6,
+            "conscientiousness": 0.7,
+            "extraversion": 0.45,
+            "agreeableness": 0.8,
+            "neuroticism": 0.02
+        })),
+        "aloof" => Some(serde_json::json!({
+            "standForce": 0.00035,
+            "pursueForce": 0.0007,
+            "arriveForce": 0.0009,
+            "idleConversationMs": 24000,
+            "completionIntent": "stand",
+            "openness": 0.4,
+            "conscientiousness": 0.6,
+            "extraversion": 0.15,
+            "agreeableness": 0.08,
+            "neuroticism": 0.3
+        })),
+        "skittish" => Some(serde_json::json!({
+            "standForce": 0.0006,
+            "pursueForce": 0.0013,
+            "arriveForce": 0.0016,
+            "completionIntent": "stand",
+            "openness": 0.3,
+            "conscientiousness": 0.4,
+            "extraversion": 0.25,
+            "agreeableness": 0.5,
+            "neuroticism": 0.95
         })),
         _ => None,
     }
@@ -343,9 +430,9 @@ pub(crate) fn hatch_pet(
     app: &tauri::AppHandle,
     input: HatchInput,
 ) -> Result<serde_json::Value, String> {
-    let _guard = HATCH_LOCK
+    let _guard = STATE_MUTATION_LOCK
         .lock()
-        .map_err(|error| format!("Hatch lock poisoned: {error}"))?;
+        .map_err(|error| format!("State lock poisoned: {error}"))?;
 
     let state = read_state(app)?;
     let ids = HatchIds {
@@ -356,6 +443,242 @@ pub(crate) fn hatch_pet(
     };
 
     let next = apply_hatch(&state, &input, &ids, now_ms()).map_err(hatch_error_message)?;
+    write_state(app, &next)?;
+
+    Ok(next)
+}
+
+/// One pet's externally-relevant fields, joined with its personality id and
+/// working directory — the shape returned by the `/pets-driven/list`,
+/// `/pets-driven/pet`, and pet update/delete HTTP endpoints.
+fn pet_view(state: &serde_json::Value, pet: &serde_json::Value) -> serde_json::Value {
+    let pet_id = pet.get("id").and_then(|value| value.as_str()).unwrap_or_default();
+    let profile_id = pet
+        .get("profileId")
+        .and_then(|value| value.as_str())
+        .unwrap_or_default();
+
+    let personality_id = state
+        .get("petProfiles")
+        .and_then(|value| value.as_array())
+        .and_then(|profiles| {
+            profiles
+                .iter()
+                .find(|profile| profile.get("id").and_then(|value| value.as_str()) == Some(profile_id))
+        })
+        .and_then(|profile| profile.get("personalityId"))
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
+
+    let cwd = state
+        .get("registeredWorkingDirectories")
+        .and_then(|value| value.as_array())
+        .and_then(|directories| {
+            directories
+                .iter()
+                .find(|directory| directory.get("petId").and_then(|value| value.as_str()) == Some(pet_id))
+        })
+        .and_then(|directory| directory.get("path"))
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
+
+    serde_json::json!({
+        "id": pet.get("id").cloned().unwrap_or(serde_json::Value::Null),
+        "name": pet.get("name").cloned().unwrap_or(serde_json::Value::Null),
+        "assetId": pet.get("assetId").cloned().unwrap_or(serde_json::Value::Null),
+        "personalityId": personality_id,
+        "cwd": cwd,
+        "visible": pet.get("visible").cloned().unwrap_or(serde_json::Value::Null),
+        "archived": pet.get("archived").cloned().unwrap_or(serde_json::Value::Null),
+        "adoptedAt": pet.get("adoptedAt").cloned().unwrap_or(serde_json::Value::Null),
+    })
+}
+
+/// The joined view of every pet in `state`, for the `/pets-driven/list` endpoint.
+pub(crate) fn list_pets_view(state: &serde_json::Value) -> Vec<serde_json::Value> {
+    state
+        .get("pets")
+        .and_then(|value| value.as_array())
+        .map(|pets| pets.iter().map(|pet| pet_view(state, pet)).collect())
+        .unwrap_or_default()
+}
+
+/// The joined view of a single pet, for the `/pets-driven/pet` endpoint.
+pub(crate) fn find_pet_view(state: &serde_json::Value, pet_id: &str) -> Option<serde_json::Value> {
+    state
+        .get("pets")
+        .and_then(|value| value.as_array())?
+        .iter()
+        .find(|pet| pet.get("id").and_then(|value| value.as_str()) == Some(pet_id))
+        .map(|pet| pet_view(state, pet))
+}
+
+pub(crate) struct PetUpdateInput {
+    pub pet_id: String,
+    pub name: Option<String>,
+    pub personality_id: Option<String>,
+    pub visible: Option<bool>,
+    pub archived: Option<bool>,
+    pub memo: Option<String>,
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum PetUpdateError {
+    NotFound,
+    UnknownPersonality,
+}
+
+/// Apply a partial patch to one pet record (and its profile's personality, if
+/// `personality_id` is set). Unset fields are left untouched.
+fn apply_pet_update(
+    state: &serde_json::Value,
+    input: &PetUpdateInput,
+) -> Result<serde_json::Value, PetUpdateError> {
+    let pet_exists = state
+        .get("pets")
+        .and_then(|value| value.as_array())
+        .is_some_and(|pets| {
+            pets.iter()
+                .any(|pet| pet.get("id").and_then(|value| value.as_str()) == Some(input.pet_id.as_str()))
+        });
+
+    if !pet_exists {
+        return Err(PetUpdateError::NotFound);
+    }
+
+    let personality = match &input.personality_id {
+        Some(personality_id) => match personality_preset(personality_id) {
+            Some(personality) => Some(personality),
+            None => return Err(PetUpdateError::UnknownPersonality),
+        },
+        None => None,
+    };
+
+    let mut next = state.clone();
+    let mut profile_id = String::new();
+
+    if let Some(pets) = next.get_mut("pets").and_then(|value| value.as_array_mut()) {
+        for pet in pets.iter_mut() {
+            if pet.get("id").and_then(|value| value.as_str()) != Some(input.pet_id.as_str()) {
+                continue;
+            }
+
+            profile_id = pet
+                .get("profileId")
+                .and_then(|value| value.as_str())
+                .unwrap_or_default()
+                .to_string();
+
+            let Some(object) = pet.as_object_mut() else {
+                continue;
+            };
+
+            if let Some(name) = &input.name {
+                object.insert("name".to_string(), serde_json::json!(name));
+            }
+            if let Some(visible) = input.visible {
+                object.insert("visible".to_string(), serde_json::json!(visible));
+            }
+            if let Some(archived) = input.archived {
+                object.insert("archived".to_string(), serde_json::json!(archived));
+            }
+            if let Some(memo) = &input.memo {
+                object.insert("memo".to_string(), serde_json::json!(memo));
+            }
+        }
+    }
+
+    if let (Some(personality_id), Some(personality)) = (&input.personality_id, personality) {
+        if let Some(profiles) = next.get_mut("petProfiles").and_then(|value| value.as_array_mut()) {
+            for profile in profiles.iter_mut() {
+                if profile.get("id").and_then(|value| value.as_str()) != Some(profile_id.as_str()) {
+                    continue;
+                }
+
+                if let Some(object) = profile.as_object_mut() {
+                    object.insert("personalityId".to_string(), serde_json::json!(personality_id));
+                    object.insert("personality".to_string(), personality.clone());
+                }
+            }
+        }
+    }
+
+    Ok(next)
+}
+
+fn pet_update_error_message(error: PetUpdateError, pet_id: &str) -> String {
+    match error {
+        PetUpdateError::NotFound => format!("No pet found with id {pet_id}"),
+        PetUpdateError::UnknownPersonality => "Unknown personality preset".to_string(),
+    }
+}
+
+/// Authoritative pet-update path, mirroring `hatch_pet`'s serialise/read/write
+/// cycle. Returns the new state for the caller to broadcast.
+pub(crate) fn update_pet(
+    app: &tauri::AppHandle,
+    input: PetUpdateInput,
+) -> Result<serde_json::Value, String> {
+    let _guard = STATE_MUTATION_LOCK
+        .lock()
+        .map_err(|error| format!("State lock poisoned: {error}"))?;
+
+    let state = read_state(app)?;
+    let next = apply_pet_update(&state, &input)
+        .map_err(|error| pet_update_error_message(error, &input.pet_id))?;
+    write_state(app, &next)?;
+
+    Ok(next)
+}
+
+/// Permanently remove a pet, its profile, and any working directory it holds
+/// (mirrors the frontend's `removePet` in app-state/pet-adoption.ts).
+fn apply_remove_pet(state: &serde_json::Value, pet_id: &str) -> Result<serde_json::Value, String> {
+    let pet = state
+        .get("pets")
+        .and_then(|value| value.as_array())
+        .and_then(|pets| {
+            pets.iter()
+                .find(|pet| pet.get("id").and_then(|value| value.as_str()) == Some(pet_id))
+        })
+        .ok_or_else(|| format!("No pet found with id {pet_id}"))?;
+
+    let profile_id = pet
+        .get("profileId")
+        .and_then(|value| value.as_str())
+        .unwrap_or_default()
+        .to_string();
+
+    let mut next = state.clone();
+    let Some(object) = next.as_object_mut() else {
+        return Ok(next);
+    };
+
+    if let Some(serde_json::Value::Array(pets)) = object.get_mut("pets") {
+        pets.retain(|pet| pet.get("id").and_then(|value| value.as_str()) != Some(pet_id));
+    }
+    if let Some(serde_json::Value::Array(profiles)) = object.get_mut("petProfiles") {
+        profiles.retain(|profile| {
+            profile.get("id").and_then(|value| value.as_str()) != Some(profile_id.as_str())
+        });
+    }
+    if let Some(serde_json::Value::Array(directories)) = object.get_mut("registeredWorkingDirectories")
+    {
+        directories.retain(|directory| directory.get("petId").and_then(|value| value.as_str()) != Some(pet_id));
+    }
+
+    Ok(next)
+}
+
+/// Authoritative pet-delete path, mirroring `hatch_pet`'s serialise/read/write
+/// cycle. Returns the new state for the caller to broadcast.
+pub(crate) fn remove_pet(app: &tauri::AppHandle, pet_id: &str) -> Result<serde_json::Value, String> {
+    let _guard = STATE_MUTATION_LOCK
+        .lock()
+        .map_err(|error| format!("State lock poisoned: {error}"))?;
+
+    let state = read_state(app)?;
+    let next = apply_remove_pet(&state, pet_id)?;
     write_state(app, &next)?;
 
     Ok(next)
@@ -415,7 +738,7 @@ mod tests {
         assert_eq!(profile["id"], "profile-1");
         assert_eq!(profile["petAssetId"], "cato");
         assert_eq!(profile["personalityId"], "playful");
-        assert_eq!(profile["personality"]["extraversion"], 0.85);
+        assert_eq!(profile["personality"]["extraversion"], 0.95);
 
         let directory = &next["registeredWorkingDirectories"][0];
         assert_eq!(directory["id"], "dir-1");
@@ -516,8 +839,8 @@ mod tests {
 
         let profile = &next["petProfiles"][0];
         assert_eq!(profile["personalityId"], "curious");
-        assert_eq!(profile["personality"]["openness"], 0.9);
-        assert_eq!(profile["personality"]["extraversion"], 0.55);
+        assert_eq!(profile["personality"]["openness"], 0.98);
+        assert_eq!(profile["personality"]["extraversion"], 0.45);
     }
 
     #[test]
@@ -549,5 +872,115 @@ mod tests {
     #[test]
     fn find_pet_id_by_cwd_returns_none_for_unknown_path() {
         assert_eq!(find_pet_id_by_cwd(&empty_pets_driven_state(), "D:/proj"), None);
+    }
+
+    fn hatched_state() -> serde_json::Value {
+        apply_hatch(
+            &empty_pets_driven_state(),
+            &HatchInput {
+                cwd: "D:/proj".to_string(),
+                asset_id: "cato".to_string(),
+                name: "Rex".to_string(),
+                personality_id: "playful".to_string(),
+            },
+            &sample_ids(),
+            1000,
+        )
+        .expect("hatch should succeed")
+    }
+
+    #[test]
+    fn list_pets_view_joins_personality_id_and_cwd() {
+        let state = hatched_state();
+        let pets = list_pets_view(&state);
+
+        assert_eq!(pets.len(), 1);
+        assert_eq!(pets[0]["id"], "pet-1");
+        assert_eq!(pets[0]["name"], "Rex");
+        assert_eq!(pets[0]["personalityId"], "playful");
+        assert_eq!(pets[0]["cwd"], "D:/proj");
+        assert_eq!(pets[0]["visible"], true);
+    }
+
+    #[test]
+    fn find_pet_view_returns_none_for_unknown_pet() {
+        assert_eq!(find_pet_view(&hatched_state(), "pet-missing"), None);
+    }
+
+    #[test]
+    fn apply_pet_update_patches_name_visibility_and_personality() {
+        let state = hatched_state();
+        let next = apply_pet_update(
+            &state,
+            &PetUpdateInput {
+                pet_id: "pet-1".to_string(),
+                name: Some("Rexy".to_string()),
+                personality_id: Some("reserved".to_string()),
+                visible: Some(false),
+                archived: None,
+                memo: Some("likes naps".to_string()),
+            },
+        )
+        .expect("update should succeed");
+
+        let pet = &next["pets"][0];
+        assert_eq!(pet["name"], "Rexy");
+        assert_eq!(pet["visible"], false);
+        assert_eq!(pet["archived"], false);
+        assert_eq!(pet["memo"], "likes naps");
+
+        let profile = &next["petProfiles"][0];
+        assert_eq!(profile["personalityId"], "reserved");
+        assert_eq!(profile["personality"]["neuroticism"], 0.82);
+    }
+
+    #[test]
+    fn apply_pet_update_rejects_unknown_pet() {
+        let error = apply_pet_update(
+            &hatched_state(),
+            &PetUpdateInput {
+                pet_id: "pet-missing".to_string(),
+                name: None,
+                personality_id: None,
+                visible: None,
+                archived: None,
+                memo: None,
+            },
+        )
+        .expect_err("unknown pet id should be rejected");
+
+        assert_eq!(error, PetUpdateError::NotFound);
+    }
+
+    #[test]
+    fn apply_pet_update_rejects_unknown_personality() {
+        let error = apply_pet_update(
+            &hatched_state(),
+            &PetUpdateInput {
+                pet_id: "pet-1".to_string(),
+                name: None,
+                personality_id: Some("chaotic".to_string()),
+                visible: None,
+                archived: None,
+                memo: None,
+            },
+        )
+        .expect_err("unknown personality should be rejected");
+
+        assert_eq!(error, PetUpdateError::UnknownPersonality);
+    }
+
+    #[test]
+    fn apply_remove_pet_deletes_pet_profile_and_directory() {
+        let next = apply_remove_pet(&hatched_state(), "pet-1").expect("removal should succeed");
+
+        assert!(next["pets"].as_array().unwrap().is_empty());
+        assert!(next["petProfiles"].as_array().unwrap().is_empty());
+        assert!(next["registeredWorkingDirectories"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn apply_remove_pet_rejects_unknown_pet() {
+        assert!(apply_remove_pet(&hatched_state(), "pet-missing").is_err());
     }
 }

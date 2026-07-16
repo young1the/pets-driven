@@ -16,6 +16,13 @@ const CLAUDE_HOOK_INGRESS_PORT: u16 = 43187;
 const PETS_DRIVEN_HATCH_PATH: &str = "/pets-driven/hatch";
 const PETS_DRIVEN_SHOW_PATH: &str = "/pets-driven/show";
 const PETS_DRIVEN_HIDE_PATH: &str = "/pets-driven/hide";
+const PETS_DRIVEN_PING_PATH: &str = "/pets-driven/ping";
+const PETS_DRIVEN_OPTIONS_PATH: &str = "/pets-driven/options";
+const PETS_DRIVEN_LIST_PATH: &str = "/pets-driven/list";
+const PETS_DRIVEN_PET_PATH: &str = "/pets-driven/pet";
+const PETS_DRIVEN_PET_UPDATE_PATH: &str = "/pets-driven/pet/update";
+const PETS_DRIVEN_PET_DELETE_PATH: &str = "/pets-driven/pet/delete";
+const PETS_DRIVEN_API_PATH: &str = "/pets-driven/api";
 const PETS_DRIVEN_STATE_CHANGED_EVENT: &str = "pets-driven:state-changed";
 const PETS_DRIVEN_PET_COMMAND_EVENT: &str = "pets-driven:pet-command";
 
@@ -150,8 +157,13 @@ fn parse_http_request(request: &[u8]) -> Result<(String, serde_json::Value), Str
         return Err("Ingress only accepts POST".to_string());
     }
 
-    let payload = serde_json::from_str(body)
-        .map_err(|error| format!("Could not parse ingress JSON: {error}"))?;
+    // Read-only endpoints (ping/options/list/pet) take no body; treat blank
+    // as `{}` rather than failing JSON parsing on an empty string.
+    let payload = if body.trim().is_empty() {
+        serde_json::json!({})
+    } else {
+        serde_json::from_str(body).map_err(|error| format!("Could not parse ingress JSON: {error}"))?
+    };
 
     Ok((path.to_string(), payload))
 }
@@ -263,6 +275,285 @@ fn handle_show_hide_request(
     }
 }
 
+// coupling: keep in sync with the path match arms in
+// handle_claude_hook_connection below — every route this ingress serves
+// should have one descriptor here so an external caller can discover the
+// whole API from `/pets-driven/api` alone.
+fn api_endpoint_descriptors() -> serde_json::Value {
+    serde_json::json!([
+        {
+            "path": PETS_DRIVEN_API_PATH,
+            "method": "POST",
+            "body": null,
+            "description": "This endpoint: an index of every HTTP route this ingress serves."
+        },
+        {
+            "path": PETS_DRIVEN_PING_PATH,
+            "method": "POST",
+            "body": null,
+            "description": "Health check: confirms the pets-driven ingress server is up and listening."
+        },
+        {
+            "path": PETS_DRIVEN_OPTIONS_PATH,
+            "method": "POST",
+            "body": null,
+            "description": "Lists every personality preset (id + trait values) and every hatchable pet asset (bundled with the app, plus the user's pet source folder) accepted by /pets-driven/hatch."
+        },
+        {
+            "path": PETS_DRIVEN_LIST_PATH,
+            "method": "POST",
+            "body": null,
+            "description": "Lists every pet currently in state: id, name, assetId, personalityId, cwd, visible, archived, adoptedAt."
+        },
+        {
+            "path": PETS_DRIVEN_PET_PATH,
+            "method": "POST",
+            "body": {
+                "petId": "string, optional",
+                "cwd": "string, optional (petId takes precedence when both are given)"
+            },
+            "description": "Reads one pet by petId or by the cwd it is registered to. 404 if neither matches a pet."
+        },
+        {
+            "path": PETS_DRIVEN_HATCH_PATH,
+            "method": "POST",
+            "body": {
+                "cwd": "string",
+                "assetId": "string, see /pets-driven/options",
+                "name": "string",
+                "personalityId": "string, see /pets-driven/options"
+            },
+            "description": "Creates a new pet bound to cwd. 409 if that folder already has a pet."
+        },
+        {
+            "path": PETS_DRIVEN_PET_UPDATE_PATH,
+            "method": "POST",
+            "body": {
+                "petId": "string",
+                "name": "string, optional",
+                "personalityId": "string, optional, see /pets-driven/options",
+                "visible": "bool, optional",
+                "archived": "bool, optional",
+                "memo": "string, optional"
+            },
+            "description": "Patches one pet's editable fields. Only petId is required; omitted fields are left unchanged."
+        },
+        {
+            "path": PETS_DRIVEN_PET_DELETE_PATH,
+            "method": "POST",
+            "body": { "petId": "string" },
+            "description": "Permanently removes a pet, its personality profile, and its registered working directory."
+        },
+        {
+            "path": PETS_DRIVEN_SHOW_PATH,
+            "method": "POST",
+            "body": { "cwd": "string" },
+            "description": "Shows the desktop window for the pet registered to cwd. 404 if no pet is registered there."
+        },
+        {
+            "path": PETS_DRIVEN_HIDE_PATH,
+            "method": "POST",
+            "body": { "cwd": "string" },
+            "description": "Hides the desktop window for the pet registered to cwd. 404 if no pet is registered there."
+        },
+        {
+            "path": CLAUDE_HOOK_INGRESS_PATH,
+            "method": "POST",
+            "body": "A Claude Code lifecycle hook event, forwarded unchanged",
+            "description": "Routes a Claude Code hook event to the pet whose registered working directory matches the event's cwd."
+        },
+        {
+            "path": CODEX_HOOK_INGRESS_PATH,
+            "method": "POST",
+            "body": "A Codex lifecycle hook event, forwarded unchanged",
+            "description": "Same routing as /claude-hook, for Codex."
+        }
+    ])
+}
+
+fn handle_api_request(stream: &mut TcpStream) {
+    let body = serde_json::json!({ "ok": true, "endpoints": api_endpoint_descriptors() }).to_string();
+    let _ = write_http_response(stream, "200 OK", &body);
+}
+
+fn handle_ping_request(stream: &mut TcpStream) {
+    let _ = write_http_response(
+        stream,
+        "200 OK",
+        r#"{"ok":true,"app":"pets-driven","status":"listening"}"#,
+    );
+}
+
+fn handle_options_request(app: &tauri::AppHandle, stream: &mut TcpStream) {
+    let personalities: Vec<serde_json::Value> = crate::state_store::PERSONALITY_IDS
+        .iter()
+        .filter_map(|id| {
+            crate::state_store::personality_preset(id)
+                .map(|traits| serde_json::json!({ "id": id, "traits": traits }))
+        })
+        .collect();
+    let assets = crate::pet_assets::list_hatchable_pet_assets(app);
+
+    let body = serde_json::json!({
+        "ok": true,
+        "personalities": personalities,
+        "assets": assets,
+    })
+    .to_string();
+
+    let _ = write_http_response(stream, "200 OK", &body);
+}
+
+fn handle_list_pets_request(app: &tauri::AppHandle, stream: &mut TcpStream) {
+    match crate::state_store::read_state_pub(app) {
+        Ok(state) => {
+            let pets = crate::state_store::list_pets_view(&state);
+            let body = serde_json::json!({ "ok": true, "pets": pets }).to_string();
+            let _ = write_http_response(stream, "200 OK", &body);
+        }
+        Err(error) => {
+            let _ = write_http_response(
+                stream,
+                "500 Internal Server Error",
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+        }
+    }
+}
+
+/// Resolve a single pet by `petId` (preferred) or `cwd`, and reply with its
+/// joined view, or 404 when neither matches.
+fn handle_get_pet_request(
+    app: &tauri::AppHandle,
+    payload: &serde_json::Value,
+    stream: &mut TcpStream,
+) {
+    let state = match crate::state_store::read_state_pub(app) {
+        Ok(state) => state,
+        Err(error) => {
+            let _ = write_http_response(
+                stream,
+                "500 Internal Server Error",
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+            return;
+        }
+    };
+
+    let pet_id = payload
+        .get("petId")
+        .and_then(|value| value.as_str())
+        .map(str::to_string)
+        .or_else(|| {
+            payload
+                .get("cwd")
+                .and_then(|value| value.as_str())
+                .and_then(|cwd| crate::state_store::find_pet_id_by_cwd(&state, cwd))
+        });
+
+    let pet = pet_id.and_then(|pet_id| crate::state_store::find_pet_view(&state, &pet_id));
+
+    match pet {
+        Some(pet) => {
+            let body = serde_json::json!({ "ok": true, "pet": pet }).to_string();
+            let _ = write_http_response(stream, "200 OK", &body);
+        }
+        None => {
+            let _ = write_http_response(
+                stream,
+                "404 Not Found",
+                r#"{"ok":false,"error":"No matching pet"}"#,
+            );
+        }
+    }
+}
+
+fn handle_update_pet_request(
+    app: &tauri::AppHandle,
+    payload: &serde_json::Value,
+    stream: &mut TcpStream,
+) {
+    let Some(pet_id) = payload.get("petId").and_then(|value| value.as_str()) else {
+        let _ = write_http_response(
+            stream,
+            "400 Bad Request",
+            r#"{"ok":false,"error":"Missing required field: petId"}"#,
+        );
+        return;
+    };
+
+    let input = crate::state_store::PetUpdateInput {
+        pet_id: pet_id.to_string(),
+        name: payload.get("name").and_then(|value| value.as_str()).map(str::to_string),
+        personality_id: payload
+            .get("personalityId")
+            .and_then(|value| value.as_str())
+            .map(str::to_string),
+        visible: payload.get("visible").and_then(|value| value.as_bool()),
+        archived: payload.get("archived").and_then(|value| value.as_bool()),
+        memo: payload.get("memo").and_then(|value| value.as_str()).map(str::to_string),
+    };
+    let pet_id = pet_id.to_string();
+
+    match crate::state_store::update_pet(app, input) {
+        Ok(next_state) => {
+            let _ = app.emit_to("main", PETS_DRIVEN_STATE_CHANGED_EVENT, ());
+            let pet = crate::state_store::find_pet_view(&next_state, &pet_id);
+            let body = serde_json::json!({ "ok": true, "pet": pet }).to_string();
+            let _ = write_http_response(stream, "200 OK", &body);
+        }
+        Err(error) => {
+            let status = if error.starts_with("No pet found") {
+                "404 Not Found"
+            } else {
+                "400 Bad Request"
+            };
+            let _ = write_http_response(
+                stream,
+                status,
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+        }
+    }
+}
+
+fn handle_delete_pet_request(
+    app: &tauri::AppHandle,
+    payload: &serde_json::Value,
+    stream: &mut TcpStream,
+) {
+    let Some(pet_id) = payload.get("petId").and_then(|value| value.as_str()) else {
+        let _ = write_http_response(
+            stream,
+            "400 Bad Request",
+            r#"{"ok":false,"error":"Missing required field: petId"}"#,
+        );
+        return;
+    };
+
+    match crate::state_store::remove_pet(app, pet_id) {
+        Ok(_next_state) => {
+            let _ = app.emit_to("main", PETS_DRIVEN_STATE_CHANGED_EVENT, ());
+            // Tear down any open window for the now-deleted pet; `hidePet` on
+            // the frontend closes the window and no-ops safely on a pet id
+            // that is no longer in state.
+            let _ = app.emit_to(
+                "main",
+                PETS_DRIVEN_PET_COMMAND_EVENT,
+                serde_json::json!({ "action": "hide", "petId": pet_id }),
+            );
+            let _ = write_http_response(stream, "200 OK", r#"{"ok":true}"#);
+        }
+        Err(error) => {
+            let _ = write_http_response(
+                stream,
+                "404 Not Found",
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+        }
+    }
+}
+
 fn claude_hook_payload_string_field<'a>(payload: &'a serde_json::Value, field: &str) -> &'a str {
     payload
         .get(field)
@@ -356,6 +647,27 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
             }
             PETS_DRIVEN_HIDE_PATH => {
                 handle_show_hide_request(&app, &payload, &mut stream, "hide");
+            }
+            PETS_DRIVEN_API_PATH => {
+                handle_api_request(&mut stream);
+            }
+            PETS_DRIVEN_PING_PATH => {
+                handle_ping_request(&mut stream);
+            }
+            PETS_DRIVEN_OPTIONS_PATH => {
+                handle_options_request(&app, &mut stream);
+            }
+            PETS_DRIVEN_LIST_PATH => {
+                handle_list_pets_request(&app, &mut stream);
+            }
+            PETS_DRIVEN_PET_UPDATE_PATH => {
+                handle_update_pet_request(&app, &payload, &mut stream);
+            }
+            PETS_DRIVEN_PET_DELETE_PATH => {
+                handle_delete_pet_request(&app, &payload, &mut stream);
+            }
+            PETS_DRIVEN_PET_PATH => {
+                handle_get_pet_request(&app, &payload, &mut stream);
             }
             _ => {
                 eprintln!("[pets-driven-hook] rejected 404: unknown ingress path {path}");
@@ -468,6 +780,43 @@ mod tests {
         assert_eq!(path, "/claude-hook");
         assert_eq!(parsed["hook_event_name"], "Notification");
         assert_eq!(parsed["message"], "hi");
+    }
+
+    #[test]
+    fn api_endpoint_descriptors_include_every_known_route() {
+        let descriptors = api_endpoint_descriptors();
+        let paths: Vec<&str> = descriptors
+            .as_array()
+            .expect("descriptors should be a JSON array")
+            .iter()
+            .map(|descriptor| descriptor["path"].as_str().expect("descriptor should have a path"))
+            .collect();
+
+        for expected in [
+            CLAUDE_HOOK_INGRESS_PATH,
+            CODEX_HOOK_INGRESS_PATH,
+            PETS_DRIVEN_HATCH_PATH,
+            PETS_DRIVEN_SHOW_PATH,
+            PETS_DRIVEN_HIDE_PATH,
+            PETS_DRIVEN_PING_PATH,
+            PETS_DRIVEN_OPTIONS_PATH,
+            PETS_DRIVEN_LIST_PATH,
+            PETS_DRIVEN_PET_PATH,
+            PETS_DRIVEN_PET_UPDATE_PATH,
+            PETS_DRIVEN_PET_DELETE_PATH,
+            PETS_DRIVEN_API_PATH,
+        ] {
+            assert!(paths.contains(&expected), "missing api descriptor for {expected}");
+        }
+    }
+
+    #[test]
+    fn read_only_ingress_paths_accept_an_empty_body() {
+        let request = b"POST /pets-driven/ping HTTP/1.1\r\nContent-Length: 0\r\n\r\n";
+        let (path, parsed) = parse_http_request(request).expect("empty body should parse");
+
+        assert_eq!(path, "/pets-driven/ping");
+        assert_eq!(parsed, serde_json::json!({}));
     }
 
     #[test]

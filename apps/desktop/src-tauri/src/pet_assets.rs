@@ -3,6 +3,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use tauri::Manager;
+
 use crate::state_store;
 
 #[derive(serde::Deserialize)]
@@ -120,6 +122,74 @@ fn read_pet_packages(pets_root: &Path) -> Result<Vec<CodexPetPackage>, String> {
     packages.sort_by_key(|package| package.display_name.to_lowercase());
 
     Ok(packages)
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct HatchablePetAsset {
+    id: String,
+    display_name: String,
+    description: String,
+    /// `true` for a pet shipped with the app, `false` for one from the
+    /// user-designated pet source folder.
+    bundled: bool,
+}
+
+/// The `pets/` folder bundled with the app (see `tauri.conf.json`'s
+/// `bundle.resources`): a resource in packaged builds, the workspace checkout
+/// when running `tauri dev`.
+fn bundled_pets_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let candidate = resource_dir.join("pets");
+        if candidate.is_dir() {
+            return Some(candidate);
+        }
+    }
+
+    let dev_candidate =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("..").join("pets");
+
+    if dev_candidate.is_dir() {
+        Some(dev_candidate)
+    } else {
+        None
+    }
+}
+
+/// Every pet asset id valid for hatching: the pets bundled with the app, plus
+/// the user-designated pet source folder. Bundled entries win on id collision.
+pub(crate) fn list_hatchable_pet_assets(app: &tauri::AppHandle) -> Vec<HatchablePetAsset> {
+    let mut assets = Vec::new();
+
+    if let Some(dir) = bundled_pets_dir(app) {
+        if let Ok(packages) = read_pet_packages(&dir) {
+            assets.extend(packages.into_iter().map(|package| HatchablePetAsset {
+                id: package.id,
+                display_name: package.display_name,
+                description: package.description,
+                bundled: true,
+            }));
+        }
+    }
+
+    if let Some(dir) = designated_pet_source_root(app) {
+        if let Ok(packages) = read_pet_packages(&dir) {
+            for package in packages {
+                if assets.iter().any(|asset| asset.id == package.id) {
+                    continue;
+                }
+
+                assets.push(HatchablePetAsset {
+                    id: package.id,
+                    display_name: package.display_name,
+                    description: package.description,
+                    bundled: false,
+                });
+            }
+        }
+    }
+
+    assets
 }
 
 /// The single designated user pet folder, read straight from the persisted
