@@ -1,11 +1,13 @@
 import type { PetName } from "@pets-driven/design-system";
-import { Button, PetAvatar } from "@pets-driven/design-system";
+import { Button, IconButton, PetAvatar, TerminalIcon } from "@pets-driven/design-system";
 import { localeLabels, locales, useTranslation } from "@pets-driven/i18n";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { isTauri } from "@tauri-apps/api/core";
 import { type CSSProperties, useEffect, useState } from "react";
 import { type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
 import { useDesktopLocale } from "@/app/i18n/desktop-locale";
+import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
@@ -398,6 +400,7 @@ export function SetupWizard({
   const [step, setStep] = useState<WizardStep>("welcome");
   const [looksFound, setLooksFound] = useState<number | null>(null);
   const [defaultPetFolder, setDefaultPetFolder] = useState<string | null>(null);
+  const [terminalOpen, setTerminalOpen] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -658,6 +661,13 @@ export function SetupWizard({
                 <a href={PETDEX_URL} rel="noreferrer" style={petdexLink} target="_blank">
                   {t("setupWizard.petdexOpen")}
                 </a>
+                <IconButton
+                  label={t("onboarding.openTerminal")}
+                  onClick={() => setTerminalOpen(true)}
+                  variant="ghost"
+                >
+                  <TerminalIcon />
+                </IconButton>
               </div>
 
               <div style={folderRow}>
@@ -818,6 +828,13 @@ export function SetupWizard({
           </section>
         )}
       </div>
+
+      <PetdexTerminalDialog
+        available={isTauri()}
+        cwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
+        onClose={() => setTerminalOpen(false)}
+        open={terminalOpen}
+      />
     </main>
   );
 }

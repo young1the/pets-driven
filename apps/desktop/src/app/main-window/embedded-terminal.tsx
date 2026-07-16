@@ -99,6 +99,30 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
     term.open(container);
     fitAddon.fit();
 
+    // xterm has no built-in paste binding: left to itself, Ctrl/Cmd+V sends
+    // the literal SYN control byte to the shell, which readline echoes back
+    // as "^V" instead of pasting. Intercept it here and paste the clipboard
+    // text directly, matching how every other terminal app handles the key.
+    term.attachCustomKeyEventHandler((event) => {
+      if (event.type !== "keydown" || event.key.toLowerCase() !== "v") {
+        return true;
+      }
+      if (!event.ctrlKey && !event.metaKey) {
+        return true;
+      }
+
+      void navigator.clipboard
+        .readText()
+        .then((text) => {
+          if (text) {
+            term.paste(text);
+          }
+        })
+        .catch(() => {});
+
+      return false;
+    });
+
     void (async () => {
       try {
         const id = await invoke<string>("terminal_open", {
