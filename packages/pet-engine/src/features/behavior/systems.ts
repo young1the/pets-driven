@@ -23,9 +23,12 @@ import {
   personalityIdleDurationScale,
   signedDecisionScore,
 } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
-import { resolveSpeechVariant } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
-import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import {
+  personalityAcknowledgeFeedback,
+  resolveSpeechVariant,
+} from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
+import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import {
   ARRIVAL_DWELL_REASON,
@@ -537,6 +540,12 @@ export function runPetExpressionExpirationSystem(components: ComponentStore, clo
 // bounds and oscillates horizontally (stroking motion, not a swipe-through),
 // claims user-interaction with reason "petting" and shows a love reaction.
 // Skips any pet currently being dragged by the same pointer.
+//
+// Petting is also the only interaction that releases an agent task: any
+// AgentTaskState (working/waiting/failed/completed) clears along with the
+// movement hold and the agent-task channel badge. Pressing or dragging a pet
+// deliberately does NOT release it, so a hold survives casual clicks until
+// the user strokes the pet.
 
 function findCursorState(components: ComponentStore): {
   position: { x: number; y: number } | null;
@@ -575,10 +584,55 @@ function horizontalOscillation(
   return { reversals, displacement: maxX - minX };
 }
 
+// Petting acknowledges whatever the agent reported: the movement hold lifts
+// and the task state clears no matter the status — working included, so a
+// stroke also dismisses a stale "working" report. Settled statuses
+// (waiting/failed/completed) additionally play the personality acknowledge
+// beat; a released "working" state keeps the plain petting love reaction.
+function releaseAgentTaskOnPetting(
+  components: ComponentStore,
+  id: string,
+  now: number,
+  random: RandomSource,
+): void {
+  const task = components.getComponent(id, "AgentTaskState");
+  components.removeComponent(id, "TaskMovementHold");
+  if (!task) return;
+
+  const personality = components.getComponent(id, "Personality");
+  const feedback = personalityAcknowledgeFeedback(personality?.catalogId, task.status, random);
+  components.removeComponent(id, "AgentTaskState");
+
+  const channel = components.getComponent(id, "AgentChannelState");
+  if (channel?.source === "agent-task") {
+    components.removeComponent(id, "AgentChannelState");
+  }
+
+  if (feedback) {
+    const durationMs = SPEECH_BUBBLE_DURATION_MS;
+    components.setComponent(
+      id,
+      utteranceChannel({ message: feedback.speech, source: "interaction", now, durationMs }),
+    );
+    components.setComponent(id, {
+      type: "PetExpressionState",
+      source: "acknowledge",
+      mood: feedback.mood,
+      emote: feedback.emote,
+      label: null,
+      startedAt: now,
+      expiresAt: now + durationMs,
+    });
+    claim(components, id, "user-interaction", now, `acknowledge-${task.status}`, now + durationMs);
+    recordPetExperience(components, id, "acknowledged", now);
+  }
+}
+
 export function runPettingDetectionSystem(
   components: ComponentStore,
   clock: Clock,
   physics?: VelocityWriter,
+  random: RandomSource = createSeededRandom(1),
 ): void {
   const now = clock.now();
   const cursor = findCursorState(components);
@@ -634,6 +688,9 @@ export function runPettingDetectionSystem(
       expiresAt: now + PETTING_DURATION_MS,
     });
     recordPetExperience(components, id, "petted", now);
+    // After the petting claim/expression, so a settled status's acknowledge
+    // beat (claim + expression + speech) overrides the plain love reaction.
+    releaseAgentTaskOnPetting(components, id, now, random);
   });
 }
 
@@ -1273,7 +1330,12 @@ export function runAutonomousBehaviorSystem(
       // Already saying something (social line, agent status, …)? Stay quiet.
       if (components.getComponent(id, "AgentChannelState")?.message) return;
       if (clock.now() - activity.lastActiveAt >= idleConversation.idleAfterMs) {
-        setIdleSpeech(components, id, resolveSpeechVariant(speechProfile.idleCompanion, random), now);
+        setIdleSpeech(
+          components,
+          id,
+          resolveSpeechVariant(speechProfile.idleCompanion, random),
+          now,
+        );
         // Reset the idle timer so the *next* chatter is another full
         // idleAfterMs away. Without this, lastActiveAt stays frozen (it is only
         // otherwise bumped by agent events), the threshold remains crossed, and
@@ -3079,9 +3141,12 @@ export const PettingDetectionSystem: SimulationSystem<WorldStepContext> = {
     "Transform",
     "PhysicsBody",
     "PetIdentity",
+    "Personality",
     "DragInteraction",
     "BehaviorDecisionState",
     "PetExpressionState",
+    "AgentTaskState",
+    "AgentChannelState",
     "MoodState",
     "RecentExperienceMemory",
   ],
@@ -3091,11 +3156,14 @@ export const PettingDetectionSystem: SimulationSystem<WorldStepContext> = {
     "Steering",
     "MotionTarget",
     "PhysicsVelocity",
+    "TaskMovementHold",
+    "AgentTaskState",
+    "AgentChannelState",
     "MoodState",
     "RecentExperienceMemory",
   ],
   update(ctx) {
-    runPettingDetectionSystem(ctx.components, ctx.clock, ctx.physics);
+    runPettingDetectionSystem(ctx.components, ctx.clock, ctx.physics, ctx.random);
   },
 };
 

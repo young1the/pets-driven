@@ -1156,7 +1156,7 @@ describe("demo scenario", () => {
     });
   });
 
-  it("holds waiting pets until the user interacts with that pet", () => {
+  it("holds waiting pets until the user pets that pet", () => {
     const scenario = createDemoScenario();
 
     scenario.world.pushEvent({
@@ -1177,6 +1177,8 @@ describe("demo scenario", () => {
       animationState: "waiting",
     });
 
+    // A plain press-and-release does NOT acknowledge the report — the hold
+    // and the waiting status both survive.
     scenario.world.pushEvent({
       kind: "pointer",
       type: "pointer.down",
@@ -1185,9 +1187,36 @@ describe("demo scenario", () => {
       position: { x: 600, y: 1040 },
     });
     scenario.world.step(16);
+    scenario.world.pushEvent({
+      kind: "pointer",
+      type: "pointer.up",
+      pointerId: 1,
+      at: scenario.clock.now(),
+      position: { x: 600, y: 1040 },
+    });
+    scenario.world.step(16);
 
-    // Interaction lifts the hold and clears the agent's "waiting" report —
-    // the user acknowledged it, so the pet returns to idle.
+    expect(scenario.world.getComponent("pet-a", "TaskMovementHold")).toBeDefined();
+    expect(scenario.world.getComponent("pet-a", "AgentTaskState")).toMatchObject({
+      status: "waiting",
+    });
+
+    // Stroking the cursor back and forth over the pet's body (petting) is the
+    // only interaction that lifts the hold and clears the agent's report.
+    const position = scenario.world.getComponent("pet-a", "Transform")?.position ?? {
+      x: 600,
+      y: 1040,
+    };
+    for (let index = 0; index < 6; index += 1) {
+      scenario.clock.advanceBy(100);
+      const dx = index % 2 === 0 ? -10 : 10;
+      scenario.world.feedCursorPosition(
+        { x: position.x + dx, y: position.y },
+        scenario.clock.now(),
+      );
+      scenario.world.step(16);
+    }
+
     expect(scenario.world.getComponent("pet-a", "TaskMovementHold")).toBeUndefined();
     expect(scenario.world.getComponent("pet-a", "AgentTaskState")).toBeUndefined();
   });

@@ -164,6 +164,10 @@ _Avoid_: pet habitat
 Primary pointer interaction with a **Pet** body, used for drag-and-drop play.
 _Avoid_: open terminal, open context
 
+**Petting**:
+A stroking gesture — the cursor oscillating horizontally over a **Pet** body — that comforts the **Pet** and is the only interaction that acknowledges an agent task report.
+_Avoid_: hover, click, press
+
 **Pet Context Menu**:
 The secondary-click menu for commands and settings related to a **Pet**.
 _Avoid_: left-click panel
@@ -264,9 +268,10 @@ _Avoid_: cooldown (as a domain term), session
 - Replaced **Attention-Producing Events** remain available through **Attention History**.
 - **Attention History** is accessed through the **Pet Context Menu** or **Management Surface**, not stacked on the **Pet Surface**.
 - Acknowledging **Attention Hold** does not remove events from **Attention History**.
-- **Attention Hold** remains until the user acknowledges it through **Direct Manipulation** or a **Pet Overlay Action**.
-- **Direct Manipulation** acknowledges **Attention Hold** when it starts on the **Pet** body.
-- Clicking an **Attention Overlay** acknowledges its **Attention Hold**.
+- **Attention Hold** remains until the user acknowledges it by **Petting** the **Pet**.
+- **Direct Manipulation** (press, drag, throw) does not acknowledge **Attention Hold**; only **Petting** releases it.
+- **Petting** also clears a live working report, returning the **Pet** to idle.
+- Clicking an **Attention Overlay** does not acknowledge its **Attention Hold**.
 - Clicking non-attention overlays changes presentation only and does not acknowledge **Attention Hold**.
 - Acknowledging **Attention Hold** releases the hold and may start **Acknowledge Feedback**.
 - **Acknowledge Feedback** may vary by event kind, **Pet Profile**, and current presentation state.

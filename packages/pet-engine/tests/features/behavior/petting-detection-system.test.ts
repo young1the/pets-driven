@@ -132,6 +132,58 @@ describe("PettingDetectionSystem", () => {
     expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("petting");
   });
 
+  it("shows personality-aware acknowledge feedback when petting a pet with a completed task", () => {
+    const store = makeStore();
+    store.setComponent("pet-a", {
+      type: "Personality",
+      catalogId: "mischievous",
+      openness: 0.9,
+      conscientiousness: 0.1,
+      extraversion: 0.82,
+      agreeableness: 0.32,
+      neuroticism: 0.35,
+    });
+    store.setComponent("pet-a", { type: "AgentTaskState", status: "completed", since: 100 });
+    store.setComponent("pet-a", { type: "TaskMovementHold", since: 100 });
+    store.setComponent("pet-a", {
+      type: "AgentChannelState",
+      source: "agent-task",
+      status: "completed",
+      label: "Done",
+      message: null,
+      updatedAt: 100,
+      expiresAt: null,
+    });
+
+    runPettingDetectionSystem(store, createManualClock(500));
+
+    expect(store.getComponent("pet-a", "TaskMovementHold")).toBeUndefined();
+    expect(store.getComponent("pet-a", "AgentTaskState")).toBeUndefined();
+    // The settled agent-task channel clears, and the acknowledge feedback line
+    // takes over the same channel as a status-less interaction utterance. The
+    // line is a localizable `petSpeech.*` key resolved to a random variant.
+    expect(store.getComponent("pet-a", "AgentChannelState")).toMatchObject({
+      source: "interaction",
+      status: null,
+      expiresAt: 3_500,
+    });
+    expect(store.getComponent("pet-a", "AgentChannelState")?.message).toMatch(
+      /^petSpeech\.mischievous\.ackCompleted\.[0-3]$/,
+    );
+    // The acknowledge beat overrides the plain petting love reaction.
+    expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
+      source: "acknowledge",
+      mood: "excited",
+      emote: "sparkle",
+      expiresAt: 3_500,
+    });
+    expect(store.getComponent("pet-a", "BehaviorDecisionState")).toMatchObject({
+      source: "user-interaction",
+      reason: "acknowledge-completed",
+      expiresAt: 3_500,
+    });
+  });
+
   it("extends the reaction duration on continued petting instead of restarting the expression", () => {
     const store = makeStore();
 
