@@ -1366,6 +1366,53 @@ describe("pet window product route", () => {
     expect(await screen.findByText("Nothing connected")).toBeInTheDocument();
   });
 
+  it("clears the connect notice even when a later binding update arrives", async () => {
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
+
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_BINDING_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)?.({
+        payload: {
+          ...petWindowFramePayload({ sequence: 1, petId: "pet-a", x: 10, y: 20 }),
+          name: "Otto",
+        },
+      });
+    });
+
+    const handleBinding = tauriEventMocks.listeners.get(PET_WINDOW_BINDING_EVENT)!;
+
+    act(() => {
+      handleBinding({
+        payload: { petId: "pet-a", title: null, isLoading: true, isConnecting: true },
+      });
+    });
+    act(() => {
+      handleBinding({
+        payload: { petId: "pet-a", title: "Windows Terminal", isLoading: false },
+      });
+    });
+
+    expect(await screen.findByText("Connected to Windows Terminal")).toBeInTheDocument();
+
+    // A stray non-connecting binding event arrives within the 2.6s window
+    // (e.g. the user double-clicks the pet to start/focus a session, which
+    // emits a loading binding state).
+    act(() => {
+      handleBinding({
+        payload: { petId: "pet-a", title: "Windows Terminal", isLoading: true },
+      });
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 2800));
+
+    expect(screen.queryByText("Connected to Windows Terminal")).not.toBeInTheDocument();
+  });
+
   it("does not re-apply Pet Window positions when rounded coordinates are unchanged", async () => {
     window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 

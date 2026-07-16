@@ -14,7 +14,8 @@ import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-sta
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, LogicalPosition, LogicalSize } from "@tauri-apps/api/window";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { type PetConnectNotice, PetConnectNoticeView } from "@/pet-window/pet-connect-notice";
 import type { PetWindowFixturePresentation } from "@/pet-window/pet-window-fixtures";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import {
@@ -50,6 +51,11 @@ type PetWindowViewProps = {
    */
   previewPresentation?: PetWindowFixturePresentation;
   previewScale?: number;
+  /**
+   * Browser-fixture only: seeds the terminal-binding notice pill, which in the
+   * real app is driven by Tauri PET_WINDOW_BINDING_EVENT. Ignored inside Tauri.
+   */
+  previewConnectNotice?: { text: string; transient: boolean };
 };
 
 type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
@@ -189,7 +195,12 @@ function steadyActivity(
   return shown.value;
 }
 
-export function PetWindowView({ pet, previewPresentation, previewScale }: PetWindowViewProps) {
+export function PetWindowView({
+  pet,
+  previewPresentation,
+  previewScale,
+  previewConnectNotice,
+}: PetWindowViewProps) {
   const { t } = useTranslation("desktop");
   const isPreview = !isTauri();
   const surfaceRef = useRef<HTMLElement | null>(null);
@@ -237,9 +248,14 @@ export function PetWindowView({ pet, previewPresentation, previewScale }: PetWin
   const petNameRef = useRef<string | null>(null);
   const cwdRef = useRef<string | null>(null);
   // Connect-mode feedback: the prompt while the host waits for a pick, then a
-  // short-lived result notice. Non-connect binding updates stay silent.
-  const [bindingNotice, setBindingNotice] = useState<string | null>(null);
-  const bindingNoticeTimerRef = useRef<number | null>(null);
+  // short-lived result notice. Non-connect binding updates stay silent. This
+  // lives outside the ECS status card and owns its own dismissal (see
+  // PetConnectNoticeView) — the handler below only computes the next value.
+  const [connectNotice, setConnectNotice] = useState<PetConnectNotice | null>(() =>
+    isPreview && previewConnectNotice ? { id: 0, ...previewConnectNotice } : null,
+  );
+  const connectNoticeIdRef = useRef(0);
+  const dismissConnectNotice = useCallback(() => setConnectNotice(null), []);
   // Title held when connect mode started; a cancelled pick reports the same
   // binding back, so an unchanged title means nothing new was connected.
   const connectStartTitleRef = useRef<string | null | undefined>(undefined);
@@ -405,42 +421,40 @@ export function PetWindowView({ pet, previewPresentation, previewScale }: PetWin
         return;
       }
 
-      if (bindingNoticeTimerRef.current !== null) {
-        window.clearTimeout(bindingNoticeTimerRef.current);
-        bindingNoticeTimerRef.current = null;
-      }
-
       if (binding.isConnecting) {
         connectStartTitleRef.current = binding.title;
-        setBindingNotice(t("petWindow.connectPrompt"));
+        connectNoticeIdRef.current += 1;
+        setConnectNotice({
+          id: connectNoticeIdRef.current,
+          text: t("petWindow.connectPrompt"),
+          transient: false,
+        });
         return;
       }
 
+      // A non-connecting binding update that isn't the result of a connect the
+      // user just started (e.g. a loading/bind update from starting a session)
+      // is silent — it leaves any live notice, and its timer, untouched.
       if (connectStartTitleRef.current === undefined) {
         return;
       }
 
       const isNewBinding = binding.title !== null && binding.title !== connectStartTitleRef.current;
       connectStartTitleRef.current = undefined;
-      setBindingNotice(
-        isNewBinding
+      connectNoticeIdRef.current += 1;
+      setConnectNotice({
+        id: connectNoticeIdRef.current,
+        text: isNewBinding
           ? t("petWindow.connectedTo", { title: binding.title })
           : t("petWindow.connectCancelled"),
-      );
-      bindingNoticeTimerRef.current = window.setTimeout(() => {
-        bindingNoticeTimerRef.current = null;
-        setBindingNotice(null);
-      }, 2600);
+        transient: true,
+      });
     }).then((unlisten) => {
       unlistenBinding = unlisten;
     });
 
     return () => {
       unlistenBinding?.();
-      if (bindingNoticeTimerRef.current !== null) {
-        window.clearTimeout(bindingNoticeTimerRef.current);
-        bindingNoticeTimerRef.current = null;
-      }
     };
   }, [pet.petId, t]);
 
@@ -860,12 +874,16 @@ export function PetWindowView({ pet, previewPresentation, previewScale }: PetWin
             animationState={presentation.animationState}
             cwd={isBodyHovered ? cwdRef.current : null}
             name={petName}
-            notice={bindingNotice}
             overlay={presentation.overlay}
             scale={spriteScale}
             spriteHeight={PET_CELL_SIZE.height * spriteScale}
           />
         ) : null}
+        <PetConnectNoticeView
+          notice={connectNotice}
+          onDismiss={dismissConnectNotice}
+          scale={spriteScale}
+        />
         <IconButton
           className="pet-window-resize-button"
           label="Resize pet"
@@ -899,8 +917,6 @@ type PetStatusCardProps = {
   partnerName: string | null;
   overlay: PetWindowOverlay | null;
   cwd: string | null;
-  /** Transient host notice (e.g. connect-mode) that outranks the status message. */
-  notice: string | null;
   spriteHeight: number;
   /** Pet window resize scale; shrinks the card's own size at small pet sizes
    * so it doesn't loom over a tiny sprite, clamped so text stays legible. */
@@ -914,7 +930,6 @@ function PetStatusCard({
   partnerName,
   overlay,
   cwd,
-  notice,
   spriteHeight,
   scale,
 }: PetStatusCardProps) {
@@ -928,10 +943,9 @@ function PetStatusCard({
     : status.label;
   // The agent-channel overlay owns the single message line: social/idle/greet
   // dialogue arrives here as a null-status channel message, agent lines as a
-  // status-bearing one. A transient host notice still outranks it. Personality
-  // dialogue arrives as a `petSpeech.*` i18n key (localized here); agent-supplied
-  // summaries are free text and show verbatim.
-  const rawMessage = notice ?? status.message;
+  // status-bearing one. Personality dialogue arrives as a `petSpeech.*` i18n key
+  // (localized here); agent-supplied summaries are free text and show verbatim.
+  const rawMessage = status.message;
   const messageLine = rawMessage?.startsWith(`${PET_SPEECH_KEY_PREFIX}.`)
     ? t(rawMessage)
     : rawMessage;

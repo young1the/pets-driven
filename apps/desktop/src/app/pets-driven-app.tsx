@@ -337,6 +337,7 @@ export function PetsDrivenApp({
           pet={petWindowPet}
           previewPresentation={petWindowFixture?.presentation}
           previewScale={petWindowFixture?.scale}
+          previewConnectNotice={petWindowFixture?.connectNotice}
         />
         {petWindowFixture ? (
           <PetWindowFixtureSwitcher

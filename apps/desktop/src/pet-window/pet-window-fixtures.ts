@@ -16,6 +16,8 @@ export const PET_WINDOW_FIXTURE_IDS = [
   "long-name",
   "large-scale",
   "small-scale",
+  "connect-prompt",
+  "connect-connected",
 ] as const;
 
 export type PetWindowFixtureId = (typeof PET_WINDOW_FIXTURE_IDS)[number];
@@ -28,6 +30,14 @@ export type PetWindowFixturePresentation = {
   overlay: PetWindowOverlay | null;
 };
 
+/** Seeds the terminal-binding notice pill (host/UI feedback, outside the ECS
+ * presentation) so its distinct component is inspectable in the fixture preview. */
+export type PetWindowConnectNoticeFixture = {
+  text: string;
+  /** `false` persists (the prompt); `true` fades on its own timer (the result). */
+  transient: boolean;
+};
+
 export type PetWindowFixture = {
   id: PetWindowFixtureId;
   label: string;
@@ -35,6 +45,7 @@ export type PetWindowFixture = {
   pet: PetWindowRouteParams;
   presentation: PetWindowFixturePresentation;
   scale?: number;
+  connectNotice?: PetWindowConnectNoticeFixture;
 };
 
 export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
@@ -204,6 +215,34 @@ export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
       overlay: { kind: "status", label: "Away" },
     },
     scale: 0.5,
+  },
+  {
+    id: "connect-prompt",
+    label: "Connect: prompt",
+    description: "Terminal-find connect prompt (persists until a pick resolves).",
+    pet: { petId: "fixture-cato", assetId: "cato", windowIndex: 1, name: "Luna" },
+    presentation: {
+      decisionEmote: null,
+      animationState: "idle",
+      activity: null,
+      partnerName: null,
+      overlay: null,
+    },
+    connectNotice: { text: "Click the terminal window to connect", transient: false },
+  },
+  {
+    id: "connect-connected",
+    label: "Connect: connected",
+    description: "Terminal-find result notice — fades on its own timer after ~2.6s.",
+    pet: { petId: "fixture-otto", assetId: "otto", windowIndex: 2, name: "Scout" },
+    presentation: {
+      decisionEmote: null,
+      animationState: "idle",
+      activity: null,
+      partnerName: null,
+      overlay: null,
+    },
+    connectNotice: { text: "Connected to Windows Terminal", transient: true },
   },
 ];
 
