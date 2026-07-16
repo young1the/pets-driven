@@ -139,10 +139,3 @@ export function promptForLaunchProfile(profile: LaunchProfileId): string {
   return "C:\\>";
 }
 
-export function previewCwdForLaunchProfile(profile: LaunchProfileId, path: string): string {
-  if (profile === "git-bash") {
-    return `~/${path}`;
-  }
-
-  return `C:\\pets\\${path}`;
-}

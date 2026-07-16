@@ -47,7 +47,6 @@ import {
   customizeLaunchLine,
   type LaunchProfileId,
   parseLaunchLine,
-  previewCwdForLaunchProfile,
   promptForLaunchProfile,
 } from "@/app/session-launch-profile";
 import { pushSearchParams } from "@/app/spa-navigation";
@@ -1514,7 +1513,6 @@ function PetsDrivenHostApp() {
   const previewWorkingDir = previewPet
     ? (getWorkingDirectoryForPet(petsDrivenState, previewPet.id)?.path ?? null)
     : null;
-  const previewDir = previewWorkingDir ?? "core";
   const launchSettings = parseLaunchLine(petsDrivenState.sessionCommand);
 
   return (
@@ -1576,7 +1574,6 @@ function PetsDrivenHostApp() {
         onCommand: setLaunchCommand,
         onLaunchLine: updateSessionCommand,
         preview: {
-          cwd: previewCwdForLaunchProfile(launchSettings.profile, previewDir),
           prompt: promptForLaunchProfile(launchSettings.profile),
           command: petsDrivenState.sessionCommand,
         },

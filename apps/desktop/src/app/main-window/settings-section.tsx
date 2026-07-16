@@ -1,6 +1,6 @@
 import { type BadgeTone, FolderIcon, TerminalPreview } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
-import { type CSSProperties, useState } from "react";
+import type { CSSProperties } from "react";
 import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { LAUNCH_PROFILE_OPTIONS, type LaunchProfileId } from "@/app/session-launch-profile";
@@ -13,7 +13,7 @@ export interface SettingsSectionProps {
   onLaunchProfile: (value: LaunchProfileId) => void;
   onCommand: (value: string) => void;
   onLaunchLine: (value: string) => void;
-  preview: { cwd: string; prompt: string; command: string };
+  preview: { prompt: string; command: string };
   hook: { tone: BadgeTone; label: string; summary: string; url: string };
   onReconnect: () => void;
   /** Bundled Claude Code plugin install state; null while the check runs. */
@@ -53,12 +53,6 @@ const hint: CSSProperties = {
 const rowStyle = (last = false): CSSProperties => ({
   padding: "22px 0",
   borderBottom: last ? "none" : "1px solid var(--border-soft)",
-});
-const toggleRowStyle = (last = false): CSSProperties => ({
-  ...rowStyle(last),
-  display: "flex",
-  alignItems: "center",
-  gap: "14px",
 });
 const segWrap: CSSProperties = {
   display: "inline-flex",
@@ -105,30 +99,6 @@ const browseStyle: CSSProperties = {
   color: "var(--text-strong)",
   whiteSpace: "nowrap",
 };
-const track = (on: boolean): CSSProperties => ({
-  position: "relative",
-  width: "46px",
-  height: "27px",
-  flex: "none",
-  border: 0,
-  cursor: "pointer",
-  borderRadius: "999px",
-  padding: 0,
-  background: on ? "var(--color-primary)" : "var(--border-strong)",
-  transition: "background 160ms ease",
-});
-const knob = (on: boolean): CSSProperties => ({
-  position: "absolute",
-  top: "3px",
-  left: "3px",
-  width: "21px",
-  height: "21px",
-  borderRadius: "999px",
-  background: "#fff",
-  boxShadow: "0 2px 4px rgba(0,0,0,0.25)",
-  transform: `translateX(${on ? "19px" : "0"})`,
-  transition: "transform 180ms cubic-bezier(.22,1,.36,1)",
-});
 const swatch = (hex: string, on: boolean): CSSProperties => ({
   width: "34px",
   height: "34px",
@@ -203,12 +173,6 @@ export function SettingsSection({
   const { t } = useTranslation("desktop");
   const { locale, setLocale } = useDesktopLocale();
   const { mode, setMode, accent, setAccent } = useDesktopTheme();
-
-  // Notifications, sound and the default folder are not yet backed by persisted
-  // state — they live here as local UI placeholders until wired up.
-  const [notify, setNotify] = useState(true);
-  const [sound, setSound] = useState(true);
-  const [defaultFolder, setDefaultFolder] = useState("~/projects");
 
   const customLaunchLine = launchProfile === "custom";
 
@@ -311,28 +275,8 @@ export function SettingsSection({
               </details>
             )}
             <div style={{ marginTop: "16px" }}>
-              <span style={smallCaps}>{t("settings.runsOnDoubleClick")}</span>
-              <TerminalPreview
-                command={preview.command}
-                cwd={preview.cwd}
-                prompt={preview.prompt}
-              />
-            </div>
-          </div>
-
-          {/* Default working folder (placeholder — not yet persisted). */}
-          <div style={rowStyle()}>
-            <span style={label}>{t("settings.defaultFolderTitle")}</span>
-            <p style={hint}>{t("settings.defaultFolderDesc")}</p>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <input
-                onChange={(event) => setDefaultFolder(event.target.value)}
-                style={inputStyle}
-                value={defaultFolder}
-              />
-              <button style={browseStyle} type="button">
-                {t("settings.browse")}
-              </button>
+              <span style={smallCaps}>{t("settings.commandPreview")}</span>
+              <TerminalPreview command={preview.command} prompt={preview.prompt} />
             </div>
           </div>
 
@@ -379,38 +323,27 @@ export function SettingsSection({
                   {petSourceDirectory ?? defaultPetSourceDirectory ?? "~/.petdex/pets"}
                 </small>
               </span>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={onChangePetFolder}
+                style={{
+                  ...browseStyle,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+                type="button"
+              >
+                <FolderIcon />
+                {t("settings.changePetFolder")}
+              </button>
               {petSourceDirectory && (
-                <button
-                  onClick={onResetPetFolder}
-                  style={{
-                    border: 0,
-                    background: "transparent",
-                    cursor: "pointer",
-                    color: "var(--text-muted)",
-                    fontFamily: "inherit",
-                    fontSize: "12.5px",
-                    fontWeight: 700,
-                    padding: "6px",
-                  }}
-                  type="button"
-                >
+                <button onClick={onResetPetFolder} style={browseStyle} type="button">
                   {t("settings.resetPetFolder")}
                 </button>
               )}
             </div>
-            <button
-              onClick={onChangePetFolder}
-              style={{
-                ...browseStyle,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-              type="button"
-            >
-              <FolderIcon />
-              {t("settings.changePetFolder")}
-            </button>
           </div>
 
           {/* Agent connection — hook ingress status and the Claude Code
@@ -525,7 +458,7 @@ export function SettingsSection({
           </div>
 
           {/* Language — real, persisted locale switch. */}
-          <div style={rowStyle()}>
+          <div style={rowStyle(true)}>
             <span style={label}>{t("settings.language")}</span>
             <div style={{ ...segWrap, marginTop: "11px" }}>
               {locales.map((value) => (
@@ -538,58 +471,6 @@ export function SettingsSection({
                   {localeLabels[value]}
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* Notifications (placeholder toggle). */}
-          <div style={toggleRowStyle()}>
-            <button
-              aria-pressed={notify}
-              onClick={() => setNotify((value) => !value)}
-              style={track(notify)}
-              type="button"
-            >
-              <span style={knob(notify)} />
-            </button>
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: "14.5px",
-                  color: "var(--text-strong)",
-                }}
-              >
-                {t("settings.notifications")}
-              </div>
-              <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
-                {t("settings.notificationsDesc")}
-              </div>
-            </div>
-          </div>
-
-          {/* Sound effects (placeholder toggle). */}
-          <div style={toggleRowStyle(true)}>
-            <button
-              aria-pressed={sound}
-              onClick={() => setSound((value) => !value)}
-              style={track(sound)}
-              type="button"
-            >
-              <span style={knob(sound)} />
-            </button>
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: "14.5px",
-                  color: "var(--text-strong)",
-                }}
-              >
-                {t("settings.sound")}
-              </div>
-              <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
-                {t("settings.soundDesc")}
-              </div>
             </div>
           </div>
         </div>
