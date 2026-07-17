@@ -6,10 +6,6 @@ export {
   type IconButtonProps,
 } from "./components/buttons/icon-button";
 export {
-  ChatBubble,
-  type ChatBubbleProps,
-} from "./components/chat/chat-bubble";
-export {
   Badge,
   type BadgeProps,
   type BadgeTone,
@@ -26,11 +22,6 @@ export { Tooltip, type TooltipProps } from "./components/feedback/tooltip";
 export { Checkbox, type CheckboxProps } from "./components/forms/checkbox";
 export { Input, type InputProps } from "./components/forms/input";
 export { Radio, type RadioProps } from "./components/forms/radio";
-export {
-  SegmentedControl,
-  type SegmentedControlProps,
-  type SegmentedOption,
-} from "./components/forms/segmented-control";
 export {
   Select,
   type SelectOption,
@@ -80,35 +71,4 @@ export {
   type PetAvatarSize,
   type PetAvatarStatus,
 } from "./components/pets/pet-avatar";
-export {
-  PET_RINGS,
-  PET_TINTS,
-  PETS,
-  type PetName,
-} from "./components/pets/pets";
-export {
-  BigQuoteSlide,
-  type BigQuoteSlideProps,
-} from "./components/slides/big-quote-slide";
-export {
-  ClosingSlide,
-  type ClosingSlideProps,
-} from "./components/slides/closing-slide";
-export {
-  ComparisonSlide,
-  type ComparisonSlideProps,
-} from "./components/slides/comparison-slide";
-export {
-  ContentSlide,
-  type ContentSlidePoint,
-  type ContentSlideProps,
-} from "./components/slides/content-slide";
-export {
-  SectionSlide,
-  type SectionSlideProps,
-} from "./components/slides/section-slide";
-export {
-  SlideHighlight,
-  TitleSlide,
-  type TitleSlideProps,
-} from "./components/slides/title-slide";
+export { PETS, type PetName } from "./components/pets/pets";

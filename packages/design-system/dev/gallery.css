@@ -61,17 +61,3 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
-
-/* Slides render at 1280×720; scale to 0.4 → 512×288 thumbnails. */
-.gx-slide {
-  width: 512px;
-  height: 288px;
-  overflow: hidden;
-  border-radius: 14px;
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-md);
-}
-.gx-slide > * {
-  transform: scale(0.4);
-  transform-origin: top left;
-}

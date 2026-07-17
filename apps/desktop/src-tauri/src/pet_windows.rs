@@ -121,21 +121,6 @@ pub(crate) async fn open_adopted_pet_window(
 }
 
 #[tauri::command]
-pub(crate) async fn close_pet_window_playground(app: tauri::AppHandle) -> Result<(), String> {
-    for index in 1..=PET_WINDOW_PLAYGROUND_MAX_WINDOWS {
-        let label = pet_window_playground_label(index);
-
-        if let Some(window) = app.get_webview_window(&label) {
-            window
-                .destroy()
-                .map_err(|error| format!("Could not close {label}: {error}"))?;
-        }
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
 pub(crate) async fn close_all_pet_windows(app: tauri::AppHandle) -> Result<(), String> {
     for (label, window) in app.webview_windows() {
         if label.starts_with("pet-window-") {

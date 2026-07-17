@@ -1,16 +1,10 @@
 import { type ReactNode, useState } from "react";
-import wordmark from "../src/assets/petsdriven-wordmark.svg";
 import {
   BackIcon,
   Badge,
-  BigQuoteSlide,
   Button,
   Card,
-  ChatBubble,
   Checkbox,
-  ClosingSlide,
-  ComparisonSlide,
-  ContentSlide,
   Dialog,
   FolderIcon,
   GearIcon,
@@ -27,15 +21,11 @@ import {
   Radio,
   RefreshIcon,
   SearchIcon,
-  SectionSlide,
-  SegmentedControl,
   Select,
-  SlideHighlight,
   Switch,
   Tabs,
   Tag,
   TerminalPreview,
-  TitleSlide,
   Toast,
   Tooltip,
   TrashIcon,
@@ -53,8 +43,6 @@ function Pet({ emoji, bg = "var(--lavender-200)" }: { emoji: string; bg?: string
     </svg>
   );
 }
-
-const PETS = ["🐱", "🦊", "🐹", "🫧", "🦉", "🐧"];
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -74,18 +62,8 @@ function Cell({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function SlideCell({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="gx-cell">
-      <span className="gx-label">{label}</span>
-      <div className="gx-slide">{children}</div>
-    </div>
-  );
-}
-
 export function Gallery() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [density, setDensity] = useState("cozy");
 
   return (
     <div className="gx-wrap">
@@ -145,17 +123,6 @@ export function Gallery() {
         </Cell>
         <Cell label="Select">
           <Select label="Favourite pet" options={["Cato", "Fenn", "Mochi", "Bloop"]} />
-        </Cell>
-        <Cell label="Segmented control">
-          <SegmentedControl
-            value={density}
-            onChange={setDensity}
-            options={[
-              { value: "cozy", label: "Cozy" },
-              { value: "compact", label: "Compact" },
-              { value: "roomy", label: "Roomy" },
-            ]}
-          />
         </Cell>
         <Cell label="Checkbox / Radio / Switch">
           <Checkbox label="Treats enabled" defaultChecked />
@@ -322,102 +289,6 @@ export function Gallery() {
             }
           />
         </Cell>
-        <Cell label="Chat">
-          <ChatBubble from="pet" name="Cato" avatar={<Pet emoji="🐱" />}>
-            On it — mapping the change now.
-          </ChatBubble>
-          <ChatBubble from="user">Thanks!</ChatBubble>
-          <ChatBubble from="pet" avatar={<Pet emoji="🦊" />} typing />
-        </Cell>
-      </Section>
-
-      <Section title="Slides">
-        <SlideCell label="TitleSlide">
-          <TitleSlide
-            brand={<img src={wordmark} alt="Pets-Driven" />}
-            eyebrow="Pets-Driven Development"
-            title={
-              <>
-                A cute way to develop with <SlideHighlight>AI agents.</SlideHighlight>
-              </>
-            }
-            subtitle="Give a task and watch a little pack of pets do the work."
-            pets={PETS.slice(0, 4).map((e) => <Pet key={e} emoji={e} />)}
-          />
-        </SlideCell>
-        <SlideCell label="SectionSlide">
-          <SectionSlide
-            kicker="01 — Meet the pack"
-            title={
-              <>
-                Six pets,
-                <br />
-                one workflow.
-              </>
-            }
-            subtitle="Plan, fetch, edit, debug, test, report — each step has a pet."
-            pet={<Pet emoji="🐱" bg="rgba(255,255,255,.9)" />}
-          />
-        </SlideCell>
-        <SlideCell label="ContentSlide">
-          <ContentSlide
-            eyebrow="How the pack works"
-            title="Every step has a pet."
-            points={[
-              {
-                art: <Pet emoji="🐱" />,
-                title: "Cato plans",
-                description: "Maps the change and assigns each step.",
-              },
-              {
-                art: <Pet emoji="🦊" />,
-                title: "Fenn debugs",
-                description: "Sniffs out the gnarly bugs.",
-              },
-              {
-                art: <Pet emoji="🫧" />,
-                title: "Bloop tests",
-                description: "Keeps everything green.",
-              },
-            ]}
-            asideArt={<Pet emoji="🦊" />}
-            asideCaption="Fenn"
-            asideRole="The Debugger"
-          />
-        </SlideCell>
-        <SlideCell label="ComparisonSlide">
-          <ComparisonSlide
-            title="From log-watching to pet-watching."
-            oldItems={[
-              "Walls of terminal output",
-              "No idea which agent did what",
-              "Context lost between runs",
-            ]}
-            newPet={<Pet emoji="🐹" />}
-            newItems={[
-              "A face and mood per agent",
-              "See progress at a glance",
-              "Chat with any pet, anytime",
-            ]}
-          />
-        </SlideCell>
-        <SlideCell label="BigQuoteSlide">
-          <BigQuoteSlide
-            quote="I shipped a refactor without reading a single log line. I just watched Mochi do it."
-            pet={<Pet emoji="🐹" />}
-            authorName="An early adopter"
-            authorMeta="Tinkerer, owns four pets"
-          />
-        </SlideCell>
-        <SlideCell label="ClosingSlide">
-          <ClosingSlide
-            pets={PETS.map((e) => <Pet key={e} emoji={e} bg="rgba(255,255,255,.12)" />)}
-            title="Bring home your pack."
-            subtitle="Free while they nap. Adopt as many as you need."
-            cta="✨ petsdriven.dev"
-            footer={<img src={wordmark} alt="Pets-Driven" />}
-          />
-        </SlideCell>
       </Section>
     </div>
   );

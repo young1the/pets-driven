@@ -78,7 +78,6 @@ pub fn run() {
             pet_assets::get_default_pet_source_directory,
             pet_windows::open_adopted_pet_window,
             pet_windows::open_pet_window_playground,
-            pet_windows::close_pet_window_playground,
             pet_windows::close_all_pet_windows,
             pet_windows::close_adopted_pet_window,
             pet_windows::open_pet_context_menu,
