@@ -1,11 +1,13 @@
-import type { ButtonHTMLAttributes, ElementType, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ElementType, ReactNode } from "react";
 import "./button.css";
 
 /**
  * The tactile, chunky Pets-Driven button with a signature "toy lip" that
  * compresses on press. Use for primary and secondary actions.
  */
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement>,
+    Pick<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "target" | "rel"> {
   /** Visual style. @default "primary" */
   variant?: "primary" | "accent" | "mint" | "neutral" | "ghost";
   /** Control height. @default "md" */

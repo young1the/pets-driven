@@ -10,6 +10,8 @@ dev-server*.log
 .DS_Store
 .claude/
 workspaces/
+.env
+.env.local
 
 # Built-in pet sprites copied from the repo-root `pets/` source of truth by
 # scripts/sync-pet-assets.mjs. Generated build artifacts — edit pets/ instead.

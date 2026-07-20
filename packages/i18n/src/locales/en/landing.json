@@ -33,5 +33,10 @@
       "jumps": "jumps far!",
       "shy": "shy…"
     }
+  },
+  "cta": {
+    "title": "Bring home your pack today.",
+    "body": "Free while they nap. Adopt as many as you need.",
+    "button": "Adopt your pack"
   }
 }
