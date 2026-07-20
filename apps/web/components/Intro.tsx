@@ -844,6 +844,66 @@ export default function Intro({ locale }: { locale: Locale }) {
           </Button>
         </div>
       </section>
+
+      {/* ===================== CTA — ADOPT YOUR PACK ===================== */}
+      <section style={{ padding: "24px 6vw 100px", background: "#FFFCFD" }}>
+        <div
+          data-reveal
+          className="pd-dots"
+          style={{
+            opacity: 0,
+            transform: "translateY(26px)",
+            transition:
+              "opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)",
+            maxWidth: 1140,
+            margin: "0 auto",
+            textAlign: "center",
+            padding: "60px 32px",
+            borderRadius: "var(--radius-2xl)",
+            border: "1px solid var(--blossom-100)",
+            background: "linear-gradient(160deg, var(--teal-50), var(--blossom-50))",
+          }}
+        >
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 22 }}>
+            {CTA_PETS.map((pet) => (
+              <PetAvatar key={pet} pet={pet} size="lg" status="happy" />
+            ))}
+          </div>
+          <h2
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 600,
+              fontSize: "clamp(30px,4vw,44px)",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.1,
+              color: "var(--ink-950)",
+              margin: 0,
+            }}
+          >
+            {t("cta.title")}
+          </h2>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 18,
+              color: "var(--ink-700)",
+              margin: "14px 0 28px",
+            }}
+          >
+            {t("cta.body")}
+          </p>
+          <Button
+            variant="accent"
+            size="lg"
+            as="a"
+            href={process.env.NEXT_PUBLIC_GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t("cta.button")}
+          </Button>
+        </div>
+      </section>
     </IntroScenes>
   );
 }

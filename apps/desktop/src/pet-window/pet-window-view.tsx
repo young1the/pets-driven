@@ -56,6 +56,13 @@ type PetWindowViewProps = {
    * real app is driven by Tauri PET_WINDOW_BINDING_EVENT. Ignored inside Tauri.
    */
   previewConnectNotice?: { text: string; transient: boolean };
+  /**
+   * PROTOTYPE ONLY (working-signal-lab). A decoration layer rendered inside the
+   * sprite's visual frame, aligned to the sprite box (full width, bottom-anchored
+   * cell height) so aura/typing treatments sit on the real sprite. Remove with
+   * the lab once a working-signal direction is picked.
+   */
+  prototypeDecor?: React.ReactNode;
 };
 
 type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
@@ -65,6 +72,8 @@ type PetWindowPresentation = {
   activity: PetActivityKind | null;
   /** Session partner name for the capsule label, following the shown activity. */
   partnerName: string | null;
+  /** True while an agent task is running, so the capsule stays shown as "working". */
+  working: boolean;
   overlay: PetWindowOverlay | null;
 };
 
@@ -151,6 +160,7 @@ function defaultPresentation(index: number): PetWindowPresentation {
     animationState: movementDirectionForWindow(index) >= 0 ? "running-right" : "running-left",
     activity: null,
     partnerName: null,
+    working: false,
     overlay: { kind: "status", label: "!" },
   };
 }
@@ -245,6 +255,7 @@ export function PetWindowView({
   previewPresentation,
   previewScale,
   previewConnectNotice,
+  prototypeDecor,
 }: PetWindowViewProps) {
   const { t } = useTranslation("desktop");
   const isPreview = !isTauri();
@@ -368,6 +379,7 @@ export function PetWindowView({
               animationState: presentationRef.current.animationState,
               activity: presentationRef.current.activity,
               partnerName: presentationRef.current.partnerName,
+              working: presentationRef.current.working,
             },
             overlay: presentationRef.current.overlay,
           },
@@ -376,6 +388,7 @@ export function PetWindowView({
               ...frame.sprite,
               activity: steadiedActivity,
               partnerName: steadiedPartnerName,
+              working: frame.sprite.working ?? false,
             },
             overlay: frame.overlay,
           },
@@ -386,6 +399,7 @@ export function PetWindowView({
           animationState: frame.sprite.animationState,
           activity: steadiedActivity,
           partnerName: steadiedPartnerName,
+          working: frame.sprite.working ?? false,
           overlay: frame.overlay,
         };
         setPresentation({
@@ -393,6 +407,7 @@ export function PetWindowView({
           animationState: frame.sprite.animationState,
           activity: steadiedActivity,
           partnerName: steadiedPartnerName,
+          working: frame.sprite.working ?? false,
           overlay: frame.overlay,
         });
       }
@@ -879,11 +894,28 @@ export function PetWindowView({
             style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD * spriteScale }}
           />
         ) : null}
+        {/* PROTOTYPE (working-signal-lab): decor aligned to the sprite box. */}
+        {prototypeDecor ? (
+          <span
+            className="pet-window-proto-decor"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: `${PET_CELL_SIZE.height * spriteScale}px`,
+              pointerEvents: "none",
+            }}
+          >
+            {prototypeDecor}
+          </span>
+        ) : null}
         {petName !== null ? (
           <PetStatusCard
             activity={presentation.activity}
             partnerName={presentation.partnerName}
             animationState={presentation.animationState}
+            working={presentation.working}
             cwd={isBodyHovered ? cwdRef.current : null}
             name={petName}
             overlay={presentation.overlay}
@@ -927,6 +959,7 @@ type PetStatusCardProps = {
   animationState: PetAnimationState;
   activity: PetActivityKind | null;
   partnerName: string | null;
+  working: boolean;
   overlay: PetWindowOverlay | null;
   cwd: string | null;
   spriteHeight: number;
@@ -940,13 +973,14 @@ function PetStatusCard({
   animationState,
   activity,
   partnerName,
+  working,
   overlay,
   cwd,
   spriteHeight,
   scale,
 }: PetStatusCardProps) {
   const { t } = useTranslation("desktop");
-  const status = presentPetStatus(animationState, overlay, activity, partnerName);
+  const status = presentPetStatus(animationState, overlay, activity, partnerName, working);
   const accent = PET_MOODS[status.mood].accent;
   // Static labels carry a stable key we can localize; host-supplied free text
   // (speech/attention overlays) has no key, so it shows as-is.

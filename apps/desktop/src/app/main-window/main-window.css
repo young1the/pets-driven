@@ -137,3 +137,27 @@
   width: 100%;
   align-items: center;
 }
+
+/* In-field status dot. The working variant pulses a soft ring so an actively
+   working pet reads as "busy" at a glance, distinct from a static idle dot. */
+.pd-field-dot--working {
+  animation: pd-field-dot-pulse 1.6s ease-out infinite;
+}
+
+@keyframes pd-field-dot-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--sky-300) 60%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-field-dot--working {
+    animation: none;
+  }
+}

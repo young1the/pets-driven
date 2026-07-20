@@ -138,11 +138,17 @@ export function MainWindowSurface({
     () =>
       managedPets
         .filter((pet) => pet.visible)
-        .map((pet) => ({
-          id: pet.id,
-          name: pet.name,
-          color: petStatusById[pet.id]?.dotColor ?? "var(--ink-300)",
-        })),
+        .map((pet) => {
+          const status = petStatusById[pet.id];
+          return {
+            id: pet.id,
+            name: pet.name,
+            color: status?.dotColor ?? "var(--ink-300)",
+            // `info` tone is the working signal; other tones (idle/waiting/
+            // failed/done) keep their own dot color and stay static.
+            working: status?.tone === "info",
+          };
+        }),
     [managedPets, petStatusById],
   );
 

@@ -164,7 +164,7 @@ describe("HomeSection", () => {
     render(
       <HomeSection
         atHome={[]}
-        inField={[{ id: "mochi", name: "Mochi", color: "#FF6FAB" }]}
+        inField={[{ id: "mochi", name: "Mochi", color: "#FF6FAB", working: false }]}
         onDeploy={vi.fn()}
         onRecall={onRecall}
         onEdit={vi.fn()}

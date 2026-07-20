@@ -115,6 +115,7 @@ describe("pet window projection", () => {
           animationState: "running-left",
           activity: null,
           partnerName: null,
+          working: false,
         },
         overlay: null,
       },
@@ -132,6 +133,35 @@ describe("pet window projection", () => {
     );
 
     expect(projection.frame.sprite.activity).toBe("chasingCursor");
+  });
+
+  it("flags the frame sprite as working while an agent task is running", () => {
+    const snapshot = snapshotFixture();
+    snapshot.pets[0] = {
+      ...snapshot.pets[0],
+      agentTask: { status: "working", label: null },
+    };
+
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 0, y: 0, width: 1000, height: 800 },
+      7,
+    );
+
+    expect(projection.frame.sprite.working).toBe(true);
+  });
+
+  it("does not flag the frame sprite as working when idle", () => {
+    const snapshot = snapshotFixture();
+    snapshot.pets[0] = { ...snapshot.pets[0], agentTask: null };
+
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 0, y: 0, width: 1000, height: 800 },
+      7,
+    );
+
+    expect(projection.frame.sprite.working).toBe(false);
   });
 
   it("passes the session partner name through to the frame sprite", () => {

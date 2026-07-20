@@ -54,6 +54,12 @@ export type PetWindowFrameSprite = {
    * session, so the capsule can read "Chatting with Otto". Null otherwise.
    */
   partnerName?: string | null;
+  /**
+   * True while an agent task is actively running (AgentTaskState.status ===
+   * "working"). Lets the window show a persistent working capsule for the whole
+   * task, not just while a transient agent-channel line is live.
+   */
+  working?: boolean;
 };
 
 export type PetWindowResizeEvent = {

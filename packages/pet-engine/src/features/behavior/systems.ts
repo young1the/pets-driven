@@ -586,9 +586,11 @@ function horizontalOscillation(
 
 // Petting acknowledges whatever the agent reported: the movement hold lifts
 // and the task state clears no matter the status — working included, so a
-// stroke also dismisses a stale "working" report. Settled statuses
-// (waiting/failed/completed) additionally play the personality acknowledge
-// beat; a released "working" state keeps the plain petting love reaction.
+// stroke also dismisses a stale "working" report. Releasing an agent state is
+// always confirmed with a love/heart beat (so the stroke visibly "accepts" the
+// report); settled statuses (waiting/failed/completed) additionally speak the
+// personality acknowledge line, while a released "working" state keeps the
+// plain petting love reaction set by the caller.
 function releaseAgentTaskOnPetting(
   components: ComponentStore,
   id: string,
@@ -614,11 +616,15 @@ function releaseAgentTaskOnPetting(
       id,
       utteranceChannel({ message: feedback.speech, source: "interaction", now, durationMs }),
     );
+    // Releasing a reported task always reads as a heart, no matter the
+    // personality's usual acknowledge cue — the stroke is an affectionate
+    // "got it", so the emote is unified even though the spoken line stays
+    // personality-specific (feedback.speech above).
     components.setComponent(id, {
       type: "PetExpressionState",
       source: "acknowledge",
-      mood: feedback.mood,
-      emote: feedback.emote,
+      mood: "love",
+      emote: "heart",
       label: null,
       startedAt: now,
       expiresAt: now + durationMs,

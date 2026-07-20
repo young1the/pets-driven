@@ -198,4 +198,28 @@ describe("presentPetStatus", () => {
     expect(presentation.labelKey).toBeNull();
     expect(presentation.mood).toBe("love");
   });
+
+  it("keeps the capsule shown while working even with no overlay", () => {
+    const presentation = presentPetStatus("running", null, null, null, true);
+
+    expect(presentation.showCapsule).toBe(true);
+    // No overriding activity/label of its own, so it falls back to "Working".
+    expect(presentation.label).toBe("Working");
+    expect(presentation.labelKey).toBe("working");
+    expect(presentation.mood).toBe("working");
+  });
+
+  it("prefers the ambient activity label over the Working fallback while working", () => {
+    const presentation = presentPetStatus("running", null, "exploring", null, true);
+
+    expect(presentation.showCapsule).toBe(true);
+    expect(presentation.label).toBe("Exploring");
+    expect(presentation.labelKey).toBe("exploring");
+  });
+
+  it("still hides the capsule for an idle (not working) pet with no overlay", () => {
+    const presentation = presentPetStatus("running", null, "exploring", null, false);
+
+    expect(presentation.showCapsule).toBe(false);
+  });
 });

@@ -73,6 +73,36 @@ describe("petting releases the agent task state", () => {
     expect(components.getComponent("pet", "AgentChannelState")).toBeUndefined();
   });
 
+  it("confirms a settled release with a heart even when the personality cue isn't one", () => {
+    const components = storeWithStrokedPet([
+      { type: "Transform", position: { x: 0, y: 0 } },
+      { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
+      { type: "PetIdentity", name: "Pet" },
+      // "playful" normally acknowledges "waiting" with a sparkle, not a heart —
+      // proves the release override wins over the personality's acknowledge cue.
+      {
+        type: "Personality",
+        catalogId: "playful",
+        openness: 0.5,
+        conscientiousness: 0.5,
+        extraversion: 0.5,
+        agreeableness: 0.5,
+        neuroticism: 0.5,
+      },
+      { type: "AgentTaskState", status: "waiting", since: 0 },
+      { type: "TaskMovementHold", since: 0 },
+    ]);
+
+    runPettingDetectionSystem(components, createManualClock(400));
+
+    expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
+    expect(components.getComponent("pet", "PetExpressionState")).toMatchObject({
+      source: "acknowledge",
+      mood: "love",
+      emote: "heart",
+    });
+  });
+
   it("clears a live working status too — petting dismisses the report entirely", () => {
     const components = storeWithStrokedPet([
       { type: "Transform", position: { x: 0, y: 0 } },

@@ -15,7 +15,7 @@ export type HomePetView = {
 
 export interface HomeSectionProps {
   atHome: HomePetView[];
-  inField: { id: string; name: string; color: string }[];
+  inField: { id: string; name: string; color: string; working: boolean }[];
   onDeploy: (petId: string) => void;
   onRecall: (petId: string) => void;
   onEdit: (petId: string) => void;
@@ -277,6 +277,7 @@ export const HomeSection = memo(function HomeSection({
                 type="button"
               >
                 <span
+                  className={pet.working ? "pd-field-dot--working" : undefined}
                   style={{
                     width: "8px",
                     height: "8px",

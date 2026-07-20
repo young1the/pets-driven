@@ -132,7 +132,7 @@ describe("PettingDetectionSystem", () => {
     expect(store.getComponent("pet-a", "BehaviorDecisionState")?.reason).toBe("petting");
   });
 
-  it("shows personality-aware acknowledge feedback when petting a pet with a completed task", () => {
+  it("speaks a personality-aware acknowledge line but confirms the release with a heart", () => {
     const store = makeStore();
     store.setComponent("pet-a", {
       type: "Personality",
@@ -170,11 +170,13 @@ describe("PettingDetectionSystem", () => {
     expect(store.getComponent("pet-a", "AgentChannelState")?.message).toMatch(
       /^petSpeech\.mischievous\.ackCompleted\.[0-3]$/,
     );
-    // The acknowledge beat overrides the plain petting love reaction.
+    // The release is always confirmed with a heart, overriding the plain
+    // petting love reaction AND the personality's usual acknowledge emote
+    // (mischievous → sparkle); only the spoken line above stays personality-aware.
     expect(store.getComponent("pet-a", "PetExpressionState")).toMatchObject({
       source: "acknowledge",
-      mood: "excited",
-      emote: "sparkle",
+      mood: "love",
+      emote: "heart",
       expiresAt: 3_500,
     });
     expect(store.getComponent("pet-a", "BehaviorDecisionState")).toMatchObject({

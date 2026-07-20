@@ -28,6 +28,9 @@ export type PetWindowFixturePresentation = {
   activity: PetActivityKind | null;
   partnerName: string | null;
   overlay: PetWindowOverlay | null;
+  /** Seeds the persistent "working" capsule in preview (real app derives it
+   *  from the world snapshot). Defaults to false when omitted. */
+  working?: boolean;
 };
 
 /** Seeds the terminal-binding notice pill (host/UI feedback, outside the ECS

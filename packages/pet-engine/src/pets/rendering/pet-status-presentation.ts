@@ -262,6 +262,7 @@ export function presentPetStatus(
   overlay: PetSpriteOverlay | null | undefined,
   activity?: PetActivityKind | null,
   partnerName?: string | null,
+  working: boolean = false,
 ): PetStatusPresentation {
   // The canonical activity gives ambient rows a live, specific label
   // ("Chasing the cursor" instead of a mute working capsule). Task-owned
@@ -276,6 +277,21 @@ export function presentPetStatus(
   const base = withPartnerName(activityBase, partnerName);
 
   if (!overlay) {
+    // A running agent task keeps a persistent working capsule so the floating
+    // pet always signals "working" (vs an idle pet, which shows no capsule) —
+    // not just during a transient agent-channel line. The ambient activity
+    // still owns the label; fall back to "Working" only when the row/activity
+    // gives no label of its own, so the capsule is never empty.
+    if (working) {
+      const hasLabel = base.labelKey !== null || base.label !== null;
+      return {
+        ...base,
+        label: hasLabel ? base.label : "Working",
+        labelKey: hasLabel ? base.labelKey : "working",
+        message: null,
+        showCapsule: true,
+      };
+    }
     return { ...base, message: null, showCapsule: false };
   }
 
