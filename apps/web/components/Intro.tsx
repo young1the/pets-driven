@@ -6,6 +6,15 @@ import { IntroScenes } from "@/components/IntroScenes";
 const CTA_PETS: PetName[] = ["cato", "otto", "mochi", "fenn", "bloop", "pip"];
 
 /**
+ * GitHub redirects this to the newest release's asset of that exact name, so the
+ * CTA hands over the installer itself instead of dropping visitors on a release
+ * page to hunt for it. The release workflow attaches the version-less copy.
+ */
+const DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_DOWNLOAD_URL ??
+  "https://github.com/young1the/pets-driven/releases/latest/download/PetsDriven-windows-x64-setup.exe";
+
+/**
  * Pets-Driven Intro — the official homepage.
  * A faithful React port of the "Pets-Driven Intro" scroll-driven design:
  *   ACT I   The Watch — demon eyes in the dark resolve into the pack as light rises
@@ -786,64 +795,6 @@ export default function Intro({ locale }: { locale: Locale }) {
           </div>
         </div>
       </section>
-            <section style={{ padding: "24px 6vw 100px", background: "#FFFCFD" }}>
-        <div
-          data-reveal
-          className="pd-dots"
-          style={{
-            opacity: 0,
-            transform: "translateY(26px)",
-            transition:
-              "opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)",
-            maxWidth: 1140,
-            margin: "0 auto",
-            textAlign: "center",
-            padding: "60px 32px",
-            borderRadius: "var(--radius-2xl)",
-            border: "1px solid var(--blossom-100)",
-            background: "linear-gradient(160deg, var(--teal-50), var(--blossom-50))",
-          }}
-        >
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 22 }}>
-            {CTA_PETS.map((pet) => (
-              <PetAvatar key={pet} pet={pet} size="lg" status="happy" />
-            ))}
-          </div>
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 600,
-              fontSize: "clamp(30px,4vw,44px)",
-              letterSpacing: "-0.02em",
-              lineHeight: 1.1,
-              color: "var(--ink-950)",
-              margin: 0,
-            }}
-          >
-            {t("cta.title")}
-          </h2>
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 18,
-              color: "var(--ink-700)",
-              margin: "14px 0 28px",
-            }}
-          >
-            {t("cta.body")}
-          </p>
-          <Button
-            variant="accent"
-            size="lg"
-            as="a"
-            href={process.env.NEXT_PUBLIC_GITHUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t("cta.button")}
-          </Button>
-        </div>
-      </section>
 
       {/* ===================== CTA — ADOPT YOUR PACK ===================== */}
       <section style={{ padding: "24px 6vw 100px", background: "#FFFCFD" }}>
@@ -892,16 +843,27 @@ export default function Intro({ locale }: { locale: Locale }) {
           >
             {t("cta.body")}
           </p>
-          <Button
-            variant="accent"
-            size="lg"
-            as="a"
-            href={process.env.NEXT_PUBLIC_GITHUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <Button variant="accent" size="lg" as="a" href={DOWNLOAD_URL}>
             {t("cta.button")}
           </Button>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 14,
+              color: "var(--ink-700)",
+              margin: "16px 0 0",
+            }}
+          >
+            {t("cta.note")}{" "}
+            <a
+              href={process.env.NEXT_PUBLIC_GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "var(--blossom-600)" }}
+            >
+              {t("cta.sourceLink")}
+            </a>
+          </p>
         </div>
       </section>
     </IntroScenes>

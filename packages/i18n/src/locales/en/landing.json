@@ -37,6 +37,8 @@
   "cta": {
     "title": "Bring home your pack today.",
     "body": "Free while they nap. Adopt as many as you need.",
-    "button": "Adopt your pack"
+    "button": "Adopt your pack",
+    "note": "Downloads the Windows installer.",
+    "sourceLink": "View the source on GitHub"
   }
 }
