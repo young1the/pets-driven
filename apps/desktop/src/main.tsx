@@ -7,25 +7,12 @@ import { PetsDrivenApp } from "./app/pets-driven-app";
 import { pushSearchParams } from "./app/spa-navigation";
 import { DesktopThemeProvider } from "./app/theme/desktop-theme";
 import { PetContextMenuView } from "./pet-window/pet-context-menu-view";
-// PROTOTYPE gate — `?surface=working-signal-lab` (dev + loopback only). Delete
-// with working-signal-lab.tsx once a working-signal direction is picked.
-import { WorkingSignalLab } from "./pet-window/working-signal-lab";
 import "./styles/main.css";
 
 type NavigateSearchParams = (mutate: (params: URLSearchParams) => void) => void;
 
 function RootSurface({ navigateSearchParams }: { navigateSearchParams: NavigateSearchParams }) {
   const params = new URLSearchParams(window.location.search);
-
-  if (
-    import.meta.env.DEV &&
-    params.get("surface") === "working-signal-lab" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.hostname === "::1")
-  ) {
-    return <WorkingSignalLab />;
-  }
 
   if (params.get("surface") === "pet-context-menu") {
     const petId = params.get("petId") ?? "pet-a";
