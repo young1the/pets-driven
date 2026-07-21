@@ -1,8 +1,7 @@
 <!-- markdownlint-disable MD033 MD041 -->
 <div align="center">
 
-<!-- TODO(maintainer): 실제 로고/배너로 교체 (예: docs/assets/logo.png) -->
-<img src="pets/cato/spritesheet.webp" alt="Pets Driven" width="120" />
+<img src="apps/desktop/src-tauri/icons/128x128@2x.png" alt="Pets Driven" width="120" />
 
 <h1>Pets Driven</h1>
 
