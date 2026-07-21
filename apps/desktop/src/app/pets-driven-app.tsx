@@ -1,10 +1,6 @@
 import { Button } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import {
-  getWorldViewport,
-  type MonitorWorkArea,
-} from "@pets-driven/pet-engine/core/monitor-geometry";
-import {
   createAdoptedPetsScenario,
   createDemoScenario,
   deriveAdoptedPetLocomotion,
@@ -13,19 +9,20 @@ import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/c
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
-import {
-  availableMonitors,
-  currentMonitor,
-  cursorPosition,
-  getCurrentWindow,
-  type Monitor,
-} from "@tauri-apps/api/window";
+import { currentMonitor, cursorPosition } from "@tauri-apps/api/window";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
 import type { ClaudeHookIngressStatus } from "@/adapters/agent-events/claude-hook-ingress";
 import { useAppNavigation } from "@/app/app-navigation";
 import { desktopGateway, type ForeignWindow } from "@/app/desktop-gateway";
+import {
+  adoptedPetBodySize,
+  desktopFixturePetBodySize,
+  loadDesktopMonitorWorkAreas,
+  loadMainWindowSpawnPoint,
+  projectionBoundsForMonitors,
+} from "@/app/desktop-host/monitor-geometry";
 import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import type { MainWindowTab } from "@/app/main-window/main-window";
 import { MainWindowSurface } from "@/app/main-window/main-window-surface";
@@ -59,11 +56,7 @@ import {
 } from "@/app-state/pets-driven-state";
 import { PetWindowFixtureSwitcher } from "@/pet-window/pet-window-fixture-switcher";
 import { PET_WINDOW_FIXTURES, resolvePetWindowFixture } from "@/pet-window/pet-window-fixtures";
-import {
-  clampPetWindowScale,
-  DEFAULT_PET_WINDOW_SCALE,
-  PET_WINDOW_LAYOUT,
-} from "@/pet-window/pet-window-layout";
+import { clampPetWindowScale, DEFAULT_PET_WINDOW_SCALE } from "@/pet-window/pet-window-layout";
 import {
   PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
@@ -102,7 +95,6 @@ const DESKTOP_FIXTURE_STEP_MS = 16;
 // frames, and a window that finishes creating after its first frame was
 // emitted must not wait for the next real change to show itself.
 const PET_WINDOW_FRAME_HEARTBEAT_TICKS = Math.round(500 / DESKTOP_FIXTURE_HOST_TICK_MS);
-const DESKTOP_FIXTURE_WORLD_SIZE = { width: 1920, height: 1080 };
 const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
 const EMPTY_PET_PACKAGES_GATEWAY = {
   ...desktopGateway,
@@ -150,86 +142,6 @@ function petWindowPlaygroundLabelForPetId(petId: string) {
   );
 
   return index >= 0 ? `pet-window-playground-${index + 1}` : null;
-}
-
-function desktopFixturePetBodySize(
-  bounds: { width: number; height: number },
-  scale = DEFAULT_PET_WINDOW_SCALE,
-) {
-  const scaleX = bounds.width / DESKTOP_FIXTURE_WORLD_SIZE.width;
-  const scaleY = bounds.height / DESKTOP_FIXTURE_WORLD_SIZE.height;
-
-  return {
-    width: (PET_WINDOW_LAYOUT.body.width * scale) / scaleX,
-    height: (PET_WINDOW_LAYOUT.body.height * scale) / scaleY,
-  };
-}
-
-// Adopted pets run in a world sized to the real work area, so their projection
-// is 1:1 — the physics body must equal the sprite's body rect directly, not be
-// divided by the fixture world scale (which left pets half-sunk behind the
-// taskbar).
-function adoptedPetBodySize(scale = 1) {
-  const petScale = clampPetWindowScale(scale);
-
-  return {
-    width: PET_WINDOW_LAYOUT.body.width * petScale,
-    height: PET_WINDOW_LAYOUT.body.height * petScale,
-  };
-}
-
-async function loadMainWindowSpawnPoint(): Promise<{
-  x: number;
-  y: number;
-} | null> {
-  try {
-    const currentWindow = getCurrentWindow();
-    const [position, size, monitor] = await Promise.all([
-      currentWindow.outerPosition(),
-      currentWindow.outerSize(),
-      currentMonitor(),
-    ]);
-    const dpi = monitor?.scaleFactor ?? 1;
-
-    return {
-      x: (position.x + size.width / 2) / dpi,
-      y: (position.y + size.height / 2) / dpi,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function monitorToWorkArea(monitor: Monitor, index: number): MonitorWorkArea {
-  const dpi = monitor.scaleFactor;
-
-  return {
-    id: monitor.name ?? `monitor-${index + 1}`,
-    x: monitor.workArea.position.x / dpi,
-    y: monitor.workArea.position.y / dpi,
-    width: monitor.workArea.size.width / dpi,
-    height: monitor.workArea.size.height / dpi,
-  };
-}
-
-function projectionBoundsForMonitors(monitors: MonitorWorkArea[]) {
-  return getWorldViewport(monitors);
-}
-
-async function loadDesktopMonitorWorkAreas(): Promise<MonitorWorkArea[]> {
-  try {
-    const monitors = await availableMonitors();
-
-    if (monitors.length > 0) {
-      return monitors.map(monitorToWorkArea);
-    }
-  } catch {
-    // Fall back to the current monitor below.
-  }
-
-  const monitor = await currentMonitor();
-
-  return monitor ? [monitorToWorkArea(monitor, 0)] : [];
 }
 
 function createInitialPetsDrivenState(): PetsDrivenState {
