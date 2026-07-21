@@ -30,6 +30,34 @@
 
   "overrides": [
     {
+      "includes": [
+        "packages/pet-engine/src/**",
+        "packages/design-system/src/**",
+        "packages/i18n/src/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@tauri-apps/**"],
+                    "message": "Platform-agnostic packages must not depend on Tauri. Keep native access in apps/desktop (behind DesktopGateway)."
+                  },
+                  {
+                    "group": ["node:*", "node:*/**"],
+                    "message": "Platform-agnostic packages must not depend on Node built-ins. This code must run unchanged in the browser playground."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["**/*.test.ts", "**/*.test.tsx", "**/tests/**"],
       "linter": {
         "rules": {
