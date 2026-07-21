@@ -9,15 +9,15 @@
 A little companion lives on your desktop for each project. It walks, naps, and plays on its own —
 and springs to attention the moment its agent needs you.</p>
 
-<!-- TODO(maintainer): point badges at the real repo once it's public -->
+[![Latest release](https://img.shields.io/github/v/release/young1the/pets-driven?sort=semver&color=F95E9E&label=release)](https://github.com/young1the/pets-driven/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/young1the/pets-driven/total?color=16B8A6)](https://github.com/young1the/pets-driven/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)
-![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)
 ![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20%2B%20React-24C8DB.svg)
 
 **English** · [한국어](./README.ko.md) <!-- TODO(maintainer): add README.ko.md -->
 
-[Features](#-features) · [Meet the pets](#-meet-the-pets) · [How it works](#-how-it-works) · [Getting started](#-getting-started) · [Agent integration](#-agent-integration)
+[Download](#-download) · [Features](#-features) · [Meet the pets](#-meet-the-pets) · [How it works](#-how-it-works) · [Getting started](#-getting-started) · [Agent integration](#-agent-integration)
 
 </div>
 
@@ -98,10 +98,21 @@ flowchart LR
 For the full domain model, ubiquitous language, and architecture diagrams, see
 [`CONTEXT.md`](./CONTEXT.md).
 
+## ⬇️ Download
+
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Installer-F95E9E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/young1the/pets-driven/releases/latest)
+
+Grab the installer from the **[latest release](https://github.com/young1the/pets-driven/releases/latest)** —
+download the `.exe` and run it. That link always points at the newest published version.
+
+> macOS and Linux builds aren't published yet. The app is built with [Tauri](https://tauri.app), so
+> they're on the roadmap — until then, [build from source](#-getting-started).
+
 ## 🚀 Getting started
 
-> **Status:** early development (`v0.1.0`). Windows is the current bundle target; the app is built
-> with [Tauri](https://tauri.app), so macOS and Linux are on the roadmap. For now, run from source.
+> **Status:** early development. Prebuilt **Windows** installers live on the
+> [releases page](https://github.com/young1the/pets-driven/releases/latest); macOS and Linux are on
+> the roadmap. Prefer to hack on it? Build from source below.
 
 ### Prerequisites
 
