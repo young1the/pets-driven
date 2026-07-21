@@ -20,7 +20,7 @@ import {
   getCurrentWindow,
   type Monitor,
 } from "@tauri-apps/api/window";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
 import {
@@ -38,9 +38,7 @@ import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import type { MainWindowTab } from "@/app/main-window/main-window";
 import { MainWindowSurface } from "@/app/main-window/main-window-surface";
 import { shortWorkingDir } from "@/app/main-window/pet-card-view";
-import { AdoptPetFlow } from "@/app/onboarding/adopt-pet-flow";
 import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
-import { SetupWizard } from "@/app/onboarding/setup-wizard";
 import {
   buildLaunchLine,
   customizeLaunchLine,
@@ -90,7 +88,20 @@ import {
 } from "@/pet-window/pet-window-projection";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PetWindowView } from "@/pet-window/pet-window-view";
-import { PlaygroundApp } from "@/playground/browser/playground-app";
+
+// Onboarding and the playground are large surfaces that most sessions never
+// open — the wizard and adopt flow only run on first setup, the playground is a
+// dev/debug tool. Loading them on demand keeps them out of the main-window
+// chunk so the app has less to parse on cold start.
+const SetupWizard = lazy(() =>
+  import("@/app/onboarding/setup-wizard").then((m) => ({ default: m.SetupWizard })),
+);
+const AdoptPetFlow = lazy(() =>
+  import("@/app/onboarding/adopt-pet-flow").then((m) => ({ default: m.AdoptPetFlow })),
+);
+const PlaygroundApp = lazy(() =>
+  import("@/playground/browser/playground-app").then((m) => ({ default: m.PlaygroundApp })),
+);
 
 const DESKTOP_FIXTURE_HOST_TICK_MS = 16;
 const DESKTOP_FIXTURE_STEP_MS = 16;
@@ -1096,31 +1107,41 @@ function PetsDrivenHostApp() {
         >
           {t("common.back")}
         </Button>
-        <PlaygroundApp />
+        <Suspense fallback={null}>
+          <PlaygroundApp />
+        </Suspense>
       </div>
     );
   }
 
   if (view === "onboarding") {
     return (
-      <SetupWizard
-        gateway={devFixture?.petPackages === "empty" ? EMPTY_PET_PACKAGES_GATEWAY : desktopGateway}
-        onCreatePet={() => navigate("adopt")}
-        onDone={() => navigate("home")}
-        onStateChange={applyPetsDrivenState}
-        state={petsDrivenState}
-      />
+      <Suspense fallback={null}>
+        <SetupWizard
+          gateway={
+            devFixture?.petPackages === "empty" ? EMPTY_PET_PACKAGES_GATEWAY : desktopGateway
+          }
+          onCreatePet={() => navigate("adopt")}
+          onDone={() => navigate("home")}
+          onStateChange={applyPetsDrivenState}
+          state={petsDrivenState}
+        />
+      </Suspense>
     );
   }
 
   if (view === "adopt") {
     return (
-      <AdoptPetFlow
-        gateway={devFixture?.petPackages === "empty" ? EMPTY_PET_PACKAGES_GATEWAY : desktopGateway}
-        onDone={() => navigate("home")}
-        onStateChange={applyPetsDrivenState}
-        state={petsDrivenState}
-      />
+      <Suspense fallback={null}>
+        <AdoptPetFlow
+          gateway={
+            devFixture?.petPackages === "empty" ? EMPTY_PET_PACKAGES_GATEWAY : desktopGateway
+          }
+          onDone={() => navigate("home")}
+          onStateChange={applyPetsDrivenState}
+          state={petsDrivenState}
+        />
+      </Suspense>
     );
   }
 

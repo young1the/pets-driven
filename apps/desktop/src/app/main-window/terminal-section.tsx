@@ -1,8 +1,13 @@
 import { FolderIcon, RefreshIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import { useState } from "react";
-import { EmbeddedTerminal } from "@/app/main-window/embedded-terminal";
+import { lazy, Suspense, useState } from "react";
 import "@/app/main-window/terminal-section.css";
+
+// xterm (plus its fit addon and CSS) is a heavy dependency that only matters
+// once the terminal tab is actually opened, so keep it out of the main chunk.
+const EmbeddedTerminal = lazy(() =>
+  import("@/app/main-window/embedded-terminal").then((m) => ({ default: m.EmbeddedTerminal })),
+);
 
 export interface TerminalSectionProps {
   /** Opens the OS folder picker; resolves to null when cancelled. */
@@ -67,12 +72,14 @@ export function TerminalSection({
         </div>
 
         {available ? (
-          <EmbeddedTerminal
-            className="pd-eterm__view"
-            cwd={cwd}
-            exitedLabel={t("terminal.exited")}
-            key={`${cwd ?? ""}:${restartNonce}`}
-          />
+          <Suspense fallback={<div className="pd-eterm__view" />}>
+            <EmbeddedTerminal
+              className="pd-eterm__view"
+              cwd={cwd}
+              exitedLabel={t("terminal.exited")}
+              key={`${cwd ?? ""}:${restartNonce}`}
+            />
+          </Suspense>
         ) : (
           <div className="pd-eterm__unavailable">{t("terminal.unavailable")}</div>
         )}
