@@ -1,4 +1,12 @@
-import { defaultLocale, I18nProvider, isLocale, type Locale, locales } from "@pets-driven/i18n";
+import {
+  defaultLocale,
+  I18nProvider,
+  isLocale,
+  type Locale,
+  locales,
+  namespaces,
+  resources,
+} from "@pets-driven/i18n";
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 
 const LOCALE_STORAGE_KEY = "pd-locale";
@@ -56,7 +64,10 @@ export function DesktopLocaleProvider({ children }: { children: ReactNode }) {
 
   return (
     <DesktopLocaleContext.Provider value={control}>
-      <I18nProvider locale={locale}>{children}</I18nProvider>
+      {/* Desktop needs the full catalog (incl. the `desktop` namespace). */}
+      <I18nProvider locale={locale} resources={resources} namespaces={namespaces}>
+        {children}
+      </I18nProvider>
     </DesktopLocaleContext.Provider>
   );
 }

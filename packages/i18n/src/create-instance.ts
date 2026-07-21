@@ -1,18 +1,26 @@
-import { createInstance, type InitOptions, type i18n } from "i18next";
-import { defaultLocale, type Locale, namespaces } from "./config";
-import { resources } from "./resources";
+import { createInstance, type InitOptions, type i18n, type Resource } from "i18next";
+import { defaultLocale, type Locale, type Namespace } from "./config";
+import { landingNamespaces, landingResources } from "./resources.landing";
 
 /**
  * Shared init options for both the server (plain i18next) and client
  * (react-i18next) instances, so their behavior stays identical.
+ *
+ * `resources`/`ns` default to the lightweight landing catalog so consumers that
+ * don't need the `desktop` namespace (the marketing site) never bundle it. The
+ * desktop app passes the full catalog explicitly.
  */
-export function baseInitOptions(locale: Locale): InitOptions {
+export function baseInitOptions(
+  locale: Locale,
+  resources: Resource = landingResources,
+  ns: readonly Namespace[] = landingNamespaces,
+): InitOptions {
   return {
     lng: locale,
     fallbackLng: defaultLocale,
     supportedLngs: [...new Set([locale, defaultLocale])],
     resources,
-    ns: [...namespaces],
+    ns: [...ns],
     defaultNS: "landing",
     interpolation: {
       // React already escapes interpolated values.
