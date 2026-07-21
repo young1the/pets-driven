@@ -63,10 +63,11 @@ acknowledge it by **petting** it — a small stroke gesture — and it settles b
 
 ## ⬇️ Download
 
-[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Installer-F95E9E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/young1the/pets-driven/releases/latest)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Installer-F95E9E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/young1the/pets-driven/releases/latest/download/PetsDriven-windows-x64-setup.exe)
 
-Grab the installer from the **[latest release](https://github.com/young1the/pets-driven/releases/latest)** —
-download the `.exe` and run it. That link always points at the newest published version.
+The badge downloads the installer for the newest published version directly — run the `.exe` and
+you're done. Prefer to see what's in it first? Browse the
+**[latest release](https://github.com/young1the/pets-driven/releases/latest)**.
 
 > macOS and Linux builds aren't published yet. The app is built with [Tauri](https://tauri.app), so
 > they're on the roadmap — until then, [build from source](#-getting-started).

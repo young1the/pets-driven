@@ -48,6 +48,7 @@ jobs:
       # tauri.conf.json's beforeBuildCommand builds the frontend, so no
       # separate vite build step is needed.
       - uses: tauri-apps/tauri-action@v0
+        id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -56,3 +57,19 @@ jobs:
           releaseName: ${{ github.ref_name }}
           releaseDraft: false
           args: --bundles nsis
+
+      # The bundled installer carries the version in its file name, so no fixed
+      # URL can ever point at it. Attaching a second copy under a version-less
+      # name is what makes the README's one-click
+      # /releases/latest/download/PetsDriven-windows-x64-setup.exe link resolve.
+      - name: Attach installer under a stable name
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $paths = '${{ steps.tauri.outputs.artifactPaths }}' | ConvertFrom-Json
+          $setup = $paths | Where-Object { $_ -like '*-setup.exe' } | Select-Object -First 1
+          if (-not $setup) { throw "no NSIS setup.exe among: $($paths -join ', ')" }
+          $stable = Join-Path $env:RUNNER_TEMP 'PetsDriven-windows-x64-setup.exe'
+          Copy-Item -LiteralPath $setup -Destination $stable
+          gh release upload ${{ github.ref_name }} $stable --clobber -R ${{ github.repository }}

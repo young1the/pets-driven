@@ -64,10 +64,10 @@
 
 ## ⬇️ 다운로드
 
-[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Installer-F95E9E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/young1the/pets-driven/releases/latest)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Installer-F95E9E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/young1the/pets-driven/releases/latest/download/PetsDriven-windows-x64-setup.exe)
 
-**[최신 릴리스](https://github.com/young1the/pets-driven/releases/latest)**에서 설치 파일을 받으세요 —
-`.exe`를 내려받아 실행하면 됩니다. 이 링크는 항상 가장 최근에 공개된 버전을 가리킵니다.
+위 배지를 누르면 가장 최근에 공개된 버전의 설치 파일이 바로 내려받아집니다 — `.exe`를 실행하면 끝입니다.
+변경 내역을 먼저 보고 싶다면 **[최신 릴리스](https://github.com/young1the/pets-driven/releases/latest)**를 확인하세요.
 
 > macOS·Linux 빌드는 아직 배포 전입니다. [Tauri](https://tauri.app)로 만들어졌기에 로드맵에
 > 있으며, 그전까지는 [소스에서 빌드](#-시작하기)하세요.
