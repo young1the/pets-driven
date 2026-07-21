@@ -35,25 +35,22 @@ import {
 import { useAppNavigation } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { resolveDesktopFixture } from "@/app/dev-fixtures";
-import type { HomePetView } from "@/app/main-window/home-section";
-import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
-import type { PetEditView } from "@/app/main-window/pet-edit-section";
+import type { MainWindowTab } from "@/app/main-window/main-window";
+import { MainWindowSurface } from "@/app/main-window/main-window-surface";
+import { shortWorkingDir } from "@/app/main-window/pet-card-view";
 import { AdoptPetFlow } from "@/app/onboarding/adopt-pet-flow";
 import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
 import { SetupWizard } from "@/app/onboarding/setup-wizard";
-import { personalityRoleLabelKey } from "@/app/pet-presentation";
 import {
   buildLaunchLine,
   customizeLaunchLine,
   type LaunchProfileId,
   parseLaunchLine,
-  promptForLaunchProfile,
 } from "@/app/session-launch-profile";
 import { pushSearchParams } from "@/app/spa-navigation";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
 import {
   clearWorkingDirectoryForPet,
-  getWorkingDirectoryForPet,
   registerWorkingDirectory,
   removePet,
 } from "@/app-state/pet-adoption";
@@ -265,48 +262,12 @@ function routeClaudeHookPayloadToRegisteredWorkingDirectory(
   };
 }
 
-function shortWorkingDir(dirPath: string): string {
-  const parts = dirPath.split(/[\\/]/).filter(Boolean);
-  if (parts.length === 0) return dirPath;
-  const last = parts[parts.length - 1];
-  if (parts.length === 1) return last;
-  const parent = parts[parts.length - 2];
-  const displayParent = /^[a-zA-Z]:$/.test(parent) ? "~" : parent;
-  return `${displayParent}/${last}`;
-}
-
 function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
   return {
     url: "",
     state: isTauri() ? "pending" : "error",
     error: isTauri() ? null : "Claude hook ingress is only available in Tauri.",
   };
-}
-
-const PET_GRADIENTS: { from: string; to: string }[] = [
-  { from: "#FF7FB4", to: "#F95E9E" },
-  { from: "#5AC8E8", to: "#2F9CC4" },
-  { from: "#A28BF0", to: "#7560D8" },
-  { from: "#5BD08A", to: "#2E9E63" },
-  { from: "#8B7FE8", to: "#6F5FD6" },
-  { from: "#FF7A5C", to: "#E04428" },
-];
-
-function hashString(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
-function petGradient(petId: string): { from: string; to: string } {
-  return PET_GRADIENTS[hashString(petId) % PET_GRADIENTS.length];
-}
-
-function cardNote(memo: string | undefined, emptyLabel: string): string {
-  const trimmed = memo?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : emptyLabel;
 }
 
 export function PetsDrivenApp({
@@ -1454,161 +1415,35 @@ function PetsDrivenHostApp() {
     updateSessionCommand(buildLaunchLine(settings.profile, command));
   }
 
-  // Build the view models MainWindow needs from petsDrivenState.
-  const managedPets = petsDrivenState.pets.filter((pet) => !pet.archived);
-  const profileFor = (pet: (typeof managedPets)[number]) =>
-    petsDrivenState.petProfiles.find((profile) => profile.id === pet.profileId);
-  const statusFor = (petId: string): PetCardStatus =>
-    petStatusById[petId] ?? {
-      label: "Idle",
-      labelKey: "idle",
-      tone: "neutral",
-      dotColor: "var(--ink-300)",
-    };
-  const atHome: HomePetView[] = managedPets
-    .filter((pet) => !pet.visible)
-    .map((pet) => {
-      const personalityId = profileFor(pet)?.personalityId;
-      const dirPath = getWorkingDirectoryForPet(petsDrivenState, pet.id)?.path ?? null;
-      const cwd = dirPath ? shortWorkingDir(dirPath) : null;
-      return {
-        id: pet.id,
-        name: pet.name,
-        assetId: pet.assetId,
-        note: cardNote(pet.memo, t("common.noNote")),
-        role: t(personalityRoleLabelKey(personalityId)),
-        gradient: petGradient(pet.id),
-        cwd,
-      };
-    });
-
-  const inField = managedPets
-    .filter((pet) => pet.visible)
-    .map((pet) => ({
-      id: pet.id,
-      name: pet.name,
-      color: statusFor(pet.id).dotColor,
-    }));
-
-  const editingPet = managedPets.find((pet) => pet.id === editPetId) ?? null;
-  const editDirPath = editingPet
-    ? (getWorkingDirectoryForPet(petsDrivenState, editingPet.id)?.path ?? null)
-    : null;
-  const editPetView: PetEditView | null = editingPet
-    ? {
-        id: editingPet.id,
-        name: editingPet.name,
-        assetId: editingPet.assetId,
-        role: t(personalityRoleLabelKey(profileFor(editingPet)?.personalityId)),
-        gradient: petGradient(editingPet.id),
-        folder: editDirPath ?? "",
-        cwd: editDirPath ? shortWorkingDir(editDirPath) : null,
-        memo: editingPet.memo ?? "",
-        deployed: editingPet.visible,
-        personalityId: profileFor(editingPet)?.personalityId,
-      }
-    : null;
-
-  const previewPet = managedPets[0];
-  const previewWorkingDir = previewPet
-    ? (getWorkingDirectoryForPet(petsDrivenState, previewPet.id)?.path ?? null)
-    : null;
-  const launchSettings = parseLaunchLine(petsDrivenState.sessionCommand);
-
   return (
-    <MainWindow
-      debug={{
-        error: petWindowError,
-        groups: [
-          {
-            title: "Pets",
-            hint: "adoption & state",
-            items: [
-              { label: "Adopt a pet", onClick: () => navigate("adopt") },
-              { label: "Reset pets", onClick: () => void resetPets() },
-            ],
-          },
-          {
-            title: "Simulation",
-            hint: "world & playground",
-            items: [
-              {
-                label: "Open playground",
-                onClick: () => navigate("playground"),
-              },
-            ],
-          },
-        ],
-      }}
-      edit={{
-        onName: (value) => editPetId && patchPet(editPetId, { name: value }),
-        onMemo: (value) => editPetId && patchPet(editPetId, { memo: value }),
-        onPersonalityId: (value) => editPetId && setPetPersonality(editPetId, value),
-        onPickFolder: () => editPetId && void pickFolderForPet(editPetId),
-        onClearFolder: () => editPetId && clearFolderForPet(editPetId),
-        onToggleDeployed: () =>
-          editPetId && (editingPet?.visible ? hidePet(editPetId) : showPet(editPetId)),
-        onDelete: () => editPetId && deletePet(editPetId),
-        onDone: () => setEditPetId(null),
-      }}
-      editPet={editPetView}
-      home={{
-        atHome,
-        inField,
-        onDeploy: showPet,
-        onRecall: hidePet,
-        onEdit: (petId) => setEditPetId(petId),
-        onAddPet: () => navigate("adopt"),
-        onShowAll: showAllPets,
-        onHideAll: hideAllPets,
-      }}
-      onTab={(next) => {
-        setEditPetId(null);
-        setMainTab(next);
-      }}
-      settings={{
-        launchProfile: launchSettings.profile,
-        command: launchSettings.command,
-        launchLine: launchSettings.launchLine,
-        onLaunchProfile: setLaunchProfile,
-        onCommand: setLaunchCommand,
-        onLaunchLine: updateSessionCommand,
-        preview: {
-          prompt: promptForLaunchProfile(launchSettings.profile),
-          command: petsDrivenState.sessionCommand,
-        },
-        hook: {
-          tone:
-            claudeHookIngressStatus.state === "listening"
-              ? "success"
-              : claudeHookIngressStatus.state === "pending"
-                ? "info"
-                : "danger",
-          label:
-            claudeHookIngressStatus.state === "listening"
-              ? t("hook.connected")
-              : claudeHookIngressStatus.state === "pending"
-                ? t("hook.connecting")
-                : t("hook.offline"),
-          summary: t("hook.summary", { state: claudeHookIngressStatus.state }),
-          url: claudeHookIngressStatus.url,
-        },
-        onReconnect: () => void emitClaudeHookTestEvent(),
-        plugin: claudePlugin.status,
-        pluginBusy: claudePlugin.busy,
-        onInstallPlugin: () => void claudePlugin.install(),
-        onUninstallPlugin: () => void claudePlugin.uninstall(),
-        petSourceDirectory: petsDrivenState.petSourceDirectory,
-        defaultPetSourceDirectory: defaultPetSourceFolder,
-        onChangePetFolder: () => void changePetSourceFolder(),
-        onResetPetFolder: () => applyPetSourceFolder(null),
-      }}
-      terminal={{
-        available: isTauri(),
-        pickDirectory: () => desktopGateway.pickDirectory(),
-        initialCwd: previewWorkingDir,
-      }}
-      tab={mainTab}
+    <MainWindowSurface
+      claudeHookIngressStatus={claudeHookIngressStatus}
+      claudePlugin={claudePlugin}
+      defaultPetSourceFolder={defaultPetSourceFolder}
+      editPetId={editPetId}
+      mainTab={mainTab}
+      navigate={navigate}
+      onChangePetSourceFolder={() => void changePetSourceFolder()}
+      onClearFolderForPet={clearFolderForPet}
+      onDeletePet={deletePet}
+      onHideAllPets={hideAllPets}
+      onHidePet={hidePet}
+      onPatchPet={patchPet}
+      onPickFolderForPet={(petId: string) => void pickFolderForPet(petId)}
+      onReconnectHook={() => void emitClaudeHookTestEvent()}
+      onResetPetFolder={() => applyPetSourceFolder(null)}
+      onResetPets={() => void resetPets()}
+      onSetLaunchCommand={setLaunchCommand}
+      onSetLaunchProfile={setLaunchProfile}
+      onSetPetPersonality={setPetPersonality}
+      onShowAllPets={showAllPets}
+      onShowPet={showPet}
+      onUpdateSessionCommand={updateSessionCommand}
+      petStatusById={petStatusById}
+      petWindowError={petWindowError}
+      setEditPetId={setEditPetId}
+      setMainTab={setMainTab}
+      state={petsDrivenState}
       toast={toast}
     />
   );

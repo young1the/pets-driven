@@ -1,6 +1,6 @@
 import { Button, PetShowcaseCard, PlusIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, memo, useEffect, useRef, useState } from "react";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 
 export type HomePetView = {
@@ -63,7 +63,7 @@ function fanOrder<T>(pets: T[]): { pet: T; index: number; center: number }[] {
   return ordered.map((pet, index) => ({ pet, index, center }));
 }
 
-export function HomeSection({
+export const HomeSection = memo(function HomeSection({
   atHome,
   inField,
   onDeploy,
@@ -351,4 +351,4 @@ export function HomeSection({
       </div>
     </div>
   );
-}
+});
