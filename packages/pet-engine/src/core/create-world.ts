@@ -433,7 +433,7 @@ export function createWorld(input: WorldDefinition) {
       const physicsSnapshot = runPhysicsTransformSyncSystem(components, physics);
       const bodies = physicsSnapshot.bodies.map((body) => ({
         ...body,
-        animationState: getPetAnimationState(components, body.id),
+        animationState: getPetAnimationState(components, body.id, input.clock.now()),
         interaction: getInteractionSnapshot(components, body.id),
       }));
 

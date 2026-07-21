@@ -1,4 +1,5 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import { getExpressivePoseState } from "@pets-driven/pet-engine/features/behavior/pose-choreography";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 
 // Per-tick horizontal displacement (engine pixels) above this counts as the pet
@@ -17,29 +18,6 @@ const AIRBORNE_DISPLACEMENT_THRESHOLD = 0.5;
 
 type TravelDirection = "left" | "right";
 
-/**
- * Sustained expressive idle activities (see BehaviorDecisionKind) hold their
- * autonomous claim for the whole pose. They stand the pet still, so the
- * travel/jump branches fall through and this reason→row map drives the sprite.
- * This is what makes the otherwise agent-only rows — waving / focus / review /
- * waiting / failed — appear during ordinary autonomous life.
- */
-const EXPRESSIVE_POSE_ROWS: Partial<Record<string, PetAnimationState>> = {
-  greet: "waving",
-  groom: "running",
-  observe: "review",
-  beckon: "waiting",
-  fret: "failed",
-  nap: "idle",
-  meditate: "review",
-  "keep-watch": "waiting",
-  peek: "review",
-  inspect: "review",
-  "follow-routine": "running",
-  "offer-comfort": "waving",
-  "stand-lookout": "failed",
-};
-
 function getTravelDirection(dx: number): TravelDirection | null {
   if (Math.abs(dx) <= TRAVEL_DISPLACEMENT_THRESHOLD) {
     return null;
@@ -52,10 +30,15 @@ function getTravelDirection(dx: number): TravelDirection | null {
  * one of the atlas's animation rows. This is where the vocabulary of pet
  * intents lives: as the behavior surface grows, new intents resolve to a row
  * here, while the rendering layer stays a pure function of the row.
+ *
+ * `now` is the world clock, used to advance a held expressive pose through its
+ * choreography (see pose-choreography.ts). Omitting it pins every pose to its
+ * opening beat, which is the pre-choreography behavior.
  */
 export function getPetAnimationState(
   componentStore: ComponentStore,
   id: string,
+  now = 0,
 ): PetAnimationState | undefined {
   if (!componentStore.getComponent(id, "PetIdentity")) {
     return undefined;
@@ -106,10 +89,12 @@ export function getPetAnimationState(
 
   // Sustained expressive poses: the pet is standing still with an autonomous
   // claim naming the gesture. Checked after travel/jump so a moving pet still
-  // animates locomotion; a stationary pose wins over the idle fallback.
+  // animates locomotion; a stationary pose wins over the idle fallback. The
+  // row advances through the pose's choreography as the claim is held, so two
+  // poses sharing an opening row still diverge within the first second.
   const decision = componentStore.getComponent(id, "BehaviorDecisionState");
   if (decision?.source === "autonomous") {
-    const pose = EXPRESSIVE_POSE_ROWS[decision.reason];
+    const pose = getExpressivePoseState(decision.reason, now - decision.decidedAt);
     if (pose) return pose;
   }
 
