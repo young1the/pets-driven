@@ -912,6 +912,22 @@
         "Eep! Yes, all finished.",
         "You surprised me — but it's done!"
       ]
+    },
+    "social": {
+      "greet": ["Hi!", "Hey there!", "Oh, hello!", "There you are!"],
+      "chat": [
+        "Guess what?",
+        "No way…",
+        "Really?",
+        "Hehe.",
+        "So then—",
+        "Same!",
+        "And then?",
+        "You think so?",
+        "Haha, right?",
+        "Tell me more!"
+      ],
+      "chaseCatch": ["Tag!", "Gotcha!", "Caught you!", "Got you!"]
     }
   }
 }
