@@ -1,7 +1,6 @@
 import { IconButton, PET_MOODS } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
-import { FALLBACK_CODEX_PET_SPRITESHEET_URL } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import {
   msUntilNextAtlasFrame,
@@ -11,8 +10,8 @@ import { PET_SPEECH_KEY_PREFIX } from "@pets-driven/pet-engine/pets/personalitie
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import { PetSprite, type PetSpriteProps } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { type PetConnectNotice, PetConnectNoticeView } from "@/pet-window/pet-connect-notice";
+import { useEffect, useRef, useState } from "react";
+import { PetConnectNoticeView } from "@/pet-window/pet-connect-notice";
 import type { PetWindowFixturePresentation } from "@/pet-window/pet-window-fixtures";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import {
@@ -28,9 +27,10 @@ import {
   type PetWindowInputKind,
   type PetWindowOverlay,
 } from "@/pet-window/pet-window-messages";
-import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
 import { petWindowTransport } from "@/pet-window/pet-window-transport";
 import type { PetWindowHitLayout, PetWindowRouteParams } from "@/pet-window/pet-window-types";
+import { usePetWindowConnectNotice } from "@/pet-window/use-pet-window-connect-notice";
+import { usePetWindowSpritesheet } from "@/pet-window/use-pet-window-spritesheet";
 
 type PetWindowViewProps = {
   pet: PetWindowRouteParams;
@@ -241,7 +241,6 @@ export function PetWindowView({
   previewConnectNotice,
   prototypeDecor,
 }: PetWindowViewProps) {
-  const { t } = useTranslation("desktop");
   const isPreview = !petWindowTransport.isDesktopRuntime();
   const surfaceRef = useRef<HTMLElement | null>(null);
   const visualFrameRef = useRef<HTMLSpanElement | null>(null);
@@ -271,7 +270,7 @@ export function PetWindowView({
   const [spriteScale, setSpriteScale] = useState(
     isPreview && previewScale ? clampPetWindowScale(previewScale) : 1,
   );
-  const [spritesheetUrl, setSpritesheetUrl] = useState<string | null>(null);
+  const spritesheetUrl = usePetWindowSpritesheet(pet.assetId);
   const [presentation, setPresentation] = useState<PetWindowPresentation>(() => ({
     ...defaultPresentation(pet.windowIndex),
     ...(isPreview ? previewPresentation : undefined),
@@ -286,18 +285,11 @@ export function PetWindowView({
   const shownActivityRef = useRef<ShownActivity>({ value: null, at: 0 });
   const petNameRef = useRef<string | null>(null);
   const cwdRef = useRef<string | null>(null);
-  // Connect-mode feedback: the prompt while the host waits for a pick, then a
-  // short-lived result notice. Non-connect binding updates stay silent. This
-  // lives outside the ECS status card and owns its own dismissal (see
-  // PetConnectNoticeView) — the handler below only computes the next value.
-  const [connectNotice, setConnectNotice] = useState<PetConnectNotice | null>(() =>
-    isPreview && previewConnectNotice ? { id: 0, ...previewConnectNotice } : null,
-  );
-  const connectNoticeIdRef = useRef(0);
-  const dismissConnectNotice = useCallback(() => setConnectNotice(null), []);
-  // Title held when connect mode started; a cancelled pick reports the same
-  // binding back, so an unchanged title means nothing new was connected.
-  const connectStartTitleRef = useRef<string | null | undefined>(undefined);
+  const { connectNotice, dismissConnectNotice } = usePetWindowConnectNotice({
+    petId: pet.petId,
+    isPreview,
+    previewConnectNotice,
+  });
 
   useEffect(() => {
     document.documentElement.classList.add("pet-window-document");
@@ -442,81 +434,6 @@ export function PetWindowView({
       unlistenFrame?.();
     };
   }, [pet.petId]);
-
-  useEffect(() => {
-    let unlistenBinding: (() => void) | undefined;
-
-    void petWindowTransport
-      .subscribeBinding((binding) => {
-        if (binding.petId !== pet.petId) {
-          return;
-        }
-
-        if (binding.isConnecting) {
-          connectStartTitleRef.current = binding.title;
-          connectNoticeIdRef.current += 1;
-          setConnectNotice({
-            id: connectNoticeIdRef.current,
-            text: t("petWindow.connectPrompt"),
-            transient: false,
-          });
-          return;
-        }
-
-        // A non-connecting binding update that isn't the result of a connect the
-        // user just started (e.g. a loading/bind update from starting a session)
-        // is silent — it leaves any live notice, and its timer, untouched.
-        if (connectStartTitleRef.current === undefined) {
-          return;
-        }
-
-        const isNewBinding =
-          binding.title !== null && binding.title !== connectStartTitleRef.current;
-        connectStartTitleRef.current = undefined;
-        connectNoticeIdRef.current += 1;
-        setConnectNotice({
-          id: connectNoticeIdRef.current,
-          text: isNewBinding
-            ? t("petWindow.connectedTo", { title: binding.title })
-            : t("petWindow.connectCancelled"),
-          transient: true,
-        });
-      })
-      .then((unlisten) => {
-        unlistenBinding = unlisten;
-      });
-
-    return () => {
-      unlistenBinding?.();
-    };
-  }, [pet.petId, t]);
-
-  useEffect(() => {
-    let isActive = true;
-    let dispose = () => {};
-
-    setSpritesheetUrl(null);
-
-    void loadPetWindowSpritesheetUrl(pet.assetId)
-      .catch(() => ({
-        url: FALLBACK_CODEX_PET_SPRITESHEET_URL,
-        dispose: () => {},
-      }))
-      .then((spritesheet) => {
-        if (!isActive) {
-          spritesheet.dispose();
-          return;
-        }
-
-        dispose = spritesheet.dispose;
-        setSpritesheetUrl(spritesheet.url);
-      });
-
-    return () => {
-      isActive = false;
-      dispose();
-    };
-  }, [pet.assetId]);
 
   function emitPetWindowInput(
     kind: PetWindowInputKind,
