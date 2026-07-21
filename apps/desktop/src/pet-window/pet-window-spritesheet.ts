@@ -1,5 +1,5 @@
 import { getCodexPetSpritesheetUrl } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { desktopGateway } from "@/app/desktop-gateway";
 
 export type PetWindowSpritesheetUrl = {
   url: string;
@@ -9,30 +9,18 @@ export type PetWindowSpritesheetUrl = {
 export async function loadPetWindowSpritesheetUrl(
   assetId: string,
 ): Promise<PetWindowSpritesheetUrl> {
-  if (!isTauri()) {
+  if (!desktopGateway.isDesktopRuntime()) {
     return {
       url: getCodexPetSpritesheetUrl(assetId),
       dispose: () => {},
     };
   }
 
-  const bytes = await loadPetWindowSpritesheetBytes(assetId);
+  const bytes = await desktopGateway.loadPetSpritesheet(assetId);
   const objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/webp" }));
 
   return {
     url: objectUrl,
     dispose: () => URL.revokeObjectURL(objectUrl),
   };
-}
-
-async function loadPetWindowSpritesheetBytes(assetId: string) {
-  const response = await invoke<ArrayBuffer | Uint8Array | number[]>("load_codex_pet_spritesheet", {
-    assetId,
-  });
-
-  if (response instanceof ArrayBuffer) {
-    return response;
-  }
-
-  return new Uint8Array(response).buffer;
 }

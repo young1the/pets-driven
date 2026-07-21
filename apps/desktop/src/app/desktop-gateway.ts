@@ -94,6 +94,9 @@ export type DesktopGateway = {
   /** Close every open pet overlay window. */
   closeAllPetWindows(): Promise<void>;
 
+  /** Raw spritesheet bytes for an installed pet asset (Tauri only). */
+  loadPetSpritesheet(assetId: string): Promise<ArrayBuffer>;
+
   // Terminal-session windows: a pet's bound external terminal window.
   /** Focus the bound foreign window; false when it no longer exists. */
   focusForeignWindow(hwnd: number): Promise<boolean>;
@@ -258,6 +261,25 @@ export const desktopGateway: DesktopGateway = {
     }
 
     await invoke("close_all_pet_windows");
+  },
+
+  async loadPetSpritesheet(assetId) {
+    if (!isTauri()) {
+      throw new Error("Pet spritesheet bytes require the Tauri desktop shell.");
+    }
+
+    const response = await invoke<ArrayBuffer | Uint8Array | number[]>(
+      "load_codex_pet_spritesheet",
+      {
+        assetId,
+      },
+    );
+
+    if (response instanceof ArrayBuffer) {
+      return response;
+    }
+
+    return new Uint8Array(response).buffer;
   },
 
   async focusForeignWindow(hwnd) {

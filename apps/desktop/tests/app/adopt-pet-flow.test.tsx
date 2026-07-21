@@ -32,6 +32,7 @@ function createGateway(
       error: null,
     }),
     isDesktopRuntime: vi.fn().mockReturnValue(false),
+    loadPetSpritesheet: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
     getClaudeHookIngressStatus: vi.fn().mockResolvedValue({
       url: "",
       state: "error",
