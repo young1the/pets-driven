@@ -12,7 +12,7 @@ import { currentMonitor, cursorPosition } from "@tauri-apps/api/window";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
-import type { ClaudeHookIngressStatus } from "@/adapters/agent-events/claude-hook-ingress";
+import type { PetCommandEvent } from "@/adapters/agent-events/hatch-ingress";
 import { useAppNavigation } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
@@ -23,6 +23,7 @@ import {
   loadMainWindowSpawnPoint,
   projectionBoundsForMonitors,
 } from "@/app/desktop-host/monitor-geometry";
+import { useAgentEventIngress } from "@/app/desktop-host/use-agent-event-ingress";
 import { usePetRosterActions } from "@/app/desktop-host/use-pet-roster-actions";
 import { usePetSessionBindings } from "@/app/desktop-host/use-pet-session-bindings";
 import { resolveDesktopFixture } from "@/app/dev-fixtures";
@@ -80,7 +81,6 @@ const DESKTOP_FIXTURE_STEP_MS = 16;
 // frames, and a window that finishes creating after its first frame was
 // emitted must not wait for the next real change to show itself.
 const PET_WINDOW_FRAME_HEARTBEAT_TICKS = Math.round(500 / DESKTOP_FIXTURE_HOST_TICK_MS);
-const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
 const EMPTY_PET_PACKAGES_GATEWAY = {
   ...desktopGateway,
   listPetPackages: async () => [],
@@ -144,14 +144,6 @@ function routeClaudeHookPayloadToRegisteredWorkingDirectory(
   return {
     ...payload,
     sourceId: workingDirectory.agentSourceId,
-  };
-}
-
-function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
-  return {
-    url: "",
-    state: isTauri() ? "pending" : "error",
-    error: isTauri() ? null : "Claude hook ingress is only available in Tauri.",
   };
 }
 
@@ -255,9 +247,6 @@ function PetsDrivenHostApp() {
   const [desktopFixtureWindowCount] = useState(0);
   const [adoptedSimulationResetKey] = useState(0);
   const [petWindowError, setPetWindowError] = useState<string | null>(null);
-  const [claudeHookIngressStatus, setClaudeHookIngressStatus] = useState<ClaudeHookIngressStatus>(
-    defaultClaudeHookIngressStatus,
-  );
   const claudePlugin = useClaudePlugin(desktopGateway);
   const [mainTab, setMainTab] = useState<MainWindowTab>(devFixture?.tab ?? "home");
   const [editPetId, setEditPetId] = useState<string | null>(devFixture?.editPetId ?? null);
@@ -347,6 +336,72 @@ function PetsDrivenHostApp() {
     setPetWindowError,
   });
 
+  // Fan a routed Claude hook event into every live world. Only the pet whose
+  // AgentBinding.sourceId matches reacts; the others ignore it. Each world
+  // stamps the event with its own clock since they advance independently.
+  function handleAgentHookEvent(payload: unknown) {
+    try {
+      const routedPayload = routeClaudeHookPayloadToRegisteredWorkingDirectory(
+        payload,
+        petsDrivenStateRef.current,
+      );
+
+      if (!routedPayload) {
+        return;
+      }
+
+      for (const scenario of [fixtureScenarioRef.current, adoptedScenarioRef.current]) {
+        if (!scenario) {
+          continue;
+        }
+
+        const agentEvent = createAgentEventFromClaudeHook(routedPayload, {
+          defaultSourceId: "agent-a",
+          now: scenario.clock.now(),
+        });
+
+        scenario.world.pushEvent(toWorldEvent(agentEvent));
+      }
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
+  // The backend owns the hatch write; when it signals a state change, reload
+  // the persisted state so the new pet's window opens and it joins the sim.
+  function handleBackendStateChanged() {
+    void desktopGateway
+      .readPetsDrivenState()
+      .then((state) => {
+        applyReloadedPetsDrivenState(state);
+      })
+      .catch((error) => {
+        setPetWindowError(formatCommandError(error));
+      });
+  }
+
+  // Backend-triggered show/hide: reload state first so newly hatched pets are
+  // in memory before showPet/hidePet run.
+  function handlePetCommand({ action, petId }: PetCommandEvent) {
+    void desktopGateway
+      .readPetsDrivenState()
+      .then((state) => {
+        applyReloadedPetsDrivenState(state);
+        if (action === "show") showPet(petId);
+        if (action === "hide") hidePet(petId);
+      })
+      .catch((error) => {
+        setPetWindowError(formatCommandError(error));
+      });
+  }
+
+  const { claudeHookIngressStatus, emitClaudeHookTestEvent } = useAgentEventIngress({
+    onAgentHookEvent: handleAgentHookEvent,
+    onBackendStateChanged: handleBackendStateChanged,
+    onPetCommand: handlePetCommand,
+    setPetWindowError,
+  });
+
   // Stable signature of the visible pet roster. Roster *membership* changes
   // (a pet shown, hidden or deleted) are reconciled into the live world in
   // place — see the roster-reconcile effect — instead of rebuilding it, so one
@@ -361,44 +416,6 @@ function PetsDrivenHostApp() {
   // appears and tears down when the last leaves, but never rebuilds while pets
   // are merely added to or removed from an already-running world.
   const adoptedHasVisiblePets = adoptedSimKey.length > 0;
-
-  useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
-    let isMounted = true;
-
-    const loadClaudeHookIngressStatus = () => {
-      void desktopGateway
-        .getClaudeHookIngressStatus()
-        .then((nextStatus) => {
-          if (isMounted) {
-            setClaudeHookIngressStatus(nextStatus);
-          }
-        })
-        .catch((error) => {
-          if (isMounted) {
-            setClaudeHookIngressStatus({
-              url: "",
-              state: "error",
-              error: formatCommandError(error),
-            });
-          }
-        });
-    };
-
-    loadClaudeHookIngressStatus();
-    const intervalId = window.setInterval(
-      loadClaudeHookIngressStatus,
-      CLAUDE_HOOK_STATUS_REFRESH_MS,
-    );
-
-    return () => {
-      isMounted = false;
-      window.clearInterval(intervalId);
-    };
-  }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once input listener (StrictMode-safe). The handlers it invokes read live state via refs and stable setters, so listing them would only re-register the listener every render and reintroduce duplicate-listener firing.
   useEffect(() => {
@@ -565,98 +582,6 @@ function PetsDrivenHostApp() {
       isMounted = false;
     };
   }, [devFixture]);
-
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-
-    void desktopGateway
-      .subscribeClaudeHookIngress((payload) => {
-        try {
-          const routedPayload = routeClaudeHookPayloadToRegisteredWorkingDirectory(
-            payload,
-            petsDrivenStateRef.current,
-          );
-
-          if (!routedPayload) {
-            return;
-          }
-
-          // Fan the event into every live world. Only the pet whose
-          // AgentBinding.sourceId matches reacts; the others ignore it. Each
-          // world stamps the event with its own clock since they advance
-          // independently.
-          for (const scenario of [fixtureScenarioRef.current, adoptedScenarioRef.current]) {
-            if (!scenario) {
-              continue;
-            }
-
-            const agentEvent = createAgentEventFromClaudeHook(routedPayload, {
-              defaultSourceId: "agent-a",
-              now: scenario.clock.now(),
-            });
-
-            scenario.world.pushEvent(toWorldEvent(agentEvent));
-          }
-        } catch (error) {
-          setPetWindowError(formatCommandError(error));
-        }
-      })
-      .then((stop) => {
-        unlisten = stop;
-      });
-
-    return () => unlisten?.();
-  }, []);
-
-  // The backend owns the hatch write; when it signals a state change, reload
-  // the persisted state so the new pet's window opens and it joins the sim.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once listener; applyReloadedPetsDrivenState is ref-based, so listing it would only re-subscribe without changing behavior.
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-
-    void desktopGateway
-      .subscribePetsDrivenStateChanged(() => {
-        void desktopGateway
-          .readPetsDrivenState()
-          .then((state) => {
-            applyReloadedPetsDrivenState(state);
-          })
-          .catch((error) => {
-            setPetWindowError(formatCommandError(error));
-          });
-      })
-      .then((stop) => {
-        unlisten = stop;
-      });
-
-    return () => unlisten?.();
-  }, []);
-
-  // Backend-triggered show/hide: reload state first so newly hatched pets are
-  // in memory before showPet/hidePet run.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once listener; applyReloadedPetsDrivenState/showPet/hidePet are ref/setState-based, so listing them would only re-subscribe without changing behavior.
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-
-    void desktopGateway
-      .subscribePetCommand(({ action, petId }) => {
-        void desktopGateway
-          .readPetsDrivenState()
-          .then((state) => {
-            applyReloadedPetsDrivenState(state);
-            if (action === "show") showPet(petId);
-            if (action === "hide") hidePet(petId);
-          })
-          .catch((error) => {
-            setPetWindowError(formatCommandError(error));
-          });
-      })
-      .then((stop) => {
-        unlisten = stop;
-      });
-
-    return () => unlisten?.();
-  }, []);
 
   useEffect(() => {
     if (!isTauri() || desktopFixtureWindowCount <= 0) {
@@ -1040,16 +965,6 @@ function PetsDrivenHostApp() {
         />
       </Suspense>
     );
-  }
-
-  async function emitClaudeHookTestEvent() {
-    setPetWindowError(null);
-
-    try {
-      await desktopGateway.emitTestClaudeHookIngressEvent();
-    } catch (error) {
-      setPetWindowError(formatCommandError(error));
-    }
   }
 
   return (
