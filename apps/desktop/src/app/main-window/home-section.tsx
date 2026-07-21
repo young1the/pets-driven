@@ -87,12 +87,12 @@ export const HomeSection = memo(function HomeSection({
     ? (greetingVariants[greetingPick.index] ?? greetingVariants[0] ?? t("home.greeting"))
     : t("home.greeting");
   const dragRef = useRef<{ id: string; startX: number; startY: number } | null>(null);
-  const [dragVisual, setDragVisual] = useState<{
-    id: string;
-    dx: number;
-    dy: number;
-    over: boolean;
-  } | null>(null);
+  // Only *which* card is being dragged is state. The per-pointermove offset is
+  // transient and goes straight to the dragged card's transform (see
+  // handleMove), so a drag re-renders the fan twice — on grab and on release —
+  // instead of on every pointer move.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const cardElsRef = useRef(new Map<string, HTMLDivElement>());
 
   const onEditRef = useRef(onEdit);
   onEditRef.current = onEdit;
@@ -105,15 +105,16 @@ export const HomeSection = memo(function HomeSection({
       if (!active) {
         return;
       }
+      const card = cardElsRef.current.get(active.id);
+      if (!card) {
+        return;
+      }
       const dx = event.clientX - active.startX;
       const dy = event.clientY - active.startY;
-      const moved = Math.hypot(dx, dy) > DRAG_THRESHOLD;
-      setDragVisual({
-        id: active.id,
-        dx,
-        dy,
-        over: moved && dy < -DEPLOY_Y_THRESHOLD,
-      });
+      // `ty` is the card's resting offset in the fan, published by the render
+      // so the imperative transform can stay in sync with the layout.
+      const ty = Number(card.dataset.ty ?? "0");
+      card.style.transform = `translate(calc(-50% + ${dx}px), ${ty + dy}px) scale(1.06)`;
     }
 
     function handleUp(event: PointerEvent) {
@@ -122,7 +123,7 @@ export const HomeSection = memo(function HomeSection({
         return;
       }
       dragRef.current = null;
-      setDragVisual(null);
+      setDraggingId(null);
 
       const dx = event.clientX - active.startX;
       const dy = event.clientY - active.startY;
@@ -153,7 +154,7 @@ export const HomeSection = memo(function HomeSection({
       startX: event.clientX,
       startY: event.clientY,
     };
-    setDragVisual({ id: petId, dx: 0, dy: 0, over: false });
+    setDraggingId(petId);
   }
 
   const n = atHome.length;
@@ -163,7 +164,7 @@ export const HomeSection = memo(function HomeSection({
 
   const homeClass = [
     "pd-home",
-    dragVisual ? "pd-home--dragging" : "",
+    draggingId ? "pd-home--dragging" : "",
     hoverId ? "pd-home--hovered" : "",
   ]
     .filter(Boolean)
@@ -304,11 +305,13 @@ export const HomeSection = memo(function HomeSection({
           const d = index - center;
           const ty = Math.abs(d) * 22;
           const hovered = hoverId === pet.id;
-          const dragging = dragVisual?.id === pet.id;
+          const dragging = draggingId === pet.id;
           const wrapStyle: CSSProperties = {
             left: `calc(50% + ${d * stepX}px)`,
+            // While dragging this is only the resting pose; handleMove writes the
+            // live offset straight to the element.
             transform: dragging
-              ? `translate(calc(-50% + ${dragVisual.dx}px), ${ty + dragVisual.dy}px) scale(1.06)`
+              ? `translate(-50%, ${ty}px) scale(1.06)`
               : hovered
                 ? `translateX(-50%) translateY(${ty - 60}px) rotate(0deg) scale(1.06)`
                 : `translateX(-50%) translateY(${ty}px) rotate(${d * rotX}deg)`,
@@ -322,6 +325,15 @@ export const HomeSection = memo(function HomeSection({
                 .filter(Boolean)
                 .join(" ")}
               key={pet.id}
+              ref={(el) => {
+                const cards = cardElsRef.current;
+                if (el) {
+                  cards.set(pet.id, el);
+                } else {
+                  cards.delete(pet.id);
+                }
+              }}
+              data-ty={ty}
               role="button"
               tabIndex={0}
               aria-label={t("home.openDetails", { name: pet.name })}
