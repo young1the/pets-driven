@@ -52,9 +52,37 @@ pub(crate) fn validate_asset_id(asset_id: &str) -> Result<(), String> {
     }
 }
 
+/// Resolve a manifest's spritesheet file within its pet directory, honoring
+/// `spritesheetPath` when set and falling back to `spritesheet.webp`
+/// otherwise. Shared by `read_pet_packages` and `load_codex_pet_spritesheet`
+/// so listing and loading a pet always agree on which file backs it.
+fn spritesheet_path_from_manifest(pet_dir: &Path, manifest: &PetManifest) -> PathBuf {
+    pet_dir.join(
+        manifest
+            .spritesheet_path
+            .as_deref()
+            .unwrap_or("spritesheet.webp"),
+    )
+}
+
+/// Read and parse `<pet_dir>/pet.json`, if present and valid.
+fn read_pet_manifest(pet_dir: &Path) -> Option<PetManifest> {
+    let manifest_text = fs::read_to_string(pet_dir.join("pet.json")).ok()?;
+    serde_json::from_str(&manifest_text).ok()
+}
+
+/// Resolve the on-disk spritesheet path for a pet directory, reading its
+/// manifest for `spritesheetPath`. Returns `None` if the manifest or the
+/// resolved spritesheet file is missing.
+fn resolve_pet_spritesheet_path(pet_dir: &Path) -> Option<PathBuf> {
+    let manifest = read_pet_manifest(pet_dir)?;
+    let spritesheet_path = spritesheet_path_from_manifest(pet_dir, &manifest);
+
+    spritesheet_path.exists().then_some(spritesheet_path)
+}
+
 /// Discover the pet packages under `pets_root`. A pet's asset id is its
-/// directory name, not any `id` field in the manifest: `load_codex_pet_spritesheet`
-/// rebuilds `<pets_root>/<id>/spritesheet.webp` from that id, so keying a package
+/// directory name, not any `id` field in the manifest, so keying a package
 /// by anything else would break sprite loading the moment the two disagree.
 fn read_pet_packages(pets_root: &Path) -> Result<Vec<CodexPetPackage>, String> {
     let entries = fs::read_dir(pets_root)
@@ -92,12 +120,7 @@ fn read_pet_packages(pets_root: &Path) -> Result<Vec<CodexPetPackage>, String> {
             .map_err(|error| format!("Could not read {}: {error}", manifest_path.display()))?;
         let manifest: PetManifest = serde_json::from_str(&manifest_text)
             .map_err(|error| format!("Could not parse {}: {error}", manifest_path.display()))?;
-        let spritesheet_path = pet_dir.join(
-            manifest
-                .spritesheet_path
-                .as_deref()
-                .unwrap_or("spritesheet.webp"),
-        );
+        let spritesheet_path = spritesheet_path_from_manifest(&pet_dir, &manifest);
 
         if !spritesheet_path.exists() {
             continue;
@@ -257,9 +280,9 @@ pub(crate) fn load_codex_pet_spritesheet(
     // Resolve the sprite from the same single designated folder used for listing,
     // so a listed pack and its loaded sprite always come from the one folder.
     if let Some(root) = designated_pet_source_root(&app) {
-        let spritesheet_path = root.join(&asset_id).join("spritesheet.webp");
+        let pet_dir = root.join(&asset_id);
 
-        if spritesheet_path.exists() {
+        if let Some(spritesheet_path) = resolve_pet_spritesheet_path(&pet_dir) {
             let bytes = fs::read(&spritesheet_path)
                 .map_err(|error| format!("Could not read Codex pet spritesheet: {error}"))?;
 
@@ -398,6 +421,31 @@ mod tests {
 
         let ids: Vec<&str> = packages.iter().map(|p| p.id.as_str()).collect();
         assert_eq!(ids, vec!["abe", "zed"]);
+
+        fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn spritesheet_resolution_honors_a_non_webp_spritesheet_path() {
+        let root = unique_temp_dir();
+        let pet_dir = root.join("kirby");
+        fs::create_dir_all(&pet_dir).unwrap();
+        fs::write(
+            pet_dir.join("pet.json"),
+            r#"{"displayName":"Kirby","spritesheetPath":"spritesheet.png"}"#,
+        )
+        .unwrap();
+        fs::write(pet_dir.join("spritesheet.png"), b"png").unwrap();
+
+        // Listing must see the pet...
+        let packages = read_pet_packages(&root).unwrap();
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].id, "kirby");
+
+        // ...and loading must resolve the same file the listing found, not a
+        // hardcoded `spritesheet.webp` that doesn't exist for this pet.
+        let resolved = resolve_pet_spritesheet_path(&pet_dir);
+        assert_eq!(resolved, Some(pet_dir.join("spritesheet.png")));
 
         fs::remove_dir_all(&root).ok();
     }
