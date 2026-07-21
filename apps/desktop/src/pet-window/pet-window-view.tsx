@@ -9,7 +9,7 @@ import {
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PET_SPEECH_KEY_PREFIX } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { PetSprite, type PetSpriteProps } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
@@ -195,6 +195,51 @@ function steadyActivity(
   return shown.value;
 }
 
+/**
+ * PetSprite with its own animation clock.
+ *
+ * The clock ticks only when the atlas is about to flip frames (every
+ * 110-320ms) rather than at display refresh rate: pet windows are always-on, so
+ * a 60Hz loop was a steady idle-CPU cost per pet. `performance.now()` shares
+ * rAF's time origin, so the animation phase is unchanged.
+ *
+ * Owning the clock here — rather than in PetWindowView — keeps each frame flip
+ * from re-rendering the whole window (drag/resize overlays, status card,
+ * connect notice); only this sprite subtree updates.
+ */
+function AnimatedPetSprite({
+  animationState,
+  ...rest
+}: Omit<PetSpriteProps, "elapsedMs" | "animationState"> & {
+  animationState: PetAnimationState;
+}) {
+  const [elapsedMs, setElapsedMs] = useState(() => performance.now());
+
+  useEffect(() => {
+    let isActive = true;
+    let timeoutId = 0;
+
+    const tick = () => {
+      if (!isActive) {
+        return;
+      }
+
+      const nextElapsedMs = performance.now();
+      setElapsedMs(nextElapsedMs);
+      timeoutId = window.setTimeout(tick, msUntilNextAtlasFrame(animationState, nextElapsedMs));
+    };
+
+    tick();
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [animationState]);
+
+  return <PetSprite animationState={animationState} elapsedMs={elapsedMs} {...rest} />;
+}
+
 export function PetWindowView({
   pet,
   previewPresentation,
@@ -228,7 +273,6 @@ export function PetWindowView({
   const isBodyHoveredRef = useRef(false);
   const isResizeHoveredRef = useRef(false);
   const [interactionStatus, setInteractionStatus] = useState<string | null>(null);
-  const [elapsedMs, setElapsedMs] = useState(0);
   const [spriteScale, setSpriteScale] = useState(
     isPreview && previewScale ? clampPetWindowScale(previewScale) : 1,
   );
@@ -484,37 +528,6 @@ export function PetWindowView({
       dispose();
     };
   }, [pet.assetId]);
-
-  // Advance the sprite clock only when the atlas is about to flip frames
-  // (every 110-320ms) instead of re-rendering at display refresh rate: pet
-  // windows are always-on, so a 60Hz rAF loop here was a steady idle-CPU
-  // cost per pet. performance.now() shares rAF's time origin, so the
-  // animation phase is unchanged.
-  const currentAnimationState = presentation.animationState;
-  useEffect(() => {
-    let isActive = true;
-    let timeoutId = 0;
-
-    const tick = () => {
-      if (!isActive) {
-        return;
-      }
-
-      const nextElapsedMs = performance.now();
-      setElapsedMs(nextElapsedMs);
-      timeoutId = window.setTimeout(
-        tick,
-        msUntilNextAtlasFrame(currentAnimationState, nextElapsedMs),
-      );
-    };
-
-    tick();
-
-    return () => {
-      isActive = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [currentAnimationState]);
 
   function emitPetWindowInput(
     kind: PetWindowInputKind,
@@ -854,11 +867,10 @@ export function PetWindowView({
         }}
       >
         {spritesheetUrl ? (
-          <PetSprite
+          <AnimatedPetSprite
             alt={`Pet Sprite ${pet.petId}`}
             animationState={presentation.animationState}
             decisionEmote={presentation.decisionEmote}
-            elapsedMs={elapsedMs}
             imageUrl={spritesheetUrl}
             overlay={presentation.overlay}
             showStatusBubble={false}
