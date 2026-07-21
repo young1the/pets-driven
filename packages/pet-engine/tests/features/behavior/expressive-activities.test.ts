@@ -130,7 +130,8 @@ describe("expressive pose planning", () => {
     expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
       source: "expressive",
       mood: "confused",
-      emote: "exclaim",
+      // Fretting is anxiety, not alarm; the "!" stays with stand-lookout.
+      emote: "sweat",
       expiresAt: 3_000,
     });
     expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);

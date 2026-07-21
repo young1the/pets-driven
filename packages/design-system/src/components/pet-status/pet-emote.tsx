@@ -4,8 +4,8 @@ import "./pet-status.css";
 
 /**
  * The floating corner emote for a desktop pet (hearts / zzz / sparkles /
- * "?" / "!"). Pointer-transparent; the consumer absolutely positions the
- * root at the pet's top-right.
+ * "?" / "!" / ♪ / sweat / "···"). Pointer-transparent; the consumer absolutely
+ * positions the root at the pet's top-right.
  */
 export interface PetEmoteProps extends HTMLAttributes<HTMLDivElement> {
   kind: PetEmoteKind;
@@ -32,6 +32,25 @@ function SparkSvg() {
       <path
         d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"
         fill="var(--color-accent)"
+      />
+    </svg>
+  );
+}
+
+function NoteSvg() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M11 4h2v10.6a3.4 3.4 0 1 1-2-3.1V4zm2 0h6v2h-6V4z" fill="var(--comp-accent)" />
+    </svg>
+  );
+}
+
+function SweatSvg() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path
+        d="M12 3c3.4 4.2 5.4 7.1 5.4 9.4a5.4 5.4 0 1 1-10.8 0C6.6 10.1 8.6 7.2 12 3z"
+        fill="var(--sky-400)"
       />
     </svg>
   );
@@ -84,6 +103,28 @@ export function PetEmote({
           <span className="pd-emote__spark pd-emote__spark--2">
             <SparkSvg />
           </span>
+        </>
+      )}
+      {kind === "note" && (
+        <>
+          <span className="pd-emote__note pd-emote__note--1">
+            <NoteSvg />
+          </span>
+          <span className="pd-emote__note pd-emote__note--2">
+            <NoteSvg />
+          </span>
+        </>
+      )}
+      {kind === "sweat" && (
+        <span className="pd-emote__sweat">
+          <SweatSvg />
+        </span>
+      )}
+      {kind === "dots" && (
+        <>
+          <span className="pd-emote__dot pd-emote__dot--1" />
+          <span className="pd-emote__dot pd-emote__dot--2" />
+          <span className="pd-emote__dot pd-emote__dot--3" />
         </>
       )}
       {kind === "question" && <span className="pd-emote__bubblet">?</span>}

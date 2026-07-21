@@ -274,15 +274,22 @@ const EXPRESSIVE_POSE_CUES: Record<
   { mood: PetExpressionMood; emote: PetExpressionEmote }
 > = {
   greet: { mood: "happy", emote: "sparkle" },
-  groom: { mood: "working", emote: "none" },
+  // Humming while tidying — "none" left the most conscientious pose entirely
+  // unreadable next to a plain idle.
+  groom: { mood: "working", emote: "note" },
   observe: { mood: "thinking", emote: "question" },
   beckon: { mood: "love", emote: "heart" },
-  fret: { mood: "confused", emote: "exclaim" },
+  // Anxiety, not alarm. stand-lookout keeps the "!".
+  fret: { mood: "confused", emote: "sweat" },
   nap: { mood: "sleepy", emote: "zzz" },
-  meditate: { mood: "happy", emote: "sparkle" },
-  "keep-watch": { mood: "love", emote: "heart" },
-  peek: { mood: "thinking", emote: "question" },
+  // Quiet inward calm, so it stops reading as a second greet.
+  meditate: { mood: "happy", emote: "dots" },
+  // Watchful rather than doting, so it separates from offer-comfort.
+  "keep-watch": { mood: "love", emote: "dots" },
+  // Peeking is passive watching; inspect below keeps the pointed "?".
+  peek: { mood: "thinking", emote: "dots" },
   inspect: { mood: "thinking", emote: "question" },
+  // Intentionally unadorned: a routine is background life, not an event.
   "follow-routine": { mood: "working", emote: "none" },
   "offer-comfort": { mood: "love", emote: "heart" },
   "stand-lookout": { mood: "confused", emote: "exclaim" },

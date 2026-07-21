@@ -7,7 +7,25 @@
 
 export type PetMood = "working" | "happy" | "love" | "excited" | "thinking" | "sleepy" | "confused";
 
-export type PetEmoteKind = "none" | "heart" | "zzz" | "sparkle" | "question" | "exclaim";
+/**
+ * The corner-emote vocabulary. Deliberately larger than the mood set: several
+ * distinct behaviors share a mood (and a sprite row), so the emote is often the
+ * only channel that tells them apart — a fretting pet and a startled one are
+ * both "confused", but only one of them is sweating.
+ */
+export type PetEmoteKind =
+  | "none"
+  | "heart"
+  | "zzz"
+  | "sparkle"
+  | "question"
+  | "exclaim"
+  /** Floating ♪ — playful, proud, humming to itself. */
+  | "note"
+  /** A flicked droplet — fluster and exertion, distinct from alarm ("!"). */
+  | "sweat"
+  /** Drifting "···" — quiet attention, distinct from a pointed "?". */
+  | "dots";
 
 type PetMoodSpec = {
   face: string;

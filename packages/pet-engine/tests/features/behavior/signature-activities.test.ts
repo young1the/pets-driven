@@ -169,7 +169,9 @@ describe("personality signature activities", () => {
     expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
       source: "expressive",
       mood: "happy",
-      emote: "sparkle",
+      // Quiet "···" rather than a sparkle, so meditating stops looking like
+      // another greet.
+      emote: "dots",
     });
     expect(store.getComponent("pet", "MoodState")!.arousal).toBeLessThan(arousalBefore);
     expect(store.getComponent("pet", "RecentExperienceMemory")?.entries.at(-1)?.kind).toBe(
@@ -184,7 +186,8 @@ describe("personality signature activities", () => {
 
     expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
       mood: "love",
-      emote: "heart",
+      // Watchful, not doting — keeps it distinct from offer-comfort's heart.
+      emote: "dots",
     });
     expect(store.getComponent("pet", "Drives")!.social).toBeLessThan(socialBefore);
   });
@@ -197,7 +200,8 @@ describe("personality signature activities", () => {
     expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
     expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
       mood: "thinking",
-      emote: "question",
+      // Passive watching; the pointed "?" now belongs to inspect alone.
+      emote: "dots",
     });
     expect(store.getComponent("pet", "Drives")!.curiosity).toBeLessThan(curiosityBefore);
   });

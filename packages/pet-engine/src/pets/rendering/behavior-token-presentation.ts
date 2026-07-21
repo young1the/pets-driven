@@ -13,14 +13,15 @@ export type BehaviorTokenPresentation = {
 };
 
 const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPresentation> = {
+  // Ambling is background life — a "?" made every stroll look like a puzzle.
   "wander-near": {
-    emote: "question",
+    emote: "none",
     label: "Nearby wander",
     mood: "thinking",
     tone: "curious",
   },
   "wander-far": {
-    emote: "question",
+    emote: "dots",
     label: "Far wander",
     mood: "thinking",
     tone: "curious",
@@ -38,7 +39,8 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "spark",
   },
   "request-climb": {
-    emote: "exclaim",
+    // Effort, not alarm.
+    emote: "sweat",
     label: "Climb request",
     mood: "working",
     tone: "motion",
@@ -56,13 +58,13 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "affection",
   },
   "flee-from-pet": {
-    emote: "exclaim",
+    emote: "sweat",
     label: "Fleeing from pet",
     mood: "confused",
     tone: "alert",
   },
   "collision-flee": {
-    emote: "exclaim",
+    emote: "sweat",
     label: "Collision flee",
     mood: "confused",
     tone: "alert",
@@ -74,7 +76,8 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "affection",
   },
   "collision-avoid": {
-    emote: "exclaim",
+    // A composed sidestep reads differently from a panicked one.
+    emote: "dots",
     label: "Collision avoid",
     mood: "confused",
     tone: "alert",
@@ -92,7 +95,8 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "calm",
   },
   "collision-unfazed": {
-    emote: "question",
+    // Being unbothered is the whole point; any symbol contradicts it.
+    emote: "none",
     label: "Collision unfazed",
     mood: "working",
     tone: "calm",
@@ -104,7 +108,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "spark",
   },
   "play-romp": {
-    emote: "sparkle",
+    emote: "note",
     label: "Romping around",
     mood: "excited",
     tone: "spark",
@@ -116,25 +120,25 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "calm",
   },
   meditate: {
-    emote: "sparkle",
+    emote: "dots",
     label: "Meditating",
     mood: "happy",
     tone: "calm",
   },
   "play-feint": {
-    emote: "exclaim",
+    emote: "note",
     label: "Playing a trick",
     mood: "excited",
     tone: "spark",
   },
   "keep-watch": {
-    emote: "heart",
+    emote: "dots",
     label: "Keeping watch",
     mood: "love",
     tone: "affection",
   },
   peek: {
-    emote: "question",
+    emote: "dots",
     label: "Peeking from afar",
     mood: "thinking",
     tone: "curious",
@@ -158,7 +162,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "calm",
   },
   strut: {
-    emote: "sparkle",
+    emote: "note",
     label: "Strutting",
     mood: "excited",
     tone: "spark",
@@ -182,7 +186,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "calm",
   },
   groom: {
-    emote: "none",
+    emote: "note",
     label: "Tidying up",
     mood: "working",
     tone: "calm",
@@ -200,7 +204,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "affection",
   },
   fret: {
-    emote: "exclaim",
+    emote: "sweat",
     label: "Fretting",
     mood: "confused",
     tone: "alert",

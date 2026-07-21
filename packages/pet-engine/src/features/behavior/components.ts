@@ -247,7 +247,17 @@ export type PetExpressionMood =
   | "sleepy"
   | "confused";
 
-export type PetExpressionEmote = "none" | "heart" | "zzz" | "sparkle" | "question" | "exclaim";
+/** Mirrors the design-system PetEmoteKind; see it for what each symbol means. */
+export type PetExpressionEmote =
+  | "none"
+  | "heart"
+  | "zzz"
+  | "sparkle"
+  | "question"
+  | "exclaim"
+  | "note"
+  | "sweat"
+  | "dots";
 
 export type PetExpressionStateComponent = {
   type: "PetExpressionState";

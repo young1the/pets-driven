@@ -123,6 +123,123 @@
   }
 }
 
+/* ♪ — playful / proud / humming. Drifts up and sways, unlike the sparkle's
+   in-place twinkle, so the two never read as the same cue. */
+.pd-emote__note {
+  position: absolute;
+  right: 4px;
+  top: 10px;
+}
+.pd-emote__note svg,
+.pd-emote--sm .pd-emote__note svg {
+  width: 18px;
+  height: 18px;
+}
+.pd-emote__note--2 {
+  right: 20px;
+  top: 2px;
+}
+.pd-emote__note--2 svg,
+.pd-emote--sm .pd-emote__note--2 svg {
+  width: 13px;
+  height: 13px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pd-emote__note {
+    animation: pd-note-drift 2.2s var(--ease-in-out) infinite;
+  }
+  .pd-emote__note--2 {
+    animation-delay: 0.7s;
+  }
+}
+@keyframes pd-note-drift {
+  0% {
+    opacity: 0;
+    transform: translate(0, 6px) rotate(-8deg);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8px, -12px) rotate(10deg);
+  }
+}
+
+/* A droplet flicked off the head — fluster and exertion. Deliberately NOT the
+   "!" bubblet: alarm and embarrassment are different states that used to
+   collapse onto the same symbol. */
+.pd-emote__sweat {
+  position: absolute;
+  right: 4px;
+  top: 2px;
+}
+.pd-emote__sweat svg,
+.pd-emote--sm .pd-emote__sweat svg {
+  width: 16px;
+  height: 16px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pd-emote__sweat {
+    animation: pd-sweat-flick 1.6s var(--ease-out) infinite;
+  }
+}
+@keyframes pd-sweat-flick {
+  0% {
+    opacity: 0;
+    transform: translate(-2px, 0) scale(0.7);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(10px, 8px) scale(0.8);
+  }
+}
+
+/* "···" — quiet attention. A pet that is watching, not questioning. */
+.pd-emote__dot {
+  position: absolute;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--comp-accent);
+}
+.pd-emote__dot--1 {
+  right: 24px;
+}
+.pd-emote__dot--2 {
+  right: 14px;
+}
+.pd-emote__dot--3 {
+  right: 4px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pd-emote__dot {
+    animation: pd-dot-pulse 1.8s var(--ease-in-out) infinite;
+  }
+  .pd-emote__dot--2 {
+    animation-delay: 0.2s;
+  }
+  .pd-emote__dot--3 {
+    animation-delay: 0.4s;
+  }
+}
+@keyframes pd-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(2px);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .pd-emote__bubblet {
   position: absolute;
   right: 0;
