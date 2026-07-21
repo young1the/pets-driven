@@ -152,7 +152,7 @@ vi.mock("@tauri-apps/api/window", () => ({
 const invokeMock = vi.mocked(invoke);
 const isTauriMock = vi.mocked(isTauri);
 const testPetsDrivenState: PetsDrivenState = {
-  schemaVersion: 3,
+  schemaVersion: 1,
   registeredWorkingDirectories: [
     {
       id: "wd-cms",

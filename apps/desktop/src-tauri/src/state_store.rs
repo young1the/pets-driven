@@ -330,11 +330,6 @@ fn apply_hatch(
     }
 
     let mut next = state.clone();
-    // The hatch records use the v2 shape (named pet, profile); pin the version
-    // so the frontend does not run the v1->v2 migration and overwrite the name.
-    if let Some(object) = next.as_object_mut() {
-        object.insert("schemaVersion".to_string(), serde_json::json!(2));
-    }
 
     push_array(
         &mut next,
@@ -722,7 +717,7 @@ mod tests {
         let next = apply_hatch(&empty_pets_driven_state(), &input, &sample_ids(), 1000)
             .expect("hatch should succeed");
 
-        assert_eq!(next["schemaVersion"], 2);
+        assert_eq!(next["schemaVersion"], 1);
 
         let pet = &next["pets"][0];
         assert_eq!(pet["id"], "pet-1");

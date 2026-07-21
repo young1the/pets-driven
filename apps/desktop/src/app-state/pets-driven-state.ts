@@ -24,7 +24,7 @@ export type PetRecord = {
   profileId: string;
   /** User-given pet name from onboarding. */
   name: string;
-  /** Adoption time in epoch ms; 0 for records migrated from v1. */
+  /** Adoption time in epoch ms. */
   adoptedAt: number;
   archived: boolean;
   visible: boolean;
@@ -33,28 +33,8 @@ export type PetRecord = {
   memo?: string;
 };
 
-type PetRecordV1 = Omit<PetRecord, "workingDirectoryId" | "name" | "adoptedAt"> & {
-  workingDirectoryId: string;
-};
-
-export type PetsDrivenStateV1 = {
+export type PetsDrivenState = {
   schemaVersion: 1;
-  registeredWorkingDirectories: RegisteredWorkingDirectory[];
-  pets: PetRecordV1[];
-  petProfiles: PetProfile[];
-};
-
-export type PetsDrivenStateV2 = {
-  schemaVersion: 2;
-  registeredWorkingDirectories: RegisteredWorkingDirectory[];
-  pets: PetRecord[];
-  petProfiles: PetProfile[];
-  sessionCommand: string;
-  petSourceDirectories: string[];
-};
-
-export type PetsDrivenStateV3 = {
-  schemaVersion: 3;
   registeredWorkingDirectories: RegisteredWorkingDirectory[];
   pets: PetRecord[];
   petProfiles: PetProfile[];
@@ -70,12 +50,9 @@ export type PetsDrivenStateV3 = {
   petSourceDirectory: string | null;
 };
 
-/** Canonical state alias — always the latest schema. */
-export type PetsDrivenState = PetsDrivenStateV3;
-
 export function createEmptyPetsDrivenState(): PetsDrivenState {
   return {
-    schemaVersion: 3,
+    schemaVersion: 1,
     registeredWorkingDirectories: [],
     pets: [],
     petProfiles: [],
@@ -84,54 +61,13 @@ export function createEmptyPetsDrivenState(): PetsDrivenState {
   };
 }
 
-/**
- * Collapse a legacy v2 folder list (or a corrupt persisted value) to the single
- * designated folder: the first non-blank entry wins, `null` falls back to the
- * Petdex default.
- */
+/** Normalizes a persisted `petSourceDirectory`, discarding anything malformed. */
 function sanitizePetSourceDirectory(value: unknown): string | null {
-  const candidates = Array.isArray(value) ? value : [value];
-
-  for (const entry of candidates) {
-    if (typeof entry === "string" && entry.trim().length > 0) {
-      const normalized = normalizeWorkingDirectoryPath(entry);
-
-      if (normalized) {
-        return normalized;
-      }
-    }
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
   }
 
-  return null;
-}
-
-function defaultPetNameFromAssetId(assetId: string): string {
-  if (!assetId) {
-    return "Pet";
-  }
-
-  return assetId.charAt(0).toUpperCase() + assetId.slice(1);
-}
-
-function migratePetsDrivenStateV1(candidate: Partial<PetsDrivenStateV1>): PetsDrivenState {
-  const pets = Array.isArray(candidate.pets) ? candidate.pets : [];
-
-  return {
-    schemaVersion: 3,
-    registeredWorkingDirectories: Array.isArray(candidate.registeredWorkingDirectories)
-      ? candidate.registeredWorkingDirectories
-      : [],
-    pets: pets.map((pet) => ({
-      ...pet,
-      workingDirectoryId: pet.workingDirectoryId || null,
-      name: defaultPetNameFromAssetId(pet.assetId),
-      adoptedAt: 0,
-      visible: false,
-    })),
-    petProfiles: Array.isArray(candidate.petProfiles) ? candidate.petProfiles : [],
-    sessionCommand: DEFAULT_SESSION_COMMAND,
-    petSourceDirectory: null,
-  };
+  return normalizeWorkingDirectoryPath(value) || null;
 }
 
 /**
@@ -165,38 +101,26 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
     return createEmptyPetsDrivenState();
   }
 
-  const candidate = value as Partial<PetsDrivenStateV1 | PetsDrivenStateV2 | PetsDrivenStateV3>;
+  const candidate = value as Partial<PetsDrivenState>;
 
-  if (candidate.schemaVersion === 1) {
-    return repairPetDirectoryLinks(
-      migratePetsDrivenStateV1(candidate as Partial<PetsDrivenStateV1>),
-    );
-  }
-
-  if (candidate.schemaVersion !== 2 && candidate.schemaVersion !== 3) {
+  if (candidate.schemaVersion !== 1) {
     return createEmptyPetsDrivenState();
   }
 
-  // v2 stored a list of extra scan folders; v3 keeps a single designated
-  // folder. sanitizePetSourceDirectory collapses either shape.
-  const persisted = candidate as Partial<PetsDrivenStateV2> & Partial<PetsDrivenStateV3>;
-
   return repairPetDirectoryLinks({
-    schemaVersion: 3,
-    registeredWorkingDirectories: Array.isArray(persisted.registeredWorkingDirectories)
-      ? persisted.registeredWorkingDirectories
+    schemaVersion: 1,
+    registeredWorkingDirectories: Array.isArray(candidate.registeredWorkingDirectories)
+      ? candidate.registeredWorkingDirectories
       : [],
-    pets: Array.isArray(persisted.pets)
-      ? persisted.pets.map((pet) => ({ ...pet, visible: false }))
+    pets: Array.isArray(candidate.pets)
+      ? candidate.pets.map((pet) => ({ ...pet, visible: false }))
       : [],
-    petProfiles: Array.isArray(persisted.petProfiles) ? persisted.petProfiles : [],
+    petProfiles: Array.isArray(candidate.petProfiles) ? candidate.petProfiles : [],
     sessionCommand:
-      typeof persisted.sessionCommand === "string" && persisted.sessionCommand.trim()
-        ? persisted.sessionCommand
+      typeof candidate.sessionCommand === "string" && candidate.sessionCommand.trim()
+        ? candidate.sessionCommand
         : DEFAULT_SESSION_COMMAND,
-    petSourceDirectory: sanitizePetSourceDirectory(
-      persisted.schemaVersion === 2 ? persisted.petSourceDirectories : persisted.petSourceDirectory,
-    ),
+    petSourceDirectory: sanitizePetSourceDirectory(candidate.petSourceDirectory),
   });
 }
 

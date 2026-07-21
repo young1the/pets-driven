@@ -153,7 +153,7 @@ function createFixtureState(inputs: FixturePetInput[]): PetsDrivenState {
   );
 
   return {
-    schemaVersion: 3,
+    schemaVersion: 1,
     registeredWorkingDirectories,
     pets,
     petProfiles: inputs.map((input, index) => ({
