@@ -1,11 +1,46 @@
 import { CODEX_PET_ASSETS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
+import {
+  CLAUDE_HOOK_INGRESS_EVENT,
+  type ClaudeHookIngressStatus,
+} from "@/adapters/agent-events/claude-hook-ingress";
+import {
+  PETS_DRIVEN_PET_COMMAND_EVENT,
+  PETS_DRIVEN_STATE_CHANGED_EVENT,
+  type PetCommandEvent,
+} from "@/adapters/agent-events/hatch-ingress";
 import {
   createEmptyPetsDrivenState,
   type PetsDrivenState,
   parsePetsDrivenState,
 } from "@/app-state/pets-driven-state";
+
+/** Unsubscribe handle returned by the gateway's event subscriptions. */
+export type Unsubscribe = () => void;
+
+const NOOP_UNSUBSCRIBE: Unsubscribe = () => {};
+
+// Embedded-terminal PTY channel. These names and payload shapes mirror the
+// Rust side in embedded_terminal.rs; `data` arrives as a JSON array of bytes.
+const TERMINAL_DATA_EVENT = "embedded-terminal-data";
+const TERMINAL_EXIT_EVENT = "embedded-terminal-exit";
+
+export type TerminalDataEvent = { id: string; data: number[] };
+export type TerminalExitEvent = { id: string };
+
+export type TerminalOpenOptions = {
+  /** Working directory to spawn the shell in; null uses the process default. */
+  cwd?: string | null;
+  /** Program to run; null falls back to COMSPEC/SHELL in Rust. */
+  shell?: string | null;
+  cols: number;
+  rows: number;
+};
+
+/** A foreign OS window a pet is bound to. Mirrors the Rust `ForeignWindow`. */
+export type ForeignWindow = { hwnd: number; title: string };
 
 export type CodexPetPackage = {
   id: string;
@@ -48,6 +83,39 @@ export type DesktopGateway = {
   getClaudePluginStatus(): Promise<ClaudePluginStatus>;
   installClaudePlugin(): Promise<ClaudePluginStatus>;
   uninstallClaudePlugin(): Promise<ClaudePluginStatus>;
+
+  /** Whether we're running inside the Tauri desktop shell (vs. browser/tests). */
+  isDesktopRuntime(): boolean;
+
+  /** Current status of the Claude hook ingress listener. */
+  getClaudeHookIngressStatus(): Promise<ClaudeHookIngressStatus>;
+  /** Fire a synthetic hook ingress event (debug tooling). */
+  emitTestClaudeHookIngressEvent(): Promise<void>;
+  /** Close every open pet overlay window. */
+  closeAllPetWindows(): Promise<void>;
+
+  // Terminal-session windows: a pet's bound external terminal window.
+  /** Focus the bound foreign window; false when it no longer exists. */
+  focusForeignWindow(hwnd: number): Promise<boolean>;
+  /** Launch a new terminal session in `cwd` and return its window, if any. */
+  startSession(cwd: string, command: string): Promise<ForeignWindow | null>;
+  /** Let the user pick an existing window to bind; null when cancelled. */
+  connectForeignWindow(): Promise<ForeignWindow | null>;
+
+  // App-level event subscriptions. Each resolves to an unsubscribe handle;
+  // outside Tauri they subscribe to nothing and the handle is a no-op. The
+  // handler receives the domain payload directly, never a Tauri Event wrapper.
+  subscribeClaudeHookIngress(handler: (payload: unknown) => void): Promise<Unsubscribe>;
+  subscribePetsDrivenStateChanged(handler: () => void): Promise<Unsubscribe>;
+  subscribePetCommand(handler: (event: PetCommandEvent) => void): Promise<Unsubscribe>;
+
+  // Embedded terminal (PTY) channel.
+  openTerminal(options: TerminalOpenOptions): Promise<string>;
+  writeTerminal(id: string, data: string): Promise<void>;
+  resizeTerminal(id: string, cols: number, rows: number): Promise<void>;
+  closeTerminal(id: string): Promise<void>;
+  subscribeTerminalData(handler: (event: TerminalDataEvent) => void): Promise<Unsubscribe>;
+  subscribeTerminalExit(handler: (event: TerminalExitEvent) => void): Promise<Unsubscribe>;
 };
 
 const CLAUDE_PLUGIN_UNAVAILABLE: ClaudePluginStatus = {
@@ -162,5 +230,136 @@ export const desktopGateway: DesktopGateway = {
     }
 
     return await invoke<ClaudePluginStatus>("uninstall_claude_plugin");
+  },
+
+  isDesktopRuntime() {
+    return isTauri();
+  },
+
+  async getClaudeHookIngressStatus() {
+    if (!isTauri()) {
+      return { url: "", state: "error", error: null };
+    }
+
+    return await invoke<ClaudeHookIngressStatus>("get_claude_hook_ingress_status");
+  },
+
+  async emitTestClaudeHookIngressEvent() {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("emit_test_claude_hook_ingress_event");
+  },
+
+  async closeAllPetWindows() {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("close_all_pet_windows");
+  },
+
+  async focusForeignWindow(hwnd) {
+    if (!isTauri()) {
+      return false;
+    }
+
+    return await invoke<boolean>("focus_window", { hwnd });
+  },
+
+  async startSession(cwd, command) {
+    if (!isTauri()) {
+      return null;
+    }
+
+    return await invoke<ForeignWindow | null>("start_session", { cwd, command });
+  },
+
+  async connectForeignWindow() {
+    if (!isTauri()) {
+      return null;
+    }
+
+    return await invoke<ForeignWindow | null>("connect_window");
+  },
+
+  async subscribeClaudeHookIngress(handler) {
+    if (!isTauri()) {
+      return NOOP_UNSUBSCRIBE;
+    }
+
+    return await listen<unknown>(CLAUDE_HOOK_INGRESS_EVENT, (event) => handler(event.payload));
+  },
+
+  async subscribePetsDrivenStateChanged(handler) {
+    if (!isTauri()) {
+      return NOOP_UNSUBSCRIBE;
+    }
+
+    return await listen(PETS_DRIVEN_STATE_CHANGED_EVENT, () => handler());
+  },
+
+  async subscribePetCommand(handler) {
+    if (!isTauri()) {
+      return NOOP_UNSUBSCRIBE;
+    }
+
+    return await listen<PetCommandEvent>(PETS_DRIVEN_PET_COMMAND_EVENT, (event) =>
+      handler(event.payload),
+    );
+  },
+
+  async openTerminal(options) {
+    if (!isTauri()) {
+      throw new Error("Embedded terminal requires the Tauri desktop shell.");
+    }
+
+    return await invoke<string>("terminal_open", {
+      cwd: options.cwd ?? null,
+      shell: options.shell ?? null,
+      cols: options.cols,
+      rows: options.rows,
+    });
+  },
+
+  async writeTerminal(id, data) {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("terminal_write", { id, data });
+  },
+
+  async resizeTerminal(id, cols, rows) {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("terminal_resize", { id, cols, rows });
+  },
+
+  async closeTerminal(id) {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("terminal_close", { id });
+  },
+
+  async subscribeTerminalData(handler) {
+    if (!isTauri()) {
+      return NOOP_UNSUBSCRIBE;
+    }
+
+    return await listen<TerminalDataEvent>(TERMINAL_DATA_EVENT, (event) => handler(event.payload));
+  },
+
+  async subscribeTerminalExit(handler) {
+    if (!isTauri()) {
+      return NOOP_UNSUBSCRIBE;
+    }
+
+    return await listen<TerminalExitEvent>(TERMINAL_EXIT_EVENT, (event) => handler(event.payload));
   },
 };

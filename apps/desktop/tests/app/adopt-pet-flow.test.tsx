@@ -31,6 +31,26 @@ function createGateway(
       version: null,
       error: null,
     }),
+    isDesktopRuntime: vi.fn().mockReturnValue(false),
+    getClaudeHookIngressStatus: vi.fn().mockResolvedValue({
+      url: "",
+      state: "error",
+      error: null,
+    }),
+    emitTestClaudeHookIngressEvent: vi.fn().mockResolvedValue(undefined),
+    closeAllPetWindows: vi.fn().mockResolvedValue(undefined),
+    focusForeignWindow: vi.fn().mockResolvedValue(false),
+    startSession: vi.fn().mockResolvedValue(null),
+    connectForeignWindow: vi.fn().mockResolvedValue(null),
+    subscribeClaudeHookIngress: vi.fn().mockResolvedValue(() => {}),
+    subscribePetsDrivenStateChanged: vi.fn().mockResolvedValue(() => {}),
+    subscribePetCommand: vi.fn().mockResolvedValue(() => {}),
+    openTerminal: vi.fn().mockResolvedValue(""),
+    writeTerminal: vi.fn().mockResolvedValue(undefined),
+    resizeTerminal: vi.fn().mockResolvedValue(undefined),
+    closeTerminal: vi.fn().mockResolvedValue(undefined),
+    subscribeTerminalData: vi.fn().mockResolvedValue(() => {}),
+    subscribeTerminalExit: vi.fn().mockResolvedValue(() => {}),
   };
 }
 

@@ -1,18 +1,8 @@
-import { invoke, isTauri } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef } from "react";
+import { desktopGateway } from "@/app/desktop-gateway";
 import "@xterm/xterm/css/xterm.css";
-
-// Mirror the Rust payloads from embedded_terminal.rs. `data` arrives as a JSON
-// array of bytes, which we hand to xterm as a Uint8Array so control sequences
-// and partial UTF-8 survive intact.
-type TerminalDataEvent = { id: string; data: number[] };
-type TerminalExitEvent = { id: string };
-
-const TERMINAL_DATA_EVENT = "embedded-terminal-data";
-const TERMINAL_EXIT_EVENT = "embedded-terminal-exit";
 
 // xterm renders into a canvas, so `var(--...)` font/color tokens must be
 // resolved to concrete values before they reach it.
@@ -76,7 +66,7 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!isTauri()) {
+    if (!desktopGateway.isDesktopRuntime()) {
       return;
     }
     const container = containerRef.current;
@@ -125,7 +115,7 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
 
     void (async () => {
       try {
-        const id = await invoke<string>("terminal_open", {
+        const id = await desktopGateway.openTerminal({
           cwd: cwd ?? null,
           shell: shell ?? null,
           cols: term.cols,
@@ -134,21 +124,21 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
         // The effect may have been torn down while the command was in flight;
         // kill the orphaned session so it doesn't linger.
         if (disposed) {
-          void invoke("terminal_close", { id }).catch(() => {});
+          void desktopGateway.closeTerminal(id).catch(() => {});
           return;
         }
         sessionId = id;
 
         unlisteners.push(
-          await listen<TerminalDataEvent>(TERMINAL_DATA_EVENT, (event) => {
-            if (event.payload.id === id) {
-              term.write(new Uint8Array(event.payload.data));
+          await desktopGateway.subscribeTerminalData((payload) => {
+            if (payload.id === id) {
+              term.write(new Uint8Array(payload.data));
             }
           }),
         );
         unlisteners.push(
-          await listen<TerminalExitEvent>(TERMINAL_EXIT_EVENT, (event) => {
-            if (event.payload.id === id) {
+          await desktopGateway.subscribeTerminalExit((payload) => {
+            if (payload.id === id) {
               term.write(`\r\n\x1b[2m${exitedLabel}\x1b[0m\r\n`);
             }
           }),
@@ -160,7 +150,7 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
 
     const dataDisposable = term.onData((data) => {
       if (sessionId) {
-        void invoke("terminal_write", { id: sessionId, data }).catch(() => {});
+        void desktopGateway.writeTerminal(sessionId, data).catch(() => {});
       }
     });
 
@@ -172,11 +162,7 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
         return;
       }
       if (sessionId) {
-        void invoke("terminal_resize", {
-          id: sessionId,
-          cols: term.cols,
-          rows: term.rows,
-        }).catch(() => {});
+        void desktopGateway.resizeTerminal(sessionId, term.cols, term.rows).catch(() => {});
       }
     });
     resizeObserver.observe(container);
@@ -191,7 +177,7 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
         stop();
       }
       if (sessionId) {
-        void invoke("terminal_close", { id: sessionId }).catch(() => {});
+        void desktopGateway.closeTerminal(sessionId).catch(() => {});
       }
       term.dispose();
     };

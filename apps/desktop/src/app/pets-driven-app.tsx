@@ -11,7 +11,7 @@ import {
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import {
   availableMonitors,
@@ -23,17 +23,9 @@ import {
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
-import {
-  CLAUDE_HOOK_INGRESS_EVENT,
-  type ClaudeHookIngressStatus,
-} from "@/adapters/agent-events/claude-hook-ingress";
-import {
-  PETS_DRIVEN_PET_COMMAND_EVENT,
-  PETS_DRIVEN_STATE_CHANGED_EVENT,
-  type PetCommandEvent,
-} from "@/adapters/agent-events/hatch-ingress";
+import type { ClaudeHookIngressStatus } from "@/adapters/agent-events/claude-hook-ingress";
 import { useAppNavigation } from "@/app/app-navigation";
-import { desktopGateway } from "@/app/desktop-gateway";
+import { desktopGateway, type ForeignWindow } from "@/app/desktop-gateway";
 import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import type { MainWindowTab } from "@/app/main-window/main-window";
 import { MainWindowSurface } from "@/app/main-window/main-window-surface";
@@ -119,9 +111,6 @@ const EMPTY_PET_PACKAGES_GATEWAY = {
 // Native folder dialogs are app-modal side effects. Keep the guard outside the
 // React tree so duplicate listeners from a remount cannot open a second dialog.
 let activeFolderPickerPetId: string | null = null;
-
-// A foreign OS window a pet is bound to. Mirrors the Rust `ForeignWindow`.
-type ForeignWindow = { hwnd: number; title: string };
 
 function formatCommandError(error: unknown) {
   if (error instanceof Error) {
@@ -467,7 +456,8 @@ function PetsDrivenHostApp() {
     let isMounted = true;
 
     const loadClaudeHookIngressStatus = () => {
-      void invoke<ClaudeHookIngressStatus>("get_claude_hook_ingress_status")
+      void desktopGateway
+        .getClaudeHookIngressStatus()
         .then((nextStatus) => {
           if (isMounted) {
             setClaudeHookIngressStatus(nextStatus);
@@ -663,45 +653,43 @@ function PetsDrivenHostApp() {
   }, [devFixture]);
 
   useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
     let unlisten: (() => void) | undefined;
 
-    void listen<unknown>(CLAUDE_HOOK_INGRESS_EVENT, (event) => {
-      try {
-        const routedPayload = routeClaudeHookPayloadToRegisteredWorkingDirectory(
-          event.payload,
-          petsDrivenStateRef.current,
-        );
+    void desktopGateway
+      .subscribeClaudeHookIngress((payload) => {
+        try {
+          const routedPayload = routeClaudeHookPayloadToRegisteredWorkingDirectory(
+            payload,
+            petsDrivenStateRef.current,
+          );
 
-        if (!routedPayload) {
-          return;
-        }
-
-        // Fan the event into every live world. Only the pet whose
-        // AgentBinding.sourceId matches reacts; the others ignore it. Each
-        // world stamps the event with its own clock since they advance
-        // independently.
-        for (const scenario of [fixtureScenarioRef.current, adoptedScenarioRef.current]) {
-          if (!scenario) {
-            continue;
+          if (!routedPayload) {
+            return;
           }
 
-          const agentEvent = createAgentEventFromClaudeHook(routedPayload, {
-            defaultSourceId: "agent-a",
-            now: scenario.clock.now(),
-          });
+          // Fan the event into every live world. Only the pet whose
+          // AgentBinding.sourceId matches reacts; the others ignore it. Each
+          // world stamps the event with its own clock since they advance
+          // independently.
+          for (const scenario of [fixtureScenarioRef.current, adoptedScenarioRef.current]) {
+            if (!scenario) {
+              continue;
+            }
 
-          scenario.world.pushEvent(toWorldEvent(agentEvent));
+            const agentEvent = createAgentEventFromClaudeHook(routedPayload, {
+              defaultSourceId: "agent-a",
+              now: scenario.clock.now(),
+            });
+
+            scenario.world.pushEvent(toWorldEvent(agentEvent));
+          }
+        } catch (error) {
+          setPetWindowError(formatCommandError(error));
         }
-      } catch (error) {
-        setPetWindowError(formatCommandError(error));
-      }
-    }).then((stop) => {
-      unlisten = stop;
-    });
+      })
+      .then((stop) => {
+        unlisten = stop;
+      });
 
     return () => unlisten?.();
   }, []);
@@ -710,24 +698,22 @@ function PetsDrivenHostApp() {
   // the persisted state so the new pet's window opens and it joins the sim.
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once listener; applyReloadedPetsDrivenState is ref-based, so listing it would only re-subscribe without changing behavior.
   useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
     let unlisten: (() => void) | undefined;
 
-    void listen(PETS_DRIVEN_STATE_CHANGED_EVENT, () => {
-      void desktopGateway
-        .readPetsDrivenState()
-        .then((state) => {
-          applyReloadedPetsDrivenState(state);
-        })
-        .catch((error) => {
-          setPetWindowError(formatCommandError(error));
-        });
-    }).then((stop) => {
-      unlisten = stop;
-    });
+    void desktopGateway
+      .subscribePetsDrivenStateChanged(() => {
+        void desktopGateway
+          .readPetsDrivenState()
+          .then((state) => {
+            applyReloadedPetsDrivenState(state);
+          })
+          .catch((error) => {
+            setPetWindowError(formatCommandError(error));
+          });
+      })
+      .then((stop) => {
+        unlisten = stop;
+      });
 
     return () => unlisten?.();
   }, []);
@@ -736,27 +722,24 @@ function PetsDrivenHostApp() {
   // in memory before showPet/hidePet run.
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once listener; applyReloadedPetsDrivenState/showPet/hidePet are ref/setState-based, so listing them would only re-subscribe without changing behavior.
   useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
     let unlisten: (() => void) | undefined;
 
-    void listen<PetCommandEvent>(PETS_DRIVEN_PET_COMMAND_EVENT, (event) => {
-      const { action, petId } = event.payload;
-      void desktopGateway
-        .readPetsDrivenState()
-        .then((state) => {
-          applyReloadedPetsDrivenState(state);
-          if (action === "show") showPet(petId);
-          if (action === "hide") hidePet(petId);
-        })
-        .catch((error) => {
-          setPetWindowError(formatCommandError(error));
-        });
-    }).then((stop) => {
-      unlisten = stop;
-    });
+    void desktopGateway
+      .subscribePetCommand(({ action, petId }) => {
+        void desktopGateway
+          .readPetsDrivenState()
+          .then((state) => {
+            applyReloadedPetsDrivenState(state);
+            if (action === "show") showPet(petId);
+            if (action === "hide") hidePet(petId);
+          })
+          .catch((error) => {
+            setPetWindowError(formatCommandError(error));
+          });
+      })
+      .then((stop) => {
+        unlisten = stop;
+      });
 
     return () => unlisten?.();
   }, []);
@@ -1149,7 +1132,7 @@ function PetsDrivenHostApp() {
     setPetWindowError(null);
 
     try {
-      await invoke("emit_test_claude_hook_ingress_event");
+      await desktopGateway.emitTestClaudeHookIngressEvent();
     } catch (error) {
       setPetWindowError(formatCommandError(error));
     }
@@ -1192,7 +1175,7 @@ function PetsDrivenHostApp() {
       return;
     }
     try {
-      if (await invoke<boolean>("focus_window", { hwnd: binding.hwnd })) {
+      if (await desktopGateway.focusForeignWindow(binding.hwnd)) {
         return;
       }
     } catch {
@@ -1215,10 +1198,10 @@ function PetsDrivenHostApp() {
     launchingPetIdsRef.current.add(petId);
     emitBindingState(petId, true);
     try {
-      const launched = await invoke<ForeignWindow | null>("start_session", {
+      const launched = await desktopGateway.startSession(
         cwd,
-        command: petsDrivenStateRef.current.sessionCommand,
-      });
+        petsDrivenStateRef.current.sessionCommand,
+      );
       if (launched) {
         setBinding(petId, launched);
       } else {
@@ -1241,7 +1224,7 @@ function PetsDrivenHostApp() {
     launchingPetIdsRef.current.add(petId);
     emitBindingState(petId, true, true);
     try {
-      const picked = await invoke<ForeignWindow | null>("connect_window");
+      const picked = await desktopGateway.connectForeignWindow();
       if (picked) {
         setBinding(petId, picked);
       } else {
@@ -1265,7 +1248,7 @@ function PetsDrivenHostApp() {
     const empty = createEmptyPetsDrivenState();
 
     try {
-      await invoke("close_all_pet_windows");
+      await desktopGateway.closeAllPetWindows();
       await desktopGateway.writePetsDrivenState(empty);
       applyPetsDrivenState(empty);
       navigate("onboarding");
@@ -1345,7 +1328,7 @@ function PetsDrivenHostApp() {
     };
     applyPetsDrivenState(next);
     void desktopGateway.writePetsDrivenState(next);
-    void invoke("close_all_pet_windows").catch(() => {});
+    void desktopGateway.closeAllPetWindows().catch(() => {});
   }
 
   function deletePet(petId: string) {
