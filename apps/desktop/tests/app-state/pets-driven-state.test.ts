@@ -5,43 +5,10 @@ import {
   setPetSourceDirectory,
 } from "@/app-state/pets-driven-state";
 
-const v1Payload = {
-  schemaVersion: 1,
-  registeredWorkingDirectories: [
-    {
-      id: "wd-1",
-      path: "D:\\projects\\alpha",
-      petId: "pet-1",
-      agentSourceId: "agent-1",
-      createdAt: 10,
-      updatedAt: 20,
-    },
-  ],
-  pets: [
-    {
-      id: "pet-1",
-      workingDirectoryId: "wd-1",
-      assetId: "bloop",
-      profileId: "profile-1",
-      archived: false,
-      visible: true,
-    },
-    {
-      id: "pet-2",
-      workingDirectoryId: "",
-      assetId: "cato",
-      profileId: "profile-2",
-      archived: false,
-      visible: true,
-    },
-  ],
-  petProfiles: [],
-};
-
 describe("parsePetsDrivenState", () => {
-  it("creates an empty v3 state", () => {
+  it("creates an empty state", () => {
     expect(createEmptyPetsDrivenState()).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 1,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
@@ -50,31 +17,38 @@ describe("parsePetsDrivenState", () => {
     });
   });
 
-  it("migrates v1 pets with default name, adoptedAt and nullable link", () => {
-    const state = parsePetsDrivenState(v1Payload);
+  it("passes a well-formed state through unchanged", () => {
+    const state = parsePetsDrivenState({
+      schemaVersion: 1,
+      registeredWorkingDirectories: [
+        {
+          id: "wd-1",
+          path: "D:\\projects\\alpha",
+          petId: "pet-1",
+          agentSourceId: "agent-1",
+          createdAt: 10,
+          updatedAt: 20,
+        },
+      ],
+      pets: [
+        {
+          id: "pet-1",
+          workingDirectoryId: "wd-1",
+          assetId: "bloop",
+          profileId: "profile-1",
+          name: "Bloop",
+          adoptedAt: 100,
+          archived: false,
+          visible: true,
+        },
+      ],
+      petProfiles: [],
+    });
 
-    expect(state.schemaVersion).toBe(3);
-    expect(state.pets[0]).toMatchObject({
-      id: "pet-1",
-      name: "Bloop",
-      adoptedAt: 0,
-      workingDirectoryId: "wd-1",
-    });
-    expect(state.pets[1]).toMatchObject({
-      id: "pet-2",
-      name: "Cato",
-      adoptedAt: 0,
-      workingDirectoryId: null,
-    });
+    expect(parsePetsDrivenState(state)).toEqual(state);
   });
 
-  it("passes v3 state through unchanged", () => {
-    const v3 = parsePetsDrivenState(v1Payload);
-
-    expect(parsePetsDrivenState(v3)).toEqual(v3);
-  });
-
-  it("returns an empty v3 state for unknown payloads", () => {
+  it("returns an empty state for unknown or unversioned payloads", () => {
     expect(parsePetsDrivenState(null)).toEqual(createEmptyPetsDrivenState());
     expect(parsePetsDrivenState("junk")).toEqual(createEmptyPetsDrivenState());
     expect(parsePetsDrivenState({ schemaVersion: 99 })).toEqual(createEmptyPetsDrivenState());
@@ -82,7 +56,7 @@ describe("parsePetsDrivenState", () => {
 
   it("repairs pet back-pointers from the directory registry", () => {
     const state = parsePetsDrivenState({
-      schemaVersion: 2,
+      schemaVersion: 1,
       registeredWorkingDirectories: [
         {
           id: "wd-1",
@@ -124,7 +98,7 @@ describe("parsePetsDrivenState", () => {
 
   it("defaults memo to an empty string when missing", () => {
     const state = parsePetsDrivenState({
-      schemaVersion: 2,
+      schemaVersion: 1,
       registeredWorkingDirectories: [],
       pets: [
         {
@@ -146,7 +120,7 @@ describe("parsePetsDrivenState", () => {
 
   it("preserves an existing memo", () => {
     const state = parsePetsDrivenState({
-      schemaVersion: 2,
+      schemaVersion: 1,
       registeredWorkingDirectories: [],
       pets: [
         {
@@ -169,7 +143,7 @@ describe("parsePetsDrivenState", () => {
 
   it("defaults petSourceDirectory to null when missing", () => {
     const state = parsePetsDrivenState({
-      schemaVersion: 3,
+      schemaVersion: 1,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
@@ -178,34 +152,21 @@ describe("parsePetsDrivenState", () => {
     expect(state.petSourceDirectory).toBeNull();
   });
 
-  it("collapses a legacy v2 folder list to its first non-blank entry", () => {
+  it("normalizes a persisted petSourceDirectory", () => {
     const state = parsePetsDrivenState({
-      schemaVersion: 2,
+      schemaVersion: 1,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
-      petSourceDirectories: ["  ", 42, "D:\\pets", "C:\\more"],
+      petSourceDirectory: "D:/pets/../pets/mine/",
     });
 
-    expect(state.schemaVersion).toBe(3);
-    expect(state.petSourceDirectory).toBe("D:\\pets");
+    expect(state.petSourceDirectory).toBe("D:\\pets\\mine");
   });
 
-  it("falls back to null for a v2 list with no usable entry", () => {
+  it("rejects a corrupt petSourceDirectory value", () => {
     const state = parsePetsDrivenState({
-      schemaVersion: 2,
-      registeredWorkingDirectories: [],
-      pets: [],
-      petProfiles: [],
-      petSourceDirectories: ["  ", 42],
-    });
-
-    expect(state.petSourceDirectory).toBeNull();
-  });
-
-  it("rejects a corrupt v3 petSourceDirectory value", () => {
-    const state = parsePetsDrivenState({
-      schemaVersion: 3,
+      schemaVersion: 1,
       registeredWorkingDirectories: [],
       pets: [],
       petProfiles: [],
