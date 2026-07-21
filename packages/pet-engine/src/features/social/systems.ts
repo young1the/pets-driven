@@ -11,6 +11,7 @@ import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/co
 import { clampDrive, driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
 import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
 import { personalitySocialKindScale } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
+import { PET_SPEECH_KEY_PREFIX } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { SocialSessionComponent, SocialSessionKind } from "./components";
@@ -82,22 +83,16 @@ const CHASE_SPEED_FACTOR = 1.15;
 const MIN_PLAY_SPACING_BW = 1.2;
 const STAND_SPACING_BW = 1.5;
 
-// Said by the pet that just tagged its friend.
-const CHASE_CATCH_LINES = ["Tag!", "Gotcha!", "Caught you!", "Got you!"];
+// Spoken lines live in the desktop i18n bundle under `petSpeech.social.<slot>`
+// (see packages/i18n), same scheme as the personality voice profiles: this
+// module only picks a variant index and builds the localizable key; the
+// render layer resolves it via PET_SPEECH_KEY_PREFIX.
+const SOCIAL_SPEECH_KEY_PREFIX = `${PET_SPEECH_KEY_PREFIX}.social`;
 
-const GREET_LINES = ["Hi!", "Hey there!", "Oh, hello!", "There you are!"];
-const CHAT_LINES = [
-  "Guess what?",
-  "No way…",
-  "Really?",
-  "Hehe.",
-  "So then—",
-  "Same!",
-  "And then?",
-  "You think so?",
-  "Haha, right?",
-  "Tell me more!",
-];
+// Said by the pet that just tagged its friend.
+const CHASE_CATCH_LINE_COUNT = 4;
+const GREET_LINE_COUNT = 4;
+const CHAT_LINE_COUNT = 10;
 
 // ── Small helpers ────────────────────────────────────────────────────────────
 
@@ -449,8 +444,9 @@ function pickKind(
   return "greet";
 }
 
-function pickLine(lines: string[], seed: number): string {
-  return lines[Math.abs(Math.floor(seed)) % lines.length];
+/** Build a localizable `petSpeech.social.<slot>.<variant>` key, seeded like the old literal-line pick. */
+function pickLine(slot: string, variantCount: number, seed: number): string {
+  return `${SOCIAL_SPEECH_KEY_PREFIX}.${slot}.${Math.abs(Math.floor(seed)) % variantCount}`;
 }
 
 // ── The system ───────────────────────────────────────────────────────────────
@@ -560,7 +556,7 @@ function choreograph(
         setSpeech(
           components,
           id,
-          pickLine(GREET_LINES, session.startedAt + i),
+          pickLine("greet", GREET_LINE_COUNT, session.startedAt + i),
           now,
           PHASE_DURATIONS.greet.play,
         );
@@ -587,7 +583,13 @@ function choreograph(
     if (i === speakerIndex) {
       // Refreshed every tick of the turn, but give it the turn's length so the
       // bubble never blinks out between refreshes or at the turn boundary.
-      setSpeech(components, id, pickLine(CHAT_LINES, session.startedAt + turn), now, CHAT_TURN_MS);
+      setSpeech(
+        components,
+        id,
+        pickLine("chat", CHAT_LINE_COUNT, session.startedAt + turn),
+        now,
+        CHAT_TURN_MS,
+      );
       setExpression(components, id, "thinking", "none", now, 400);
     } else {
       setSpeech(components, id, null, now);
@@ -637,7 +639,7 @@ function choreographChase(
   if (caught) {
     const caughtId = ids[nearestRunner.index];
     // The chaser tags a runner: a quick excited cue, spoken by the catcher.
-    setSpeech(components, chaserId, pickLine(CHASE_CATCH_LINES, now), now);
+    setSpeech(components, chaserId, pickLine("chaseCatch", CHASE_CATCH_LINE_COUNT, now), now);
     setExpression(components, chaserId, "excited", "sparkle", now, 600);
     setExpression(components, caughtId, "confused", "exclaim", now, 600);
     session.lastCatchAt = now;
