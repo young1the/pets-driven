@@ -1,13 +1,7 @@
 import { useTranslation } from "@pets-driven/i18n";
-import { isTauri } from "@tauri-apps/api/core";
-import { emitTo, listen } from "@tauri-apps/api/event";
-import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useEffect, useRef, useState } from "react";
-import {
-  PET_WINDOW_HOST_LABEL,
-  PET_WINDOW_INPUT_EVENT,
-  type PetWindowInputKind,
-} from "@/pet-window/pet-window-messages";
+import type { PetWindowInputKind } from "@/pet-window/pet-window-messages";
+import { petWindowTransport } from "@/pet-window/pet-window-transport";
 
 type PetContextMenuViewProps = {
   petId: string;
@@ -28,7 +22,7 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
 
   useEffect(() => {
     document.documentElement.classList.add("pet-context-menu-document");
-    if (!isTauri()) {
+    if (!petWindowTransport.isDesktopRuntime()) {
       document.documentElement.classList.add("pet-context-menu-fixture-preview");
     }
 
@@ -39,15 +33,14 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
   }, []);
 
   useEffect(() => {
-    if (!isTauri()) {
+    if (!petWindowTransport.isDesktopRuntime()) {
       return;
     }
 
     // Show the window (created hidden) only after React has rendered content,
     // which prevents the white flash that occurs when the window is shown before
     // the webview has painted its first frame.
-    const win = getCurrentWindow();
-    void win.show().then(() => win.setFocus());
+    void petWindowTransport.showWindow().then(() => petWindowTransport.focusWindow());
 
     // Prevent WebView2's built-in context menu from appearing inside the popup.
     const preventContextMenu = (e: Event) => e.preventDefault();
@@ -59,16 +52,20 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
     // Arm the blur listener only after the window has genuinely received focus.
     // setFocus() can fire a spurious blur before focus settles; registering early
     // would catch that transient event and immediately hide the menu.
-    void listen("tauri://focus", () => {
-      unlistenFocus?.();
-      void listen("tauri://blur", () => {
-        void getCurrentWindow().hide();
-      }).then((fn) => {
-        unlisten = fn;
+    void petWindowTransport
+      .subscribeWindowFocus(() => {
+        unlistenFocus?.();
+        void petWindowTransport
+          .subscribeWindowBlur(() => {
+            void petWindowTransport.hideWindow();
+          })
+          .then((fn) => {
+            unlisten = fn;
+          });
+      })
+      .then((fn) => {
+        unlistenFocus = fn;
       });
-    }).then((fn) => {
-      unlistenFocus = fn;
-    });
 
     return () => {
       window.removeEventListener("contextmenu", preventContextMenu);
@@ -78,26 +75,18 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
   }, []);
 
   useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
     const { width, height } = view === "note" ? NOTE_WINDOW_SIZE : MENU_WINDOW_SIZE;
 
-    void getCurrentWindow().setSize(new LogicalSize(width, height));
+    void petWindowTransport.setWindowSize(width, height);
   }, [view]);
 
   function emitSignal(kind: PetWindowInputKind, memo?: string) {
-    if (!isTauri()) {
-      return;
-    }
-
     sequenceRef.current += 1;
 
-    void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
+    petWindowTransport.sendInput({
       sequence: sequenceRef.current,
       petId,
-      windowLabel: getCurrentWindow().label,
+      windowLabel: petWindowTransport.windowLabel(),
       pointerId: 0,
       kind,
       localPoint: { x: 0, y: 0 },
@@ -108,9 +97,7 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
   }
 
   function closeWindow() {
-    if (isTauri()) {
-      void getCurrentWindow().hide();
-    }
+    void petWindowTransport.hideWindow();
   }
 
   if (view === "note") {

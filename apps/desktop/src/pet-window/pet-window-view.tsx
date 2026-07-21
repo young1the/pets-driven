@@ -11,9 +11,6 @@ import { PET_SPEECH_KEY_PREFIX } from "@pets-driven/pet-engine/pets/personalitie
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import { PetSprite, type PetSpriteProps } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
-import { isTauri } from "@tauri-apps/api/core";
-import { emitTo, listen } from "@tauri-apps/api/event";
-import { getCurrentWindow, LogicalPosition, LogicalSize } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type PetConnectNotice, PetConnectNoticeView } from "@/pet-window/pet-connect-notice";
 import type { PetWindowFixturePresentation } from "@/pet-window/pet-window-fixtures";
@@ -28,18 +25,11 @@ import {
 import {
   isFreshPetWindowMessage,
   isSamePetWindowPresentation,
-  PET_WINDOW_BINDING_EVENT,
-  PET_WINDOW_FRAME_EVENT,
-  PET_WINDOW_HOST_LABEL,
-  PET_WINDOW_INPUT_EVENT,
-  PET_WINDOW_RESIZE_EVENT,
-  type PetWindowBindingEvent,
-  type PetWindowFrame,
   type PetWindowInputKind,
   type PetWindowOverlay,
-  type PetWindowResizeEvent,
 } from "@/pet-window/pet-window-messages";
 import { loadPetWindowSpritesheetUrl } from "@/pet-window/pet-window-spritesheet";
+import { petWindowTransport } from "@/pet-window/pet-window-transport";
 import type { PetWindowHitLayout, PetWindowRouteParams } from "@/pet-window/pet-window-types";
 
 type PetWindowViewProps = {
@@ -111,7 +101,7 @@ function surfacePointFromEvent(element: HTMLElement, event: React.MouseEvent<HTM
 }
 
 async function setNativeCursorPassthrough(ignoreCursorEvents: boolean) {
-  if (!isTauri()) {
+  if (!petWindowTransport.isDesktopRuntime()) {
     return;
   }
 
@@ -120,24 +110,18 @@ async function setNativeCursorPassthrough(ignoreCursorEvents: boolean) {
     restoreCursorEventsTimer = null;
   }
 
-  const currentWindow = getCurrentWindow();
-
   if (ignoreCursorEvents) {
     restoreCursorEventsTimer = window.setTimeout(() => {
       restoreCursorEventsTimer = null;
-      void getCurrentWindow().setIgnoreCursorEvents(false);
+      void petWindowTransport.setIgnoreCursorEvents(false);
     }, 180);
   }
 
-  await currentWindow.setIgnoreCursorEvents(ignoreCursorEvents);
+  await petWindowTransport.setIgnoreCursorEvents(ignoreCursorEvents);
 }
 
 async function startNativeWindowDrag() {
-  if (!isTauri()) {
-    return;
-  }
-
-  await getCurrentWindow().startDragging();
+  await petWindowTransport.startDragging();
 }
 
 function movementDirectionForWindow(index: number) {
@@ -258,7 +242,7 @@ export function PetWindowView({
   prototypeDecor,
 }: PetWindowViewProps) {
   const { t } = useTranslation("desktop");
-  const isPreview = !isTauri();
+  const isPreview = !petWindowTransport.isDesktopRuntime();
   const surfaceRef = useRef<HTMLElement | null>(null);
   const visualFrameRef = useRef<HTMLSpanElement | null>(null);
   const dragPauseUntilRef = useRef(0);
@@ -328,138 +312,131 @@ export function PetWindowView({
   }, [isPreview]);
 
   useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
     let unlistenFrame: (() => void) | undefined;
-    const currentWindow = getCurrentWindow();
 
-    void listen<PetWindowFrame>(PET_WINDOW_FRAME_EVENT, (event) => {
-      const frame = event.payload;
-
-      if (frame.petId !== pet.petId) {
-        return;
-      }
-
-      if (!isFreshPetWindowMessage(frameSequenceRef.current, frame.sequence)) {
-        return;
-      }
-
-      if (isResizingRef.current) {
-        frameSequenceRef.current = frame.sequence;
-        return;
-      }
-
-      frameSequenceRef.current = frame.sequence;
-      isPositionDrivenRef.current = true;
-      if (frame.name) {
-        petNameRef.current = frame.name;
-        setPetName(frame.name);
-      }
-      if (frame.cwd !== undefined) cwdRef.current = frame.cwd || null;
-
-      const steadiedActivity = steadyActivity(
-        shownActivityRef.current,
-        frame.sprite.activity ?? null,
-        Date.now(),
-      );
-      // The partner name follows the shown activity: keep it in step when the
-      // new activity wins, hold the previous name while the old label is held.
-      const steadiedPartnerName =
-        steadiedActivity === (frame.sprite.activity ?? null)
-          ? (frame.sprite.partnerName ?? null)
-          : presentationRef.current.partnerName;
-
-      if (
-        !isSamePetWindowPresentation(
-          {
-            sprite: {
-              decisionEmote: presentationRef.current.decisionEmote,
-              animationState: presentationRef.current.animationState,
-              activity: presentationRef.current.activity,
-              partnerName: presentationRef.current.partnerName,
-              working: presentationRef.current.working,
-            },
-            overlay: presentationRef.current.overlay,
-          },
-          {
-            sprite: {
-              ...frame.sprite,
-              activity: steadiedActivity,
-              partnerName: steadiedPartnerName,
-              working: frame.sprite.working ?? false,
-            },
-            overlay: frame.overlay,
-          },
-        )
-      ) {
-        presentationRef.current = {
-          decisionEmote: frame.sprite.decisionEmote ?? null,
-          animationState: frame.sprite.animationState,
-          activity: steadiedActivity,
-          partnerName: steadiedPartnerName,
-          working: frame.sprite.working ?? false,
-          overlay: frame.overlay,
-        };
-        setPresentation({
-          decisionEmote: frame.sprite.decisionEmote ?? null,
-          animationState: frame.sprite.animationState,
-          activity: steadiedActivity,
-          partnerName: steadiedPartnerName,
-          working: frame.sprite.working ?? false,
-          overlay: frame.overlay,
-        });
-      }
-
-      const frameScale = clampPetWindowScale(frame.window.width / PET_CELL_SIZE.width);
-      const nextSize = petWindowSizeForScale(frameScale);
-      if (
-        !appliedSizeRef.current ||
-        appliedSizeRef.current.width !== nextSize.width ||
-        appliedSizeRef.current.height !== nextSize.height
-      ) {
-        appliedSizeRef.current = nextSize;
-        setSpriteScale(frameScale);
-        void currentWindow.setSize(new LogicalSize(nextSize.width, nextSize.height));
-      }
-
-      const nextPosition = {
-        x: Math.round(frame.window.x),
-        y: Math.round(frame.window.y),
-      };
-      const shouldShowWindow = !hasShownAfterFirstPositionRef.current;
-
-      if (
-        appliedPositionRef.current &&
-        appliedPositionRef.current.x === nextPosition.x &&
-        appliedPositionRef.current.y === nextPosition.y
-      ) {
-        if (shouldShowWindow) {
-          hasShownAfterFirstPositionRef.current = true;
-          void currentWindow.show();
+    void petWindowTransport
+      .subscribeFrame((frame) => {
+        if (frame.petId !== pet.petId) {
+          return;
         }
 
-        return;
-      }
+        if (!isFreshPetWindowMessage(frameSequenceRef.current, frame.sequence)) {
+          return;
+        }
 
-      appliedPositionRef.current = nextPosition;
-      if (shouldShowWindow) {
-        hasShownAfterFirstPositionRef.current = true;
-      }
+        if (isResizingRef.current) {
+          frameSequenceRef.current = frame.sequence;
+          return;
+        }
 
-      void currentWindow
-        .setPosition(new LogicalPosition(nextPosition.x, nextPosition.y))
-        .then(() => {
+        frameSequenceRef.current = frame.sequence;
+        isPositionDrivenRef.current = true;
+        if (frame.name) {
+          petNameRef.current = frame.name;
+          setPetName(frame.name);
+        }
+        if (frame.cwd !== undefined) cwdRef.current = frame.cwd || null;
+
+        const steadiedActivity = steadyActivity(
+          shownActivityRef.current,
+          frame.sprite.activity ?? null,
+          Date.now(),
+        );
+        // The partner name follows the shown activity: keep it in step when the
+        // new activity wins, hold the previous name while the old label is held.
+        const steadiedPartnerName =
+          steadiedActivity === (frame.sprite.activity ?? null)
+            ? (frame.sprite.partnerName ?? null)
+            : presentationRef.current.partnerName;
+
+        if (
+          !isSamePetWindowPresentation(
+            {
+              sprite: {
+                decisionEmote: presentationRef.current.decisionEmote,
+                animationState: presentationRef.current.animationState,
+                activity: presentationRef.current.activity,
+                partnerName: presentationRef.current.partnerName,
+                working: presentationRef.current.working,
+              },
+              overlay: presentationRef.current.overlay,
+            },
+            {
+              sprite: {
+                ...frame.sprite,
+                activity: steadiedActivity,
+                partnerName: steadiedPartnerName,
+                working: frame.sprite.working ?? false,
+              },
+              overlay: frame.overlay,
+            },
+          )
+        ) {
+          presentationRef.current = {
+            decisionEmote: frame.sprite.decisionEmote ?? null,
+            animationState: frame.sprite.animationState,
+            activity: steadiedActivity,
+            partnerName: steadiedPartnerName,
+            working: frame.sprite.working ?? false,
+            overlay: frame.overlay,
+          };
+          setPresentation({
+            decisionEmote: frame.sprite.decisionEmote ?? null,
+            animationState: frame.sprite.animationState,
+            activity: steadiedActivity,
+            partnerName: steadiedPartnerName,
+            working: frame.sprite.working ?? false,
+            overlay: frame.overlay,
+          });
+        }
+
+        const frameScale = clampPetWindowScale(frame.window.width / PET_CELL_SIZE.width);
+        const nextSize = petWindowSizeForScale(frameScale);
+        if (
+          !appliedSizeRef.current ||
+          appliedSizeRef.current.width !== nextSize.width ||
+          appliedSizeRef.current.height !== nextSize.height
+        ) {
+          appliedSizeRef.current = nextSize;
+          setSpriteScale(frameScale);
+          void petWindowTransport.setWindowSize(nextSize.width, nextSize.height);
+        }
+
+        const nextPosition = {
+          x: Math.round(frame.window.x),
+          y: Math.round(frame.window.y),
+        };
+        const shouldShowWindow = !hasShownAfterFirstPositionRef.current;
+
+        if (
+          appliedPositionRef.current &&
+          appliedPositionRef.current.x === nextPosition.x &&
+          appliedPositionRef.current.y === nextPosition.y
+        ) {
           if (shouldShowWindow) {
-            return currentWindow.show();
+            hasShownAfterFirstPositionRef.current = true;
+            void petWindowTransport.showWindow();
+          }
+
+          return;
+        }
+
+        appliedPositionRef.current = nextPosition;
+        if (shouldShowWindow) {
+          hasShownAfterFirstPositionRef.current = true;
+        }
+
+        void petWindowTransport.setWindowPosition(nextPosition.x, nextPosition.y).then(() => {
+          if (shouldShowWindow) {
+            return petWindowTransport.showWindow();
           }
 
           return undefined;
         });
-    }).then((unlisten) => {
-      unlistenFrame = unlisten;
-    });
+      })
+      .then((unlisten) => {
+        unlistenFrame = unlisten;
+      });
 
     return () => {
       unlistenFrame?.();
@@ -467,50 +444,47 @@ export function PetWindowView({
   }, [pet.petId]);
 
   useEffect(() => {
-    if (!isTauri()) {
-      return;
-    }
-
     let unlistenBinding: (() => void) | undefined;
 
-    void listen<PetWindowBindingEvent>(PET_WINDOW_BINDING_EVENT, (event) => {
-      const binding = event.payload;
+    void petWindowTransport
+      .subscribeBinding((binding) => {
+        if (binding.petId !== pet.petId) {
+          return;
+        }
 
-      if (binding.petId !== pet.petId) {
-        return;
-      }
+        if (binding.isConnecting) {
+          connectStartTitleRef.current = binding.title;
+          connectNoticeIdRef.current += 1;
+          setConnectNotice({
+            id: connectNoticeIdRef.current,
+            text: t("petWindow.connectPrompt"),
+            transient: false,
+          });
+          return;
+        }
 
-      if (binding.isConnecting) {
-        connectStartTitleRef.current = binding.title;
+        // A non-connecting binding update that isn't the result of a connect the
+        // user just started (e.g. a loading/bind update from starting a session)
+        // is silent — it leaves any live notice, and its timer, untouched.
+        if (connectStartTitleRef.current === undefined) {
+          return;
+        }
+
+        const isNewBinding =
+          binding.title !== null && binding.title !== connectStartTitleRef.current;
+        connectStartTitleRef.current = undefined;
         connectNoticeIdRef.current += 1;
         setConnectNotice({
           id: connectNoticeIdRef.current,
-          text: t("petWindow.connectPrompt"),
-          transient: false,
+          text: isNewBinding
+            ? t("petWindow.connectedTo", { title: binding.title })
+            : t("petWindow.connectCancelled"),
+          transient: true,
         });
-        return;
-      }
-
-      // A non-connecting binding update that isn't the result of a connect the
-      // user just started (e.g. a loading/bind update from starting a session)
-      // is silent — it leaves any live notice, and its timer, untouched.
-      if (connectStartTitleRef.current === undefined) {
-        return;
-      }
-
-      const isNewBinding = binding.title !== null && binding.title !== connectStartTitleRef.current;
-      connectStartTitleRef.current = undefined;
-      connectNoticeIdRef.current += 1;
-      setConnectNotice({
-        id: connectNoticeIdRef.current,
-        text: isNewBinding
-          ? t("petWindow.connectedTo", { title: binding.title })
-          : t("petWindow.connectCancelled"),
-        transient: true,
+      })
+      .then((unlisten) => {
+        unlistenBinding = unlisten;
       });
-    }).then((unlisten) => {
-      unlistenBinding = unlisten;
-    });
 
     return () => {
       unlistenBinding?.();
@@ -549,10 +523,6 @@ export function PetWindowView({
     event: React.MouseEvent<HTMLElement>,
     screenPointOverride?: { x: number; y: number },
   ) {
-    if (!isTauri()) {
-      return;
-    }
-
     const surface = visualFrameRef.current;
 
     if (!surface) {
@@ -563,11 +533,11 @@ export function PetWindowView({
     inputSequenceRef.current += 1;
     const sequence = inputSequenceRef.current;
 
-    void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
+    petWindowTransport.sendInput({
       sequence,
       petId: pet.petId,
       petName: petNameRef.current ?? undefined,
-      windowLabel: getCurrentWindow().label,
+      windowLabel: petWindowTransport.windowLabel(),
       pointerId: pointerIdFromEvent(event),
       kind,
       localPoint,
@@ -582,15 +552,11 @@ export function PetWindowView({
 
   // Coordinate-free signal to the host for window focus/bind/start actions.
   function emitPetWindowSignal(kind: PetWindowInputKind) {
-    if (!isTauri()) {
-      return;
-    }
-
     inputSequenceRef.current += 1;
-    void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, {
+    petWindowTransport.sendInput({
       sequence: inputSequenceRef.current,
       petId: pet.petId,
-      windowLabel: getCurrentWindow().label,
+      windowLabel: petWindowTransport.windowLabel(),
       pointerId: 0,
       kind,
       localPoint: { x: 0, y: 0 },
@@ -628,9 +594,7 @@ export function PetWindowView({
       appliedSizeRef.current = nextSize;
       resizeAppliedScaleRef.current = newScale;
       setSpriteScale(newScale);
-      if (isTauri()) {
-        void getCurrentWindow().setSize(new LogicalSize(nextSize.width, nextSize.height));
-      }
+      void petWindowTransport.setWindowSize(nextSize.width, nextSize.height);
       return;
     }
 
@@ -765,12 +729,10 @@ export function PetWindowView({
       }
 
       appliedSizeRef.current = petWindowSizeForScale(finalScale);
-      if (isTauri()) {
-        void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_RESIZE_EVENT, {
-          petId: pet.petId,
-          scale: finalScale,
-        } satisfies PetWindowResizeEvent);
-      }
+      petWindowTransport.sendResize({
+        petId: pet.petId,
+        scale: finalScale,
+      });
       return;
     }
 
