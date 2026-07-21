@@ -9,15 +9,15 @@
 프로젝트마다 작은 컴패니언 하나가 데스크톱에 삽니다. 스스로 걷고, 졸고, 놀다가 —
 자신의 에이전트가 당신을 필요로 하는 순간 번쩍 주의를 요청합니다.</p>
 
-<!-- TODO(maintainer): 저장소가 공개되면 배지를 실제 repo로 연결 -->
+[![Latest release](https://img.shields.io/github/v/release/young1the/pets-driven?sort=semver&color=F95E9E&label=release)](https://github.com/young1the/pets-driven/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/young1the/pets-driven/total?color=16B8A6)](https://github.com/young1the/pets-driven/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)
-![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)
 ![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20%2B%20React-24C8DB.svg)
 
 [English](./README.md) · **한국어**
 
-[기능](#-기능) · [펫 소개](#-펫-소개) · [작동 방식](#-작동-방식) · [시작하기](#-시작하기) · [에이전트 연동](#-에이전트-연동)
+[다운로드](#-다운로드) · [기능](#-기능) · [펫 소개](#-펫-소개) · [작동 방식](#-작동-방식) · [시작하기](#-시작하기) · [에이전트 연동](#-에이전트-연동)
 
 </div>
 
@@ -100,10 +100,21 @@ flowchart LR
 전체 도메인 모델, 공통 용어(ubiquitous language), 아키텍처 다이어그램은
 [`CONTEXT.md`](./CONTEXT.md)를 참고하세요.
 
+## ⬇️ 다운로드
+
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Installer-F95E9E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/young1the/pets-driven/releases/latest)
+
+**[최신 릴리스](https://github.com/young1the/pets-driven/releases/latest)**에서 설치 파일을 받으세요 —
+`.exe`를 내려받아 실행하면 됩니다. 이 링크는 항상 가장 최근에 공개된 버전을 가리킵니다.
+
+> macOS·Linux 빌드는 아직 배포 전입니다. [Tauri](https://tauri.app)로 만들어졌기에 로드맵에
+> 있으며, 그전까지는 [소스에서 빌드](#-시작하기)하세요.
+
 ## 🚀 시작하기
 
-> **상태:** 초기 개발 단계(`v0.1.0`). 현재 번들 타깃은 Windows이며, [Tauri](https://tauri.app)로
-> 만들어졌기에 macOS와 Linux는 로드맵에 있습니다. 지금은 소스에서 실행하세요.
+> **상태:** 초기 개발 단계. 미리 빌드된 **Windows** 설치 파일은
+> [릴리스 페이지](https://github.com/young1the/pets-driven/releases/latest)에 있고, macOS와 Linux는
+> 로드맵에 있습니다. 직접 손대며 개발하고 싶다면 아래에서 소스로 빌드하세요.
 
 ### 사전 준비
 
