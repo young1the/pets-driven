@@ -68,7 +68,10 @@ export function useAgentEventIngress({
     };
 
     loadClaudeHookIngressStatus();
-    const intervalId = window.setInterval(loadClaudeHookIngressStatus, CLAUDE_HOOK_STATUS_REFRESH_MS);
+    const intervalId = window.setInterval(
+      loadClaudeHookIngressStatus,
+      CLAUDE_HOOK_STATUS_REFRESH_MS,
+    );
 
     return () => {
       isMounted = false;

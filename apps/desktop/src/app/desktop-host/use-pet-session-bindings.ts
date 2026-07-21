@@ -20,7 +20,10 @@ type UsePetSessionBindingsParams = {
  * in-memory binding and launch-guard maps; the host drives these from the
  * pet-window input stream.
  */
-export function usePetSessionBindings({ stateRef, setPetWindowError }: UsePetSessionBindingsParams) {
+export function usePetSessionBindings({
+  stateRef,
+  setPetWindowError,
+}: UsePetSessionBindingsParams) {
   // petId -> the window this pet is bound to. In-memory only; HWNDs go stale
   // across restarts, so a dead focus just clears the binding.
   const windowBindingsRef = useRef<Map<string, ForeignWindow>>(new Map());
