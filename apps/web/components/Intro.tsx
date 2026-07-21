@@ -1,8 +1,7 @@
-"use client";
-
 import { PetAvatar, type PetAvatarStatus, type PetName } from "@pets-driven/design-system";
-import { useTranslation } from "@pets-driven/i18n";
-import { useEffect, useRef } from "react";
+import type { Locale } from "@pets-driven/i18n/config";
+import { getServerTranslation } from "@pets-driven/i18n/server";
+import { IntroScenes } from "@/components/IntroScenes";
 
 /**
  * Pets-Driven Intro — the official homepage.
@@ -141,82 +140,11 @@ function EyePair({ c }: { c: Creature }) {
   );
 }
 
-export default function Intro() {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const { t } = useTranslation("landing");
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-
-    // ---- Scroll-pinned scenes: drive --p on each stage ----
-    const pins = Array.from(root.querySelectorAll<HTMLElement>("[data-pin]"));
-    pins.forEach((sec) => {
-      const len = parseFloat(sec.getAttribute("data-len") || "300") || 300;
-      sec.style.height = `${len}vh`;
-    });
-
-    let ticking = false;
-    const update = () => {
-      const vh = window.innerHeight;
-      for (const sc of pins) {
-        const r = sc.getBoundingClientRect();
-        const len = sc.offsetHeight - vh;
-        let pr = len > 0 ? -r.top / len : r.top < 0 ? 1 : 0;
-        pr = Math.max(0, Math.min(1, pr));
-        const stage = sc.querySelector<HTMLElement>(".stage") || (sc as HTMLElement);
-        stage.style.setProperty("--p", pr.toFixed(4));
-      }
-    };
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        update();
-        ticking = false;
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-
-    // ---- Reveal-on-enter ----
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          const el = e.target as HTMLElement;
-          el.style.opacity = "1";
-          el.style.transform = "none";
-          io.unobserve(el);
-        });
-      },
-      { threshold: 0.18 },
-    );
-    root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
-      io.observe(el);
-    });
-
-    update();
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      io.disconnect();
-    };
-  }, []);
+export default function Intro({ locale }: { locale: Locale }) {
+  const { t } = getServerTranslation(locale, "landing");
 
   return (
-    <div
-      className="pdd-root"
-      id="pddRoot"
-      ref={rootRef}
-      style={{
-        fontFamily: "var(--font-body)",
-        color: "var(--ink-800)",
-        background: "#FFFCFD",
-        WebkitFontSmoothing: "antialiased",
-      }}
-    >
+    <IntroScenes>
       {/* ===================== ACT I — THE WATCH ===================== */}
       <section
         className="scene"
@@ -856,6 +784,6 @@ export default function Intro() {
           </div>
         </div>
       </section>
-    </div>
+    </IntroScenes>
   );
 }
