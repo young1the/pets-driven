@@ -14,6 +14,8 @@
 }
 
 .pd-eterm__frame {
+  /* Positioning context for the onboarding coach overlay. */
+  position: relative;
   flex: 1;
   min-height: 0;
   box-sizing: border-box;
@@ -87,11 +89,12 @@
   white-space: nowrap;
 }
 
-.pd-eterm__restart {
+/* Both sit together at the right end of the bar; the first one claims the gap. */
+.pd-eterm__restart,
+.pd-eterm__tips {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
   border: 0;
   border-radius: 9px;
   padding: 6px 11px;
@@ -105,7 +108,12 @@
     color 130ms ease,
     background 130ms ease;
 }
-.pd-eterm__restart:hover {
+.pd-eterm__restart {
+  margin-left: auto;
+}
+
+.pd-eterm__restart:hover,
+.pd-eterm__tips:hover {
   color: var(--term-fg);
   background: rgba(255, 255, 255, 0.06);
 }

@@ -17,7 +17,38 @@
     "defaultFolder": "기본 폴더",
     "restart": "새 터미널",
     "exited": "[프로세스가 종료되었습니다]",
-    "unavailable": "인앱 터미널은 데스크탑 앱에서만 사용할 수 있어요."
+    "unavailable": "인앱 터미널은 데스크탑 앱에서만 사용할 수 있어요.",
+    "onboarding": {
+      "showTips": "팁 보기",
+      "next": "다음",
+      "start": "시작하기",
+      "skip": "그만 볼래요",
+      "close": "닫기",
+      "copyHint": "클릭해서 복사",
+      "copied": "복사했어요!",
+      "skills": {
+        "hatch": {
+          "title": "펫 부화시키기",
+          "blurb": "지금 폴더에 어울리는 펫을 만들어 등록해요. 여기서 시작하세요.",
+          "example": "/pets-driven:hatch ~/projects 아래의 프로젝트들을 분석하고 각각 잘 어울리는 펫들을 만들어줘"
+        },
+        "bring": {
+          "title": "프로젝트 데려오기",
+          "blurb": "원격 저장소를 클론하거나 로컬 저장소의 워크트리를 만들어 펫에게 일감을 줘요.",
+          "example": "/pets-driven:bring github.com/acme/web 를 이 폴더로 가져와서 펫이랑 연결해줘"
+        },
+        "attach": {
+          "title": "펫과 연결 확인",
+          "blurb": "이 터미널이 폴더에 묶인 펫과 잘 이어졌는지 핑을 보내 확인해요.",
+          "example": "/pets-driven:attach 지금 터미널이 어떤 펫에 붙어 있는지 확인해줘"
+        },
+        "carry": {
+          "title": "다음 에이전트로 넘기기",
+          "blurb": "작업한 내용과 위치(워크트리·브랜치)를 요약해 다음 에이전트가 이어받게 해요.",
+          "example": "/pets-driven:carry 지금까지 한 작업을 다른 에이전트가 이어받게 정리해줘"
+        }
+      }
+    }
   },
   "home": {
     "eyebrow": "내 무리",

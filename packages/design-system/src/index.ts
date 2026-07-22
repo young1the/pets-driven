@@ -38,6 +38,7 @@ export {
   PlusIcon,
   RefreshIcon,
   SearchIcon,
+  SparkleIcon,
   TerminalIcon,
   TrashIcon,
   WrenchIcon,
