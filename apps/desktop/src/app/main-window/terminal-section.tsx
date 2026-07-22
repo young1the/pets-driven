@@ -1,6 +1,7 @@
-import { FolderIcon, RefreshIcon } from "@pets-driven/design-system";
+import { FolderIcon, RefreshIcon, SparkleIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import { lazy, Suspense, useState } from "react";
+import { TerminalOnboarding, useTerminalOnboarding } from "@/app/main-window/terminal-onboarding";
 import "@/app/main-window/terminal-section.css";
 
 // xterm (plus its fit addon and CSS) is a heavy dependency that only matters
@@ -35,6 +36,7 @@ export function TerminalSection({
   const [cwd, setCwd] = useState<string | null>(initialCwd);
   // Bumped to force a clean remount of the terminal (new PTY) on "restart".
   const [restartNonce, setRestartNonce] = useState(0);
+  const onboarding = useTerminalOnboarding();
 
   async function chooseFolder() {
     const path = await pickDirectory();
@@ -72,6 +74,13 @@ export function TerminalSection({
             <RefreshIcon size={14} />
             {t("terminal.restart")}
           </button>
+          {/* Only offered once the coach is off screen — it is the way back. */}
+          {!onboarding.open && (
+            <button className="pd-eterm__tips" onClick={onboarding.show} type="button">
+              <SparkleIcon size={14} />
+              {t("terminal.onboarding.showTips")}
+            </button>
+          )}
         </div>
 
         {available ? (
@@ -87,6 +96,8 @@ export function TerminalSection({
         ) : (
           <div className="pd-eterm__unavailable">{t("terminal.unavailable")}</div>
         )}
+
+        {onboarding.open && <TerminalOnboarding dismiss={onboarding.dismiss} />}
       </div>
     </div>
   );

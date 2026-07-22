@@ -1,0 +1,161 @@
+/* Cato's coaching bubble, anchored to the bottom-right of the terminal window
+   (`.pd-eterm__frame` is the positioning context). Sits on the dark --term-*
+   surface like the rest of the tab. */
+.pd-term-onb {
+  position: absolute;
+  right: 24px;
+  bottom: 22px;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  /* Only the bubble itself takes clicks; the pet never blocks the terminal. */
+  pointer-events: none;
+}
+
+.pd-term-onb__bubble {
+  position: relative;
+  width: 320px;
+  box-sizing: border-box;
+  padding: 14px 16px 12px;
+  border-radius: 16px;
+  background: var(--term-bg-soft);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  color: var(--term-fg);
+  pointer-events: auto;
+}
+
+/* Tail pointing at Cato. */
+.pd-term-onb__bubble::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  bottom: 24px;
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  background: var(--term-bg-soft);
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.pd-term-onb__head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.pd-term-onb__count {
+  color: var(--term-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.pd-term-onb__close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--term-muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+.pd-term-onb__close:hover {
+  color: var(--term-fg);
+}
+
+.pd-term-onb__title {
+  margin: 0 0 4px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.pd-term-onb__blurb {
+  margin: 0 0 10px;
+  color: var(--term-muted);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* Dashed to read as "a thing you can take", not a thing already run. */
+.pd-term-onb__example {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--term-prompt);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  transition: border-color 130ms ease;
+}
+.pd-term-onb__example:hover {
+  border-color: var(--term-prompt);
+}
+
+.pd-term-onb__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pd-term-onb__actions button {
+  border: 0;
+  border-radius: 9px;
+  padding: 7px 12px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--term-muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    color 130ms ease,
+    background 130ms ease;
+}
+.pd-term-onb__actions button:hover {
+  color: var(--term-fg);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pd-term-onb__next {
+  margin-left: auto;
+  background: var(--color-primary);
+  color: #fff;
+}
+.pd-term-onb__next:hover {
+  background: var(--color-primary);
+  color: #fff;
+  filter: brightness(1.08);
+}
+
+.pd-term-onb__pet {
+  display: flex;
+  align-items: flex-end;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+  animation: pd-term-onb-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes pd-term-onb-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-term-onb__pet {
+    animation: none;
+  }
+}
