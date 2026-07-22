@@ -80,6 +80,30 @@ describe("Personality Catalog behavior signatures", () => {
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.aloof.primaryDecision).toBe("withdraw");
   });
 
+  it("gives every catalog entry a distinct second signature beat", () => {
+    const secondaries = Object.values(PERSONALITY_BEHAVIOR_SIGNATURES).map(
+      (signature) => signature.secondaryDecision,
+    );
+    // Every preset carries a second signature that is not its first, and no two
+    // presets share the same second beat — two exclusive silhouettes each.
+    for (const signature of Object.values(PERSONALITY_BEHAVIOR_SIGNATURES)) {
+      expect(signature.secondaryDecision).not.toBe(signature.primaryDecision);
+    }
+    expect(new Set(secondaries).size).toBe(secondaries.length);
+  });
+
+  it("biases each personality toward its own second signature", () => {
+    expect(signedDecisionScore("lazy", "lounge", 0)).toBeGreaterThan(
+      signedDecisionScore("playful", "lounge", 0),
+    );
+    expect(signedDecisionScore("shrewd", "appraise", 0)).toBeGreaterThan(
+      signedDecisionScore("gentle", "appraise", 0),
+    );
+    expect(signedDecisionScore("feisty", "posture", 0)).toBeGreaterThan(
+      signedDecisionScore("reserved", "posture", 0),
+    );
+  });
+
   it("gives every remaining catalog entry an exclusive primary action", () => {
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.playful.primaryDecision).toBe("play-romp");
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.curious.primaryDecision).toBe("inspect");

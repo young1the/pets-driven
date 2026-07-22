@@ -90,9 +90,9 @@ const STAND_SPACING_BW = 1.5;
 const SOCIAL_SPEECH_KEY_PREFIX = `${PET_SPEECH_KEY_PREFIX}.social`;
 
 // Said by the pet that just tagged its friend.
-const CHASE_CATCH_LINE_COUNT = 4;
-const GREET_LINE_COUNT = 4;
-const CHAT_LINE_COUNT = 10;
+const CHASE_CATCH_LINE_COUNT = 8;
+const GREET_LINE_COUNT = 8;
+const CHAT_LINE_COUNT = 20;
 
 // ── Small helpers ────────────────────────────────────────────────────────────
 

@@ -37,7 +37,7 @@ describe("Personality Catalog voice profiles", () => {
   it("resolves a random in-range variant key at speak time", () => {
     const random = createSeededRandom(7);
     const key = resolveSpeechVariant("petSpeech.playful.idle", random);
-    expect(key).toMatch(/^petSpeech\.playful\.idle\.[0-3]$/);
+    expect(key).toMatch(/^petSpeech\.playful\.idle\.[0-7]$/);
     const variant = Number(key?.split(".").at(-1));
     expect(variant).toBeGreaterThanOrEqual(0);
     expect(variant).toBeLessThan(PET_SPEECH_VARIANT_COUNT);
@@ -58,7 +58,7 @@ describe("Personality Catalog voice profiles", () => {
     const failed = personalityAcknowledgeFeedback("skittish", "failed", random);
     expect(failed).toMatchObject({ mood: "confused", emote: "exclaim" });
     expect(failed?.speech).toMatch(
-      new RegExp(`^${PET_SPEECH_KEY_PREFIX}\\.skittish\\.ackFailed\\.[0-3]$`),
+      new RegExp(`^${PET_SPEECH_KEY_PREFIX}\\.skittish\\.ackFailed\\.[0-7]$`),
     );
     expect(personalityAcknowledgeFeedback("steady", "waiting", random)).toMatchObject({
       mood: "working",

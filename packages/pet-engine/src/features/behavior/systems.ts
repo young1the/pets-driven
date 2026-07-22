@@ -112,6 +112,20 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   strut: 10_000,
   "offer-comfort": 10_000,
   "stand-lookout": 8_000,
+  // Second signature poses — occasional treats like the first tier.
+  caper: 10_000,
+  "check-in": 10_000,
+  "hide-away": 10_000,
+  "explore-nook": 10_000,
+  "tidy-up": 10_000,
+  posture: 10_000,
+  nurture: 10_000,
+  scheme: 10_000,
+  lounge: 14_000,
+  center: 12_000,
+  preen: 10_000,
+  "startle-scan": 8_000,
+  appraise: 10_000,
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
@@ -243,7 +257,21 @@ type ExpressivePoseKind =
   | "inspect"
   | "follow-routine"
   | "offer-comfort"
-  | "stand-lookout";
+  | "stand-lookout"
+  // Second signature pose per personality.
+  | "caper"
+  | "check-in"
+  | "hide-away"
+  | "explore-nook"
+  | "tidy-up"
+  | "posture"
+  | "nurture"
+  | "scheme"
+  | "lounge"
+  | "center"
+  | "preen"
+  | "startle-scan"
+  | "appraise";
 
 // ── Expressive idle poses ──────────────────────────────────────────────────
 // Sustained, stationary gestures that exercise the otherwise agent-only sprite
@@ -266,6 +294,20 @@ const EXPRESSIVE_POSE_DURATIONS: Record<ExpressivePoseKind, { base: number; jitt
   "follow-routine": { base: 4_000, jitter: 2_000 },
   "offer-comfort": { base: 3_000, jitter: 1_500 },
   "stand-lookout": { base: 2_500, jitter: 1_500 },
+  // Second signature poses — same tier as their sibling beats.
+  caper: { base: 3_000, jitter: 2_000 },
+  "check-in": { base: 3_000, jitter: 1_500 },
+  "hide-away": { base: 4_000, jitter: 2_500 },
+  "explore-nook": { base: 3_000, jitter: 2_000 },
+  "tidy-up": { base: 3_500, jitter: 2_000 },
+  posture: { base: 2_800, jitter: 1_500 },
+  nurture: { base: 3_000, jitter: 1_500 },
+  scheme: { base: 3_000, jitter: 2_000 },
+  lounge: { base: 6_000, jitter: 4_000 },
+  center: { base: 5_000, jitter: 3_000 },
+  preen: { base: 3_500, jitter: 2_000 },
+  "startle-scan": { base: 2_200, jitter: 1_500 },
+  appraise: { base: 3_500, jitter: 2_000 },
 };
 
 /** Mood/emote cue attached to each expressive pose (a PetExpressionState). */
@@ -293,6 +335,21 @@ const EXPRESSIVE_POSE_CUES: Record<
   "follow-routine": { mood: "working", emote: "none" },
   "offer-comfort": { mood: "love", emote: "heart" },
   "stand-lookout": { mood: "confused", emote: "exclaim" },
+  // Second signature poses — each leans away from its sibling's cue so the two
+  // beats read as distinct moments of the same personality.
+  caper: { mood: "excited", emote: "note" },
+  "check-in": { mood: "love", emote: "heart" },
+  "hide-away": { mood: "thinking", emote: "dots" },
+  "explore-nook": { mood: "thinking", emote: "question" },
+  "tidy-up": { mood: "working", emote: "note" },
+  posture: { mood: "excited", emote: "exclaim" },
+  nurture: { mood: "love", emote: "heart" },
+  scheme: { mood: "excited", emote: "sparkle" },
+  lounge: { mood: "sleepy", emote: "zzz" },
+  center: { mood: "happy", emote: "dots" },
+  preen: { mood: "working", emote: "none" },
+  "startle-scan": { mood: "confused", emote: "sweat" },
+  appraise: { mood: "thinking", emote: "dots" },
 };
 
 function expressivePoseDurationMs(kind: ExpressivePoseKind, random: RandomSource): number {
@@ -1982,6 +2039,106 @@ function scoreStandLookout(p: PersonalityComponent): number {
   return 0.05 + p.neuroticism * 0.4 + (1 - p.extraversion) * 0.08;
 }
 
+// ── Second signature pose score functions ──────────────────────────────────
+// A second catalog-exclusive beat per personality. Bases mirror the first
+// signature's tier so the two poses alternate rather than one crowding out the
+// other; each still leans on the axes that best explain the gesture.
+
+function scoreCaper(p: PersonalityComponent, drives?: DrivesComponent): number {
+  const base = 0.05 + p.extraversion * 0.3 + p.openness * 0.2 - p.neuroticism * 0.15;
+  if (!drives) return base;
+  // A rested, playful pet has energy to burn on a caper.
+  return base + driveResponseCurve(drives.energy) * driveWeight(0.2, restSensitivity(p));
+}
+
+function scoreCheckIn(p: PersonalityComponent, drives?: DrivesComponent): number {
+  const base = 0.05 + p.agreeableness * 0.3 + p.conscientiousness * 0.15;
+  if (!drives) return base;
+  return base + driveResponseCurve(drives.social) * driveWeight(0.25, socialSensitivity(p));
+}
+
+function scoreHideAway(p: PersonalityComponent): number {
+  return 0.05 + (1 - p.extraversion) * 0.3 + p.neuroticism * 0.1;
+}
+
+function scoreExploreNook(p: PersonalityComponent, drives?: DrivesComponent): number {
+  const base = 0.05 + p.openness * 0.3 + (1 - p.extraversion) * 0.08;
+  if (!drives) return base;
+  return base + driveResponseCurve(drives.curiosity) * driveWeight(0.35, curiositySensitivity(p));
+}
+
+function scoreTidyUp(p: PersonalityComponent): number {
+  return 0.05 + p.conscientiousness * 0.35 + (1 - p.neuroticism) * 0.08;
+}
+
+function scorePosture(p: PersonalityComponent): number {
+  return 0.05 + p.extraversion * 0.3 + (1 - p.neuroticism) * 0.15;
+}
+
+function scoreNurture(p: PersonalityComponent, drives?: DrivesComponent): number {
+  const base = 0.05 + p.agreeableness * 0.35 + p.extraversion * 0.1;
+  if (!drives) return base;
+  return base + driveResponseCurve(drives.social) * driveWeight(0.2, socialSensitivity(p));
+}
+
+function scoreScheme(p: PersonalityComponent): number {
+  return 0.05 + p.extraversion * 0.25 + p.openness * 0.2 + (1 - p.conscientiousness) * 0.15;
+}
+
+function scoreLounge(p: PersonalityComponent, drives?: DrivesComponent): number {
+  const base = 0.05 + (1 - p.extraversion) * 0.2 + (1 - p.conscientiousness) * 0.1;
+  if (!drives) return base;
+  return base + driveResponseCurve(1 - drives.energy) * driveWeight(0.4, restSensitivity(p));
+}
+
+function scoreCenter(p: PersonalityComponent): number {
+  return 0.05 + p.conscientiousness * 0.15 + (1 - p.neuroticism) * 0.2;
+}
+
+function scorePreen(p: PersonalityComponent): number {
+  return 0.05 + (1 - p.agreeableness) * 0.25 + (1 - p.extraversion) * 0.12;
+}
+
+function scoreStartleScan(p: PersonalityComponent): number {
+  return 0.05 + p.neuroticism * 0.4 + (1 - p.extraversion) * 0.1;
+}
+
+function scoreAppraise(p: PersonalityComponent, drives?: DrivesComponent): number {
+  const base = 0.05 + p.openness * 0.25 + p.conscientiousness * 0.2 - p.extraversion * 0.08;
+  if (!drives) return base;
+  return base + driveResponseCurve(drives.curiosity) * driveWeight(0.3, curiositySensitivity(p));
+}
+
+/**
+ * Each catalog personality's second signature pose, keyed by catalog id. The
+ * decision system offers exactly this pose (in addition to the personality's
+ * first signature) whenever the pet is a grounded walker, so every preset shows
+ * two distinct catalog-exclusive silhouettes across its autonomous life.
+ */
+const SECOND_SIGNATURE_POSE: Partial<
+  Record<
+    string,
+    {
+      kind: ExpressivePoseKind;
+      score: (p: PersonalityComponent, drives?: DrivesComponent) => number;
+    }
+  >
+> = {
+  playful: { kind: "caper", score: scoreCaper },
+  attentive: { kind: "check-in", score: scoreCheckIn },
+  reserved: { kind: "hide-away", score: scoreHideAway },
+  curious: { kind: "explore-nook", score: scoreExploreNook },
+  steady: { kind: "tidy-up", score: scoreTidyUp },
+  feisty: { kind: "posture", score: scorePosture },
+  gentle: { kind: "nurture", score: scoreNurture },
+  mischievous: { kind: "scheme", score: scoreScheme },
+  lazy: { kind: "lounge", score: scoreLounge },
+  zen: { kind: "center", score: scoreCenter },
+  aloof: { kind: "preen", score: scorePreen },
+  skittish: { kind: "startle-scan", score: scoreStartleScan },
+  shrewd: { kind: "appraise", score: scoreAppraise },
+};
+
 /**
  * Personality-modulated wander radii.
  * "near": high N → tighter range but still meaningfully visible movement.
@@ -2621,6 +2778,21 @@ export function runBehaviorDecisionSystem(
             }),
           });
         }
+
+        // Second signature pose per personality — a catalog-exclusive stationary
+        // beat that stands alongside each preset's first signature. All hold a
+        // still pose, so they share the expressive materialization path; only
+        // the choreography, cue, and gating differ.
+        const secondSignature = SECOND_SIGNATURE_POSE[personality.catalogId ?? ""];
+        if (secondSignature) {
+          pushCandidate(candidates, components, id, now, {
+            kind: secondSignature.kind,
+            score: secondSignature.score(personality, drives),
+            build: () => ({
+              activityDurationMs: expressivePoseDurationMs(secondSignature.kind, random),
+            }),
+          });
+        }
       }
 
       pushCandidate(candidates, components, id, now, {
@@ -2842,7 +3014,21 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
       case "inspect":
       case "follow-routine":
       case "offer-comfort":
-      case "stand-lookout": {
+      case "stand-lookout":
+      // Second signature poses share the stationary materialization path.
+      case "caper":
+      case "check-in":
+      case "hide-away":
+      case "explore-nook":
+      case "tidy-up":
+      case "posture":
+      case "nurture":
+      case "scheme":
+      case "lounge":
+      case "center":
+      case "preen":
+      case "startle-scan":
+      case "appraise": {
         setPetSteering(components, id, "stand");
         clearMotionTarget(components, id);
         const cue = EXPRESSIVE_POSE_CUES[token.kind];
@@ -2881,6 +3067,31 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
           adjustDrive(components, id, { energy: 0.08 });
         } else if (token.kind === "offer-comfort") {
           adjustDrive(components, id, { social: -0.2 });
+        } else if (token.kind === "caper") {
+          // Bouncing about burns a little energy but scratches the play itch.
+          adjustDrive(components, id, { energy: -0.05 });
+        } else if (token.kind === "check-in") {
+          adjustDrive(components, id, { social: -0.15 });
+        } else if (token.kind === "hide-away") {
+          adjustDrive(components, id, { curiosity: -0.1 });
+        } else if (token.kind === "explore-nook") {
+          adjustDrive(components, id, { curiosity: -0.3 });
+        } else if (token.kind === "tidy-up") {
+          adjustDrive(components, id, { energy: 0.08 });
+        } else if (token.kind === "posture") {
+          adjustDrive(components, id, { energy: -0.05 });
+        } else if (token.kind === "nurture") {
+          adjustDrive(components, id, { social: -0.2 });
+        } else if (token.kind === "scheme") {
+          adjustDrive(components, id, { curiosity: -0.1 });
+        } else if (token.kind === "lounge") {
+          adjustDrive(components, id, { energy: 0.2 });
+        } else if (token.kind === "center") {
+          adjustDrive(components, id, { energy: 0.1 });
+        } else if (token.kind === "preen") {
+          adjustDrive(components, id, { energy: 0.05 });
+        } else if (token.kind === "appraise") {
+          adjustDrive(components, id, { curiosity: -0.2 });
         }
         break;
       }

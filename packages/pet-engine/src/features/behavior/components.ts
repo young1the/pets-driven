@@ -87,6 +87,21 @@ export type BehaviorDecisionKind =
   | "strut"
   | "offer-comfort"
   | "stand-lookout"
+  // Second signature beat per personality — an additional catalog-exclusive
+  // pose so every preset is known for two readable silhouettes, not one.
+  | "caper" // playful — a giddy dance-about
+  | "check-in" // attentive — trots close and looks you over
+  | "hide-away" // reserved — tucks quietly out of view
+  | "explore-nook" // curious — pokes into a corner
+  | "tidy-up" // steady — a brisk, orderly straighten
+  | "posture" // feisty — puffs up and shows off
+  | "nurture" // gentle — a doting little fuss
+  | "scheme" // mischievous — plotting the next prank
+  | "lounge" // lazy — sprawls out and loafs
+  | "center" // zen — settles into a poised stillness
+  | "preen" // aloof — cool, unhurried self-grooming
+  | "startle-scan" // skittish — a jumpy sweep of the room
+  | "appraise" // shrewd — a calculating, sizing-up study
   // Expressive idle poses — sustained, stationary gestures that exercise the
   // otherwise agent-only sprite rows (waving / focus / review / waiting /
   // failed) during ordinary autonomous life. Each is personality-shaped.

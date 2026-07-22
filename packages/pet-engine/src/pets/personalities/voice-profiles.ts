@@ -34,7 +34,7 @@ type PersonalityVoiceProfile = {
 export const PET_SPEECH_KEY_PREFIX = "petSpeech";
 
 /** Interchangeable line variants each speech slot carries in the i18n bundle. */
-export const PET_SPEECH_VARIANT_COUNT = 4;
+export const PET_SPEECH_VARIANT_COUNT = 8;
 
 /** i18n slot names that pair with each SpeechProfile field / acknowledge status. */
 const ACKNOWLEDGE_SLOT: Record<AcknowledgedTaskStatus, string> = {

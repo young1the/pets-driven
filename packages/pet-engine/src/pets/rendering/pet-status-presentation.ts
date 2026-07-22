@@ -160,6 +160,18 @@ const SIGNATURE_ROW_ACTIVITY: ReadonlySet<PetActivityKind> = new Set([
   "followingRoutine",
   "offeringComfort",
   "keepingLookout",
+  // Second signature poses whose choreography leans on task-atlas rows
+  // (review / waiting / failed / running) rather than plain idle.
+  "checkingIn",
+  "exploringNook",
+  "tidyingUp",
+  "posturing",
+  "nurturing",
+  "scheming",
+  "centering",
+  "preening",
+  "scanningNervously",
+  "appraising",
 ]);
 
 /** English localization fallbacks; hosts translate via labelKey (petStatus.*). */
@@ -195,6 +207,19 @@ const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   strutting: "Strutting",
   offeringComfort: "Offering comfort",
   keepingLookout: "Keeping lookout",
+  capering: "Capering about",
+  checkingIn: "Checking in",
+  hidingAway: "Hiding away",
+  exploringNook: "Exploring a nook",
+  tidyingUp: "Tidying up",
+  posturing: "Posturing",
+  nurturing: "Nurturing",
+  scheming: "Scheming",
+  lounging: "Lounging",
+  centering: "Centering",
+  preening: "Preening",
+  scanningNervously: "Scanning nervously",
+  appraising: "Appraising",
 };
 
 function activityEntry(
@@ -237,6 +262,19 @@ const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   strutting: activityEntry("strutting", "excited", "sparkle"),
   offeringComfort: activityEntry("offeringComfort", "love", "heart"),
   keepingLookout: activityEntry("keepingLookout", "confused", "exclaim"),
+  capering: activityEntry("capering", "excited", "note"),
+  checkingIn: activityEntry("checkingIn", "love", "heart"),
+  hidingAway: activityEntry("hidingAway", "thinking", "dots"),
+  exploringNook: activityEntry("exploringNook", "thinking", "question"),
+  tidyingUp: activityEntry("tidyingUp", "working", "note"),
+  posturing: activityEntry("posturing", "excited", "exclaim"),
+  nurturing: activityEntry("nurturing", "love", "heart"),
+  scheming: activityEntry("scheming", "excited", "sparkle"),
+  lounging: activityEntry("lounging", "sleepy", "zzz"),
+  centering: activityEntry("centering", "happy", "dots"),
+  preening: activityEntry("preening", "working", "none"),
+  scanningNervously: activityEntry("scanningNervously", "confused", "sweat"),
+  appraising: activityEntry("appraising", "thinking", "dots"),
 };
 
 function presentationFromAgentStatus(status: AgentChannelStatus): IntentPresentation {

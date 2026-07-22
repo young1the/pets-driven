@@ -4,6 +4,12 @@ import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/personalitie
 
 type BehaviorSignature = {
   primaryDecision: BehaviorDecisionKind;
+  /**
+   * A second catalog-exclusive beat the preset is known for. It stands beside
+   * {@link primaryDecision} so every personality reads with two distinct
+   * silhouettes rather than one; its bias lives in {@link decisionBias}.
+   */
+  secondaryDecision: BehaviorDecisionKind;
   decisionBias: Partial<Record<BehaviorDecisionKind, number>>;
   idleDurationScale: number;
   arrivalDwellScale: number;
@@ -28,15 +34,18 @@ const NEUTRAL_SOCIAL_SCALE: Record<SocialSessionKind, number> = {
 export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorSignature> = {
   playful: {
     primaryDecision: "play-romp",
-    decisionBias: { "play-romp": 0.55, "chase-cursor": 0.25, "idle-stay": -0.25 },
+    secondaryDecision: "caper",
+    decisionBias: { "play-romp": 0.55, caper: 0.5, "chase-cursor": 0.25, "idle-stay": -0.25 },
     idleDurationScale: 0.65,
     arrivalDwellScale: 0.7,
     socialKindScale: { greet: 0.8, chat: 0.9, chase: 2.4 },
   },
   attentive: {
     primaryDecision: "keep-watch",
+    secondaryDecision: "check-in",
     decisionBias: {
       "keep-watch": 0.85,
+      "check-in": 0.5,
       "seek-user": 0.4,
       beckon: 0.25,
       greet: 0.15,
@@ -48,8 +57,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   reserved: {
     primaryDecision: "peek",
+    secondaryDecision: "hide-away",
     decisionBias: {
       peek: 0.8,
+      "hide-away": 0.5,
       "idle-stay": 0.35,
       observe: 0.15,
       fret: -0.2,
@@ -61,8 +72,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   curious: {
     primaryDecision: "inspect",
+    secondaryDecision: "explore-nook",
     decisionBias: {
       inspect: 0.85,
+      "explore-nook": 0.5,
       observe: 0.25,
       "request-climb": 0.35,
       "wander-far": 0.2,
@@ -74,8 +87,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   steady: {
     primaryDecision: "follow-routine",
+    secondaryDecision: "tidy-up",
     decisionBias: {
       "follow-routine": 0.9,
+      "tidy-up": 0.5,
       groom: 0.3,
       "idle-stay": 0.15,
       "play-romp": -0.35,
@@ -87,8 +102,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   feisty: {
     primaryDecision: "strut",
+    secondaryDecision: "posture",
     decisionBias: {
       strut: 0.85,
+      posture: 0.5,
       "collision-engage": 0.6,
       "collision-unfazed": 0.5,
       "wander-far": 0.2,
@@ -101,8 +118,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   gentle: {
     primaryDecision: "offer-comfort",
+    secondaryDecision: "nurture",
     decisionBias: {
       "offer-comfort": 0.85,
+      nurture: 0.5,
       greet: 0.3,
       "approach-pet": 0.3,
       beckon: 0.2,
@@ -114,8 +133,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   mischievous: {
     primaryDecision: "play-feint",
+    secondaryDecision: "scheme",
     decisionBias: {
       "play-feint": 0.85,
+      scheme: 0.5,
       "chase-cursor": 0.55,
       "request-jump": 0.3,
       "wander-far": 0.2,
@@ -128,8 +149,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   lazy: {
     primaryDecision: "nap",
+    secondaryDecision: "lounge",
     decisionBias: {
       nap: 0.95,
+      lounge: 0.55,
       "idle-stay": 0.7,
       groom: 0.15,
       "wander-far": -0.35,
@@ -142,8 +165,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   zen: {
     primaryDecision: "meditate",
+    secondaryDecision: "center",
     decisionBias: {
       meditate: 0.85,
+      center: 0.5,
       "collision-stay": 0.6,
       "collision-unfazed": 0.5,
       "idle-stay": 0.5,
@@ -156,8 +181,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   aloof: {
     primaryDecision: "withdraw",
+    secondaryDecision: "preen",
     decisionBias: {
       withdraw: 0.85,
+      preen: 0.5,
       "wander-far": 0.2,
       observe: 0.15,
       greet: -0.65,
@@ -170,8 +197,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   skittish: {
     primaryDecision: "stand-lookout",
+    secondaryDecision: "startle-scan",
     decisionBias: {
       "stand-lookout": 0.9,
+      "startle-scan": 0.55,
       "collision-flee": 0.7,
       "flee-from-pet": 0.6,
       fret: 0.5,
@@ -184,8 +213,10 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
   },
   shrewd: {
     primaryDecision: "observe",
+    secondaryDecision: "appraise",
     decisionBias: {
       observe: 0.9,
+      appraise: 0.55,
       inspect: 0.25,
       "wander-far": 0.2,
       groom: 0.1,

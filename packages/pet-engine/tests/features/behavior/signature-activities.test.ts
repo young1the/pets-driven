@@ -268,6 +268,83 @@ describe("personality signature activities", () => {
     expect(comfort.getComponent("pet", "Drives")!.social).toBeLessThan(0.3);
   });
 
+  it.each([
+    ["lounge", "sleepy", "zzz"],
+    ["center", "happy", "dots"],
+    ["appraise", "thinking", "dots"],
+    ["startle-scan", "confused", "sweat"],
+    ["nurture", "love", "heart"],
+  ] as const)("materializes the second signature pose %s as a held cue", (kind, mood, emote) => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Steering", mode: "stand" },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "Drives", social: 0.5, energy: 0.3, curiosity: 0.5 },
+          {
+            type: "BehaviorDecisionToken",
+            kind,
+            decidedAt: 0,
+            consumed: false,
+            activityDurationMs: 8_000,
+          },
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0));
+
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
+    expect(store.getComponent("pet", "PetExpressionState")).toMatchObject({
+      source: "expressive",
+      mood,
+      emote,
+    });
+  });
+
+  it("lets a lazy lounge restore energy and an appraisal scratch curiosity", () => {
+    const lounge = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Steering", mode: "stand" },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "Drives", social: 0.3, energy: 0.2, curiosity: 0.2 },
+          {
+            type: "BehaviorDecisionToken",
+            kind: "lounge",
+            decidedAt: 0,
+            consumed: false,
+            activityDurationMs: 8_000,
+          },
+        ],
+      },
+    ]);
+    runBehaviorPlanningSystem(lounge, createManualClock(0));
+    expect(lounge.getComponent("pet", "Drives")!.energy).toBeGreaterThan(0.2);
+
+    const appraise = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Steering", mode: "stand" },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          { type: "Drives", social: 0.3, energy: 0.6, curiosity: 0.5 },
+          {
+            type: "BehaviorDecisionToken",
+            kind: "appraise",
+            decidedAt: 0,
+            consumed: false,
+            activityDurationMs: 8_000,
+          },
+        ],
+      },
+    ]);
+    runBehaviorPlanningSystem(appraise, createManualClock(0));
+    expect(appraise.getComponent("pet", "Drives")!.curiosity).toBeLessThan(0.5);
+  });
+
   it("materializes a feisty strut as a deliberate slower walk", () => {
     const store = createComponentStore([
       {

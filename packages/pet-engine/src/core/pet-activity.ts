@@ -38,7 +38,21 @@ export type PetActivityKind =
   | "followingRoutine"
   | "strutting"
   | "offeringComfort"
-  | "keepingLookout";
+  | "keepingLookout"
+  // Second signature activity per personality.
+  | "capering"
+  | "checkingIn"
+  | "hidingAway"
+  | "exploringNook"
+  | "tidyingUp"
+  | "posturing"
+  | "nurturing"
+  | "scheming"
+  | "lounging"
+  | "centering"
+  | "preening"
+  | "scanningNervously"
+  | "appraising";
 
 /**
  * Reasons that describe a *movement* the pet may still be executing after the
@@ -79,6 +93,21 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   strut: "strutting",
   "offer-comfort": "offeringComfort",
   "stand-lookout": "keepingLookout",
+  // Second signature poses. Like the first-tier expressive poses below, these
+  // hold a stationary claim, so they read from the unexpired claim directly.
+  caper: "capering",
+  "check-in": "checkingIn",
+  "hide-away": "hidingAway",
+  "explore-nook": "exploringNook",
+  "tidy-up": "tidyingUp",
+  posture: "posturing",
+  nurture: "nurturing",
+  scheme: "scheming",
+  lounge: "lounging",
+  center: "centering",
+  preen: "preening",
+  "startle-scan": "scanningNervously",
+  appraise: "appraising",
   // Expressive idle poses hold a stationary claim (Steering stays "stand"), so
   // unlike the movement reasons above they read purely from the unexpired
   // claim, not from a non-idle intent.

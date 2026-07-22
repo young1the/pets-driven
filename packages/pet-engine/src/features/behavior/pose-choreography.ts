@@ -97,6 +97,79 @@ const EXPRESSIVE_POSE_CHOREOGRAPHY: Partial<Record<string, PoseChoreography>> = 
     { state: "failed", durationMs: 520 },
     { state: "waiting", durationMs: 700 },
   ],
+  // ── Second signature poses ────────────────────────────────────────────────
+  // Same existing rows, new rhythms, so each preset's two beats stay legible.
+  // A skip-and-settle — the giddy cousin of a plain wave.
+  caper: [
+    { state: "waving", durationMs: 320 },
+    { state: "running", durationMs: 300 },
+    { state: "idle", durationMs: 220 },
+  ],
+  // Trot up, hold close, and give a small wave — an "I'm right here" check.
+  "check-in": [
+    { state: "waiting", durationMs: 560 },
+    { state: "waving", durationMs: 360 },
+  ],
+  // A quick glance out, then a long, still tuck-away.
+  "hide-away": [
+    { state: "review", durationMs: 280 },
+    { state: "idle", durationMs: 760 },
+  ],
+  // Peer in, shuffle deeper, peer again — nosing into a corner.
+  "explore-nook": [
+    { state: "review", durationMs: 480 },
+    { state: "running", durationMs: 320 },
+    { state: "review", durationMs: 400 },
+  ],
+  // A brisk straighten with a satisfied breath between passes.
+  "tidy-up": [
+    { state: "running", durationMs: 760 },
+    { state: "idle", durationMs: 280 },
+  ],
+  // Puff up, freeze the pose, puff up again — all show.
+  posture: [
+    { state: "waving", durationMs: 300 },
+    { state: "failed", durationMs: 260 },
+    { state: "idle", durationMs: 220 },
+  ],
+  // Reach out, then linger warmly — a doting little fuss.
+  nurture: [
+    { state: "waving", durationMs: 440 },
+    { state: "waiting", durationMs: 600 },
+  ],
+  // A sly examine, a scuttle, and a look back — plotting.
+  scheme: [
+    { state: "review", durationMs: 380 },
+    { state: "running", durationMs: 320 },
+    { state: "idle", durationMs: 200 },
+  ],
+  // Mostly sprawled, with the barest lazy stir.
+  lounge: [
+    { state: "idle", durationMs: 900 },
+    { state: "waving", durationMs: 240 },
+  ],
+  // A long poised hold with a slow, even settle — the stillest of stances.
+  center: [
+    { state: "waiting", durationMs: 820 },
+    { state: "idle", durationMs: 640 },
+  ],
+  // Unhurried self-grooming, cool and self-contained.
+  preen: [
+    { state: "running", durationMs: 640 },
+    { state: "idle", durationMs: 380 },
+  ],
+  // A jumpy sweep — startle, scan, startle again.
+  "startle-scan": [
+    { state: "failed", durationMs: 360 },
+    { state: "review", durationMs: 420 },
+    { state: "idle", durationMs: 200 },
+  ],
+  // A measured study with a beat of calculation between reads.
+  appraise: [
+    { state: "review", durationMs: 620 },
+    { state: "idle", durationMs: 380 },
+    { state: "review", durationMs: 340 },
+  ],
 };
 
 /**

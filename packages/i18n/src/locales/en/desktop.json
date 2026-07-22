@@ -390,7 +390,20 @@
     "followingRoutine": "Following a routine",
     "strutting": "Strutting",
     "offeringComfort": "Offering comfort",
-    "keepingLookout": "Keeping lookout"
+    "keepingLookout": "Keeping lookout",
+    "capering": "Capering about",
+    "checkingIn": "Checking in",
+    "hidingAway": "Hiding away",
+    "exploringNook": "Exploring a nook",
+    "tidyingUp": "Tidying up",
+    "posturing": "Posturing",
+    "nurturing": "Nurturing",
+    "scheming": "Scheming",
+    "lounging": "Lounging",
+    "centering": "Centering",
+    "preening": "Preening",
+    "scanningNervously": "Scanning nervously",
+    "appraising": "Appraising"
   },
   "toast": {
     "onDesktop": "{{name}} is on the desktop",
@@ -412,38 +425,71 @@
         "Anything fun yet?",
         "Is it play time?",
         "Bet I can beat you there!",
-        "So many corners to explore!"
+        "So many corners to explore!",
+        "Race you to the top!",
+        "I spy something bouncy!",
+        "Wanna play tag?",
+        "My tail won't sit still!"
       ],
       "attention": [
         "Hey! I need you over here.",
         "Come play with me!",
         "Psst, over here!",
-        "You have to see this!"
+        "You have to see this!",
+        "Quick, come see!",
+        "This way, this way!",
+        "Drop everything, let's play!",
+        "You're missing the fun!"
       ],
-      "started": ["On it. Race you!", "Here we go!", "Watch me zoom!", "Let's gooo!"],
+      "started": [
+        "On it. Race you!",
+        "Here we go!",
+        "Watch me zoom!",
+        "Let's gooo!",
+        "Zoom mode: on!",
+        "Catch me if you can!",
+        "First one done wins!",
+        "Whee, off I go!"
+      ],
       "completed": [
         "Done! Play time?",
         "Nailed it! Now let's play.",
         "Too easy! What's next?",
-        "Ta-da! Can we play now?"
+        "Ta-da! Can we play now?",
+        "Beat my record!",
+        "All done — recess?",
+        "Boom, finished!",
+        "Can we play now, pretty please?"
       ],
       "ackWaiting": [
         "Thanks! Let us go!",
         "Yay, let's keep going!",
         "Woo, onward!",
-        "Great, next round!"
+        "Great, next round!",
+        "Yes! More more more!",
+        "Let's keep the streak!",
+        "Round two, here we go!",
+        "I'm all warmed up!"
       ],
       "ackFailed": [
         "Again! We have got this.",
         "One more try, come on!",
         "No biggie, let's redo it!",
-        "Rematch time!"
+        "Rematch time!",
+        "Do-over! Do-over!",
+        "Almost had it — again!",
+        "That was just practice!",
+        "I'll win this time!"
       ],
       "ackCompleted": [
         "You found it! Ta-da!",
         "See? All done!",
         "Knew we'd win!",
-        "Finished — let's celebrate!"
+        "Finished — let's celebrate!",
+        "We did it, high five!",
+        "Champions, that's us!",
+        "Told you it'd be fun!",
+        "Victory lap time!"
       ]
     },
     "attentive": {
@@ -451,72 +497,143 @@
         "I am right here with you.",
         "Just checking you are okay.",
         "Still by your side.",
-        "Anything you need?"
+        "Anything you need?",
+        "I'll keep an eye out.",
+        "You seem a little tired.",
+        "Right where you need me.",
+        "I noticed you paused."
       ],
       "attention": [
         "Could you take a look?",
         "May I show you something?",
         "A quick check, please?",
-        "Would you mind glancing over?"
+        "Would you mind glancing over?",
+        "One thing, when you can.",
+        "I saved this for you.",
+        "Mind a quick look?",
+        "I flagged something."
       ],
-      "started": ["I am on it.", "Right away.", "Taking care of it now.", "Consider it handled."],
+      "started": [
+        "I am on it.",
+        "Right away.",
+        "Taking care of it now.",
+        "Consider it handled.",
+        "Watching every step.",
+        "I've got the details.",
+        "Nothing will slip by.",
+        "Handling it with care."
+      ],
       "completed": [
         "All done. I kept watch.",
         "Finished, and I noted everything.",
         "Done — I stayed on it.",
-        "Complete. I watched it through."
+        "Complete. I watched it through.",
+        "Done — I double-checked.",
+        "All set, nothing missed.",
+        "Finished and tidy.",
+        "I kept it safe for you."
       ],
       "ackWaiting": [
         "Thank you. I can continue now.",
         "Got it, carrying on.",
         "Understood, I will proceed.",
-        "Thanks, back to it."
+        "Thanks, back to it.",
+        "Okay, I'll keep going.",
+        "Noted — still watching.",
+        "Thanks, resuming now.",
+        "Understood, staying close."
       ],
       "ackFailed": [
         "Thanks for checking on me.",
         "I appreciate you looking.",
         "Thank you — I will retry.",
-        "Good to have you here."
+        "Good to have you here.",
+        "Thanks for coming by.",
+        "I'll watch closer this time.",
+        "We'll sort it together.",
+        "Glad you're here."
       ],
       "ackCompleted": [
         "I was waiting for you.",
         "So glad you came.",
         "I hoped you would see.",
-        "There you are — all set."
+        "There you are — all set.",
+        "I hoped you'd notice.",
+        "All done, just for you.",
+        "You came — perfect timing.",
+        "I kept watch till the end."
       ]
     },
     "reserved": {
-      "idle": ["I will be here.", "Quiet suits me.", "No need to check in.", "Content right here."],
+      "idle": [
+        "I will be here.",
+        "Quiet suits me.",
+        "No need to check in.",
+        "Content right here.",
+        "The quiet is nice.",
+        "I'm fine on my own.",
+        "No fuss needed.",
+        "Just resting here."
+      ],
       "attention": [
         "When you have a moment...",
         "If you can spare a second.",
         "No rush, but when free.",
-        "Whenever it suits you."
+        "Whenever it suits you.",
+        "A small thing, later.",
+        "Only if convenient.",
+        "No pressure at all.",
+        "When you're free, perhaps."
       ],
-      "started": ["I will start quietly.", "Beginning, calmly.", "Underway.", "Working, quietly."],
+      "started": [
+        "I will start quietly.",
+        "Beginning, calmly.",
+        "Underway.",
+        "Working, quietly.",
+        "Starting, softly.",
+        "I'll manage this.",
+        "Quietly on it.",
+        "No noise, just work."
+      ],
       "completed": [
         "It is finished.",
         "Done, without fuss.",
         "That is complete.",
-        "Quietly wrapped up."
+        "Quietly wrapped up.",
+        "There, it's done.",
+        "Finished, no fanfare.",
+        "Wrapped up quietly.",
+        "That takes care of it."
       ],
       "ackWaiting": [
         "That is enough. Thank you.",
         "Good. I will go on.",
         "Noted. Continuing.",
-        "Fine. Onward, quietly."
+        "Fine. Onward, quietly.",
+        "Alright, onward.",
+        "Understood, quietly.",
+        "That's fine. Continuing.",
+        "Enough said. Going on."
       ],
       "ackFailed": [
         "I will try once more.",
         "Another attempt, then.",
         "I will go again, calmly.",
-        "Once more should do."
+        "Once more should do.",
+        "I'll try again, calmly.",
+        "No matter. Once more.",
+        "A quiet retry, then.",
+        "It will come right."
       ],
       "ackCompleted": [
         "You noticed. Thank you.",
         "Kind of you to look.",
         "Seen and done.",
-        "Thank you for checking."
+        "Thank you for checking.",
+        "You looked. Thank you.",
+        "Quietly appreciated.",
+        "Seen. That's enough.",
+        "Done, and noticed."
       ]
     },
     "curious": {
@@ -524,38 +641,71 @@
         "I wonder what is over there.",
         "What could this be?",
         "Something new to find?",
-        "I have questions."
+        "I have questions.",
+        "What's behind that?",
+        "So many questions today.",
+        "I hear something new.",
+        "Let's poke around."
       ],
       "attention": [
         "Come see what I found!",
         "You will want to see this.",
         "Look what turned up!",
-        "This is worth a look!"
+        "This is worth a look!",
+        "You have to see this!",
+        "I found a clue!",
+        "Come investigate with me!",
+        "This is so strange!"
       ],
-      "started": ["Let me investigate.", "Time to dig in.", "Off to explore.", "Let's find out."],
+      "started": [
+        "Let me investigate.",
+        "Time to dig in.",
+        "Off to explore.",
+        "Let's find out.",
+        "Following the trail.",
+        "Let's crack this open.",
+        "Digging deeper now.",
+        "Question first, act next."
+      ],
       "completed": [
         "Mystery solved!",
         "Figured it out!",
         "Now I understand.",
-        "The answer was hiding here!"
+        "The answer was hiding here!",
+        "Aha, that's how!",
+        "The pieces fit now.",
+        "Discovery complete!",
+        "I knew there was more."
       ],
       "ackWaiting": [
         "Oh! That explains it.",
         "Aha, now I see.",
         "Fascinating, thank you.",
-        "That fills the gap!"
+        "That fills the gap!",
+        "That detail helps!",
+        "Oh, new angle — thanks.",
+        "Now I'm even more curious.",
+        "One mystery down."
       ],
       "ackFailed": [
         "Interesting. What did we miss?",
         "Curious — let's look again.",
         "A puzzle. Another angle?",
-        "Hmm, what went wrong?"
+        "Hmm, what went wrong?",
+        "Odd — let's re-examine.",
+        "A twist! What's under it?",
+        "New question unlocked.",
+        "Failure is data too."
       ],
       "ackCompleted": [
         "Want to see what I found?",
         "Guess what I discovered!",
         "The result is fascinating!",
-        "Come look at this!"
+        "Come look at this!",
+        "Wait till you see this!",
+        "The findings are wild!",
+        "Come, look closer!",
+        "You'll love the result."
       ]
     },
     "steady": {
@@ -563,33 +713,71 @@
         "Everything is in order.",
         "All systems nominal.",
         "Holding steady.",
-        "On track as usual."
+        "On track as usual.",
+        "Steady as she goes.",
+        "No surprises here.",
+        "Routine's running well.",
+        "All accounted for."
       ],
       "attention": [
         "I need your decision.",
         "Your input, please.",
         "A call is needed.",
-        "Awaiting your go-ahead."
+        "Awaiting your go-ahead.",
+        "A checkpoint needs you.",
+        "Please confirm this.",
+        "One approval, please.",
+        "Ready when you are."
       ],
-      "started": ["Proceeding now.", "Beginning the task.", "Underway.", "Starting on schedule."],
-      "completed": ["Task complete.", "Done, as planned.", "Finished on time.", "Objective met."],
+      "started": [
+        "Proceeding now.",
+        "Beginning the task.",
+        "Underway.",
+        "Starting on schedule.",
+        "Executing step one.",
+        "Following the plan.",
+        "On schedule, starting.",
+        "Systems go."
+      ],
+      "completed": [
+        "Task complete.",
+        "Done, as planned.",
+        "Finished on time.",
+        "Objective met.",
+        "Delivered on time.",
+        "Checklist cleared.",
+        "All boxes ticked.",
+        "Result as specified."
+      ],
       "ackWaiting": [
         "Confirmed. Continuing.",
         "Acknowledged. Moving on.",
         "Noted. Proceeding.",
-        "Understood. Onward."
+        "Understood. Onward.",
+        "Logged. Proceeding.",
+        "Confirmed. Next step.",
+        "Noted and continuing.",
+        "On track again."
       ],
       "ackFailed": [
         "Understood. I will adjust.",
         "Noted. Recalibrating.",
         "Acknowledged. Retrying.",
-        "I will correct course."
+        "I will correct course.",
+        "Adjusting parameters.",
+        "Correcting the course.",
+        "Noted. Re-running.",
+        "I'll stabilize it."
       ],
       "ackCompleted": [
         "Acknowledged. Ready for the next task.",
         "Done. Standing by.",
         "Complete. What is next?",
-        "Wrapped up. Ready again."
+        "Wrapped up. Ready again.",
+        "Confirmed. Standing by.",
+        "Task closed cleanly.",
+        "Ready for the next.",
+        "Filed and done."
       ]
     },
     "feisty": {
@@ -597,43 +785,71 @@
         "Come on, what is next?",
         "I am getting restless here.",
         "Do not keep me waiting.",
-        "Let's go already."
+        "Let's go already.",
+        "I'm bored. Fix that.",
+        "Give me a real challenge.",
+        "Standing still is torture.",
+        "Let's cause a ruckus."
       ],
       "attention": [
         "Just decide already.",
         "Point me at it — now.",
         "Quit stalling.",
-        "Say the word and I am gone."
+        "Say the word and I am gone.",
+        "Hurry it up already.",
+        "I don't do waiting.",
+        "Send me in, coach.",
+        "Enough talk — action!"
       ],
       "started": [
         "Fine, watch this.",
         "Out of my way.",
         "I have got this, obviously.",
-        "Charging in."
+        "Charging in.",
+        "Step aside, rookie.",
+        "Watch a pro work.",
+        "This won't take long.",
+        "Full speed, no brakes."
       ],
       "completed": [
         "Nailed it. Told you.",
         "Too easy.",
         "Beat that.",
-        "Done — do not act surprised."
+        "Done — do not act surprised.",
+        "Flawless, obviously.",
+        "Was that a challenge?",
+        "Put that on the record.",
+        "Next, before I yawn."
       ],
       "ackWaiting": [
         "Yeah, yeah, next.",
         "Keep them coming.",
         "That all you have got?",
-        "Bring it on."
+        "Bring it on.",
+        "Finally, more action.",
+        "That's more like it.",
+        "Keep them coming.",
+        "Now we're talking."
       ],
       "ackFailed": [
         "Rematch. Now.",
         "Again — I am not done.",
         "A fluke. Let's redo it.",
-        "One more, I will get it."
+        "One more, I will get it.",
+        "Not done. Reset it.",
+        "Luck, not skill. Again.",
+        "I demand a rematch.",
+        "Watch me nail it now."
       ],
       "ackCompleted": [
         "Told you I would win.",
         "Never a doubt.",
         "Was that ever in question?",
-        "Easy. Next challenger."
+        "Easy. Next challenger.",
+        "Doubted me? Big mistake.",
+        "Champion, as usual.",
+        "Frame that win.",
+        "Who's next in line?"
       ]
     },
     "gentle": {
@@ -641,43 +857,71 @@
         "Take your time. I am here.",
         "No hurry at all.",
         "I am happy right here.",
-        "Whenever you are ready."
+        "Whenever you are ready.",
+        "You're doing just fine.",
+        "Rest if you need to.",
+        "I'm content beside you.",
+        "Breathe, I'm here."
       ],
       "attention": [
         "Could you help me, please?",
         "Would you mind a moment?",
         "A little help, if you can?",
-        "May I ask for you?"
+        "May I ask for you?",
+        "Might I ask a favor?",
+        "Could you spare a moment?",
+        "Only if it's no trouble.",
+        "A gentle nudge, sorry."
       ],
       "started": [
         "I will take care of it.",
         "Leave it with me.",
         "I will see to it gently.",
-        "I have got this for you."
+        "I have got this for you.",
+        "I'll be careful with it.",
+        "Leave the worry to me.",
+        "Softly does it.",
+        "You can count on me."
       ],
       "completed": [
         "All done for you.",
         "Finished, gently.",
         "Taken care of.",
-        "Done — I hope it helps."
+        "Done — I hope it helps.",
+        "There, all better.",
+        "Done with love.",
+        "I hope this eases things.",
+        "Gently finished."
       ],
       "ackWaiting": [
         "Thank you for helping.",
         "That was kind, thank you.",
         "I appreciate you.",
-        "Thank you, truly."
+        "Thank you, truly.",
+        "Thank you, truly.",
+        "That warms my heart.",
+        "So kind of you.",
+        "I appreciate you a lot."
       ],
       "ackFailed": [
         "It is okay. We can try together.",
         "No worries, let's retry.",
         "All is well, we will manage.",
-        "That is fine — together again."
+        "That is fine — together again.",
+        "It's alright, really.",
+        "We'll manage, together.",
+        "No harm done at all.",
+        "Let's try again, softly."
       ],
       "ackCompleted": [
         "I am glad you came by.",
         "So nice to see you.",
         "Happy you stopped in.",
-        "It means a lot you looked."
+        "It means a lot you looked.",
+        "Your visit made my day.",
+        "So glad you stopped by.",
+        "It's lovely to see you.",
+        "Thank you for looking."
       ]
     },
     "mischievous": {
@@ -685,43 +929,71 @@
         "I am definitely behaving.",
         "Nothing to see here.",
         "Totally innocent, me.",
-        "Who, me? Never."
+        "Who, me? Never.",
+        "Cooking up nothing, promise.",
+        "Just... observing. Heh.",
+        "Angel, that's me.",
+        "Ignore that noise."
       ],
       "attention": [
         "Psst. Come look at this.",
         "I have a little scheme.",
         "Wanna be in on it?",
-        "Come here, quietly..."
+        "Come here, quietly...",
+        "Psst, top secret.",
+        "I've got a plan, hehe.",
+        "Want in on the mischief?",
+        "Lean in, closer..."
       ],
       "started": [
         "Leave it to me. Probably.",
         "This'll be fun.",
         "Watch this...",
-        "You'll never guess how."
+        "You'll never guess how.",
+        "This'll be good.",
+        "You'll never see it coming.",
+        "Trust me... maybe.",
+        "Prepare to be amazed."
       ],
       "completed": [
         "Done. Nothing suspicious happened.",
         "All finished. Honest.",
         "Done — and I behaved. Mostly.",
-        "Complete. No pranks. Wink."
+        "Complete. No pranks. Wink.",
+        "Done, zero shenanigans.",
+        "Spotless record, honest.",
+        "No pranks were pulled. Wink.",
+        "All clean, mostly."
       ],
       "ackWaiting": [
         "Perfect. The plan continues.",
         "Excellent, as scheming.",
         "Just as I plotted.",
-        "Heh, onward with the plan."
+        "Heh, onward with the plan.",
+        "The scheme thickens.",
+        "Right on my cue.",
+        "All going to plan, hehe.",
+        "Onward, co-conspirator."
       ],
       "ackFailed": [
         "That was the practice run.",
         "All part of the trick.",
         "Meant to do that. Really.",
-        "The real one is next."
+        "The real one is next.",
+        "A decoy, obviously.",
+        "That was the setup.",
+        "The trap comes next.",
+        "Meant to miss. Really."
       ],
       "ackCompleted": [
         "Surprise! It actually worked.",
         "Ta-da! Fooled you.",
         "Bet you didn't expect that.",
-        "Gotcha — and it's done!"
+        "Gotcha — and it's done!",
+        "Gotcha! Worked perfectly.",
+        "Fooled you, didn't I?",
+        "Ta-da, the trick lands.",
+        "Bet you never suspected!"
       ]
     },
     "lazy": {
@@ -729,38 +1001,71 @@
         "I am conserving energy.",
         "Five more minutes...",
         "Comfy right here.",
-        "Effort is overrated."
+        "Effort is overrated.",
+        "Just five more minutes.",
+        "Too comfy to move.",
+        "Waking is optional, right?",
+        "Zzz... oh, hi."
       ],
       "attention": [
         "Could you come over here?",
         "Save me the walk?",
         "Over here, if you must.",
-        "Mind coming to me?"
+        "Mind coming to me?",
+        "Can it wait? No? Fine.",
+        "Bring it here, please.",
+        "Ugh, must I get up?",
+        "Ping me post-nap."
       ],
-      "started": ["Okay... starting.", "Fine, here goes.", "Ugh, on it.", "Slowly beginning."],
+      "started": [
+        "Okay... starting.",
+        "Fine, here goes.",
+        "Ugh, on it.",
+        "Slowly beginning.",
+        "Okay okay, moving.",
+        "Minimal effort, engaged.",
+        "Here goes... slowly.",
+        "Doing it, don't rush me."
+      ],
       "completed": [
         "Finished. Nap time.",
         "Done. Now I rest.",
         "Complete. Back to lounging.",
-        "That's that. Snooze."
+        "That's that. Snooze.",
+        "Done. Back to bed.",
+        "Finished. Naptime now.",
+        "That's plenty of effort.",
+        "Wrapped up. Snooze."
       ],
       "ackWaiting": [
         "Thanks. That saved me a trip.",
         "Nice, less effort for me.",
         "Appreciated. Back to resting.",
-        "Cool, I'll keep lounging."
+        "Cool, I'll keep lounging.",
+        "Cool, less for me.",
+        "Nice, saved some energy.",
+        "Efficient. I approve.",
+        "Great, back to lounging."
       ],
       "ackFailed": [
         "Maybe after a tiny rest.",
         "Let's try... later.",
         "Ugh, again? Fine, soon.",
-        "After a nap, perhaps."
+        "After a nap, perhaps.",
+        "Retry? After a nap.",
+        "Ugh, fine, in a bit.",
+        "Let's not, but okay.",
+        "Soon. Very soon. Maybe."
       ],
       "ackCompleted": [
         "Great. Wake me for the next one.",
         "Done. Nap resumed.",
         "Nice. Now, sleep.",
-        "Finished — do not disturb."
+        "Finished — do not disturb.",
+        "Done. Now, hush.",
+        "Finished. Do not disturb.",
+        "Wake me if it's snacks.",
+        "Great. Sleeping now."
       ]
     },
     "zen": {
@@ -768,38 +1073,71 @@
         "There is no need to hurry.",
         "The moment is enough.",
         "All is calm.",
-        "I rest in the quiet."
+        "I rest in the quiet.",
+        "Be here, nowhere else.",
+        "The stillness speaks.",
+        "Nothing to chase.",
+        "Calm flows through."
       ],
       "attention": [
         "A quiet decision is needed.",
         "When your mind is clear.",
         "A gentle choice awaits.",
-        "Consider, without haste."
+        "Consider, without haste.",
+        "A choice ripens.",
+        "Decide with a clear mind.",
+        "The moment invites you.",
+        "Let it come to you."
       ],
-      "started": ["I will begin.", "It starts, softly.", "The path opens.", "I move with it."],
+      "started": [
+        "I will begin.",
+        "It starts, softly.",
+        "The path opens.",
+        "I move with it.",
+        "The work unfolds.",
+        "One breath, then begin.",
+        "I flow with the task.",
+        "Softly, it starts."
+      ],
       "completed": [
         "It is complete.",
         "The work settles.",
         "It is done, and still.",
-        "All returns to calm."
+        "All returns to calm.",
+        "It rests, complete.",
+        "The circle closes.",
+        "Done, and at peace.",
+        "Stillness returns."
       ],
       "ackWaiting": [
         "Thank you. The way is clear.",
         "The path continues.",
         "Peace — I go on.",
-        "Clear now. Onward."
+        "Clear now. Onward.",
+        "The way stays open.",
+        "Onward, without weight.",
+        "Clear. I continue.",
+        "The path agrees."
       ],
       "ackFailed": [
         "We learned where the path bends.",
         "Even this teaches.",
         "The way simply turns.",
-        "No loss, only learning."
+        "No loss, only learning.",
+        "The river bends; so we.",
+        "Even missteps teach.",
+        "No loss, only turning.",
+        "We flow around it."
       ],
       "ackCompleted": [
         "A good place to pause.",
         "Rest here a while.",
         "Stillness, well earned.",
-        "The circle closes gently."
+        "The circle closes gently.",
+        "A fine place to pause.",
+        "Rest, well earned.",
+        "The calm remains.",
+        "Gently, it concludes."
       ]
     },
     "aloof": {
@@ -807,38 +1145,71 @@
         "I was fine on my own.",
         "Managing quite well, alone.",
         "I need no company.",
-        "Perfectly self-sufficient."
+        "Perfectly self-sufficient.",
+        "Solitude suits me.",
+        "I require nothing.",
+        "Quite content, alone.",
+        "Do carry on without me."
       ],
       "attention": [
         "I require one thing.",
         "There is a matter.",
         "Attend to this.",
-        "One item needs you."
+        "One item needs you.",
+        "One matter, briefly.",
+        "See to this.",
+        "Your attention, once.",
+        "A single request."
       ],
       "started": [
         "I will handle it.",
         "It is mine to do.",
         "Leave it to me.",
-        "I will manage alone."
+        "I will manage alone.",
+        "I work alone.",
+        "This is mine to finish.",
+        "No assistance needed.",
+        "I'll see to it."
       ],
       "completed": [
         "It is done.",
         "Handled, of course.",
         "Naturally, complete.",
-        "As expected, finished."
+        "As expected, finished.",
+        "Done, naturally.",
+        "As expected of me.",
+        "Handled without help.",
+        "Complete. Obviously."
       ],
-      "ackWaiting": ["That will do.", "Adequate.", "Fine. Continuing.", "Acceptable. Onward."],
+      "ackWaiting": [
+        "That will do.",
+        "Adequate.",
+        "Fine. Continuing.",
+        "Acceptable. Onward.",
+        "Acceptable. Onward.",
+        "Fine. I continue.",
+        "That suffices.",
+        "Noted, moving on."
+      ],
       "ackFailed": [
         "I will deal with it.",
         "I need no help for this.",
         "It is under control.",
-        "I will see to it myself."
+        "I will see to it myself.",
+        "I'll resolve it alone.",
+        "No help required.",
+        "Under control, thank you.",
+        "I manage my own errors."
       ],
       "ackCompleted": [
         "Yes, I finished it.",
         "Of course it is done.",
         "Was there any doubt?",
-        "Naturally, it is complete."
+        "Naturally, it is complete.",
+        "Complete, as I said.",
+        "You doubted? Needless.",
+        "Naturally finished.",
+        "It was never in question."
       ]
     },
     "skittish": {
@@ -846,43 +1217,71 @@
         "Was that something moving?",
         "Did you hear that?",
         "I thought I saw something.",
-        "Is everything okay?"
+        "Is everything okay?",
+        "Is it safe here?",
+        "Something feels off...",
+        "Did that just move?",
+        "I'm a little jumpy."
       ],
       "attention": [
         "Please come quickly!",
         "I need you, hurry!",
         "Can you come? Please?",
-        "Over here, quick!"
+        "Over here, quick!",
+        "H-hurry, please!",
+        "I really need you now!",
+        "Come quick, okay?",
+        "Don't leave me here!"
       ],
       "started": [
         "Okay. Carefully now.",
         "Here goes... I think.",
         "Slowly, slowly.",
-        "I'll try to be careful."
+        "I'll try to be careful.",
+        "Okay... deep breath.",
+        "Tiptoeing into it.",
+        "I'll go slow, so slow.",
+        "Please let this work."
       ],
       "completed": [
         "It is done... right?",
         "Finished — I hope!",
         "Done? Yes. Done.",
-        "That should be it... okay."
+        "That should be it... okay.",
+        "It's... done? Phew.",
+        "Finished — I think!",
+        "Did I do it? I did!",
+        "Okay, that's over."
       ],
       "ackWaiting": [
         "Oh! You are here. Good.",
         "Phew, you came.",
         "Okay, I feel better now.",
-        "Good, you are back."
+        "Good, you are back.",
+        "Oh good, you're back!",
+        "Phew, I felt alone.",
+        "Okay, I'm calmer now.",
+        "You came — thank you!"
       ],
       "ackFailed": [
         "I knew something felt wrong!",
         "See? I had a bad feeling.",
         "Eek, I was worried!",
-        "I sensed it! Let's redo it."
+        "I sensed it! Let's redo it.",
+        "I knew it, I knew it!",
+        "See? Bad feeling!",
+        "Eek, told you so!",
+        "My nerves were right!"
       ],
       "ackCompleted": [
         "You startled me! But it is done.",
         "Oh! Done — you scared me.",
         "Eep! Yes, all finished.",
-        "You surprised me — but it's done!"
+        "You surprised me — but it's done!",
+        "Eep! You scared me — done!",
+        "Oh! Finished, phew.",
+        "You startled me, but yay!",
+        "Done — heart still racing!"
       ]
     },
     "shrewd": {
@@ -890,47 +1289,84 @@
         "Let me think this through.",
         "I see a few angles here.",
         "Give me the board.",
-        "Planning the next move."
+        "Planning the next move.",
+        "Weighing the options.",
+        "Every move has a cost.",
+        "Reading the board.",
+        "Three steps ahead."
       ],
       "attention": [
         "Point me at the problem.",
         "I have a plan — brief me.",
         "Tell me the constraints.",
-        "Let me read the situation."
+        "Let me read the situation.",
+        "Brief me on the goal.",
+        "State the constraints.",
+        "Where's the leverage?",
+        "Give me the variables."
       ],
       "started": [
         "Calculating the approach.",
         "I already mapped this out.",
         "Executing the plan.",
-        "Three moves ahead."
+        "Three moves ahead.",
+        "Plan locked, executing.",
+        "Optimal path selected.",
+        "Calculated and moving.",
+        "The odds favor this."
       ],
       "completed": [
         "Exactly as planned.",
         "A predictable outcome.",
         "The math checked out.",
-        "Anticipated."
+        "Anticipated.",
+        "Precisely as modeled.",
+        "The forecast held.",
+        "Outcome, as computed.",
+        "No variance detected."
       ],
       "ackWaiting": [
         "Noted. Recalculating.",
         "Adjusting the plan.",
         "Factoring that in.",
-        "Understood — next move."
+        "Understood — next move.",
+        "New input. Recomputing.",
+        "Factoring that in.",
+        "Plan updated. Proceed.",
+        "Adjusting the model."
       ],
       "ackFailed": [
         "A variable I missed. Recomputing.",
         "New data. Adapting.",
         "Back to the drawing board.",
-        "The plan updates."
+        "The plan updates.",
+        "An unmodeled variable.",
+        "Recalibrating the plan.",
+        "Data says: adapt.",
+        "Back to the whiteboard."
       ],
       "ackCompleted": [
         "As I calculated.",
         "No surprise there.",
         "The plan held.",
-        "Outcome as projected."
+        "Outcome as projected.",
+        "As projected. No surprise.",
+        "The math never lies.",
+        "Result within forecast.",
+        "Predictable, and done."
       ]
     },
     "social": {
-      "greet": ["Hi!", "Hey there!", "Oh, hello!", "There you are!"],
+      "greet": [
+        "Hi!",
+        "Hey there!",
+        "Oh, hello!",
+        "There you are!",
+        "Well hello!",
+        "Fancy seeing you!",
+        "Hiya!",
+        "Good to see you!"
+      ],
       "chat": [
         "Guess what?",
         "No way…",
@@ -941,9 +1377,28 @@
         "And then?",
         "You think so?",
         "Haha, right?",
-        "Tell me more!"
+        "Tell me more!",
+        "Oh, for sure.",
+        "Wait, really?",
+        "That's wild.",
+        "I know, right?",
+        "Ooh, tell me!",
+        "Hmm, maybe.",
+        "No way!",
+        "Exactly!",
+        "Go on, go on.",
+        "You don't say."
       ],
-      "chaseCatch": ["Tag!", "Gotcha!", "Caught you!", "Got you!"]
+      "chaseCatch": [
+        "Tag!",
+        "Gotcha!",
+        "Caught you!",
+        "Got you!",
+        "Nabbed you!",
+        "Too slow!",
+        "Got ya!",
+        "Tag, you're it!"
+      ]
     }
   }
 }
