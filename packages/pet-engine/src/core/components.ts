@@ -45,6 +45,7 @@ export type {
   DragInteractionComponent,
   KeyboardControlTargetComponent,
   KeyboardInputStateComponent,
+  TapGestureStateComponent,
   ThrowImpulseComponent,
 } from "@pets-driven/pet-engine/features/interaction/components";
 export type {
@@ -129,6 +130,7 @@ import type {
   DragInteractionComponent,
   KeyboardControlTargetComponent,
   KeyboardInputStateComponent,
+  TapGestureStateComponent,
   ThrowImpulseComponent,
 } from "@pets-driven/pet-engine/features/interaction/components";
 import type {
@@ -219,6 +221,7 @@ export type Component =
   | RompStateComponent
   | FeintStateComponent
   | SpeechProfileComponent
+  | TapGestureStateComponent
   | TaskMovementHoldComponent
   | TransformComponent
   | TravelStateComponent

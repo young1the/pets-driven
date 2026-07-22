@@ -42,3 +42,16 @@ export type ThrowImpulseComponent = {
   type: "ThrowImpulse";
   velocity: Vector;
 };
+
+/**
+ * Tracks the most recent tap (a press that never became a drag) so two quick
+ * taps on the same pet can be recognized as a double-click. Lives on the
+ * "user-interaction" entity alongside DragInteraction. `entityId` is the pet
+ * that was tapped, reset to null once a double-click has fired so a third tap
+ * does not chain into another one.
+ */
+export type TapGestureStateComponent = {
+  type: "TapGestureState";
+  entityId: string | null;
+  lastTapAt: number;
+};
