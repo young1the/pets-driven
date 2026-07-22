@@ -1,6 +1,7 @@
+import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import type { PetMood } from "@pets-driven/pet-engine/pets/status/pet-mood";
+import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 
 export type DemoPet = {
   id: string;
@@ -13,19 +14,27 @@ export type DemoPet = {
   color: string;
 };
 
-export type DemoPetStatus = {
-  label: string;
-  message: string | null;
-  mood: PetMood;
+/**
+ * Deliberately the same shape as the app's `PetWindowFixturePresentation`: the
+ * video states what the pet IS, and `presentPetStatus` derives every label,
+ * mood and emote from it — exactly as the desktop window does. Nothing in this
+ * video should hand-write a capsule string; if a label looks wrong, it is wrong
+ * in the product too.
+ */
+export type DemoPetPresentation = {
+  animationState: PetAnimationState;
+  activity?: PetActivityKind | null;
+  partnerName?: string | null;
+  /** A running agent task keeps the capsule pinned open, as in the real window. */
+  working?: boolean;
+  overlay?: PetSpriteOverlay | null;
+  decisionEmote?: BehaviorTokenPresentation | null;
 };
 
-export type PetMotionKeyframe = {
+export type PetMotionKeyframe = DemoPetPresentation & {
   frame: number;
   x: number;
   y: number;
-  animationState: PetAnimationState;
-  decisionEmote?: BehaviorTokenPresentation | null;
-  status?: DemoPetStatus | null;
 };
 
 export const DEMO_PETS: DemoPet[] = [
@@ -61,26 +70,35 @@ export const DEMO_PETS: DemoPet[] = [
   },
 ];
 
-export const TERMINAL_LINES = [
-  { prompt: "$", text: "codex --workdir D:/pets-driven", tone: "command" },
-  { prompt: ">", text: "Terminal channel activated for Cato", tone: "success" },
-  { prompt: ">", text: "Agent source ready in the bound working directory", tone: "muted" },
-] as const;
-
-export const MULTI_PET_PATHS: Record<string, PetMotionKeyframe[]> = {
-  cato: [
-    { frame: 720, x: 420, y: 650, animationState: "running-right" },
-    { frame: 870, x: 780, y: 650, animationState: "running-right" },
-    { frame: 1020, x: 960, y: 620, animationState: "waving" },
-  ],
-  otto: [
-    { frame: 720, x: 1320, y: 650, animationState: "running-left" },
-    { frame: 870, x: 1040, y: 650, animationState: "running-left" },
-    { frame: 1020, x: 1160, y: 620, animationState: "jumping" },
-  ],
-  pip: [
-    { frame: 720, x: 960, y: 460, animationState: "running-right" },
-    { frame: 870, x: 1180, y: 390, animationState: "running-right" },
-    { frame: 1020, x: 1480, y: 500, animationState: "review" },
-  ],
-};
+export const WORKSPACE_PETS: DemoPet[] = [
+  {
+    id: "bloop",
+    name: "Bloop",
+    assetId: "bloop",
+    note: "playful operator",
+    role: "ops",
+    cwd: "D:/pets-driven/services",
+    gradient: { from: "#75D9A9", to: "#46B97E" },
+    color: "#75d9a9",
+  },
+  {
+    id: "fenn",
+    name: "Fenn",
+    assetId: "fenn",
+    note: "swift scout",
+    role: "tests",
+    cwd: "D:/pets-driven/apps/desktop",
+    gradient: { from: "#F2A45E", to: "#DE6E2B" },
+    color: "#f2a45e",
+  },
+  {
+    id: "mochi",
+    name: "Mochi",
+    assetId: "mochi",
+    note: "careful archivist",
+    role: "docs",
+    cwd: "D:/pets-driven/docs",
+    gradient: { from: "#FF9DB6", to: "#F16A90" },
+    color: "#ff9db6",
+  },
+];

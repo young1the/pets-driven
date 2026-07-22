@@ -1,8 +1,8 @@
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import type { CSSProperties } from "react";
-import { AbsoluteFill, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { presentBehaviorDecisionToken } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import type { CSSProperties, ReactNode } from "react";
+import { AbsoluteFill, Sequence, staticFile, useCurrentFrame } from "remotion";
 import {
-  Callout,
   Caption,
   ClickBurst,
   DemoAppFrame,
@@ -12,670 +12,685 @@ import {
   DemoWindow,
   DesktopBackdrop,
   DesktopPet,
+  HeartBurst,
   PoofBurst,
+  TERMINAL_TYPING,
 } from "./components";
-import { DEMO_PETS, type DemoPet, type PetMotionKeyframe } from "./fixtures";
-import { easeOutCubic, lerp, progress } from "./timeline";
+import { DEMO_PETS, type PetMotionKeyframe, WORKSPACE_PETS } from "./fixtures";
+import {
+  beat,
+  easeInCubic,
+  easeInOutCubic,
+  easeOutCubic,
+  lerp,
+  progress,
+  pulse,
+  scene,
+  sceneLocal,
+} from "./timeline";
 import "./service-demo.css";
 
-const cato = DEMO_PETS[0];
-const otto = DEMO_PETS[1];
-const pip = DEMO_PETS[2];
-const TERMINAL_TYPING_DONE_FRAME = 528;
-const WORKING_BUBBLE_START_FRAME = TERMINAL_TYPING_DONE_FRAME + 4;
-const WORKING_BUBBLE_DURATION = 64;
-const TERMINAL_FADE_START_FRAME = WORKING_BUBBLE_START_FRAME + WORKING_BUBBLE_DURATION + 6;
-const TERMINAL_FADE_DURATION = 24;
-const PET_EXIT_MOVE_START_FRAME = TERMINAL_FADE_START_FRAME + TERMINAL_FADE_DURATION;
-const PET_EXIT_MOVE_DURATION = 20;
-const PET_EXIT_X = 1200;
-const PET_EXIT_Y = 980;
-const PET_POOF_START_FRAME = PET_EXIT_MOVE_START_FRAME + PET_EXIT_MOVE_DURATION;
-const PET_POOF_DURATION = 16;
-const PET_POOF_HIDE_OFFSET = 6;
-const MULTI_SCENE_START_FRAME = PET_POOF_START_FRAME + PET_POOF_DURATION;
-const SUMMONED_PET_SCALE = 1.26;
-const MULTI_PET_SCALE = 1.08;
-const CURSOR_BASE_SCALE = 1.8;
-const SUMMON_EMOTE_START_FRAME = 232;
-const SUMMON_EMOTE_DURATION = 18;
-const CURSOR_ENTRY_START_FRAME = 54;
-const CURSOR_ENTRY_X = 1680;
-const CURSOR_ROW_Y = 828;
-const CURSOR_PIP_X = 1092;
-const CURSOR_PIP_Y = 850;
-const CURSOR_OTTO_X = 828;
-const CURSOR_OTTO_Y = 850;
-const CURSOR_CATO_X = 960;
-const CURSOR_TO_PIP_END_FRAME = 64;
-const CURSOR_PIP_HOVER_END_FRAME = 70;
-const CURSOR_TO_OTTO_END_FRAME = 82;
-const CURSOR_OTTO_HOVER_END_FRAME = 88;
-const CURSOR_TO_CATO_END_FRAME = 98;
-const CURSOR_PIP_OTTO_HANDOFF_FRAME = 76;
-const CURSOR_RELEASE_Y = 530;
-const CURSOR_FOLLOW_START_FRAME = SUMMON_EMOTE_START_FRAME + SUMMON_EMOTE_DURATION;
-const CURSOR_FOLLOW_DURATION = 34;
-const bloop: DemoPet = {
-  id: "bloop",
-  name: "Bloop",
-  assetId: "bloop",
-  note: "playful operator",
-  role: "ops",
-  cwd: "D:/pets-driven/services",
-  gradient: { from: "#75D9A9", to: "#46B97E" },
-  color: "#75d9a9",
-};
-const fenn: DemoPet = {
-  id: "fenn",
-  name: "Fenn",
-  assetId: "fenn",
-  note: "swift scout",
-  role: "tests",
-  cwd: "D:/pets-driven/apps/desktop",
-  gradient: { from: "#F2A45E", to: "#DE6E2B" },
-  color: "#f2a45e",
-};
-const mochi: DemoPet = {
-  id: "mochi",
-  name: "Mochi",
-  assetId: "mochi",
-  note: "careful archivist",
-  role: "docs",
-  cwd: "D:/pets-driven/docs",
-  gradient: { from: "#FF9DB6", to: "#F16A90" },
-  color: "#ff9db6",
-};
-const MULTI_SCENE_PETS: DemoPet[] = [bloop, fenn, mochi];
+const [cato, otto, pip] = DEMO_PETS;
+
+const HERO_SCALE = 1.5;
+const MULTI_PET_SCALE = 1.35;
+const CURSOR_SCALE = 1.8;
+
+const HERO_X = 960;
+/** Pets stand on the dock, the way they walk above a real taskbar. */
+const HERO_GROUND_Y = 995;
+const HERO_CENTER_Y = HERO_GROUND_Y - (PET_CELL_SIZE.height * HERO_SCALE) / 2;
+const HERO_EXIT_X = 1300;
+const DESKTOP_GROUND_Y = 985;
+
+const CURSOR_PARK = { x: 1330, y: 700 };
+/** Where the cursor lands on the pet — off the face, so it never hides the eyes. */
+const HERO_TOUCH = { x: HERO_X + 58, y: HERO_CENTER_Y + 62 };
+
+/**
+ * Opacity for something that fades in, holds, then fades out — all four numbers
+ * in the same units the surrounding beats use.
+ */
+function windowOpacity(
+  frame: number,
+  inStart: number,
+  inLength: number,
+  outStart: number,
+  outLength: number,
+) {
+  return progress(frame, inStart, inLength) * (1 - progress(frame, outStart, outLength));
+}
 
 export function ServiceDemoVideo() {
   const frame = useCurrentFrame();
-  const appP = progress(frame, 0, 54);
-  const terminalP = progress(frame, 390, 72);
-  const multiP = progress(frame, MULTI_SCENE_START_FRAME, 300);
-  const closingP = progress(frame, 900, 60);
-  const closingBackdropP = progress(frame, 900, 10);
-  const pipHoverWindowP = progress(
-    frame,
-    CURSOR_TO_PIP_END_FRAME - 2,
-    CURSOR_PIP_OTTO_HANDOFF_FRAME - (CURSOR_TO_PIP_END_FRAME - 2),
-  );
-  const pipPop = Math.sin(pipHoverWindowP * Math.PI);
-  const pipCardHovered = pipPop > 0.15;
-  const ottoHoverWindowP = progress(
-    frame,
-    CURSOR_PIP_OTTO_HANDOFF_FRAME,
-    CURSOR_OTTO_HOVER_END_FRAME + 2 - CURSOR_PIP_OTTO_HANDOFF_FRAME,
-  );
-  const ottoPop = Math.sin(ottoHoverWindowP * Math.PI);
-  const ottoCardHovered = ottoPop > 0.15;
-  const catoHoverWindowP = progress(
-    frame,
-    CURSOR_TO_CATO_END_FRAME - 2,
-    112 - (CURSOR_TO_CATO_END_FRAME - 2),
-  );
-  const catoPop = Math.sin(catoHoverWindowP * Math.PI);
-  const catoCardHovered = catoPop > 0.15;
+  const cameraScale = cameraAt(frame);
+  const hero = heroPose(frame);
+  const cursor = cursorAt(frame);
 
-  const dragP = easeOutCubic(progress(frame, 112, 68));
-  const cardY = lerp(0, -314, dragP);
-  const releaseP = progress(frame, 180, 10);
-  const petReveal = progress(frame, 190, 24);
-  const summonDropP = easeOutCubic(progress(frame, 190, 42));
-  const desktopFadeP = progress(frame, 190, 42);
-  const terminalWindowP = progress(frame, 390, 28);
-  const summonEmoteP = progress(frame, SUMMON_EMOTE_START_FRAME, SUMMON_EMOTE_DURATION);
-  const workingBubbleP = progress(frame, WORKING_BUBBLE_START_FRAME, WORKING_BUBBLE_DURATION);
-  const workSceneExitOpacity = interpolate(
-    progress(frame, TERMINAL_FADE_START_FRAME, TERMINAL_FADE_DURATION),
-    [0, 1],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    },
-  );
-  const poofP = progress(frame, PET_POOF_START_FRAME, PET_POOF_DURATION);
-  const summonCaptionOpacity =
-    interpolate(progress(frame, 0, 10), [0, 1], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }) *
-    interpolate(progress(frame, 274, 18), [0, 1], [1, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-  const terminalCaptionOpacity =
-    interpolate(progress(frame, 344, 18), [0, 1], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }) *
-    interpolate(progress(frame, 642, 20), [0, 1], [1, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-  const multiCaptionOpacity =
-    interpolate(multiP, [0, 0.08], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }) *
-    interpolate(closingP, [0, 0.2], [1, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-  const summonPet = summonedPetPose(frame, summonDropP);
-  const petCenter = {
-    x: summonPet.x,
-    y: summonPet.y - (PET_CELL_SIZE.height * SUMMONED_PET_SCALE) / 2,
-  };
-  const cursor = cursorPosition(frame, petCenter);
-  const clickBurst1 = progress(frame, 332, 13);
-  const clickBurst2 = progress(frame, 348, 13);
-  const showSummonedPet = petReveal > 0 && frame < PET_POOF_START_FRAME + PET_POOF_HIDE_OFFSET;
-  const mainWindowOpacity =
-    interpolate(appP, [0, 0.22], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }) *
-    interpolate(desktopFadeP, [0, 1], [1, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }) *
-    interpolate(terminalWindowP, [0, 0.5], [1, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-  const dragCardOpacity = interpolate(releaseP, [0, 0.72, 1], [1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const summonL = sceneLocal(frame, "summon");
+  const terminalL = sceneLocal(frame, "terminal");
+  const completedL = sceneLocal(frame, "completed");
+
+  const appOpacity = windowOpacity(summonL, 0, 12, 54, 18);
+  // One quick flick, no easing curve to admire — the card is out in 20 frames.
+  const dragP = progress(summonL, 34, 20);
+  const catoHoverPop = pulse(progress(summonL, 18, 16));
+  const dragging = summonL >= 34 && summonL < 64;
+
+  const terminalOpacity = windowOpacity(terminalL, 24, 22, scene("terminal").duration, 18);
+  const clickBurstA = progress(terminalL, 6, 13);
+  const clickBurstB = progress(terminalL, 20, 13);
+
+  const heartBurstP = progress(completedL, 108, 30);
+  const poofP = progress(completedL, 162, 14);
 
   return (
     <AbsoluteFill className="pd-video">
       <div className="pd-video__background" />
-      <main className="pd-video__stage">
-        <DemoAppFrame
-          className="pd-video-main-frame"
-          style={
-            {
-              opacity: mainWindowOpacity,
-              transform: `translateX(-50%) translateY(${lerp(34, 0, easeOutCubic(appP))}px)`,
-            } as CSSProperties
-          }
-        >
-          <DemoWindow className="pd-video-main-window">
-            <div className="pd-video-home">
-              <div className="pd-video-home__copy">
-                <span>Your pack</span>
-                <h2>
-                  Good morning,
-                  <br />
-                  Trainer!
-                </h2>
-                <button type="button">Add a pet</button>
-                <p>Bring a new pet into the pack and give it a job.</p>
+
+      {/* Everything diegetic lives under the camera, so push-ins can punch into
+          the moments that matter. Captions deliberately stay outside it. */}
+      <div
+        className="pd-video-camera"
+        style={{
+          transform: `scale(${cameraScale})`,
+          transformOrigin: `${CAMERA_ORIGIN.x}px ${CAMERA_ORIGIN.y}px`,
+        }}
+      >
+        <main className="pd-video__stage">
+          {/* No desktop chrome through the middle act — the summoned pet stands
+              on the bare backdrop so nothing competes with it. */}
+          <DemoAppFrame
+            className="pd-video-main-frame"
+            style={
+              {
+                opacity: appOpacity,
+                transform: `translateX(-50%) translateY(${lerp(34, 0, easeOutCubic(progress(summonL, 0, 16)))}px)`,
+              } as CSSProperties
+            }
+          >
+            <DemoWindow className="pd-video-main-window">
+              <div className="pd-video-home">
+                <div className="pd-video-home__copy">
+                  <span>Your pack</span>
+                  <h2>
+                    Good morning,
+                    <br />
+                    Trainer!
+                  </h2>
+                  <button type="button">Add a pet</button>
+                  <p>Bring a new pet into the pack and give it a job.</p>
+                </div>
+                <div className="pd-video-card-fan">
+                  <div className="pd-video-card pd-video-card--left">
+                    <DemoPetCard pet={otto} />
+                  </div>
+                  <div
+                    className="pd-video-card pd-video-card--center"
+                    style={{
+                      opacity: dragging || summonL >= 64 ? 0 : 1,
+                      transform: `translateX(-50%) translateY(${lerp(0, -10, catoHoverPop)}px) scale(${lerp(1, 1.14, catoHoverPop)})`,
+                      zIndex: 120,
+                    }}
+                  >
+                    <DemoPetCard featured={catoHoverPop > 0.15} pet={cato} />
+                  </div>
+                  <div className="pd-video-card pd-video-card--right">
+                    <DemoPetCard pet={pip} />
+                  </div>
+                </div>
               </div>
-              <div className="pd-video-card-fan">
+
+              {/* Lives inside the window body, not the app frame, so the deck
+                  end of the card is clipped by the window like its neighbours
+                  instead of hanging outside it. */}
+              {dragging ? (
                 <div
-                  className="pd-video-card pd-video-card--left"
+                  className="pd-video-drag-card"
                   style={{
-                    transform: `translateX(-50%) translateY(${lerp(22, -10, ottoPop)}px) rotate(${lerp(-7, 0, ottoPop)}deg) scale(${lerp(1, 1.14, ottoPop)})`,
-                    zIndex: ottoCardHovered ? 130 : undefined,
+                    opacity: 1 - progress(summonL, 54, 10),
+                    transform: `translateX(-50%) translateY(${lerp(0, -352, dragP)}px) scale(${lerp(1, 1.05, dragP)})`,
                   }}
                 >
-                  <DemoPetCard featured={ottoCardHovered} pet={otto} />
+                  <DemoPetCard featured={dragP > 0.22} pet={cato} />
                 </div>
-                <div
-                  className="pd-video-card pd-video-card--center"
-                  style={{
-                    opacity: frame >= 112 ? 0 : 1,
-                    transform: `translateX(-50%) translateY(${lerp(0, -10, catoPop)}px) scale(${lerp(1, 1.14, catoPop)})`,
-                    zIndex: 120,
-                  }}
-                >
-                  <DemoPetCard featured={catoCardHovered} pet={cato} />
-                </div>
-                <div
-                  className="pd-video-card pd-video-card--right"
-                  style={{
-                    transform: `translateX(-50%) translateY(${lerp(22, -10, pipPop)}px) rotate(${lerp(7, 0, pipPop)}deg) scale(${lerp(1, 1.14, pipPop)})`,
-                    zIndex: pipCardHovered ? 130 : undefined,
-                  }}
-                >
-                  <DemoPetCard featured={pipCardHovered} pet={pip} />
-                </div>
-              </div>
-            </div>
-          </DemoWindow>
+              ) : null}
+            </DemoWindow>
+          </DemoAppFrame>
 
-          {frame >= 112 && frame < 190 ? (
-            <div
-              className="pd-video-drag-card"
-              style={{
-                opacity: dragCardOpacity,
-                transform: `translateX(-50%) translateY(${cardY}px) scale(${lerp(1, 1.05, dragP)})`,
-              }}
-            >
-              <DemoPetCard featured={dragP > 0.22} pet={cato} />
-            </div>
-          ) : null}
-        </DemoAppFrame>
-
-        <Caption
-          style={{
-            left: "50%",
-            opacity: summonCaptionOpacity,
-            textAlign: "center",
-            top: 118,
-            transform: "translateX(-50%)",
-          }}
-        >
-          Summon a pet from your deck.
-        </Caption>
-
-        {showSummonedPet ? (
-          <>
+          {hero ? (
             <DesktopPet
-              animationState={summonPet.animationState}
-              decisionEmote={
-                summonEmoteP > 0 && summonEmoteP < 1
-                  ? { emote: "heart", label: "Excited", mood: "love", tone: "affection" }
-                  : null
-              }
               elapsedMs={frame * 33}
               pet={cato}
-              scale={SUMMONED_PET_SCALE}
-              x={summonPet.x}
-              y={summonPet.y}
+              presentation={hero}
+              scale={HERO_SCALE}
+              x={hero.x}
+              y={hero.y}
             />
-            <Callout
-              className="pd-video-working-callout"
-              style={{
-                left: summonPet.x,
-                opacity:
-                  interpolate(workingBubbleP, [0, 0.12, 0.9, 1], [0, 1, 1, 0], {
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  }) *
-                  interpolate(multiP, [0, 0.08], [1, 0], {
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  }),
-                top: summonPet.y - 246,
-                transform: `translateX(-50%) translateY(${lerp(10, 0, easeOutCubic(workingBubbleP))}px)`,
-              }}
-            >
-              Now I&apos;m working.
-            </Callout>
-          </>
-        ) : null}
+          ) : null}
 
-        <section
-          className="pd-video-terminal-zone"
-          style={
-            {
-              opacity:
-                interpolate(terminalP, [0, 0.18], [0, 1], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                }) *
-                workSceneExitOpacity *
-                interpolate(multiP, [0, 0.08], [1, 0], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                }),
-              transform: `translateX(-50%) translateY(${lerp(12, 0, easeOutCubic(terminalP))}px)`,
-            } as CSSProperties
-          }
-        >
-          <DemoTerminal className="pd-video-terminal-window" cwd={cato.cwd} />
-        </section>
-
-        <Caption
-          style={{
-            left: "50%",
-            opacity: terminalCaptionOpacity * workSceneExitOpacity,
-            textAlign: "center",
-            top: 118,
-            transform: "translateX(-50%)",
-          }}
-        >
-          Open its terminal with a double-click.
-        </Caption>
-
-        <section
-          className="pd-video-multi"
-          style={{
-            opacity:
-              interpolate(multiP, [0, 0.06], [0, 1], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }) *
-              interpolate(closingP, [0, 0.2], [1, 0], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
-          }}
-        >
-          <DesktopBackdrop />
-          <Caption
-            style={{
-              left: "50%",
-              opacity: multiCaptionOpacity,
-              textAlign: "center",
-              top: 118,
-              transform: "translateX(-50%)",
-            }}
+          <section
+            className="pd-video-terminal-zone"
+            style={
+              {
+                opacity: terminalOpacity,
+                transform: `translateX(-50%) translateY(${lerp(12, 0, easeOutCubic(progress(terminalL, 24, 22)))}px)`,
+              } as CSSProperties
+            }
           >
-            Each pet settles into a different desktop routine.
-          </Caption>
-          {MULTI_SCENE_PETS.map((pet) => {
-            const pose = roamingPetPose(pet.id, frame);
-            return (
-              <DesktopPet
-                animationState={pose.animationState}
-                decisionEmote={pose.decisionEmote}
-                elapsedMs={frame * 33}
-                key={pet.id}
-                pet={pet}
-                status={pose.status}
-                scale={MULTI_PET_SCALE}
-                x={pose.x}
-                y={pose.y}
-              />
-            );
-          })}
-        </section>
+            <DemoTerminal
+              className="pd-video-terminal-window"
+              cwd={cato.cwd}
+              typingStartFrame={beat("terminal", TERMINAL_TYPING.command + 30)}
+            />
+          </section>
 
-        <section
-          className="pd-video-closing"
-          style={{ opacity: interpolate(closingBackdropP, [0, 1], [0, 1]) }}
-        >
-          <div className="pd-video-closing__wash" />
-          <div className="pd-video-closing__dots" />
-          <div
-            className="pd-video-closing__reveal"
-            style={{
-              opacity: interpolate(closingP, [0, 0.28], [0, 1], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
-              transform: `translateY(${lerp(26, 0, easeOutCubic(closingP))}px)`,
-            }}
+          <Sequence
+            durationInFrames={scene("multi-pet").duration}
+            from={scene("multi-pet").from}
+            layout="none"
+            name="One pet per project"
           >
-            {/* biome-ignore lint/performance/noImgElement: Remotion renders outside Next.js, so next/image is unavailable here. */}
-            <img alt="" src={staticFile("petsdriven-mark.svg")} />
-            <h2>
-              Pets<span className="pd-video-closing__hyphen">-</span>Driven
-            </h2>
-            <p className="pd-video-closing__eyebrow">a cute way to develop with AI agents</p>
-          </div>
-        </section>
+            <MultiPetScene />
+          </Sequence>
 
-        {clickBurst1 > 0 && clickBurst1 < 1 ? (
-          <ClickBurst progress={clickBurst1} x={petCenter.x} y={petCenter.y} />
-        ) : null}
-        {clickBurst2 > 0 && clickBurst2 < 1 ? (
-          <ClickBurst progress={clickBurst2} x={petCenter.x} y={petCenter.y} />
-        ) : null}
-        {poofP > 0 && poofP < 1 ? (
-          <PoofBurst progress={poofP} x={petCenter.x} y={petCenter.y} />
-        ) : null}
+          <Sequence
+            durationInFrames={scene("closing").duration}
+            from={scene("closing").from}
+            layout="none"
+            name="Closing"
+          >
+            <ClosingScene />
+          </Sequence>
 
-        {cursor && workSceneExitOpacity > 0 ? (
-          <DemoCursor scale={cursor.scale} x={cursor.x} y={cursor.y} />
-        ) : null}
+          {clickBurstA > 0 && clickBurstA < 1 ? (
+            <ClickBurst progress={clickBurstA} x={HERO_TOUCH.x} y={HERO_TOUCH.y} />
+          ) : null}
+          {clickBurstB > 0 && clickBurstB < 1 ? (
+            <ClickBurst progress={clickBurstB} x={HERO_TOUCH.x} y={HERO_TOUCH.y} />
+          ) : null}
+          {heartBurstP > 0 && heartBurstP < 1 ? (
+            <HeartBurst progress={heartBurstP} x={HERO_X} y={HERO_CENTER_Y} />
+          ) : null}
+          {poofP > 0 && poofP < 1 ? (
+            <PoofBurst progress={poofP} x={HERO_EXIT_X} y={HERO_CENTER_Y} />
+          ) : null}
+
+          {cursor ? <DemoCursor scale={cursor.scale} x={cursor.x} y={cursor.y} /> : null}
+        </main>
+      </div>
+
+      {/* Captions are titles, not set dressing — the camera must not drag them
+          out of frame during a push-in. */}
+      <main className="pd-video__stage pd-video__stage--overlay">
+        <SceneCaption opacity={windowOpacity(summonL, 2, 10, 84, 14)}>
+          Summon a pet from your deck.
+        </SceneCaption>
+        <SceneCaption opacity={windowOpacity(terminalL, 0, 10, 96, 14)}>
+          Double-click it to open its terminal.
+        </SceneCaption>
+        <SceneCaption opacity={windowOpacity(completedL, 30, 10, 62, 12)}>
+          Done — and it waits.
+        </SceneCaption>
+        <SceneCaption opacity={windowOpacity(completedL, 66, 10, 140, 14)}>
+          Pet it to release.
+        </SceneCaption>
+        <SceneCaption opacity={windowOpacity(sceneLocal(frame, "multi-pet"), 4, 10, 34, 12)}>
+          Every project gets its own.
+        </SceneCaption>
+        <SceneCaption opacity={windowOpacity(sceneLocal(frame, "multi-pet"), 52, 10, 168, 14)}>
+          And a life of their own.
+        </SceneCaption>
       </main>
     </AbsoluteFill>
   );
 }
 
-function cursorPosition(
-  frame: number,
-  petCenter: { x: number; y: number },
-): { scale: number; x: number; y: number } | null {
-  if (frame < CURSOR_ENTRY_START_FRAME) {
+function SceneCaption({ children, opacity }: { children: ReactNode; opacity: number }) {
+  if (opacity <= 0) {
     return null;
   }
-  if (frame < CURSOR_TO_PIP_END_FRAME) {
-    // Swoop in from off-screen and check the rightmost pet first.
-    const p = easeOutCubic(
-      progress(frame, CURSOR_ENTRY_START_FRAME, CURSOR_TO_PIP_END_FRAME - CURSOR_ENTRY_START_FRAME),
-    );
-    return {
-      scale: CURSOR_BASE_SCALE,
-      x: lerp(CURSOR_ENTRY_X, CURSOR_PIP_X, p),
-      y: lerp(CURSOR_ROW_Y, CURSOR_PIP_Y, p) - Math.sin(p * Math.PI) * 46,
-    };
-  }
-  if (frame < CURSOR_PIP_HOVER_END_FRAME) {
-    const wiggle = Math.sin((frame - CURSOR_TO_PIP_END_FRAME) / 2.4) * 3;
-    return { scale: CURSOR_BASE_SCALE, x: CURSOR_PIP_X + wiggle, y: CURSOR_PIP_Y };
-  }
-  if (frame < CURSOR_TO_OTTO_END_FRAME) {
-    // Sweep across to the leftmost pet to compare it too.
-    const p = easeOutCubic(
-      progress(
-        frame,
-        CURSOR_PIP_HOVER_END_FRAME,
-        CURSOR_TO_OTTO_END_FRAME - CURSOR_PIP_HOVER_END_FRAME,
-      ),
-    );
-    return {
-      scale: CURSOR_BASE_SCALE,
-      x: lerp(CURSOR_PIP_X, CURSOR_OTTO_X, p),
-      y: lerp(CURSOR_PIP_Y, CURSOR_OTTO_Y, p) - Math.sin(p * Math.PI) * 34,
-    };
-  }
-  if (frame < CURSOR_OTTO_HOVER_END_FRAME) {
-    const wiggle = Math.sin((frame - CURSOR_TO_OTTO_END_FRAME) / 2.4) * 3;
-    return { scale: CURSOR_BASE_SCALE, x: CURSOR_OTTO_X + wiggle, y: CURSOR_OTTO_Y };
-  }
-  if (frame < CURSOR_TO_CATO_END_FRAME) {
-    // Moves to Cato, the eventual pick — but doesn't grab it yet.
-    const p = easeOutCubic(
-      progress(
-        frame,
-        CURSOR_OTTO_HOVER_END_FRAME,
-        CURSOR_TO_CATO_END_FRAME - CURSOR_OTTO_HOVER_END_FRAME,
-      ),
-    );
-    return {
-      scale: CURSOR_BASE_SCALE,
-      x: lerp(CURSOR_OTTO_X, CURSOR_CATO_X, p),
-      y: lerp(CURSOR_OTTO_Y, CURSOR_ROW_Y, p) - Math.sin(p * Math.PI) * 18,
-    };
-  }
-  if (frame < 112) {
-    // Hovers on Cato for a beat — a moment of "is this the one?" — before the drag starts.
-    const wiggle = Math.sin((frame - CURSOR_TO_CATO_END_FRAME) / 2.6) * 3;
-    return { scale: CURSOR_BASE_SCALE, x: CURSOR_CATO_X + wiggle, y: CURSOR_ROW_Y };
-  }
-  if (frame < 180) {
-    const p = easeOutCubic(progress(frame, 112, 68));
-    return { scale: CURSOR_BASE_SCALE, x: 960, y: lerp(828, CURSOR_RELEASE_Y, p) };
-  }
-  if (frame < CURSOR_FOLLOW_START_FRAME) {
-    // Pet has just been created — the cursor stays put instead of following it.
-    return { scale: CURSOR_BASE_SCALE, x: 960, y: CURSOR_RELEASE_Y };
-  }
-  if (frame < CURSOR_FOLLOW_START_FRAME + CURSOR_FOLLOW_DURATION) {
-    const p = easeOutCubic(progress(frame, CURSOR_FOLLOW_START_FRAME, CURSOR_FOLLOW_DURATION));
-    return {
-      scale: CURSOR_BASE_SCALE,
-      x: lerp(960, petCenter.x, p),
-      y: lerp(CURSOR_RELEASE_Y, petCenter.y, p),
-    };
-  }
-  if (frame < 330) {
-    return { scale: CURSOR_BASE_SCALE, x: petCenter.x, y: petCenter.y };
-  }
-  if (frame < 375) {
-    const pulse = frame % 16 < 8 ? CURSOR_BASE_SCALE * 0.86 : CURSOR_BASE_SCALE;
-    return { scale: pulse, x: petCenter.x, y: petCenter.y };
-  }
-  if (frame < 390) {
-    const p = easeOutCubic(progress(frame, 375, 15));
-    return {
-      scale: CURSOR_BASE_SCALE,
-      x: lerp(petCenter.x, 1110, p),
-      y: lerp(petCenter.y, 622, p),
-    };
-  }
-  return { scale: CURSOR_BASE_SCALE, x: 1110, y: 622 };
+  return (
+    <Caption
+      style={{
+        left: "50%",
+        opacity,
+        textAlign: "center",
+        top: 118,
+        transform: "translateX(-50%)",
+      }}
+    >
+      {children}
+    </Caption>
+  );
 }
 
-const DESKTOP_ROAM_Y = 785;
-const DESKTOP_WORK_Y = 830;
+/* -------------------------------------------------------------------------- */
+/* Hero pet — spans summon through the two attention holds                     */
+/* -------------------------------------------------------------------------- */
 
-function roamingPetPose(petId: string, frame: number): PetMotionKeyframe {
-  const local = Math.max(0, frame - MULTI_SCENE_START_FRAME);
-  const configs = {
-    bloop: {
-      arc: 160,
-      baseX: 460,
-      baseY: DESKTOP_ROAM_Y,
-      phase: 0.2,
-      vertical: 18,
-      workX: 480,
-      workY: DESKTOP_WORK_Y,
-    },
-    fenn: {
-      arc: 150,
-      baseX: 1420,
-      baseY: DESKTOP_ROAM_Y,
-      phase: 2.5,
-      vertical: 16,
-      workX: 1440,
-      workY: DESKTOP_WORK_Y,
-    },
-    mochi: {
-      arc: 140,
-      baseX: 960,
-      baseY: DESKTOP_ROAM_Y,
-      phase: 4.1,
-      vertical: 24,
-      workX: 960,
-      workY: DESKTOP_WORK_Y,
-    },
-  };
-  const config = configs[petId as keyof typeof configs];
-  const wave = local / 26 + config.phase;
-  const roamX = config.baseX + Math.sin(wave) * config.arc;
-  const roamY = config.baseY + Math.cos(local / 16 + config.phase) * config.vertical;
-  const roamFacing = Math.cos(wave) >= 0 ? "right" : "left";
-  const settleP = easeOutCubic(progress(local, 48, 30));
-  const workingP = progress(local, 84, 12);
-  const settledBaseX = lerp(roamX, config.workX, settleP);
-  const settledBaseY = lerp(roamY, config.workY, settleP);
+function heroPose(frame: number): PetMotionKeyframe | null {
+  const summonL = sceneLocal(frame, "summon");
+  const terminalL = sceneLocal(frame, "terminal");
+  const completedL = sceneLocal(frame, "completed");
 
-  if (settleP < 1) {
+  if (summonL < 58 || completedL >= 168) {
+    return null;
+  }
+
+  // Dropped out of the card and onto the desktop. The fall accelerates to carry
+  // the flick's momentum through, then the pet settles and waves.
+  if (terminalL < 0) {
+    const dropP = easeInCubic(progress(summonL, 58, 26));
     return {
-      animationState: roamFacing === "left" ? "running-left" : "running-right",
+      activity: dropP < 1 ? "midAir" : "greeting",
+      animationState: dropP < 1 ? "jumping" : "waving",
+      decisionEmote: dropP < 1 ? null : presentBehaviorDecisionToken("greet"),
       frame,
-      x: settledBaseX,
-      y: settledBaseY,
+      x: HERO_X,
+      y: lerp(560, HERO_GROUND_Y, dropP),
     };
   }
 
+  // Double-clicked open; the bound agent picks up the task.
+  if (completedL < 0) {
+    return {
+      animationState: terminalL >= 104 ? "running" : "idle",
+      frame,
+      x: HERO_X,
+      y: HERO_GROUND_Y,
+    };
+  }
+
+  if (completedL < 26) {
+    return {
+      animationState: "running",
+      frame,
+      overlay: {
+        kind: "agent-channel",
+        label: null,
+        message: "running the test suite",
+        status: "working",
+      },
+      working: true,
+      x: HERO_X,
+      y: HERO_GROUND_Y,
+    };
+  }
+
+  // The hold. Hopping in place: done, pleased about it, and going nowhere until
+  // you say so — this is the whole point of the video. The "Done" capsule and
+  // its sparkle come from the completed agent status, not from us.
+  if (completedL < 108) {
+    return {
+      animationState: "jumping",
+      frame,
+      overlay: {
+        kind: "agent-channel",
+        label: null,
+        message: "tests are green",
+        status: "completed",
+      },
+      working: true,
+      x: HERO_X,
+      y: HERO_GROUND_Y - Math.abs(Math.sin((completedL - 26) / 9)) * 20,
+    };
+  }
+
+  // Petted — the task is released, and `beingPetted` is a real pet activity.
+  if (completedL < 142) {
+    return {
+      activity: "beingPetted",
+      animationState: "waving",
+      frame,
+      working: true,
+      x: HERO_X,
+      y: HERO_GROUND_Y,
+    };
+  }
+
+  const exitP = easeOutCubic(progress(completedL, 142, 20));
+  return {
+    animationState: "running-right",
+    frame,
+    x: lerp(HERO_X, HERO_EXIT_X, exitP),
+    y: lerp(HERO_GROUND_Y, HERO_GROUND_Y - 24, exitP),
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cursor                                                                      */
+/* -------------------------------------------------------------------------- */
+
+function cursorAt(frame: number): { scale: number; x: number; y: number } | null {
+  const summonL = sceneLocal(frame, "summon");
+  const terminalL = sceneLocal(frame, "terminal");
+  const completedL = sceneLocal(frame, "completed");
+  const heroCenter = HERO_TOUCH;
+
+  if (summonL < 6 || completedL >= 150) {
+    return null;
+  }
+
+  if (terminalL < 0) {
+    // Swoops in, sizes up the one card it wants, then flicks it out of the deck.
+    if (summonL < 22) {
+      const p = easeOutCubic(progress(summonL, 6, 16));
+      return {
+        scale: CURSOR_SCALE,
+        x: lerp(1680, HERO_X, p),
+        y: 828 - Math.sin(p * Math.PI) * 46,
+      };
+    }
+    if (summonL < 34) {
+      return {
+        scale: CURSOR_SCALE,
+        x: HERO_X + Math.sin((summonL - 22) / 2.4) * 3,
+        y: 828,
+      };
+    }
+    if (summonL < 54) {
+      // Rides the card out at the same speed.
+      return { scale: CURSOR_SCALE, x: HERO_X, y: lerp(828, 498, progress(summonL, 34, 20)) };
+    }
+    if (summonL < 88) {
+      // Lets go and stays put — the pet is its own thing now.
+      return { scale: CURSOR_SCALE, x: HERO_X, y: 498 };
+    }
+    const p = easeOutCubic(progress(summonL, 88, 20));
+    return {
+      scale: CURSOR_SCALE,
+      x: HERO_X,
+      y: lerp(498, heroCenter.y, p),
+    };
+  }
+
+  if (completedL < 0) {
+    if (terminalL < 6) {
+      return { scale: CURSOR_SCALE, ...heroCenter };
+    }
+    if (terminalL < 34) {
+      const clicking = terminalL % 16 < 8;
+      return { scale: clicking ? CURSOR_SCALE * 0.86 : CURSOR_SCALE, ...heroCenter };
+    }
+    const p = easeOutCubic(progress(terminalL, 34, 16));
+    return {
+      scale: CURSOR_SCALE,
+      x: lerp(heroCenter.x, CURSOR_PARK.x, p),
+      y: lerp(heroCenter.y, CURSOR_PARK.y, p),
+    };
+  }
+
+  // Stays parked well past the completion, so the badge is visibly ignored for a
+  // beat before anyone reaches for it.
+  if (completedL < 62) {
+    return { scale: CURSOR_SCALE, ...CURSOR_PARK };
+  }
+  if (completedL < 84) {
+    const p = easeOutCubic(progress(completedL, 62, 22));
+    return {
+      scale: CURSOR_SCALE,
+      x: lerp(CURSOR_PARK.x, heroCenter.x, p),
+      y: lerp(CURSOR_PARK.y, heroCenter.y, p),
+    };
+  }
+  // The stroke gesture: back and forth across the pet, easing at each turn.
+  if (completedL < 108) {
+    const t = progress(completedL, 84, 24);
+    return {
+      scale: CURSOR_SCALE * 0.94,
+      x: heroCenter.x + Math.sin(t * Math.PI * 2 * 2.5) * 52,
+      y: heroCenter.y + Math.cos(t * Math.PI * 2 * 2.5) * 9,
+    };
+  }
+  if (completedL < 130) {
+    return { scale: CURSOR_SCALE, ...heroCenter };
+  }
+  const p = easeOutCubic(progress(completedL, 130, 20));
+  return {
+    scale: CURSOR_SCALE,
+    x: lerp(heroCenter.x, 1620, p),
+    y: lerp(heroCenter.y, 520, p),
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* One pet per project                                                         */
+/* -------------------------------------------------------------------------- */
+
+/** Frames of head start each pet's sprite clock carries, to break the lockstep. */
+const SPRITE_PHASE_OFFSET: Record<string, number> = { bloop: 0, fenn: 5, mochi: 11 };
+
+function MultiPetScene() {
+  const local = useCurrentFrame();
+  const opacity = windowOpacity(local, 0, 10, scene("multi-pet").duration - 10, 10);
+
+  return (
+    <section className="pd-video-multi" style={{ opacity }}>
+      <DesktopBackdrop />
+      {WORKSPACE_PETS.map((pet) => {
+        const pose = multiPetPose(pet.id, local);
+        return (
+          <DesktopPet
+            // Each pet reads the atlas from its own offset, so two pets running
+            // side by side are never on the same stride frame.
+            elapsedMs={(local + SPRITE_PHASE_OFFSET[pet.id]) * 33}
+            key={pet.id}
+            pet={pet}
+            presentation={pose}
+            scale={MULTI_PET_SCALE}
+            x={pose.x}
+            y={pose.y}
+          />
+        );
+      })}
+    </section>
+  );
+}
+
+/**
+ * First the claim — one pet per project — and then the part you only see if you
+ * leave them alone.
+ *
+ * There is deliberately no shared beat table below. An earlier cut had two pets
+ * playing tag off one timeline, and a pair driven by the same clock reads as
+ * choreography no matter how the easing is staggered. Each routine here is a
+ * pure function of its own period and phase, so nothing can ever line up.
+ */
+const PACK_SHOT_END = 40;
+
+const MULTI_PET_HOME: Record<string, number> = { bloop: 940, fenn: 1450, mochi: 380 };
+
+function multiPetPose(petId: string, local: number): PetMotionKeyframe {
+  const home = MULTI_PET_HOME[petId];
+  const onTheClock = local < PACK_SHOT_END;
+
+  // The pack shot: each pet parked on its own agent.
+  if (onTheClock) {
+    if (petId === "bloop") {
+      return {
+        animationState: "running",
+        frame: local,
+        overlay: {
+          kind: "agent-channel",
+          label: null,
+          message: "running the deploy",
+          status: "working",
+        },
+        working: true,
+        x: home,
+        y: DESKTOP_GROUND_Y,
+      };
+    }
+    if (petId === "fenn") {
+      return {
+        animationState: "review",
+        frame: local,
+        overlay: {
+          kind: "agent-channel",
+          label: null,
+          message: "a test is failing",
+          status: "failed",
+        },
+        working: true,
+        x: home,
+        y: DESKTOP_GROUND_Y,
+      };
+    }
+    return {
+      activity: "napping",
+      animationState: "idle",
+      decisionEmote: presentBehaviorDecisionToken("nap"),
+      frame: local,
+      working: true,
+      x: home,
+      y: DESKTOP_GROUND_Y,
+    };
+  }
+
+  const t = local - PACK_SHOT_END;
+
+  if (petId === "mochi") {
+    return hoppingPose(t, home);
+  }
   if (petId === "bloop") {
-    const sparkleCycle = local % 90;
-    const bloopWorking = workingP > 0;
-    const bloopCompleted = bloopWorking && sparkleCycle < 16;
-    return {
-      animationState: bloopWorking ? "running" : "waiting",
-      decisionEmote: !bloopWorking
-        ? { emote: "question", label: "Queued", mood: "thinking", tone: "curious" }
-        : bloopCompleted
-          ? { emote: "sparkle", label: "Shipped", mood: "happy", tone: "spark" }
-          : null,
-      frame,
-      status: {
-        label: !bloopWorking ? "Queued" : bloopCompleted ? "Done" : "Working",
-        message: !bloopWorking
-          ? "queued for the next deploy"
-          : bloopCompleted
-            ? "shipped the deploy"
-            : "running the deploy pipeline",
-        mood: !bloopWorking ? "thinking" : bloopCompleted ? "happy" : "working",
-      },
-      x: config.workX + Math.sin(local / 14) * 10,
-      y: config.workY + Math.sin(local / 11) * 4,
-    };
+    return wanderingPose(t, home);
   }
+  return pottering(t, home);
+}
 
-  if (petId === "fenn") {
-    const reviewP = progress(local, 126, 16);
-    const reviewFlagWindow = local >= 126 && local < 170;
-    return {
-      animationState: reviewP > 0 ? "review" : "waiting",
-      decisionEmote:
-        reviewP <= 0
-          ? { emote: "question", label: "Waiting", mood: "thinking", tone: "curious" }
-          : reviewFlagWindow
-            ? { emote: "exclaim", label: "Flagged", mood: "confused", tone: "alert" }
-            : { emote: "sparkle", label: "Approved", mood: "happy", tone: "spark" },
-      frame,
-      status: {
-        label: reviewP <= 0 ? "Waiting" : reviewFlagWindow ? "Flagged" : "Approved",
-        message:
-          reviewP <= 0
-            ? "waiting on the test run"
-            : reviewFlagWindow
-              ? "flagged a failing test"
-              : "tests are green",
-        mood: reviewP <= 0 ? "thinking" : reviewFlagWindow ? "confused" : "happy",
-      },
-      x: config.workX + Math.sin(local / 20 + config.phase) * 6,
-      y: config.workY + Math.cos(local / 22 + config.phase) * 3,
-    };
-  }
+/** Mochi wakes up and bounces: a real arc, with a beat of rest between hops. */
+function hoppingPose(t: number, home: number): PetMotionKeyframe {
+  const HOP = 20;
+  const REST = 14;
+  const cycle = t % (HOP + REST);
+  const airborne = cycle < HOP;
+  const arc = airborne ? Math.sin((cycle / HOP) * Math.PI) : 0;
+  // Each hop carries it a little way along, and the drift turns it around.
+  const drift = Math.sin(t / 44) * 96;
 
-  const jumpCycle = Math.max(0, local - 132) % 96;
-  const jumpP = easeOutCubic(progress(jumpCycle, 0, 18));
-  const landingP = progress(jumpCycle, 18, 18);
-  const jumpLift =
-    jumpCycle < 18 ? lerp(0, -34, jumpP) : jumpCycle < 36 ? lerp(-34, 0, landingP) : 0;
   return {
-    animationState: jumpCycle < 36 && workingP > 0 ? "jumping" : "waiting",
-    decisionEmote:
-      jumpCycle < 18
-        ? { emote: "heart", label: "Filed", mood: "love", tone: "affection" }
-        : jumpCycle > 60
-          ? { emote: "zzz", label: "Napping", mood: "sleepy", tone: "calm" }
-          : null,
-    frame,
-    status: {
-      label: jumpCycle < 18 ? "Done" : jumpCycle > 60 ? "Napping" : "Working",
-      message:
-        jumpCycle < 18
-          ? "filed a doc update"
-          : jumpCycle > 60
-            ? "taking a quick break"
-            : "organizing the docs",
-      mood: jumpCycle < 18 ? "love" : jumpCycle > 60 ? "sleepy" : "working",
-    },
-    x: config.workX + Math.sin(local / 16 + config.phase) * 8,
-    y: config.workY + jumpLift + Math.cos(local / 18 + config.phase) * 2,
+    activity: airborne ? "hopping" : "exploring",
+    animationState: airborne ? "jumping" : "idle",
+    // Sparkles on the push-off only; carrying the token through the whole arc
+    // left a badge pinned over its head the entire scene.
+    decisionEmote: cycle < 7 ? presentBehaviorDecisionToken("request-jump") : null,
+    frame: t,
+    x: home + drift,
+    y: DESKTOP_GROUND_Y - arc * 92,
   };
 }
 
-function summonedPetPose(frame: number, dropP: number): PetMotionKeyframe {
-  if (frame >= PET_EXIT_MOVE_START_FRAME) {
-    const moveP = easeOutCubic(progress(frame, PET_EXIT_MOVE_START_FRAME, PET_EXIT_MOVE_DURATION));
-    return {
-      animationState: "running-right",
-      frame,
-      x: lerp(960, PET_EXIT_X, moveP),
-      y: lerp(1008, PET_EXIT_Y, moveP),
-    };
-  }
+/**
+ * Bloop ambles. Speed comes from the derivative of its own path, so it slows to
+ * a stop at each turn and changes facing while standing still — a pet cannot
+ * reverse mid-stride.
+ */
+function wanderingPose(t: number, home: number): PetMotionKeyframe {
+  const speed = Math.cos(t / 27);
+  const moving = Math.abs(speed) > 0.3;
 
   return {
-    animationState:
-      dropP < 0.82 ? "waving" : frame >= TERMINAL_TYPING_DONE_FRAME ? "running" : "idle",
-    frame,
-    x: 960,
-    y: lerp(602, 1008, dropP),
+    activity: moving ? "exploring" : "observing",
+    animationState: moving ? (speed > 0 ? "running-right" : "running-left") : "idle",
+    // A stroll is background life; `observe` put a "?" over its head that read
+    // as the pet being stuck rather than idly looking around.
+    decisionEmote: null,
+    frame: t,
+    x: home + Math.sin(t / 27) * 155,
+    y: DESKTOP_GROUND_Y + Math.cos(t / 19) * 4,
   };
+}
+
+/** Fenn stays put and busies itself — looking around, then a tidy-up. */
+function pottering(t: number, home: number): PetMotionKeyframe {
+  const cycle = t % 96;
+  const grooming = cycle >= 54;
+
+  return {
+    activity: grooming ? "grooming" : "observing",
+    animationState: grooming ? "idle" : "review",
+    decisionEmote: grooming ? presentBehaviorDecisionToken("groom") : null,
+    frame: t,
+    x: home + Math.sin(t / 33) * 26,
+    y: DESKTOP_GROUND_Y + Math.cos(t / 23) * 4,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Closing                                                                     */
+/* -------------------------------------------------------------------------- */
+
+function ClosingScene() {
+  const local = useCurrentFrame();
+  return (
+    <section className="pd-video-closing" style={{ opacity: progress(local, 0, 10) }}>
+      <div className="pd-video-closing__wash" />
+      <div className="pd-video-closing__dots" />
+      <div
+        className="pd-video-closing__reveal"
+        style={{
+          opacity: progress(local, 0, 22),
+          transform: `translateY(${lerp(26, 0, easeOutCubic(progress(local, 0, 26)))}px)`,
+        }}
+      >
+        {/* biome-ignore lint/performance/noImgElement: Remotion renders outside Next.js, so next/image is unavailable here. */}
+        <img alt="" src={staticFile("petsdriven-mark.svg")} />
+        <h2>
+          Pets<span className="pd-video-closing__hyphen">-</span>Driven
+        </h2>
+        <p className="pd-video-closing__eyebrow">a cute way to develop with AI agents</p>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Camera                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The camera zooms around the bottom edge of the frame. Pets live on the floor,
+ * so anchoring there crops the empty upper desktop instead of the action.
+ */
+export const CAMERA_ORIGIN = { x: 960, y: 1080 };
+
+/**
+ * Exactly one push-in, on the one beat that needs it.
+ *
+ * Earlier cuts also punched in on the landing and drifted through the terminal.
+ * Three moves in twenty seconds read as restlessness, not emphasis — and a 1.04
+ * drift is motion nobody can name. Everything except the attention hold now sits
+ * still, so when the camera finally moves it means something.
+ */
+const CAMERA_KEYS: { frame: number; scale: number }[] = [
+  { frame: beat("summon", 0), scale: 1 },
+  // The pet has finished and is waiting on you: come in close for the capsule
+  // and the petting, hold through the release, pull back as it leaves.
+  { frame: beat("completed", 20), scale: 1 },
+  { frame: beat("completed", 64), scale: 1.22 },
+  { frame: beat("completed", 142), scale: 1.22 },
+  { frame: beat("completed", 172), scale: 1 },
+  // Wide and flat for the pack shot — three pets have to fit side by side.
+  { frame: beat("multi-pet", 0), scale: 1 },
+  { frame: beat("closing", 0), scale: 1 },
+];
+
+function cameraAt(frame: number) {
+  const first = CAMERA_KEYS[0];
+  if (frame <= first.frame) {
+    return first.scale;
+  }
+  for (let index = 1; index < CAMERA_KEYS.length; index += 1) {
+    const from = CAMERA_KEYS[index - 1];
+    const to = CAMERA_KEYS[index];
+    if (frame <= to.frame) {
+      return lerp(
+        from.scale,
+        to.scale,
+        easeInOutCubic((frame - from.frame) / (to.frame - from.frame)),
+      );
+    }
+  }
+  return CAMERA_KEYS[CAMERA_KEYS.length - 1].scale;
 }
