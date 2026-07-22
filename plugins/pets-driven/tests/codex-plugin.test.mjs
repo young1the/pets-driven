@@ -42,13 +42,24 @@ for (const eventName of ["UserPromptSubmit", "PermissionRequest", "Stop"]) {
   assert.match(commandHook.commandWindows, /\$env:PLUGIN_ROOT/);
   assert.match(commandHook.commandWindows, /\$env:USERPROFILE/);
   assert.doesNotMatch(commandHook.commandWindows, /%USERPROFILE%/);
+
+  // The payload must reach the hook script as raw stdin bytes. Reading it into a
+  // PowerShell string and piping that to the script round-trips it through the
+  // console encoding and $OutputEncoding (ASCII on Windows PowerShell 5.1),
+  // which turns every non-ASCII character -- a Korean prompt, a Korean path --
+  // into "?". The child inherits stdin instead.
+  assert.doesNotMatch(commandHook.commandWindows, /\[Console\]::In/);
+  assert.doesNotMatch(commandHook.commandWindows, /\$payload/);
 }
 
 if (process.platform === "win32") {
+  // Non-ASCII in both a path and a prompt: the two places a Korean user hits
+  // the encoding boundary between Codex, PowerShell and the hook script.
   const codexPayload = {
     hook_event_name: "UserPromptSubmit",
-    cwd: "D:\\pets-driven",
+    cwd: "D:\\pets-driven\\기타개선",
     session_id: "codex-session",
+    prompt: "안녕 한국어 테스트",
   };
   const result = spawnSync(
     "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
