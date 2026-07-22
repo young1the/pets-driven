@@ -128,6 +128,15 @@ export function TerminalIcon({ size, className }: IconProps) {
   );
 }
 
+export function SparkleIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" />
+      <path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" />
+    </Icon>
+  );
+}
+
 export function RefreshIcon({ size, className }: IconProps) {
   return (
     <Icon className={className} size={size} strokeWidth={2.2}>
