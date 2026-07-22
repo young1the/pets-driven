@@ -15,12 +15,22 @@ root instead:
 - In an installed Codex hook context, the bundled hook config resolves the installed cache path.
 - In this repository while developing, use `plugins/pets-driven`.
 
-The create command shape is:
+The pets-driven desktop app owns its own data — the state file and the pet asset
+folders. Every lookup goes through it; do not read those paths off disk yourself
+(no `~/.petdex/pets`, no `~/.codex/pets`, no state file). The command shapes are:
 
 ```bash
+plugins/pets-driven/hooks/run-hook.cmd forward list     # existing pets + their cwd
+plugins/pets-driven/hooks/run-hook.cmd forward options  # hatchable assets + personalities
 plugins/pets-driven/hooks/run-hook.cmd forward hatch "<assetId>" "<name>" "<personalityId>"
+plugins/pets-driven/hooks/run-hook.cmd forward bind "<petId>"    # bind a pet to this folder
+plugins/pets-driven/hooks/run-hook.cmd forward unbind "<petId>"  # release it (cwd -> null)
 ```
 
-To target a different folder, append that folder as the final quoted argument.
-The script builds JSON and escapes Windows paths safely, so pass plain quoted
-arguments instead of hand-writing JSON.
+`hatch` and `bind` use the current folder; to target a different one, append it
+as the final quoted argument. The script builds JSON and escapes Windows paths
+safely, so pass plain quoted arguments instead of hand-writing JSON.
+
+A pet's `cwd` may be `null` — that pet exists with no folder bound and receives
+no agent events. Offer to `bind` such a pet rather than hatching a new one when
+the user just wants a pet on this folder.

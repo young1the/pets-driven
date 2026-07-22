@@ -4,18 +4,27 @@
 # Modes:
 #   forward                          read hook JSON from stdin, POST it unchanged
 #   forward attach                   synthesize a Notification ping for $PWD
+#   forward options                  print the hatchable assets and personality
+#                                    presets the app accepts
+#   forward list                     print every pet in the app's state
 #   forward hatch ASSET NAME PRESET [CWD]
 #                                    POST a create request (this script builds the
 #                                    JSON so paths are escaped safely), print the
 #                                    response, propagate failure
+#   forward bind PET_ID [CWD]        bind that pet to CWD (default $PWD)
+#   forward unbind PET_ID            detach that pet from its folder (cwd -> null)
 #   forward --self-check             assert the synthesized bodies, then exit
+#
+# The desktop app is the only reader of pets-driven state and pet asset folders:
+# every mode here goes through its HTTP ingress rather than touching those files,
+# so an agent never has to know where they live on disk.
 #
 # ponytail: the ingress URLs are coupled to CLAUDE_HOOK_INGRESS_PORT (43187)
 # and the ingress paths in apps/desktop/src-tauri/src/claude_hook_ingress.rs
 # -- change both sides if the port or paths move.
 
-INGRESS_URL="http://127.0.0.1:43187/claude-hook"
-HATCH_URL="http://127.0.0.1:43187/pets-driven/hatch"
+INGRESS_ORIGIN="http://127.0.0.1:43187"
+INGRESS_URL="$INGRESS_ORIGIN/claude-hook"
 
 post() {
   # -s silent, -m 2 caps the wait so a stopped app never blocks the agent.
@@ -24,6 +33,16 @@ post() {
   # ANSI codepage, and the ingress then rejects the body as invalid UTF-8.
   printf '%s' "$1" | curl -s -m 2 -X POST "$INGRESS_URL" \
     -H "Content-Type: application/json" --data-binary @- >/dev/null 2>&1
+}
+
+request() {
+  # Authoritative call: print the response body and propagate a connection
+  # failure so the agent can tell "app not running" from a rejection.
+  local path="$1"
+  shift
+  printf '%s' "${1-}" | curl -sS -m 5 -X POST "$INGRESS_ORIGIN$path" \
+    -H "Content-Type: application/json" --data-binary @-
+  return $?
 }
 
 json_escape() {
@@ -51,6 +70,18 @@ hatch_body() {
     "$(json_escape "$1")" \
     "$(json_escape "$2")" \
     "$(json_escape "$3")"
+}
+
+bind_body() {
+  printf '{"petId":"%s","cwd":"%s"}' \
+    "$(json_escape "$1")" \
+    "$(json_escape "$(to_windows_path "${2:-$PWD}")")"
+}
+
+unbind_body() {
+  # An explicit null is the "detach this pet from its folder" signal; omitting
+  # the field would leave the current binding untouched.
+  printf '{"petId":"%s","cwd":null}' "$(json_escape "$1")"
 }
 
 summary_body() {
@@ -81,6 +112,22 @@ self_check() {
     *) echo "FAIL: hatch path not escaped: $hatch" >&2; exit 1 ;;
   esac
 
+  local bind
+  bind="$(bind_body "pet-1" 'C:\a\b')"
+  case "$bind" in
+    *'\\a\\b'*) ;;
+    *) echo "FAIL: bind path not escaped: $bind" >&2; exit 1 ;;
+  esac
+
+  # The detach signal has to be a bare JSON null -- "null" as a string would
+  # read as a folder literally named null.
+  local unbind
+  unbind="$(unbind_body "pet-1")"
+  case "$unbind" in
+    *'"cwd":null'*) ;;
+    *) echo "FAIL: unbind body should send a null cwd: $unbind" >&2; exit 1 ;;
+  esac
+
   local summary
   summary="$(summary_body "Stop" 'He said "hi" and left')"
   case "$summary" in
@@ -99,13 +146,26 @@ self_check() {
 case "$1" in
   --self-check) self_check ;;
   attach) post "$(attach_body)" ;;
+  # Read-only lookups: the app answers from its own state, so the agent never
+  # reads the state file or a pet asset folder itself.
+  options) request /pets-driven/options; exit $? ;;
+  list) request /pets-driven/list; exit $? ;;
   hatch)
     # Authoritative create: show the response and propagate connection failure
     # so the agent can report "app not running" vs. a rejection (e.g. occupied).
     # JSON is built here from plain args so the agent never has to escape a path.
     shift
-    printf '%s' "$(hatch_body "$@")" | curl -sS -m 5 -X POST "$HATCH_URL" \
-      -H "Content-Type: application/json" --data-binary @-
+    request /pets-driven/hatch "$(hatch_body "$@")"
+    exit $?
+    ;;
+  bind)
+    shift
+    request /pets-driven/pet/update "$(bind_body "$@")"
+    exit $?
+    ;;
+  unbind)
+    shift
+    request /pets-driven/pet/update "$(unbind_body "$@")"
     exit $?
     ;;
   summary)
