@@ -9,6 +9,7 @@ next-env.d.ts
 dev-server*.log
 .DS_Store
 .claude/
+.codex/
 workspaces/
 .env
 .env.local
