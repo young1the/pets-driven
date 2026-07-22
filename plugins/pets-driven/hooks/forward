@@ -9,8 +9,8 @@
 #   forward list                     print every pet in the app's state
 #   forward hatch ASSET NAME PRESET [CWD]
 #                                    POST a create request (this script builds the
-#                                    JSON so paths are escaped safely), print the
-#                                    response, propagate failure
+#                                    JSON so paths are escaped safely) and print
+#                                    the response
 #   forward bind PET_ID [CWD]        bind that pet to CWD (default $PWD)
 #   forward unbind PET_ID            detach that pet from its folder (cwd -> null)
 #   forward --self-check             assert the synthesized bodies, then exit
@@ -23,7 +23,9 @@
 # and the ingress paths in apps/desktop/src-tauri/src/claude_hook_ingress.rs
 # -- change both sides if the port or paths move.
 
-INGRESS_ORIGIN="http://127.0.0.1:43187"
+# PETS_DRIVEN_INGRESS_ORIGIN lets the tests aim at a closed port to exercise the
+# "app not running" answer; nothing sets it in normal use.
+INGRESS_ORIGIN="${PETS_DRIVEN_INGRESS_ORIGIN:-http://127.0.0.1:43187}"
 INGRESS_URL="$INGRESS_ORIGIN/claude-hook"
 
 post() {
@@ -35,14 +37,27 @@ post() {
     -H "Content-Type: application/json" --data-binary @- >/dev/null 2>&1
 }
 
+# A stopped desktop app is a normal state, not a fault: the plugin can be
+# installed long before the app is first opened. Answering with this instead of
+# curl's connection error keeps the agent from reporting a scary failure, while
+# still telling it apart from a rejection (which comes back as the app's own
+# {"ok":false,"error":...}).
+APP_NOT_RUNNING='{"ok":false,"error":"app-not-running","message":"The pets-driven desktop app is not running."}'
+
 request() {
-  # Authoritative call: print the response body and propagate a connection
-  # failure so the agent can tell "app not running" from a rejection.
+  # Authoritative call: print the response body. A connection failure is
+  # reported as the structured app-not-running answer above and still exits 0,
+  # so an unopened app never surfaces as a command error.
   local path="$1"
   shift
-  printf '%s' "${1-}" | curl -sS -m 5 -X POST "$INGRESS_ORIGIN$path" \
-    -H "Content-Type: application/json" --data-binary @-
-  return $?
+  local response
+  if ! response="$(printf '%s' "${1-}" | curl -s -m 5 -X POST "$INGRESS_ORIGIN$path" \
+    -H "Content-Type: application/json" --data-binary @- 2>/dev/null)"; then
+    printf '%s' "$APP_NOT_RUNNING"
+    return 0
+  fi
+  printf '%s' "$response"
+  return 0
 }
 
 json_escape() {
@@ -151,8 +166,8 @@ case "$1" in
   options) request /pets-driven/options; exit $? ;;
   list) request /pets-driven/list; exit $? ;;
   hatch)
-    # Authoritative create: show the response and propagate connection failure
-    # so the agent can report "app not running" vs. a rejection (e.g. occupied).
+    # Authoritative create: show the response, which tells "app not running"
+    # apart from a rejection (e.g. the folder is already occupied).
     # JSON is built here from plain args so the agent never has to escape a path.
     shift
     request /pets-driven/hatch "$(hatch_body "$@")"

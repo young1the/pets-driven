@@ -49,3 +49,21 @@ for (const path of [
 ]) {
   assert.ok(script.includes(path), `forward should reach the ingress at ${path}`);
 }
+
+// The plugin can be installed long before the app is first opened, so a stopped
+// app must read as a plain answer, not as a failed command: no curl error on
+// stderr, exit 0, and a structured body the agent can report calmly.
+const stopped = spawnSync(bashBin, [hookScript, "list"], {
+  cwd: pluginRoot,
+  encoding: "utf8",
+  // Port 1 is never bound, which is exactly the "app not running" case.
+  env: { ...process.env, PETS_DRIVEN_INGRESS_ORIGIN: "http://127.0.0.1:1" },
+});
+
+assert.equal(stopped.status, 0, "a stopped app should not fail the command");
+assert.equal(stopped.stderr, "", "a stopped app should not print a connection error");
+assert.deepEqual(JSON.parse(stopped.stdout), {
+  ok: false,
+  error: "app-not-running",
+  message: "The pets-driven desktop app is not running.",
+});

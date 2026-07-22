@@ -39,9 +39,9 @@ knows where they currently live and which folder the user designated.
    `{"ok":true,"assets":[{"id","displayName","description","bundled"}],"personalities":[{"id","traits"}]}`.
    Present the assets by `displayName` (`bundled: false` ones come from the
    user's own pet folder) and let the user pick one — its `id` is `assetId`. If
-   `assets` is empty, tell the user to install a pet asset first and stop. A
-   connection error (non-zero exit, no JSON) means the desktop app is not
-   running; say so and stop.
+   `assets` is empty, tell the user to install a pet asset first and stop.
+   `{"ok":false,"error":"app-not-running"}` means the desktop app is simply not
+   open — that is not a failure, so mention it plainly and stop.
 
 3. **Recommend a personality.** Read the chosen asset's `description` and
    recommend the best-fitting preset from the `personalities` the app just
@@ -78,10 +78,11 @@ knows where they currently live and which folder the user designated.
 
 6. **Report the result** from the command output:
    - `{"ok":true}` → the pet was created; tell the user to look at their desktop.
+   - `{"ok":false,"error":"app-not-running"}` → the desktop app is not open. Say
+     that plainly, without treating it as an error, and let them retry once it
+     is running.
    - `{"ok":false,"error":...}` → report the error (e.g. the folder already has a
      pet).
-   - A connection error (non-zero exit, no JSON) → tell the user the pets-driven
-     desktop app must be running, then they can retry.
 
 ## Binding an existing pet instead
 
