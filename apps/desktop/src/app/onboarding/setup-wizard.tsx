@@ -357,7 +357,7 @@ const folderText: CSSProperties = {
 };
 const pluginGrid: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr",
+  gridTemplateColumns: "1fr",
   gap: "12px",
   marginTop: "6px",
 };
@@ -894,18 +894,27 @@ export function SetupWizard({
             <div style={pluginGrid}>
               <div style={pluginCard(true, false)}>
                 <span style={{ ...pluginBadge, background: "#D97757" }}>C</span>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <b style={{ display: "block", color: "var(--text-strong)", fontSize: "15px" }}>
                     {t("setupWizard.claudeName")}
                   </b>
-                  <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                    {t("setupWizard.claudeSubtitle")}
-                  </span>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{pluginHint}</span>
                 </div>
+                {claudePlugin.status?.state === "installed" ? (
+                  <span className="pd-onb__connect-ok">✓ {t("claudePlugin.installed")}</span>
+                ) : claudePlugin.status && claudePlugin.status.state !== "cli-missing" ? (
+                  <Button disabled={claudePlugin.busy} onClick={() => void claudePlugin.install()}>
+                    {claudePlugin.busy
+                      ? t("claudePlugin.installing")
+                      : claudePlugin.status.state === "error"
+                        ? t("claudePlugin.retry")
+                        : t("claudePlugin.install")}
+                  </Button>
+                ) : null}
               </div>
               <div style={pluginCard(false, true)}>
                 <span style={{ ...pluginBadge, background: "var(--ink-900)" }}>‹›</span>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <b style={{ display: "block", color: "var(--text-strong)", fontSize: "15px" }}>
                     {t("setupWizard.codexName")}
                   </b>
@@ -914,24 +923,6 @@ export function SetupWizard({
                   </span>
                 </div>
               </div>
-            </div>
-
-            <div className="pd-onb__connect-card" style={{ margin: "20px 0 0" }}>
-              <span className="pd-onb__connect-text">
-                <b>{t("claudePlugin.connectTitle")}</b>
-                <small>{pluginHint}</small>
-              </span>
-              {claudePlugin.status?.state === "installed" ? (
-                <span className="pd-onb__connect-ok">✓ {t("claudePlugin.installed")}</span>
-              ) : claudePlugin.status && claudePlugin.status.state !== "cli-missing" ? (
-                <Button disabled={claudePlugin.busy} onClick={() => void claudePlugin.install()}>
-                  {claudePlugin.busy
-                    ? t("claudePlugin.installing")
-                    : claudePlugin.status.state === "error"
-                      ? t("claudePlugin.retry")
-                      : t("claudePlugin.install")}
-                </Button>
-              ) : null}
             </div>
 
             <div style={{ ...sectionLabel, margin: "20px 0 0" }}>
