@@ -1,3 +1,5 @@
+import type { PetEmoteKind, PetMood } from "@pets-driven/pet-engine/pets/status/pet-mood";
+
 /**
  * The pet's high-level steering mode, driving AutonomousBehaviorSystem and
  * MotionTargetSystem target selection: `stand` = hold position, `pursue` = move
@@ -238,26 +240,12 @@ export type PetExpressionSource =
   // Expressive idle poses and catalog-exclusive signature activities.
   | "expressive";
 
-export type PetExpressionMood =
-  | "working"
-  | "happy"
-  | "love"
-  | "excited"
-  | "thinking"
-  | "sleepy"
-  | "confused";
+// The mood/emote vocabulary is defined once in the pet-status rendering module
+// (the SSOT) and aliased here so the simulation-side expression state and the
+// presentation layer can never drift apart.
+export type PetExpressionMood = PetMood;
 
-/** Mirrors the design-system PetEmoteKind; see it for what each symbol means. */
-export type PetExpressionEmote =
-  | "none"
-  | "heart"
-  | "zzz"
-  | "sparkle"
-  | "question"
-  | "exclaim"
-  | "note"
-  | "sweat"
-  | "dots";
+export type PetExpressionEmote = PetEmoteKind;
 
 export type PetExpressionStateComponent = {
   type: "PetExpressionState";

@@ -1,9 +1,9 @@
-import { PET_MOODS } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PET_SPEECH_KEY_PREFIX } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
+import { PET_MOODS } from "@pets-driven/pet-engine/pets/status/pet-mood";
 import type { PetWindowOverlay } from "@/pet-window/pet-window-messages";
 
 type PetWindowStatusProps = {

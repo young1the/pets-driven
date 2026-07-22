@@ -30,11 +30,7 @@
 
   "overrides": [
     {
-      "includes": [
-        "packages/pet-engine/src/**",
-        "packages/design-system/src/**",
-        "packages/i18n/src/**"
-      ],
+      "includes": ["packages/pet-engine/src/**"],
       "linter": {
         "rules": {
           "style": {
@@ -49,6 +45,79 @@
                   {
                     "group": ["node:*", "node:*/**"],
                     "message": "Platform-agnostic packages must not depend on Node built-ins. This code must run unchanged in the browser playground."
+                  },
+                  {
+                    "group": ["@pets-driven/design-system", "@pets-driven/design-system/**"],
+                    "message": "pet-engine is the shared SSOT and must stay a leaf: it must not depend on design-system. Domain vocabulary (moods, emotes) lives in pet-engine and is consumed by design-system, not the other way around."
+                  },
+                  {
+                    "group": ["@pets-driven/i18n", "@pets-driven/i18n/**"],
+                    "message": "pet-engine must stay locale-agnostic: emit stable label keys (see PetStatusLabelKey) and let apps translate. It must not depend on i18n."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/design-system/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@tauri-apps/**"],
+                    "message": "Platform-agnostic packages must not depend on Tauri. Keep native access in apps/desktop (behind DesktopGateway)."
+                  },
+                  {
+                    "group": ["node:*", "node:*/**"],
+                    "message": "Platform-agnostic packages must not depend on Node built-ins. This code must run unchanged in the browser playground."
+                  },
+                  {
+                    "group": ["@pets-driven/pet-engine", "@pets-driven/pet-engine/**"],
+                    "message": "design-system is a leaf of generic UI: its src must not depend on pet-engine. (The dev-only gallery under dev/ may import pet-engine to showcase domain widgets.)"
+                  },
+                  {
+                    "group": ["@pets-driven/i18n", "@pets-driven/i18n/**"],
+                    "message": "design-system components must stay locale-agnostic: take text via props. They must not depend on i18n."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/i18n/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@tauri-apps/**"],
+                    "message": "Platform-agnostic packages must not depend on Tauri. Keep native access in apps/desktop (behind DesktopGateway)."
+                  },
+                  {
+                    "group": ["node:*", "node:*/**"],
+                    "message": "Platform-agnostic packages must not depend on Node built-ins. This code must run unchanged in the browser playground."
+                  },
+                  {
+                    "group": [
+                      "@pets-driven/pet-engine",
+                      "@pets-driven/pet-engine/**",
+                      "@pets-driven/design-system",
+                      "@pets-driven/design-system/**"
+                    ],
+                    "message": "i18n is a leaf: it must not depend on other @pets-driven packages."
                   }
                 ]
               }

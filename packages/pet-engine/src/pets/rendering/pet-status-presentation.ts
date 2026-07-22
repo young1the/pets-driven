@@ -1,12 +1,12 @@
-import type { PetEmoteKind, PetMood } from "@pets-driven/design-system";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import type { PetEmoteKind, PetMood } from "@pets-driven/pet-engine/pets/status/pet-mood";
 
 /**
  * Pure mapping from simulation-side presentation data (the sprite's current
- * animation row + host-driven overlay) to the design-system status primitives
+ * animation row + host-driven overlay) to the pet-status rendering primitives
  * (capsule mood/label + corner emote). No Tauri, no DOM — unit-testable.
  */
 /**

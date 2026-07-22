@@ -1,4 +1,3 @@
-import { PetSpeechBubble } from "@pets-driven/design-system";
 import type { AgentChannelStatus } from "@pets-driven/pet-engine/features/agent/components";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { BehaviorTokenEmote } from "@pets-driven/pet-engine/pets/rendering/behavior-token-emote";
@@ -9,6 +8,7 @@ import {
 } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-frame";
 import { PetSpriteHtml } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-html";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
+import { PetSpeechBubble } from "@pets-driven/pet-engine/pets/status/pet-speech-bubble";
 import type { CSSProperties } from "react";
 
 export type PetSpriteOverlay =

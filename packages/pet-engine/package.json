@@ -8,6 +8,8 @@
     "./pets/rendering/pet-sprite": "./src/pets/rendering/pet-sprite.tsx",
     "./pets/rendering/pet-sprite-html": "./src/pets/rendering/pet-sprite-html.tsx",
     "./pets/rendering/behavior-token-emote": "./src/pets/rendering/behavior-token-emote.tsx",
+    "./pets/status/pet-emote": "./src/pets/status/pet-emote.tsx",
+    "./pets/status/pet-speech-bubble": "./src/pets/status/pet-speech-bubble.tsx",
     "./*": "./src/*.ts"
   },
   "scripts": {
@@ -18,8 +20,7 @@
     "react": "^18.3.0"
   },
   "dependencies": {
-    "matter-js": "^0.20.0",
-    "@pets-driven/design-system": "workspace:*"
+    "matter-js": "^0.20.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

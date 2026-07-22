@@ -1,10 +1,11 @@
-import { PET_MOODS, type PetMood, PetShowcaseCard } from "@pets-driven/design-system";
+import { PetShowcaseCard } from "@pets-driven/design-system";
 import {
   PET_CELL_SIZE,
   type PetAnimationState,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
+import { PET_MOODS, type PetMood } from "@pets-driven/pet-engine/pets/status/pet-mood";
 import type { CSSProperties, ReactNode } from "react";
 import { staticFile, useCurrentFrame } from "remotion";
 import type { DemoPet, DemoPetStatus } from "./fixtures";

@@ -27,6 +27,7 @@
     "@fontsource/nunito": "^5.2.5"
   },
   "devDependencies": {
+    "@pets-driven/pet-engine": "workspace:*",
     "@types/node": "^25.8.0",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",

@@ -137,6 +137,9 @@ importers:
         specifier: ^5.2.5
         version: 5.2.7
     devDependencies:
+      '@pets-driven/pet-engine':
+        specifier: workspace:*
+        version: link:../pet-engine
       '@types/node':
         specifier: ^25.8.0
         version: 25.9.3
@@ -186,9 +189,6 @@ importers:
 
   packages/pet-engine:
     dependencies:
-      '@pets-driven/design-system':
-        specifier: workspace:*
-        version: link:../design-system
       matter-js:
         specifier: ^0.20.0
         version: 0.20.0

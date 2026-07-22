@@ -53,19 +53,6 @@ export {
   type PetShowcaseCardStatus,
 } from "./components/pet-showcase/pet-showcase-card";
 export {
-  PetEmote,
-  type PetEmoteProps,
-} from "./components/pet-status/pet-emote";
-export {
-  PET_MOODS,
-  type PetEmoteKind,
-  type PetMood,
-} from "./components/pet-status/pet-mood";
-export {
-  PetSpeechBubble,
-  type PetSpeechBubbleProps,
-} from "./components/pet-status/pet-speech-bubble";
-export {
   PetAvatar,
   type PetAvatarProps,
   type PetAvatarSize,
