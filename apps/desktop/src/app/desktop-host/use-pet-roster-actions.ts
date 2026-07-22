@@ -5,12 +5,7 @@ import type { AppView } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
 import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
-import {
-  buildLaunchLine,
-  customizeLaunchLine,
-  type LaunchProfileId,
-  parseLaunchLine,
-} from "@/app/session-launch-profile";
+import { buildLaunchLine, parseLaunchLine } from "@/app/session-launch-line";
 import {
   clearWorkingDirectoryForPet,
   registerWorkingDirectory,
@@ -73,9 +68,19 @@ export function usePetRosterActions({
     void desktopGateway.writePetsDrivenState(next);
   }
 
+  /**
+   * Pick the shell for the in-app terminal. The same shell backs the launch line
+   * a pet double-click runs, so rebuild that line around the command the user
+   * already typed instead of leaving the two settings to drift apart.
+   */
   function updateTerminalShell(shell: string) {
+    const current = stateRef.current;
     const trimmed = shell.trim();
-    const next = { ...stateRef.current, terminalShell: trimmed ? trimmed : null };
+    const next = {
+      ...current,
+      terminalShell: trimmed ? trimmed : null,
+      sessionCommand: buildLaunchLine(trimmed, parseLaunchLine(current.sessionCommand).command),
+    };
     applyState(next);
     void desktopGateway.writePetsDrivenState(next);
   }
@@ -216,24 +221,8 @@ export function usePetRosterActions({
     }
   }
 
-  function setLaunchProfile(profile: LaunchProfileId) {
-    const settings = parseLaunchLine(stateRef.current.sessionCommand);
-    if (profile === "custom") {
-      updateSessionCommand(customizeLaunchLine(settings));
-      return;
-    }
-
-    updateSessionCommand(buildLaunchLine(profile, settings.command));
-  }
-
   function setLaunchCommand(command: string) {
-    const settings = parseLaunchLine(stateRef.current.sessionCommand);
-    if (settings.profile === "custom") {
-      updateSessionCommand(command);
-      return;
-    }
-
-    updateSessionCommand(buildLaunchLine(settings.profile, command));
+    updateSessionCommand(buildLaunchLine(stateRef.current.terminalShell ?? "", command));
   }
 
   return {
@@ -251,7 +240,6 @@ export function usePetRosterActions({
     clearFolderForPet,
     applyPetSourceFolder,
     changePetSourceFolder,
-    setLaunchProfile,
     setLaunchCommand,
   };
 }

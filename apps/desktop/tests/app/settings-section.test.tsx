@@ -4,12 +4,8 @@ import { SettingsSection } from "@/app/main-window/settings-section";
 
 function setup(overrides = {}) {
   const props = {
-    launchProfile: "cmd" as const,
     command: "claude --resume",
-    launchLine: "cmd /k claude --resume",
-    onLaunchProfile: vi.fn(),
     onCommand: vi.fn(),
-    onLaunchLine: vi.fn(),
     terminalShell: "",
     onTerminalShell: vi.fn(),
     preview: {
@@ -19,17 +15,17 @@ function setup(overrides = {}) {
     },
     hook: {
       tone: "success" as const,
-      label: "All connected",
-      summary: "6 of 6 agents reporting",
-      url: "claude-hook://127.0.0.1:7878",
+      summary: "your pets are following along.",
     },
-    onReconnect: vi.fn(),
     plugin: {
       state: "not-installed" as const,
       version: null,
       error: null,
     },
     pluginBusy: false,
+    pluginRun: null,
+    terminalAvailable: false,
+    onClosePluginRun: vi.fn(),
     onInstallPlugin: vi.fn(),
     onUninstallPlugin: vi.fn(),
     petSourceDirectory: null as string | null,
@@ -52,41 +48,23 @@ describe("SettingsSection", () => {
     expect(onCommand).toHaveBeenCalledWith("claude");
   });
 
-  it("switches the launch profile", () => {
-    const onLaunchProfile = vi.fn();
-    setup({ onLaunchProfile });
-    fireEvent.click(screen.getByText("PowerShell"));
-    expect(onLaunchProfile).toHaveBeenCalledWith("powershell");
+  it("picks the terminal shell that backs both the app terminal and the launch line", () => {
+    const onTerminalShell = vi.fn();
+    setup({ onTerminalShell, terminalShell: "C:\\Windows\\System32\\cmd.exe" });
+
+    fireEvent.change(screen.getByLabelText("Terminal"), { target: { value: "" } });
+
+    expect(onTerminalShell).toHaveBeenCalledWith("");
   });
 
-  it("edits the raw launch line when custom is selected", () => {
-    const onLaunchLine = vi.fn();
-    setup({
-      launchProfile: "custom",
-      launchLine: '"C:\\Tools\\Git\\bin\\bash.exe" -lc "claude; exec bash"',
-      onLaunchLine,
-      preview: {
-        cwd: "C:\\pets\\core",
-        prompt: ">",
-        command: '"C:\\Tools\\Git\\bin\\bash.exe" -lc "claude; exec bash"',
-      },
-    });
+  it("states the connection as one line, with no ingress URL or test action", () => {
+    setup({ plugin: { state: "installed" as const, version: "0.1.0", error: null } });
 
-    fireEvent.change(screen.getByLabelText("Launch line"), {
-      target: { value: "wt -d . powershell" },
-    });
-
-    expect(onLaunchLine).toHaveBeenCalledWith("wt -d . powershell");
-  });
-
-  it("shows the hook status and sends a test event", () => {
-    const onReconnect = vi.fn();
-    setup({ onReconnect });
-
-    expect(screen.getByText("All connected")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Send test event"));
-    expect(onReconnect).toHaveBeenCalled();
+    expect(
+      screen.getByText("Installed · v0.1.0 — your pets are following along."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Send test event")).not.toBeInTheDocument();
+    expect(screen.queryByText(/127\.0\.0\.1/)).not.toBeInTheDocument();
   });
 
   it("installs the Claude plugin when not installed", () => {
@@ -106,7 +84,9 @@ describe("SettingsSection", () => {
       onUninstallPlugin,
     });
 
-    expect(screen.getByText("Installed · v0.1.0")).toBeInTheDocument();
+    expect(
+      screen.getByText("Installed · v0.1.0 — your pets are following along."),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Reinstall"));
     expect(onInstallPlugin).toHaveBeenCalled();

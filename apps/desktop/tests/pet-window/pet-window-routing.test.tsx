@@ -2,7 +2,6 @@ import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personali
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-ingress";
 import { PetsDrivenApp } from "@/app/pets-driven-app";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
@@ -151,6 +150,7 @@ vi.mock("@tauri-apps/api/window", () => ({
 
 const invokeMock = vi.mocked(invoke);
 const isTauriMock = vi.mocked(isTauri);
+const GIT_BASH_PATH = "C:\\Program Files\\Git\\bin\\bash.exe";
 const testPetsDrivenState: PetsDrivenState = {
   schemaVersion: 1,
   registeredWorkingDirectories: [
@@ -214,15 +214,11 @@ describe("pet window product route", () => {
       if (command === "read_pets_driven_state") {
         return testPetsDrivenState;
       }
-      if (command === "emit_test_claude_hook_ingress_event") {
-        tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
-          payload: {
-            hook_event_name: "PermissionRequest",
-            cwd: "D:\\workmanager\\pets-driven",
-            message: "Test Claude hook",
-          },
-        });
-        return undefined;
+      if (command === "list_terminal_shells") {
+        return [
+          { label: "Command Prompt", path: "C:\\Windows\\System32\\cmd.exe" },
+          { label: "Git Bash", path: GIT_BASH_PATH },
+        ];
       }
 
       return undefined;
@@ -1970,5 +1966,26 @@ describe("pet window product route", () => {
       expect.objectContaining({ kind: "overlay.click" }),
     );
     expect(tauriWindowMocks.setIgnoreCursorEvents).toHaveBeenCalledWith(true);
+  });
+
+  it("points the in-app terminal and the double-click launch line at one shell", async () => {
+    render(<PetsDrivenApp />);
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Settings" }));
+    fireEvent.change(await screen.findByLabelText("Terminal"), {
+      target: { value: GIT_BASH_PATH },
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith(
+        "write_pets_driven_state",
+        expect.objectContaining({
+          state: expect.objectContaining({
+            terminalShell: GIT_BASH_PATH,
+            sessionCommand: `"${GIT_BASH_PATH}" -lc "claude; exec bash"`,
+          }),
+        }),
+      );
+    });
   });
 });

@@ -36,13 +36,10 @@
   },
   "settings": {
     "title": "설정",
-    "doubleClickTitle": "더블클릭 동작",
-    "doubleClickDesc": "펫을 더블클릭하면 작업 폴더에서 이 터미널 명령을 실행해요.",
-    "shell": "셸",
-    "launchLine": "실행 명령줄",
+    "terminal": "터미널",
+    "terminalDesc": "인앱 터미널이 여는 셸이자, 펫을 더블클릭했을 때 작업 폴더에서 실행할 명령이에요.",
     "command": "명령어",
     "commandPlaceholder": "claude --resume",
-    "advancedLaunchLine": "고급 실행 명령줄",
     "commandPreview": "명령어 미리보기",
     "petSourcesTitle": "펫 폴더",
     "petSourcesDesc": "펫 팩을 검색하는 폴더입니다. 기본값은 Petdex가 펫을 설치하는 ~/.petdex/pets 폴더예요. 기본 펫들은 항상 함께 표시됩니다.",
@@ -60,23 +57,17 @@
     "accentColor": "앱 강조 색상",
     "accentColorDesc": "앱 전반의 강조와 활성 상태에 사용되는 색입니다.",
     "agentConnection": "에이전트 연결",
-    "agentConnectionDesc": "앱이 이 기기에서 Claude Code 이벤트를 수신해요. 플러그인이 세션의 이벤트를 전달합니다.",
-    "reconnect": "테스트 이벤트 보내기",
+    "agentConnectionDesc": "펫이 Claude Code 작업에 반응하려면 이 플러그인이 필요해요.",
     "defaultTerminal": "기본 터미널",
     "defaultTerminalDesc": "인앱 터미널이 여는 셸이에요. 시스템에서 감지한 목록에서 고르거나, ‘시스템 기본값’을 선택하면 COMSPEC / SHELL을 따라요.",
     "defaultTerminalSystem": "시스템 기본값"
   },
-  "launchProfile": {
-    "cmd": "명령 프롬프트",
-    "powershell": "PowerShell",
-    "gitBash": "Git Bash",
-    "custom": "사용자 지정"
-  },
   "hook": {
-    "connected": "모두 연결됨",
-    "connecting": "연결 중",
-    "offline": "오프라인",
-    "summary": "Claude 훅 {{state}}"
+    "summary": {
+      "listening": "펫이 작업을 따라가고 있어요.",
+      "pending": "연결을 준비하는 중이에요.",
+      "error": "펫이 작업을 보지 못하고 있어요. 앱을 다시 시작해 보세요."
+    }
   },
   "claudePlugin": {
     "title": "Claude Code 플러그인",
@@ -92,7 +83,12 @@
     "installedHint": "Claude Code가 에이전트 활동을 펫에게 알려줘요.",
     "notInstalledHint": "플러그인을 설치하면 에이전트가 일할 때 펫이 반응해요.",
     "cliMissing": "Claude Code CLI를 찾지 못했어요. 먼저 Claude Code를 설치한 뒤 다시 시도해 주세요.",
-    "error": "Claude Code와 통신하는 중 문제가 생겼어요."
+    "error": "Claude Code와 통신하는 중 문제가 생겼어요.",
+    "run": {
+      "install": "플러그인 설치 중",
+      "uninstall": "플러그인 제거 중",
+      "close": "닫기"
+    }
   },
   "edit": {
     "back": "무리로 돌아가기",

@@ -14,6 +14,7 @@ import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { isTauri } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type CodexPetPackage, type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
+import { PluginRunTerminal } from "@/app/main-window/plugin-run-terminal";
 import {
   PERSONALITY_OPTIONS,
   type PersonalityOption,
@@ -131,7 +132,7 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
  */
 function ClaudeConnectCard({ gateway }: { gateway: DesktopGateway }) {
   const { t } = useTranslation("desktop");
-  const { status, busy, install } = useClaudePlugin(gateway);
+  const { status, busy, run, install, dismissRun } = useClaudePlugin(gateway);
 
   const hintText = !status
     ? t("claudePlugin.checking")
@@ -144,23 +145,26 @@ function ClaudeConnectCard({ gateway }: { gateway: DesktopGateway }) {
           : t("claudePlugin.notInstalledHint");
 
   return (
-    <div className="pd-onb__connect-card">
-      <span className="pd-onb__connect-text">
-        <b>{t("claudePlugin.connectTitle")}</b>
-        <small>{hintText}</small>
-      </span>
-      {status?.state === "installed" ? (
-        <span className="pd-onb__connect-ok">✓ {t("claudePlugin.installed")}</span>
-      ) : status && status.state !== "cli-missing" ? (
-        <Button disabled={busy} onClick={() => void install()}>
-          {busy
-            ? t("claudePlugin.installing")
-            : status.state === "error"
-              ? t("claudePlugin.retry")
-              : t("claudePlugin.install")}
-        </Button>
-      ) : null}
-    </div>
+    <>
+      <div className="pd-onb__connect-card">
+        <span className="pd-onb__connect-text">
+          <b>{t("claudePlugin.connectTitle")}</b>
+          <small>{hintText}</small>
+        </span>
+        {status?.state === "installed" ? (
+          <span className="pd-onb__connect-ok">✓ {t("claudePlugin.installed")}</span>
+        ) : status && status.state !== "cli-missing" ? (
+          <Button disabled={busy} onClick={() => install()}>
+            {busy
+              ? t("claudePlugin.installing")
+              : status.state === "error"
+                ? t("claudePlugin.retry")
+                : t("claudePlugin.install")}
+          </Button>
+        ) : null}
+      </div>
+      {run && <PluginRunTerminal available={isTauri()} onClose={dismissRun} run={run} />}
+    </>
   );
 }
 

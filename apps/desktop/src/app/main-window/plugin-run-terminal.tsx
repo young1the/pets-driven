@@ -1,0 +1,62 @@
+import { useTranslation } from "@pets-driven/i18n";
+import { lazy, Suspense } from "react";
+import type { ClaudePluginRun } from "@/app/use-claude-plugin";
+import "@/app/main-window/terminal-section.css";
+import "@/app/main-window/plugin-run-terminal.css";
+
+// xterm is heavy and most sessions never install the plugin, so keep it out of
+// the main chunk — same treatment as the terminal tab.
+const EmbeddedTerminal = lazy(() =>
+  import("@/app/main-window/embedded-terminal").then((m) => ({ default: m.EmbeddedTerminal })),
+);
+
+export interface PluginRunTerminalProps {
+  run: ClaudePluginRun;
+  /** Whether the app is running inside Tauri (PTY available). */
+  available: boolean;
+  onClose: () => void;
+}
+
+/**
+ * The plugin install/uninstall running where the user can see it: a real shell
+ * with the `claude` line typed in, live output, and a prompt left behind so
+ * they can answer a question, retry, or check things by hand.
+ *
+ * Deliberately spawns the OS default shell rather than the one picked in
+ * settings — a shell like WSL has its own `claude` install, which would not be
+ * the one the status probes report on.
+ */
+export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminalProps) {
+  const { t } = useTranslation("desktop");
+
+  return (
+    <div className="pd-plugin-run">
+      <div className="pd-eterm__frame">
+        <div className="pd-eterm__bar">
+          <span aria-hidden className="pd-eterm__dots">
+            <span />
+            <span />
+            <span />
+          </span>
+          <span className="pd-plugin-run__title">{t(`claudePlugin.run.${run.action}`)}</span>
+          <button className="pd-eterm__restart" onClick={onClose} type="button">
+            {t("claudePlugin.run.close")}
+          </button>
+        </div>
+
+        {available ? (
+          <Suspense fallback={<div className="pd-eterm__view" />}>
+            <EmbeddedTerminal
+              className="pd-eterm__view"
+              exitedLabel={t("terminal.exited")}
+              initialInput={run.line}
+              key={run.line}
+            />
+          </Suspense>
+        ) : (
+          <div className="pd-eterm__unavailable">{t("terminal.unavailable")}</div>
+        )}
+      </div>
+    </div>
+  );
+}

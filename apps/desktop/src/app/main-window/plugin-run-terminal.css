@@ -1,0 +1,21 @@
+/* The install terminal is embedded in a settings/onboarding card rather than
+   filling a tab, so it needs a fixed height instead of `flex: 1`. Everything
+   inside reuses the `pd-eterm__*` chrome from terminal-section.css. */
+.pd-plugin-run {
+  margin-top: 10px;
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-plugin-run__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--term-muted);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12px;
+}

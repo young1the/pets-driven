@@ -22,6 +22,10 @@ function createGateway(
       version: null,
       error: null,
     }),
+    planClaudePluginCommand: vi.fn().mockResolvedValue({
+      line: "claude plugin install pets-driven@pets-driven --scope user",
+      status: { state: "not-installed", version: null, error: null },
+    }),
     installClaudePlugin: vi.fn().mockResolvedValue({
       state: "installed",
       version: "0.1.0",
@@ -39,7 +43,6 @@ function createGateway(
       state: "error",
       error: null,
     }),
-    emitTestClaudeHookIngressEvent: vi.fn().mockResolvedValue(undefined),
     closeAllPetWindows: vi.fn().mockResolvedValue(undefined),
     focusForeignWindow: vi.fn().mockResolvedValue(false),
     startSession: vi.fn().mockResolvedValue(null),
@@ -180,9 +183,12 @@ describe("AdoptPetFlow Claude Code connect", () => {
 
     fireEvent.click(await screen.findByText("Install"));
 
+    // The install is not run here: it is handed to the in-app terminal so the
+    // user can watch it and answer anything the CLI asks.
     await waitFor(() => {
-      expect(gateway.installClaudePlugin).toHaveBeenCalled();
+      expect(gateway.planClaudePluginCommand).toHaveBeenCalledWith("install");
     });
-    expect(await screen.findByText(/Installed/)).toBeInTheDocument();
+    expect(gateway.installClaudePlugin).not.toHaveBeenCalled();
+    expect(await screen.findByText("Installing the plugin")).toBeInTheDocument();
   });
 });

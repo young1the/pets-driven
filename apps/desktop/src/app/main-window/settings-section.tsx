@@ -3,28 +3,33 @@ import { localeLabels, useTranslation } from "@pets-driven/i18n";
 import type { CSSProperties } from "react";
 import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
+import { PluginRunTerminal } from "@/app/main-window/plugin-run-terminal";
 import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
-import { LAUNCH_PROFILE_OPTIONS, type LaunchProfileId } from "@/app/session-launch-profile";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
+import type { ClaudePluginRun } from "@/app/use-claude-plugin";
 
 export interface SettingsSectionProps {
-  launchProfile: LaunchProfileId;
   command: string;
-  launchLine: string;
-  onLaunchProfile: (value: LaunchProfileId) => void;
   onCommand: (value: string) => void;
-  onLaunchLine: (value: string) => void;
-  /** The shell the in-app terminal spawns; empty string = OS default. */
+  /**
+   * The shell both the in-app terminal and the double-click launch line use;
+   * empty string = OS default.
+   */
   terminalShell: string;
   onTerminalShell: (value: string) => void;
   preview: { prompt: string; command: string };
-  hook: { tone: BadgeTone; label: string; summary: string; url: string };
-  onReconnect: () => void;
+  /** Hook ingress health, folded into the plugin card rather than shown alone. */
+  hook: { tone: BadgeTone; summary: string };
   /** Bundled Claude Code plugin install state; null while the check runs. */
   plugin: ClaudePluginStatus | null;
   pluginBusy: boolean;
+  /** An install/uninstall the in-app terminal is showing; null when idle. */
+  pluginRun: ClaudePluginRun | null;
+  /** Whether the app is running inside Tauri, so a PTY can be spawned. */
+  terminalAvailable: boolean;
   onInstallPlugin: () => void;
   onUninstallPlugin: () => void;
+  onClosePluginRun: () => void;
   /** The single folder scanned for pet packs; null = the Petdex default. */
   petSourceDirectory: string | null;
   /** The resolved Petdex default path shown when no custom folder is set. */
@@ -105,18 +110,6 @@ const selectStyle: CSSProperties = {
   cursor: "pointer",
   outline: "none",
 };
-const browseStyle: CSSProperties = {
-  border: 0,
-  cursor: "pointer",
-  padding: "11px 18px",
-  borderRadius: "12px",
-  fontFamily: "var(--font-body)",
-  fontWeight: 700,
-  fontSize: "13px",
-  background: "var(--surface-sunken)",
-  color: "var(--text-strong)",
-  whiteSpace: "nowrap",
-};
 const swatch = (hex: string, on: boolean): CSSProperties => ({
   width: "34px",
   height: "34px",
@@ -142,10 +135,18 @@ const connectionText: CSSProperties = {
   minWidth: 0,
   flex: 1,
 };
+/** The trailing action buttons inside a card row (connection, pet folder). */
 const smallAction: CSSProperties = {
-  ...browseStyle,
+  border: 0,
+  cursor: "pointer",
   padding: "8px 14px",
+  borderRadius: "12px",
+  fontFamily: "var(--font-body)",
+  fontWeight: 700,
   fontSize: "12.5px",
+  background: "var(--surface-card)",
+  color: "var(--text-strong)",
+  whiteSpace: "nowrap",
 };
 const TONE_COLORS: Partial<Record<BadgeTone, string>> = {
   success: "#2f9e63",
@@ -170,21 +171,19 @@ const smallCaps: CSSProperties = {
 };
 
 export function SettingsSection({
-  launchProfile,
   command,
-  launchLine,
-  onLaunchProfile,
   onCommand,
-  onLaunchLine,
   terminalShell,
   onTerminalShell,
   preview,
   hook,
-  onReconnect,
   plugin,
   pluginBusy,
+  pluginRun,
+  terminalAvailable,
   onInstallPlugin,
   onUninstallPlugin,
+  onClosePluginRun,
   petSourceDirectory,
   defaultPetSourceDirectory,
   onChangePetFolder,
@@ -199,19 +198,29 @@ export function SettingsSection({
   const hasCustomShell =
     terminalShell.trim() !== "" && !shellOptions.some((option) => option.path === terminalShell);
 
-  const customLaunchLine = launchProfile === "custom";
-
+  // The hook only says anything useful once the plugin exists to feed it, so
+  // the two fold into a single line: what is installed, and whether the pets
+  // are actually seeing the agent because of it.
+  const installedLabel = plugin?.version
+    ? t("claudePlugin.installedVersion", { version: plugin.version })
+    : t("claudePlugin.installed");
   const pluginHintText = !plugin
     ? t("claudePlugin.checking")
     : plugin.state === "installed"
-      ? plugin.version
-        ? t("claudePlugin.installedVersion", { version: plugin.version })
-        : t("claudePlugin.installed")
+      ? `${installedLabel} — ${hook.summary}`
       : plugin.state === "cli-missing"
         ? t("claudePlugin.cliMissing")
         : plugin.state === "error"
           ? (plugin.error ?? t("claudePlugin.error"))
           : t("claudePlugin.notInstalledHint");
+  const connectionTone: BadgeTone =
+    !plugin || plugin.state === "cli-missing"
+      ? "neutral"
+      : plugin.state === "installed"
+        ? hook.tone
+        : plugin.state === "error"
+          ? "danger"
+          : "neutral";
 
   return (
     <div style={{ padding: "38px 24px 64px", minHeight: "100%" }}>
@@ -246,84 +255,35 @@ export function SettingsSection({
             padding: "4px 26px",
           }}
         >
-          {/* Command — the agent shell run on double-click. */}
+          {/* Terminal — one shell for the in-app terminal and for the launch
+              line a pet double-click runs, plus the agent command itself. */}
           <div style={rowStyle()}>
-            <span style={label}>{t("settings.command")}</span>
-            <p style={hint}>{t("settings.doubleClickDesc")}</p>
-            <div style={segWrap}>
-              {LAUNCH_PROFILE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => onLaunchProfile(option.value)}
-                  style={seg(launchProfile === option.value)}
-                  type="button"
-                >
-                  {t(`launchProfile.${option.labelKey}`)}
-                </button>
+            <span style={label}>{t("settings.terminal")}</span>
+            <p style={hint}>{t("settings.terminalDesc")}</p>
+            <select
+              aria-label={t("settings.terminal")}
+              onChange={(event) => onTerminalShell(event.target.value)}
+              style={{ ...selectStyle, width: "100%" }}
+              value={terminalShell}
+            >
+              <option value="">{t("settings.defaultTerminalSystem")}</option>
+              {shellOptions.map((option) => (
+                <option key={option.path} value={option.path}>
+                  {option.label} ({option.path})
+                </option>
               ))}
-            </div>
-            <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-              <input
-                aria-label={customLaunchLine ? t("settings.launchLine") : t("settings.command")}
-                onChange={(event) =>
-                  customLaunchLine
-                    ? onLaunchLine(event.target.value)
-                    : onCommand(event.target.value)
-                }
-                placeholder={
-                  customLaunchLine
-                    ? '"…/bash.exe" -lc "claude; exec bash"'
-                    : t("settings.commandPlaceholder")
-                }
-                style={inputStyle}
-                value={customLaunchLine ? launchLine : command}
-              />
-            </div>
-            {!customLaunchLine && (
-              <details style={{ marginTop: "10px" }}>
-                <summary
-                  style={{
-                    cursor: "pointer",
-                    fontSize: "12px",
-                    fontWeight: 800,
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  {t("settings.advancedLaunchLine")}
-                </summary>
-                <input
-                  aria-label={t("settings.launchLine")}
-                  onChange={(event) => onLaunchLine(event.target.value)}
-                  style={{ ...inputStyle, width: "100%", marginTop: "10px" }}
-                  value={launchLine}
-                />
-              </details>
-            )}
+              {hasCustomShell && <option value={terminalShell}>{terminalShell}</option>}
+            </select>
+            <input
+              aria-label={t("settings.command")}
+              onChange={(event) => onCommand(event.target.value)}
+              placeholder={t("settings.commandPlaceholder")}
+              style={{ ...inputStyle, width: "100%", marginTop: "8px" }}
+              value={command}
+            />
             <div style={{ marginTop: "16px" }}>
               <span style={smallCaps}>{t("settings.commandPreview")}</span>
               <TerminalPreview command={preview.command} prompt={preview.prompt} />
-            </div>
-          </div>
-
-          {/* Default terminal — the shell the in-app terminal spawns. */}
-          <div style={rowStyle()}>
-            <span style={label}>{t("settings.defaultTerminal")}</span>
-            <p style={hint}>{t("settings.defaultTerminalDesc")}</p>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <select
-                aria-label={t("settings.defaultTerminal")}
-                onChange={(event) => onTerminalShell(event.target.value)}
-                style={selectStyle}
-                value={terminalShell}
-              >
-                <option value="">{t("settings.defaultTerminalSystem")}</option>
-                {shellOptions.map((option) => (
-                  <option key={option.path} value={option.path}>
-                    {option.label} ({option.path})
-                  </option>
-                ))}
-                {hasCustomShell && <option value={terminalShell}>{terminalShell}</option>}
-              </select>
             </div>
           </div>
 
@@ -331,29 +291,13 @@ export function SettingsSection({
           <div style={rowStyle()}>
             <span style={label}>{t("settings.petSourcesTitle")}</span>
             <p style={hint}>{t("settings.petSourcesDesc")}</p>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "10px 12px",
-                border: "1px solid var(--border-soft)",
-                borderRadius: "14px",
-                background: "var(--surface-sunken)",
-                marginBottom: "12px",
-              }}
-            >
+            {/* Same card shape as the agent connection rows: the folder reads on
+                the left, its actions sit alongside it rather than underneath. */}
+            <div style={connectionCard}>
               <span style={{ color: "var(--text-muted)", display: "flex" }}>
                 <FolderIcon />
               </span>
-              <span
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  minWidth: 0,
-                  flex: 1,
-                }}
-              >
+              <span style={connectionText}>
                 <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
                   {petSourceDirectory
                     ? folderName(petSourceDirectory)
@@ -370,55 +314,24 @@ export function SettingsSection({
                   {petSourceDirectory ?? defaultPetSourceDirectory ?? "~/.petdex/pets"}
                 </small>
               </span>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                onClick={onChangePetFolder}
-                style={{
-                  ...browseStyle,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-                type="button"
-              >
-                <FolderIcon />
+              <button onClick={onChangePetFolder} style={smallAction} type="button">
                 {t("settings.changePetFolder")}
               </button>
               {petSourceDirectory && (
-                <button onClick={onResetPetFolder} style={browseStyle} type="button">
+                <button onClick={onResetPetFolder} style={smallAction} type="button">
                   {t("settings.resetPetFolder")}
                 </button>
               )}
             </div>
           </div>
 
-          {/* Agent connection — hook ingress status and the Claude Code
-              plugin that forwards agent events into it. */}
+          {/* Agent connection — one card: the Claude Code plugin, and what it
+              is (or is not) doing for the pets right now. */}
           <div style={rowStyle()}>
             <span style={label}>{t("settings.agentConnection")}</span>
             <p style={hint}>{t("settings.agentConnectionDesc")}</p>
             <div style={connectionCard}>
-              <span aria-hidden style={statusDot(hook.tone)} />
-              <span style={connectionText}>
-                <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>{hook.label}</b>
-                <small
-                  style={{
-                    color: "var(--text-muted)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {hook.summary}
-                  {hook.url ? ` · ${hook.url}` : ""}
-                </small>
-              </span>
-              <button onClick={onReconnect} style={smallAction} type="button">
-                {t("settings.reconnect")}
-              </button>
-            </div>
-            <div style={{ ...connectionCard, marginTop: "10px" }}>
+              <span aria-hidden style={statusDot(connectionTone)} />
               <span style={connectionText}>
                 <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
                   {t("claudePlugin.title")}
@@ -463,6 +376,13 @@ export function SettingsSection({
                 </button>
               ) : null}
             </div>
+            {pluginRun && (
+              <PluginRunTerminal
+                available={terminalAvailable}
+                onClose={onClosePluginRun}
+                run={pluginRun}
+              />
+            )}
           </div>
 
           {/* Appearance — flips the whole-app light/dark/system theme. */}

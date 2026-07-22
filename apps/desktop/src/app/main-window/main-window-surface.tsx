@@ -10,11 +10,7 @@ import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import { cardNote, petGradient, shortWorkingDir } from "@/app/main-window/pet-card-view";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import { personalityRoleLabelKey } from "@/app/pet-presentation";
-import {
-  type LaunchProfileId,
-  parseLaunchLine,
-  promptForLaunchProfile,
-} from "@/app/session-launch-profile";
+import { parseLaunchLine, promptForShell } from "@/app/session-launch-line";
 import type { useClaudePlugin } from "@/app/use-claude-plugin";
 import { getWorkingDirectoryForPet } from "@/app-state/pet-adoption";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
@@ -43,11 +39,8 @@ export interface MainWindowSurfaceProps {
   onClearFolderForPet: (petId: string) => void;
   onDeletePet: (petId: string) => void;
   onResetPets: () => void;
-  onUpdateSessionCommand: (command: string) => void;
   onUpdateTerminalShell: (shell: string) => void;
-  onSetLaunchProfile: (profile: LaunchProfileId) => void;
   onSetLaunchCommand: (command: string) => void;
-  onReconnectHook: () => void;
   onChangePetSourceFolder: () => void;
   onResetPetFolder: () => void;
 }
@@ -94,11 +87,8 @@ export function MainWindowSurface({
   onClearFolderForPet,
   onDeletePet,
   onResetPets,
-  onUpdateSessionCommand,
   onUpdateTerminalShell,
-  onSetLaunchProfile,
   onSetLaunchCommand,
-  onReconnectHook,
   onChangePetSourceFolder,
   onResetPetFolder,
 }: MainWindowSurfaceProps) {
@@ -240,16 +230,12 @@ export function MainWindowSurface({
         setMainTab(next);
       }}
       settings={{
-        launchProfile: launchSettings.profile,
         command: launchSettings.command,
-        launchLine: launchSettings.launchLine,
-        onLaunchProfile: onSetLaunchProfile,
         onCommand: onSetLaunchCommand,
-        onLaunchLine: onUpdateSessionCommand,
         terminalShell: state.terminalShell ?? "",
         onTerminalShell: onUpdateTerminalShell,
         preview: {
-          prompt: promptForLaunchProfile(launchSettings.profile),
+          prompt: promptForShell(state.terminalShell ?? launchSettings.shell),
           command: state.sessionCommand,
         },
         hook: {
@@ -259,20 +245,15 @@ export function MainWindowSurface({
               : claudeHookIngressStatus.state === "pending"
                 ? "info"
                 : "danger",
-          label:
-            claudeHookIngressStatus.state === "listening"
-              ? t("hook.connected")
-              : claudeHookIngressStatus.state === "pending"
-                ? t("hook.connecting")
-                : t("hook.offline"),
-          summary: t("hook.summary", { state: claudeHookIngressStatus.state }),
-          url: claudeHookIngressStatus.url,
+          summary: t(`hook.summary.${claudeHookIngressStatus.state}`),
         },
-        onReconnect: () => onReconnectHook(),
         plugin: claudePlugin.status,
         pluginBusy: claudePlugin.busy,
-        onInstallPlugin: () => void claudePlugin.install(),
-        onUninstallPlugin: () => void claudePlugin.uninstall(),
+        pluginRun: claudePlugin.run,
+        terminalAvailable: isTauri(),
+        onInstallPlugin: () => claudePlugin.install(),
+        onUninstallPlugin: () => claudePlugin.uninstall(),
+        onClosePluginRun: () => claudePlugin.dismissRun(),
         petSourceDirectory: state.petSourceDirectory,
         defaultPetSourceDirectory: defaultPetSourceFolder,
         onChangePetFolder: () => onChangePetSourceFolder(),

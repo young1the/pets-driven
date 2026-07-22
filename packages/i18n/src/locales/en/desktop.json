@@ -36,13 +36,10 @@
   },
   "settings": {
     "title": "Settings",
-    "doubleClickTitle": "Double-click action",
-    "doubleClickDesc": "When you double-click a pet, it opens this terminal command in its working folder.",
-    "shell": "Shell",
-    "launchLine": "Launch line",
+    "terminal": "Terminal",
+    "terminalDesc": "The shell the in-app terminal opens, and the command it runs in a pet's working folder when you double-click the pet.",
     "command": "Command",
     "commandPlaceholder": "claude --resume",
-    "advancedLaunchLine": "Advanced launch line",
     "commandPreview": "Command preview",
     "petSourcesTitle": "Pets folder",
     "petSourcesDesc": "The folder scanned for pet packs. Defaults to ~/.petdex/pets, where Petdex installs your pets. The built-in pets always show alongside it.",
@@ -60,23 +57,17 @@
     "accentColor": "App accent color",
     "accentColorDesc": "The color used across the app for highlights and active states.",
     "agentConnection": "Agent connection",
-    "agentConnectionDesc": "The app listens for Claude Code events on this machine; the plugin forwards them from your sessions.",
-    "reconnect": "Send test event",
+    "agentConnectionDesc": "Your pets react to Claude Code sessions through this plugin.",
     "defaultTerminal": "Default terminal",
     "defaultTerminalDesc": "The shell the in-app terminal opens, detected from your system. Pick “System default” to follow COMSPEC / SHELL.",
     "defaultTerminalSystem": "System default"
   },
-  "launchProfile": {
-    "cmd": "Command Prompt",
-    "powershell": "PowerShell",
-    "gitBash": "Git Bash",
-    "custom": "Custom"
-  },
   "hook": {
-    "connected": "All connected",
-    "connecting": "Connecting",
-    "offline": "Offline",
-    "summary": "Claude hook {{state}}"
+    "summary": {
+      "listening": "your pets are following along.",
+      "pending": "getting the connection ready.",
+      "error": "your pets can't see the work. Try restarting the app."
+    }
   },
   "claudePlugin": {
     "title": "Claude Code plugin",
@@ -92,7 +83,12 @@
     "installedHint": "Claude Code reports agent activity to your pets.",
     "notInstalledHint": "Install the plugin so your pets react while agents work.",
     "cliMissing": "Claude Code CLI not found. Install Claude Code first, then come back.",
-    "error": "Something went wrong talking to Claude Code."
+    "error": "Something went wrong talking to Claude Code.",
+    "run": {
+      "install": "Installing the plugin",
+      "uninstall": "Removing the plugin",
+      "close": "Close"
+    }
   },
   "edit": {
     "back": "Back to the pack",

@@ -69,6 +69,7 @@ pub fn run() {
             claude_hook_ingress::get_claude_hook_ingress_status,
             claude_hook_ingress::emit_test_claude_hook_ingress_event,
             claude_plugin::get_claude_plugin_status,
+            claude_plugin::plan_claude_plugin_command,
             claude_plugin::install_claude_plugin,
             claude_plugin::uninstall_claude_plugin,
             state_store::read_pets_driven_state,

@@ -53,6 +53,12 @@ export interface EmbeddedTerminalProps {
   cwd?: string | null;
   /** Program to run; empty/undefined falls back to COMSPEC/SHELL in Rust. */
   shell?: string | null;
+  /**
+   * A command typed into the shell once it starts, as if the user had entered
+   * it. The prompt stays afterwards, so they can watch it run and then keep
+   * working in the same session.
+   */
+  initialInput?: string | null;
   exitedLabel: string;
   className?: string;
 }
@@ -62,7 +68,13 @@ export interface EmbeddedTerminalProps {
  * one PTY session; changing `cwd`/`shell` tears down and restarts it (the
  * parent also keys us to force a clean remount).
  */
-export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: EmbeddedTerminalProps) {
+export function EmbeddedTerminal({
+  cwd,
+  shell,
+  initialInput,
+  exitedLabel,
+  className,
+}: EmbeddedTerminalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -143,6 +155,12 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
             }
           }),
         );
+
+        // The shell buffers stdin, so this is safe to send before its prompt
+        // has finished drawing — it runs as soon as the shell reads a line.
+        if (initialInput) {
+          await desktopGateway.writeTerminal(id, `${initialInput}\r`);
+        }
       } catch (error) {
         term.write(`\r\n\x1b[31m${String(error)}\x1b[0m\r\n`);
       }
@@ -181,7 +199,7 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
       }
       term.dispose();
     };
-  }, [cwd, shell, exitedLabel]);
+  }, [cwd, shell, initialInput, exitedLabel]);
 
   return <div className={className} ref={containerRef} />;
 }

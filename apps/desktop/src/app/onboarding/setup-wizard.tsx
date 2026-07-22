@@ -7,11 +7,13 @@ import { isTauri } from "@tauri-apps/api/core";
 import { type CSSProperties, useEffect, useState } from "react";
 import { type CodexPetPackage, type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
 import { useDesktopLocale } from "@/app/i18n/desktop-locale";
+import { PluginRunTerminal } from "@/app/main-window/plugin-run-terminal";
 import { TerminalSection } from "@/app/main-window/terminal-section";
 import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
 import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
+import { buildLaunchLine, parseLaunchLine } from "@/app/session-launch-line";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
 import {
@@ -656,7 +658,13 @@ export function SetupWizard({
       return;
     }
 
-    const nextState = { ...state, terminalShell: nextShell };
+    // The picked shell also runs the double-click launch line, so rebuild it
+    // around the command already stored instead of letting the two drift.
+    const nextState = {
+      ...state,
+      terminalShell: nextShell,
+      sessionCommand: buildLaunchLine(trimmed, parseLaunchLine(state.sessionCommand).command),
+    };
     await gateway.writePetsDrivenState(nextState);
     onStateChange(nextState);
   }
@@ -961,7 +969,7 @@ export function SetupWizard({
                 {claudePlugin.status?.state === "installed" ? (
                   <span className="pd-onb__connect-ok">✓ {t("claudePlugin.installed")}</span>
                 ) : claudePlugin.status && claudePlugin.status.state !== "cli-missing" ? (
-                  <Button disabled={claudePlugin.busy} onClick={() => void claudePlugin.install()}>
+                  <Button disabled={claudePlugin.busy} onClick={() => claudePlugin.install()}>
                     {claudePlugin.busy
                       ? t("claudePlugin.installing")
                       : claudePlugin.status.state === "error"
@@ -985,14 +993,24 @@ export function SetupWizard({
               {t("setupWizard.pluginTerminalLabel")}
             </div>
             <p style={fieldHint}>{t("setupWizard.pluginTerminalHint")}</p>
-            <div style={inlineTermShell}>
-              <TerminalSection
+            {/* While an install is running, this slot shows that run instead of
+                a blank shell — same place, so the step's layout does not jump. */}
+            {claudePlugin.run ? (
+              <PluginRunTerminal
                 available={isTauri()}
-                initialCwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
-                pickDirectory={() => gateway.pickDirectory()}
-                shell={state.terminalShell}
+                onClose={claudePlugin.dismissRun}
+                run={claudePlugin.run}
               />
-            </div>
+            ) : (
+              <div style={inlineTermShell}>
+                <TerminalSection
+                  available={isTauri()}
+                  initialCwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
+                  pickDirectory={() => gateway.pickDirectory()}
+                  shell={state.terminalShell}
+                />
+              </div>
+            )}
 
             <div style={footer}>
               <Button onClick={() => setStep("petsFolder")} variant="ghost">

@@ -22,7 +22,6 @@ type UseAgentEventIngressParams = {
   onBackendStateChanged: () => void;
   /** The backend asked to show/hide a pet after reloading state. */
   onPetCommand: (event: PetCommandEvent) => void;
-  setPetWindowError: (message: string | null) => void;
 };
 
 /**
@@ -35,7 +34,6 @@ export function useAgentEventIngress({
   onAgentHookEvent,
   onBackendStateChanged,
   onPetCommand,
-  setPetWindowError,
 }: UseAgentEventIngressParams) {
   const [claudeHookIngressStatus, setClaudeHookIngressStatus] = useState<ClaudeHookIngressStatus>(
     defaultClaudeHookIngressStatus,
@@ -118,15 +116,5 @@ export function useAgentEventIngress({
     return () => unlisten?.();
   }, []);
 
-  async function emitClaudeHookTestEvent() {
-    setPetWindowError(null);
-
-    try {
-      await desktopGateway.emitTestClaudeHookIngressEvent();
-    } catch (error) {
-      setPetWindowError(formatCommandError(error));
-    }
-  }
-
-  return { claudeHookIngressStatus, emitClaudeHookTestEvent };
+  return { claudeHookIngressStatus };
 }

@@ -183,7 +183,6 @@ function PetsDrivenHostApp() {
 
   const {
     resetPets,
-    updateSessionCommand,
     updateTerminalShell,
     patchPet,
     setPetPersonality,
@@ -196,7 +195,6 @@ function PetsDrivenHostApp() {
     clearFolderForPet,
     applyPetSourceFolder,
     changePetSourceFolder,
-    setLaunchProfile,
     setLaunchCommand,
   } = usePetRosterActions({
     stateRef: petsDrivenStateRef,
@@ -260,11 +258,10 @@ function PetsDrivenHostApp() {
       });
   }
 
-  const { claudeHookIngressStatus, emitClaudeHookTestEvent } = useAgentEventIngress({
+  const { claudeHookIngressStatus } = useAgentEventIngress({
     onAgentHookEvent: pushAgentHookEvent,
     onBackendStateChanged: handleBackendStateChanged,
     onPetCommand: handlePetCommand,
-    setPetWindowError,
   });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once to load persisted state; applyPetsDrivenState/navigate are ref/setState-based, so listing them would re-run the initial load on every render.
@@ -363,15 +360,12 @@ function PetsDrivenHostApp() {
       onHidePet={hidePet}
       onPatchPet={patchPet}
       onPickFolderForPet={(petId: string) => void pickFolderForPet(petId)}
-      onReconnectHook={() => void emitClaudeHookTestEvent()}
       onResetPetFolder={() => applyPetSourceFolder(null)}
       onResetPets={() => void resetPets()}
       onSetLaunchCommand={setLaunchCommand}
-      onSetLaunchProfile={setLaunchProfile}
       onSetPetPersonality={setPetPersonality}
       onShowAllPets={showAllPets}
       onShowPet={showPet}
-      onUpdateSessionCommand={updateSessionCommand}
       onUpdateTerminalShell={updateTerminalShell}
       petStatusById={petStatusById}
       petWindowError={petWindowError}

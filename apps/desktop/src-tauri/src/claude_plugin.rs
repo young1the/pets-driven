@@ -263,6 +263,69 @@ pub(crate) async fn get_claude_plugin_status() -> ClaudePluginStatus {
         .unwrap_or_else(|error| ClaudePluginStatus::error(error.to_string()))
 }
 
+/// The `claude` line the in-app terminal should run, plus the status the caller
+/// should show if there is nothing to run.
+#[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ClaudePluginPlan {
+    /// Command to type into the terminal; None when preparation already failed.
+    pub line: Option<String>,
+    pub status: ClaudePluginStatus,
+}
+
+/// Work out which `claude plugin` line installs or removes the plugin right
+/// now, so the frontend can run it in the visible in-app terminal.
+///
+/// The read-only probes (`marketplace list --json`, `plugin list --json`) and
+/// the marketplace registration stay here: their output is parsed as JSON,
+/// which a PTY would corrupt with echo and control codes, and the stale-path
+/// recovery in `ensure_marketplace` has no single-line equivalent. Only the
+/// install/uninstall itself — the slow, chatty step worth watching — is handed
+/// back to be run where the user can see and answer it.
+#[tauri::command]
+pub(crate) async fn plan_claude_plugin_command(
+    app: tauri::AppHandle,
+    action: String,
+) -> ClaudePluginPlan {
+    tauri::async_runtime::spawn_blocking(move || {
+        if action == "uninstall" {
+            return ClaudePluginPlan {
+                line: Some(format!("claude plugin uninstall {PLUGIN_ID} -y")),
+                status: read_status(),
+            };
+        }
+
+        let Some(dir) = bundled_plugins_dir(&app) else {
+            return ClaudePluginPlan {
+                line: None,
+                status: ClaudePluginStatus::error(
+                    "bundled plugin files not found; reinstall the app".to_string(),
+                ),
+            };
+        };
+
+        if let Err(status) = ensure_marketplace(&dir) {
+            return ClaudePluginPlan { line: None, status };
+        }
+
+        // Reinstalling refreshes the cached files from the (just-updated)
+        // marketplace, which is how an app update rolls the plugin forward.
+        let status = read_status();
+        let line = if status.state == "installed" {
+            format!("claude plugin update {PLUGIN_ID}")
+        } else {
+            format!("claude plugin install {PLUGIN_ID} --scope user")
+        };
+
+        ClaudePluginPlan { line: Some(line), status }
+    })
+    .await
+    .unwrap_or_else(|error| ClaudePluginPlan {
+        line: None,
+        status: ClaudePluginStatus::error(error.to_string()),
+    })
+}
+
 #[tauri::command]
 pub(crate) async fn install_claude_plugin(app: tauri::AppHandle) -> ClaudePluginStatus {
     tauri::async_runtime::spawn_blocking(move || match bundled_plugins_dir(&app) {

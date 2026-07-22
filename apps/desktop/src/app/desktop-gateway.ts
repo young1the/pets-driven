@@ -62,6 +62,17 @@ export type ClaudePluginStatus = {
 };
 
 /**
+ * What to run in the in-app terminal to install or remove the plugin. `line` is
+ * null when preparation already failed, in which case `status` carries the why.
+ */
+export type ClaudePluginPlan = {
+  line: string | null;
+  status: ClaudePluginStatus;
+};
+
+export type ClaudePluginAction = "install" | "uninstall";
+
+/**
  * Thin gateway over the Tauri commands the app shell and onboarding need.
  * Components receive this via props so tests can inject fakes without
  * mocking @tauri-apps/api.
@@ -86,6 +97,8 @@ export type DesktopGateway = {
   /** The Petdex default pet folder (~/.petdex/pets); null outside Tauri. */
   getDefaultPetSourceDirectory(): Promise<string | null>;
   getClaudePluginStatus(): Promise<ClaudePluginStatus>;
+  /** Resolve the `claude` line to run in the terminal for an install/uninstall. */
+  planClaudePluginCommand(action: ClaudePluginAction): Promise<ClaudePluginPlan>;
   installClaudePlugin(): Promise<ClaudePluginStatus>;
   uninstallClaudePlugin(): Promise<ClaudePluginStatus>;
 
@@ -94,8 +107,6 @@ export type DesktopGateway = {
 
   /** Current status of the Claude hook ingress listener. */
   getClaudeHookIngressStatus(): Promise<ClaudeHookIngressStatus>;
-  /** Fire a synthetic hook ingress event (debug tooling). */
-  emitTestClaudeHookIngressEvent(): Promise<void>;
   /** Close every open pet overlay window. */
   closeAllPetWindows(): Promise<void>;
 
@@ -232,6 +243,14 @@ export const desktopGateway: DesktopGateway = {
     return await invoke<ClaudePluginStatus>("get_claude_plugin_status");
   },
 
+  async planClaudePluginCommand(action: ClaudePluginAction) {
+    if (!isTauri()) {
+      return { line: null, status: CLAUDE_PLUGIN_UNAVAILABLE };
+    }
+
+    return await invoke<ClaudePluginPlan>("plan_claude_plugin_command", { action });
+  },
+
   async installClaudePlugin() {
     if (!isTauri()) {
       return CLAUDE_PLUGIN_UNAVAILABLE;
@@ -258,14 +277,6 @@ export const desktopGateway: DesktopGateway = {
     }
 
     return await invoke<ClaudeHookIngressStatus>("get_claude_hook_ingress_status");
-  },
-
-  async emitTestClaudeHookIngressEvent() {
-    if (!isTauri()) {
-      return;
-    }
-
-    await invoke("emit_test_claude_hook_ingress_event");
   },
 
   async closeAllPetWindows() {
