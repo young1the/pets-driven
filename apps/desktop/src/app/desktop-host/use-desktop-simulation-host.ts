@@ -236,14 +236,12 @@ export function useDesktopSimulationHost({
       }
       if (input.kind === "menu.note-save") {
         const current = stateRef.current;
-        const next: typeof current = {
+        const memo = input.memo ?? "";
+        applyState({
           ...current,
-          pets: current.pets.map((p) =>
-            p.id === input.petId ? { ...p, memo: input.memo ?? "" } : p,
-          ),
-        };
-        applyState(next);
-        void desktopGateway.writePetsDrivenState(next);
+          pets: current.pets.map((p) => (p.id === input.petId ? { ...p, memo } : p)),
+        });
+        void desktopGateway.updatePet({ petId: input.petId, memo });
         return;
       }
       if (input.kind === "menu.pick-folder") {
@@ -336,12 +334,11 @@ export function useDesktopSimulationHost({
         scenario.world.setComponent(petId, canJump);
       }
       const current = stateRef.current;
-      const next: typeof current = {
+      applyState({
         ...current,
         pets: current.pets.map((p) => (p.id === petId ? { ...p, scale: nextScale } : p)),
-      };
-      applyState(next);
-      void desktopGateway.writePetsDrivenState(next);
+      });
+      void desktopGateway.updatePet({ petId, scale: nextScale });
     }).then((stop) => {
       unlisten = stop;
     });

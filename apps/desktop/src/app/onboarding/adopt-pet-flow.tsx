@@ -202,12 +202,12 @@ export function AdoptPetFlow({
     void loadPackages();
   }, [loadPackages]);
 
-  // Persist a mutated state and rescan the pet-pack roots so a folder change is
-  // reflected in the list immediately. Reuses the same write path as adoption.
+  // Persist a pet-source folder change and rescan the pet-pack roots so the new
+  // folder's pets show up in the list immediately.
   const persistAndRescan = useCallback(
     async (nextState: PetsDrivenState) => {
       try {
-        await gateway.writePetsDrivenState(nextState);
+        await gateway.updateSettings({ petSourceDirectory: nextState.petSourceDirectory });
         onStateChange(nextState);
         setAdoptionError(null);
       } catch (error) {
@@ -321,10 +321,24 @@ export function AdoptPetFlow({
     };
 
     try {
-      await gateway.writePetsDrivenState(homeState);
-      onStateChange(homeState);
+      // The backend owns the create: it mints the pet's ids and appends it to
+      // whatever is on disk, so its state wins over the one built above. That
+      // local copy is still what a browser dev run (no backend) falls back to.
+      const persisted = await gateway.hatchPet({
+        assetId,
+        name: trimmedName,
+        personalityId: personality.id,
+        cwd: selectedFolderPath ?? null,
+      });
+      const bornState = persisted ?? homeState;
+      // The backend mints its own ids, so ask the state it returned which pet is
+      // new instead of assuming the locally built one survived.
+      const knownPetIds = new Set(stateRef.current.pets.map((pet) => pet.id));
+      const createdPet = bornState.pets.find((pet) => !knownPetIds.has(pet.id));
+
+      onStateChange(bornState);
       setBornPet({
-        id: petId,
+        id: createdPet?.id ?? petId,
         name: trimmedName,
         assetId,
         personalityId: personality.id,

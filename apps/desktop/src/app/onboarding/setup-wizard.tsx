@@ -638,7 +638,7 @@ export function SetupWizard({
       return;
     }
 
-    await gateway.writePetsDrivenState(nextState);
+    await gateway.updateSettings({ petSourceDirectory: nextState.petSourceDirectory });
     onStateChange(nextState);
   }
 
@@ -665,7 +665,10 @@ export function SetupWizard({
       terminalShell: nextShell,
       sessionCommand: buildLaunchLine(trimmed, parseLaunchLine(state.sessionCommand).command),
     };
-    await gateway.writePetsDrivenState(nextState);
+    await gateway.updateSettings({
+      terminalShell: nextState.terminalShell,
+      sessionCommand: nextState.sessionCommand,
+    });
     onStateChange(nextState);
   }
 

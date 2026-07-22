@@ -14,7 +14,7 @@ import { parseLaunchLine, promptForShell } from "@/app/session-launch-line";
 import type { useClaudePlugin } from "@/app/use-claude-plugin";
 import { getWorkingDirectoryForPet } from "@/app-state/pet-adoption";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
-import type { PetRecord, PetsDrivenState } from "@/app-state/pets-driven-state";
+import type { PetPatch, PetRecord, PetsDrivenState } from "@/app-state/pets-driven-state";
 
 /** How many pets the debug seed button adopts in one press. */
 const SEED_WATCHED_FOLDER_COUNT = 13;
@@ -36,7 +36,7 @@ export interface MainWindowSurfaceProps {
   onHidePet: (petId: string) => void;
   onShowAllPets: () => void;
   onHideAllPets: () => void;
-  onPatchPet: (petId: string, patch: Partial<PetRecord>) => void;
+  onPatchPet: (petId: string, patch: PetPatch) => void;
   onSetPetPersonality: (petId: string, personalityId: PetPersonalityId) => void;
   onPickFolderForPet: (petId: string) => void;
   onClearFolderForPet: (petId: string) => void;

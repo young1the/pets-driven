@@ -474,19 +474,15 @@ describe("pet window product route", () => {
     });
 
     await waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith(
-        "write_pets_driven_state",
-        expect.objectContaining({
-          state: expect.objectContaining({
-            pets: expect.arrayContaining([
-              expect.objectContaining({
-                id: "pet-a",
-                memo: "Great work today!",
-              }),
-            ]),
-          }),
-        }),
-      );
+      // The memo goes over as a patch, not as the whole state document: a
+      // document write would carry this window's stale copy of the roster and
+      // erase anything the backend hatched since it was loaded.
+      expect(invokeMock).toHaveBeenCalledWith("update_pet_record", {
+        input: { petId: "pet-a", memo: "Great work today!" },
+      });
+      expect(
+        invokeMock.mock.calls.filter(([command]) => command === "write_pets_driven_state"),
+      ).toHaveLength(0);
     });
   });
 
@@ -544,27 +540,11 @@ describe("pet window product route", () => {
         directory: true,
         multiple: false,
       });
-      expect(invokeMock).toHaveBeenCalledWith(
-        "write_pets_driven_state",
-        expect.objectContaining({
-          state: expect.objectContaining({
-            pets: expect.arrayContaining([
-              expect.objectContaining({
-                id: "pet-a",
-                workingDirectoryId: expect.any(String),
-              }),
-            ]),
-            registeredWorkingDirectories: expect.arrayContaining([
-              expect.objectContaining({
-                path: "D:\\new-project",
-                petId: "pet-a",
-              }),
-            ]),
-          }),
-        }),
-      );
+      expect(invokeMock).toHaveBeenCalledWith("update_pet_record", {
+        input: { petId: "pet-a", cwd: "D:\\new-project" },
+      });
       expect(
-        invokeMock.mock.calls.filter(([command]) => command === "write_pets_driven_state"),
+        invokeMock.mock.calls.filter(([command]) => command === "update_pet_record"),
       ).toHaveLength(1);
     });
   });
@@ -1986,15 +1966,12 @@ describe("pet window product route", () => {
     });
 
     await waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith(
-        "write_pets_driven_state",
-        expect.objectContaining({
-          state: expect.objectContaining({
-            terminalShell: GIT_BASH_PATH,
-            sessionCommand: `"${GIT_BASH_PATH}" -lc "claude; exec bash"`,
-          }),
-        }),
-      );
+      expect(invokeMock).toHaveBeenCalledWith("update_pets_driven_settings", {
+        input: {
+          terminalShell: GIT_BASH_PATH,
+          sessionCommand: `"${GIT_BASH_PATH}" -lc "claude; exec bash"`,
+        },
+      });
     });
   });
 });

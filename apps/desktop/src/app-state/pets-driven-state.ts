@@ -33,6 +33,12 @@ export type PetRecord = {
   memo?: string;
 };
 
+/**
+ * The pet fields the app can patch and persist. `visible` is deliberately out:
+ * it is runtime-only, so a toggle has nothing to save.
+ */
+export type PetPatch = Partial<Pick<PetRecord, "name" | "memo" | "archived" | "scale">>;
+
 export type PetsDrivenState = {
   schemaVersion: 1;
   registeredWorkingDirectories: RegisteredWorkingDirectory[];
@@ -139,6 +145,29 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
     terminalShell: sanitizeTerminalShell(candidate.terminalShell),
     petSourceDirectory: sanitizePetSourceDirectory(candidate.petSourceDirectory),
   });
+}
+
+/**
+ * `visible` is runtime-only — it is stripped before persisting and parsed back
+ * as false — so any state that came from the backend has every pet at home.
+ * Carry the current visibility across for pets we already know about; a pet the
+ * backend just created keeps the incoming value and is deployed by its own show
+ * command.
+ */
+export function carryOverPetVisibility(
+  current: PetsDrivenState,
+  next: PetsDrivenState,
+): PetsDrivenState {
+  const visibleById = new Map(current.pets.map((pet) => [pet.id, pet.visible]));
+
+  return {
+    ...next,
+    pets: next.pets.map((pet) => {
+      const wasVisible = visibleById.get(pet.id);
+
+      return wasVisible === undefined ? pet : { ...pet, visible: wasVisible };
+    }),
+  };
 }
 
 export function normalizeWorkingDirectoryPath(path: string): string {

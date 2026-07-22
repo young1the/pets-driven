@@ -85,9 +85,12 @@ pub(crate) fn read_pets_driven_state(app: tauri::AppHandle) -> Result<serde_json
     read_state(&app)
 }
 
-/// The webview persists the whole state blob, so this write has to queue behind
-/// the authoritative read-modify-write cycles (hatch, pet update, pet delete)
-/// that the ingress thread runs against the same file.
+/// Replace the whole state document with what the caller holds in memory. This
+/// is last-writer-wins by nature — anything the ingress thread persisted since
+/// the caller loaded its copy is lost — so it is reserved for the flows that
+/// genuinely own the entire document (the reset in Settings). Every other
+/// webview mutation goes through the intent commands below, which apply a patch
+/// to whatever is on disk instead.
 #[tauri::command]
 pub(crate) fn write_pets_driven_state(
     app: tauri::AppHandle,
@@ -100,11 +103,79 @@ pub(crate) fn write_pets_driven_state(
     write_state(&app, &state)
 }
 
+// The webview's mutation surface. Each command takes an intent — which pet,
+// which fields — and hands it to the same authoritative read-modify-write cycle
+// the HTTP ingress uses, so the two writers can no longer overwrite each other.
+// They return the persisted state; the caller decides whether it needs it.
+
+/// Adopt a pet. Mirrors the `/pets-driven/hatch` endpoint, except `cwd` may be
+/// absent or null — onboarding lets the user skip the folder step.
+#[tauri::command]
+pub(crate) fn hatch_pet_record(
+    app: tauri::AppHandle,
+    input: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    hatch_pet(&app, hatch_input_from_payload(&input)?)
+}
+
+/// Patch one pet's editable fields. Omitted fields are left untouched.
+#[tauri::command]
+pub(crate) fn update_pet_record(
+    app: tauri::AppHandle,
+    input: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    update_pet(&app, pet_update_input_from_payload(&input)?)
+}
+
+/// Permanently remove a pet, its profile, and any working directory it holds.
+#[tauri::command]
+pub(crate) fn delete_pet_record(
+    app: tauri::AppHandle,
+    pet_id: String,
+) -> Result<serde_json::Value, String> {
+    remove_pet(&app, &pet_id)
+}
+
+/// Patch the app-wide settings (launch line, terminal shell, pet source folder).
+#[tauri::command]
+pub(crate) fn update_pets_driven_settings(
+    app: tauri::AppHandle,
+    input: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    update_settings(&app, settings_update_input_from_payload(&input)?)
+}
+
 pub(crate) struct HatchInput {
-    pub cwd: String,
+    /// The folder the new pet watches. `None` adopts it with no folder bound —
+    /// the shape onboarding uses when the user skips the folder step.
+    pub cwd: Option<String>,
     pub asset_id: String,
     pub name: String,
     pub personality_id: String,
+}
+
+/// Read a required non-blank string off a hatch payload.
+pub(crate) fn hatch_input_field(payload: &serde_json::Value, field: &str) -> Result<String, String> {
+    payload
+        .get(field)
+        .and_then(|value| value.as_str())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| format!("Hatch request is missing required field: {field}"))
+}
+
+/// Read a hatch request off a JSON payload — the body of `/pets-driven/hatch`
+/// and the argument of the `hatch_pet_record` command. `cwd` is optional here;
+/// the HTTP endpoint requires it separately.
+pub(crate) fn hatch_input_from_payload(
+    payload: &serde_json::Value,
+) -> Result<HatchInput, String> {
+    Ok(HatchInput {
+        cwd: nullable_string_field(payload, "cwd")?.flatten(),
+        asset_id: hatch_input_field(payload, "assetId")?,
+        name: hatch_input_field(payload, "name")?,
+        personality_id: hatch_input_field(payload, "personalityId")?,
+    })
 }
 
 struct HatchIds {
@@ -333,32 +404,34 @@ fn apply_hatch(
     let personality =
         personality_preset(&input.personality_id).ok_or(HatchError::UnknownPersonality)?;
 
-    // Guard against a corrupted path: a control character (e.g. a CR injected by
-    // an unescaped backslash in the request JSON) would store a folder that can
-    // never be opened or matched. Reject it rather than persist garbage.
-    if input.cwd.trim().is_empty() || input.cwd.contains(['\r', '\n', '\t']) {
-        return Err(HatchError::InvalidCwd);
-    }
+    if let Some(cwd) = &input.cwd {
+        // Guard against a corrupted path: a control character (e.g. a CR injected
+        // by an unescaped backslash in the request JSON) would store a folder that
+        // can never be opened or matched. Reject it rather than persist garbage.
+        if cwd.trim().is_empty() || cwd.contains(['\r', '\n', '\t']) {
+            return Err(HatchError::InvalidCwd);
+        }
 
-    let target = comparable_path(&input.cwd);
-    if let Some(directories) = state
-        .get("registeredWorkingDirectories")
-        .and_then(|value| value.as_array())
-    {
-        for directory in directories {
-            let path = directory
-                .get("path")
-                .and_then(|value| value.as_str())
-                .unwrap_or_default();
-
-            if comparable_path(path) == target {
-                let owner_pet_id = directory
-                    .get("petId")
+        let target = comparable_path(cwd);
+        if let Some(directories) = state
+            .get("registeredWorkingDirectories")
+            .and_then(|value| value.as_array())
+        {
+            for directory in directories {
+                let path = directory
+                    .get("path")
                     .and_then(|value| value.as_str())
-                    .unwrap_or_default()
-                    .to_string();
+                    .unwrap_or_default();
 
-                return Err(HatchError::Occupied { owner_pet_id });
+                if comparable_path(path) == target {
+                    let owner_pet_id = directory
+                        .get("petId")
+                        .and_then(|value| value.as_str())
+                        .unwrap_or_default()
+                        .to_string();
+
+                    return Err(HatchError::Occupied { owner_pet_id });
+                }
             }
         }
     }
@@ -370,7 +443,7 @@ fn apply_hatch(
         "pets",
         serde_json::json!({
             "id": ids.pet_id,
-            "workingDirectoryId": ids.working_directory_id,
+            "workingDirectoryId": input.cwd.as_ref().map(|_| ids.working_directory_id.clone()),
             "assetId": input.asset_id,
             "profileId": ids.profile_id,
             "name": input.name,
@@ -389,18 +462,22 @@ fn apply_hatch(
             "personality": personality
         }),
     );
-    push_array(
-        &mut next,
-        "registeredWorkingDirectories",
-        serde_json::json!({
-            "id": ids.working_directory_id,
-            "path": input.cwd,
-            "petId": ids.pet_id,
-            "agentSourceId": ids.agent_source_id,
-            "createdAt": now,
-            "updatedAt": now
-        }),
-    );
+    // A pet can be adopted with no folder bound: it lives on and receives no
+    // agent events until one is picked from its settings.
+    if let Some(cwd) = &input.cwd {
+        push_array(
+            &mut next,
+            "registeredWorkingDirectories",
+            serde_json::json!({
+                "id": ids.working_directory_id,
+                "path": cwd,
+                "petId": ids.pet_id,
+                "agentSourceId": ids.agent_source_id,
+                "createdAt": now,
+                "updatedAt": now
+            }),
+        );
+    }
 
     Ok(next)
 }
@@ -549,10 +626,53 @@ pub(crate) struct PetUpdateInput {
     pub visible: Option<bool>,
     pub archived: Option<bool>,
     pub memo: Option<String>,
+    pub scale: Option<f64>,
     /// The pet's registered working directory. `None` leaves the current
     /// binding untouched, `Some(None)` clears it (the pet keeps living with no
     /// folder), and `Some(Some(path))` re-binds the pet to that folder.
     pub cwd: Option<Option<String>>,
+}
+
+/// Read a field that carries three states: absent leaves the stored value
+/// alone, an explicit null clears it, a string sets it.
+fn nullable_string_field(
+    payload: &serde_json::Value,
+    key: &str,
+) -> Result<Option<Option<String>>, String> {
+    match payload.get(key) {
+        None => Ok(None),
+        Some(serde_json::Value::Null) => Ok(Some(None)),
+        Some(serde_json::Value::String(value)) => Ok(Some(Some(value.to_string()))),
+        Some(_) => Err(format!("{key} must be a string or null")),
+    }
+}
+
+/// Read a pet patch off a JSON payload — the body of `/pets-driven/pet/update`
+/// and the argument of the `update_pet_record` command, which are the same
+/// shape on purpose. An absent field means "leave this alone", so every field
+/// but `petId` maps to `None` when missing.
+pub(crate) fn pet_update_input_from_payload(
+    payload: &serde_json::Value,
+) -> Result<PetUpdateInput, String> {
+    let pet_id = payload
+        .get("petId")
+        .and_then(|value| value.as_str())
+        .ok_or_else(|| "Missing required field: petId".to_string())?;
+    let cwd = nullable_string_field(payload, "cwd")?;
+
+    Ok(PetUpdateInput {
+        pet_id: pet_id.to_string(),
+        name: payload.get("name").and_then(|value| value.as_str()).map(str::to_string),
+        personality_id: payload
+            .get("personalityId")
+            .and_then(|value| value.as_str())
+            .map(str::to_string),
+        visible: payload.get("visible").and_then(|value| value.as_bool()),
+        archived: payload.get("archived").and_then(|value| value.as_bool()),
+        memo: payload.get("memo").and_then(|value| value.as_str()).map(str::to_string),
+        scale: payload.get("scale").and_then(|value| value.as_f64()),
+        cwd,
+    })
 }
 
 /// The ids a working-directory re-bind needs, generated by the caller so
@@ -644,6 +764,9 @@ fn apply_pet_update(
             }
             if let Some(memo) = &input.memo {
                 object.insert("memo".to_string(), serde_json::json!(memo));
+            }
+            if let Some(scale) = input.scale {
+                object.insert("scale".to_string(), serde_json::json!(scale));
             }
         }
     }
@@ -797,6 +920,70 @@ fn apply_remove_pet(state: &serde_json::Value, pet_id: &str) -> Result<serde_jso
     Ok(next)
 }
 
+/// The app-wide settings a caller can patch. Each field is `None` when the
+/// caller left it out; the two nullable ones clear the stored value on
+/// `Some(None)` (no shell picked / the default pet source folder).
+pub(crate) struct SettingsUpdateInput {
+    pub session_command: Option<String>,
+    pub terminal_shell: Option<Option<String>>,
+    pub pet_source_directory: Option<Option<String>>,
+}
+
+fn settings_update_input_from_payload(
+    payload: &serde_json::Value,
+) -> Result<SettingsUpdateInput, String> {
+    Ok(SettingsUpdateInput {
+        session_command: payload
+            .get("sessionCommand")
+            .and_then(|value| value.as_str())
+            .map(str::to_string),
+        terminal_shell: nullable_string_field(payload, "terminalShell")?,
+        pet_source_directory: nullable_string_field(payload, "petSourceDirectory")?,
+    })
+}
+
+fn apply_settings_update(
+    state: &serde_json::Value,
+    input: &SettingsUpdateInput,
+) -> serde_json::Value {
+    let mut next = state.clone();
+    let Some(object) = next.as_object_mut() else {
+        return next;
+    };
+
+    if let Some(session_command) = &input.session_command {
+        object.insert("sessionCommand".to_string(), serde_json::json!(session_command));
+    }
+    if let Some(terminal_shell) = &input.terminal_shell {
+        object.insert("terminalShell".to_string(), serde_json::json!(terminal_shell));
+    }
+    if let Some(pet_source_directory) = &input.pet_source_directory {
+        object.insert(
+            "petSourceDirectory".to_string(),
+            serde_json::json!(pet_source_directory),
+        );
+    }
+
+    next
+}
+
+/// Authoritative settings path, mirroring `hatch_pet`'s serialise/read/write
+/// cycle. Returns the new state for the caller to broadcast.
+pub(crate) fn update_settings(
+    app: &tauri::AppHandle,
+    input: SettingsUpdateInput,
+) -> Result<serde_json::Value, String> {
+    let _guard = STATE_MUTATION_LOCK
+        .lock()
+        .map_err(|error| format!("State lock poisoned: {error}"))?;
+
+    let state = read_state(app)?;
+    let next = apply_settings_update(&state, &input);
+    write_state(app, &next)?;
+
+    Ok(next)
+}
+
 /// Authoritative pet-delete path, mirroring `hatch_pet`'s serialise/read/write
 /// cycle. Returns the new state for the caller to broadcast.
 pub(crate) fn remove_pet(app: &tauri::AppHandle, pet_id: &str) -> Result<serde_json::Value, String> {
@@ -840,7 +1027,7 @@ mod tests {
     #[test]
     fn apply_hatch_appends_pet_profile_and_directory() {
         let input = HatchInput {
-            cwd: "D:/proj".to_string(),
+            cwd: Some("D:/proj".to_string()),
             asset_id: "cato".to_string(),
             name: "Rex".to_string(),
             personality_id: "playful".to_string(),
@@ -880,7 +1067,7 @@ mod tests {
         let first = apply_hatch(
             &empty_pets_driven_state(),
             &HatchInput {
-                cwd: "D:/Proj".to_string(),
+                cwd: Some("D:/Proj".to_string()),
                 asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "playful".to_string(),
@@ -893,7 +1080,7 @@ mod tests {
         let error = apply_hatch(
             &first,
             &HatchInput {
-                cwd: "d:\\proj".to_string(),
+                cwd: Some("d:\\proj".to_string()),
                 asset_id: "otto".to_string(),
                 name: "Blue".to_string(),
                 personality_id: "reserved".to_string(),
@@ -921,7 +1108,7 @@ mod tests {
         let error = apply_hatch(
             &empty_pets_driven_state(),
             &HatchInput {
-                cwd: "D:\realtime".to_string(),
+                cwd: Some("D:\realtime".to_string()),
                 asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "playful".to_string(),
@@ -939,7 +1126,7 @@ mod tests {
         let error = apply_hatch(
             &empty_pets_driven_state(),
             &HatchInput {
-                cwd: "D:/proj".to_string(),
+                cwd: Some("D:/proj".to_string()),
                 asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "chaotic".to_string(),
@@ -955,7 +1142,7 @@ mod tests {
     #[test]
     fn apply_hatch_accepts_curious_personality() {
         let input = HatchInput {
-            cwd: "D:/proj".to_string(),
+            cwd: Some("D:/proj".to_string()),
             asset_id: "cato".to_string(),
             name: "Rex".to_string(),
             personality_id: "curious".to_string(),
@@ -980,7 +1167,7 @@ mod tests {
         let state = apply_hatch(
             &empty_pets_driven_state(),
             &HatchInput {
-                cwd: "D:/Proj".to_string(),
+                cwd: Some("D:/Proj".to_string()),
                 asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "playful".to_string(),
@@ -1005,7 +1192,7 @@ mod tests {
         apply_hatch(
             &empty_pets_driven_state(),
             &HatchInput {
-                cwd: "D:/proj".to_string(),
+                cwd: Some("D:/proj".to_string()),
                 asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "playful".to_string(),
@@ -1049,6 +1236,7 @@ mod tests {
             visible: None,
             archived: None,
             memo: None,
+            scale: None,
             cwd: None,
         }
     }
@@ -1079,6 +1267,132 @@ mod tests {
         let profile = &next["petProfiles"][0];
         assert_eq!(profile["personalityId"], "reserved");
         assert_eq!(profile["personality"]["neuroticism"], 0.82);
+    }
+
+    #[test]
+    fn apply_pet_update_patches_scale() {
+        let next = apply_pet_update(
+            &hatched_state(),
+            &PetUpdateInput {
+                scale: Some(1.4),
+                ..pet_update_input("pet-1")
+            },
+            &sample_working_directory_ids(),
+            2000,
+        )
+        .expect("update should succeed");
+
+        assert_eq!(next["pets"][0]["scale"], 1.4);
+    }
+
+    #[test]
+    fn apply_pet_update_leaves_omitted_fields_alone() {
+        let state = apply_pet_update(
+            &hatched_state(),
+            &PetUpdateInput {
+                memo: Some("likes naps".to_string()),
+                scale: Some(1.4),
+                ..pet_update_input("pet-1")
+            },
+            &sample_working_directory_ids(),
+            2000,
+        )
+        .expect("first update should succeed");
+
+        let next = apply_pet_update(
+            &state,
+            &PetUpdateInput {
+                name: Some("Rexy".to_string()),
+                ..pet_update_input("pet-1")
+            },
+            &sample_working_directory_ids(),
+            3000,
+        )
+        .expect("second update should succeed");
+
+        let pet = &next["pets"][0];
+        assert_eq!(pet["name"], "Rexy");
+        assert_eq!(pet["memo"], "likes naps");
+        assert_eq!(pet["scale"], 1.4);
+    }
+
+    #[test]
+    fn pet_update_input_distinguishes_absent_null_and_string_cwd() {
+        let absent = pet_update_input_from_payload(&serde_json::json!({ "petId": "pet-1" }))
+            .expect("a bare petId should parse");
+        assert_eq!(absent.cwd, None);
+
+        let cleared =
+            pet_update_input_from_payload(&serde_json::json!({ "petId": "pet-1", "cwd": null }))
+                .expect("an explicit null should parse");
+        assert_eq!(cleared.cwd, Some(None));
+
+        let bound = pet_update_input_from_payload(
+            &serde_json::json!({ "petId": "pet-1", "cwd": "D:/proj" }),
+        )
+        .expect("a path should parse");
+        assert_eq!(bound.cwd, Some(Some("D:/proj".to_string())));
+
+        assert!(pet_update_input_from_payload(&serde_json::json!({ "cwd": 7 })).is_err());
+        assert!(pet_update_input_from_payload(&serde_json::json!({ "petId": "pet-1", "cwd": 7 }))
+            .is_err());
+    }
+
+    #[test]
+    fn apply_hatch_without_a_cwd_registers_no_working_directory() {
+        let next = apply_hatch(
+            &empty_pets_driven_state(),
+            &HatchInput {
+                cwd: None,
+                asset_id: "cato".to_string(),
+                name: "Rex".to_string(),
+                personality_id: "playful".to_string(),
+            },
+            &sample_ids(),
+            1000,
+        )
+        .expect("a folderless hatch should succeed");
+
+        assert!(next["registeredWorkingDirectories"]
+            .as_array()
+            .unwrap()
+            .is_empty());
+        assert_eq!(next["pets"][0]["workingDirectoryId"], serde_json::Value::Null);
+        assert_eq!(next["petProfiles"][0]["personalityId"], "playful");
+    }
+
+    #[test]
+    fn apply_settings_update_patches_only_the_fields_given() {
+        let state = serde_json::json!({
+            "schemaVersion": 1,
+            "sessionCommand": "cmd /k claude",
+            "terminalShell": "C:/Windows/System32/cmd.exe",
+            "petSourceDirectory": "D:/pets"
+        });
+
+        let next = apply_settings_update(
+            &state,
+            &SettingsUpdateInput {
+                session_command: Some("cmd /k codex".to_string()),
+                terminal_shell: None,
+                pet_source_directory: Some(None),
+            },
+        );
+
+        assert_eq!(next["sessionCommand"], "cmd /k codex");
+        assert_eq!(next["terminalShell"], "C:/Windows/System32/cmd.exe");
+        assert_eq!(next["petSourceDirectory"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn settings_update_input_rejects_a_non_string_shell() {
+        assert!(settings_update_input_from_payload(&serde_json::json!({ "terminalShell": 7 })).is_err());
+        assert_eq!(
+            settings_update_input_from_payload(&serde_json::json!({}))
+                .expect("an empty patch should parse")
+                .terminal_shell,
+            None
+        );
     }
 
     #[test]

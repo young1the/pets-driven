@@ -10,6 +10,12 @@ function createGateway(
   return {
     readPetsDrivenState: vi.fn(),
     writePetsDrivenState: vi.fn(),
+    // The command surface answers with the state the backend persisted; null is
+    // the outside-Tauri answer, which keeps the caller on its in-memory copy.
+    hatchPet: vi.fn().mockResolvedValue(null),
+    updatePet: vi.fn().mockResolvedValue(null),
+    deletePet: vi.fn().mockResolvedValue(null),
+    updateSettings: vi.fn().mockResolvedValue(null),
     listPetPackages: vi.fn().mockResolvedValue(packages),
     listTerminalShells: vi.fn().mockResolvedValue([]),
     openAdoptedPetWindow: vi.fn(),
@@ -147,11 +153,9 @@ describe("AdoptPetFlow pet source folders", () => {
     fireEvent.click(chooseFolder);
 
     await waitFor(() => {
-      expect(gateway.writePetsDrivenState).toHaveBeenCalledWith(
-        expect.objectContaining({
-          petSourceDirectory: "D:\\pets\\mine",
-        }),
-      );
+      expect(gateway.updateSettings).toHaveBeenCalledWith({
+        petSourceDirectory: "D:\\pets\\mine",
+      });
     });
 
     expect(onStateChange).toHaveBeenCalledWith(

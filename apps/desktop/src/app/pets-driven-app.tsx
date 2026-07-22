@@ -14,7 +14,11 @@ import type { MainWindowTab } from "@/app/main-window/main-window";
 import { MainWindowSurface } from "@/app/main-window/main-window-surface";
 import { pushSearchParams } from "@/app/spa-navigation";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
-import { createEmptyPetsDrivenState, type PetsDrivenState } from "@/app-state/pets-driven-state";
+import {
+  carryOverPetVisibility,
+  createEmptyPetsDrivenState,
+  type PetsDrivenState,
+} from "@/app-state/pets-driven-state";
 import { PetWindowSurface, petWindowRouteParams } from "@/pet-window/pet-window-route";
 
 // Onboarding and the playground are large surfaces that most sessions never
@@ -92,23 +96,11 @@ function PetsDrivenHostApp() {
     setPetsDrivenState(next);
   }
 
-  // `visible` is a runtime-only flag: the backend strips it on write and parsing
-  // defaults it to false. A bare reload of persisted state (e.g. the
-  // hatch-triggered state-changed event) would therefore knock already-shown
-  // pets out of the sim world. Reload paths use this to carry over the current
-  // visibility of pets we already know about; freshly persisted pets keep the
-  // incoming value and are turned on by their own show command.
+  // A bare reload of persisted state (e.g. the hatch-triggered state-changed
+  // event) would knock already-shown pets out of the sim world, so reload paths
+  // go through this instead of applying the state as-is.
   function applyReloadedPetsDrivenState(next: PetsDrivenState) {
-    const prevVisible = new Map(
-      petsDrivenStateRef.current.pets.map((pet) => [pet.id, pet.visible]),
-    );
-    applyPetsDrivenState({
-      ...next,
-      pets: next.pets.map((pet) => {
-        const previous = prevVisible.get(pet.id);
-        return previous === undefined ? pet : { ...pet, visible: previous };
-      }),
-    });
+    applyPetsDrivenState(carryOverPetVisibility(petsDrivenStateRef.current, next));
   }
 
   function flashToast(message: string) {

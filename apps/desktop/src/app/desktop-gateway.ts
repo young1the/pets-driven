@@ -79,7 +79,41 @@ export type ClaudePluginAction = "install" | "uninstall";
  */
 export type DesktopGateway = {
   readPetsDrivenState(): Promise<PetsDrivenState>;
+  /**
+   * Replace the persisted state with this whole document. Last-writer-wins, so
+   * it is only for flows that own the entire document (the Settings reset).
+   * Everything else sends an intent through the four mutations below, which the
+   * backend applies to whatever is on disk — see `state_store.rs`.
+   */
   writePetsDrivenState(state: PetsDrivenState): Promise<void>;
+  /**
+   * Adopt a pet, optionally bound to `cwd`. Resolves to the persisted state, or
+   * null outside Tauri, where the caller keeps its in-memory copy.
+   */
+  hatchPet(input: {
+    assetId: string;
+    name: string;
+    personalityId: string;
+    cwd: string | null;
+  }): Promise<PetsDrivenState | null>;
+  /** Patch one pet. Omitted fields are left as they are on disk. */
+  updatePet(input: {
+    petId: string;
+    name?: string;
+    personalityId?: string;
+    archived?: boolean;
+    memo?: string;
+    scale?: number;
+    /** A path re-binds the pet to that folder, null detaches it. */
+    cwd?: string | null;
+  }): Promise<PetsDrivenState | null>;
+  deletePet(petId: string): Promise<PetsDrivenState | null>;
+  /** Patch the app-wide settings. Omitted fields are left as they are on disk. */
+  updateSettings(input: {
+    sessionCommand?: string;
+    terminalShell?: string | null;
+    petSourceDirectory?: string | null;
+  }): Promise<PetsDrivenState | null>;
   listPetPackages(): Promise<CodexPetPackage[]>;
   /** Shells the in-app terminal can spawn, detected from the system. Empty outside Tauri. */
   listTerminalShells(): Promise<TerminalShellOption[]>;
@@ -152,6 +186,22 @@ const CLAUDE_PLUGIN_UNAVAILABLE: ClaudePluginStatus = {
   error: null,
 };
 
+/**
+ * Run one of the backend's state-mutation commands and parse the state it
+ * persisted. Outside Tauri there is no state file at all, so this resolves to
+ * null and the caller stays on its in-memory copy.
+ */
+async function sendStateMutation(
+  command: string,
+  args: Record<string, unknown>,
+): Promise<PetsDrivenState | null> {
+  if (!isTauri()) {
+    return null;
+  }
+
+  return parsePetsDrivenState(await invoke<unknown>(command, args));
+}
+
 export const desktopGateway: DesktopGateway = {
   async readPetsDrivenState() {
     if (!isTauri()) {
@@ -174,6 +224,22 @@ export const desktopGateway: DesktopGateway = {
     };
 
     await invoke("write_pets_driven_state", { state: storable });
+  },
+
+  async hatchPet(input) {
+    return await sendStateMutation("hatch_pet_record", { input });
+  },
+
+  async updatePet(input) {
+    return await sendStateMutation("update_pet_record", { input });
+  },
+
+  async deletePet(petId) {
+    return await sendStateMutation("delete_pet_record", { petId });
+  },
+
+  async updateSettings(input) {
+    return await sendStateMutation("update_pets_driven_settings", { input });
   },
 
   async listPetPackages() {

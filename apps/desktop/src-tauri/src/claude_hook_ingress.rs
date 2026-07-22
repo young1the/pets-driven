@@ -168,24 +168,16 @@ fn parse_http_request(request: &[u8]) -> Result<(String, serde_json::Value), Str
     Ok((path.to_string(), payload))
 }
 
-fn hatch_input_field(payload: &serde_json::Value, field: &str) -> Result<String, String> {
-    payload
-        .get(field)
-        .and_then(|value| value.as_str())
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty())
-        .ok_or_else(|| format!("Hatch request is missing required field: {field}"))
-}
+use crate::state_store::hatch_input_field;
 
+/// Unlike the `hatch_pet_record` command, the HTTP endpoint requires a folder:
+/// an agent hook only ever hatches for the directory it is running in.
 fn hatch_input_from_payload(
     payload: &serde_json::Value,
 ) -> Result<crate::state_store::HatchInput, String> {
-    Ok(crate::state_store::HatchInput {
-        cwd: hatch_input_field(payload, "cwd")?,
-        asset_id: hatch_input_field(payload, "assetId")?,
-        name: hatch_input_field(payload, "name")?,
-        personality_id: hatch_input_field(payload, "personalityId")?,
-    })
+    hatch_input_field(payload, "cwd")?;
+
+    crate::state_store::hatch_input_from_payload(payload)
 }
 
 fn handle_hatch_request(app: &tauri::AppHandle, payload: &serde_json::Value, stream: &mut TcpStream) {
@@ -472,33 +464,13 @@ fn handle_get_pet_request(
 /// Read the tri-state `cwd` field of a pet-update payload: absent leaves the
 /// pet's folder binding alone, an explicit `null` detaches it, and a string
 /// re-binds the pet to that folder.
-fn pet_update_cwd_from_payload(
-    payload: &serde_json::Value,
-) -> Result<Option<Option<String>>, String> {
-    match payload.get("cwd") {
-        None => Ok(None),
-        Some(serde_json::Value::Null) => Ok(Some(None)),
-        Some(serde_json::Value::String(path)) => Ok(Some(Some(path.to_string()))),
-        Some(_) => Err("cwd must be a string or null".to_string()),
-    }
-}
-
 fn handle_update_pet_request(
     app: &tauri::AppHandle,
     payload: &serde_json::Value,
     stream: &mut TcpStream,
 ) {
-    let Some(pet_id) = payload.get("petId").and_then(|value| value.as_str()) else {
-        let _ = write_http_response(
-            stream,
-            "400 Bad Request",
-            r#"{"ok":false,"error":"Missing required field: petId"}"#,
-        );
-        return;
-    };
-
-    let cwd = match pet_update_cwd_from_payload(payload) {
-        Ok(cwd) => cwd,
+    let input = match crate::state_store::pet_update_input_from_payload(payload) {
+        Ok(input) => input,
         Err(error) => {
             let _ = write_http_response(
                 stream,
@@ -508,20 +480,7 @@ fn handle_update_pet_request(
             return;
         }
     };
-
-    let input = crate::state_store::PetUpdateInput {
-        pet_id: pet_id.to_string(),
-        name: payload.get("name").and_then(|value| value.as_str()).map(str::to_string),
-        personality_id: payload
-            .get("personalityId")
-            .and_then(|value| value.as_str())
-            .map(str::to_string),
-        visible: payload.get("visible").and_then(|value| value.as_bool()),
-        archived: payload.get("archived").and_then(|value| value.as_bool()),
-        memo: payload.get("memo").and_then(|value| value.as_str()).map(str::to_string),
-        cwd,
-    };
-    let pet_id = pet_id.to_string();
+    let pet_id = input.pet_id.clone();
 
     match crate::state_store::update_pet(app, input) {
         Ok(next_state) => {
@@ -859,32 +818,23 @@ mod tests {
 
         assert_eq!(path, "/pets-driven/hatch");
         let input = hatch_input_from_payload(&parsed).expect("payload should map to hatch input");
-        assert_eq!(input.cwd, "D:/proj");
+        assert_eq!(input.cwd.as_deref(), Some("D:/proj"));
         assert_eq!(input.asset_id, "cato");
         assert_eq!(input.name, "Rex");
         assert_eq!(input.personality_id, "playful");
     }
 
     #[test]
-    fn pet_update_cwd_distinguishes_absent_null_and_string() {
-        assert_eq!(
-            pet_update_cwd_from_payload(&serde_json::json!({ "petId": "pet-1" })),
-            Ok(None)
-        );
-        assert_eq!(
-            pet_update_cwd_from_payload(&serde_json::json!({ "petId": "pet-1", "cwd": null })),
-            Ok(Some(None))
-        );
-        assert_eq!(
-            pet_update_cwd_from_payload(&serde_json::json!({ "petId": "pet-1", "cwd": "D:/proj" })),
-            Ok(Some(Some("D:/proj".to_string())))
-        );
-        assert!(pet_update_cwd_from_payload(&serde_json::json!({ "cwd": 7 })).is_err());
+    fn hatch_input_requires_all_fields() {
+        let payload = serde_json::json!({ "cwd": "D:/proj", "assetId": "cato" });
+        assert!(hatch_input_from_payload(&payload).is_err());
     }
 
     #[test]
-    fn hatch_input_requires_all_fields() {
-        let payload = serde_json::json!({ "cwd": "D:/proj", "assetId": "cato" });
+    fn hatch_over_http_still_requires_a_working_directory() {
+        // The command surface allows a folderless pet; this endpoint does not.
+        let payload =
+            serde_json::json!({ "assetId": "cato", "name": "Rex", "personalityId": "playful" });
         assert!(hatch_input_from_payload(&payload).is_err());
     }
 

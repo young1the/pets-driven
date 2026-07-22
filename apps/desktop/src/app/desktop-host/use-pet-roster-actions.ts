@@ -13,8 +13,9 @@ import {
   removePet,
 } from "@/app-state/pet-adoption";
 import {
+  carryOverPetVisibility,
   createEmptyPetsDrivenState,
-  type PetRecord,
+  type PetPatch,
   type PetsDrivenState,
   setPetSourceDirectory,
 } from "@/app-state/pets-driven-state";
@@ -124,9 +125,8 @@ export function usePetRosterActions({
   }
 
   function updateSessionCommand(command: string) {
-    const next = { ...stateRef.current, sessionCommand: command };
-    applyState(next);
-    void desktopGateway.writePetsDrivenState(next);
+    applyState({ ...stateRef.current, sessionCommand: command });
+    void desktopGateway.updateSettings({ sessionCommand: command });
   }
 
   /**
@@ -137,23 +137,26 @@ export function usePetRosterActions({
   function updateTerminalShell(shell: string) {
     const current = stateRef.current;
     const trimmed = shell.trim();
-    const next = {
-      ...current,
-      terminalShell: trimmed ? trimmed : null,
-      sessionCommand: buildLaunchLine(trimmed, parseLaunchLine(current.sessionCommand).command),
-    };
-    applyState(next);
-    void desktopGateway.writePetsDrivenState(next);
+    const terminalShell = trimmed ? trimmed : null;
+    const sessionCommand = buildLaunchLine(
+      trimmed,
+      parseLaunchLine(current.sessionCommand).command,
+    );
+
+    applyState({ ...current, terminalShell, sessionCommand });
+    void desktopGateway.updateSettings({ terminalShell, sessionCommand });
   }
 
-  function patchPet(petId: string, patch: Partial<PetRecord>) {
+  // Every mutation below applies to local state first so the UI stays instant,
+  // then sends the change itself to the backend, which applies it to whatever is
+  // on disk. Nothing here persists the whole state document.
+  function patchPet(petId: string, patch: PetPatch) {
     const current = stateRef.current;
-    const next: PetsDrivenState = {
+    applyState({
       ...current,
       pets: current.pets.map((pet) => (pet.id === petId ? { ...pet, ...patch } : pet)),
-    };
-    applyState(next);
-    void desktopGateway.writePetsDrivenState(next);
+    });
+    void desktopGateway.updatePet({ petId, ...patch });
   }
 
   function setPetPersonality(petId: string, personalityId: PetPersonalityId) {
@@ -166,16 +169,15 @@ export function usePetRosterActions({
     if (!option) {
       return;
     }
-    const next: PetsDrivenState = {
+    applyState({
       ...current,
       petProfiles: current.petProfiles.map((profile) =>
         profile.id === pet.profileId
           ? { ...profile, personalityId, personality: option.factory() }
           : profile,
       ),
-    };
-    applyState(next);
-    void desktopGateway.writePetsDrivenState(next);
+    });
+    void desktopGateway.updatePet({ petId, personalityId });
   }
 
   /**
@@ -232,9 +234,8 @@ export function usePetRosterActions({
     if (!pet || !window.confirm(t("confirm.deletePet", { name: pet.name }))) {
       return;
     }
-    const next = removePet(stateRef.current, petId);
-    applyState(next);
-    void desktopGateway.writePetsDrivenState(next);
+    applyState(removePet(stateRef.current, petId));
+    void desktopGateway.deletePet(petId);
     void desktopGateway.closeAdoptedPetWindow(petId).catch(() => {});
     setEditPetId(null);
     flashToast(t("toast.removed", { name: pet.name }));
@@ -263,8 +264,18 @@ export function usePetRosterActions({
         flashToast(t("toast.folderOccupied"));
         return;
       }
+      // The local ids above are a placeholder: the backend mints the directory
+      // record it persists, so adopt the state it hands back.
       applyState(result.state);
-      void desktopGateway.writePetsDrivenState(result.state);
+
+      try {
+        const persisted = await desktopGateway.updatePet({ petId, cwd: path });
+        if (persisted) {
+          applyState(carryOverPetVisibility(stateRef.current, persisted));
+        }
+      } catch (error) {
+        setPetWindowError(formatCommandError(error));
+      }
     } finally {
       activeFolderPickerPetId = null;
     }
@@ -276,7 +287,7 @@ export function usePetRosterActions({
       return;
     }
     applyState(next);
-    void desktopGateway.writePetsDrivenState(next);
+    void desktopGateway.updatePet({ petId, cwd: null });
   }
 
   function applyPetSourceFolder(path: string | null) {
@@ -285,7 +296,7 @@ export function usePetRosterActions({
       return;
     }
     applyState(next);
-    void desktopGateway.writePetsDrivenState(next);
+    void desktopGateway.updateSettings({ petSourceDirectory: next.petSourceDirectory });
   }
 
   async function changePetSourceFolder() {
