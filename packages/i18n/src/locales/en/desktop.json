@@ -71,7 +71,6 @@
   },
   "claudePlugin": {
     "title": "Claude Code plugin",
-    "connectTitle": "Connect Claude Code",
     "checking": "Checking Claude Code…",
     "install": "Install",
     "installing": "Working…",
@@ -164,8 +163,6 @@
     "doneTitle": "Resting until you deploy.",
     "summaryPet": "Pet",
     "summaryWatches": "Watches",
-    "summaryReactsTo": "Reacts to",
-    "summaryReactsToValue": "Your coding agent — starts, finishes, gets stuck",
     "openApp": "Open Pets-Driven →",
     "addAnother": "Add another pet"
   },

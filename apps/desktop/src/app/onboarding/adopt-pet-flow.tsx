@@ -14,7 +14,6 @@ import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { isTauri } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type CodexPetPackage, type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
-import { PluginRunTerminal } from "@/app/main-window/plugin-run-terminal";
 import {
   PERSONALITY_OPTIONS,
   type PersonalityOption,
@@ -25,7 +24,6 @@ import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
 import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
-import { useClaudePlugin } from "@/app/use-claude-plugin";
 import { adoptPet, registerWorkingDirectory } from "@/app-state/pet-adoption";
 import {
   normalizeWorkingDirectoryPath,
@@ -122,50 +120,6 @@ function PetPreview({ assetId, scale }: { assetId: string; scale: number }) {
       size={PET_CELL_SIZE}
     />
   ) : null;
-}
-
-/**
- * Install card for the Claude Code plugin, shown once the pet is born — the
- * plugin forwards the agent events the new pet reacts to. Installing is a
- * one-click consent, never automatic, since it touches the user's Claude
- * Code configuration.
- */
-function ClaudeConnectCard({ gateway }: { gateway: DesktopGateway }) {
-  const { t } = useTranslation("desktop");
-  const { status, busy, run, install, dismissRun } = useClaudePlugin(gateway);
-
-  const hintText = !status
-    ? t("claudePlugin.checking")
-    : status.state === "installed"
-      ? t("claudePlugin.installedHint")
-      : status.state === "cli-missing"
-        ? t("claudePlugin.cliMissing")
-        : status.state === "error"
-          ? (status.error ?? t("claudePlugin.error"))
-          : t("claudePlugin.notInstalledHint");
-
-  return (
-    <>
-      <div className="pd-onb__connect-card">
-        <span className="pd-onb__connect-text">
-          <b>{t("claudePlugin.connectTitle")}</b>
-          <small>{hintText}</small>
-        </span>
-        {status?.state === "installed" ? (
-          <span className="pd-onb__connect-ok">✓ {t("claudePlugin.installed")}</span>
-        ) : status && status.state !== "cli-missing" ? (
-          <Button disabled={busy} onClick={() => install()}>
-            {busy
-              ? t("claudePlugin.installing")
-              : status.state === "error"
-                ? t("claudePlugin.retry")
-                : t("claudePlugin.install")}
-          </Button>
-        ) : null}
-      </div>
-      {run && <PluginRunTerminal available={isTauri()} onClose={dismissRun} run={run} />}
-    </>
-  );
 }
 
 function StepHeader({ step, total, onExit }: { step: number; total: number; onExit: () => void }) {
@@ -768,13 +722,7 @@ export function AdoptPetFlow({
               <span>{t("onboarding.summaryWatches")}</span>
               <strong>{bornPet.folderPath || t("onboarding.summaryWatchesNone")}</strong>
             </div>
-            <div className="pd-onb__summary-row">
-              <span>{t("onboarding.summaryReactsTo")}</span>
-              <strong>{t("onboarding.summaryReactsToValue")}</strong>
-            </div>
           </div>
-
-          <ClaudeConnectCard gateway={gateway} />
 
           <div className="pd-onb__done-actions">
             <Button onClick={onDone} size="lg">

@@ -162,8 +162,10 @@ describe("AdoptPetFlow pet source folders", () => {
   });
 });
 
-describe("AdoptPetFlow Claude Code connect", () => {
-  it("offers the Claude plugin install on the done step", async () => {
+describe("AdoptPetFlow done step", () => {
+  // Connecting the agent is the setup wizard's job, not the adoption flow's.
+  // The done step celebrates the new pet and gets out of the way.
+  it("celebrates the pet without re-offering the agent connection", async () => {
     const gateway = createGateway([
       {
         id: "boba",
@@ -179,16 +181,10 @@ describe("AdoptPetFlow Claude Code connect", () => {
     fireEvent.click(screen.getByText("Looks good →"));
     fireEvent.click(screen.getByText("Adopt without a folder →"));
 
-    expect(await screen.findByText("Connect Claude Code")).toBeInTheDocument();
-
-    fireEvent.click(await screen.findByText("Install"));
-
-    // The install is not run here: it is handed to the in-app terminal so the
-    // user can watch it and answer anything the CLI asks.
-    await waitFor(() => {
-      expect(gateway.planClaudePluginCommand).toHaveBeenCalledWith("install");
-    });
-    expect(gateway.installClaudePlugin).not.toHaveBeenCalled();
-    expect(await screen.findByText("Installing the plugin")).toBeInTheDocument();
+    expect(await screen.findByText("Open Pets-Driven →")).toBeInTheDocument();
+    expect(screen.queryByText("Connect Claude Code")).not.toBeInTheDocument();
+    expect(screen.queryByText("Install")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reacts to")).not.toBeInTheDocument();
+    expect(gateway.planClaudePluginCommand).not.toHaveBeenCalled();
   });
 });
