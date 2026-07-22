@@ -3,6 +3,7 @@ import { localeLabels, useTranslation } from "@pets-driven/i18n";
 import type { CSSProperties } from "react";
 import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
+import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
 import { LAUNCH_PROFILE_OPTIONS, type LaunchProfileId } from "@/app/session-launch-profile";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 
@@ -88,6 +89,20 @@ const inputStyle: CSSProperties = {
   fontFamily: "var(--font-mono)",
   fontSize: "13px",
   color: "var(--text-strong)",
+  outline: "none",
+};
+const selectStyle: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  boxSizing: "border-box",
+  border: "1.5px solid var(--border-default)",
+  background: "var(--surface-card)",
+  borderRadius: "12px",
+  padding: "11px 14px",
+  fontFamily: "var(--font-body)",
+  fontSize: "13px",
+  color: "var(--text-strong)",
+  cursor: "pointer",
   outline: "none",
 };
 const browseStyle: CSSProperties = {
@@ -178,6 +193,11 @@ export function SettingsSection({
   const { t } = useTranslation("desktop");
   const { locale, setLocale } = useDesktopLocale();
   const { mode, setMode, accent, setAccent } = useDesktopTheme();
+  const shellOptions = useTerminalShellOptions();
+  // A previously-saved shell that the current system probe didn't surface still
+  // needs an entry so the dropdown can show what is actually persisted.
+  const hasCustomShell =
+    terminalShell.trim() !== "" && !shellOptions.some((option) => option.path === terminalShell);
 
   const customLaunchLine = launchProfile === "custom";
 
@@ -290,13 +310,20 @@ export function SettingsSection({
             <span style={label}>{t("settings.defaultTerminal")}</span>
             <p style={hint}>{t("settings.defaultTerminalDesc")}</p>
             <div style={{ display: "flex", gap: "8px" }}>
-              <input
+              <select
                 aria-label={t("settings.defaultTerminal")}
                 onChange={(event) => onTerminalShell(event.target.value)}
-                placeholder={t("settings.defaultTerminalPlaceholder")}
-                style={inputStyle}
+                style={selectStyle}
                 value={terminalShell}
-              />
+              >
+                <option value="">{t("settings.defaultTerminalSystem")}</option>
+                {shellOptions.map((option) => (
+                  <option key={option.path} value={option.path}>
+                    {option.label} ({option.path})
+                  </option>
+                ))}
+                {hasCustomShell && <option value={terminalShell}>{terminalShell}</option>}
+              </select>
             </div>
           </div>
 

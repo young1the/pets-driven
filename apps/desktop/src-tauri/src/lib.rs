@@ -87,7 +87,8 @@ pub fn run() {
             embedded_terminal::terminal_open,
             embedded_terminal::terminal_write,
             embedded_terminal::terminal_resize,
-            embedded_terminal::terminal_close
+            embedded_terminal::terminal_close,
+            embedded_terminal::list_terminal_shells
         ])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");

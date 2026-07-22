@@ -63,8 +63,8 @@
     "agentConnectionDesc": "The app listens for Claude Code events on this machine; the plugin forwards them from your sessions.",
     "reconnect": "Send test event",
     "defaultTerminal": "Default terminal",
-    "defaultTerminalDesc": "The shell the in-app terminal opens. Leave empty to use your system default (COMSPEC / SHELL).",
-    "defaultTerminalPlaceholder": "System default"
+    "defaultTerminalDesc": "The shell the in-app terminal opens, detected from your system. Pick “System default” to follow COMSPEC / SHELL.",
+    "defaultTerminalSystem": "System default"
   },
   "launchProfile": {
     "cmd": "Command Prompt",

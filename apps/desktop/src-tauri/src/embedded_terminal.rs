@@ -48,6 +48,117 @@ struct TerminalExitPayload {
     id: String,
 }
 
+/// A selectable shell for the in-app terminal. `path` is the executable the PTY
+/// spawns; `label` is a friendly name for the dropdown.
+#[derive(Clone, Serialize)]
+pub(crate) struct TerminalShellOption {
+    label: String,
+    path: String,
+}
+
+/// De-duplicated push helper: keeps the first label seen for a given path.
+fn push_shell(
+    options: &mut Vec<TerminalShellOption>,
+    seen: &mut std::collections::HashSet<String>,
+    label: &str,
+    path: String,
+) {
+    if path.trim().is_empty() {
+        return;
+    }
+    if seen.insert(path.to_lowercase()) {
+        options.push(TerminalShellOption {
+            label: label.to_string(),
+            path,
+        });
+    }
+}
+
+/// A friendly label for a shell path, falling back to its file name.
+#[cfg(not(windows))]
+fn shell_label(path: &str) -> String {
+    std::path::Path::new(path)
+        .file_name()
+        .map(|name| name.to_string_lossy().to_string())
+        .unwrap_or_else(|| path.to_string())
+}
+
+/// Enumerate the shells the user can pick for the in-app terminal. On Unix this
+/// reads the system's `/etc/shells` (plus the current `$SHELL`); on Windows
+/// there is no single system registry of terminals, so we probe well-known
+/// install locations for the shells that are actually present.
+#[tauri::command]
+pub(crate) fn list_terminal_shells() -> Vec<TerminalShellOption> {
+    let mut options: Vec<TerminalShellOption> = Vec::new();
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    #[cfg(windows)]
+    {
+        let comspec = std::env::var("COMSPEC").unwrap_or_else(|_| "cmd.exe".to_string());
+        push_shell(&mut options, &mut seen, "Command Prompt", comspec);
+
+        let system_root =
+            std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
+
+        let powershell = format!(
+            "{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            system_root
+        );
+        if std::path::Path::new(&powershell).exists() {
+            push_shell(&mut options, &mut seen, "Windows PowerShell", powershell);
+        }
+
+        for pwsh in [
+            "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+            "C:\\Program Files (x86)\\PowerShell\\7\\pwsh.exe",
+        ] {
+            if std::path::Path::new(pwsh).exists() {
+                push_shell(&mut options, &mut seen, "PowerShell 7", pwsh.to_string());
+            }
+        }
+
+        for bash in [
+            "C:\\Program Files\\Git\\bin\\bash.exe",
+            "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
+        ] {
+            if std::path::Path::new(bash).exists() {
+                push_shell(&mut options, &mut seen, "Git Bash", bash.to_string());
+            }
+        }
+
+        let wsl = format!("{}\\System32\\wsl.exe", system_root);
+        if std::path::Path::new(&wsl).exists() {
+            push_shell(&mut options, &mut seen, "WSL", wsl);
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        if let Ok(contents) = std::fs::read_to_string("/etc/shells") {
+            for line in contents.lines() {
+                let trimmed = line.trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    continue;
+                }
+                if std::path::Path::new(trimmed).exists() {
+                    let label = shell_label(trimmed);
+                    push_shell(&mut options, &mut seen, &label, trimmed.to_string());
+                }
+            }
+        }
+
+        // Offer the user's current $SHELL even if it is not listed in /etc/shells.
+        if let Ok(shell) = std::env::var("SHELL") {
+            if std::path::Path::new(&shell).exists() {
+                let label = shell_label(&shell);
+                push_shell(&mut options, &mut seen, &label, shell);
+            }
+        }
+    }
+
+    options
+}
+
 /// The shell to spawn when the caller does not name one. Honors COMSPEC/SHELL
 /// so it matches whatever the user's environment expects.
 fn default_shell() -> String {

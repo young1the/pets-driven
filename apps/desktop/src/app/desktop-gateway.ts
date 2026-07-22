@@ -49,6 +49,9 @@ export type CodexPetPackage = {
   spritesheetPath: string;
 };
 
+/** A selectable shell for the in-app terminal. Mirrors the Rust `TerminalShellOption`. */
+export type TerminalShellOption = { label: string; path: string };
+
 export type ClaudePluginState = "cli-missing" | "not-installed" | "installed" | "error";
 
 /** Install state of the bundled Claude Code plugin, as reported by the CLI. */
@@ -67,6 +70,8 @@ export type DesktopGateway = {
   readPetsDrivenState(): Promise<PetsDrivenState>;
   writePetsDrivenState(state: PetsDrivenState): Promise<void>;
   listPetPackages(): Promise<CodexPetPackage[]>;
+  /** Shells the in-app terminal can spawn, detected from the system. Empty outside Tauri. */
+  listTerminalShells(): Promise<TerminalShellOption[]>;
   openAdoptedPetWindow(petId: string, assetId: string): Promise<void>;
   closeAdoptedPetWindow(petId: string): Promise<void>;
   openPetContextMenu(
@@ -162,6 +167,14 @@ export const desktopGateway: DesktopGateway = {
       description: asset.description,
       spritesheetPath: asset.spritesheetPath,
     }));
+  },
+
+  async listTerminalShells() {
+    if (!isTauri()) {
+      return [];
+    }
+
+    return await invoke<TerminalShellOption[]>("list_terminal_shells");
   },
 
   async openAdoptedPetWindow(petId, assetId) {

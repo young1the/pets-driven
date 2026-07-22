@@ -7,7 +7,8 @@ import { isTauri } from "@tauri-apps/api/core";
 import { type CSSProperties, useEffect, useState } from "react";
 import { type CodexPetPackage, type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
 import { useDesktopLocale } from "@/app/i18n/desktop-locale";
-import { EmbeddedTerminal } from "@/app/main-window/embedded-terminal";
+import { TerminalSection } from "@/app/main-window/terminal-section";
+import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
 import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
@@ -423,7 +424,7 @@ const doneActions: CSSProperties = {
   gap: "13px",
   marginTop: "26px",
 };
-const wizardInput: CSSProperties = {
+const wizardSelect: CSSProperties = {
   boxSizing: "border-box",
   width: "100%",
   maxWidth: "420px",
@@ -431,9 +432,10 @@ const wizardInput: CSSProperties = {
   background: "var(--surface-card)",
   borderRadius: "12px",
   padding: "11px 14px",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-body)",
   fontSize: "13px",
   color: "var(--text-strong)",
+  cursor: "pointer",
   outline: "none",
 };
 const fieldHint: CSSProperties = {
@@ -481,26 +483,13 @@ const petLookName: CSSProperties = {
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 };
-const inlineTermFrame: CSSProperties = {
-  marginTop: "16px",
-  height: "220px",
-  borderRadius: "14px",
+const inlineTermShell: CSSProperties = {
+  display: "flex",
+  height: "320px",
+  marginTop: "14px",
+  borderRadius: "16px",
   overflow: "hidden",
   border: "1px solid var(--border-soft)",
-  background: "var(--term-bg, #2a2540)",
-};
-const inlineTermView: CSSProperties = {
-  width: "100%",
-  height: "100%",
-};
-const inlineTermUnavailable: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  height: "100%",
-  fontFamily: "var(--font-body)",
-  fontSize: "13px",
-  color: "var(--text-muted)",
 };
 
 export function SetupWizard({
@@ -519,6 +508,11 @@ export function SetupWizard({
   const [petPackages, setPetPackages] = useState<CodexPetPackage[]>([]);
   const [defaultPetFolder, setDefaultPetFolder] = useState<string | null>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const shellOptions = useTerminalShellOptions(gateway);
+  const currentShell = state.terminalShell ?? "";
+  // Keep a persisted shell the system probe didn't surface pickable in the list.
+  const hasCustomShell =
+    currentShell.trim() !== "" && !shellOptions.some((option) => option.path === currentShell);
 
   useEffect(() => {
     let isActive = true;
@@ -698,13 +692,20 @@ export function SetupWizard({
               </div>
 
               <div style={sectionLabel}>{t("settings.defaultTerminal")}</div>
-              <input
+              <select
                 aria-label={t("settings.defaultTerminal")}
                 onChange={(event) => void applyTerminalShell(event.target.value)}
-                placeholder={t("settings.defaultTerminalPlaceholder")}
-                style={wizardInput}
-                value={state.terminalShell ?? ""}
-              />
+                style={wizardSelect}
+                value={currentShell}
+              >
+                <option value="">{t("settings.defaultTerminalSystem")}</option>
+                {shellOptions.map((option) => (
+                  <option key={option.path} value={option.path}>
+                    {option.label} ({option.path})
+                  </option>
+                ))}
+                {hasCustomShell && <option value={currentShell}>{currentShell}</option>}
+              </select>
               <p style={fieldHint}>{t("settings.defaultTerminalDesc")}</p>
             </div>
 
@@ -937,18 +938,13 @@ export function SetupWizard({
               {t("setupWizard.pluginTerminalLabel")}
             </div>
             <p style={fieldHint}>{t("setupWizard.pluginTerminalHint")}</p>
-            <div style={inlineTermFrame}>
-              {isTauri() ? (
-                <EmbeddedTerminal
-                  className="pd-onb__inline-term"
-                  cwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
-                  exitedLabel={t("terminal.exited")}
-                  shell={state.terminalShell}
-                  style={inlineTermView}
-                />
-              ) : (
-                <div style={inlineTermUnavailable}>{t("terminal.unavailable")}</div>
-              )}
+            <div style={inlineTermShell}>
+              <TerminalSection
+                available={isTauri()}
+                initialCwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
+                pickDirectory={() => gateway.pickDirectory()}
+                shell={state.terminalShell}
+              />
             </div>
 
             <div style={footer}>
