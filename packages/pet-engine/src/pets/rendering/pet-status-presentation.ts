@@ -29,8 +29,23 @@ export type PetStatusLabelKey =
   | "playingWith"
   | "makingFriendsWith";
 
+/**
+ * Whether a status belongs to the agent work lifecycle or to ambient
+ * play/idle. Drives the host's decision to color the capsule (work) or keep
+ * it neutral (ambient).
+ */
+export type PetStatusTone = "work" | "ambient";
+
 export type PetStatusPresentation = {
   mood: PetMood;
+  /**
+   * Whether the status reflects an agent work lifecycle ("work": working,
+   * waiting, done, failed, reviewing, or an attention prompt) or an ambient
+   * play/idle state. Hosts reserve the mood accent color for "work" so that
+   * color reads as "this pet is doing agent work"; ambient states render in a
+   * neutral tone and rely on the pet's name and dialogue instead.
+   */
+  tone: PetStatusTone;
   /** Capsule label; null lets the mood's default label show. */
   label: string | null;
   /**
@@ -286,18 +301,20 @@ export function presentPetStatus(
       const hasLabel = base.labelKey !== null || base.label !== null;
       return {
         ...base,
+        tone: "work",
         label: hasLabel ? base.label : "Working",
         labelKey: hasLabel ? base.labelKey : "working",
         message: null,
         showCapsule: true,
       };
     }
-    return { ...base, message: null, showCapsule: false };
+    return { ...base, tone: "ambient", message: null, showCapsule: false };
   }
 
   if (overlay.kind === "attention") {
     return {
       mood: "confused",
+      tone: "work",
       label: overlay.label,
       labelKey: null,
       message: null,
@@ -310,11 +327,12 @@ export function presentPetStatus(
     // A null status is a plain spoken line (social/idle/interaction): keep the
     // ambient activity capsule (mood/label/emote) and just carry the message.
     if (overlay.status === null) {
-      return { ...base, message: overlay.message ?? null, showCapsule: true };
+      return { ...base, tone: "ambient", message: overlay.message ?? null, showCapsule: true };
     }
     const agentBase = presentationFromAgentStatus(overlay.status);
     return {
       ...agentBase,
+      tone: "work",
       // The host's label wins for display, but the status enum gives us a
       // stable key the presentation layer can localize instead.
       label: overlay.label ?? agentBase.label,
@@ -328,6 +346,7 @@ export function presentPetStatus(
   // there is no fixed label key.
   return {
     ...base,
+    tone: "ambient",
     label: overlay.label,
     labelKey: null,
     message: null,

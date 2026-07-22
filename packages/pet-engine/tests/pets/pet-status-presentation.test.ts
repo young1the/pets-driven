@@ -42,6 +42,7 @@ describe("presentPetStatus", () => {
 
     expect(presentation).toEqual({
       mood: "confused",
+      tone: "work",
       label: "WAIT",
       labelKey: null,
       message: null,
@@ -60,6 +61,7 @@ describe("presentPetStatus", () => {
 
     expect(presentation).toEqual({
       mood: "working",
+      tone: "work",
       label: "Working",
       labelKey: "working",
       message: null,
@@ -221,5 +223,53 @@ describe("presentPetStatus", () => {
     const presentation = presentPetStatus("running", null, "exploring", null, false);
 
     expect(presentation.showCapsule).toBe(false);
+  });
+
+  describe("tone", () => {
+    it("marks the agent work lifecycle states as work tone", () => {
+      expect(presentPetStatus("running", null, null, null, true).tone).toBe("work");
+      expect(
+        presentPetStatus("idle", {
+          kind: "agent-channel",
+          status: "waiting",
+          label: "Waiting",
+          message: null,
+        }).tone,
+      ).toBe("work");
+      expect(
+        presentPetStatus("idle", {
+          kind: "agent-channel",
+          status: "completed",
+          label: "Done",
+          message: null,
+        }).tone,
+      ).toBe("work");
+      expect(
+        presentPetStatus("idle", {
+          kind: "agent-channel",
+          status: "failed",
+          label: "Failed",
+          message: null,
+        }).tone,
+      ).toBe("work");
+      expect(presentPetStatus("running", { kind: "attention", label: "WAIT" }).tone).toBe("work");
+    });
+
+    it("marks ambient play, idle and spoken lines as ambient tone", () => {
+      expect(presentPetStatus("idle", null).tone).toBe("ambient");
+      expect(presentPetStatus("running-right", null, "chasingCursor").tone).toBe("ambient");
+      expect(presentPetStatus("idle", null, "beingPetted").tone).toBe("ambient");
+      expect(
+        presentPetStatus("idle", {
+          kind: "agent-channel",
+          status: null,
+          label: null,
+          message: "hi there",
+        }).tone,
+      ).toBe("ambient");
+      expect(
+        presentPetStatus("running-right", { kind: "speech", label: "Otto's on it…" }).tone,
+      ).toBe("ambient");
+    });
   });
 });
