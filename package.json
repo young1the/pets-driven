@@ -4,6 +4,7 @@
   "license": "MIT",
   "packageManager": "pnpm@10.25.0",
   "scripts": {
+    "prepare": "husky",
     "check": "biome check .",
     "format": "biome format . --write",
     "lint": "biome lint .",
@@ -22,6 +23,13 @@
     "test:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-install-test.ps1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.3"
+    "@biomejs/biome": "^2.5.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.1.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc,css}": [
+      "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
+    ]
   }
 }
