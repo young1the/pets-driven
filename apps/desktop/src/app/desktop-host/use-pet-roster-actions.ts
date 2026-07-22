@@ -178,9 +178,24 @@ export function usePetRosterActions({
     void desktopGateway.writePetsDrivenState(next);
   }
 
+  /**
+   * `visible` is runtime-only: the gateway strips it before persisting and a
+   * load always defaults it to false, so a visibility toggle has nothing to
+   * save. Keep it out of the persistence path entirely — the state blob a
+   * toggle would write is whatever this window last loaded, which overwrites
+   * any pet the backend hatched in the meantime.
+   */
+  function setPetVisibility(petId: string, visible: boolean) {
+    const current = stateRef.current;
+    applyState({
+      ...current,
+      pets: current.pets.map((pet) => (pet.id === petId ? { ...pet, visible } : pet)),
+    });
+  }
+
   function showPet(petId: string) {
     const pet = stateRef.current.pets.find((p) => p.id === petId);
-    patchPet(petId, { visible: true });
+    setPetVisibility(petId, true);
     void desktopGateway.openAdoptedPetWindow(petId, pet?.assetId ?? "").catch(() => {});
     if (pet) {
       flashToast(t("toast.onDesktop", { name: pet.name }));
@@ -189,7 +204,7 @@ export function usePetRosterActions({
 
   function hidePet(petId: string) {
     const pet = stateRef.current.pets.find((p) => p.id === petId);
-    patchPet(petId, { visible: false });
+    setPetVisibility(petId, false);
     void desktopGateway.closeAdoptedPetWindow(petId).catch(() => {});
     if (pet) {
       flashToast(t("toast.cameHome", { name: pet.name }));
@@ -198,19 +213,17 @@ export function usePetRosterActions({
 
   function showAllPets() {
     for (const pet of stateRef.current.pets.filter((p) => !p.archived)) {
-      patchPet(pet.id, { visible: true });
+      setPetVisibility(pet.id, true);
       void desktopGateway.openAdoptedPetWindow(pet.id, pet.assetId).catch(() => {});
     }
   }
 
   function hideAllPets() {
     const current = stateRef.current;
-    const next: PetsDrivenState = {
+    applyState({
       ...current,
       pets: current.pets.map((pet) => ({ ...pet, visible: false })),
-    };
-    applyState(next);
-    void desktopGateway.writePetsDrivenState(next);
+    });
     void desktopGateway.closeAllPetWindows().catch(() => {});
   }
 

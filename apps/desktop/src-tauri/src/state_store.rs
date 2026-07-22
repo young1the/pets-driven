@@ -51,6 +51,10 @@ fn read_state(app: &tauri::AppHandle) -> Result<serde_json::Value, String> {
         .map_err(|error| format!("Could not parse {}: {error}", state_path.display()))
 }
 
+/// Persist the state file by writing a sibling temp file and renaming it over
+/// the target. A plain `fs::write` truncates in place, so a reader racing the
+/// write (the webview reloading after a hatch, say) could observe a partial
+/// file and fall back to empty state.
 fn write_state(app: &tauri::AppHandle, state: &serde_json::Value) -> Result<(), String> {
     let state_path = pets_driven_state_path(app)?;
 
@@ -62,8 +66,18 @@ fn write_state(app: &tauri::AppHandle, state: &serde_json::Value) -> Result<(), 
     let state_text = serde_json::to_string_pretty(state)
         .map_err(|error| format!("Could not serialize pets-driven state: {error}"))?;
 
-    fs::write(&state_path, state_text)
-        .map_err(|error| format!("Could not write {}: {error}", state_path.display()))
+    let temp_path = state_path.with_file_name(format!(
+        "{PETS_DRIVEN_STATE_FILE_NAME}.{}.tmp",
+        new_id("write")
+    ));
+
+    fs::write(&temp_path, state_text)
+        .map_err(|error| format!("Could not write {}: {error}", temp_path.display()))?;
+
+    fs::rename(&temp_path, &state_path).map_err(|error| {
+        let _ = fs::remove_file(&temp_path);
+        format!("Could not replace {}: {error}", state_path.display())
+    })
 }
 
 #[tauri::command]
@@ -71,11 +85,18 @@ pub(crate) fn read_pets_driven_state(app: tauri::AppHandle) -> Result<serde_json
     read_state(&app)
 }
 
+/// The webview persists the whole state blob, so this write has to queue behind
+/// the authoritative read-modify-write cycles (hatch, pet update, pet delete)
+/// that the ingress thread runs against the same file.
 #[tauri::command]
 pub(crate) fn write_pets_driven_state(
     app: tauri::AppHandle,
     state: serde_json::Value,
 ) -> Result<(), String> {
+    let _guard = STATE_MUTATION_LOCK
+        .lock()
+        .map_err(|error| format!("State lock poisoned: {error}"))?;
+
     write_state(&app, &state)
 }
 

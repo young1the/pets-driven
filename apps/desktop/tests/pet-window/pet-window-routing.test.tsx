@@ -490,6 +490,27 @@ describe("pet window product route", () => {
     });
   });
 
+  it("does not persist the state blob when pets are shown", async () => {
+    render(<PetsDrivenApp />);
+
+    await screen.findByRole("button", { name: "Open Otto's details" });
+    showAllAdoptedPets();
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("open_adopted_pet_window", {
+        petId: "pet-a",
+        assetId: "bloop",
+      });
+    });
+
+    // `visible` never survives a round trip — the gateway strips it on write and
+    // a load defaults it to false — so a toggle has nothing to save. Writing the
+    // blob anyway would overwrite whatever the backend hatched in the meantime.
+    expect(
+      invokeMock.mock.calls.filter(([command]) => command === "write_pets_driven_state"),
+    ).toHaveLength(0);
+  });
+
   it("handles duplicate folder-pick input only once", async () => {
     dialogMocks.open.mockResolvedValue("D:\\new-project");
 

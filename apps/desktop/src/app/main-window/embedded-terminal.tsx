@@ -113,6 +113,12 @@ export function EmbeddedTerminal({
         return true;
       }
 
+      // Returning false only tells xterm to skip the key — the keydown still
+      // carries its default action, so the webview runs its own paste and
+      // xterm's paste listener inserts the clipboard a second time. Cancel the
+      // default so the manual paste below is the only one that lands.
+      event.preventDefault();
+
       void navigator.clipboard
         .readText()
         .then((text) => {
