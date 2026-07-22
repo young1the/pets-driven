@@ -7,6 +7,7 @@ import { formatCommandError } from "@/app/desktop-host/format-command-error";
 import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
 import { buildLaunchLine, parseLaunchLine } from "@/app/session-launch-line";
 import {
+  adoptPet,
   clearWorkingDirectoryForPet,
   registerWorkingDirectory,
   removePet,
@@ -21,6 +22,9 @@ import {
 // Native folder dialogs are app-modal side effects. Keep the guard outside the
 // React tree so duplicate listeners from a remount cannot open a second dialog.
 let activeFolderPickerPetId: string | null = null;
+
+/** Built-in Pet Assets cycled through when seeding a debug roster. */
+const SEED_ASSET_IDS = ["cato", "otto", "mochi", "fenn", "bloop", "pip"];
 
 type UsePetRosterActionsParams = {
   stateRef: MutableRefObject<PetsDrivenState>;
@@ -60,6 +64,63 @@ export function usePetRosterActions({
     } catch (error) {
       setPetWindowError(formatCommandError(error));
     }
+  }
+
+  /**
+   * Dev-only: adopt `count` pets in a single write, each already holding a
+   * watch folder. The paths are synthetic strings and need not exist on disk —
+   * the registry only ever compares them as text — which is the point: it fills
+   * the working directory registry without `count` trips through the native
+   * folder picker. Stamping the run time into the path keeps repeated presses
+   * from colliding with the folders an earlier press registered.
+   */
+  function seedWatchedFolders(count: number) {
+    const now = Date.now();
+    const seededPetIds: string[] = [];
+    let next = stateRef.current;
+
+    for (let index = 0; index < count; index++) {
+      const petId = crypto.randomUUID();
+      const option = PERSONALITY_OPTIONS[index % PERSONALITY_OPTIONS.length];
+
+      next = adoptPet(next, {
+        id: petId,
+        profileId: crypto.randomUUID(),
+        name: `Seed ${index + 1}`,
+        assetId: SEED_ASSET_IDS[index % SEED_ASSET_IDS.length],
+        personalityId: option.id,
+        personality: option.factory(),
+        now,
+      });
+
+      const result = registerWorkingDirectory(next, {
+        petId,
+        path: `C:\\debug\\seed-${now}\\workspace-${index + 1}`,
+        workingDirectoryId: crypto.randomUUID(),
+        agentSourceId: crypto.randomUUID(),
+        now,
+      });
+
+      // Unreachable while the paths carry `now`, but registration is the only
+      // thing that can fail here — keep the pet rather than drop the batch.
+      if (result.status === "linked") {
+        next = result.state;
+      }
+
+      seededPetIds.push(petId);
+    }
+
+    // `adoptPet` marks a pet visible; seeded pets stay home so this doesn't
+    // open `count` always-on-top windows at once.
+    const seeded = new Set(seededPetIds);
+    next = {
+      ...next,
+      pets: next.pets.map((pet) => (seeded.has(pet.id) ? { ...pet, visible: false } : pet)),
+    };
+
+    applyState(next);
+    void desktopGateway.writePetsDrivenState(next);
+    flashToast(`Seeded ${count} pets with watch folders`);
   }
 
   function updateSessionCommand(command: string) {
@@ -227,6 +288,7 @@ export function usePetRosterActions({
 
   return {
     resetPets,
+    seedWatchedFolders,
     updateSessionCommand,
     updateTerminalShell,
     patchPet,

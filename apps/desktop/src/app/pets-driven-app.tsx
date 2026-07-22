@@ -121,6 +121,7 @@ function PetsDrivenHostApp() {
 
   const {
     resetPets,
+    seedWatchedFolders,
     updateTerminalShell,
     patchPet,
     setPetPersonality,
@@ -301,6 +302,7 @@ function PetsDrivenHostApp() {
       onResetPetFolder={() => applyPetSourceFolder(null)}
       onResetPets={() => void resetPets()}
       onSetLaunchCommand={setLaunchCommand}
+      onSeedWatchedFolders={seedWatchedFolders}
       onSetPetPersonality={setPetPersonality}
       onShowAllPets={showAllPets}
       onShowPet={showPet}

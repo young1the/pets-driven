@@ -16,6 +16,9 @@ import { getWorkingDirectoryForPet } from "@/app-state/pet-adoption";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
 import type { PetRecord, PetsDrivenState } from "@/app-state/pets-driven-state";
 
+/** How many pets the debug seed button adopts in one press. */
+const SEED_WATCHED_FOLDER_COUNT = 13;
+
 export interface MainWindowSurfaceProps {
   state: PetsDrivenState;
   petStatusById: Record<string, PetCardStatus>;
@@ -39,6 +42,7 @@ export interface MainWindowSurfaceProps {
   onClearFolderForPet: (petId: string) => void;
   onDeletePet: (petId: string) => void;
   onResetPets: () => void;
+  onSeedWatchedFolders: (count: number) => void;
   onUpdateTerminalShell: (shell: string) => void;
   onSetLaunchCommand: (command: string) => void;
   onChangePetSourceFolder: () => void;
@@ -87,6 +91,7 @@ export function MainWindowSurface({
   onClearFolderForPet,
   onDeletePet,
   onResetPets,
+  onSeedWatchedFolders,
   onUpdateTerminalShell,
   onSetLaunchCommand,
   onChangePetSourceFolder,
@@ -197,6 +202,12 @@ export function MainWindowSurface({
             hint: "adoption & state",
             items: [
               { label: "Adopt a pet", onClick: () => navigate("adopt") },
+              {
+                // Fills the watch-folder registry past the point where the
+                // adopt flow's folder list needs to scroll.
+                label: `Seed ${SEED_WATCHED_FOLDER_COUNT} watched folders`,
+                onClick: () => onSeedWatchedFolders(SEED_WATCHED_FOLDER_COUNT),
+              },
               { label: "Reset pets", onClick: () => onResetPets() },
             ],
           },
