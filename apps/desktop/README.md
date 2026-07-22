@@ -28,8 +28,12 @@ from a loopback hostname. It does not read or overwrite persisted Tauri state.
 ## Pet window fixtures
 
 The pet window is a separate 192x268 always-on-top overlay window in the real
-app; in Tauri it's driven entirely by `PET_WINDOW_FRAME_EVENT`s from the main
-window. To inspect it in a plain browser tab, open
+app, loaded from its own lean `pet-window.html` entry so a full roster of pets
+does not each hold the main window's bundle. In Tauri its appearance is driven
+by `PET_WINDOW_FRAME_EVENT`s from the main window, while its position comes
+from the `place_pet_windows` batch the main window sends the shell once per
+frame — an overlay never moves itself. To inspect it in a plain browser tab,
+open
 `http://localhost:1420/?surface=pet-window&fixture=<id>` — this seeds the
 sprite/overlay presentation that would otherwise come from the frame stream,
 and pins the page to the real window's fixed size with a checkerboard backdrop

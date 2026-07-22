@@ -180,7 +180,6 @@ export function usePetWindowSurface({
   const dragPauseUntilRef = useRef(0);
   const inputSequenceRef = useRef(0);
   const frameSequenceRef = useRef(0);
-  const appliedPositionRef = useRef<{ x: number; y: number } | null>(null);
   const appliedSizeRef = useRef<{ width: number; height: number } | null>(null);
   const resizeStartRef = useRef<{
     screenX: number;
@@ -189,7 +188,6 @@ export function usePetWindowSurface({
   } | null>(null);
   const resizeAppliedScaleRef = useRef<number | null>(null);
   const isResizingRef = useRef(false);
-  const hasShownAfterFirstPositionRef = useRef(false);
   const isPositionDrivenRef = useRef(false);
   const pointerStartRef = useRef<PetWindowPointerStart | null>(null);
   // bodyDownRef tracks the press origin so we can tell a tap from a drag;
@@ -297,6 +295,9 @@ export function usePetWindowSurface({
           });
         }
 
+        // Position is not applied here: the host moves every pet window in one
+        // native batch (place_pet_windows), and shows each on its first
+        // placement. A frame only carries what this webview has to render.
         const frameScale = clampPetWindowScale(frame.window.width / PET_CELL_SIZE.width);
         const nextSize = petWindowSizeForScale(frameScale);
         if (
@@ -308,38 +309,6 @@ export function usePetWindowSurface({
           setSpriteScale(frameScale);
           void petWindowTransport.setWindowSize(nextSize.width, nextSize.height);
         }
-
-        const nextPosition = {
-          x: Math.round(frame.window.x),
-          y: Math.round(frame.window.y),
-        };
-        const shouldShowWindow = !hasShownAfterFirstPositionRef.current;
-
-        if (
-          appliedPositionRef.current &&
-          appliedPositionRef.current.x === nextPosition.x &&
-          appliedPositionRef.current.y === nextPosition.y
-        ) {
-          if (shouldShowWindow) {
-            hasShownAfterFirstPositionRef.current = true;
-            void petWindowTransport.showWindow();
-          }
-
-          return;
-        }
-
-        appliedPositionRef.current = nextPosition;
-        if (shouldShowWindow) {
-          hasShownAfterFirstPositionRef.current = true;
-        }
-
-        void petWindowTransport.setWindowPosition(nextPosition.x, nextPosition.y).then(() => {
-          if (shouldShowWindow) {
-            return petWindowTransport.showWindow();
-          }
-
-          return undefined;
-        });
       })
       .then((unlisten) => {
         unlistenFrame = unlisten;

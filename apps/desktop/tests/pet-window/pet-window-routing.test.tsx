@@ -443,7 +443,7 @@ describe("pet window product route", () => {
     await waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
         petId: "pet-a",
-        url: "index.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=",
+        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=",
         localX: 400,
         localY: 300,
       });
@@ -1052,38 +1052,28 @@ describe("pet window product route", () => {
 
     act(() => {
       handleFrame({
-        payload: petWindowFramePayload({
-          sequence: 2,
-          petId: "pet-a",
-          x: 333.4,
-          y: 444.2,
-        }),
+        payload: {
+          ...petWindowFramePayload({ sequence: 2, petId: "pet-a", x: 333.4, y: 444.2 }),
+          name: "Otto",
+        },
       });
     });
 
-    expect(tauriWindowMocks.setPosition).toHaveBeenLastCalledWith({
-      x: 333,
-      y: 444,
-    });
-    await waitFor(() => {
-      expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
-    });
+    expect(await screen.findByText("Otto")).toBeInTheDocument();
 
-    const appliedCallCount = tauriWindowMocks.setPosition.mock.calls.length;
-
+    // A frame from behind the sequence high-water mark is discarded, so the
+    // name it carries never reaches the window.
     act(() => {
       handleFrame({
-        payload: petWindowFramePayload({
-          sequence: 1,
-          petId: "pet-a",
-          x: 111,
-          y: 222,
-        }),
+        payload: {
+          ...petWindowFramePayload({ sequence: 1, petId: "pet-a", x: 111, y: 222 }),
+          name: "Stale",
+        },
       });
     });
 
-    expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(appliedCallCount);
-    expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Stale")).not.toBeInTheDocument();
+    expect(screen.getByText("Otto")).toBeInTheDocument();
   });
 
   it("shows connect-mode notices on the Pet Window status card", async () => {
@@ -1208,7 +1198,7 @@ describe("pet window product route", () => {
     expect(screen.queryByText("Connected to Windows Terminal")).not.toBeInTheDocument();
   });
 
-  it("does not re-apply Pet Window positions when rounded coordinates are unchanged", async () => {
+  it("never places its own OS window — the host owns every pet's position", async () => {
     window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
 
     render(<PetsDrivenApp />);
@@ -1217,35 +1207,17 @@ describe("pet window product route", () => {
       expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
     });
 
-    const handleFrame = tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)!;
-
     act(() => {
-      handleFrame({
-        payload: petWindowFramePayload({
-          sequence: 1,
-          petId: "pet-a",
-          x: 333.2,
-          y: 444.2,
-        }),
-      });
-      handleFrame({
-        payload: petWindowFramePayload({
-          sequence: 2,
-          petId: "pet-a",
-          x: 333.4,
-          y: 444.3,
-        }),
+      tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)!({
+        payload: petWindowFramePayload({ sequence: 1, petId: "pet-a", x: 333.2, y: 444.2 }),
       });
     });
 
-    expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(1);
-    expect(tauriWindowMocks.setPosition).toHaveBeenLastCalledWith({
-      x: 333,
-      y: 444,
-    });
-    await waitFor(() => {
-      expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
-    });
+    // Twelve pets each round-tripping their own position through IPC every
+    // frame is what made a full roster stutter; place_pet_windows moves them
+    // all natively in one batch instead.
+    expect(tauriWindowMocks.setPosition).not.toHaveBeenCalled();
+    expect(tauriWindowMocks.show).not.toHaveBeenCalled();
   });
 
   it("ignores frames for other pets before checking freshness", async () => {
@@ -1260,76 +1232,92 @@ describe("pet window product route", () => {
     const handleFrame = tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)!;
 
     act(() => {
+      // Same sequence as pet-b's frame below: counting this one would push the
+      // high-water mark up and make pet-b's own frame look stale.
       handleFrame({
-        payload: petWindowFramePayload({
-          sequence: 4,
-          petId: "pet-a",
-          x: 100,
-          y: 200,
-        }),
+        payload: {
+          ...petWindowFramePayload({ sequence: 4, petId: "pet-a", x: 100, y: 200 }),
+          name: "Not mine",
+        },
       });
       handleFrame({
-        payload: petWindowFramePayload({
-          sequence: 4,
-          petId: "pet-b",
-          x: 500,
-          y: 600,
-        }),
+        payload: {
+          ...petWindowFramePayload({ sequence: 4, petId: "pet-b", x: 500, y: 600 }),
+          name: "Otto",
+        },
       });
     });
 
-    expect(tauriWindowMocks.setPosition).toHaveBeenCalledTimes(1);
-    expect(tauriWindowMocks.setPosition).toHaveBeenLastCalledWith({
-      x: 500,
-      y: 600,
-    });
-    await waitFor(() => {
-      expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
-    });
+    expect(await screen.findByText("Otto")).toBeInTheDocument();
+    expect(screen.queryByText("Not mine")).not.toBeInTheDocument();
   });
 
-  it("keeps a Pet Window hidden until its own first position update is applied", async () => {
-    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-b&assetId=otto");
+  it("places every deployed pet's window in one batched host call", async () => {
+    render(<PetsDrivenApp />);
+
+    await screen.findByRole("button", { name: "Open Otto's details" });
+    showAllAdoptedPets();
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith(
+        "place_pet_windows",
+        expect.objectContaining({
+          placements: expect.arrayContaining([
+            expect.objectContaining({
+              petId: "pet-a",
+              x: expect.any(Number),
+              y: expect.any(Number),
+            }),
+          ]),
+        }),
+      );
+    });
+
+    const placementOf = (call: unknown[]) =>
+      (call[1] as { placements: { petId: string; x: number; y: number }[] }).placements.find(
+        (placement) => placement.petId === "pet-a",
+      );
+    const placementCalls = invokeMock.mock.calls.filter(([command]) => {
+      return command === "place_pet_windows";
+    });
+
+    // Rounded coordinates: a pet that has not visibly moved must stay out of
+    // the batch entirely, so no two consecutive calls repeat a placement.
+    for (let index = 1; index < placementCalls.length; index += 1) {
+      const previous = placementOf(placementCalls[index - 1]);
+      const current = placementOf(placementCalls[index]);
+      if (previous && current) {
+        expect(`${current.x},${current.y}`).not.toBe(`${previous.x},${previous.y}`);
+      }
+      expect(current === undefined || Number.isInteger(current.x)).toBe(true);
+    }
+  });
+
+  it("places a pet again when its overlay window was not ready for the batch", async () => {
+    const placementCommands: { placements: { petId: string }[] }[] = [];
+    const baseInvoke = invokeMock.getMockImplementation()!;
+    invokeMock.mockImplementation(async (command, args) => {
+      if (command === "place_pet_windows") {
+        placementCommands.push(args as { placements: { petId: string }[] });
+        // The shell reports the window as still being created, so the host must
+        // not treat this placement as applied.
+        return ["pet-a"];
+      }
+
+      return baseInvoke(command, args);
+    });
 
     render(<PetsDrivenApp />);
 
+    await screen.findByRole("button", { name: "Open Otto's details" });
+    showAllAdoptedPets();
+
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(PET_WINDOW_FRAME_EVENT)).toBe(true);
-    });
-
-    const handleFrame = tauriEventMocks.listeners.get(PET_WINDOW_FRAME_EVENT)!;
-
-    act(() => {
-      handleFrame({
-        payload: petWindowFramePayload({
-          sequence: 1,
-          petId: "pet-a",
-          x: 100,
-          y: 200,
-        }),
-      });
-    });
-
-    expect(tauriWindowMocks.setPosition).not.toHaveBeenCalled();
-    expect(tauriWindowMocks.show).not.toHaveBeenCalled();
-
-    act(() => {
-      handleFrame({
-        payload: petWindowFramePayload({
-          sequence: 1,
-          petId: "pet-b",
-          x: 500.7,
-          y: 600.1,
-        }),
-      });
-    });
-
-    expect(tauriWindowMocks.setPosition).toHaveBeenCalledWith({
-      x: 501,
-      y: 600,
-    });
-    await waitFor(() => {
-      expect(tauriWindowMocks.show).toHaveBeenCalledTimes(1);
+      expect(
+        placementCommands.filter((command) =>
+          command.placements.some((placement) => placement.petId === "pet-a"),
+        ).length,
+      ).toBeGreaterThan(1);
     });
   });
 

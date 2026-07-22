@@ -1,0 +1,9 @@
+/* Entry stylesheet for the overlay surfaces that get their own OS window: the
+   pet window and its owned context menu. Deliberately excludes app.css and
+   playground.css — a dozen pet webviews should not each parse the whole main
+   window's stylesheet. */
+
+@import "./base.css";
+@import "./theme.css";
+@import "./pet-window.css";
+@import "./pet-context-menu.css";

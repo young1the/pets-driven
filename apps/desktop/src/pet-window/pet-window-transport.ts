@@ -1,6 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
-import { getCurrentWindow, LogicalPosition, LogicalSize } from "@tauri-apps/api/window";
+import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import {
   PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
@@ -41,8 +41,9 @@ export type PetWindowTransport = {
   sendInput(payload: PetWindowInputEvent): void;
   sendResize(payload: PetWindowResizeEvent): void;
 
-  // Control of this webview's own OS window.
-  setWindowPosition(x: number, y: number): Promise<void>;
+  // Control of this webview's own OS window. Position is absent on purpose: the
+  // host places every pet window natively in one batch (place_pet_windows), so
+  // an overlay never moves itself.
   setWindowSize(width: number, height: number): Promise<void>;
   showWindow(): Promise<void>;
   focusWindow(): Promise<void>;
@@ -108,14 +109,6 @@ export const petWindowTransport: PetWindowTransport = {
     }
 
     void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_RESIZE_EVENT, payload);
-  },
-
-  async setWindowPosition(x, y) {
-    if (!isTauri()) {
-      return;
-    }
-
-    await getCurrentWindow().setPosition(new LogicalPosition(x, y));
   },
 
   async setWindowSize(width, height) {

@@ -55,6 +55,9 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: "index.html",
+          // Pet overlays get their own entry so a dozen pet webviews never load
+          // the main window's bundle just to draw a sprite.
+          petWindow: "pet-window.html",
           playground: "playground.html",
         },
       },

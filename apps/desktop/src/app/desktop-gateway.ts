@@ -109,6 +109,15 @@ export type DesktopGateway = {
   getClaudeHookIngressStatus(): Promise<ClaudeHookIngressStatus>;
   /** Close every open pet overlay window. */
   closeAllPetWindows(): Promise<void>;
+  /**
+   * Move a whole frame's worth of pet windows in one shell call. The pet
+   * windows do not place themselves — see place_pet_windows in pet_windows.rs.
+   * Resolves with the pets whose window did not exist yet, which the caller
+   * must place again once it does.
+   */
+  placePetWindows(
+    placements: ReadonlyArray<{ petId: string; x: number; y: number }>,
+  ): Promise<string[]>;
 
   /** Raw spritesheet bytes for an installed pet asset (Tauri only). */
   loadPetSpritesheet(assetId: string): Promise<ArrayBuffer>;
@@ -209,7 +218,8 @@ export const desktopGateway: DesktopGateway = {
       return;
     }
 
-    const url = `index.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}`;
+    // Shares the pet windows' lean overlay entry — see pet-window-main.tsx.
+    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}`;
     await invoke("open_pet_context_menu", { petId, url, localX: x, localY: y });
   },
 
@@ -285,6 +295,14 @@ export const desktopGateway: DesktopGateway = {
     }
 
     await invoke("close_all_pet_windows");
+  },
+
+  async placePetWindows(placements) {
+    if (!isTauri() || placements.length === 0) {
+      return [];
+    }
+
+    return (await invoke<string[] | undefined>("place_pet_windows", { placements })) ?? [];
   },
 
   async loadPetSpritesheet(assetId) {

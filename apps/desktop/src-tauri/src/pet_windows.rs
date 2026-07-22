@@ -1,4 +1,5 @@
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use serde::Deserialize;
+use tauri::{LogicalPosition, Manager, WebviewUrl, WebviewWindowBuilder};
 
 use crate::pet_assets::validate_asset_id;
 
@@ -37,9 +38,14 @@ fn pet_window_playground_asset_id(index: u8) -> &'static str {
         .unwrap_or("cato")
 }
 
+/// Overlay windows load their own lean entry, never `index.html`: loading the
+/// main window's bundle in every pet webview is what made a dozen deployed pets
+/// cost hundreds of megabytes.
+pub(crate) const PET_OVERLAY_ENTRY: &str = "pet-window.html";
+
 fn pet_window_playground_url(index: u8) -> String {
     format!(
-        "index.html?surface=pet-window&petId={}&assetId={}&windowIndex={index}",
+        "{PET_OVERLAY_ENTRY}?surface=pet-window&petId={}&assetId={}&windowIndex={index}",
         pet_window_playground_pet_id(index),
         pet_window_playground_asset_id(index),
     )
@@ -95,8 +101,9 @@ pub(crate) async fn open_adopted_pet_window(
     validate_asset_id(&asset_id)?;
 
     let label = format!("pet-window-{pet_id}");
-    let url =
-        format!("index.html?surface=pet-window&petId={pet_id}&assetId={asset_id}&windowIndex=1");
+    let url = format!(
+        "{PET_OVERLAY_ENTRY}?surface=pet-window&petId={pet_id}&assetId={asset_id}&windowIndex=1"
+    );
 
     if app.get_webview_window(&label).is_some() {
         return Ok(());
@@ -118,6 +125,58 @@ pub(crate) async fn open_adopted_pet_window(
         .map_err(|error| format!("Could not create {label}: {error}"))?;
 
     Ok(())
+}
+
+/// One pet's screen placement for a single simulation frame.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PetWindowPlacement {
+    pet_id: String,
+    x: f64,
+    y: f64,
+}
+
+/// Move every moving pet's overlay window in one call.
+///
+/// The host used to reach each pet window over IPC with its frame, wait for
+/// that webview to run JS, and have it call back into the shell to move itself
+/// — two round trips per pet per frame, so a dozen pets cost roughly 1500 IPC
+/// hops a second and the app visibly stuttered. The host now sends the whole
+/// batch here once per frame and the moves happen natively.
+///
+/// A window is created hidden and shown on its first placement, so it never
+/// flashes at the origin before the simulation has told it where to stand.
+///
+/// Returns the pets whose window did not exist yet. The host skips pets that
+/// have not moved since their last placement, so without this a window that
+/// finished creating just after its first batch went out could sit hidden
+/// forever behind a pet that happened to stand still.
+#[tauri::command]
+pub(crate) async fn place_pet_windows(
+    app: tauri::AppHandle,
+    placements: Vec<PetWindowPlacement>,
+) -> Result<Vec<String>, String> {
+    let mut unplaced = Vec::new();
+
+    for placement in placements {
+        let Some(window) = app.get_webview_window(&format!("pet-window-{}", placement.pet_id))
+        else {
+            unplaced.push(placement.pet_id);
+            continue;
+        };
+
+        window
+            .set_position(LogicalPosition::new(placement.x, placement.y))
+            .map_err(|error| format!("Could not place {}: {error}", placement.pet_id))?;
+
+        if !window.is_visible().unwrap_or(true) {
+            window
+                .show()
+                .map_err(|error| format!("Could not show {}: {error}", placement.pet_id))?;
+        }
+    }
+
+    Ok(unplaced)
 }
 
 #[tauri::command]
@@ -261,11 +320,11 @@ mod tests {
     fn pet_window_playground_url_routes_to_pet_window_surface() {
         assert_eq!(
             pet_window_playground_url(2),
-            "index.html?surface=pet-window&petId=pet-b&assetId=otto&windowIndex=2"
+            "pet-window.html?surface=pet-window&petId=pet-b&assetId=otto&windowIndex=2"
         );
         assert_eq!(
             pet_window_playground_url(7),
-            "index.html?surface=pet-window&petId=pet-g&assetId=cato&windowIndex=7"
+            "pet-window.html?surface=pet-window&petId=pet-g&assetId=cato&windowIndex=7"
         );
     }
 }

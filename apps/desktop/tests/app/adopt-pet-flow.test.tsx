@@ -44,6 +44,7 @@ function createGateway(
       error: null,
     }),
     closeAllPetWindows: vi.fn().mockResolvedValue(undefined),
+    placePetWindows: vi.fn().mockResolvedValue([]),
     focusForeignWindow: vi.fn().mockResolvedValue(false),
     startSession: vi.fn().mockResolvedValue(null),
     connectForeignWindow: vi.fn().mockResolvedValue(null),

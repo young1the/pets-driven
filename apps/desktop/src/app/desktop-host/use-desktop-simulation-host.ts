@@ -50,6 +50,10 @@ const DESKTOP_FIXTURE_STEP_MS = 16;
 // frames, and a window that finishes creating after its first frame was
 // emitted must not wait for the next real change to show itself.
 const PET_WINDOW_FRAME_HEARTBEAT_TICKS = Math.round(500 / DESKTOP_FIXTURE_HOST_TICK_MS);
+// The cursor is a slow stimulus — pets notice it and drift towards it. Sampling
+// it every tick cost one shell round trip per frame for a signal that nothing
+// reads at that resolution.
+const CURSOR_POLL_INTERVAL_MS = 100;
 
 function petWindowPlaygroundLabelForPetId(petId: string) {
   const index = PLAYGROUND_PET_ENTITY_IDS.indexOf(
@@ -153,8 +157,13 @@ export function useDesktopSimulationHost({
   // petting reactions can see the live cursor.
   const adoptedCursorPhysicalRef = useRef<{ x: number; y: number } | null>(null);
   const adoptedCursorScaleRef = useRef(1);
+  const adoptedCursorPolledAtRef = useRef(0);
   const fixtureCursorPhysicalRef = useRef<{ x: number; y: number } | null>(null);
   const fixtureCursorScaleRef = useRef(1);
+  const fixtureCursorPolledAtRef = useRef(0);
+  // petId -> the placement last handed to the shell, so a pet standing still
+  // never re-enters the batch and never moves its OS window.
+  const adoptedPlacedByPetIdRef = useRef<Map<string, { x: number; y: number }>>(new Map());
 
   const [desktopFixtureWindowCount] = useState(0);
   const [adoptedSimulationResetKey] = useState(0);
@@ -381,13 +390,17 @@ export function useDesktopSimulationHost({
       isBroadcasting = true;
 
       // Cache the latest cursor position asynchronously — never block the tick.
-      void cursorPosition()
-        .then((physical) => {
-          fixtureCursorPhysicalRef.current = { x: physical.x, y: physical.y };
-        })
-        .catch(() => {
-          fixtureCursorPhysicalRef.current = null;
-        });
+      const fixtureNow = Date.now();
+      if (fixtureNow - fixtureCursorPolledAtRef.current >= CURSOR_POLL_INTERVAL_MS) {
+        fixtureCursorPolledAtRef.current = fixtureNow;
+        void cursorPosition()
+          .then((physical) => {
+            fixtureCursorPhysicalRef.current = { x: physical.x, y: physical.y };
+          })
+          .catch(() => {
+            fixtureCursorPhysicalRef.current = null;
+          });
+      }
 
       const fixtureCursorPhysical = fixtureCursorPhysicalRef.current;
       if (fixtureCursorPhysical) {
@@ -453,6 +466,7 @@ export function useDesktopSimulationHost({
       adoptedStatusTrackerRef.current = createPetCardStatusTracker();
       adoptedPetIdsRef.current = new Set();
       adoptedLastEmitByPetIdRef.current = new Map();
+      adoptedPlacedByPetIdRef.current = new Map();
       return;
     }
 
@@ -503,6 +517,7 @@ export function useDesktopSimulationHost({
       // counter at 0 made every frame look stale to the existing window, freezing
       // it until the counter climbed back past where it had been (~tens of seconds).
       adoptedLastEmitByPetIdRef.current = new Map();
+      adoptedPlacedByPetIdRef.current = new Map();
       adoptedScaleByPetIdRef.current = scaleByPetId;
       adoptedStatusTrackerRef.current = createPetCardStatusTracker();
     });
@@ -522,13 +537,17 @@ export function useDesktopSimulationHost({
       isBroadcasting = true;
 
       // Cache the latest cursor position asynchronously — never block the tick.
-      void cursorPosition()
-        .then((physical) => {
-          adoptedCursorPhysicalRef.current = { x: physical.x, y: physical.y };
-        })
-        .catch(() => {
-          adoptedCursorPhysicalRef.current = null;
-        });
+      const tickStartedAt = Date.now();
+      if (tickStartedAt - adoptedCursorPolledAtRef.current >= CURSOR_POLL_INTERVAL_MS) {
+        adoptedCursorPolledAtRef.current = tickStartedAt;
+        void cursorPosition()
+          .then((physical) => {
+            adoptedCursorPhysicalRef.current = { x: physical.x, y: physical.y };
+          })
+          .catch(() => {
+            adoptedCursorPhysicalRef.current = null;
+          });
+      }
 
       const cursorPhysical = adoptedCursorPhysicalRef.current;
       if (cursorPhysical) {
@@ -574,37 +593,73 @@ export function useDesktopSimulationHost({
 
       const pets = stateRef.current.pets;
       const dirs = stateRef.current.registeredWorkingDirectories;
-      void Promise.all(
-        projections.flatMap((projection) => {
-          const petRecord = pets.find((p) => p.id === projection.petId);
-          const dirPath = dirs.find((d) => d.petId === projection.petId)?.path ?? null;
-          const frame = petRecord
-            ? {
-                ...projection.frame,
-                name: petRecord.name,
-                cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
-              }
-            : projection.frame;
+      // Where each pet stands is settled natively in one batch; what each pet
+      // looks like is a per-window event. Splitting the two is what keeps a
+      // roomful of pets cheap: walking changes position every tick but the
+      // sprite only every few hundred milliseconds, so the expensive
+      // cross-webview emit now fires on appearance changes alone.
+      const placements: { petId: string; x: number; y: number }[] = [];
+      const emits: Promise<unknown>[] = [];
 
-          // Idle pets produce byte-identical frames tick after tick; skip the
-          // cross-webview emit for those (modulo the heartbeat re-send).
-          const body = JSON.stringify({ ...frame, sequence: 0 });
-          const lastEmit = adoptedLastEmitByPetIdRef.current.get(projection.petId);
-          if (
-            lastEmit &&
-            lastEmit.body === body &&
-            frame.sequence - lastEmit.sequence < PET_WINDOW_FRAME_HEARTBEAT_TICKS
-          ) {
-            return [];
-          }
+      for (const projection of projections) {
+        const nextPlacement = {
+          x: Math.round(projection.frame.window.x),
+          y: Math.round(projection.frame.window.y),
+        };
+        const placed = adoptedPlacedByPetIdRef.current.get(projection.petId);
+        if (!placed || placed.x !== nextPlacement.x || placed.y !== nextPlacement.y) {
+          adoptedPlacedByPetIdRef.current.set(projection.petId, nextPlacement);
+          placements.push({ petId: projection.petId, ...nextPlacement });
+        }
 
-          adoptedLastEmitByPetIdRef.current.set(projection.petId, {
-            body,
-            sequence: frame.sequence,
-          });
-          return [emitTo(`pet-window-${projection.petId}`, PET_WINDOW_FRAME_EVENT, frame)];
-        }),
-      ).finally(() => {
+        const petRecord = pets.find((p) => p.id === projection.petId);
+        const dirPath = dirs.find((d) => d.petId === projection.petId)?.path ?? null;
+        const frame = petRecord
+          ? {
+              ...projection.frame,
+              name: petRecord.name,
+              cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
+            }
+          : projection.frame;
+
+        // Position is deliberately excluded from the comparison: the pet window
+        // no longer places itself, so a frame that only moved has nothing new
+        // to render. Heartbeat re-sends still land twice a second.
+        const body = JSON.stringify({
+          ...frame,
+          sequence: 0,
+          window: { width: frame.window.width, height: frame.window.height },
+        });
+        const lastEmit = adoptedLastEmitByPetIdRef.current.get(projection.petId);
+        if (
+          lastEmit &&
+          lastEmit.body === body &&
+          frame.sequence - lastEmit.sequence < PET_WINDOW_FRAME_HEARTBEAT_TICKS
+        ) {
+          continue;
+        }
+
+        adoptedLastEmitByPetIdRef.current.set(projection.petId, {
+          body,
+          sequence: frame.sequence,
+        });
+        emits.push(emitTo(`pet-window-${projection.petId}`, PET_WINDOW_FRAME_EVENT, frame));
+      }
+
+      if (placements.length > 0) {
+        emits.push(
+          desktopGateway.placePetWindows(placements).then((unplaced) => {
+            // Their overlay window had not finished being created. Forget the
+            // placement so the next tick sends it again — otherwise a pet that
+            // stands still after being deployed would never be shown at all.
+            for (const petId of unplaced) {
+              adoptedPlacedByPetIdRef.current.delete(petId);
+            }
+          }),
+        );
+      }
+
+      void Promise.all(emits).finally(() => {
         isBroadcasting = false;
       });
     }, DESKTOP_FIXTURE_HOST_TICK_MS);
@@ -669,6 +724,7 @@ export function useDesktopSimulationHost({
       scenario.removePet(id);
       adoptedPetIdsRef.current.delete(id);
       adoptedLastEmitByPetIdRef.current.delete(id);
+      adoptedPlacedByPetIdRef.current.delete(id);
       const { [id]: _removedScale, ...restScales } = adoptedScaleByPetIdRef.current;
       adoptedScaleByPetIdRef.current = restScales;
     }

@@ -82,6 +82,7 @@ pub fn run() {
             pet_windows::close_all_pet_windows,
             pet_windows::close_adopted_pet_window,
             pet_windows::open_pet_context_menu,
+            pet_windows::place_pet_windows,
             terminal_channel::focus_window,
             terminal_channel::start_session,
             terminal_channel::connect_window,

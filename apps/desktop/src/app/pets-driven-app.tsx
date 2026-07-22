@@ -15,10 +15,7 @@ import { MainWindowSurface } from "@/app/main-window/main-window-surface";
 import { pushSearchParams } from "@/app/spa-navigation";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
 import { createEmptyPetsDrivenState, type PetsDrivenState } from "@/app-state/pets-driven-state";
-import { PetWindowFixtureSwitcher } from "@/pet-window/pet-window-fixture-switcher";
-import { PET_WINDOW_FIXTURES, resolvePetWindowFixture } from "@/pet-window/pet-window-fixtures";
-import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
-import { PetWindowView } from "@/pet-window/pet-window-view";
+import { PetWindowSurface, petWindowRouteParams } from "@/pet-window/pet-window-route";
 
 // Onboarding and the playground are large surfaces that most sessions never
 // open — the wizard and adopt flow only run on first setup, the playground is a
@@ -38,30 +35,6 @@ const EMPTY_PET_PACKAGES_GATEWAY = {
   ...desktopGateway,
   listPetPackages: async () => [],
 };
-function petWindowRouteParams(): PetWindowRouteParams | null {
-  const params = new URLSearchParams(window.location.search);
-  // A bare `?fixture=<pet-window-fixture-id>` (no `surface=pet-window`, no
-  // petId/assetId) should be enough to land on the pet-window tweak menu —
-  // resolvePetWindowFixture already gates this to dev + loopback.
-  const petWindowFixture = resolvePetWindowFixture(window.location.search, {
-    hostname: window.location.hostname,
-    isDev: import.meta.env.DEV,
-  });
-
-  if (params.get("surface") !== "pet-window" && !petWindowFixture) {
-    return null;
-  }
-
-  return {
-    petId: params.get("petId") || petWindowFixture?.pet.petId || "pet-a",
-    assetId: params.get("assetId") || petWindowFixture?.pet.assetId || "bloop",
-    windowIndex: params.get("windowIndex")
-      ? Number(params.get("windowIndex"))
-      : (petWindowFixture?.pet.windowIndex ?? 1),
-    name: params.get("name") ?? petWindowFixture?.pet.name ?? undefined,
-  };
-}
-
 function createInitialPetsDrivenState(): PetsDrivenState {
   return createEmptyPetsDrivenState();
 }
@@ -76,42 +49,7 @@ export function PetsDrivenApp({
   const petWindowPet = petWindowRouteParams();
 
   if (petWindowPet) {
-    const petWindowFixture = resolvePetWindowFixture(window.location.search, {
-      hostname: window.location.hostname,
-      isDev: import.meta.env.DEV,
-    });
-
-    return (
-      <>
-        <PetWindowView
-          pet={petWindowPet}
-          previewPresentation={petWindowFixture?.presentation}
-          previewScale={petWindowFixture?.scale}
-          previewConnectNotice={petWindowFixture?.connectNotice}
-        />
-        {petWindowFixture ? (
-          <PetWindowFixtureSwitcher
-            activeId={petWindowFixture.id}
-            onSelect={(fixtureId) =>
-              navigateSearchParams((params) => {
-                const fixture = PET_WINDOW_FIXTURES.find((candidate) => candidate.id === fixtureId);
-                params.set("fixture", fixtureId);
-                if (fixture) {
-                  params.set("petId", fixture.pet.petId);
-                  params.set("assetId", fixture.pet.assetId);
-                  params.set("windowIndex", String(fixture.pet.windowIndex));
-                  if (fixture.pet.name) {
-                    params.set("name", fixture.pet.name);
-                  } else {
-                    params.delete("name");
-                  }
-                }
-              })
-            }
-          />
-        ) : null}
-      </>
-    );
+    return <PetWindowSurface navigateSearchParams={navigateSearchParams} pet={petWindowPet} />;
   }
 
   return <PetsDrivenHostApp />;
