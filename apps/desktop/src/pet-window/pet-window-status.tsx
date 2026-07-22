@@ -34,7 +34,12 @@ export function PetWindowStatus({
 }: PetWindowStatusProps) {
   const { t } = useTranslation("desktop");
   const status = presentPetStatus(animationState, overlay, activity, partnerName, working);
-  const accent = PET_MOODS[status.mood].accent;
+  // Color is reserved for the agent work lifecycle: a "work" tone paints the
+  // dot and label with the mood accent, so color alone reads as "this pet is
+  // working". Ambient play/idle stays neutral and leans on the name + dialogue.
+  const isWork = status.tone === "work";
+  const dotColor = isWork ? PET_MOODS[status.mood].accent : "var(--ink-400)";
+  const labelColor = isWork ? PET_MOODS[status.mood].accent : "var(--text-muted)";
   // Static labels carry a stable key we can localize; host-supplied free text
   // (speech/attention overlays) has no key, so it shows as-is.
   const label = status.labelKey
@@ -55,8 +60,8 @@ export function PetWindowStatus({
       className="pet-window-status-card"
       style={
         {
-          "--pet-window-dot-color": accent,
-          "--pet-window-label-color": accent,
+          "--pet-window-dot-color": dotColor,
+          "--pet-window-label-color": labelColor,
           "--sprite-h": `${spriteHeight}px`,
           "--pet-window-card-scale": cardScale,
         } as React.CSSProperties
