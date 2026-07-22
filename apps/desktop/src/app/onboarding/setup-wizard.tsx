@@ -1,5 +1,5 @@
 import type { PetName } from "@pets-driven/design-system";
-import { Button, PetAvatar } from "@pets-driven/design-system";
+import { Button, PetAvatar, TerminalIcon } from "@pets-driven/design-system";
 import { localeLabels, locales, useTranslation } from "@pets-driven/i18n";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
@@ -9,6 +9,7 @@ import { type CodexPetPackage, type DesktopGateway, desktopGateway } from "@/app
 import { useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { TerminalSection } from "@/app/main-window/terminal-section";
 import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
+import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
@@ -332,14 +333,15 @@ const folderIcon: CSSProperties = {
   flex: "none",
   color: "var(--text-strong)",
 };
-// Two combined action+label buttons ("browse Petdex" / "add via terminal").
+// Stacked action+label buttons ("browse Petdex" / "add via terminal").
 const petGetActions: CSSProperties = {
   display: "flex",
+  flexDirection: "column",
   gap: "10px",
   marginTop: "18px",
 };
 const petGetButton: CSSProperties = {
-  flex: 1,
+  width: "100%",
   minWidth: 0,
   boxSizing: "border-box",
   display: "inline-flex",
@@ -542,13 +544,15 @@ const petLookName: CSSProperties = {
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 };
+// A fixed-height flex column so TerminalSection (.pd-eterm) fills it and renders
+// its own frame — mirrors how the main window hosts it. No overflow:hidden here,
+// which was clipping the terminal's right edge.
 const inlineTermShell: CSSProperties = {
   display: "flex",
+  flexDirection: "column",
   height: "320px",
+  minWidth: 0,
   marginTop: "14px",
-  borderRadius: "16px",
-  overflow: "hidden",
-  border: "1px solid var(--border-soft)",
 };
 
 export function SetupWizard({
@@ -566,6 +570,7 @@ export function SetupWizard({
   const [looksFound, setLooksFound] = useState<number | null>(null);
   const [petPackages, setPetPackages] = useState<CodexPetPackage[]>([]);
   const [defaultPetFolder, setDefaultPetFolder] = useState<string | null>(null);
+  const [terminalOpen, setTerminalOpen] = useState(false);
   const shellOptions = useTerminalShellOptions(gateway);
   const currentShell = state.terminalShell ?? "";
   // Keep a persisted shell the system probe didn't surface pickable in the list.
@@ -868,6 +873,10 @@ export function SetupWizard({
                 <a href={PETDEX_URL} rel="noreferrer" style={petGetButtonPrimary} target="_blank">
                   🐾 {t("setupWizard.petdexTitle")}
                 </a>
+                <button onClick={() => setTerminalOpen(true)} style={petGetButton} type="button">
+                  <TerminalIcon size={16} />
+                  {t("setupWizard.petdexAddViaTerminal")}
+                </button>
               </div>
 
               <div style={folderCountRow}>
@@ -914,19 +923,6 @@ export function SetupWizard({
               ) : looksFound !== null ? (
                 <div style={emptyStrip}>{t("setupWizard.petsFolderEmpty")}</div>
               ) : null}
-
-              <div style={{ ...sectionLabel, margin: "8px 0 0" }}>
-                {t("setupWizard.petdexAddViaTerminal")}
-              </div>
-              <p style={fieldHint}>{t("onboarding.terminalHint")}</p>
-              <div style={inlineTermShell}>
-                <TerminalSection
-                  available={isTauri()}
-                  initialCwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
-                  pickDirectory={() => gateway.pickDirectory()}
-                  shell={state.terminalShell}
-                />
-              </div>
             </div>
 
             <div style={footer}>
@@ -1047,6 +1043,14 @@ export function SetupWizard({
           </section>
         )}
       </div>
+
+      <PetdexTerminalDialog
+        available={isTauri()}
+        cwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
+        onClose={() => setTerminalOpen(false)}
+        open={terminalOpen}
+        shell={state.terminalShell}
+      />
     </main>
   );
 }
