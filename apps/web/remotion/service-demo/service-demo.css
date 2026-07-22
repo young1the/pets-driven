@@ -26,11 +26,25 @@
   background-size: 26px 26px;
 }
 
+.pd-video-camera {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
 .pd-video__stage {
   position: relative;
   width: 100%;
   height: 100%;
   padding: 56px 72px;
+}
+
+/* Captions ride above the camera so a push-in never crops them. */
+.pd-video__stage--overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
 }
 
 .pd-video-opening {
@@ -266,49 +280,6 @@
   box-shadow: 0 4px 12px rgba(249, 94, 158, 0.28);
 }
 
-.pd-video-callout {
-  position: absolute;
-  z-index: 40;
-  padding: 12px 18px;
-  border-radius: var(--radius-sm);
-  background: var(--ink-900);
-  box-shadow: var(--shadow-md);
-  color: #fff;
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.3;
-  white-space: nowrap;
-}
-
-.pd-video-callout::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -6px;
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
-  background: var(--ink-900);
-  transform: rotate(45deg);
-}
-
-.pd-video-working-callout {
-  z-index: 54;
-  background: #fff;
-  box-shadow:
-    0 18px 36px rgba(33, 24, 55, 0.18),
-    0 0 0 1px rgba(119, 91, 158, 0.12);
-  color: var(--ink-900);
-  font-size: 16px;
-}
-
-.pd-video-working-callout::after {
-  left: 50%;
-  bottom: -6px;
-  margin-left: -6px;
-  background: #fff;
-}
-
 .pd-video-cursor {
   position: absolute;
   z-index: 80;
@@ -353,6 +324,20 @@
   box-shadow: 0 4px 10px rgba(249, 94, 158, 0.28);
 }
 
+.pd-video-heart-burst {
+  position: absolute;
+  z-index: 77;
+  width: 0;
+  height: 0;
+}
+
+.pd-video-heart {
+  position: absolute;
+  left: 0;
+  top: 0;
+  filter: drop-shadow(0 6px 12px rgba(249, 94, 158, 0.35));
+}
+
 .pd-video-card-pet {
   width: 112px;
   height: 122px;
@@ -367,78 +352,13 @@
   transform: translate(-50%, -100%);
 }
 
-.pd-video-status-card {
+.pd-video-status {
   position: absolute;
   bottom: calc(100% + 14px);
   left: 50%;
   z-index: 50;
-  transform: translateX(-50%);
   pointer-events: none;
-}
-
-.pd-video-status-card__inner {
-  background: var(--surface-card);
-  border: 1px solid var(--border-default);
-  box-shadow: var(--shadow-lg);
-  border-radius: 999px;
-  padding: 8px 16px;
-  white-space: nowrap;
-}
-
-.pd-video-status-card__inner--expanded {
-  border-radius: 16px;
-  padding: 10px 16px 12px;
-}
-
-.pd-video-status-card__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pd-video-status-card__dot {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--status-card-accent, var(--sky-400));
-}
-
-.pd-video-status-card__name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--ink-950);
-  line-height: 1;
-}
-
-.pd-video-status-card__label {
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
-  color: var(--status-card-accent, var(--sky-700));
-}
-
-.pd-video-status-card__message {
-  margin-top: 5px;
-  max-width: 210px;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.35;
-  color: var(--text-subtle);
-  white-space: normal;
-}
-
-.pd-video-status-card__cwd {
-  margin-top: 4px;
-  max-width: 210px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-subtle);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  transform: translateX(-50%);
 }
 
 .pd-video-terminal {
@@ -652,11 +572,6 @@
   justify-content: center;
   align-items: flex-start;
   width: 100%;
-}
-
-.pd-video-terminal-callout {
-  position: absolute;
-  bottom: auto;
 }
 
 .pd-video-multi {

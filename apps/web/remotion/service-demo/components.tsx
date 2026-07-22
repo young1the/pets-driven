@@ -1,14 +1,11 @@
 import { PetShowcaseCard } from "@pets-driven/design-system";
-import {
-  PET_CELL_SIZE,
-  type PetAnimationState,
-} from "@pets-driven/pet-engine/pets/assets/pet-atlas";
-import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
+import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import { PET_MOODS, type PetMood } from "@pets-driven/pet-engine/pets/status/pet-mood";
+import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
+import { PetSpeechBubble } from "@pets-driven/pet-engine/pets/status/pet-speech-bubble";
 import type { CSSProperties, ReactNode } from "react";
 import { staticFile, useCurrentFrame } from "remotion";
-import type { DemoPet, DemoPetStatus } from "./fixtures";
+import type { DemoPet, DemoPetPresentation } from "./fixtures";
 
 export function DemoWindow({
   children,
@@ -152,22 +149,6 @@ export function Caption({ children, style }: { children: ReactNode; style?: CSSP
   );
 }
 
-export function Callout({
-  className = "",
-  children,
-  style,
-}: {
-  className?: string;
-  children: ReactNode;
-  style?: CSSProperties;
-}) {
-  return (
-    <div className={["pd-video-callout", className].filter(Boolean).join(" ")} style={style}>
-      {children}
-    </div>
-  );
-}
-
 export function DemoCursor({ scale = 1, x, y }: { scale?: number; x: number; y: number }) {
   return (
     <svg
@@ -275,6 +256,53 @@ export function PoofBurst({ progress: p, x, y }: { progress: number; x: number; 
   );
 }
 
+const HEART_PARTICLES: { drift: number; delay: number; scale: number; tint: string }[] = [
+  { delay: 0, drift: -46, scale: 1, tint: "var(--blossom-400)" },
+  { delay: 0.14, drift: 34, scale: 0.76, tint: "var(--blossom-500)" },
+  { delay: 0.26, drift: -14, scale: 0.9, tint: "var(--lavender-400)" },
+  { delay: 0.38, drift: 58, scale: 0.64, tint: "var(--blossom-400)" },
+  { delay: 0.5, drift: -66, scale: 0.7, tint: "var(--lavender-300)" },
+];
+
+/** The reward beat: hearts rising off a pet that has just been acknowledged. */
+export function HeartBurst({ progress: p, x, y }: { progress: number; x: number; y: number }) {
+  return (
+    <div className="pd-video-heart-burst" style={{ left: x, top: y }}>
+      {HEART_PARTICLES.map((heart) => {
+        const local = Math.max(0, Math.min(1, (p - heart.delay) / (1 - heart.delay)));
+        if (local <= 0) {
+          return null;
+        }
+        const ease = 1 - (1 - local) ** 2;
+        const opacity = local < 0.16 ? local / 0.16 : Math.max(0, 1 - (local - 0.16) / 0.84);
+        return (
+          <svg
+            aria-hidden="true"
+            className="pd-video-heart"
+            height={30 * heart.scale}
+            key={heart.delay}
+            style={{
+              opacity,
+              // Kept short so the hearts never climb into the status card.
+              transform: `translate(-50%, -50%) translate(${heart.drift * ease}px, ${-110 * ease}px) scale(${0.6 + ease * 0.5})`,
+            }}
+            viewBox="0 0 24 22"
+            width={32 * heart.scale}
+          >
+            <path
+              d="M12 21S1.8 14.4 1.8 7.7A5.7 5.7 0 0 1 12 4.3 5.7 5.7 0 0 1 22.2 7.7C22.2 14.4 12 21 12 21Z"
+              fill={heart.tint}
+              stroke="#181326"
+              strokeLinejoin="round"
+              strokeWidth="2"
+            />
+          </svg>
+        );
+      })}
+    </div>
+  );
+}
+
 const DESKTOP_DOCK_APPS: { from: string; to: string }[] = [
   { from: "#FF9DB6", to: "#F16A90" },
   { from: "#FFD08A", to: "#F2A45E" },
@@ -351,97 +379,95 @@ export function DemoPetPortrait({ pet }: { pet: DemoPet }) {
 }
 
 export function DesktopPet({
-  animationState,
-  decisionEmote = null,
   elapsedMs,
   pet,
+  presentation,
   scale = 0.74,
-  status = null,
   x,
   y,
 }: {
-  animationState: PetAnimationState;
-  decisionEmote?: BehaviorTokenPresentation | null;
   elapsedMs: number;
   pet: DemoPet;
+  presentation: DemoPetPresentation;
   scale?: number;
-  status?: DemoPetStatus | null;
   x: number;
   y: number;
 }) {
+  // The product's own mapping. Label, mood and emote are all derived here, so
+  // the video cannot show a state the desktop window would not produce.
+  const status = presentPetStatus(
+    presentation.animationState,
+    presentation.overlay,
+    presentation.activity,
+    presentation.partnerName,
+    presentation.working ?? false,
+  );
+
   return (
     <div className="pd-video-desktop-pet" style={{ left: x, top: y }}>
       <PetSprite
         alt={`${pet.name} sprite`}
-        animationState={animationState}
-        decisionEmote={decisionEmote}
+        animationState={presentation.animationState}
+        decisionEmote={presentation.decisionEmote ?? null}
         elapsedMs={elapsedMs}
         imageUrl={staticFile(`codex-pets/${pet.assetId}/spritesheet.webp`)}
         scale={scale}
+        // The capsule is placed by the video (it has to clear the caption and
+        // the neighbouring pets), so PetSprite's own anchored bubble is off and
+        // the same presentation is rendered through the same design-system
+        // component just below.
         showStatusBubble={false}
         size={PET_CELL_SIZE}
       />
-      {status ? (
-        <DemoPetStatusCard
-          cwd={pet.cwd}
-          label={status.label}
-          message={status.message}
-          mood={status.mood}
-          name={pet.name}
-        />
+      {status.showCapsule ? (
+        <div className="pd-video-status">
+          <PetSpeechBubble
+            message={status.message ?? undefined}
+            mood={status.mood}
+            work={status.label ?? undefined}
+          />
+        </div>
       ) : null}
     </div>
   );
 }
 
-export function DemoPetStatusCard({
+/**
+ * Typing beats are expressed relative to `typingStartFrame` so the terminal can
+ * be retimed with its scene instead of pinning itself to absolute frames.
+ */
+export const TERMINAL_TYPING = {
+  command: 0,
+  attachLineVisible: 24,
+  attach: 30,
+  hatchLineVisible: 50,
+  hatch: 56,
+  tail: 62,
+  softLine: 72,
+  done: 82,
+} as const;
+
+export function DemoTerminal({
+  className = "",
   cwd,
-  label,
-  message,
-  mood,
-  name,
+  typingStartFrame,
 }: {
-  cwd?: string;
-  label: string;
-  message: string | null;
-  mood: PetMood;
-  name: string;
+  className?: string;
+  cwd: string;
+  typingStartFrame: number;
 }) {
-  const accent = PET_MOODS[mood].accent;
-
-  return (
-    <div
-      className="pd-video-status-card"
-      style={{ "--status-card-accent": accent } as CSSProperties}
-    >
-      <div
-        className={`pd-video-status-card__inner${
-          message || cwd ? " pd-video-status-card__inner--expanded" : ""
-        }`}
-      >
-        <div className="pd-video-status-card__row">
-          <span className="pd-video-status-card__dot" />
-          <span className="pd-video-status-card__name">{name}</span>
-          <span className="pd-video-status-card__label">{label}</span>
-        </div>
-        {message ? <div className="pd-video-status-card__message">{message}</div> : null}
-        {cwd ? <div className="pd-video-status-card__cwd">{cwd}</div> : null}
-      </div>
-    </div>
-  );
-}
-
-export function DemoTerminal({ className = "", cwd }: { className?: string; cwd: string }) {
   const frame = useCurrentFrame();
+  const at = (offset: number) => typingStartFrame + offset;
   const command = "codex --workdir D:/pets-driven";
   const attach = "attached to Cato";
-  const hatch = "/pet-driven:hatch";
-  const commandText = revealText(command, frame, 420, 1.25);
-  const attachText = revealText(attach, frame, 462, 1.4);
-  const hatchText = revealText(hatch, frame, 498, 1.3);
-  const showCommandCursor = frame >= 420 && commandText.length < command.length;
-  const showAttachCursor = frame >= 462 && attachText.length < attach.length;
-  const showHatchCursor = frame >= 498 && hatchText.length < hatch.length;
+  const hatch = "/pets-driven:hatch";
+  const commandText = revealText(command, frame, at(TERMINAL_TYPING.command), 1.6);
+  const attachText = revealText(attach, frame, at(TERMINAL_TYPING.attach), 1.5);
+  const hatchText = revealText(hatch, frame, at(TERMINAL_TYPING.hatch), 1.4);
+  const showCommandCursor =
+    frame >= at(TERMINAL_TYPING.command) && commandText.length < command.length;
+  const showAttachCursor = frame >= at(TERMINAL_TYPING.attach) && attachText.length < attach.length;
+  const showHatchCursor = frame >= at(TERMINAL_TYPING.hatch) && hatchText.length < hatch.length;
 
   return (
     <div className={["pd-video-terminal", className].filter(Boolean).join(" ")}>
@@ -459,18 +485,24 @@ export function DemoTerminal({ className = "", cwd }: { className?: string; cwd:
             <span className="pd-video-terminal-shell__command">{commandText}</span>
             {showCommandCursor ? <span className="pd-video-terminal-shell__cursor" /> : null}
           </div>
-          <div className="pd-video-terminal-shell__line" style={{ opacity: frame >= 452 ? 1 : 0 }}>
+          <div
+            className="pd-video-terminal-shell__line"
+            style={{ opacity: frame >= at(TERMINAL_TYPING.attachLineVisible) ? 1 : 0 }}
+          >
             <span className="pd-video-terminal-shell__hint">&gt; </span>
             <span className="pd-video-terminal-shell__text">{attachText}</span>
             {showAttachCursor ? <span className="pd-video-terminal-shell__cursor" /> : null}
           </div>
-          <div className="pd-video-terminal-shell__line" style={{ opacity: frame >= 490 ? 1 : 0 }}>
+          <div
+            className="pd-video-terminal-shell__line"
+            style={{ opacity: frame >= at(TERMINAL_TYPING.hatchLineVisible) ? 1 : 0 }}
+          >
             <span className="pd-video-terminal-shell__hint">-&gt; run </span>
             <span className="pd-video-terminal-shell__accent">{hatchText}</span>
             {showHatchCursor ? <span className="pd-video-terminal-shell__cursor" /> : null}
             <span
               className="pd-video-terminal-shell__text"
-              style={{ opacity: frame > 528 ? 1 : 0 }}
+              style={{ opacity: frame >= at(TERMINAL_TYPING.tail) ? 1 : 0 }}
             >
               {" "}
               to hatch your pet
@@ -478,7 +510,7 @@ export function DemoTerminal({ className = "", cwd }: { className?: string; cwd:
           </div>
           <div
             className="pd-video-terminal-shell__line pd-video-terminal-shell__line--soft"
-            style={{ opacity: frame >= 548 ? 1 : 0 }}
+            style={{ opacity: frame >= at(TERMINAL_TYPING.softLine) ? 1 : 0 }}
           >
             Pack channel is live inside the bound workspace.
           </div>
