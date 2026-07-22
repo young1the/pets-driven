@@ -26,13 +26,6 @@ type PetWindowViewProps = {
    * real app is driven by Tauri PET_WINDOW_BINDING_EVENT. Ignored inside Tauri.
    */
   previewConnectNotice?: { text: string; transient: boolean };
-  /**
-   * PROTOTYPE ONLY (working-signal-lab). A decoration layer rendered inside the
-   * sprite's visual frame, aligned to the sprite box (full width, bottom-anchored
-   * cell height) so aura/typing treatments sit on the real sprite. Remove with
-   * the lab once a working-signal direction is picked.
-   */
-  prototypeDecor?: React.ReactNode;
 };
 
 /**
@@ -46,7 +39,6 @@ export function PetWindowView({
   previewPresentation,
   previewScale,
   previewConnectNotice,
-  prototypeDecor,
 }: PetWindowViewProps) {
   const isPreview = !petWindowTransport.isDesktopRuntime();
   const spritesheetUrl = usePetWindowSpritesheet(pet.assetId);
@@ -116,22 +108,6 @@ export function PetWindowView({
             scale={spriteScale}
             style={{ marginTop: PET_WINDOW_BUBBLE_OVERHEAD * spriteScale }}
           />
-        ) : null}
-        {/* PROTOTYPE (working-signal-lab): decor aligned to the sprite box. */}
-        {prototypeDecor ? (
-          <span
-            className="pet-window-proto-decor"
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: `${PET_CELL_SIZE.height * spriteScale}px`,
-              pointerEvents: "none",
-            }}
-          >
-            {prototypeDecor}
-          </span>
         ) : null}
         {petName !== null ? (
           <PetWindowStatus
