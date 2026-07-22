@@ -1,12 +1,19 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
+import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
 import type {
   KeyboardWorldEvent,
   PointerWorldEvent,
 } from "@pets-driven/pet-engine/features/events/world-event";
 import type { WorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
+import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
 import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
+import { personalityAcknowledgeFeedback } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
+import {
+  createSeededRandom,
+  type RandomSource,
+} from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
 const INTERACTION_ENTITY_ID = "user-interaction";
@@ -14,6 +21,13 @@ const DRAG_START_DISTANCE = 4;
 const HIT_TARGET_PADDING = 12;
 const MAX_DRAG_SAMPLES = 6;
 const THROW_VELOCITY_THRESHOLD = 8;
+// Two taps on the same pet within this window count as a double-click, which
+// dismisses a settled agent task (waiting/completed) — the same 400ms the pet
+// window surface uses for its own double-tap gesture, so the two agree.
+const DOUBLE_CLICK_WINDOW_MS = 400;
+// Lifetime of the heart + acknowledge line shown when a double-click dismisses
+// a task; mirrors the petting release's SPEECH_BUBBLE_DURATION_MS.
+const ACKNOWLEDGE_FEEDBACK_MS = 3000;
 // Matter.js has no continuous collision detection, so a body that advances more
 // than a wall's thickness (48px, see createMonitorBoundaryEntities) in a single
 // 16ms step tunnels straight through and the pet is lost off-screen. Cap the
@@ -25,6 +39,7 @@ export function runUserInteractionBehaviorSystem(
   components: ComponentStore,
   events: WorldEventQueue,
   clock: Clock,
+  random: RandomSource = createSeededRandom(1),
 ): void {
   const inputEvents = events.drainWhere(
     (event): event is PointerWorldEvent | KeyboardWorldEvent =>
@@ -32,7 +47,7 @@ export function runUserInteractionBehaviorSystem(
   );
 
   for (const event of inputEvents) {
-    if (event.kind === "pointer") handlePointerEvent(components, event, clock);
+    if (event.kind === "pointer") handlePointerEvent(components, event, clock, random);
     if (event.kind === "keyboard") handleKeyboardEvent(components, event);
   }
 }
@@ -41,6 +56,7 @@ function handlePointerEvent(
   components: ComponentStore,
   event: PointerWorldEvent,
   clock: Clock,
+  random: RandomSource,
 ): void {
   if (event.type === "pointer.down") {
     const controlHit = hitTest(components, event.position, "CanControl");
@@ -98,8 +114,97 @@ function handlePointerEvent(
       );
       if (keyboardTarget?.entityId === drag.entityId) keyboardTarget.entityId = null;
     }
+    // A press that never crossed the drag threshold (phase stays "pending") is
+    // a tap/click. Two such taps on the same pet in quick succession dismiss a
+    // settled agent task — the double-click PET-5 asks for.
+    const wasTap = drag.phase === "pending";
+    const tappedEntityId = drag.entityId;
     components.removeComponent(INTERACTION_ENTITY_ID, "DragInteraction");
+    if (wasTap) {
+      registerTapAndMaybeRelease(components, tappedEntityId, clock.now(), random);
+    }
   }
+}
+
+// Records a tap and, when it is the second tap on the same pet within the
+// double-click window, dismisses that pet's settled agent task.
+function registerTapAndMaybeRelease(
+  components: ComponentStore,
+  entityId: string,
+  now: number,
+  random: RandomSource,
+): void {
+  const tracker = components.getComponent(INTERACTION_ENTITY_ID, "TapGestureState");
+  const isDoubleClick =
+    tracker?.entityId === entityId && now - tracker.lastTapAt <= DOUBLE_CLICK_WINDOW_MS;
+
+  if (isDoubleClick) {
+    // Reset so a third tap starts a fresh gesture rather than chaining.
+    components.setComponent(INTERACTION_ENTITY_ID, {
+      type: "TapGestureState",
+      entityId: null,
+      lastTapAt: 0,
+    });
+    releaseSettledTaskOnDoubleClick(components, entityId, now, random);
+    return;
+  }
+
+  components.setComponent(INTERACTION_ENTITY_ID, {
+    type: "TapGestureState",
+    entityId,
+    lastTapAt: now,
+  });
+}
+
+// Double-click dismisses only *settled* work: a waiting or completed task
+// clears along with its movement hold and channel badge, confirmed with the
+// same affectionate heart beat and personality acknowledge line that petting
+// gives. A live "working" task is deliberately left alone — per PET-5 it can
+// only be released by stroking the pet, so a stray double-click never dismisses
+// a report that is still in progress.
+function releaseSettledTaskOnDoubleClick(
+  components: ComponentStore,
+  id: string,
+  now: number,
+  random: RandomSource,
+): void {
+  const task = components.getComponent(id, "AgentTaskState");
+  if (!task) return;
+  if (task.status !== "waiting" && task.status !== "completed") return;
+
+  components.removeComponent(id, "TaskMovementHold");
+
+  const personality = components.getComponent(id, "Personality");
+  const feedback = personalityAcknowledgeFeedback(personality?.catalogId, task.status, random);
+  components.removeComponent(id, "AgentTaskState");
+
+  const channel = components.getComponent(id, "AgentChannelState");
+  if (channel?.source === "agent-task") {
+    components.removeComponent(id, "AgentChannelState");
+  }
+
+  components.setComponent(id, {
+    type: "PetExpressionState",
+    source: "acknowledge",
+    mood: "love",
+    emote: "heart",
+    label: null,
+    startedAt: now,
+    expiresAt: now + ACKNOWLEDGE_FEEDBACK_MS,
+  });
+  if (feedback) {
+    components.setComponent(
+      id,
+      utteranceChannel({
+        message: feedback.speech,
+        source: "interaction",
+        now,
+        durationMs: ACKNOWLEDGE_FEEDBACK_MS,
+      }),
+    );
+  }
+  claimUserInteraction(components, id, now, `acknowledge-${task.status}`, ACKNOWLEDGE_FEEDBACK_MS);
+  recordPetExperience(components, id, "acknowledged", now);
 }
 
 function handleKeyboardEvent(components: ComponentStore, event: KeyboardWorldEvent): void {
@@ -265,15 +370,24 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "KeyboardControlTarget",
     "KeyboardInputState",
     "DragInteraction",
+    "TapGestureState",
+    "AgentTaskState",
+    "AgentChannelState",
+    "Personality",
   ],
   writes: [
     "KeyboardControlTarget",
     "KeyboardInputState",
     "DragInteraction",
     "BehaviorDecisionState",
+    "TapGestureState",
+    "AgentTaskState",
+    "AgentChannelState",
+    "TaskMovementHold",
+    "PetExpressionState",
   ],
   update(ctx) {
-    runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock);
+    runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock, ctx.random);
   },
 };
 
