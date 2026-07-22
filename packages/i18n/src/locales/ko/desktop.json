@@ -61,7 +61,10 @@
     "accentColorDesc": "앱 전반의 강조와 활성 상태에 사용되는 색입니다.",
     "agentConnection": "에이전트 연결",
     "agentConnectionDesc": "앱이 이 기기에서 Claude Code 이벤트를 수신해요. 플러그인이 세션의 이벤트를 전달합니다.",
-    "reconnect": "테스트 이벤트 보내기"
+    "reconnect": "테스트 이벤트 보내기",
+    "defaultTerminal": "기본 터미널",
+    "defaultTerminalDesc": "인앱 터미널이 여는 셸이에요. 비워 두면 시스템 기본값(COMSPEC / SHELL)을 사용해요.",
+    "defaultTerminalPlaceholder": "시스템 기본값"
   },
   "launchProfile": {
     "cmd": "명령 프롬프트",
@@ -185,7 +188,7 @@
       },
       "appearance": {
         "title": "테마",
-        "desc": "테마 · 색상 · 언어"
+        "desc": "테마 · 색상"
       },
       "petsFolder": {
         "title": "펫 폴더",
@@ -240,7 +243,10 @@
     "doneEyebrow": "모두 준비됐어요 ✨",
     "doneTitle": "보금자리가 준비됐어요.",
     "createFirstPet": "첫 펫 만들기 →",
-    "goToHome": "홈으로 이동"
+    "goToHome": "홈으로 이동",
+    "petsFolderPreviewLabel": "설치된 모습",
+    "pluginTerminalLabel": "실시간 터미널",
+    "pluginTerminalHint": "Claude Code를 연결하시나요? 여기서 바로 실행하고 과정을 지켜보세요."
   },
   "personality": {
     "role": "펫",

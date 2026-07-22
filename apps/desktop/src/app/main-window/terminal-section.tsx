@@ -16,6 +16,8 @@ export interface TerminalSectionProps {
   available: boolean;
   /** Working folder to open the first terminal in; null = process default. */
   initialCwd?: string | null;
+  /** Default terminal shell to spawn; null/empty falls back to the OS default. */
+  shell?: string | null;
 }
 
 function folderName(path: string): string {
@@ -27,6 +29,7 @@ export function TerminalSection({
   pickDirectory,
   available,
   initialCwd = null,
+  shell = null,
 }: TerminalSectionProps) {
   const { t } = useTranslation("desktop");
   const [cwd, setCwd] = useState<string | null>(initialCwd);
@@ -77,7 +80,8 @@ export function TerminalSection({
               className="pd-eterm__view"
               cwd={cwd}
               exitedLabel={t("terminal.exited")}
-              key={`${cwd ?? ""}:${restartNonce}`}
+              key={`${cwd ?? ""}:${shell ?? ""}:${restartNonce}`}
+              shell={shell}
             />
           </Suspense>
         ) : (

@@ -29,6 +29,8 @@ const settings = {
   onLaunchProfile: vi.fn(),
   onCommand: vi.fn(),
   onLaunchLine: vi.fn(),
+  terminalShell: "",
+  onTerminalShell: vi.fn(),
   confirmRun: true,
   onToggleConfirm: vi.fn(),
   preview: { cwd: "~/core", prompt: "$", command: "claude" },

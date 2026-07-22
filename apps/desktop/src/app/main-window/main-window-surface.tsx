@@ -44,6 +44,7 @@ export interface MainWindowSurfaceProps {
   onDeletePet: (petId: string) => void;
   onResetPets: () => void;
   onUpdateSessionCommand: (command: string) => void;
+  onUpdateTerminalShell: (shell: string) => void;
   onSetLaunchProfile: (profile: LaunchProfileId) => void;
   onSetLaunchCommand: (command: string) => void;
   onReconnectHook: () => void;
@@ -94,6 +95,7 @@ export function MainWindowSurface({
   onDeletePet,
   onResetPets,
   onUpdateSessionCommand,
+  onUpdateTerminalShell,
   onSetLaunchProfile,
   onSetLaunchCommand,
   onReconnectHook,
@@ -244,6 +246,8 @@ export function MainWindowSurface({
         onLaunchProfile: onSetLaunchProfile,
         onCommand: onSetLaunchCommand,
         onLaunchLine: onUpdateSessionCommand,
+        terminalShell: state.terminalShell ?? "",
+        onTerminalShell: onUpdateTerminalShell,
         preview: {
           prompt: promptForLaunchProfile(launchSettings.profile),
           command: state.sessionCommand,
@@ -278,6 +282,7 @@ export function MainWindowSurface({
         available: isTauri(),
         pickDirectory: () => desktopGateway.pickDirectory(),
         initialCwd: previewWorkingDir,
+        shell: state.terminalShell,
       }}
       tab={mainTab}
       toast={toast}

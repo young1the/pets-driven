@@ -1,6 +1,6 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { useEffect, useRef } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
 import { desktopGateway } from "@/app/desktop-gateway";
 import "@xterm/xterm/css/xterm.css";
 
@@ -55,6 +55,7 @@ export interface EmbeddedTerminalProps {
   shell?: string | null;
   exitedLabel: string;
   className?: string;
+  style?: CSSProperties;
 }
 
 /**
@@ -62,7 +63,13 @@ export interface EmbeddedTerminalProps {
  * one PTY session; changing `cwd`/`shell` tears down and restarts it (the
  * parent also keys us to force a clean remount).
  */
-export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: EmbeddedTerminalProps) {
+export function EmbeddedTerminal({
+  cwd,
+  shell,
+  exitedLabel,
+  className,
+  style,
+}: EmbeddedTerminalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -183,5 +190,5 @@ export function EmbeddedTerminal({ cwd, shell, exitedLabel, className }: Embedde
     };
   }, [cwd, shell, exitedLabel]);
 
-  return <div className={className} ref={containerRef} />;
+  return <div className={className} ref={containerRef} style={style} />;
 }

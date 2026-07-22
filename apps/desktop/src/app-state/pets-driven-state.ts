@@ -41,6 +41,12 @@ export type PetsDrivenState = {
   /** App-wide launch line for "Start new session". See DEFAULT_SESSION_COMMAND. */
   sessionCommand: string;
   /**
+   * The shell/executable the in-app terminal spawns (the "default terminal").
+   * `null` falls back to the OS default (COMSPEC/SHELL, resolved on the Rust
+   * side). Set during onboarding and editable in Settings.
+   */
+  terminalShell: string | null;
+  /**
    * The single folder scanned for user-installed pet packs. `null` means the
    * Petdex default (`~/.petdex/pets`, resolved on the Rust side). The bundled
    * pets always load regardless. The Rust `list_codex_pet_packages` /
@@ -57,8 +63,18 @@ export function createEmptyPetsDrivenState(): PetsDrivenState {
     pets: [],
     petProfiles: [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
+    terminalShell: null,
     petSourceDirectory: null,
   };
+}
+
+/** Normalizes a persisted `terminalShell`, treating blank strings as "unset". */
+function sanitizeTerminalShell(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  return value.trim();
 }
 
 /** Normalizes a persisted `petSourceDirectory`, discarding anything malformed. */
@@ -120,6 +136,7 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
       typeof candidate.sessionCommand === "string" && candidate.sessionCommand.trim()
         ? candidate.sessionCommand
         : DEFAULT_SESSION_COMMAND,
+    terminalShell: sanitizeTerminalShell(candidate.terminalShell),
     petSourceDirectory: sanitizePetSourceDirectory(candidate.petSourceDirectory),
   });
 }

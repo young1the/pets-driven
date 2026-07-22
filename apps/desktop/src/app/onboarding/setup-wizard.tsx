@@ -5,8 +5,9 @@ import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { isTauri } from "@tauri-apps/api/core";
 import { type CSSProperties, useEffect, useState } from "react";
-import { type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
+import { type CodexPetPackage, type DesktopGateway, desktopGateway } from "@/app/desktop-gateway";
 import { useDesktopLocale } from "@/app/i18n/desktop-locale";
+import { EmbeddedTerminal } from "@/app/main-window/embedded-terminal";
 import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
@@ -92,6 +93,43 @@ function DoneHeroPet({ assetId }: { assetId: string }) {
       size={PET_CELL_SIZE}
     />
   ) : null;
+}
+
+/** One small, idling sprite + name — a compact preview cell for the strip. */
+function PetLookCell({ pet, elapsedMs }: { pet: CodexPetPackage; elapsedMs: number }) {
+  const spritesheetUrl = usePetSpritesheetUrl(pet.id);
+
+  return (
+    <div style={petLookCell} title={pet.displayName}>
+      <div style={petLookStage}>
+        {spritesheetUrl ? (
+          <PetSprite
+            alt={`${pet.displayName} preview`}
+            animationState="idle"
+            elapsedMs={elapsedMs}
+            imageUrl={spritesheetUrl}
+            scale={0.42}
+            showStatusBubble={false}
+            size={PET_CELL_SIZE}
+          />
+        ) : null}
+      </div>
+      <span style={petLookName}>{pet.displayName}</span>
+    </div>
+  );
+}
+
+/** A simple, scrollable row of installed pet looks shown on the pets-folder step. */
+function PetLookStrip({ packages }: { packages: CodexPetPackage[] }) {
+  const elapsedMs = useAnimationClock();
+
+  return (
+    <div style={petLookStrip}>
+      {packages.map((pet) => (
+        <PetLookCell elapsedMs={elapsedMs} key={pet.id} pet={pet} />
+      ))}
+    </div>
+  );
 }
 
 const rail: CSSProperties = {
@@ -385,6 +423,85 @@ const doneActions: CSSProperties = {
   gap: "13px",
   marginTop: "26px",
 };
+const wizardInput: CSSProperties = {
+  boxSizing: "border-box",
+  width: "100%",
+  maxWidth: "420px",
+  border: "1.5px solid var(--border-default)",
+  background: "var(--surface-card)",
+  borderRadius: "12px",
+  padding: "11px 14px",
+  fontFamily: "var(--font-mono)",
+  fontSize: "13px",
+  color: "var(--text-strong)",
+  outline: "none",
+};
+const fieldHint: CSSProperties = {
+  fontFamily: "var(--font-body)",
+  fontSize: "12px",
+  color: "var(--text-muted)",
+  margin: "6px 0 0",
+  maxWidth: "460px",
+  lineHeight: 1.4,
+};
+const petLookStrip: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  overflowX: "auto",
+  padding: "4px 2px 8px",
+  marginTop: "12px",
+};
+const petLookCell: CSSProperties = {
+  flex: "none",
+  width: "84px",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "6px",
+  padding: "10px 8px",
+  borderRadius: "14px",
+  border: "1px solid var(--border-soft)",
+  background: "var(--surface-card)",
+};
+const petLookStage: CSSProperties = {
+  width: "48px",
+  height: "48px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden",
+};
+const petLookName: CSSProperties = {
+  fontFamily: "var(--font-body)",
+  fontSize: "11.5px",
+  fontWeight: 700,
+  color: "var(--text-strong)",
+  maxWidth: "100%",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+const inlineTermFrame: CSSProperties = {
+  marginTop: "16px",
+  height: "220px",
+  borderRadius: "14px",
+  overflow: "hidden",
+  border: "1px solid var(--border-soft)",
+  background: "var(--term-bg, #2a2540)",
+};
+const inlineTermView: CSSProperties = {
+  width: "100%",
+  height: "100%",
+};
+const inlineTermUnavailable: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: "100%",
+  fontFamily: "var(--font-body)",
+  fontSize: "13px",
+  color: "var(--text-muted)",
+};
 
 export function SetupWizard({
   state,
@@ -399,6 +516,7 @@ export function SetupWizard({
   const claudePlugin = useClaudePlugin(gateway);
   const [step, setStep] = useState<WizardStep>("welcome");
   const [looksFound, setLooksFound] = useState<number | null>(null);
+  const [petPackages, setPetPackages] = useState<CodexPetPackage[]>([]);
   const [defaultPetFolder, setDefaultPetFolder] = useState<string | null>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
 
@@ -429,6 +547,7 @@ export function SetupWizard({
         const packages = await gateway.listPetPackages();
         if (isActive) {
           setLooksFound(packages.length);
+          setPetPackages(packages);
         }
       } catch {
         if (isActive) {
@@ -470,6 +589,19 @@ export function SetupWizard({
     if (picked) {
       await applyPetSourceDirectory(picked);
     }
+  }
+
+  async function applyTerminalShell(value: string) {
+    const trimmed = value.trim();
+    const nextShell = trimmed ? trimmed : null;
+
+    if (nextShell === state.terminalShell) {
+      return;
+    }
+
+    const nextState = { ...state, terminalShell: nextShell };
+    await gateway.writePetsDrivenState(nextState);
+    onStateChange(nextState);
   }
 
   const guide = GUIDE[step];
@@ -549,6 +681,33 @@ export function SetupWizard({
               <h1 style={title}>{t("setupWizard.welcomeTitle")}</h1>
               <p style={lede}>{t("setupWizard.welcomeLede")}</p>
             </div>
+
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={sectionLabel}>{t("settings.language")}</div>
+              <div style={segWrap}>
+                {locales.map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => setLocale(value)}
+                    style={seg(locale === value)}
+                    type="button"
+                  >
+                    {localeLabels[value]}
+                  </button>
+                ))}
+              </div>
+
+              <div style={sectionLabel}>{t("settings.defaultTerminal")}</div>
+              <input
+                aria-label={t("settings.defaultTerminal")}
+                onChange={(event) => void applyTerminalShell(event.target.value)}
+                placeholder={t("settings.defaultTerminalPlaceholder")}
+                style={wizardInput}
+                value={state.terminalShell ?? ""}
+              />
+              <p style={fieldHint}>{t("settings.defaultTerminalDesc")}</p>
+            </div>
+
             <div style={footer}>
               <span style={{ ...stepDesc, fontSize: "13px" }}>
                 {t("setupWizard.welcomeFineprint")}
@@ -599,20 +758,6 @@ export function SetupWizard({
                   title={color.name}
                   type="button"
                 />
-              ))}
-            </div>
-
-            <div style={sectionLabel}>{t("settings.language")}</div>
-            <div style={segWrap}>
-              {locales.map((value) => (
-                <button
-                  key={value}
-                  onClick={() => setLocale(value)}
-                  style={seg(locale === value)}
-                  type="button"
-                >
-                  {localeLabels[value]}
-                </button>
               ))}
             </div>
 
@@ -712,6 +857,15 @@ export function SetupWizard({
                   ? t("setupWizard.petsFolderScanning")
                   : t("setupWizard.petsFolderFound", { count: looksFound })}
               </div>
+
+              {petPackages.length > 0 && (
+                <>
+                  <div style={{ ...sectionLabel, margin: "8px 0 0" }}>
+                    {t("setupWizard.petsFolderPreviewLabel")}
+                  </div>
+                  <PetLookStrip packages={petPackages} />
+                </>
+              )}
             </div>
 
             <div style={footer}>
@@ -779,6 +933,24 @@ export function SetupWizard({
               ) : null}
             </div>
 
+            <div style={{ ...sectionLabel, margin: "20px 0 0" }}>
+              {t("setupWizard.pluginTerminalLabel")}
+            </div>
+            <p style={fieldHint}>{t("setupWizard.pluginTerminalHint")}</p>
+            <div style={inlineTermFrame}>
+              {isTauri() ? (
+                <EmbeddedTerminal
+                  className="pd-onb__inline-term"
+                  cwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
+                  exitedLabel={t("terminal.exited")}
+                  shell={state.terminalShell}
+                  style={inlineTermView}
+                />
+              ) : (
+                <div style={inlineTermUnavailable}>{t("terminal.unavailable")}</div>
+              )}
+            </div>
+
             <div style={footer}>
               <Button onClick={() => setStep("petsFolder")} variant="ghost">
                 {t("onboarding.back")}
@@ -834,6 +1006,7 @@ export function SetupWizard({
         cwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
         onClose={() => setTerminalOpen(false)}
         open={terminalOpen}
+        shell={state.terminalShell}
       />
     </main>
   );

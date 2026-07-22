@@ -8,6 +8,8 @@ export interface PetdexTerminalDialogProps {
   onClose: () => void;
   /** Working directory for the shell; null uses the process default. */
   cwd: string | null;
+  /** Default terminal shell to spawn; null/empty falls back to the OS default. */
+  shell?: string | null;
   /** Whether the PTY is available (running inside Tauri). */
   available: boolean;
 }
@@ -18,7 +20,13 @@ export interface PetdexTerminalDialogProps {
  * The terminal mounts only while open — the Dialog unmounts its children on
  * close, which tears down the PTY session.
  */
-export function PetdexTerminalDialog({ open, onClose, cwd, available }: PetdexTerminalDialogProps) {
+export function PetdexTerminalDialog({
+  open,
+  onClose,
+  cwd,
+  shell = null,
+  available,
+}: PetdexTerminalDialogProps) {
   const { t } = useTranslation("desktop");
 
   return (
@@ -35,6 +43,7 @@ export function PetdexTerminalDialog({ open, onClose, cwd, available }: PetdexTe
             className="pd-petdex-term__view"
             cwd={cwd}
             exitedLabel={t("terminal.exited")}
+            shell={shell}
           />
         ) : (
           <div className="pd-petdex-term__unavailable">{t("terminal.unavailable")}</div>

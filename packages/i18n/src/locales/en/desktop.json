@@ -61,7 +61,10 @@
     "accentColorDesc": "The color used across the app for highlights and active states.",
     "agentConnection": "Agent connection",
     "agentConnectionDesc": "The app listens for Claude Code events on this machine; the plugin forwards them from your sessions.",
-    "reconnect": "Send test event"
+    "reconnect": "Send test event",
+    "defaultTerminal": "Default terminal",
+    "defaultTerminalDesc": "The shell the in-app terminal opens. Leave empty to use your system default (COMSPEC / SHELL).",
+    "defaultTerminalPlaceholder": "System default"
   },
   "launchProfile": {
     "cmd": "Command Prompt",
@@ -185,7 +188,7 @@
       },
       "appearance": {
         "title": "Appearance",
-        "desc": "Theme · color · language"
+        "desc": "Theme · color"
       },
       "petsFolder": {
         "title": "Pets folder",
@@ -240,7 +243,10 @@
     "doneEyebrow": "All set ✨",
     "doneTitle": "Your den is ready.",
     "createFirstPet": "Create your first pet →",
-    "goToHome": "Go to home"
+    "goToHome": "Go to home",
+    "petsFolderPreviewLabel": "Installed looks",
+    "pluginTerminalLabel": "Live terminal",
+    "pluginTerminalHint": "Connecting Claude Code? Run it right here and watch it happen."
   },
   "personality": {
     "role": "Pet",

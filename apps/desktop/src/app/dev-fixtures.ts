@@ -163,6 +163,7 @@ function createFixtureState(inputs: FixturePetInput[]): PetsDrivenState {
       personality: input.personalityFactory(),
     })),
     sessionCommand: "cmd /k codex",
+    terminalShell: null,
     petSourceDirectory: "C:\\Users\\fixture\\.petdex\\pets",
   };
 }

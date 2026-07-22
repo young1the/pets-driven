@@ -73,6 +73,13 @@ export function usePetRosterActions({
     void desktopGateway.writePetsDrivenState(next);
   }
 
+  function updateTerminalShell(shell: string) {
+    const trimmed = shell.trim();
+    const next = { ...stateRef.current, terminalShell: trimmed ? trimmed : null };
+    applyState(next);
+    void desktopGateway.writePetsDrivenState(next);
+  }
+
   function patchPet(petId: string, patch: Partial<PetRecord>) {
     const current = stateRef.current;
     const next: PetsDrivenState = {
@@ -232,6 +239,7 @@ export function usePetRosterActions({
   return {
     resetPets,
     updateSessionCommand,
+    updateTerminalShell,
     patchPet,
     setPetPersonality,
     showPet,

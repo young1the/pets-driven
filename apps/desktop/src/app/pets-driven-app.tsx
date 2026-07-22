@@ -184,6 +184,7 @@ function PetsDrivenHostApp() {
   const {
     resetPets,
     updateSessionCommand,
+    updateTerminalShell,
     patchPet,
     setPetPersonality,
     showPet,
@@ -371,6 +372,7 @@ function PetsDrivenHostApp() {
       onShowAllPets={showAllPets}
       onShowPet={showPet}
       onUpdateSessionCommand={updateSessionCommand}
+      onUpdateTerminalShell={updateTerminalShell}
       petStatusById={petStatusById}
       petWindowError={petWindowError}
       setEditPetId={setEditPetId}

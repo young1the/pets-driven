@@ -10,6 +10,8 @@ function setup(overrides = {}) {
     onLaunchProfile: vi.fn(),
     onCommand: vi.fn(),
     onLaunchLine: vi.fn(),
+    terminalShell: "",
+    onTerminalShell: vi.fn(),
     preview: {
       cwd: "C:\\pets\\core",
       prompt: "C:\\>",

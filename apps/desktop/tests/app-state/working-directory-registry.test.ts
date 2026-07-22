@@ -13,6 +13,7 @@ describe("working directory registry", () => {
       pets: [],
       petProfiles: [],
       sessionCommand: "cmd /k claude",
+      terminalShell: null,
       petSourceDirectory: null,
     });
   });
@@ -41,6 +42,7 @@ describe("working directory registry", () => {
       pets: [],
       petProfiles: [],
       sessionCommand: "cmd /k claude",
+      terminalShell: null,
       petSourceDirectory: null,
     };
 

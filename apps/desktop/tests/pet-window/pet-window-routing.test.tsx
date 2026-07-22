@@ -192,6 +192,7 @@ const testPetsDrivenState: PetsDrivenState = {
     },
   ],
   sessionCommand: "claude",
+  terminalShell: null,
   petSourceDirectory: null,
 };
 

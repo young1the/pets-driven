@@ -13,6 +13,9 @@ export interface SettingsSectionProps {
   onLaunchProfile: (value: LaunchProfileId) => void;
   onCommand: (value: string) => void;
   onLaunchLine: (value: string) => void;
+  /** The shell the in-app terminal spawns; empty string = OS default. */
+  terminalShell: string;
+  onTerminalShell: (value: string) => void;
   preview: { prompt: string; command: string };
   hook: { tone: BadgeTone; label: string; summary: string; url: string };
   onReconnect: () => void;
@@ -158,6 +161,8 @@ export function SettingsSection({
   onLaunchProfile,
   onCommand,
   onLaunchLine,
+  terminalShell,
+  onTerminalShell,
   preview,
   hook,
   onReconnect,
@@ -277,6 +282,21 @@ export function SettingsSection({
             <div style={{ marginTop: "16px" }}>
               <span style={smallCaps}>{t("settings.commandPreview")}</span>
               <TerminalPreview command={preview.command} prompt={preview.prompt} />
+            </div>
+          </div>
+
+          {/* Default terminal — the shell the in-app terminal spawns. */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.defaultTerminal")}</span>
+            <p style={hint}>{t("settings.defaultTerminalDesc")}</p>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                aria-label={t("settings.defaultTerminal")}
+                onChange={(event) => onTerminalShell(event.target.value)}
+                placeholder={t("settings.defaultTerminalPlaceholder")}
+                style={inputStyle}
+                value={terminalShell}
+              />
             </div>
           </div>
 
