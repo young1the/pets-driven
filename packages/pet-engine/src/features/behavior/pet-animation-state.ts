@@ -1,5 +1,6 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { getExpressivePoseState } from "@pets-driven/pet-engine/features/behavior/pose-choreography";
+import { isDanceFlourish } from "@pets-driven/pet-engine/features/social/dance";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 
 // Per-tick horizontal displacement (engine pixels) above this counts as the pet
@@ -85,6 +86,19 @@ export function getPetAnimationState(
   const travelDirection = getTravelDirection(dx);
   if (travelDirection) {
     return travelDirection === "right" ? "running-right" : "running-left";
+  }
+
+  const membership = componentStore.getComponent(id, "SocialSessionMember");
+  const socialSession = membership
+    ? componentStore.getComponent(membership.sessionId, "SocialSession")
+    : undefined;
+  if (
+    socialSession?.kind === "dance" &&
+    socialSession.phase === "play" &&
+    socialSession.playStartedAt !== null &&
+    isDanceFlourish(now - socialSession.playStartedAt)
+  ) {
+    return "waving";
   }
 
   // Sustained expressive poses: the pet is standing still with an autonomous

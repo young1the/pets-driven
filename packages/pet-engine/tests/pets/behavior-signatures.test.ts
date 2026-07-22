@@ -131,6 +131,32 @@ describe("Personality Catalog behavior signatures", () => {
     expect(strongestSocialKind("gentle", "gentle")).toBe("greet");
   });
 
+  it("makes lively pairs more inclined to dance than low-energy pairs", () => {
+    const danceWeight = (id: PetPersonalityId) =>
+      socialSessionKindWeights(personality(id), personality(id)).find(
+        ({ kind }) => kind === "dance",
+      )?.weight ?? 0;
+
+    expect(danceWeight("playful")).toBeGreaterThan(danceWeight("lazy"));
+    expect(danceWeight("feisty")).toBeGreaterThan(danceWeight("aloof"));
+  });
+
+  it("keeps dance visible across the catalog without flattening personality differences", () => {
+    let danceShare = 0;
+    let pairCount = 0;
+    for (const left of PERSONALITY_REGISTRY) {
+      for (const right of PERSONALITY_REGISTRY) {
+        const weights = socialSessionKindWeights(personality(left.id), personality(right.id));
+        const total = weights.reduce((sum, entry) => sum + entry.weight, 0);
+        danceShare += weights.find(({ kind }) => kind === "dance")!.weight / total;
+        pairCount += 1;
+      }
+    }
+
+    expect(danceShare / pairCount).toBeGreaterThanOrEqual(0.25);
+    expect(danceShare / pairCount).toBeLessThan(0.35);
+  });
+
   it("preserves neutral behavior for personality components without a catalog id", () => {
     expect(signedDecisionScore(undefined, "play-romp", 0.42)).toBe(0.42);
     expect(personalityIdleDurationScale(undefined)).toBe(1);

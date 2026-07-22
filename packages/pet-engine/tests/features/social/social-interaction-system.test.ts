@@ -3,6 +3,7 @@ import {
   createComponentStore,
 } from "@pets-driven/pet-engine/core/component-store";
 import type { Component, PersonalityComponent } from "@pets-driven/pet-engine/core/components";
+import { DANCE_BEAT_MS } from "@pets-driven/pet-engine/features/social/dance";
 import {
   CHASE_SWAP_MS,
   CHAT_TURN_MS,
@@ -75,7 +76,7 @@ function makeStore(
 
 function seedSession(
   store: ComponentStore,
-  kind: "greet" | "chat" | "chase",
+  kind: "greet" | "chat" | "chase" | "dance",
   startedAt: number,
   participantIds: string[] = ["pet-a", "pet-b"],
 ): void {
@@ -307,6 +308,57 @@ describe("SocialInteractionSystem — greet choreography", () => {
       source: "social",
       reason: "socialized",
     });
+  });
+});
+
+describe("SocialInteractionSystem — dance choreography", () => {
+  it("dances without speech and finishes with a shared flourish", () => {
+    const store = makeStore(AGREEABLE, AGREEABLE, [100, 160]);
+    const clock = createManualClock(0);
+    seedSession(store, "dance", 0);
+    clock.advanceBy(100);
+
+    runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
+
+    const session = store.getComponent("sess", "SocialSession");
+    expect(session?.phase).toBe("play");
+    expect(session?.playStartedAt).toBe(100);
+    const firstLeadTarget = store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x;
+    const firstPartnerTarget = store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x;
+    expect(firstLeadTarget).toBeLessThanOrEqual(68);
+    expect(firstPartnerTarget).toBeGreaterThanOrEqual(192);
+    for (const id of ["pet-a", "pet-b"]) {
+      expect(store.getComponent(id, "PetExpressionState")).toMatchObject({
+        mood: "excited",
+        emote: "note",
+      });
+    }
+    for (const id of ["pet-a", "pet-b"]) {
+      expect(store.getComponent(id, "AgentChannelState")).toBeUndefined();
+      expect(store.getComponent(id, "BehaviorDecisionState")?.reason).toBe("session-dance");
+    }
+
+    clock.advanceBy(DANCE_BEAT_MS);
+    runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x).toBe(firstLeadTarget);
+
+    clock.advanceBy(DANCE_BEAT_MS);
+    runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
+    expect(store.getComponent("pet-a", "MotionTarget")?.targetPosition?.x).toBeGreaterThan(
+      firstLeadTarget ?? 0,
+    );
+    expect(store.getComponent("pet-b", "MotionTarget")?.targetPosition?.x).toBe(firstPartnerTarget);
+
+    clock.advanceBy(PHASE_DURATIONS.dance.play - DANCE_BEAT_MS * 2);
+    runSocialInteractionSystem(store, clock, NEVER, BOUNDS, 16);
+
+    expect(store.getComponent("sess", "SocialSession")?.phase).toBe("part");
+    for (const id of ["pet-a", "pet-b"]) {
+      expect(store.getComponent(id, "PetExpressionState")).toMatchObject({
+        mood: "happy",
+        emote: "sparkle",
+      });
+    }
   });
 });
 

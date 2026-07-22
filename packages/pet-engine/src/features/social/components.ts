@@ -62,8 +62,8 @@ export type SignatureReactionMemoryComponent = {
   entries: SeenSignatureReaction[];
 };
 
-/** The three joint behaviors two pets can share. */
-export type SocialSessionKind = "greet" | "chat" | "chase";
+/** The joint behaviors a group of pets can share. */
+export type SocialSessionKind = "greet" | "chat" | "chase" | "dance";
 
 /**
  * Session progression. `approach` = move together / close the gap; `play` = the
@@ -114,6 +114,8 @@ export type SocialSessionComponent = {
   endsAt: number;
   /** When the pets actually met and play began; null while still approaching. */
   playStartedAt: number | null;
+  /** Fixed horizontal centre of a dance phrase; reset when membership changes. */
+  danceCentreX?: number | null;
   /** Whether the participants have already exchanged their greeting speech. */
   greeted: boolean;
   /**

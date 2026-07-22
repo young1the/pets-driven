@@ -233,7 +233,7 @@ A single, transient pet-to-pet interaction that a small set of **Pets** share un
 _Avoid_: session (bare), relationship, friendship
 
 **Social Session Kind**:
-What the two **Pets** are doing together in a **Social Session**: greet (a quick hello), chat (alternating speech bubbles), or chase (taking turns as chaser and runner).
+What the **Pets** are doing together in a **Social Session**: greet (a quick hello), chat (alternating speech bubbles), chase (taking turns as chaser and runner), or dance (non-crossing, beat-synchronized spatial choreography).
 _Avoid_: phase, activity
 
 **Social Session Phase**:
@@ -416,7 +416,7 @@ Instead of one **Pet** calling a method on another, the interaction itself becom
 
 ```mermaid
 flowchart TD
-    Session(["SocialSession — the relationship entity<br/>kind: greet | chat | chase<br/>participantIds[] / phase"])
+    Session(["SocialSession — the relationship entity<br/>kind: greet | chat | chase | dance<br/>participantIds[] / phase"])
     PetA["Pet A — holds SocialSessionMember"]
     PetB["Pet B — holds SocialSessionMember"]
     System["SocialInteractionSystem<br/>reads the session, choreographs every member"]

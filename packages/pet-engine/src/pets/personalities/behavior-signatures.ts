@@ -20,6 +20,7 @@ const NEUTRAL_SOCIAL_SCALE: Record<SocialSessionKind, number> = {
   greet: 1,
   chat: 1,
   chase: 1,
+  dance: 1,
 };
 
 /**
@@ -38,7 +39,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     decisionBias: { "play-romp": 0.55, caper: 0.5, "chase-cursor": 0.25, "idle-stay": -0.25 },
     idleDurationScale: 0.65,
     arrivalDwellScale: 0.7,
-    socialKindScale: { greet: 0.8, chat: 0.9, chase: 2.4 },
+    socialKindScale: { greet: 0.8, chat: 0.9, chase: 2.4, dance: 1.15 },
   },
   attentive: {
     primaryDecision: "keep-watch",
@@ -53,7 +54,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 0.9,
     arrivalDwellScale: 0.9,
-    socialKindScale: { greet: 1.1, chat: 1.8, chase: 0.6 },
+    socialKindScale: { greet: 1.1, chat: 1.8, chase: 0.6, dance: 1.1 },
   },
   reserved: {
     primaryDecision: "peek",
@@ -68,7 +69,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 1.45,
     arrivalDwellScale: 1.35,
-    socialKindScale: { greet: 1.5, chat: 0.7, chase: 0.3 },
+    socialKindScale: { greet: 1.5, chat: 0.7, chase: 0.3, dance: 0.35 },
   },
   curious: {
     primaryDecision: "inspect",
@@ -83,7 +84,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 0.85,
     arrivalDwellScale: 0.8,
-    socialKindScale: { greet: 0.7, chat: 1.7, chase: 1.1 },
+    socialKindScale: { greet: 0.7, chat: 1.7, chase: 1.1, dance: 1.2 },
   },
   steady: {
     primaryDecision: "follow-routine",
@@ -98,7 +99,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 1.25,
     arrivalDwellScale: 1.35,
-    socialKindScale: { greet: 1.5, chat: 1.1, chase: 0.45 },
+    socialKindScale: { greet: 1.5, chat: 1.1, chase: 0.45, dance: 0.6 },
   },
   feisty: {
     primaryDecision: "strut",
@@ -114,7 +115,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 0.7,
     arrivalDwellScale: 0.65,
-    socialKindScale: { greet: 0.7, chat: 0.8, chase: 1.7 },
+    socialKindScale: { greet: 0.7, chat: 0.8, chase: 1.7, dance: 1.7 },
   },
   gentle: {
     primaryDecision: "offer-comfort",
@@ -129,7 +130,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 1.1,
     arrivalDwellScale: 1.15,
-    socialKindScale: { greet: 2.2, chat: 1.2, chase: 0.35 },
+    socialKindScale: { greet: 2.2, chat: 1.2, chase: 0.35, dance: 0.75 },
   },
   mischievous: {
     primaryDecision: "play-feint",
@@ -145,7 +146,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 0.65,
     arrivalDwellScale: 0.6,
-    socialKindScale: { greet: 0.45, chat: 0.8, chase: 2.5 },
+    socialKindScale: { greet: 0.45, chat: 0.8, chase: 2.5, dance: 1.9 },
   },
   lazy: {
     primaryDecision: "nap",
@@ -161,7 +162,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 1.9,
     arrivalDwellScale: 1.7,
-    socialKindScale: { greet: 1.4, chat: 1, chase: 0.2 },
+    socialKindScale: { greet: 1.4, chat: 1, chase: 0.2, dance: 0.2 },
   },
   zen: {
     primaryDecision: "meditate",
@@ -177,7 +178,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 1.65,
     arrivalDwellScale: 1.55,
-    socialKindScale: { greet: 1.9, chat: 1.1, chase: 0.2 },
+    socialKindScale: { greet: 1.9, chat: 1.1, chase: 0.2, dance: 0.45 },
   },
   aloof: {
     primaryDecision: "withdraw",
@@ -193,7 +194,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 1.1,
     arrivalDwellScale: 1.1,
-    socialKindScale: { greet: 1.2, chat: 0.6, chase: 0.35 },
+    socialKindScale: { greet: 1.2, chat: 0.6, chase: 0.35, dance: 0.25 },
   },
   skittish: {
     primaryDecision: "stand-lookout",
@@ -209,7 +210,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 0.6,
     arrivalDwellScale: 0.55,
-    socialKindScale: { greet: 1.4, chat: 0.45, chase: 0.25 },
+    socialKindScale: { greet: 1.4, chat: 0.45, chase: 0.25, dance: 0.25 },
   },
   shrewd: {
     primaryDecision: "observe",
@@ -226,7 +227,7 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     },
     idleDurationScale: 1.4,
     arrivalDwellScale: 1.35,
-    socialKindScale: { greet: 0.7, chat: 1.1, chase: 0.4 },
+    socialKindScale: { greet: 0.7, chat: 1.1, chase: 0.4, dance: 0.55 },
   },
 };
 

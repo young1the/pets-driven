@@ -2,7 +2,11 @@ import type { ComponentStore } from "@pets-driven/pet-engine/core/component-stor
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
 import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
-import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
+import type {
+  PersonalityComponent,
+  PetExpressionEmote,
+  PetExpressionMood,
+} from "@pets-driven/pet-engine/features/behavior/components";
 import {
   BEHAVIOR_PRIORITY,
   BOOKKEEPING_AUTONOMOUS_REASONS,
@@ -15,6 +19,7 @@ import { PET_SPEECH_KEY_PREFIX } from "@pets-driven/pet-engine/pets/personalitie
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import type { SocialSessionComponent, SocialSessionKind } from "./components";
+import { danceStepOffsets, isDanceFlourish } from "./dance";
 
 type Bounds = { x?: number; y?: number; width: number; height: number };
 type Vec = { x: number; y: number };
@@ -62,6 +67,7 @@ export const PHASE_DURATIONS: Record<SocialSessionKind, { play: number; part: nu
   greet: { play: 2_500, part: 800 },
   chat: { play: 9_000, part: 800 },
   chase: { play: 7_500, part: 800 },
+  dance: { play: 7_700, part: 800 },
 };
 
 export const CHAT_TURN_MS = 2_000; // whose speech bubble shows, alternating
@@ -76,6 +82,10 @@ const CHASE_CATCH_COOLDOWN_MS = 700;
 // Gait: walking up to a friend is a saunter; a chase is a romp at full tilt.
 const APPROACH_SPEED_FACTOR = 0.45;
 const CHASE_SPEED_FACTOR = 1.15;
+const DANCE_SPEED_FACTOR = 1.15;
+// Dance must recur often enough to be observable in ambient play. Catalog
+// scales still make reserved and low-energy pets much less likely to choose it.
+const DANCE_VISIBILITY_SCALE = 1.65;
 
 // Standing together during play: if any two participants are horizontally
 // closer than MIN_PLAY_SPACING (body widths) the group is "stacked" and gets
@@ -185,8 +195,8 @@ function releaseSocialClaim(components: ComponentStore, id: string, now: number)
 function setExpression(
   components: ComponentStore,
   id: string,
-  mood: "love" | "happy" | "excited" | "thinking" | "confused",
-  emote: "none" | "heart" | "sparkle" | "question" | "exclaim",
+  mood: PetExpressionMood,
+  emote: PetExpressionEmote,
   now: number,
   durationMs: number,
 ): void {
@@ -399,8 +409,8 @@ function acceptChance(p: PersonalityComponent, drives: DrivesComponent | undefin
 
 /**
  * Pick a session kind from the two personalities. Energetic/open pairs romp
- * (chase), warm calm pairs greet, talkative pairs chat. Weighted random keeps
- * it varied rather than deterministic.
+ * or dance, warm calm pairs greet, and talkative pairs chat. Weighted random
+ * keeps it varied rather than deterministic.
  */
 export function socialSessionKindWeights(
   a: PersonalityComponent,
@@ -425,6 +435,13 @@ export function socialSessionKindWeights(
     {
       kind: "chat",
       weight: clamp(0.25 + e * 0.4 + agr * 0.3, 0.02, 2) * pairScale("chat"),
+    },
+    {
+      kind: "dance",
+      weight:
+        clamp(0.12 + e * 0.5 + o * 0.35 + agr * 0.1 - n * 0.2, 0.02, 2) *
+        pairScale("dance") *
+        DANCE_VISIBILITY_SCALE,
     },
   ];
 }
@@ -494,6 +511,7 @@ function advanceSessions(components: ComponentStore, now: number, bounds: Bounds
         if (!remaining.includes(id)) partWithParticipant(components, sessionId, id, now);
       }
       session.participantIds = remaining;
+      session.danceCentreX = null;
       if (session.chaserId && !remaining.includes(session.chaserId)) {
         session.chaserId = remaining[0];
       }
@@ -525,10 +543,15 @@ function choreograph(
     return;
   }
 
-  // greet & chat share the "gather, then stand together" shape. The greet
+  // Greet, chat, and dance share the "gather, then stand together" shape. The greet
   // phase is arrival-driven: everyone saunters toward the group's centre and
   // play begins when they have all bunched up (or the greet timeout fires).
-  const gap = bodyWidth(components, ids[0]) * (session.kind === "chat" ? 2.6 : 2);
+  const spacingByKind: Record<Exclude<SocialSessionKind, "chase">, number> = {
+    greet: 2,
+    chat: 2.6,
+    dance: 2.2,
+  };
+  const gap = bodyWidth(components, ids[0]) * spacingByKind[session.kind];
   const centre = centroidOf(pos);
   if (session.phase === "approach") {
     const met = maxPairwiseDistance(pos) <= gap * 1.35;
@@ -546,6 +569,11 @@ function choreograph(
   // play / part — stand together, but not on top of each other. Pets are
   // physical ghosts (they pass through), so standing still where they met can
   // leave them stacked; nudge a too-close huddle into an evenly-spaced row.
+  if (session.kind === "dance") {
+    choreographDance(components, session, pos, now, bounds);
+    return;
+  }
+
   standSpaced(components, ids, pos, bounds);
 
   if (session.kind === "greet") {
@@ -595,6 +623,58 @@ function choreograph(
       setSpeech(components, id, null, now);
       setExpression(components, id, "thinking", "question", now, 400);
     }
+  });
+}
+
+function choreographDance(
+  components: ComponentStore,
+  session: SocialSessionComponent,
+  pos: Vec[],
+  now: number,
+  bounds: Bounds,
+): void {
+  const ids = session.participantIds;
+  for (const id of ids) setSpeech(components, id, null, now);
+
+  if (session.phase === "part") {
+    for (const id of ids) {
+      stop(components, id);
+      setExpression(components, id, "happy", "sparkle", now, 400);
+    }
+    return;
+  }
+
+  const elapsed = now - (session.playStartedAt ?? session.startedAt);
+  const order = ids
+    .map((id, index) => ({ id, index }))
+    .sort((left, right) => pos[left.index].x - pos[right.index].x);
+  const centreX = session.danceCentreX ?? centroidOf(pos).x;
+  session.danceCentreX = centreX;
+
+  const bw = Math.max(...order.map(({ id }) => bodyWidth(components, id)));
+  const spacing = bw * (ids.length === 2 ? 4 : 2.5);
+  const offsets = danceStepOffsets(ids.length, elapsed);
+  const margin = 48;
+  const minX = (bounds.x ?? 0) + margin;
+  const maxX = (bounds.x ?? 0) + bounds.width - margin;
+  const flourish = isDanceFlourish(elapsed);
+
+  order.forEach(({ id, index }, rank) => {
+    const baseX = centreX + (rank - (order.length - 1) / 2) * spacing;
+    const targetX = clamp(baseX + (offsets[rank] ?? 0) * bw, minX, maxX);
+    if (flourish || Math.abs(pos[index].x - targetX) <= 2) {
+      stop(components, id);
+    } else {
+      moveToward(components, id, { x: targetX, y: pos[index].y }, DANCE_SPEED_FACTOR);
+    }
+    setExpression(
+      components,
+      id,
+      "excited",
+      flourish ? "sparkle" : offsets[rank] === 0 ? "note" : "none",
+      now,
+      400,
+    );
   });
 }
 
@@ -1006,6 +1086,7 @@ function emitJoins(components: ComponentStore, now: number, random: RandomSource
     if (random.next() >= acceptChance(joiner.personality, joiner.drives)) continue;
 
     session.participantIds = [...session.participantIds, joiner.id];
+    session.danceCentreX = null;
     setSessionMember(
       components,
       sessionId,

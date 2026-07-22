@@ -1,4 +1,7 @@
+import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { getPetAnimationState } from "@pets-driven/pet-engine/features/behavior/pet-animation-state";
+import { DANCE_BEAT_MS } from "@pets-driven/pet-engine/features/social/dance";
 import { describe, expect, it } from "vitest";
 
 function petBodyAnimationState(id: string) {
@@ -25,6 +28,55 @@ function petBodyAnimationState(id: string) {
 }
 
 describe("pet animation state", () => {
+  it("uses a shared flourish only at the end of the spatial dance phrase", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "PetIdentity", name: "A" },
+          {
+            type: "SocialSessionMember",
+            sessionId: "dance",
+            partnerId: "pet-b",
+            role: "initiator",
+          },
+        ],
+      },
+      {
+        id: "pet-b",
+        components: [
+          { type: "PetIdentity", name: "B" },
+          {
+            type: "SocialSessionMember",
+            sessionId: "dance",
+            partnerId: "pet-a",
+            role: "responder",
+          },
+        ],
+      },
+      {
+        id: "dance",
+        components: [
+          {
+            type: "SocialSession",
+            kind: "dance",
+            participantIds: ["pet-a", "pet-b"],
+            phase: "play",
+            startedAt: 0,
+            endsAt: 10_000,
+            playStartedAt: 1_000,
+            greeted: false,
+          },
+        ],
+      },
+    ]);
+
+    expect(getPetAnimationState(store, "pet-a", 1_000)).toBe("idle");
+    expect(getPetAnimationState(store, "pet-b", 1_000)).toBe("idle");
+    expect(getPetAnimationState(store, "pet-a", 1_000 + DANCE_BEAT_MS * 9)).toBe("waving");
+    expect(getPetAnimationState(store, "pet-b", 1_000 + DANCE_BEAT_MS * 9)).toBe("waving");
+  });
+
   it("uses idle when a pet has no active animation cue", () => {
     const { animationState } = petBodyAnimationState("pet-a");
 
