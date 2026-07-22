@@ -52,7 +52,7 @@ knows where they currently live and which folder the user designated.
    - `reserved` — peeks from a distance; cautious, stays close.
    - `curious` — inspects everything; investigates new space.
    - `steady` — follows a routine; calm and deliberate.
-   - `bold` — struts, unfazed by collisions, approaches readily.
+   - `feisty` — struts, quick to square up, approaches readily.
    - `gentle` — offers comfort; unhurried and hyper-agreeable.
    - `mischievous` — feints and pesters; restless troublemaker.
    - `lazy` — naps through most of the day.

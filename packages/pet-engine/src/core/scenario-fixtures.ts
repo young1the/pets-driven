@@ -510,15 +510,15 @@ export function createDemoScenario(options?: {
           { type: "WalkingTag" },
           { type: "CanWalk", force: DEFAULT_PET_WALK_FORCE },
           { type: "WandersOnArrival", arrivalRadius: 16 },
-          // bold: fearless extravert, low agreeableness
+          // feisty: hot-blooded extravert, low agreeableness, quick to bristle
           {
             type: "Personality",
-            catalogId: "bold",
-            openness: 0.7,
-            conscientiousness: 0.35,
-            extraversion: 0.92,
-            agreeableness: 0.28,
-            neuroticism: 0.05,
+            catalogId: "feisty",
+            openness: 0.55,
+            conscientiousness: 0.4,
+            extraversion: 0.85,
+            agreeableness: 0.3,
+            neuroticism: 0.6,
           },
         ],
       }),

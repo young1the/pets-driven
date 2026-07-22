@@ -1,8 +1,8 @@
 import {
   createAloofPersonality,
   createAttentivePersonality,
-  createBoldPersonality,
   createCuriousPersonality,
+  createFeistyPersonality,
   createGentlePersonality,
   createLazyPersonality,
   createMischievousPersonality,
@@ -25,7 +25,7 @@ export const PERSONALITY_REGISTRY = [
   { id: "reserved", factory: createReservedPersonality },
   { id: "curious", factory: createCuriousPersonality },
   { id: "steady", factory: createSteadyPersonality },
-  { id: "bold", factory: createBoldPersonality },
+  { id: "feisty", factory: createFeistyPersonality },
   { id: "gentle", factory: createGentlePersonality },
   { id: "mischievous", factory: createMischievousPersonality },
   { id: "lazy", factory: createLazyPersonality },

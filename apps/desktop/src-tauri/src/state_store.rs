@@ -108,7 +108,7 @@ pub(crate) const PERSONALITY_IDS: [&str; 12] = [
     "reserved",
     "curious",
     "steady",
-    "bold",
+    "feisty",
     "gentle",
     "mischievous",
     "lazy",
@@ -178,17 +178,17 @@ pub(crate) fn personality_preset(personality_id: &str) -> Option<serde_json::Val
             "agreeableness": 0.7,
             "neuroticism": 0.06
         })),
-        "bold" => Some(serde_json::json!({
+        "feisty" => Some(serde_json::json!({
             "standForce": 0.0009,
             "pursueForce": 0.0018,
             "arriveForce": 0.0022,
             "idleConversationMs": 9000,
             "completionIntent": "arrive",
-            "openness": 0.7,
-            "conscientiousness": 0.35,
-            "extraversion": 0.92,
-            "agreeableness": 0.28,
-            "neuroticism": 0.05
+            "openness": 0.55,
+            "conscientiousness": 0.4,
+            "extraversion": 0.85,
+            "agreeableness": 0.3,
+            "neuroticism": 0.6
         })),
         "gentle" => Some(serde_json::json!({
             "standForce": 0.0004,

@@ -40,7 +40,7 @@ describe("Personality Catalog behavior signatures", () => {
 
   it("separates the closest OCEAN neighbors with different primary decisions", () => {
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.playful.primaryDecision).not.toBe(
-      PERSONALITY_BEHAVIOR_SIGNATURES.bold.primaryDecision,
+      PERSONALITY_BEHAVIOR_SIGNATURES.feisty.primaryDecision,
     );
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.reserved.primaryDecision).not.toBe(
       PERSONALITY_BEHAVIOR_SIGNATURES.skittish.primaryDecision,
@@ -53,12 +53,12 @@ describe("Personality Catalog behavior signatures", () => {
     );
   });
 
-  it("turns playful toward romping while bold favors unfazed collisions", () => {
+  it("turns playful toward romping while feisty favors squaring up to collisions", () => {
     expect(signedDecisionScore("playful", "play-romp", 0)).toBeGreaterThan(
-      signedDecisionScore("bold", "play-romp", 0),
+      signedDecisionScore("feisty", "play-romp", 0),
     );
-    expect(signedDecisionScore("bold", "collision-unfazed", 0)).toBeGreaterThan(
-      signedDecisionScore("playful", "collision-unfazed", 0),
+    expect(signedDecisionScore("feisty", "collision-engage", 0)).toBeGreaterThan(
+      signedDecisionScore("playful", "collision-engage", 0),
     );
   });
 
@@ -84,7 +84,7 @@ describe("Personality Catalog behavior signatures", () => {
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.playful.primaryDecision).toBe("play-romp");
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.curious.primaryDecision).toBe("inspect");
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.steady.primaryDecision).toBe("follow-routine");
-    expect(PERSONALITY_BEHAVIOR_SIGNATURES.bold.primaryDecision).toBe("strut");
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.feisty.primaryDecision).toBe("strut");
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.gentle.primaryDecision).toBe("offer-comfort");
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.skittish.primaryDecision).toBe("stand-lookout");
   });

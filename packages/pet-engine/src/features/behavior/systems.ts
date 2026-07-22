@@ -2552,7 +2552,7 @@ export function runBehaviorDecisionSystem(
             }),
           });
         }
-        if (personality.catalogId === "bold") {
+        if (personality.catalogId === "feisty") {
           const direction = random.next() < 0.5 ? -1 : 1;
           const distance = petWidth(components, id) * STRUT_BODY_WIDTHS;
           const preferredX = clampToBoundsX(

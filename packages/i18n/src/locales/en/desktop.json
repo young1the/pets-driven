@@ -298,9 +298,9 @@
       "title": "Steady",
       "blurb": "Calm, consistent, and hard to rattle. Keeps the rhythm smooth."
     },
-    "bold": {
-      "title": "Bold",
-      "blurb": "Leans into the action and checks things out up close."
+    "feisty": {
+      "title": "Feisty",
+      "blurb": "Spirited and quick to bristle. Proud, scrappy, and always up for a challenge."
     },
     "gentle": {
       "title": "Gentle",
@@ -588,29 +588,49 @@
         "Wrapped up. Ready again."
       ]
     },
-    "bold": {
+    "feisty": {
       "idle": [
-        "What is next?",
-        "Bring on the next one.",
-        "Ready for anything.",
-        "Let's tackle something."
+        "Come on, what is next?",
+        "I am getting restless here.",
+        "Do not keep me waiting.",
+        "Let's go already."
       ],
       "attention": [
-        "Your call. Right now.",
-        "Decide — I am ready.",
-        "Give the word.",
-        "Point me at it."
+        "Just decide already.",
+        "Point me at it — now.",
+        "Quit stalling.",
+        "Say the word and I am gone."
       ],
-      "started": ["I am going in.", "Charging ahead.", "On it, full speed.", "Straight for it."],
-      "completed": ["Handled.", "Done and dusted.", "Crushed it.", "That is settled."],
-      "ackWaiting": ["Good. Moving on.", "Right, next.", "Onward, then.", "Let's keep rolling."],
+      "started": [
+        "Fine, watch this.",
+        "Out of my way.",
+        "I have got this, obviously.",
+        "Charging in."
+      ],
+      "completed": [
+        "Nailed it. Told you.",
+        "Too easy.",
+        "Beat that.",
+        "Done — do not act surprised."
+      ],
+      "ackWaiting": [
+        "Yeah, yeah, next.",
+        "Keep them coming.",
+        "That all you have got?",
+        "Bring it on."
+      ],
       "ackFailed": [
-        "No problem. Another run.",
-        "Again — I am ready.",
-        "So we go again.",
-        "Round two, then."
+        "Rematch. Now.",
+        "Again — I am not done.",
+        "A fluke. Let's redo it.",
+        "One more, I will get it."
       ],
-      "ackCompleted": ["Told you I had it.", "Called it.", "Never a doubt.", "Easy. What's next?"]
+      "ackCompleted": [
+        "Told you I would win.",
+        "Never a doubt.",
+        "Was that ever in question?",
+        "Easy. Next challenger."
+      ]
     },
     "gentle": {
       "idle": [

@@ -100,7 +100,7 @@ export const PERSONALITY_VOICE_PROFILES: Record<PetPersonalityId, PersonalityVoi
       completed: { mood: "happy", emote: "none" },
     },
   },
-  bold: {
+  feisty: {
     acknowledge: {
       waiting: { mood: "excited", emote: "exclaim" },
       failed: { mood: "excited", emote: "exclaim" },

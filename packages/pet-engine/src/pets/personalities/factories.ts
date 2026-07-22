@@ -90,18 +90,18 @@ export const createSteadyPersonality: PersonalityFactory = () => ({
   neuroticism: 0.06,
 });
 
-/** Fearless and blunt — barges up to anything, unbothered, low on warmth. */
-export const createBoldPersonality: PersonalityFactory = () => ({
+/** Hot-blooded and proud — quick to bristle, squares up to anything, thin on patience. */
+export const createFeistyPersonality: PersonalityFactory = () => ({
   standForce: 0.0009,
   pursueForce: 0.0018,
   arriveForce: 0.0022,
   idleConversationMs: 9000,
   completionIntent: "arrive",
-  openness: 0.7,
-  conscientiousness: 0.35,
-  extraversion: 0.92,
-  agreeableness: 0.28,
-  neuroticism: 0.05,
+  openness: 0.55,
+  conscientiousness: 0.4,
+  extraversion: 0.85,
+  agreeableness: 0.3,
+  neuroticism: 0.6,
 });
 
 /** Tender and quiet — hyper-agreeable, unhurried, gravitates gently toward the user. */

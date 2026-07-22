@@ -1,8 +1,8 @@
 import {
   createAloofPersonality,
   createAttentivePersonality,
-  createBoldPersonality,
   createCuriousPersonality,
+  createFeistyPersonality,
   createGentlePersonality,
   createLazyPersonality,
   createMischievousPersonality,
@@ -57,12 +57,12 @@ describe("personality factories — OCEAN axes", () => {
     expect(p.completionIntent).toBe("stand");
   });
 
-  it("bold has extreme extraversion, low agreeableness and very low neuroticism", () => {
-    const p = createBoldPersonality();
-    expect(p.openness).toBe(0.7);
-    expect(p.extraversion).toBe(0.92);
-    expect(p.agreeableness).toBe(0.28);
-    expect(p.neuroticism).toBe(0.05);
+  it("feisty has high extraversion, low agreeableness and elevated neuroticism", () => {
+    const p = createFeistyPersonality();
+    expect(p.extraversion).toBeGreaterThanOrEqual(0.85);
+    expect(p.agreeableness).toBeLessThan(0.35);
+    expect(p.neuroticism).toBeGreaterThan(0.5);
+    expect(p.neuroticism).toBeLessThan(0.8);
     expect(p.completionIntent).toBe("arrive");
   });
 
@@ -118,7 +118,7 @@ describe("personality factories — OCEAN axes", () => {
       createReservedPersonality,
       createCuriousPersonality,
       createSteadyPersonality,
-      createBoldPersonality,
+      createFeistyPersonality,
       createGentlePersonality,
       createMischievousPersonality,
       createLazyPersonality,

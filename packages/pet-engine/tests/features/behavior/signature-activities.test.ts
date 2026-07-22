@@ -125,7 +125,7 @@ describe("personality signature activities", () => {
       signatureProbability("reserved", "withdraw"),
     );
     expect(signatureProbability("playful", "play-romp")).toBeGreaterThan(
-      signatureProbability("bold", "play-romp"),
+      signatureProbability("feisty", "play-romp"),
     );
     expect(signatureProbability("curious", "inspect")).toBeGreaterThan(
       signatureProbability("reserved", "inspect"),
@@ -133,7 +133,7 @@ describe("personality signature activities", () => {
     expect(signatureProbability("steady", "follow-routine")).toBeGreaterThan(
       signatureProbability("gentle", "follow-routine"),
     );
-    expect(signatureProbability("bold", "strut")).toBeGreaterThan(
+    expect(signatureProbability("feisty", "strut")).toBeGreaterThan(
       signatureProbability("playful", "strut"),
     );
     expect(signatureProbability("gentle", "offer-comfort")).toBeGreaterThan(
@@ -268,7 +268,7 @@ describe("personality signature activities", () => {
     expect(comfort.getComponent("pet", "Drives")!.social).toBeLessThan(0.3);
   });
 
-  it("materializes a bold strut as a deliberate slower walk", () => {
+  it("materializes a feisty strut as a deliberate slower walk", () => {
     const store = createComponentStore([
       {
         id: "pet",

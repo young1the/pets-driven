@@ -85,12 +85,12 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     arrivalDwellScale: 1.35,
     socialKindScale: { greet: 1.5, chat: 1.1, chase: 0.45 },
   },
-  bold: {
+  feisty: {
     primaryDecision: "strut",
     decisionBias: {
       strut: 0.85,
-      "collision-unfazed": 0.65,
-      "collision-engage": 0.35,
+      "collision-engage": 0.6,
+      "collision-unfazed": 0.5,
       "wander-far": 0.2,
       greet: -0.2,
       "play-romp": -0.1,
