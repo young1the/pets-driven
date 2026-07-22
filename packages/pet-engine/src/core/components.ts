@@ -88,6 +88,10 @@ export type {
 } from "@pets-driven/pet-engine/features/physics/components";
 export type {
   CanSocializeComponent,
+  SeenSignatureReaction,
+  SignatureReactionKind,
+  SignatureReactionMemoryComponent,
+  SignatureReactionStateComponent,
   SocialInviteComponent,
   SocialSessionComponent,
   SocialSessionKind,
@@ -165,6 +169,8 @@ import type {
 } from "@pets-driven/pet-engine/features/physics/components";
 import type {
   CanSocializeComponent,
+  SignatureReactionMemoryComponent,
+  SignatureReactionStateComponent,
   SocialInviteComponent,
   SocialSessionComponent,
   SocialSessionMemberComponent,
@@ -179,6 +185,8 @@ export type Component =
   | CanControlComponent
   | CanDragComponent
   | CanSocializeComponent
+  | SignatureReactionMemoryComponent
+  | SignatureReactionStateComponent
   | SocialInviteComponent
   | SocialSessionComponent
   | SocialSessionMemberComponent

@@ -23,6 +23,45 @@ export type CanSocializeComponent = {
   type: "CanSocialize";
 };
 
+/** How a nearby pet answers another pet's active personality signature. */
+export type SignatureReactionKind = "join" | "cheer" | "watch" | "keep-distance";
+
+/**
+ * A short, one-sided response to another pet's personality signature.
+ *
+ * This is deliberately not a Social Session: the source pet keeps owning its
+ * solo signature while the responder briefly joins, cheers, watches, or gives
+ * it space. The source therefore never needs to accept an invite or change its
+ * own choreography.
+ */
+export type SignatureReactionStateComponent = {
+  type: "SignatureReactionState";
+  sourceId: string;
+  sourceDecisionKind: import("@pets-driven/pet-engine/features/behavior/components").BehaviorDecisionKind;
+  sourceDecisionAt: number;
+  reaction: SignatureReactionKind;
+  /** Existing expressive-pose choreography reused by the responder. */
+  pose: string;
+  startedAt: number;
+  expiresAt: number;
+};
+
+/** One source signature occurrence that this pet has already considered. */
+export type SeenSignatureReaction = {
+  sourceId: string;
+  sourceDecisionAt: number;
+  reacted: boolean;
+};
+
+/**
+ * Bounded, session-local memory preventing one held signature from rolling a
+ * fresh reaction every simulation tick.
+ */
+export type SignatureReactionMemoryComponent = {
+  type: "SignatureReactionMemory";
+  entries: SeenSignatureReaction[];
+};
+
 /** The three joint behaviors two pets can share. */
 export type SocialSessionKind = "greet" | "chat" | "chase";
 

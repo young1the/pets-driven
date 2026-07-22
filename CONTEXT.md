@@ -248,6 +248,10 @@ _Avoid_: request, session
 The short contented beat right after a **Social Session** ends, during which a **Pet** lingers in place instead of snapping straight back to wandering and cannot be invited again — a social refractory period.
 _Avoid_: cooldown (as a domain term), session
 
+**Signature Reaction**:
+A brief, one-sided social response made by a nearby idle **Pet** when it notices another **Pet** performing one of its personality-signature **Activities**. The responder may join in, cheer, watch, or keep its distance according to its own **Pet Profile**. It does not interrupt the source **Pet** or create a **Social Session**.
+_Avoid_: Social Session, relationship, copied personality
+
 ## Relationships
 
 - A **Pet** is bound to exactly one **Working Directory**.
@@ -344,7 +348,13 @@ _Avoid_: cooldown (as a domain term), session
 - When a **Pet** needs the user (a waiting or failed **Agent Work State**), the **Agent Work State** owns the **Pet Status Card** label; otherwise the **Activity** provides the label.
 - A **Pet**'s motion is produced by a top-down chain each frame: **Drives** and perception feed a **Decision**, the **Decision** sets a **Locomotion**, the **Locomotion** gates **Steering**, and **Steering** hands force to the physics engine; the **Activity** is a read-only label derived from that state.
 - A **Pet**'s **Mood** also shapes candidate **Decisions** after the **Pet Profile** and **Drives** are applied.
-- A **Personality Catalog** entry may define a signature **Activity** that other entries do not select; signature activities use sustained claims and choreography so their identity is readable on the **Pet Surface**.
+- A **Personality Catalog** entry defines two signature **Activities** that other entries do not select; signature activities use sustained claims and choreography so their identity is readable on the **Pet Surface**.
+- A nearby idle **Pet** able to socialize considers each observed signature **Activity** once and may start a **Signature Reaction**.
+- A **Signature Reaction** uses the responder's own personality to choose join, cheer, watch, or keep-distance; joining borrows the source signature's readable pose without changing the responder's **Pet Profile**.
+- At most two **Pets** respond to one signature **Activity** occurrence, keeping the moment readable.
+- A **Signature Reaction** claims only the responder's **Decision** with the `social` **Decision Source**; the source **Pet** continues its autonomous signature unchanged.
+- A **Signature Reaction** ends when its short response window expires, when the source signature ends, or when a higher-priority user or agent event claims the responder.
+- A **Signature Reaction** is not a **Social Session** and creates no lasting **Relationship**.
 - Meaningful user, agent, collision, and social events append to **Recent Experience Memory** and immediately shift **Mood**.
 - **Mood** recovers toward the **Pet Profile**'s temperament baseline over time.
 - **Recent Experience Memory** is bounded, session-local, and expires automatically; it does not create a lasting **Relationship** between **Pets**.

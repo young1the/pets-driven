@@ -61,6 +61,7 @@ import {
   PhysicsTransformSyncSystemPost,
   PhysicsTransformSyncSystemPre,
 } from "@pets-driven/pet-engine/features/physics/systems";
+import { SignatureReactionSystem } from "@pets-driven/pet-engine/features/social/signature-reactions";
 import { SocialInteractionSystem } from "@pets-driven/pet-engine/features/social/systems";
 
 export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
@@ -85,6 +86,7 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     WorkingBehaviorSystem, // priority 4a: working-state focus or wandering
     SocialInteractionSystem, // priority 4 (social): pet-to-pet greet/chat/chase sessions
     BehaviorDecisionSystem, // priority 5 (autonomous): personality-weighted next behavior (emits token)
+    SignatureReactionSystem, // social echo: nearby pets answer fresh personality signatures
     AutonomousBehaviorSystem, // priority 4b: idle speech
     BehaviorPlanningSystem, // materializes the decision token into concrete state
     FeintProgressSystem, // mischievous approach-then-retreat signature activity

@@ -218,6 +218,7 @@ describe("demo scenario", () => {
       "WorkingBehaviorSystem",
       "SocialInteractionSystem",
       "BehaviorDecisionSystem",
+      "SignatureReactionSystem",
       "AutonomousBehaviorSystem",
       "BehaviorPlanningSystem",
       "FeintProgressSystem",

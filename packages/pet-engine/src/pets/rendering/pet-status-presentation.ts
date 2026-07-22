@@ -153,6 +153,10 @@ const ACTIVITY_OVERRIDABLE_ROWS: ReadonlySet<PetAnimationState> = new Set([
 
 /** Signature poses intentionally reuse task atlas rows but remain pet activities. */
 const SIGNATURE_ROW_ACTIVITY: ReadonlySet<PetActivityKind> = new Set([
+  "makingFriends",
+  "keepingDistance",
+  "playing",
+  "observing",
   "meditating",
   "keepingWatch",
   "peeking",

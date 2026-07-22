@@ -93,6 +93,11 @@ export function getPetAnimationState(
   // row advances through the pose's choreography as the claim is held, so two
   // poses sharing an opening row still diverge within the first second.
   const decision = componentStore.getComponent(id, "BehaviorDecisionState");
+  const signatureReaction = componentStore.getComponent(id, "SignatureReactionState");
+  if (signatureReaction) {
+    const pose = getExpressivePoseState(signatureReaction.pose, now - signatureReaction.startedAt);
+    if (pose) return pose;
+  }
   if (decision?.source === "autonomous") {
     const pose = getExpressivePoseState(decision.reason, now - decision.decidedAt);
     if (pose) return pose;

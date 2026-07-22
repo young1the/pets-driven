@@ -125,6 +125,10 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "session-greet": "makingFriends",
   "session-chat": "chatting",
   "session-chase": "playing",
+  "signature-reaction-join": "playing",
+  "signature-reaction-cheer": "makingFriends",
+  "signature-reaction-watch": "observing",
+  "signature-reaction-keep-distance": "keepingDistance",
   "social-invite": "makingFriends",
   socialized: "foundAFriend",
 };

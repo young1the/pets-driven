@@ -249,6 +249,7 @@ export type PetExpressionSource =
   | "petting"
   | "hover"
   | "social"
+  | "signature-reaction"
   | "romp"
   | "acknowledge"
   | "signature"
