@@ -1,5 +1,5 @@
 import type { PetName } from "@pets-driven/design-system";
-import { Button, IconButton, PetAvatar, TerminalIcon } from "@pets-driven/design-system";
+import { Button, PetAvatar, TerminalIcon } from "@pets-driven/design-system";
 import { localeLabels, locales, useTranslation } from "@pets-driven/i18n";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
@@ -314,54 +314,83 @@ const textLink: CSSProperties = {
   textDecoration: "underline",
   textUnderlineOffset: "3px",
 };
-const folderRow: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "13px",
-  padding: "13px 16px",
-  borderRadius: "14px",
-  border: "1px solid var(--border-soft)",
-  background: "var(--surface-card)",
-};
-const petdexCard: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "14px",
-  padding: "16px 18px",
-  borderRadius: "16px",
-  border: "2px solid var(--color-primary)",
-  background: "var(--surface-card)",
-  boxShadow: "0 0 0 4px var(--blossom-100)",
-};
-const petdexLink: CSSProperties = {
-  flex: "none",
-  padding: "10px 18px",
-  borderRadius: "999px",
-  background: "var(--color-primary)",
-  color: "var(--color-on-primary)",
-  fontFamily: "var(--font-body)",
-  fontWeight: 700,
-  fontSize: "13.5px",
-  textDecoration: "none",
-};
 const folderIcon: CSSProperties = {
-  fontSize: "18px",
+  fontSize: "16px",
   flex: "none",
   color: "var(--text-strong)",
 };
-const folderText: CSSProperties = {
+// Two combined action+label buttons ("browse Petdex" / "add via terminal").
+const petGetActions: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  marginTop: "18px",
+};
+const petGetButton: CSSProperties = {
   flex: 1,
   minWidth: 0,
+  boxSizing: "border-box",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "9px",
+  padding: "14px 16px",
+  borderRadius: "14px",
+  border: "1px solid var(--border-soft)",
+  background: "var(--surface-card)",
+  cursor: "pointer",
+  fontFamily: "var(--font-body)",
+  fontWeight: 700,
+  fontSize: "13.5px",
+  color: "var(--text-strong)",
+  textDecoration: "none",
+};
+// "N found ................ [ Choose folder ]" on one row.
+const folderCountRow: CSSProperties = {
   display: "flex",
-  flexDirection: "column",
+  alignItems: "center",
+  gap: "12px",
+  marginTop: "6px",
+};
+const folderSelectButton: CSSProperties = {
+  marginLeft: "auto",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "8px",
+  maxWidth: "60%",
+  padding: "9px 14px",
+  borderRadius: "12px",
+  border: "1px solid var(--border-soft)",
+  background: "var(--surface-card)",
+  cursor: "pointer",
+  fontFamily: "var(--font-body)",
+  fontWeight: 700,
+  fontSize: "13px",
+  color: "var(--text-strong)",
+};
+const folderSelectName: CSSProperties = {
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+const emptyStrip: CSSProperties = {
+  marginTop: "6px",
+  padding: "18px",
+  borderRadius: "14px",
+  border: "1px dashed var(--border-default)",
+  background: "var(--surface-sunken)",
+  textAlign: "center",
+  fontFamily: "var(--font-body)",
+  fontSize: "13px",
+  color: "var(--text-muted)",
 };
 const pluginGrid: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "1fr",
+  display: "flex",
   gap: "12px",
   marginTop: "6px",
 };
 const pluginCard = (selected: boolean, disabled: boolean): CSSProperties => ({
+  flex: "1 1 0",
+  minWidth: 0,
   display: "flex",
   alignItems: "center",
   gap: "12px",
@@ -384,6 +413,15 @@ const pluginBadge: CSSProperties = {
   fontSize: "17px",
   color: "#fff",
   flex: "none",
+};
+// One-line, ellipsized so the side-by-side agent cards stay a fixed height.
+const pluginSubtitle: CSSProperties = {
+  display: "block",
+  fontSize: "12px",
+  color: "var(--text-muted)",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
 };
 const heroWrap: CSSProperties = {
   display: "flex",
@@ -788,48 +826,47 @@ export function SetupWizard({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "10px",
-                marginTop: "18px",
+                gap: "12px",
               }}
             >
-              <div style={petdexCard}>
-                <span aria-hidden style={{ fontSize: "26px", flex: "none" }}>
-                  🐾
-                </span>
-                <span style={folderText}>
-                  <b style={{ color: "var(--text-strong)", fontSize: "14.5px" }}>
-                    {t("setupWizard.petdexTitle")}
-                  </b>
-                  <small style={{ color: "var(--text-muted)" }}>
-                    {t("setupWizard.petdexBlurb")}
-                  </small>
-                </span>
-                <a href={PETDEX_URL} rel="noreferrer" style={petdexLink} target="_blank">
-                  {t("setupWizard.petdexOpen")}
+              <div style={petGetActions}>
+                <a href={PETDEX_URL} rel="noreferrer" style={petGetButton} target="_blank">
+                  🐾 {t("setupWizard.petdexTitle")}
                 </a>
-                <IconButton
-                  label={t("onboarding.openTerminal")}
-                  onClick={() => setTerminalOpen(true)}
-                  variant="ghost"
-                >
-                  <TerminalIcon />
-                </IconButton>
+                <button onClick={() => setTerminalOpen(true)} style={petGetButton} type="button">
+                  <TerminalIcon size={16} />
+                  {t("setupWizard.petdexAddViaTerminal")}
+                </button>
               </div>
 
-              <div style={folderRow}>
-                <span aria-hidden style={folderIcon}>
-                  📁
+              <div style={folderCountRow}>
+                <span
+                  className={`pd-onb__listen${looksFound === null ? "" : " pd-onb__listen--ok"}`}
+                >
+                  <span
+                    className={`pd-onb__listen-dot${
+                      looksFound === null ? " pd-onb__listen-dot--pulse" : ""
+                    }`}
+                  />
+                  {looksFound === null
+                    ? t("setupWizard.petsFolderScanning")
+                    : t("setupWizard.petsFolderCount", { count: looksFound })}
                 </span>
-                <span style={folderText}>
-                  <b style={{ color: "var(--text-strong)", fontSize: "14px" }}>
+                <button
+                  onClick={() => void changePetFolder()}
+                  style={folderSelectButton}
+                  title={state.petSourceDirectory ?? defaultPetFolder ?? "~/.petdex/pets"}
+                  type="button"
+                >
+                  <span aria-hidden style={folderIcon}>
+                    📁
+                  </span>
+                  <span style={folderSelectName}>
                     {state.petSourceDirectory
                       ? folderName(state.petSourceDirectory)
-                      : t("setupWizard.petdexDefaultFolder")}
-                  </b>
-                  <small style={{ color: "var(--text-muted)" }}>
-                    {state.petSourceDirectory ?? defaultPetFolder ?? "~/.petdex/pets"}
-                  </small>
-                </span>
+                      : t("setupWizard.selectPetFolder")}
+                  </span>
+                </button>
                 {state.petSourceDirectory && (
                   <button
                     onClick={() => void applyPetSourceDirectory(null)}
@@ -839,34 +876,13 @@ export function SetupWizard({
                     {t("setupWizard.resetPetFolder")}
                   </button>
                 )}
-                <button
-                  onClick={() => void changePetFolder()}
-                  style={{ ...textLink, textDecoration: "none" }}
-                  type="button"
-                >
-                  {t("setupWizard.changePetFolder")}
-                </button>
               </div>
 
-              <div className={`pd-onb__listen${looksFound === null ? "" : " pd-onb__listen--ok"}`}>
-                <span
-                  className={`pd-onb__listen-dot${
-                    looksFound === null ? " pd-onb__listen-dot--pulse" : ""
-                  }`}
-                />
-                {looksFound === null
-                  ? t("setupWizard.petsFolderScanning")
-                  : t("setupWizard.petsFolderFound", { count: looksFound })}
-              </div>
-
-              {petPackages.length > 0 && (
-                <>
-                  <div style={{ ...sectionLabel, margin: "8px 0 0" }}>
-                    {t("setupWizard.petsFolderPreviewLabel")}
-                  </div>
-                  <PetLookStrip packages={petPackages} />
-                </>
-              )}
+              {petPackages.length > 0 ? (
+                <PetLookStrip packages={petPackages} />
+              ) : looksFound !== null ? (
+                <div style={emptyStrip}>{t("setupWizard.petsFolderEmpty")}</div>
+              ) : null}
             </div>
 
             <div style={footer}>
@@ -898,7 +914,9 @@ export function SetupWizard({
                   <b style={{ display: "block", color: "var(--text-strong)", fontSize: "15px" }}>
                     {t("setupWizard.claudeName")}
                   </b>
-                  <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{pluginHint}</span>
+                  <span style={pluginSubtitle} title={pluginHint}>
+                    {pluginHint}
+                  </span>
                 </div>
                 {claudePlugin.status?.state === "installed" ? (
                   <span className="pd-onb__connect-ok">✓ {t("claudePlugin.installed")}</span>
@@ -918,9 +936,7 @@ export function SetupWizard({
                   <b style={{ display: "block", color: "var(--text-strong)", fontSize: "15px" }}>
                     {t("setupWizard.codexName")}
                   </b>
-                  <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                    {t("setupWizard.comingSoon")}
-                  </span>
+                  <span style={pluginSubtitle}>{t("setupWizard.comingSoon")}</span>
                 </div>
               </div>
             </div>
