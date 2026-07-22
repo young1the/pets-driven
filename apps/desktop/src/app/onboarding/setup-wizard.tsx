@@ -1,5 +1,5 @@
 import type { PetName } from "@pets-driven/design-system";
-import { Button, PetAvatar, TerminalIcon } from "@pets-driven/design-system";
+import { Button, PetAvatar } from "@pets-driven/design-system";
 import { localeLabels, locales, useTranslation } from "@pets-driven/i18n";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
@@ -9,7 +9,6 @@ import { type CodexPetPackage, type DesktopGateway, desktopGateway } from "@/app
 import { useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { TerminalSection } from "@/app/main-window/terminal-section";
 import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
-import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
@@ -207,7 +206,13 @@ const content: CSSProperties = {
   flexDirection: "column",
   padding: "26px 44px 36px",
   boxSizing: "border-box",
-  minHeight: "100vh",
+  // Scroll the pane internally rather than growing the page, so tall steps
+  // (inline terminal) don't reflow the whole layout as content loads.
+  height: "100vh",
+  overflowY: "auto",
+  // Reserve the scrollbar gutter so it appearing/disappearing can't jitter the
+  // inline terminal width (which would trigger an xterm refit flicker).
+  scrollbarGutter: "stable",
 };
 const topBar: CSSProperties = {
   display: "flex",
@@ -228,6 +233,14 @@ const body: CSSProperties = {
   flexDirection: "column",
   justifyContent: "center",
   gap: "10px",
+};
+// Content-heavy steps (inline terminal) anchor to the top so resolving async
+// content doesn't re-center and visibly jump/flicker.
+const bodyTop: CSSProperties = {
+  ...body,
+  flex: "0 0 auto",
+  justifyContent: "flex-start",
+  paddingTop: "6px",
 };
 const eyebrow: CSSProperties = {
   fontFamily: "var(--font-body)",
@@ -343,6 +356,14 @@ const petGetButton: CSSProperties = {
   fontSize: "13.5px",
   color: "var(--text-strong)",
   textDecoration: "none",
+};
+// Accent-filled variant for the primary "browse Petdex" action.
+const petGetButtonPrimary: CSSProperties = {
+  ...petGetButton,
+  border: "1px solid var(--color-primary)",
+  background: "var(--color-primary)",
+  color: "var(--color-on-primary)",
+  boxShadow: "0 0 0 4px var(--blossom-100)",
 };
 // "N found ................ [ Choose folder ]" on one row.
 const folderCountRow: CSSProperties = {
@@ -545,7 +566,6 @@ export function SetupWizard({
   const [looksFound, setLooksFound] = useState<number | null>(null);
   const [petPackages, setPetPackages] = useState<CodexPetPackage[]>([]);
   const [defaultPetFolder, setDefaultPetFolder] = useState<string | null>(null);
-  const [terminalOpen, setTerminalOpen] = useState(false);
   const shellOptions = useTerminalShellOptions(gateway);
   const currentShell = state.terminalShell ?? "";
   // Keep a persisted shell the system probe didn't surface pickable in the list.
@@ -659,7 +679,7 @@ export function SetupWizard({
   return (
     <main
       aria-label={t("setupWizard.pageAria")}
-      style={{ display: "flex", minHeight: "100vh", background: "var(--cream)" }}
+      style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--cream)" }}
     >
       <aside style={rail}>
         <Wordmark
@@ -678,13 +698,28 @@ export function SetupWizard({
                   : "upcoming";
 
             return (
-              <div key={checklistStep} style={stepRow(rowState)}>
+              <button
+                aria-current={rowState === "active" ? "step" : undefined}
+                key={checklistStep}
+                onClick={() => setStep(checklistStep)}
+                style={{
+                  ...stepRow(rowState),
+                  border: 0,
+                  background: "transparent",
+                  padding: 0,
+                  width: "100%",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  font: "inherit",
+                }}
+                type="button"
+              >
                 <span style={stepBadge(rowState)}>{rowState === "done" ? "✓" : index + 1}</span>
                 <div>
                   <div style={stepTitle}>{t(`setupWizard.checklist.${checklistStep}.title`)}</div>
                   <div style={stepDesc}>{t(`setupWizard.checklist.${checklistStep}.desc`)}</div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -817,7 +852,7 @@ export function SetupWizard({
         )}
 
         {step === "petsFolder" && (
-          <section style={body}>
+          <section style={bodyTop}>
             <span style={eyebrow}>{t("setupWizard.petsFolderEyebrow")}</span>
             <h1 style={title}>{t("setupWizard.petsFolderTitle")}</h1>
             <p style={lede}>{t("setupWizard.petsFolderLede")}</p>
@@ -830,13 +865,9 @@ export function SetupWizard({
               }}
             >
               <div style={petGetActions}>
-                <a href={PETDEX_URL} rel="noreferrer" style={petGetButton} target="_blank">
+                <a href={PETDEX_URL} rel="noreferrer" style={petGetButtonPrimary} target="_blank">
                   🐾 {t("setupWizard.petdexTitle")}
                 </a>
-                <button onClick={() => setTerminalOpen(true)} style={petGetButton} type="button">
-                  <TerminalIcon size={16} />
-                  {t("setupWizard.petdexAddViaTerminal")}
-                </button>
               </div>
 
               <div style={folderCountRow}>
@@ -864,7 +895,7 @@ export function SetupWizard({
                   <span style={folderSelectName}>
                     {state.petSourceDirectory
                       ? folderName(state.petSourceDirectory)
-                      : t("setupWizard.selectPetFolder")}
+                      : t("setupWizard.petdexDefaultFolder")}
                   </span>
                 </button>
                 {state.petSourceDirectory && (
@@ -883,6 +914,19 @@ export function SetupWizard({
               ) : looksFound !== null ? (
                 <div style={emptyStrip}>{t("setupWizard.petsFolderEmpty")}</div>
               ) : null}
+
+              <div style={{ ...sectionLabel, margin: "8px 0 0" }}>
+                {t("setupWizard.petdexAddViaTerminal")}
+              </div>
+              <p style={fieldHint}>{t("onboarding.terminalHint")}</p>
+              <div style={inlineTermShell}>
+                <TerminalSection
+                  available={isTauri()}
+                  initialCwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
+                  pickDirectory={() => gateway.pickDirectory()}
+                  shell={state.terminalShell}
+                />
+              </div>
             </div>
 
             <div style={footer}>
@@ -902,7 +946,7 @@ export function SetupWizard({
         )}
 
         {step === "plugin" && (
-          <section style={body}>
+          <section style={bodyTop}>
             <span style={eyebrow}>{t("setupWizard.pluginEyebrow")}</span>
             <h1 style={title}>{t("setupWizard.pluginTitle")}</h1>
             <p style={lede}>{t("setupWizard.pluginLede")}</p>
@@ -1003,14 +1047,6 @@ export function SetupWizard({
           </section>
         )}
       </div>
-
-      <PetdexTerminalDialog
-        available={isTauri()}
-        cwd={state.petSourceDirectory ?? defaultPetFolder ?? null}
-        onClose={() => setTerminalOpen(false)}
-        open={terminalOpen}
-        shell={state.terminalShell}
-      />
     </main>
   );
 }
