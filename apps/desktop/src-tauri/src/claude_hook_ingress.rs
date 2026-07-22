@@ -303,7 +303,7 @@ fn api_endpoint_descriptors() -> serde_json::Value {
             "path": PETS_DRIVEN_LIST_PATH,
             "method": "POST",
             "body": null,
-            "description": "Lists every pet currently in state: id, name, assetId, personalityId, cwd, visible, archived, adoptedAt."
+            "description": "Lists every pet currently in state: id, name, assetId, personalityId, cwd, visible, archived, adoptedAt. cwd is null for a pet with no folder bound."
         },
         {
             "path": PETS_DRIVEN_PET_PATH,
@@ -334,9 +334,10 @@ fn api_endpoint_descriptors() -> serde_json::Value {
                 "personalityId": "string, optional, see /pets-driven/options",
                 "visible": "bool, optional",
                 "archived": "bool, optional",
-                "memo": "string, optional"
+                "memo": "string, optional",
+                "cwd": "string or null, optional — a string re-binds the pet to that folder, null detaches it"
             },
-            "description": "Patches one pet's editable fields. Only petId is required; omitted fields are left unchanged."
+            "description": "Patches one pet's editable fields. Only petId is required; omitted fields are left unchanged. A pet with cwd null keeps living with no folder bound, so no agent event routes to it. 409 if the requested folder already belongs to another pet."
         },
         {
             "path": PETS_DRIVEN_PET_DELETE_PATH,
@@ -468,6 +469,20 @@ fn handle_get_pet_request(
     }
 }
 
+/// Read the tri-state `cwd` field of a pet-update payload: absent leaves the
+/// pet's folder binding alone, an explicit `null` detaches it, and a string
+/// re-binds the pet to that folder.
+fn pet_update_cwd_from_payload(
+    payload: &serde_json::Value,
+) -> Result<Option<Option<String>>, String> {
+    match payload.get("cwd") {
+        None => Ok(None),
+        Some(serde_json::Value::Null) => Ok(Some(None)),
+        Some(serde_json::Value::String(path)) => Ok(Some(Some(path.to_string()))),
+        Some(_) => Err("cwd must be a string or null".to_string()),
+    }
+}
+
 fn handle_update_pet_request(
     app: &tauri::AppHandle,
     payload: &serde_json::Value,
@@ -482,6 +497,18 @@ fn handle_update_pet_request(
         return;
     };
 
+    let cwd = match pet_update_cwd_from_payload(payload) {
+        Ok(cwd) => cwd,
+        Err(error) => {
+            let _ = write_http_response(
+                stream,
+                "400 Bad Request",
+                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
+            );
+            return;
+        }
+    };
+
     let input = crate::state_store::PetUpdateInput {
         pet_id: pet_id.to_string(),
         name: payload.get("name").and_then(|value| value.as_str()).map(str::to_string),
@@ -492,6 +519,7 @@ fn handle_update_pet_request(
         visible: payload.get("visible").and_then(|value| value.as_bool()),
         archived: payload.get("archived").and_then(|value| value.as_bool()),
         memo: payload.get("memo").and_then(|value| value.as_str()).map(str::to_string),
+        cwd,
     };
     let pet_id = pet_id.to_string();
 
@@ -505,6 +533,9 @@ fn handle_update_pet_request(
         Err(error) => {
             let status = if error.starts_with("No pet found") {
                 "404 Not Found"
+            } else if error.starts_with("Working directory already has pet") {
+                // Same shape as /pets-driven/hatch: the folder is taken.
+                "409 Conflict"
             } else {
                 "400 Bad Request"
             };
@@ -832,6 +863,23 @@ mod tests {
         assert_eq!(input.asset_id, "cato");
         assert_eq!(input.name, "Rex");
         assert_eq!(input.personality_id, "playful");
+    }
+
+    #[test]
+    fn pet_update_cwd_distinguishes_absent_null_and_string() {
+        assert_eq!(
+            pet_update_cwd_from_payload(&serde_json::json!({ "petId": "pet-1" })),
+            Ok(None)
+        );
+        assert_eq!(
+            pet_update_cwd_from_payload(&serde_json::json!({ "petId": "pet-1", "cwd": null })),
+            Ok(Some(None))
+        );
+        assert_eq!(
+            pet_update_cwd_from_payload(&serde_json::json!({ "petId": "pet-1", "cwd": "D:/proj" })),
+            Ok(Some(Some("D:/proj".to_string())))
+        );
+        assert!(pet_update_cwd_from_payload(&serde_json::json!({ "cwd": 7 })).is_err());
     }
 
     #[test]
