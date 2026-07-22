@@ -23,26 +23,10 @@
     "eyebrow": "Your pack",
     "greeting": "Hello,",
     "greetings": {
-      "morning": [
-        "Good morning,",
-        "Rise and shine,",
-        "Morning,"
-      ],
-      "afternoon": [
-        "Good afternoon,",
-        "Hope your day's going well,",
-        "Afternoon,"
-      ],
-      "evening": [
-        "Good evening,",
-        "Winding down for the day,",
-        "Evening,"
-      ],
-      "night": [
-        "Working late,",
-        "Burning the midnight oil,",
-        "Still up,"
-      ]
+      "morning": ["Good morning,", "Rise and shine,", "Morning,"],
+      "afternoon": ["Good afternoon,", "Hope your day's going well,", "Afternoon,"],
+      "evening": ["Good evening,", "Winding down for the day,", "Evening,"],
+      "night": ["Working late,", "Burning the midnight oil,", "Still up,"]
     },
     "greetingName": "Trainer!",
     "addPet": "Add a pet",
@@ -398,12 +382,7 @@
         "Psst, over here!",
         "You have to see this!"
       ],
-      "started": [
-        "On it. Race you!",
-        "Here we go!",
-        "Watch me zoom!",
-        "Let's gooo!"
-      ],
+      "started": ["On it. Race you!", "Here we go!", "Watch me zoom!", "Let's gooo!"],
       "completed": [
         "Done! Play time?",
         "Nailed it! Now let's play.",
@@ -442,12 +421,7 @@
         "A quick check, please?",
         "Would you mind glancing over?"
       ],
-      "started": [
-        "I am on it.",
-        "Right away.",
-        "Taking care of it now.",
-        "Consider it handled."
-      ],
+      "started": ["I am on it.", "Right away.", "Taking care of it now.", "Consider it handled."],
       "completed": [
         "All done. I kept watch.",
         "Finished, and I noted everything.",
@@ -474,24 +448,14 @@
       ]
     },
     "reserved": {
-      "idle": [
-        "I will be here.",
-        "Quiet suits me.",
-        "No need to check in.",
-        "Content right here."
-      ],
+      "idle": ["I will be here.", "Quiet suits me.", "No need to check in.", "Content right here."],
       "attention": [
         "When you have a moment...",
         "If you can spare a second.",
         "No rush, but when free.",
         "Whenever it suits you."
       ],
-      "started": [
-        "I will start quietly.",
-        "Beginning, calmly.",
-        "Underway.",
-        "Working, quietly."
-      ],
+      "started": ["I will start quietly.", "Beginning, calmly.", "Underway.", "Working, quietly."],
       "completed": [
         "It is finished.",
         "Done, without fuss.",
@@ -530,12 +494,7 @@
         "Look what turned up!",
         "This is worth a look!"
       ],
-      "started": [
-        "Let me investigate.",
-        "Time to dig in.",
-        "Off to explore.",
-        "Let's find out."
-      ],
+      "started": ["Let me investigate.", "Time to dig in.", "Off to explore.", "Let's find out."],
       "completed": [
         "Mystery solved!",
         "Figured it out!",
@@ -574,18 +533,8 @@
         "A call is needed.",
         "Awaiting your go-ahead."
       ],
-      "started": [
-        "Proceeding now.",
-        "Beginning the task.",
-        "Underway.",
-        "Starting on schedule."
-      ],
-      "completed": [
-        "Task complete.",
-        "Done, as planned.",
-        "Finished on time.",
-        "Objective met."
-      ],
+      "started": ["Proceeding now.", "Beginning the task.", "Underway.", "Starting on schedule."],
+      "completed": ["Task complete.", "Done, as planned.", "Finished on time.", "Objective met."],
       "ackWaiting": [
         "Confirmed. Continuing.",
         "Acknowledged. Moving on.",
@@ -618,36 +567,16 @@
         "Give the word.",
         "Point me at it."
       ],
-      "started": [
-        "I am going in.",
-        "Charging ahead.",
-        "On it, full speed.",
-        "Straight for it."
-      ],
-      "completed": [
-        "Handled.",
-        "Done and dusted.",
-        "Crushed it.",
-        "That is settled."
-      ],
-      "ackWaiting": [
-        "Good. Moving on.",
-        "Right, next.",
-        "Onward, then.",
-        "Let's keep rolling."
-      ],
+      "started": ["I am going in.", "Charging ahead.", "On it, full speed.", "Straight for it."],
+      "completed": ["Handled.", "Done and dusted.", "Crushed it.", "That is settled."],
+      "ackWaiting": ["Good. Moving on.", "Right, next.", "Onward, then.", "Let's keep rolling."],
       "ackFailed": [
         "No problem. Another run.",
         "Again — I am ready.",
         "So we go again.",
         "Round two, then."
       ],
-      "ackCompleted": [
-        "Told you I had it.",
-        "Called it.",
-        "Never a doubt.",
-        "Easy. What's next?"
-      ]
+      "ackCompleted": ["Told you I had it.", "Called it.", "Never a doubt.", "Easy. What's next?"]
     },
     "gentle": {
       "idle": [
@@ -750,12 +679,7 @@
         "Over here, if you must.",
         "Mind coming to me?"
       ],
-      "started": [
-        "Okay... starting.",
-        "Fine, here goes.",
-        "Ugh, on it.",
-        "Slowly beginning."
-      ],
+      "started": ["Okay... starting.", "Fine, here goes.", "Ugh, on it.", "Slowly beginning."],
       "completed": [
         "Finished. Nap time.",
         "Done. Now I rest.",
@@ -794,12 +718,7 @@
         "A gentle choice awaits.",
         "Consider, without haste."
       ],
-      "started": [
-        "I will begin.",
-        "It starts, softly.",
-        "The path opens.",
-        "I move with it."
-      ],
+      "started": ["I will begin.", "It starts, softly.", "The path opens.", "I move with it."],
       "completed": [
         "It is complete.",
         "The work settles.",
@@ -850,12 +769,7 @@
         "Naturally, complete.",
         "As expected, finished."
       ],
-      "ackWaiting": [
-        "That will do.",
-        "Adequate.",
-        "Fine. Continuing.",
-        "Acceptable. Onward."
-      ],
+      "ackWaiting": ["That will do.", "Adequate.", "Fine. Continuing.", "Acceptable. Onward."],
       "ackFailed": [
         "I will deal with it.",
         "I need no help for this.",

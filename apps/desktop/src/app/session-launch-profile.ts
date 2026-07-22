@@ -138,4 +138,3 @@ export function promptForLaunchProfile(profile: LaunchProfileId): string {
 
   return "C:\\>";
 }
-

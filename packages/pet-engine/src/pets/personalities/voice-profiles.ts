@@ -24,7 +24,10 @@ export type AcknowledgeFeedback = {
  * has {@link PET_SPEECH_VARIANT_COUNT} interchangeable variants.
  */
 type PersonalityVoiceProfile = {
-  acknowledge: Record<AcknowledgedTaskStatus, { mood: PetExpressionMood; emote: PetExpressionEmote }>;
+  acknowledge: Record<
+    AcknowledgedTaskStatus,
+    { mood: PetExpressionMood; emote: PetExpressionEmote }
+  >;
 };
 
 /** Key prefix the render layer recognizes as a localizable speech line (vs. free text). */

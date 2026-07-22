@@ -140,8 +140,7 @@ html.pet-window-fixture-preview .pet-window-surface {
 
 .pet-window-status-card__inner--expanded {
   border-radius: 13px;
-  padding:
-    calc(7px * var(--pet-window-card-scale, 1)) calc(11px * var(--pet-window-card-scale, 1))
+  padding: calc(7px * var(--pet-window-card-scale, 1)) calc(11px * var(--pet-window-card-scale, 1))
     calc(8px * var(--pet-window-card-scale, 1));
 }
 

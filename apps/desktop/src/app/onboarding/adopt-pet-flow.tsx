@@ -533,9 +533,7 @@ export function AdoptPetFlow({
                     <FolderIcon />
                   </span>
                   <b className="pd-onb__empty-card-title">{t("onboarding.emptyChooseFolder")}</b>
-                  <p className="pd-onb__empty-card-desc">
-                    {t("onboarding.emptyChooseFolderHint")}
-                  </p>
+                  <p className="pd-onb__empty-card-desc">{t("onboarding.emptyChooseFolderHint")}</p>
                   <span className="pd-onb__empty-card-cue" aria-hidden>
                     →
                   </span>

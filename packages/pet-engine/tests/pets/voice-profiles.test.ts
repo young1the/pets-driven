@@ -1,8 +1,8 @@
 import { PERSONALITY_REGISTRY } from "@pets-driven/pet-engine/pets/personalities/registry";
 import {
+  PERSONALITY_VOICE_PROFILES,
   PET_SPEECH_KEY_PREFIX,
   PET_SPEECH_VARIANT_COUNT,
-  PERSONALITY_VOICE_PROFILES,
   personalityAcknowledgeFeedback,
   personalitySpeechProfile,
   resolveSpeechVariant,
