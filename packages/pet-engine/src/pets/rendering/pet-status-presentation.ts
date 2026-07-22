@@ -27,6 +27,7 @@ export type PetStatusLabelKey =
   // Partner-aware variants of the social activities (need a {{name}} param).
   | "chattingWith"
   | "playingWith"
+  | "dancingWith"
   | "makingFriendsWith";
 
 /**
@@ -74,6 +75,7 @@ type IntentPresentation = {
 const SOCIAL_WITH_KEY: Partial<Record<PetActivityKind, PetStatusLabelKey>> = {
   chatting: "chattingWith",
   playing: "playingWith",
+  dancing: "dancingWith",
   makingFriends: "makingFriendsWith",
 };
 
@@ -194,6 +196,7 @@ const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   beingPetted: "Being petted",
   chatting: "Chatting",
   playing: "Playing",
+  dancing: "Dancing",
   onTheMove: "On the move",
   greeting: "Hi there!",
   grooming: "Tidying up",
@@ -249,6 +252,7 @@ const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   beingPetted: activityEntry("beingPetted", "love", "heart"),
   chatting: activityEntry("chatting", "happy", "none"),
   playing: activityEntry("playing", "excited", "sparkle"),
+  dancing: activityEntry("dancing", "excited", "note"),
   onTheMove: activityEntry("onTheMove", "working", "none"),
   greeting: activityEntry("greeting", "happy", "sparkle"),
   grooming: activityEntry("grooming", "working", "none"),

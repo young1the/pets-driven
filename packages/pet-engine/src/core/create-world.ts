@@ -276,6 +276,12 @@ export function createWorld(input: WorldDefinition) {
           icon: "✦",
           label: "chasing a friend",
         };
+      case "session-dance":
+        return {
+          kind: "playful",
+          icon: "🎵",
+          label: "dancing with a friend",
+        };
       case "social-invite":
         return {
           kind: "affection",

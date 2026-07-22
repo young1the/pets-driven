@@ -190,6 +190,7 @@ describe("derivePetActivity", () => {
     const cases: Array<[string, string]> = [
       ["session-greet", "makingFriends"],
       ["session-chase", "playing"],
+      ["session-dance", "dancing"],
       ["social-invite", "makingFriends"],
       ["socialized", "foundAFriend"],
     ];

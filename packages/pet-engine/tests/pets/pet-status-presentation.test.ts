@@ -87,8 +87,9 @@ describe("presentPetStatus", () => {
     expect(presentation.labelParams).toEqual({ name: "Otto" });
   });
 
-  it("maps playing and making-friends to their partner-aware variants", () => {
+  it("maps social activities to their partner-aware variants", () => {
     expect(presentPetStatus("running-right", null, "playing", "Bo").labelKey).toBe("playingWith");
+    expect(presentPetStatus("waving", null, "dancing", "Bo").labelKey).toBe("dancingWith");
     expect(presentPetStatus("running-right", null, "makingFriends", "Bo").labelKey).toBe(
       "makingFriendsWith",
     );

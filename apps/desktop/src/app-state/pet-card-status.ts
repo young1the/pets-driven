@@ -13,7 +13,11 @@ export type PetBehaviorLabelKey = PetActivityKind;
  * Partner-aware variants of the social activity labels: when the pet is in a
  * live session, the chip names its partner ("Chatting with Otto").
  */
-export type PetCardSocialLabelKey = "chattingWith" | "playingWith" | "makingFriendsWith";
+export type PetCardSocialLabelKey =
+  | "chattingWith"
+  | "playingWith"
+  | "dancingWith"
+  | "makingFriendsWith";
 
 /** Stable key for a card status label, so the UI can localize it. */
 export type PetCardStatusLabelKey =
@@ -44,6 +48,7 @@ const SOCIAL_WITH_LABEL: Partial<
 > = {
   chatting: { key: "chattingWith", label: "Chatting with" },
   playing: { key: "playingWith", label: "Playing with" },
+  dancing: { key: "dancingWith", label: "Dancing with" },
   makingFriends: { key: "makingFriendsWith", label: "Making friends with" },
 };
 
@@ -87,6 +92,7 @@ const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
   beingPetted: "Being petted",
   chatting: "Chatting",
   playing: "Playing",
+  dancing: "Dancing",
   onTheMove: "On the move",
   greeting: "Hi there!",
   grooming: "Tidying up",

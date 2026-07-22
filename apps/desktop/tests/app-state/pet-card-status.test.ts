@@ -100,7 +100,7 @@ describe("petStatusFromSnapshot", () => {
     expect(status.labelParams).toEqual({ name: "Otto" });
   });
 
-  it("maps playing and making-friends to their partner-aware variants", () => {
+  it("maps social activities to their partner-aware variants", () => {
     const playing = petStatusFromSnapshot(
       snapshot(null, {
         activity: "playing",
@@ -114,6 +114,19 @@ describe("petStatusFromSnapshot", () => {
       }),
     );
     expect(playing.labelKey).toBe("playingWith");
+    const dancing = petStatusFromSnapshot(
+      snapshot(null, {
+        activity: "dancing",
+        social: {
+          kind: "dance",
+          phase: "play",
+          role: "responder",
+          partnerId: "p",
+          partnerName: "Bo",
+        },
+      }),
+    );
+    expect(dancing.labelKey).toBe("dancingWith");
     const greeting = petStatusFromSnapshot(
       snapshot(null, {
         activity: "makingFriends",

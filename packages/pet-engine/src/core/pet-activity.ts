@@ -21,6 +21,7 @@ export type PetActivityKind =
   | "beingPetted"
   | "chatting"
   | "playing"
+  | "dancing"
   | "onTheMove"
   // Expressive idle poses and catalog-exclusive signature activities.
   | "greeting"
@@ -125,6 +126,7 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "session-greet": "makingFriends",
   "session-chat": "chatting",
   "session-chase": "playing",
+  "session-dance": "dancing",
   "signature-reaction-join": "playing",
   "signature-reaction-cheer": "makingFriends",
   "signature-reaction-watch": "observing",
