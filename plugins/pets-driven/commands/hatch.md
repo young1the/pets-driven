@@ -59,6 +59,7 @@ knows where they currently live and which folder the user designated.
    - `zen` — meditates; unbothered by anything around it.
    - `aloof` — withdraws and keeps to itself.
    - `skittish` — stands lookout and flees from contact.
+   - `shrewd` — observes and calculates; cool, deliberate, self-directed.
 
    The chosen id is `personalityId`.
 

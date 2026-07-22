@@ -325,6 +325,10 @@
     "skittish": {
       "title": "Skittish",
       "blurb": "Spooks at the slightest thing. Darts around, then bolts when a friend comes near."
+    },
+    "shrewd": {
+      "title": "Shrewd",
+      "blurb": "Cool and calculating. Reads the room, plays its own angles, and is never caught off guard."
     }
   },
   "contextMenu": {
@@ -879,6 +883,50 @@
         "Oh! Done — you scared me.",
         "Eep! Yes, all finished.",
         "You surprised me — but it's done!"
+      ]
+    },
+    "shrewd": {
+      "idle": [
+        "Let me think this through.",
+        "I see a few angles here.",
+        "Give me the board.",
+        "Planning the next move."
+      ],
+      "attention": [
+        "Point me at the problem.",
+        "I have a plan — brief me.",
+        "Tell me the constraints.",
+        "Let me read the situation."
+      ],
+      "started": [
+        "Calculating the approach.",
+        "I already mapped this out.",
+        "Executing the plan.",
+        "Three moves ahead."
+      ],
+      "completed": [
+        "Exactly as planned.",
+        "A predictable outcome.",
+        "The math checked out.",
+        "Anticipated."
+      ],
+      "ackWaiting": [
+        "Noted. Recalculating.",
+        "Adjusting the plan.",
+        "Factoring that in.",
+        "Understood — next move."
+      ],
+      "ackFailed": [
+        "A variable I missed. Recomputing.",
+        "New data. Adapting.",
+        "Back to the drawing board.",
+        "The plan updates."
+      ],
+      "ackCompleted": [
+        "As I calculated.",
+        "No surprise there.",
+        "The plan held.",
+        "Outcome as projected."
       ]
     },
     "social": {

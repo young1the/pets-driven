@@ -87,6 +87,7 @@ describe("Personality Catalog behavior signatures", () => {
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.feisty.primaryDecision).toBe("strut");
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.gentle.primaryDecision).toBe("offer-comfort");
     expect(PERSONALITY_BEHAVIOR_SIGNATURES.skittish.primaryDecision).toBe("stand-lookout");
+    expect(PERSONALITY_BEHAVIOR_SIGNATURES.shrewd.primaryDecision).toBe("observe");
   });
 
   it("distinguishes calm personalities by social and solo signatures", () => {

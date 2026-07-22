@@ -8,6 +8,7 @@ import {
   createMischievousPersonality,
   createPlayfulPersonality,
   createReservedPersonality,
+  createShrewdPersonality,
   createSkittishPersonality,
   createSteadyPersonality,
   createZenPersonality,
@@ -32,6 +33,7 @@ export const PERSONALITY_REGISTRY = [
   { id: "zen", factory: createZenPersonality },
   { id: "aloof", factory: createAloofPersonality },
   { id: "skittish", factory: createSkittishPersonality },
+  { id: "shrewd", factory: createShrewdPersonality },
 ] as const satisfies ReadonlyArray<PersonalityRegistryEntry>;
 
 export type PetPersonalityId = (typeof PERSONALITY_REGISTRY)[number]["id"];

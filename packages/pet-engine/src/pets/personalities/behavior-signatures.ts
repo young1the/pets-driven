@@ -182,6 +182,21 @@ export const PERSONALITY_BEHAVIOR_SIGNATURES: Record<PetPersonalityId, BehaviorS
     arrivalDwellScale: 0.55,
     socialKindScale: { greet: 1.4, chat: 0.45, chase: 0.25 },
   },
+  shrewd: {
+    primaryDecision: "observe",
+    decisionBias: {
+      observe: 0.9,
+      inspect: 0.25,
+      "wander-far": 0.2,
+      groom: 0.1,
+      greet: -0.5,
+      beckon: -0.45,
+      "play-romp": -0.4,
+    },
+    idleDurationScale: 1.4,
+    arrivalDwellScale: 1.35,
+    socialKindScale: { greet: 0.7, chat: 1.1, chase: 0.4 },
+  },
 };
 
 export function behaviorSignature(

@@ -149,6 +149,13 @@ export const PERSONALITY_VOICE_PROFILES: Record<PetPersonalityId, PersonalityVoi
       completed: { mood: "confused", emote: "exclaim" },
     },
   },
+  shrewd: {
+    acknowledge: {
+      waiting: { mood: "thinking", emote: "none" },
+      failed: { mood: "thinking", emote: "question" },
+      completed: { mood: "happy", emote: "none" },
+    },
+  },
 };
 
 /**

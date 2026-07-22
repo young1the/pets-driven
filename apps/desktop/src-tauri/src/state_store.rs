@@ -102,7 +102,7 @@ pub(crate) enum HatchError {
 
 // coupling: keep these in sync with the factories in
 // packages/pet-engine/src/pets/personalities/factories.ts
-pub(crate) const PERSONALITY_IDS: [&str; 12] = [
+pub(crate) const PERSONALITY_IDS: [&str; 13] = [
     "playful",
     "attentive",
     "reserved",
@@ -115,6 +115,7 @@ pub(crate) const PERSONALITY_IDS: [&str; 12] = [
     "zen",
     "aloof",
     "skittish",
+    "shrewd",
 ];
 
 pub(crate) fn personality_preset(personality_id: &str) -> Option<serde_json::Value> {
@@ -260,6 +261,18 @@ pub(crate) fn personality_preset(personality_id: &str) -> Option<serde_json::Val
             "extraversion": 0.25,
             "agreeableness": 0.5,
             "neuroticism": 0.95
+        })),
+        "shrewd" => Some(serde_json::json!({
+            "standForce": 0.0005,
+            "pursueForce": 0.001,
+            "arriveForce": 0.0013,
+            "idleConversationMs": 21000,
+            "completionIntent": "stand",
+            "openness": 0.85,
+            "conscientiousness": 0.82,
+            "extraversion": 0.3,
+            "agreeableness": 0.25,
+            "neuroticism": 0.08
         })),
         _ => None,
     }

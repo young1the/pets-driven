@@ -186,3 +186,17 @@ export const createSkittishPersonality: PersonalityFactory = () => ({
   agreeableness: 0.5,
   neuroticism: 0.95,
 });
+
+/** Cool tactician — clever, deliberate, self-directed; reads the room, plays its own angles, never rattled. */
+export const createShrewdPersonality: PersonalityFactory = () => ({
+  standForce: 0.0005,
+  pursueForce: 0.001,
+  arriveForce: 0.0013,
+  idleConversationMs: 21000,
+  completionIntent: "stand",
+  openness: 0.85,
+  conscientiousness: 0.82,
+  extraversion: 0.3,
+  agreeableness: 0.25,
+  neuroticism: 0.08,
+});

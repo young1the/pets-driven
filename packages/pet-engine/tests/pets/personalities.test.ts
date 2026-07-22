@@ -8,6 +8,7 @@ import {
   createMischievousPersonality,
   createPlayfulPersonality,
   createReservedPersonality,
+  createShrewdPersonality,
   createSkittishPersonality,
   createSteadyPersonality,
   createZenPersonality,
@@ -111,6 +112,15 @@ describe("personality factories — OCEAN axes", () => {
     expect(p.completionIntent).toBe("stand");
   });
 
+  it("shrewd pairs high openness and conscientiousness with low agreeableness and cool nerves", () => {
+    const p = createShrewdPersonality();
+    expect(p.openness).toBeGreaterThanOrEqual(0.85);
+    expect(p.conscientiousness).toBeGreaterThan(0.8);
+    expect(p.agreeableness).toBeLessThan(0.3);
+    expect(p.neuroticism).toBeLessThan(0.15);
+    expect(p.completionIntent).toBe("stand");
+  });
+
   it("all factories return all five OCEAN axes as numbers", () => {
     for (const factory of [
       createPlayfulPersonality,
@@ -125,6 +135,7 @@ describe("personality factories — OCEAN axes", () => {
       createZenPersonality,
       createAloofPersonality,
       createSkittishPersonality,
+      createShrewdPersonality,
     ]) {
       const p = factory();
       expect(typeof p.openness).toBe("number");
