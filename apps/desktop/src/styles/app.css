@@ -725,6 +725,17 @@ button.pd-onb__empty-card:disabled {
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
   width: 100%;
+  /* The registry gains a row per registered folder, so this list is the only
+     part of the step that grows without bound. Cap it against the viewport and
+     scroll it in place; otherwise it pushes the footer — and with it the Adopt
+     button — past the bottom of the window. The reserve covers the title block
+     above and the footer below; the floor keeps a usable list on short windows. */
+  align-content: start;
+  max-height: max(180px, calc(100vh - 440px));
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  /* Room for the 4px selection ring, which the scroll container would clip. */
+  padding: 5px;
 }
 
 .pd-onb__folder {
