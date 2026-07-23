@@ -25,7 +25,16 @@
   },
 
   "files": {
-    "includes": ["apps/**", "packages/**", "!**/dist", "!**/build", "!**/.next", "!**/coverage"]
+    "includes": [
+      "apps/**",
+      "packages/**",
+      "!**/dist",
+      "!**/build",
+      "!**/.next",
+      "!**/coverage",
+      "!**/src-tauri/target",
+      "!**/src-tauri/gen/schemas"
+    ]
   },
 
   "overrides": [
