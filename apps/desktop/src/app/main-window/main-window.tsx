@@ -27,7 +27,8 @@ export interface MainWindowProps {
   home: HomeSectionProps;
   edit: Omit<PetEditSectionProps, "pet">;
   settings: SettingsSectionProps;
-  terminal: TerminalSectionProps;
+  /** The coach is the terminal tab's own affair, so it is not wired from here. */
+  terminal: Omit<TerminalSectionProps, "showOnboarding">;
   debug: DebugSectionProps;
   toast: string | null;
 }
@@ -95,7 +96,9 @@ export function MainWindow({
       ) : tab === "home" ? (
         <HomeSection {...home} />
       ) : tab === "terminal" ? (
-        <TerminalSection {...terminal} />
+        // The terminal tab is the one surface that greets a new user with the
+        // Cato coach; every other reuse of TerminalSection leaves it off.
+        <TerminalSection {...terminal} showOnboarding />
       ) : tab === "settings" ? (
         <div className="pd-main__body">
           <SettingsSection {...settings} />
