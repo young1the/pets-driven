@@ -2430,12 +2430,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "pets-driven-cli"
+version = "0.2.0"
+dependencies = [
+ "pets-driven-protocol",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "pets-driven-core"
 version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.19",
+]
+
+[[package]]
+name = "pets-driven-protocol"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

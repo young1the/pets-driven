@@ -1,0 +1,28 @@
+[package]
+name = "pets-driven-cli"
+version = "0.2.0"
+description = "Command-line client for the running pets-driven desktop app"
+authors = ["pets-driven"]
+license = "MIT"
+edition = "2021"
+
+# The binary is `pets`, not `pets-driven`: the desktop crate already owns the
+# `pets-driven` binary name in this workspace, and the two must not collide in
+# the shared target directory.
+[[bin]]
+name = "pets"
+path = "src/main.rs"
+
+[lib]
+name = "pets_driven_cli"
+path = "src/lib.rs"
+
+# The CLI talks to the running desktop over the loopback protocol only. It must
+# never construct a state repository or touch state.v1.json, so it depends on
+# the protocol crate — not on pets-driven-core or the desktop crate. The
+# loopback HTTP transport is hand-rolled over std::net to avoid a Tokio/TLS
+# stack for a plain-HTTP loopback call.
+[dependencies]
+pets-driven-protocol = { path = "../pets-driven-protocol" }
+serde = "1"
+serde_json = "1"

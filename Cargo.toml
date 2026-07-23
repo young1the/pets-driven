@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "apps/desktop/src-tauri",
     "crates/pets-driven-core",
+    "crates/pets-driven-protocol",
+    "crates/pets-driven-cli",
 ]
 
 # The desktop Tauri binary and any future CLI both depend on shared Rust

@@ -1,0 +1,18 @@
+[package]
+name = "pets-driven-protocol"
+version = "0.2.0"
+description = "Typed loopback command and query messages for the pets-driven ingress"
+authors = ["pets-driven"]
+license = "MIT"
+edition = "2021"
+
+[lib]
+name = "pets_driven_protocol"
+
+# The shared wire contract between the desktop HTTP ingress and any local
+# client (the CLI). It carries only message shapes and route constants, so it
+# must stay transport-free: no HTTP client, no Tauri, no filesystem. Depends
+# only on serialization.
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
