@@ -1,6 +1,7 @@
 import { Button, PetShowcaseCard, PlusIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import { type CSSProperties, memo, useEffect, useRef, useState } from "react";
+import { type CSSProperties, memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { FAN_CARD_WIDTH, fanLayout, fanOffset, fanZIndex } from "@/app/main-window/home-fan-layout";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 
 export type HomePetView = {
@@ -41,7 +42,7 @@ function greetingPeriod(hour: number): GreetingPeriod {
 }
 
 /** Order the fan so the centre pet sits in the middle, others fan outward. */
-function fanOrder<T>(pets: T[]): { pet: T; index: number; center: number }[] {
+function fanOrder<T>(pets: T[]): { pet: T; index: number }[] {
   if (pets.length === 0) {
     return [];
   }
@@ -58,9 +59,46 @@ function fanOrder<T>(pets: T[]): { pet: T; index: number; center: number }[] {
     }
   }
 
-  const center = ordered.indexOf(pets[centerSource]);
+  return ordered.map((pet, index) => ({ pet, index }));
+}
 
-  return ordered.map((pet, index) => ({ pet, index, center }));
+/**
+ * Measure what the fan's geometry has to fit: the width it is drawn into, and
+ * the tallest card in it (a wrapped pet name makes one card taller than the
+ * rest, and a tilted card swings its whole height sideways). Width stays 0
+ * until the element is measured — and in headless renders — which `fanLayout`
+ * reads as "spread freely".
+ */
+function useFanMetrics(
+  ref: React.RefObject<HTMLElement>,
+  cardCount: number,
+): { width: number; cardHeight: number } {
+  const [metrics, setMetrics] = useState({ width: 0, cardHeight: 0 });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `cardCount` is not read in the effect, it is the trigger — adding or removing a card changes which cards there are to measure, and the tallest of them is exactly what the effect reads out of the DOM.
+  useLayoutEffect(() => {
+    function measure() {
+      const fan = ref.current;
+      const cards = fan ? [...fan.querySelectorAll<HTMLElement>(".pd-home__fan-card")] : [];
+
+      setMetrics((current) => {
+        const next = {
+          width: fan?.clientWidth ?? 0,
+          cardHeight: cards.reduce((tallest, card) => Math.max(tallest, card.offsetHeight), 0),
+        };
+
+        return next.width === current.width && next.cardHeight === current.cardHeight
+          ? current
+          : next;
+      });
+    }
+
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [ref, cardCount]);
+
+  return metrics;
 }
 
 export const HomeSection = memo(function HomeSection({
@@ -93,6 +131,8 @@ export const HomeSection = memo(function HomeSection({
   // instead of on every pointer move.
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const cardElsRef = useRef(new Map<string, HTMLDivElement>());
+  const fanRef = useRef<HTMLDivElement>(null);
+  const fanMetrics = useFanMetrics(fanRef, atHome.length);
 
   const onEditRef = useRef(onEdit);
   onEditRef.current = onEdit;
@@ -158,8 +198,7 @@ export const HomeSection = memo(function HomeSection({
   }
 
   const n = atHome.length;
-  const stepX = n <= 5 ? 150 : n <= 7 ? 124 : n <= 9 ? 104 : 88;
-  const rotX = n <= 6 ? 7 : n <= 9 ? 5.5 : 4.5;
+  const { stepX, rotationDeg, dropY } = fanLayout(n, fanMetrics.width, fanMetrics.cardHeight);
   const ordered = fanOrder(atHome);
 
   const homeClass = [
@@ -301,10 +340,14 @@ export const HomeSection = memo(function HomeSection({
         ) : null}
       </div>
 
-      <div className="pd-home__fan">
-        {ordered.map(({ pet, index, center }) => {
-          const d = index - center;
-          const ty = Math.abs(d) * 22;
+      <div
+        className="pd-home__fan"
+        ref={fanRef}
+        style={{ "--pd-fan-card-width": `${FAN_CARD_WIDTH}px` } as CSSProperties}
+      >
+        {ordered.map(({ pet, index }) => {
+          const d = fanOffset(index, n);
+          const ty = Math.abs(d) * dropY;
           const hovered = hoverId === pet.id;
           const dragging = draggingId === pet.id;
           const wrapStyle: CSSProperties = {
@@ -315,8 +358,8 @@ export const HomeSection = memo(function HomeSection({
               ? `translate(-50%, ${ty}px) scale(1.06)`
               : hovered
                 ? `translateX(-50%) translateY(${ty - 60}px) rotate(0deg) scale(1.06)`
-                : `translateX(-50%) translateY(${ty}px) rotate(${d * rotX}deg)`,
-            zIndex: dragging ? 300 : hovered ? 200 : 60 - Math.round(Math.abs(d) * 6),
+                : `translateX(-50%) translateY(${ty}px) rotate(${d * rotationDeg}deg)`,
+            zIndex: dragging ? 300 : hovered ? 200 : fanZIndex(d, n),
           };
 
           return (

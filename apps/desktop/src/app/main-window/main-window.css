@@ -66,7 +66,10 @@
 .pd-home__fan-card {
   position: absolute;
   bottom: -40px;
-  width: 224px;
+  /* Set from FAN_CARD_WIDTH in home-fan-layout.ts, which sizes the fan's spread
+     around this width — the fallback only covers a card rendered outside the
+     fan container. Keep the two in step by editing the constant, not this. */
+  width: var(--pd-fan-card-width, 224px);
   transform-origin: bottom center;
   transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   user-select: none;
