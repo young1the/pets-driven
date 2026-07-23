@@ -91,7 +91,14 @@
     "agentConnectionDesc": "Your pets react to Claude Code sessions through this plugin.",
     "defaultTerminal": "Default terminal",
     "defaultTerminalDesc": "The shell the in-app terminal opens, detected from your system. Pick “System default” to follow COMSPEC / SHELL.",
-    "defaultTerminalSystem": "System default"
+    "defaultTerminalSystem": "System default",
+    "resetAll": "Reset all settings",
+    "resetAllDesc": "Put every setting on this screen back to its default. Your pets stay exactly as they are — none of them are removed.",
+    "resetAllAction": "Reset all settings",
+    "resetAllConfirmTitle": "Reset every setting?",
+    "resetAllConfirmHint": "Terminal, pets folder, appearance and language go back to their defaults. Your pets, their folders and their looks are not touched.",
+    "resetAllCancel": "Keep my settings",
+    "resetAllConfirm": "Yes, reset settings"
   },
   "hook": {
     "summary": {
@@ -423,7 +430,8 @@
     "removed": "{{name}} was removed",
     "diagnosticsCopied": "Pet diagnostics copied",
     "diagnosticsReady": "Pet diagnostics ready",
-    "folderOccupied": "That folder already belongs to another pet"
+    "folderOccupied": "That folder already belongs to another pet",
+    "settingsReset": "Settings are back to their defaults"
   },
   "confirm": {
     "deletePet": "Send {{name}} home for good? This removes the pet."

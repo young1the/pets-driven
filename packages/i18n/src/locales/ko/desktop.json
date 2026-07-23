@@ -91,7 +91,14 @@
     "agentConnectionDesc": "펫이 Claude Code 작업에 반응하려면 이 플러그인이 필요해요.",
     "defaultTerminal": "기본 터미널",
     "defaultTerminalDesc": "인앱 터미널이 여는 셸이에요. 시스템에서 감지한 목록에서 고르거나, ‘시스템 기본값’을 선택하면 COMSPEC / SHELL을 따라요.",
-    "defaultTerminalSystem": "시스템 기본값"
+    "defaultTerminalSystem": "시스템 기본값",
+    "resetAll": "모든 설정 초기화",
+    "resetAllDesc": "이 화면의 모든 설정을 기본값으로 되돌려요. 펫은 그대로 남고, 삭제되지 않아요.",
+    "resetAllAction": "모든 설정 초기화",
+    "resetAllConfirmTitle": "모든 설정을 초기화할까요?",
+    "resetAllConfirmHint": "터미널, 펫 폴더, 테마, 언어가 기본값으로 돌아가요. 펫과 펫의 폴더, 모습은 건드리지 않아요.",
+    "resetAllCancel": "설정 유지하기",
+    "resetAllConfirm": "네, 초기화할게요"
   },
   "hook": {
     "summary": {
@@ -423,7 +430,8 @@
     "removed": "{{name}}이(가) 삭제되었어요",
     "diagnosticsCopied": "펫 진단이 복사되었어요",
     "diagnosticsReady": "펫 진단이 준비되었어요",
-    "folderOccupied": "이 폴더는 이미 다른 펫의 것이에요"
+    "folderOccupied": "이 폴더는 이미 다른 펫의 것이에요",
+    "settingsReset": "설정이 기본값으로 돌아왔어요"
   },
   "confirm": {
     "deletePet": "{{name}}을(를) 완전히 집으로 보낼까요? 펫이 삭제돼요."
