@@ -12,6 +12,7 @@ import {
   clearWorkingDirectoryForPet,
   registerWorkingDirectory,
   removePet,
+  setPetAsset,
 } from "@/app-state/pet-adoption";
 import {
   carryOverPetVisibility,
@@ -205,6 +206,20 @@ export function usePetRosterActions({
   }
 
   /**
+   * Re-skin a pet to another installed Pet Asset. A deployed pet keeps its
+   * overlay window: the window's asset id travels on the frame stream, so the
+   * sprite swaps in place rather than the window being torn down and rebuilt.
+   */
+  function setPetAssetId(petId: string, assetId: string) {
+    const next = setPetAsset(stateRef.current, petId, assetId);
+    if (next === stateRef.current) {
+      return;
+    }
+    applyState(next);
+    void desktopGateway.updatePet({ petId, assetId });
+  }
+
+  /**
    * `visible` is runtime-only: the gateway strips it before persisting and a
    * load always defaults it to false, so a visibility toggle has nothing to
    * save. Keep it out of the persistence path entirely — the state blob a
@@ -342,6 +357,7 @@ export function usePetRosterActions({
     updateTerminalShell,
     patchPet,
     setPetPersonality,
+    setPetAssetId,
     showPet,
     hidePet,
     showAllPets,

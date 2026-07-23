@@ -47,6 +47,39 @@ export function adoptPet(state: PetsDrivenState, input: AdoptPetInput): PetsDriv
 }
 
 /**
+ * Re-skin an existing pet: point it at another installed Pet Asset.
+ *
+ * A Pet Asset is first chosen at Pet Birth, but it is a presentation choice
+ * rather than an identity, so it stays editable afterwards. The id is stored
+ * twice — on the pet (what the overlay window renders) and on its profile
+ * (what pet-engine validates) — and the two must never disagree, so this is the
+ * only mutation path for it. Mirrors `apply_pet_update` in
+ * `src-tauri/src/state_store.rs`. Returns the same state reference when the pet
+ * does not exist or already wears that asset.
+ */
+export function setPetAsset(
+  state: PetsDrivenState,
+  petId: string,
+  assetId: string,
+): PetsDrivenState {
+  const pet = state.pets.find((candidate) => candidate.id === petId);
+
+  if (!pet || pet.assetId === assetId) {
+    return state;
+  }
+
+  return {
+    ...state,
+    pets: state.pets.map((candidate) =>
+      candidate.id === petId ? { ...candidate, assetId } : candidate,
+    ),
+    petProfiles: state.petProfiles.map((profile) =>
+      profile.id === pet.profileId ? { ...profile, petAssetId: assetId } : profile,
+    ),
+  };
+}
+
+/**
  * Permanently remove a pet, its profile, and any working directory it holds.
  * Other pets' directory links are left untouched. Returns the same state
  * reference when the pet does not exist.

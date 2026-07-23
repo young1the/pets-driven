@@ -100,6 +100,8 @@ export type DesktopGateway = {
   updatePet(input: {
     petId: string;
     name?: string;
+    /** Re-skin the pet to another installed Pet Asset. */
+    assetId?: string;
     personalityId?: string;
     archived?: boolean;
     memo?: string;

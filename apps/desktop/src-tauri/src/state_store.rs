@@ -648,6 +648,11 @@ pub(crate) fn find_pet_view(state: &serde_json::Value, pet_id: &str) -> Option<s
 pub(crate) struct PetUpdateInput {
     pub pet_id: String,
     pub name: Option<String>,
+    /// The installed Pet Asset the pet wears. A Pet Asset is chosen at Pet
+    /// Birth but is not frozen there — re-skinning an existing pet writes both
+    /// the pet's `assetId` and its profile's `petAssetId`, which must never
+    /// disagree.
+    pub asset_id: Option<String>,
     pub personality_id: Option<String>,
     pub visible: Option<bool>,
     pub archived: Option<bool>,
@@ -689,6 +694,10 @@ pub(crate) fn pet_update_input_from_payload(
     Ok(PetUpdateInput {
         pet_id: pet_id.to_string(),
         name: payload.get("name").and_then(|value| value.as_str()).map(str::to_string),
+        asset_id: payload
+            .get("assetId")
+            .and_then(|value| value.as_str())
+            .map(str::to_string),
         personality_id: payload
             .get("personalityId")
             .and_then(|value| value.as_str())
@@ -712,6 +721,7 @@ struct WorkingDirectoryIds {
 pub(crate) enum PetUpdateError {
     NotFound,
     UnknownPersonality,
+    InvalidAssetId,
     InvalidCwd,
     CwdOccupied { owner_pet_id: String },
 }
@@ -743,6 +753,15 @@ fn apply_pet_update(
         },
         None => None,
     };
+
+    // The asset id is addressed as a directory name by the sprite loader and as
+    // a query parameter by the pet overlay window, so reject anything those two
+    // could not resolve before it reaches disk (same guard as hatching).
+    if let Some(asset_id) = &input.asset_id {
+        if crate::pet_assets::validate_asset_id(asset_id).is_err() {
+            return Err(PetUpdateError::InvalidAssetId);
+        }
+    }
 
     // Validate the requested folder before touching state, so a rejected
     // re-bind leaves the other patched fields unwritten too.
@@ -782,6 +801,9 @@ fn apply_pet_update(
             if let Some(name) = &input.name {
                 object.insert("name".to_string(), serde_json::json!(name));
             }
+            if let Some(asset_id) = &input.asset_id {
+                object.insert("assetId".to_string(), serde_json::json!(asset_id));
+            }
             if let Some(visible) = input.visible {
                 object.insert("visible".to_string(), serde_json::json!(visible));
             }
@@ -797,16 +819,30 @@ fn apply_pet_update(
         }
     }
 
-    if let (Some(personality_id), Some(personality)) = (&input.personality_id, personality) {
+    // The profile carries both the personality preset and a mirror of the pet's
+    // asset id, so patch it once for whichever of the two the caller sent.
+    let personality_patch = match (&input.personality_id, personality) {
+        (Some(personality_id), Some(personality)) => Some((personality_id, personality)),
+        _ => None,
+    };
+
+    if personality_patch.is_some() || input.asset_id.is_some() {
         if let Some(profiles) = next.get_mut("petProfiles").and_then(|value| value.as_array_mut()) {
             for profile in profiles.iter_mut() {
                 if profile.get("id").and_then(|value| value.as_str()) != Some(profile_id.as_str()) {
                     continue;
                 }
 
-                if let Some(object) = profile.as_object_mut() {
+                let Some(object) = profile.as_object_mut() else {
+                    continue;
+                };
+
+                if let Some((personality_id, personality)) = &personality_patch {
                     object.insert("personalityId".to_string(), serde_json::json!(personality_id));
-                    object.insert("personality".to_string(), personality.clone());
+                    object.insert("personality".to_string(), (*personality).clone());
+                }
+                if let Some(asset_id) = &input.asset_id {
+                    object.insert("petAssetId".to_string(), serde_json::json!(asset_id));
                 }
             }
         }
@@ -876,6 +912,7 @@ fn pet_update_error_message(error: PetUpdateError, pet_id: &str) -> String {
     match error {
         PetUpdateError::NotFound => format!("No pet found with id {pet_id}"),
         PetUpdateError::UnknownPersonality => "Unknown personality preset".to_string(),
+        PetUpdateError::InvalidAssetId => "Invalid Codex pet asset id".to_string(),
         PetUpdateError::InvalidCwd => {
             "Working directory path is empty or contains control characters".to_string()
         }
@@ -1278,6 +1315,7 @@ mod tests {
         PetUpdateInput {
             pet_id: pet_id.to_string(),
             name: None,
+            asset_id: None,
             personality_id: None,
             visible: None,
             archived: None,
@@ -1329,6 +1367,57 @@ mod tests {
         .expect("update should succeed");
 
         assert_eq!(next["pets"][0]["scale"], 1.4);
+    }
+
+    #[test]
+    fn apply_pet_update_reskins_the_pet_and_its_profile_together() {
+        let next = apply_pet_update(
+            &hatched_state(),
+            &PetUpdateInput {
+                asset_id: Some("otto".to_string()),
+                ..pet_update_input("pet-1")
+            },
+            &sample_working_directory_ids(),
+            2000,
+        )
+        .expect("update should succeed");
+
+        // Both copies of the asset id move: the pet drives the overlay window,
+        // the profile is what pet-engine validates.
+        assert_eq!(next["pets"][0]["assetId"], "otto");
+        assert_eq!(next["petProfiles"][0]["petAssetId"], "otto");
+        // Re-skinning is not a personality change.
+        assert_eq!(next["petProfiles"][0]["personalityId"], "playful");
+    }
+
+    #[test]
+    fn apply_pet_update_rejects_an_unaddressable_asset_id() {
+        let error = apply_pet_update(
+            &hatched_state(),
+            &PetUpdateInput {
+                asset_id: Some("../escape".to_string()),
+                name: Some("Rexy".to_string()),
+                ..pet_update_input("pet-1")
+            },
+            &sample_working_directory_ids(),
+            2000,
+        )
+        .expect_err("a path-traversing asset id must be rejected");
+
+        assert_eq!(error, PetUpdateError::InvalidAssetId);
+    }
+
+    #[test]
+    fn pet_update_input_reads_an_asset_id_off_the_payload() {
+        let absent = pet_update_input_from_payload(&serde_json::json!({ "petId": "pet-1" }))
+            .expect("a bare petId should parse");
+        assert_eq!(absent.asset_id, None);
+
+        let reskin = pet_update_input_from_payload(
+            &serde_json::json!({ "petId": "pet-1", "assetId": "otto" }),
+        )
+        .expect("an asset id should parse");
+        assert_eq!(reskin.asset_id, Some("otto".to_string()));
     }
 
     #[test]

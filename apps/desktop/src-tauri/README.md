@@ -55,7 +55,7 @@ from the app's own frontend through `@tauri-apps/api`'s `invoke()`.
 | `read_pets_driven_state` | `state_store` | — | JSON state | Reads the full persisted pets-driven state. |
 | `write_pets_driven_state` | `state_store` | `state` | `()` | Overwrites the full persisted state document. Last-writer-wins, so it is reserved for the flows that own the whole document (the Settings reset) — every other mutation uses the four commands below. |
 | `hatch_pet_record` | `state_store` | `input: { assetId, name, personalityId, cwd? }` | JSON state | Adopts a pet. Same as `POST /pets-driven/hatch`, except `cwd` may be null (a pet with no folder bound). |
-| `update_pet_record` | `state_store` | `input: { petId, name?, personalityId?, visible?, archived?, memo?, scale?, cwd? }` | JSON state | Patches one pet. Omitted fields are left alone; `cwd: null` detaches the pet from its folder. |
+| `update_pet_record` | `state_store` | `input: { petId, name?, assetId?, personalityId?, visible?, archived?, memo?, scale?, cwd? }` | JSON state | Patches one pet. Omitted fields are left alone; `assetId` re-skins the pet (pet record and profile together); `cwd: null` detaches the pet from its folder. |
 | `delete_pet_record` | `state_store` | `petId` | JSON state | Removes a pet, its profile, and any working directory it holds. |
 | `update_pets_driven_settings` | `state_store` | `input: { sessionCommand?, terminalShell?, petSourceDirectory? }` | JSON state | Patches the app-wide settings. |
 | `list_codex_pet_packages` | `pet_assets` | — | `CodexPetPackage[]` | Lists pet packages found in the user's designated Petdex source folder. |

@@ -8,6 +8,7 @@ import {
   linkPetToWorkingDirectory,
   registerWorkingDirectory,
   removePet,
+  setPetAsset,
 } from "@/app-state/pet-adoption";
 import { createEmptyPetsDrivenState, type PetsDrivenState } from "@/app-state/pets-driven-state";
 
@@ -61,6 +62,35 @@ describe("adoptPet", () => {
       personalityId: "playful",
       personality: createPlayfulPersonality(),
     });
+  });
+});
+
+describe("setPetAsset", () => {
+  it("moves both copies of the asset id together", () => {
+    const state = adopt(createEmptyPetsDrivenState(), "pet-1");
+
+    const next = setPetAsset(state, "pet-1", "cato");
+
+    expect(next.pets[0].assetId).toBe("cato");
+    expect(next.petProfiles[0].petAssetId).toBe("cato");
+  });
+
+  it("leaves other pets and the personality alone", () => {
+    let state = adopt(createEmptyPetsDrivenState(), "pet-1");
+    state = adopt(state, "pet-2", "otto");
+
+    const next = setPetAsset(state, "pet-1", "cato");
+
+    expect(next.pets[1].assetId).toBe("otto");
+    expect(next.petProfiles[1].petAssetId).toBe("otto");
+    expect(next.petProfiles[0].personalityId).toBe("playful");
+  });
+
+  it("returns the same state for an unknown pet or an unchanged asset", () => {
+    const state = adopt(createEmptyPetsDrivenState(), "pet-1");
+
+    expect(setPetAsset(state, "pet-missing", "cato")).toBe(state);
+    expect(setPetAsset(state, "pet-1", "bloop")).toBe(state);
   });
 });
 
