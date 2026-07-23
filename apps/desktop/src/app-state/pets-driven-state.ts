@@ -74,6 +74,25 @@ export function createEmptyPetsDrivenState(): PetsDrivenState {
   };
 }
 
+/**
+ * Put every app-wide setting back to its default while keeping the user's data —
+ * the adopted pets, their profiles, and the folders they watch. Written as
+ * "defaults, then carry the pet data over" rather than "clear these three
+ * fields" so a setting added to the state later resets on its own; it mirrors
+ * `apply_settings_reset` in src-tauri/src/state_store.rs, which owns the copy on
+ * disk. This is only the in-memory half, for an instant redraw.
+ */
+export function resetSettings(state: PetsDrivenState): PetsDrivenState {
+  const { registeredWorkingDirectories, pets, petProfiles } = state;
+
+  return {
+    ...createEmptyPetsDrivenState(),
+    registeredWorkingDirectories,
+    pets,
+    petProfiles,
+  };
+}
+
 /** Normalizes a persisted `terminalShell`, treating blank strings as "unset". */
 function sanitizeTerminalShell(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) {

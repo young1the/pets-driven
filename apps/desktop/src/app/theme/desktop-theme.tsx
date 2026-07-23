@@ -1,4 +1,16 @@
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  THEME_ACCENT_STORAGE_KEY as ACCENT_STORAGE_KEY,
+  THEME_MODE_STORAGE_KEY as MODE_STORAGE_KEY,
+} from "@/app/local-settings-storage";
 
 export type ThemeMode = "light" | "dark" | "system";
 export type AccentId = "blossom" | "lavender" | "sky" | "coral" | "mint" | "butter";
@@ -13,32 +25,39 @@ export const ACCENTS: { id: AccentId; hex: string; name: string }[] = [
   { id: "butter", hex: "#F0A91F", name: "Butter" },
 ];
 
-const MODE_STORAGE_KEY = "pd-theme-mode";
-const ACCENT_STORAGE_KEY = "pd-theme-accent";
+/** What the app looks like before anyone has chosen anything. */
+const DEFAULT_MODE: ThemeMode = "system";
+const DEFAULT_ACCENT: AccentId = "blossom";
 
 type ThemeControl = {
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
   accent: AccentId;
   setAccent: (accent: AccentId) => void;
+  /**
+   * Put the appearance back to its default so a settings reset shows on screen
+   * at once. The effects below re-persist the defaults they just went back to,
+   * which reads the same as the cleared keys `clearStoredSettings` removes.
+   */
+  reset: () => void;
 };
 
 const ThemeContext = createContext<ThemeControl | null>(null);
 
 function readMode(): ThemeMode {
   if (typeof window === "undefined") {
-    return "system";
+    return DEFAULT_MODE;
   }
   const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
-  return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+  return stored === "light" || stored === "dark" || stored === "system" ? stored : DEFAULT_MODE;
 }
 
 function readAccent(): AccentId {
   if (typeof window === "undefined") {
-    return "blossom";
+    return DEFAULT_ACCENT;
   }
   const stored = window.localStorage.getItem(ACCENT_STORAGE_KEY);
-  return ACCENTS.some((accent) => accent.id === stored) ? (stored as AccentId) : "blossom";
+  return ACCENTS.some((accent) => accent.id === stored) ? (stored as AccentId) : DEFAULT_ACCENT;
 }
 
 /**
@@ -76,9 +95,14 @@ export function DesktopThemeProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(ACCENT_STORAGE_KEY, accent);
   }, [accent]);
 
+  const reset = useCallback(() => {
+    setMode(DEFAULT_MODE);
+    setAccent(DEFAULT_ACCENT);
+  }, []);
+
   const control = useMemo<ThemeControl>(
-    () => ({ mode, setMode, accent, setAccent }),
-    [mode, accent],
+    () => ({ mode, setMode, accent, setAccent, reset }),
+    [mode, accent, reset],
   );
 
   return <ThemeContext.Provider value={control}>{children}</ThemeContext.Provider>;
@@ -92,10 +116,11 @@ export function useDesktopTheme(): ThemeControl {
   const control = useContext(ThemeContext);
   if (!control) {
     return {
-      mode: "system",
+      mode: DEFAULT_MODE,
       setMode: () => {},
-      accent: "blossom",
+      accent: DEFAULT_ACCENT,
       setAccent: () => {},
+      reset: () => {},
     };
   }
   return control;

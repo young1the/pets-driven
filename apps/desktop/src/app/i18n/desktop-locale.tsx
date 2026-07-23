@@ -8,23 +8,16 @@ import {
   resources,
 } from "@pets-driven/i18n";
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
-
-const LOCALE_STORAGE_KEY = "pd-locale";
+import { LOCALE_STORAGE_KEY } from "@/app/local-settings-storage";
 
 /**
- * Resolve the desktop locale. A user override (persisted in localStorage by the
- * language switcher) wins; otherwise we fall back to the WebView's UI language,
- * which mirrors the OS display language on Windows. Everything else lands on the
- * source locale (English).
+ * The locale the system implies: the WebView's UI language, which mirrors the OS
+ * display language on Windows. Everything else lands on the source locale
+ * (English). This is what the app follows when the user has set no override.
  */
-function detectDesktopLocale(): Locale {
+function detectSystemLocale(): Locale {
   if (typeof window === "undefined") {
     return defaultLocale;
-  }
-
-  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (isLocale(stored ?? undefined)) {
-    return stored as Locale;
   }
 
   const candidates = [...(navigator.languages ?? []), navigator.language].filter(Boolean);
@@ -38,9 +31,32 @@ function detectDesktopLocale(): Locale {
   return defaultLocale;
 }
 
+/**
+ * Resolve the desktop locale. A user override (persisted in localStorage by the
+ * language switcher) wins; otherwise the system language decides.
+ */
+function detectDesktopLocale(): Locale {
+  if (typeof window === "undefined") {
+    return defaultLocale;
+  }
+
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  if (isLocale(stored ?? undefined)) {
+    return stored as Locale;
+  }
+
+  return detectSystemLocale();
+}
+
 type DesktopLocaleControl = {
   locale: Locale;
   setLocale: (next: Locale) => void;
+  /**
+   * Drop the language override and follow the system again. It reads no storage
+   * of its own, so it does not care whether the stored key has been cleared yet
+   * — `clearStoredSettings` owns the removal.
+   */
+  reset: () => void;
 };
 
 const DesktopLocaleContext = createContext<DesktopLocaleControl | null>(null);
@@ -60,7 +76,12 @@ export function DesktopLocaleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const control = useMemo<DesktopLocaleControl>(() => ({ locale, setLocale }), [locale, setLocale]);
+  const reset = useCallback(() => setLocaleState(detectSystemLocale()), []);
+
+  const control = useMemo<DesktopLocaleControl>(
+    () => ({ locale, setLocale, reset }),
+    [locale, setLocale, reset],
+  );
 
   return (
     <DesktopLocaleContext.Provider value={control}>
@@ -81,7 +102,7 @@ export function DesktopLocaleProvider({ children }: { children: ReactNode }) {
 export function useDesktopLocale(): DesktopLocaleControl {
   const control = useContext(DesktopLocaleContext);
   if (!control) {
-    return { locale: defaultLocale, setLocale: () => {} };
+    return { locale: defaultLocale, setLocale: () => {}, reset: () => {} };
   }
   return control;
 }

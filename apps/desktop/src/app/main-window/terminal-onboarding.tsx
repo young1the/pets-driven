@@ -1,10 +1,8 @@
 import { useTranslation } from "@pets-driven/i18n";
 import { useState } from "react";
+import { TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY as DISMISSED_STORAGE_KEY } from "@/app/local-settings-storage";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 import "@/app/main-window/terminal-onboarding.css";
-
-/** Skipped/finished state lives here so the coach only greets a user once. */
-const DISMISSED_STORAGE_KEY = "pets-driven:terminal-onboarding-dismissed";
 
 /** Order matters — this is the path we want a new user to walk. */
 const SKILL_IDS = ["hatch", "bring", "attach", "carry"] as const;

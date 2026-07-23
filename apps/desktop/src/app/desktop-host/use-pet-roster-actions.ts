@@ -4,6 +4,7 @@ import type { MutableRefObject } from "react";
 import type { AppView } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
+import { clearStoredSettings } from "@/app/local-settings-storage";
 import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
 import { buildLaunchLine, parseLaunchLine } from "@/app/session-launch-line";
 import {
@@ -17,6 +18,7 @@ import {
   createEmptyPetsDrivenState,
   type PetPatch,
   type PetsDrivenState,
+  resetSettings,
   setPetSourceDirectory,
 } from "@/app-state/pets-driven-state";
 
@@ -62,6 +64,28 @@ export function usePetRosterActions({
       await desktopGateway.writePetsDrivenState(empty);
       applyState(empty);
       navigate("onboarding");
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+    }
+  }
+
+  /**
+   * Settings only: put every app-wide setting back to its default and leave the
+   * pets alone. The two halves of "a setting" are reset from their own owners —
+   * the state file by the backend command, the frontend-only keys by the storage
+   * registry — and the local state is patched first so the settings screen
+   * redraws without waiting on the round trip or an app restart.
+   */
+  async function resetAllSettings() {
+    clearStoredSettings();
+    applyState(resetSettings(stateRef.current));
+
+    try {
+      const persisted = await desktopGateway.resetSettings();
+      if (persisted) {
+        applyState(carryOverPetVisibility(stateRef.current, persisted));
+      }
+      flashToast(t("toast.settingsReset"));
     } catch (error) {
       setPetWindowError(formatCommandError(error));
     }
@@ -312,6 +336,7 @@ export function usePetRosterActions({
 
   return {
     resetPets,
+    resetAllSettings,
     seedWatchedFolders,
     updateSessionCommand,
     updateTerminalShell,

@@ -114,6 +114,13 @@ export type DesktopGateway = {
     terminalShell?: string | null;
     petSourceDirectory?: string | null;
   }): Promise<PetsDrivenState | null>;
+  /**
+   * Put every persisted setting back to its default. The backend decides what
+   * counts as a setting; the pets, their profiles, and the folders they watch
+   * are user data and stay. Frontend-only settings live in localStorage and are
+   * cleared separately — see `clearStoredSettings` in app/local-settings-storage.
+   */
+  resetSettings(): Promise<PetsDrivenState | null>;
   listPetPackages(): Promise<CodexPetPackage[]>;
   /** Shells the in-app terminal can spawn, detected from the system. Empty outside Tauri. */
   listTerminalShells(): Promise<TerminalShellOption[]>;
@@ -240,6 +247,10 @@ export const desktopGateway: DesktopGateway = {
 
   async updateSettings(input) {
     return await sendStateMutation("update_pets_driven_settings", { input });
+  },
+
+  async resetSettings() {
+    return await sendStateMutation("reset_pets_driven_settings", {});
   },
 
   async listPetPackages() {

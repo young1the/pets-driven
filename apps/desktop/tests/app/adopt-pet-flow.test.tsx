@@ -16,6 +16,7 @@ function createGateway(
     updatePet: vi.fn().mockResolvedValue(null),
     deletePet: vi.fn().mockResolvedValue(null),
     updateSettings: vi.fn().mockResolvedValue(null),
+    resetSettings: vi.fn().mockResolvedValue(null),
     listPetPackages: vi.fn().mockResolvedValue(packages),
     listTerminalShells: vi.fn().mockResolvedValue([]),
     openAdoptedPetWindow: vi.fn(),
