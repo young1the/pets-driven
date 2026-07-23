@@ -279,6 +279,7 @@ _Avoid_: Social Session, relationship, copied personality
 - Clicking non-attention overlays changes presentation only and does not acknowledge **Attention Hold**.
 - Acknowledging **Attention Hold** releases the hold and may start **Acknowledge Feedback**.
 - **Acknowledge Feedback** may vary by event kind, **Pet Profile**, and current presentation state.
+- **Acknowledge Feedback** also varies by the gesture that acknowledged the hold: **Petting** is the affectionate one and answers with a heart, while a double-click is a dismissal and answers with its own beat, so the two never read as the same reaction.
 - **Acknowledge Feedback** is owned by the **Simulation World**, not by the **Pet Window** presentation layer alone.
 - **Acknowledge Feedback** is caused by `user-interaction` behavior priority.
 - A new **Attention-Producing Event** interrupts **Acknowledge Feedback** and creates a new **Attention Hold**.
