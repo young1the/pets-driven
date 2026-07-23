@@ -4,7 +4,7 @@ use std::{
     net::{TcpListener, TcpStream},
     sync::{Arc, Mutex},
     thread,
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use tauri::Emitter;
@@ -30,36 +30,62 @@ pub(crate) type ClaudeHookIngressStatusHandle = Arc<Mutex<ClaudeHookIngressStatu
 
 pub(crate) struct ClaudeHookIngressSharedStatus(pub(crate) ClaudeHookIngressStatusHandle);
 
+/// What the settings tab can say about the ingress without a console.
+///
+/// `state` only ever answers "did the listener claim the port"; the three
+/// `last_event_*` / `received_count` fields answer the separate question "is a
+/// hook actually arriving", which is invisible in a release build otherwise
+/// (the process has no console, so the `eprintln!` traces below go nowhere).
 #[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ClaudeHookIngressStatus {
     url: String,
     state: String,
     error: Option<String>,
+    /// Unix epoch milliseconds of the most recent accepted hook event, or
+    /// `None` while none has arrived since the app started.
+    last_event_at: Option<u64>,
+    /// Hook events accepted since the app started. Never persisted.
+    received_count: u64,
+    /// The most recent event's `hook_event_name`.
+    ///
+    /// PRIVACY: this is the only payload-derived value that leaves this module,
+    /// and it is a subset of the routing whitelist `claude_hook_ingress_log_line`
+    /// already uses. Hook payloads carry `prompt` and `tool_input.command` in
+    /// clear text; nothing outside that whitelist may be copied in here.
+    last_event_name: Option<String>,
 }
 
 impl ClaudeHookIngressStatus {
-    fn pending() -> Self {
+    fn with_state(state: &str, error: Option<String>) -> Self {
         Self {
             url: claude_hook_ingress_url(),
-            state: "pending".to_string(),
-            error: None,
+            state: state.to_string(),
+            error,
+            last_event_at: None,
+            received_count: 0,
+            last_event_name: None,
         }
+    }
+
+    fn pending() -> Self {
+        Self::with_state("pending", None)
     }
 
     fn listening() -> Self {
-        Self {
-            url: claude_hook_ingress_url(),
-            state: "listening".to_string(),
-            error: None,
-        }
+        Self::with_state("listening", None)
     }
 
     fn error(error: String) -> Self {
-        Self {
-            url: claude_hook_ingress_url(),
-            state: "error".to_string(),
-            error: Some(error),
-        }
+        Self::with_state("error", Some(error))
+    }
+
+    /// Fold one accepted hook event into the status. `received_at` is injected
+    /// so the counter can be tested without a clock.
+    fn record_event(&mut self, payload: &serde_json::Value, received_at: u64) {
+        self.received_count = self.received_count.saturating_add(1);
+        self.last_event_at = Some(received_at);
+        self.last_event_name = claude_hook_event_name(payload).map(str::to_string);
     }
 }
 
@@ -561,8 +587,17 @@ fn claude_hook_payload_first_string_field<'a>(
         .unwrap_or("-")
 }
 
+/// The lifecycle name of a hook event (`PreToolUse`, `Notification`, …).
+///
+/// PRIVACY: `hook_event_name` is a routing field, part of the same whitelist
+/// `claude_hook_ingress_log_line` keeps to. Everything else on a hook payload —
+/// `prompt`, `message`, `tool_input.command` — is user content and stays here.
+fn claude_hook_event_name(payload: &serde_json::Value) -> Option<&str> {
+    payload.get("hook_event_name").and_then(|value| value.as_str())
+}
+
 fn claude_hook_ingress_log_line(payload: &serde_json::Value) -> String {
-    let hook_event_name = claude_hook_payload_string_field(payload, "hook_event_name");
+    let hook_event_name = claude_hook_event_name(payload).unwrap_or("-");
     let cwd = claude_hook_payload_string_field(payload, "cwd");
     let source = claude_hook_payload_first_string_field(
         payload,
@@ -594,7 +629,30 @@ fn set_claude_hook_ingress_status(
     }
 }
 
-fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
+fn unix_epoch_millis() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as u64)
+        .unwrap_or_default()
+}
+
+/// Mark that a hook event reached the ingress. Called on receipt rather than
+/// after the emit, so the indicator separates "no hook arrived" from "a hook
+/// arrived but the window never got it".
+fn record_claude_hook_ingress_event(
+    status: &ClaudeHookIngressStatusHandle,
+    payload: &serde_json::Value,
+) {
+    if let Ok(mut current_status) = status.lock() {
+        current_status.record_event(payload, unix_epoch_millis());
+    }
+}
+
+fn handle_claude_hook_connection(
+    app: tauri::AppHandle,
+    status: ClaudeHookIngressStatusHandle,
+    mut stream: TcpStream,
+) {
     let request = match read_http_request(&mut stream) {
         Ok(request) => request,
         Err(error) => {
@@ -612,6 +670,9 @@ fn handle_claude_hook_connection(app: tauri::AppHandle, mut stream: TcpStream) {
         Ok((path, payload)) => match path.as_str() {
             path if is_agent_hook_ingress_path(path) => {
                 eprintln!("{}", claude_hook_ingress_log_line(&payload));
+                // A release build has no console for the line above, so the
+                // same arrival is also folded into the polled status.
+                record_claude_hook_ingress_event(&status, &payload);
 
                 match app.emit_to("main", CLAUDE_HOOK_INGRESS_EVENT, payload) {
                     Ok(()) => {
@@ -708,7 +769,8 @@ pub(crate) fn start_claude_hook_ingress(
             match stream {
                 Ok(stream) => {
                     let app = app.clone();
-                    thread::spawn(move || handle_claude_hook_connection(app, stream));
+                    let status = Arc::clone(&status);
+                    thread::spawn(move || handle_claude_hook_connection(app, status, stream));
                 }
                 Err(error) => {
                     eprintln!("Claude hook ingress connection failed: {error}");
@@ -885,6 +947,70 @@ mod tests {
         assert_eq!(status.url, "http://127.0.0.1:43187/claude-hook");
         assert_eq!(status.state, "pending");
         assert_eq!(status.error, None);
+    }
+
+    #[test]
+    fn claude_hook_ingress_status_starts_with_no_received_events() {
+        let status = ClaudeHookIngressStatus::listening();
+
+        assert_eq!(status.received_count, 0);
+        assert_eq!(status.last_event_at, None);
+        assert_eq!(status.last_event_name, None);
+    }
+
+    #[test]
+    fn claude_hook_ingress_status_counts_events_and_keeps_the_latest_time() {
+        let mut status = ClaudeHookIngressStatus::listening();
+
+        status.record_event(&serde_json::json!({ "hook_event_name": "PreToolUse" }), 1_000);
+        assert_eq!(status.received_count, 1);
+        assert_eq!(status.last_event_at, Some(1_000));
+        assert_eq!(status.last_event_name.as_deref(), Some("PreToolUse"));
+
+        status.record_event(&serde_json::json!({ "hook_event_name": "Stop" }), 4_500);
+        assert_eq!(status.received_count, 2);
+        assert_eq!(status.last_event_at, Some(4_500));
+        assert_eq!(status.last_event_name.as_deref(), Some("Stop"));
+    }
+
+    #[test]
+    fn claude_hook_ingress_status_leaves_a_nameless_event_unnamed_but_counted() {
+        let mut status = ClaudeHookIngressStatus::listening();
+
+        status.record_event(&serde_json::json!({ "cwd": "D:\\cms" }), 7);
+
+        assert_eq!(status.received_count, 1);
+        assert_eq!(status.last_event_at, Some(7));
+        assert_eq!(status.last_event_name, None);
+    }
+
+    #[test]
+    fn claude_hook_ingress_status_keeps_only_routing_fields() {
+        // Same whitelist as claude_hook_ingress_log_line: a hook payload carries
+        // the user's prompt and shell commands, and none of it may reach the UI.
+        let mut status = ClaudeHookIngressStatus::listening();
+        status.record_event(
+            &serde_json::json!({
+                "hook_event_name": "PreToolUse",
+                "cwd": "D:\\cms",
+                "session_id": "f9b89878-f7be-453b-90cb-ffd626765d25",
+                "message": "Allow Edit?",
+                "prompt": "secret user prompt",
+                "tool_input": { "command": "secret command" },
+            }),
+            1_700_000_000_000,
+        );
+
+        let serialized = serde_json::to_string(&status).expect("status should serialize");
+
+        assert!(serialized.contains("\"lastEventName\":\"PreToolUse\""));
+        assert!(serialized.contains("\"receivedCount\":1"));
+        assert!(serialized.contains("\"lastEventAt\":1700000000000"));
+        assert!(!serialized.contains("Allow Edit?"));
+        assert!(!serialized.contains("secret user prompt"));
+        assert!(!serialized.contains("secret command"));
+        assert!(!serialized.contains("f9b89878"));
+        assert!(!serialized.contains("cms"));
     }
 
     #[test]
