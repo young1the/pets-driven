@@ -12,6 +12,9 @@ function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
     url: "",
     state: isTauri() ? "pending" : "error",
     error: isTauri() ? null : "Claude hook ingress is only available in Tauri.",
+    lastEventAt: null,
+    receivedCount: 0,
+    lastEventName: null,
   };
 }
 
@@ -56,11 +59,12 @@ export function useAgentEventIngress({
         })
         .catch((error) => {
           if (isMounted) {
-            setClaudeHookIngressStatus({
+            setClaudeHookIngressStatus((previous) => ({
+              ...previous,
               url: "",
               state: "error",
               error: formatCommandError(error),
-            });
+            }));
           }
         });
     };

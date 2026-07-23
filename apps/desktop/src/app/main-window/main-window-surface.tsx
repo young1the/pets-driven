@@ -6,6 +6,7 @@ import type { ClaudeHookIngressStatus } from "@/adapters/agent-events/claude-hoo
 import type { AppView } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import type { HomePetView } from "@/app/main-window/home-section";
+import { describeHookLastSignal } from "@/app/main-window/hook-last-signal";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import { cardNote, petGradient, shortWorkingDir } from "@/app/main-window/pet-card-view";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
@@ -257,6 +258,10 @@ export function MainWindowSurface({
                 ? "info"
                 : "danger",
           summary: t(`hook.summary.${claudeHookIngressStatus.state}`),
+          // Re-read on every render; the status poll in useAgentEventIngress
+          // already re-renders this surface every couple of seconds, so the
+          // relative time stays current without a clock of its own.
+          lastSignal: describeHookLastSignal(claudeHookIngressStatus, t, Date.now()),
         },
         plugin: claudePlugin.status,
         pluginBusy: claudePlugin.busy,

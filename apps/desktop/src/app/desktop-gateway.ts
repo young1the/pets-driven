@@ -347,9 +347,16 @@ export const desktopGateway: DesktopGateway = {
     return isTauri();
   },
 
-  async getClaudeHookIngressStatus() {
+  async getClaudeHookIngressStatus(): Promise<ClaudeHookIngressStatus> {
     if (!isTauri()) {
-      return { url: "", state: "error", error: null };
+      return {
+        url: "",
+        state: "error",
+        error: null,
+        lastEventAt: null,
+        receivedCount: 0,
+        lastEventName: null,
+      };
     }
 
     return await invoke<ClaudeHookIngressStatus>("get_claude_hook_ingress_status");

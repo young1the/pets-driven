@@ -16,6 +16,7 @@ function setup(overrides = {}) {
     hook: {
       tone: "success" as const,
       summary: "your pets are following along.",
+      lastSignal: "Last signal: nothing has arrived yet",
     },
     plugin: {
       state: "not-installed" as const,
@@ -65,6 +66,15 @@ describe("SettingsSection", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("Send test event")).not.toBeInTheDocument();
     expect(screen.queryByText(/127\.0\.0\.1/)).not.toBeInTheDocument();
+  });
+
+  it("shows the last hook signal on the connection card, whatever the plugin state", () => {
+    // This line is the only hook-traffic read-out a release build has: the
+    // debug tab is stripped by the DEV gate in main-window.tsx, so it has to
+    // read on the settings card even before the plugin is installed.
+    setup({ hook: { tone: "info" as const, summary: "", lastSignal: "Last signal: PreToolUse" } });
+
+    expect(screen.getByText("Last signal: PreToolUse")).toBeInTheDocument();
   });
 
   it("installs the Claude plugin when not installed", () => {

@@ -98,6 +98,16 @@
       "listening": "펫이 작업을 따라가고 있어요.",
       "pending": "연결을 준비하는 중이에요.",
       "error": "펫이 작업을 보지 못하고 있어요. 앱을 다시 시작해 보세요."
+    },
+    "lastSignal": {
+      "none": "마지막 신호: 아직 아무것도 오지 않았어요",
+      "received": "마지막 신호: {{event}} · {{when}} · 누적 {{n}}건",
+      "unnamedEvent": "이름 없는 이벤트",
+      "justNow": "방금",
+      "secondsAgo": "{{n}}초 전",
+      "minutesAgo": "{{n}}분 전",
+      "hoursAgo": "{{n}}시간 전",
+      "daysAgo": "{{n}}일 전"
     }
   },
   "claudePlugin": {

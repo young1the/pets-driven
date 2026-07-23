@@ -98,6 +98,16 @@
       "listening": "your pets are following along.",
       "pending": "getting the connection ready.",
       "error": "your pets can't see the work. Try restarting the app."
+    },
+    "lastSignal": {
+      "none": "Last signal: nothing has arrived yet",
+      "received": "Last signal: {{event}} · {{when}} · {{n}} received",
+      "unnamedEvent": "unnamed event",
+      "justNow": "just now",
+      "secondsAgo": "{{n}}s ago",
+      "minutesAgo": "{{n}}m ago",
+      "hoursAgo": "{{n}}h ago",
+      "daysAgo": "{{n}}d ago"
     }
   },
   "claudePlugin": {

@@ -33,6 +33,7 @@ const settings = {
   hook: {
     tone: "success" as const,
     summary: "ok",
+    lastSignal: "Last signal: nothing has arrived yet",
   },
   plugin: { state: "not-installed" as const, version: null, error: null },
   pluginBusy: false,

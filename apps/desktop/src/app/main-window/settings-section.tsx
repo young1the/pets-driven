@@ -18,8 +18,13 @@ export interface SettingsSectionProps {
   terminalShell: string;
   onTerminalShell: (value: string) => void;
   preview: { prompt: string; command: string };
-  /** Hook ingress health, folded into the plugin card rather than shown alone. */
-  hook: { tone: BadgeTone; summary: string };
+  /**
+   * Hook ingress health, folded into the plugin card rather than shown alone.
+   * `summary` says whether the listener is up; `lastSignal` is the one line
+   * that says whether a hook actually arrived, and it is the only place a
+   * release build can answer that — keep it out of the dev-only debug tab.
+   */
+  hook: { tone: BadgeTone; summary: string; lastSignal: string };
   /** Bundled Claude Code plugin install state; null while the check runs. */
   plugin: ClaudePluginStatus | null;
   pluginBusy: boolean;
@@ -337,6 +342,13 @@ export function SettingsSection({
                   {t("claudePlugin.title")}
                 </b>
                 <small style={{ color: "var(--text-muted)" }}>{pluginHintText}</small>
+                {/* Its own line rather than more text appended to the hint:
+                    this is the traffic read-out, it changes while the card is
+                    on screen, and a later "dropped because …" reason belongs
+                    beside it here rather than in the plugin sentence above. */}
+                <small style={{ color: "var(--text-subtle)", marginTop: "3px" }}>
+                  {hook.lastSignal}
+                </small>
               </span>
               {plugin?.state === "installed" ? (
                 <>
