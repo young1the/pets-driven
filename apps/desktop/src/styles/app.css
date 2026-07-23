@@ -1042,7 +1042,8 @@ button.pd-onb__empty-card:disabled {
   }
 }
 
-.onboarding-pet-grid {
+/* Pet Asset picker — shared by the adopt flow and the pet-edit screen. */
+.pd-asset-grid {
   display: flex;
   gap: var(--space-3);
   width: 100%;
@@ -1051,7 +1052,7 @@ button.pd-onb__empty-card:disabled {
   scroll-snap-type: x proximity;
 }
 
-.onboarding-pet-card {
+.pd-asset-card {
   display: grid;
   gap: var(--space-2);
   align-content: start;
@@ -1059,26 +1060,26 @@ button.pd-onb__empty-card:disabled {
   scroll-snap-align: start;
 }
 
-.onboarding-pet-card__stage {
+.pd-asset-card__stage {
   display: flex;
   justify-content: center;
   min-height: 104px;
 }
 
-.onboarding-pet-card__meta {
+.pd-asset-card__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
-.onboarding-pet-card__meta strong {
+.pd-asset-card__meta strong {
   font-family: var(--font-display);
   font-weight: var(--weight-semibold);
   color: var(--text-strong);
 }
 
-.onboarding-pet-card p {
+.pd-asset-card p {
   margin: 0;
   color: var(--text-muted);
   font-size: var(--text-sm);

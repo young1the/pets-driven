@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { CodexPetPackage } from "@/app/desktop-gateway";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 
-type PetPackageGridProps = {
+type PetAssetGridProps = {
   packages: CodexPetPackage[];
   selectedAssetId: string | null;
   onSelect: (assetId: string) => void;
@@ -40,7 +40,7 @@ function useAnimationClock() {
   return elapsedMs;
 }
 
-function PetPackageCard({
+function PetAssetCard({
   pet,
   elapsedMs,
   selected,
@@ -56,7 +56,7 @@ function PetPackageCard({
   return (
     <Card
       aria-pressed={selected}
-      className="onboarding-pet-card"
+      className="pd-asset-card"
       interactive
       onClick={onSelect}
       padding="sm"
@@ -70,7 +70,7 @@ function PetPackageCard({
         }
       }}
     >
-      <div className="onboarding-pet-card__stage">
+      <div className="pd-asset-card__stage">
         {spritesheetUrl ? (
           <PetSprite
             alt={`${pet.displayName} preview`}
@@ -83,7 +83,7 @@ function PetPackageCard({
           />
         ) : null}
       </div>
-      <div className="onboarding-pet-card__meta">
+      <div className="pd-asset-card__meta">
         <strong>{pet.displayName}</strong>
         {selected && <Badge dot>Chosen</Badge>}
       </div>
@@ -92,13 +92,21 @@ function PetPackageCard({
   );
 }
 
-export function PetPackageGrid({ packages, selectedAssetId, onSelect }: PetPackageGridProps) {
+/**
+ * The installed Pet Assets as a horizontally scrolling strip of animated
+ * preview cards, one selectable at a time.
+ *
+ * Shared on purpose: a Pet Asset is picked at Pet Birth and can be changed
+ * afterwards from the pet-edit screen, and both surfaces are the same choice
+ * over the same catalog — so they present it the same way.
+ */
+export function PetAssetGrid({ packages, selectedAssetId, onSelect }: PetAssetGridProps) {
   const elapsedMs = useAnimationClock();
 
   return (
-    <div className="onboarding-pet-grid">
+    <div className="pd-asset-grid">
       {packages.map((pet) => (
-        <PetPackageCard
+        <PetAssetCard
           elapsedMs={elapsedMs}
           key={pet.id}
           onSelect={() => onSelect(pet.id)}

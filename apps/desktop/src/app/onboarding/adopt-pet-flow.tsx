@@ -20,10 +20,10 @@ import {
   personalityBlurbKey,
   personalityTitleKey,
 } from "@/app/onboarding/personality-options";
-import { PetPackageGrid } from "@/app/onboarding/pet-package-grid";
 import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
+import { PetAssetGrid } from "@/app/pet-assets/pet-asset-grid";
 import { adoptPet, registerWorkingDirectory } from "@/app-state/pet-adoption";
 import {
   normalizeWorkingDirectoryPath,
@@ -444,7 +444,7 @@ export function AdoptPetFlow({
                 </div>
               </div>
               {visiblePackages.length > 0 ? (
-                <PetPackageGrid
+                <PetAssetGrid
                   onSelect={setAssetId}
                   packages={visiblePackages}
                   selectedAssetId={assetId}
