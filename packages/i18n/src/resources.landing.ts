@@ -1,5 +1,7 @@
 import enCommon from "./locales/en/common.json";
 import enLanding from "./locales/en/landing.json";
+import jaCommon from "./locales/ja/common.json";
+import jaLanding from "./locales/ja/landing.json";
 import koCommon from "./locales/ko/common.json";
 import koLanding from "./locales/ko/landing.json";
 
@@ -12,6 +14,7 @@ import koLanding from "./locales/ko/landing.json";
 export const landingResources = {
   en: { common: enCommon, landing: enLanding },
   ko: { common: koCommon, landing: koLanding },
+  ja: { common: jaCommon, landing: jaLanding },
 } as const;
 
 /** Namespaces present in {@link landingResources}. */
