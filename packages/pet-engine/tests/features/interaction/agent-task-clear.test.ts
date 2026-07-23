@@ -248,9 +248,48 @@ describe("double-clicking releases a settled agent task", () => {
     expect(components.getComponent("pet", "AgentChannelState")).toBeUndefined();
     expect(components.getComponent("pet", "PetExpressionState")).toMatchObject({
       source: "acknowledge",
-      mood: "love",
-      emote: "heart",
+      mood: "happy",
+      emote: "note",
     });
+  });
+
+  /**
+   * PET-23: the double-click dismissal used to reuse petting's heart, which made
+   * the two gestures identical on screen. This pair of assertions is the guard
+   * against them being unified again — if one of them starts failing because the
+   * cues match, that is the regression, not a stale expectation.
+   */
+  it("stays visually distinct from the petting release, which keeps the heart", () => {
+    const dismissed = storeWithTappablePet("completed");
+    runUserInteractionBehaviorSystem(dismissed, tapAt(0, 0), createManualClock(0));
+    runUserInteractionBehaviorSystem(dismissed, tapAt(0, 0), createManualClock(100));
+
+    // Same status, same acknowledge beat — only the gesture differs.
+    const petted = storeWithStrokedPet([
+      { type: "Transform", position: { x: 0, y: 0 } },
+      { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
+      { type: "PetIdentity", name: "Pet" },
+      {
+        type: "Personality",
+        catalogId: "playful",
+        openness: 0.5,
+        conscientiousness: 0.5,
+        extraversion: 0.5,
+        agreeableness: 0.5,
+        neuroticism: 0.5,
+      },
+      { type: "AgentTaskState", status: "completed", since: 0 },
+      { type: "TaskMovementHold", since: 0 },
+    ]);
+    runPettingDetectionSystem(petted, createManualClock(400));
+
+    const dismissCue = dismissed.getComponent("pet", "PetExpressionState");
+    const pettingCue = petted.getComponent("pet", "PetExpressionState");
+
+    expect(pettingCue).toMatchObject({ source: "acknowledge", mood: "love", emote: "heart" });
+    expect(dismissCue).toMatchObject({ mood: "happy", emote: "note" });
+    expect(dismissCue?.emote).not.toBe(pettingCue?.emote);
+    expect(dismissCue?.mood).not.toBe(pettingCue?.mood);
   });
 
   it("speaks the personality acknowledge line when dismissing a settled task", () => {

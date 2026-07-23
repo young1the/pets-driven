@@ -25,8 +25,8 @@ const THROW_VELOCITY_THRESHOLD = 8;
 // dismisses a settled agent task (waiting/completed) — the same 400ms the pet
 // window surface uses for its own double-tap gesture, so the two agree.
 const DOUBLE_CLICK_WINDOW_MS = 400;
-// Lifetime of the heart + acknowledge line shown when a double-click dismisses
-// a task; mirrors the petting release's SPEECH_BUBBLE_DURATION_MS.
+// Lifetime of the dismissal cue + acknowledge line shown when a double-click
+// dismisses a task; mirrors the petting release's SPEECH_BUBBLE_DURATION_MS.
 const ACKNOWLEDGE_FEEDBACK_MS = 3000;
 // Matter.js has no continuous collision detection, so a body that advances more
 // than a wall's thickness (48px, see createMonitorBoundaryEntities) in a single
@@ -157,11 +157,19 @@ function registerTapAndMaybeRelease(
 }
 
 // Double-click dismisses only *settled* work: a waiting or completed task
-// clears along with its movement hold and channel badge, confirmed with the
-// same affectionate heart beat and personality acknowledge line that petting
-// gives. A live "working" task is deliberately left alone — per PET-5 it can
-// only be released by stroking the pet, so a stray double-click never dismisses
-// a report that is still in progress.
+// clears along with its movement hold and channel badge, confirmed with a
+// dismissal beat and the personality acknowledge line. A live "working" task is
+// deliberately left alone — per PET-5 it can only be released by stroking the
+// pet, so a stray double-click never dismisses a report that is still in
+// progress.
+//
+// The cue deliberately diverges from petting's (PET-23). Petting is the
+// affectionate gesture — it comforts the pet — so it keeps the love/heart beat.
+// A double-click is not affection: it is the user filing the Attention Hold
+// away, so the pet answers with a pleased "noted" (happy/note) instead. Keeping
+// both gestures on the heart made the two indistinguishable on screen, which is
+// exactly what PET-23 reported; if you are tempted to unify them again, that is
+// the regression the acknowledge-cue tests guard against.
 function releaseSettledTaskOnDoubleClick(
   components: ComponentStore,
   id: string,
@@ -186,8 +194,8 @@ function releaseSettledTaskOnDoubleClick(
   components.setComponent(id, {
     type: "PetExpressionState",
     source: "acknowledge",
-    mood: "love",
-    emote: "heart",
+    mood: "happy",
+    emote: "note",
     label: null,
     startedAt: now,
     expiresAt: now + ACKNOWLEDGE_FEEDBACK_MS,
