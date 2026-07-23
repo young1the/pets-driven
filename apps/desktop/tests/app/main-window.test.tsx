@@ -107,6 +107,13 @@ describe("MainWindow", () => {
     expect(screen.getByText("Pet details")).toBeInTheDocument();
   });
 
+  it("coaches the pets-driven skills on the terminal tab", () => {
+    // The terminal tab is the one surface that opts into the coach; every other
+    // reuse of TerminalSection leaves it off.
+    setup({ tab: "terminal" as const });
+    expect(screen.getByText("Hatch a pet")).toBeInTheDocument();
+  });
+
   it("renders a toast when present", () => {
     setup({ toast: "Otto is on the desktop" });
     expect(screen.getByText("Otto is on the desktop")).toBeInTheDocument();
