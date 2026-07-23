@@ -53,6 +53,28 @@
   z-index: 4;
 }
 
+/* One chip per deployed pet, so this row is the only part of the home column
+   that grows without bound. The column is centered inside `.pd-home`, which
+   clips instead of scrolling, so an uncapped row spills equally out of both
+   ends: with 31 pets the "my pack" eyebrow already sat above the top of the
+   screen, unreachable, and further rows walk the Add-a-pet button up after it.
+   Cap it against the viewport and scroll it in place, the same treatment the
+   adopt flow's folder list gets. The reserve covers the rest of the column plus
+   the fan below it; the floor keeps a usable row on short windows. */
+.pd-home__field {
+  display: flex;
+  align-items: center;
+  align-content: start;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 14px;
+  max-width: 680px;
+  max-height: max(74px, calc(100vh - 620px));
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
 .pd-home--dragging,
 .pd-home--hovered {
   overflow: visible;

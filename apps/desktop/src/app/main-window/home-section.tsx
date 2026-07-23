@@ -276,17 +276,7 @@ export const HomeSection = memo(function HomeSection({
         </span>
 
         {inField.length > 0 ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              marginTop: "14px",
-              maxWidth: "680px",
-            }}
-          >
+          <div className="pd-home__field">
             <span
               style={{
                 fontSize: "11px",
