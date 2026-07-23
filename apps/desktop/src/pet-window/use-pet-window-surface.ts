@@ -211,6 +211,10 @@ export function usePetWindowSurface({
   // the transparent window around it.
   const [isResizeAffordanceHovered, setIsResizeAffordanceHovered] = useState(false);
   const [petName, setPetName] = useState<string | null>(isPreview ? (pet.name ?? null) : null);
+  // The pet's look can change while its window is open, and the window's URL
+  // still carries whichever asset it was opened with — so the frame stream wins
+  // once it has told us otherwise.
+  const [assetId, setAssetId] = useState<string>(pet.assetId);
   const presentationRef = useRef<PetWindowPresentation>(presentation);
   const shownActivityRef = useRef<ShownActivity>({ value: null, at: 0 });
   const petNameRef = useRef<string | null>(null);
@@ -239,6 +243,9 @@ export function usePetWindowSurface({
         if (frame.name) {
           petNameRef.current = frame.name;
           setPetName(frame.name);
+        }
+        if (frame.assetId) {
+          setAssetId(frame.assetId);
         }
         if (frame.cwd !== undefined) cwdRef.current = frame.cwd || null;
 
@@ -633,6 +640,7 @@ export function usePetWindowSurface({
     presentation,
     spriteScale,
     petName,
+    assetId,
     cwdRef,
     interactionStatus,
     isBodyHovered,

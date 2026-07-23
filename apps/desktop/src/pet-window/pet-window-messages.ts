@@ -30,6 +30,13 @@ export type PetWindowFrame = {
   sequence: number;
   petId: string;
   name?: string;
+  /**
+   * The Pet Asset the window should be wearing. A pet's look is editable after
+   * adoption, but the overlay window's URL — which carries the asset id it was
+   * opened with — is fixed for the life of the window, so the live value has to
+   * ride the frame stream like the name and folder do.
+   */
+  assetId?: string;
   cwd?: string;
   window: PetWindowFrameWindow;
   sprite: PetWindowFrameSprite;

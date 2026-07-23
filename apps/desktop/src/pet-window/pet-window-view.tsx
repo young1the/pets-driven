@@ -41,7 +41,6 @@ export function PetWindowView({
   previewConnectNotice,
 }: PetWindowViewProps) {
   const isPreview = !petWindowTransport.isDesktopRuntime();
-  const spritesheetUrl = usePetWindowSpritesheet(pet.assetId);
   const { connectNotice, dismissConnectNotice } = usePetWindowConnectNotice({
     petId: pet.petId,
     isPreview,
@@ -53,6 +52,7 @@ export function PetWindowView({
     presentation,
     spriteScale,
     petName,
+    assetId,
     cwdRef,
     interactionStatus,
     isBodyHovered,
@@ -64,6 +64,9 @@ export function PetWindowView({
     handleContextMenu,
     startResize,
   } = usePetWindowSurface({ pet, isPreview, previewPresentation, previewScale });
+  // Not `pet.assetId`: the surface starts from it but lets the host's frames
+  // re-skin the pet mid-life, which the window's fixed URL cannot express.
+  const spritesheetUrl = usePetWindowSpritesheet(assetId);
 
   useEffect(() => {
     document.documentElement.classList.add("pet-window-document");

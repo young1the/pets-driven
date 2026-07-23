@@ -615,6 +615,8 @@ export function useDesktopSimulationHost({
           ? {
               ...projection.frame,
               name: petRecord.name,
+              // The window cannot re-read its own URL, so its look travels here.
+              assetId: petRecord.assetId,
               cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
             }
           : projection.frame;
