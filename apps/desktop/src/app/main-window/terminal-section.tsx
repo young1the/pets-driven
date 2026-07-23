@@ -19,6 +19,12 @@ export interface TerminalSectionProps {
   initialCwd?: string | null;
   /** Default terminal shell to spawn; null/empty falls back to the OS default. */
   shell?: string | null;
+  /**
+   * Opt-in for the Cato coach and its "tips" toolbar button. Defaults to off so
+   * that reusing this section on another surface never greets the user twice —
+   * only the main window's terminal tab owns the coach.
+   */
+  showOnboarding?: boolean;
 }
 
 function folderName(path: string): string {
@@ -31,12 +37,13 @@ export function TerminalSection({
   available,
   initialCwd = null,
   shell = null,
+  showOnboarding = false,
 }: TerminalSectionProps) {
   const { t } = useTranslation("desktop");
   const [cwd, setCwd] = useState<string | null>(initialCwd);
   // Bumped to force a clean remount of the terminal (new PTY) on "restart".
   const [restartNonce, setRestartNonce] = useState(0);
-  const onboarding = useTerminalOnboarding();
+  const onboarding = useTerminalOnboarding(showOnboarding);
 
   async function chooseFolder() {
     const path = await pickDirectory();
@@ -75,7 +82,7 @@ export function TerminalSection({
             {t("terminal.restart")}
           </button>
           {/* Only offered once the coach is off screen — it is the way back. */}
-          {!onboarding.open && (
+          {showOnboarding && !onboarding.open && (
             <button className="pd-eterm__tips" onClick={onboarding.show} type="button">
               <SparkleIcon size={14} />
               {t("terminal.onboarding.showTips")}

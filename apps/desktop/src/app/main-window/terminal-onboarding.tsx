@@ -29,14 +29,26 @@ export interface TerminalOnboardingControl {
  * Owns whether the coach is on screen, so the terminal toolbar can offer a
  * "tips" button that brings it back after it has been dismissed. Dismissing
  * persists; re-opening is per-session and deliberately does not clear the flag.
+ *
+ * `enabled` is the opt-in: surfaces that only borrow the terminal (the setup
+ * wizard, for one) pass `false` and then the coach never shows *and* the
+ * persisted flag is neither read nor written — otherwise skipping the coach
+ * there would silently burn the one greeting the terminal tab owes the user.
  */
-export function useTerminalOnboarding(): TerminalOnboardingControl {
-  const [open, setOpen] = useState(() => !readDismissed());
+export function useTerminalOnboarding(enabled: boolean): TerminalOnboardingControl {
+  const [open, setOpen] = useState(() => enabled && !readDismissed());
 
   return {
-    open,
-    show: () => setOpen(true),
+    open: enabled && open,
+    show: () => {
+      if (enabled) {
+        setOpen(true);
+      }
+    },
     dismiss: () => {
+      if (!enabled) {
+        return;
+      }
       setOpen(false);
       window.localStorage.setItem(DISMISSED_STORAGE_KEY, "true");
     },
