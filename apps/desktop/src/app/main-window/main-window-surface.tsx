@@ -10,6 +10,7 @@ import { describeHookLastSignal } from "@/app/main-window/hook-last-signal";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import { cardNote, petGradient, shortWorkingDir } from "@/app/main-window/pet-card-view";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
+import { usePetAssetOptions } from "@/app/pet-assets/use-pet-asset-options";
 import { personalityRoleLabelKey } from "@/app/pet-presentation";
 import { parseLaunchLine, promptForShell } from "@/app/session-launch-line";
 import type { useClaudePlugin } from "@/app/use-claude-plugin";
@@ -39,6 +40,7 @@ export interface MainWindowSurfaceProps {
   onHideAllPets: () => void;
   onPatchPet: (petId: string, patch: PetPatch) => void;
   onSetPetPersonality: (petId: string, personalityId: PetPersonalityId) => void;
+  onSetPetAsset: (petId: string, assetId: string) => void;
   onPickFolderForPet: (petId: string) => void;
   onClearFolderForPet: (petId: string) => void;
   onDeletePet: (petId: string) => void;
@@ -90,6 +92,7 @@ export function MainWindowSurface({
   onHideAllPets,
   onPatchPet,
   onSetPetPersonality,
+  onSetPetAsset,
   onPickFolderForPet,
   onClearFolderForPet,
   onDeletePet,
@@ -112,6 +115,8 @@ export function MainWindowSurface({
   const addPet = useStableCallback(() => navigate("adopt"));
 
   const managedPets = useMemo(() => state.pets.filter((pet) => !pet.archived), [state]);
+  // Scanned from disk on the shell side, so only ask once a pet is being edited.
+  const assetOptions = usePetAssetOptions(editPetId !== null);
 
   const atHome: HomePetView[] = useMemo(
     () =>
@@ -228,6 +233,8 @@ export function MainWindowSurface({
         ],
       }}
       edit={{
+        assetOptions,
+        onAssetId: (value) => editPetId && onSetPetAsset(editPetId, value),
         onName: (value) => editPetId && onPatchPet(editPetId, { name: value }),
         onMemo: (value) => editPetId && onPatchPet(editPetId, { memo: value }),
         onPersonalityId: (value) => editPetId && onSetPetPersonality(editPetId, value),

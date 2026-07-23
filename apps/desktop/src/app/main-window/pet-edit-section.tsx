@@ -9,8 +9,10 @@ import {
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import type { CodexPetPackage } from "@/app/desktop-gateway";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 import { PERSONALITY_OPTIONS, personalityTitleKey } from "@/app/onboarding/personality-options";
+import { PetAssetGrid } from "@/app/pet-assets/pet-asset-grid";
 
 export interface PetEditView {
   id: string;
@@ -27,6 +29,13 @@ export interface PetEditView {
 
 export interface PetEditSectionProps {
   pet: PetEditView;
+  /**
+   * The installed Pet Assets this pet can be re-skinned to. Left out (or empty)
+   * when the host has no catalog to offer, in which case the look picker is
+   * replaced by a short note rather than an empty strip.
+   */
+  assetOptions?: CodexPetPackage[];
+  onAssetId?: (assetId: string) => void;
   onName: (value: string) => void;
   onMemo: (value: string) => void;
   onPersonalityId: (value: PetPersonalityId) => void;
@@ -61,6 +70,8 @@ const textControlStyle = {
 
 export function PetEditSection({
   pet,
+  assetOptions = [],
+  onAssetId,
   onName,
   onMemo,
   onPersonalityId,
@@ -142,6 +153,32 @@ export function PetEditSection({
                 value={pet.name}
               />
             </label>
+
+            <div style={{ marginTop: "18px" }}>
+              <span style={fieldLabelStyle}>{t("edit.look")}</span>
+              {assetOptions.length > 0 ? (
+                <>
+                  <PetAssetGrid
+                    onSelect={(assetId) => onAssetId?.(assetId)}
+                    packages={assetOptions}
+                    selectedAssetId={pet.assetId}
+                  />
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: "12.5px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    {t("edit.lookHint")}
+                  </p>
+                </>
+              ) : (
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)" }}>
+                  {t("edit.lookEmpty")}
+                </p>
+              )}
+            </div>
 
             <div style={{ marginTop: "18px" }}>
               <span style={fieldLabelStyle}>{t("edit.workingFolder")}</span>

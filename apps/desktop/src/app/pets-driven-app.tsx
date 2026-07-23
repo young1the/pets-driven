@@ -118,6 +118,7 @@ function PetsDrivenHostApp() {
     updateTerminalShell,
     patchPet,
     setPetPersonality,
+    setPetAssetId,
     showPet,
     hidePet,
     showAllPets,
@@ -297,6 +298,7 @@ function PetsDrivenHostApp() {
       onResetPets={() => void resetPets()}
       onSetLaunchCommand={setLaunchCommand}
       onSeedWatchedFolders={seedWatchedFolders}
+      onSetPetAsset={setPetAssetId}
       onSetPetPersonality={setPetPersonality}
       onShowAllPets={showAllPets}
       onShowPet={showPet}

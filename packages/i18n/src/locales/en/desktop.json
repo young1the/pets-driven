@@ -4,6 +4,9 @@
     "yourPet": "Your pet",
     "back": "Back"
   },
+  "petAssets": {
+    "chosen": "Chosen"
+  },
   "nav": {
     "home": "Home",
     "terminal": "Terminal",
@@ -142,6 +145,9 @@
     "details": "Pet details",
     "name": "Name",
     "personality": "Personality",
+    "look": "Look",
+    "lookHint": "Pick another installed look. Your pet keeps its name, folder and personality.",
+    "lookEmpty": "No installed looks to switch to yet.",
     "workingFolder": "Working folder",
     "chooseFolder": "Choose a folder…",
     "clearFolder": "Clear folder",

@@ -1,4 +1,5 @@
 import { Badge, Card } from "@pets-driven/design-system";
+import { useTranslation } from "@pets-driven/i18n";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
 import { useEffect, useState } from "react";
@@ -51,6 +52,7 @@ function PetAssetCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation("desktop");
   const spritesheetUrl = usePetSpritesheetUrl(pet.id);
 
   return (
@@ -85,7 +87,7 @@ function PetAssetCard({
       </div>
       <div className="pd-asset-card__meta">
         <strong>{pet.displayName}</strong>
-        {selected && <Badge dot>Chosen</Badge>}
+        {selected && <Badge dot>{t("petAssets.chosen")}</Badge>}
       </div>
       <p>{pet.description}</p>
     </Card>
