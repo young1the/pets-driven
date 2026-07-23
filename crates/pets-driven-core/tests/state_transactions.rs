@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use pets_driven_core::{
-    empty_state, Clock, Commit, CoreError, CoreEvent, FailingReplaceRepository, HatchPet, IdSource,
+    empty_state, Clock, CoreError, CoreEvent, FailingReplaceRepository, HatchPet, IdSource,
     MemoryStateRepository, Patch, PetId, PetPatch, PetsDrivenCore, SettingsPatch, StateRepository,
     WorkingDirectoryPath,
 };
