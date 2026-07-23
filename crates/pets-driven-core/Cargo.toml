@@ -1,0 +1,19 @@
+[package]
+name = "pets-driven-core"
+version = "0.2.0"
+description = "Authoritative Pet and Registered Working Directory behavior for pets-driven"
+authors = ["pets-driven"]
+license = "MIT"
+edition = "2021"
+
+[lib]
+name = "pets_driven_core"
+
+# This crate is the shared domain core. It must not depend on Tauri, Tokio, the
+# DOM, or any workspace TypeScript package, so a future CLI can link it without
+# pulling in the desktop shell. Keep the dependency list to serialization and
+# error plumbing only.
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"

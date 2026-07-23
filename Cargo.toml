@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = [
+    "apps/desktop/src-tauri",
+    "crates/pets-driven-core",
+]
+
+# The desktop Tauri binary and any future CLI both depend on shared Rust
+# modules under `crates/`, never on each other. See PET-34 and ARCHITECTURE.md.

@@ -2,6 +2,8 @@ node_modules/
 dist/
 test-results/
 apps/desktop/src-tauri/target/
+# Cargo workspace build output (target now resolves to the repo root).
+/target/
 .next/
 out/
 *.tsbuildinfo
