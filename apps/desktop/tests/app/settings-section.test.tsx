@@ -33,6 +33,7 @@ function setup(overrides = {}) {
     defaultPetSourceDirectory: "C:\\Users\\me\\.petdex\\pets",
     onChangePetFolder: vi.fn(),
     onResetPetFolder: vi.fn(),
+    onResetAllSettings: vi.fn(),
     ...overrides,
   };
   render(<SettingsSection {...props} />);

@@ -1,6 +1,6 @@
 import { type BadgeTone, FolderIcon, TerminalPreview } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
-import type { CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
 import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { PluginRunTerminal } from "@/app/main-window/plugin-run-terminal";
@@ -41,6 +41,12 @@ export interface SettingsSectionProps {
   defaultPetSourceDirectory: string | null;
   onChangePetFolder: () => void;
   onResetPetFolder: () => void;
+  /**
+   * Put every persisted setting back to its default. Destructive enough to sit
+   * behind the confirm step below, but it never removes a pet — see
+   * `resetAllSettings` in app/desktop-host/use-pet-roster-actions.ts.
+   */
+  onResetAllSettings: () => void;
 }
 
 function folderName(path: string): string {
@@ -158,6 +164,12 @@ const TONE_COLORS: Partial<Record<BadgeTone, string>> = {
   info: "#3f82d9",
   danger: "#d9544f",
 };
+/** The one destructive action on this screen, colored so it reads as one. */
+const dangerAction: CSSProperties = {
+  ...smallAction,
+  background: TONE_COLORS.danger,
+  color: "#ffffff",
+};
 const statusDot = (tone: BadgeTone): CSSProperties => ({
   width: "10px",
   height: "10px",
@@ -193,11 +205,25 @@ export function SettingsSection({
   defaultPetSourceDirectory,
   onChangePetFolder,
   onResetPetFolder,
+  onResetAllSettings,
 }: SettingsSectionProps) {
   const { t } = useTranslation("desktop");
-  const { locale, setLocale } = useDesktopLocale();
-  const { mode, setMode, accent, setAccent } = useDesktopTheme();
+  const { locale, setLocale, reset: resetLocale } = useDesktopLocale();
+  const { mode, setMode, accent, setAccent, reset: resetTheme } = useDesktopTheme();
   const shellOptions = useTerminalShellOptions();
+  // Step one of the two-step confirm: asking swaps the button for the confirm
+  // card, so a single stray click can never reset anything.
+  const [resetAsked, setResetAsked] = useState(false);
+
+  // Appearance and language live in these providers rather than in the state
+  // document, so the reset has to tell them directly — otherwise the screen
+  // would keep the old theme until the app restarts.
+  function confirmResetAllSettings() {
+    setResetAsked(false);
+    resetTheme();
+    resetLocale();
+    onResetAllSettings();
+  }
   // A previously-saved shell that the current system probe didn't surface still
   // needs an entry so the dropdown can show what is actually persisted.
   const hasCustomShell =
@@ -437,7 +463,7 @@ export function SettingsSection({
           </div>
 
           {/* Language — real, persisted locale switch. */}
-          <div style={rowStyle(true)}>
+          <div style={rowStyle()}>
             <span style={label}>{t("settings.language")}</span>
             <div style={{ ...segWrap, marginTop: "11px" }}>
               {locales.map((value) => (
@@ -451,6 +477,33 @@ export function SettingsSection({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Reset — settings only. Last on the screen because it undoes every
+              row above it, and behind a confirm because it cannot be undone. */}
+          <div style={rowStyle(true)}>
+            <span style={label}>{t("settings.resetAll")}</span>
+            <p style={hint}>{t("settings.resetAllDesc")}</p>
+            {resetAsked ? (
+              <div className="pd-settings-confirm">
+                <span className="pd-settings-confirm__copy">
+                  <b className="pd-settings-confirm__title">{t("settings.resetAllConfirmTitle")}</b>
+                  <small className="pd-settings-confirm__hint">
+                    {t("settings.resetAllConfirmHint")}
+                  </small>
+                </span>
+                <button onClick={() => setResetAsked(false)} style={smallAction} type="button">
+                  {t("settings.resetAllCancel")}
+                </button>
+                <button onClick={confirmResetAllSettings} style={dangerAction} type="button">
+                  {t("settings.resetAllConfirm")}
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setResetAsked(true)} style={dangerAction} type="button">
+                {t("settings.resetAllAction")}
+              </button>
+            )}
           </div>
         </div>
       </div>

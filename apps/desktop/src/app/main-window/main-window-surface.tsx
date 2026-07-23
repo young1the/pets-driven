@@ -48,6 +48,8 @@ export interface MainWindowSurfaceProps {
   onSetLaunchCommand: (command: string) => void;
   onChangePetSourceFolder: () => void;
   onResetPetFolder: () => void;
+  /** Settings only — the pet roster is user data and survives it. */
+  onResetAllSettings: () => void;
 }
 
 /**
@@ -97,6 +99,7 @@ export function MainWindowSurface({
   onSetLaunchCommand,
   onChangePetSourceFolder,
   onResetPetFolder,
+  onResetAllSettings,
 }: MainWindowSurfaceProps) {
   const { t } = useTranslation("desktop");
 
@@ -274,6 +277,7 @@ export function MainWindowSurface({
         defaultPetSourceDirectory: defaultPetSourceFolder,
         onChangePetFolder: () => onChangePetSourceFolder(),
         onResetPetFolder: () => onResetPetFolder(),
+        onResetAllSettings: () => onResetAllSettings(),
       }}
       terminal={{
         available: isTauri(),

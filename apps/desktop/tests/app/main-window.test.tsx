@@ -46,6 +46,7 @@ const settings = {
   defaultPetSourceDirectory: null as string | null,
   onChangePetFolder: vi.fn(),
   onResetPetFolder: vi.fn(),
+  onResetAllSettings: vi.fn(),
 };
 const debug = { groups: [], error: null };
 const terminal = {
