@@ -159,6 +159,35 @@ describe("HomeSection", () => {
     expect(screen.queryByRole("button", { name: "Edit pet" })).not.toBeInTheDocument();
   });
 
+  it("keeps the deployed-pet chips in the capped row", () => {
+    // The row grows a chip per deployed pet inside a column that clips instead
+    // of scrolling, so it has to stay the element main-window.css bounds and
+    // scrolls — inline-styling it back into a free-growing flex box pushes the
+    // greeting off the top of the screen.
+    render(
+      <HomeSection
+        atHome={[]}
+        inField={Array.from({ length: 30 }, (_, index) => ({
+          id: `pet-${index}`,
+          name: `Pet ${index}`,
+          color: "#FF6FAB",
+          working: false,
+        }))}
+        onDeploy={vi.fn()}
+        onRecall={vi.fn()}
+        onEdit={vi.fn()}
+        onAddPet={vi.fn()}
+        onShowAll={vi.fn()}
+        onHideAll={vi.fn()}
+      />,
+    );
+
+    const row = screen.getByText("Pet 29").closest(".pd-home__field");
+
+    expect(row).not.toBeNull();
+    expect(row?.querySelectorAll("button")).toHaveLength(30);
+  });
+
   it("recalls a pet when its field chip is clicked", () => {
     const onRecall = vi.fn();
     render(
