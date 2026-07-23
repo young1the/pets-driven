@@ -78,6 +78,7 @@ pub fn run() {
             state_store::update_pet_record,
             state_store::delete_pet_record,
             state_store::update_pets_driven_settings,
+            state_store::reset_pets_driven_settings,
             pet_assets::list_codex_pet_packages,
             pet_assets::load_codex_pet_spritesheet,
             pet_assets::get_default_pet_source_directory,

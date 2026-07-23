@@ -26,6 +26,12 @@ fn empty_pets_driven_state() -> serde_json::Value {
     })
 }
 
+/// The top-level keys that hold user data rather than settings: the adopted
+/// pets, their profiles, and the folders they watch. A settings reset keeps
+/// exactly these and drops every other key, so a setting added later resets by
+/// default instead of being silently forgotten by a hand-kept list.
+const PET_DATA_KEYS: [&str; 3] = ["registeredWorkingDirectories", "pets", "petProfiles"];
+
 fn pets_driven_state_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_data_dir()
@@ -143,6 +149,26 @@ pub(crate) fn update_pets_driven_settings(
     input: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
     update_settings(&app, settings_update_input_from_payload(&input)?)
+}
+
+/// Put every app-wide setting back to its default, keeping the pets, their
+/// profiles, and the folders they watch exactly as they are. This file owns the
+/// persisted document, so it also owns what "a setting" means — the webview asks
+/// for a reset rather than clearing fields one by one. Returns the persisted
+/// state for the caller to render.
+#[tauri::command]
+pub(crate) fn reset_pets_driven_settings(
+    app: tauri::AppHandle,
+) -> Result<serde_json::Value, String> {
+    let _guard = STATE_MUTATION_LOCK
+        .lock()
+        .map_err(|error| format!("State lock poisoned: {error}"))?;
+
+    let state = read_state(&app)?;
+    let next = apply_settings_reset(&state);
+    write_state(&app, &next)?;
+
+    Ok(next)
 }
 
 pub(crate) struct HatchInput {
@@ -967,6 +993,26 @@ fn apply_settings_update(
     next
 }
 
+/// Drop every settings key, keeping only the pet data. An absent key is what
+/// the frontend parser reads as "default" (see `parsePetsDrivenState` in
+/// apps/desktop/src/app-state/pets-driven-state.ts), so removing them is how a
+/// setting goes back to its default rather than to an empty string.
+fn apply_settings_reset(state: &serde_json::Value) -> serde_json::Value {
+    let mut next = empty_pets_driven_state();
+
+    let Some(object) = next.as_object_mut() else {
+        return next;
+    };
+
+    for key in PET_DATA_KEYS {
+        if let Some(value) = state.get(key) {
+            object.insert(key.to_string(), value.clone());
+        }
+    }
+
+    next
+}
+
 /// Authoritative settings path, mirroring `hatch_pet`'s serialise/read/write
 /// cycle. Returns the new state for the caller to broadcast.
 pub(crate) fn update_settings(
@@ -1382,6 +1428,61 @@ mod tests {
         assert_eq!(next["sessionCommand"], "cmd /k codex");
         assert_eq!(next["terminalShell"], "C:/Windows/System32/cmd.exe");
         assert_eq!(next["petSourceDirectory"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn apply_settings_reset_restores_defaults_and_keeps_the_pets() {
+        let mut state = hatched_state();
+        state = apply_settings_update(
+            &state,
+            &SettingsUpdateInput {
+                session_command: Some("cmd /k codex".to_string()),
+                terminal_shell: Some(Some("C:/Windows/System32/cmd.exe".to_string())),
+                pet_source_directory: Some(Some("D:/pets".to_string())),
+            },
+        );
+
+        let next = apply_settings_reset(&state);
+
+        // Every setting is gone, so the frontend parser reads its default.
+        assert_eq!(next.get("sessionCommand"), None);
+        assert_eq!(next.get("terminalShell"), None);
+        assert_eq!(next.get("petSourceDirectory"), None);
+        assert_eq!(next["schemaVersion"], 1);
+
+        // The pet, its profile, and the folder it watches survive untouched.
+        assert_eq!(next["pets"], state["pets"]);
+        assert_eq!(next["petProfiles"], state["petProfiles"]);
+        assert_eq!(
+            next["registeredWorkingDirectories"],
+            state["registeredWorkingDirectories"]
+        );
+        assert_eq!(list_pets_view(&next)[0]["cwd"], "D:/proj");
+    }
+
+    #[test]
+    fn apply_settings_reset_drops_a_setting_this_file_does_not_know_about() {
+        // The reset keeps the pet-data keys and nothing else on purpose: a
+        // setting added to the document later must reset without anyone
+        // remembering to extend a list of settings.
+        let mut state = hatched_state();
+        state
+            .as_object_mut()
+            .unwrap()
+            .insert("someLaterSetting".to_string(), serde_json::json!("on"));
+
+        let next = apply_settings_reset(&state);
+
+        assert_eq!(next.get("someLaterSetting"), None);
+        assert_eq!(next["pets"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn apply_settings_reset_on_an_empty_state_is_the_empty_state() {
+        assert_eq!(
+            apply_settings_reset(&empty_pets_driven_state()),
+            empty_pets_driven_state()
+        );
     }
 
     #[test]
