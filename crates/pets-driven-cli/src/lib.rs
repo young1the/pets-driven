@@ -20,6 +20,8 @@
 //! * `attach`  — tell the app an agent attached to the current folder.
 //! * `summary EVENT TEXT` — forward a task summary for the current folder.
 //! * `forward` (the default) — forward a hook event read from stdin, unchanged.
+//! * `forward-codex [EVENT]` — forward a Codex event, synthesizing one when
+//!   stdin is empty, to the Codex route with a legacy Claude-route fallback.
 
 mod transport;
 
@@ -173,6 +175,13 @@ pub fn run_with<O: Write, E: Write>(
         Some((first, rest)) => (first.as_str(), rest),
     };
 
+    // Codex forwarding is special: it may synthesize a body when stdin is empty
+    // and it tries the Codex route before the legacy Claude route, so it does
+    // not fit the single-request shape the other commands share.
+    if command == "forward-codex" {
+        return run_codex_forward(rest, cwd, origin, stdin);
+    }
+
     let request = match prepare(command, rest, cwd, stdin) {
         Ok(request) => request,
         Err(UsageError(message)) => {
@@ -195,8 +204,8 @@ pub fn run_with<O: Write, E: Write>(
         }
         Mode::Authoritative => {
             match transport::post_json(origin, request.path, &request.body, AUTHORITATIVE_TIMEOUT) {
-                Ok(body) => {
-                    let _ = out.write_all(&body);
+                Ok(response) => {
+                    let _ = out.write_all(&response.body);
                     let _ = writeln!(out);
                 }
                 Err(TransportError::Connect(_) | TransportError::Resolve(_)) => {
@@ -240,6 +249,72 @@ fn read_stdin() -> Vec<u8> {
     let mut buffer = Vec::new();
     let _ = std::io::stdin().read_to_end(&mut buffer);
     buffer
+}
+
+/// Strip a leading UTF-8 byte-order mark, which some shells prepend to a hook
+/// payload.
+fn strip_bom(bytes: &[u8]) -> &[u8] {
+    bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]).unwrap_or(bytes)
+}
+
+/// Resolve the body to forward for a Codex event: the real stdin payload when
+/// present, otherwise a synthesized event. Returns `None` when there is nothing
+/// to send — an empty payload for a lifecycle event the app does not express —
+/// so the caller simply exits without posting.
+fn codex_forward_body(stdin: &[u8], event_name: &str, cwd: &str) -> Option<Vec<u8>> {
+    let payload = strip_bom(stdin);
+
+    // A real payload is forwarded unchanged. Only a blank body or a bare `{}`
+    // (or non-UTF-8, which a genuine hook payload never is) falls through to
+    // synthesis.
+    let is_blank = match std::str::from_utf8(payload) {
+        Ok(text) => {
+            let trimmed = text.trim();
+            trimmed.is_empty() || trimmed == "{}"
+        }
+        Err(_) => false,
+    };
+
+    if !is_blank {
+        return Some(payload.to_vec());
+    }
+
+    protocol::CodexHookEvent::synthesize(event_name, cwd).map(|event| json_body(&event))
+}
+
+/// Forward a Codex lifecycle event. Tries the Codex route first and falls back
+/// to the legacy Claude route when the app rejects or cannot serve it (an older
+/// desktop that predates `/codex-hook`), mirroring the shell forwarder. Always
+/// fire-and-forget: a hook must never surface an error to the agent.
+fn run_codex_forward(
+    args: &[String],
+    cwd: &str,
+    origin: &str,
+    stdin: impl FnOnce() -> Vec<u8>,
+) -> i32 {
+    let event_name = args.first().map(String::as_str).unwrap_or("UserPromptSubmit");
+
+    let Some(body) = codex_forward_body(&stdin(), event_name, cwd) else {
+        // Nothing to send: an empty payload for an event with no synthesized
+        // form. Exit cleanly, like the script.
+        return 0;
+    };
+
+    let delivered = matches!(
+        transport::post_json(origin, protocol::paths::CODEX_HOOK, &body, FIRE_AND_FORGET_TIMEOUT),
+        Ok(ref response) if response.is_success()
+    );
+
+    if !delivered {
+        let _ = transport::post_json(
+            origin,
+            protocol::paths::CLAUDE_HOOK,
+            &body,
+            FIRE_AND_FORGET_TIMEOUT,
+        );
+    }
+
+    0
 }
 
 #[cfg(test)]
@@ -336,6 +411,38 @@ mod tests {
         assert_eq!(request.path, protocol::paths::CLAUDE_HOOK);
         assert_eq!(request.mode, Mode::FireAndForget);
         assert_eq!(request.body, b"{\"raw\":true}");
+    }
+
+    #[test]
+    fn codex_forward_passes_a_real_stdin_payload_through() {
+        let body = codex_forward_body(br#"{"hook_event_name":"Stop","cwd":"D:/x"}"#, "Stop", "D:/proj")
+            .expect("a real payload should be forwarded");
+        assert_eq!(body, br#"{"hook_event_name":"Stop","cwd":"D:/x"}"#);
+    }
+
+    #[test]
+    fn codex_forward_strips_a_utf8_bom_before_deciding() {
+        // A BOM in front of `{}` must still count as an empty payload, so the
+        // event is synthesized rather than forwarded as-is.
+        let mut stdin = vec![0xEF, 0xBB, 0xBF];
+        stdin.extend_from_slice(b"{}");
+        let body = codex_forward_body(&stdin, "Stop", "D:/proj").expect("should synthesize");
+        let text = String::from_utf8(body).unwrap();
+        assert!(text.contains(r#""summary":"Codex turn completed""#));
+    }
+
+    #[test]
+    fn codex_forward_synthesizes_when_stdin_is_empty() {
+        let body = codex_forward_body(b"", "UserPromptSubmit", "D:/proj").expect("should synthesize");
+        let text = String::from_utf8(body).unwrap();
+        assert!(text.contains(r#""hook_event_name":"UserPromptSubmit""#));
+        assert!(text.contains(r#""sourceId":"codex""#));
+        assert!(text.contains(r#""cwd":"D:/proj""#));
+    }
+
+    #[test]
+    fn codex_forward_has_nothing_to_send_for_an_unknown_empty_event() {
+        assert_eq!(codex_forward_body(b"   ", "Frobnicate", "D:/proj"), None);
     }
 
     #[test]

@@ -155,6 +155,54 @@ impl HookEvent {
     }
 }
 
+/// A synthesized Codex lifecycle event, forwarded to [`paths::CODEX_HOOK`] (with
+/// a legacy fallback to [`paths::CLAUDE_HOOK`]).
+///
+/// Codex hooks can fire with no useful stdin payload, so the client synthesizes
+/// one per lifecycle event. The source identity is emitted under all three keys
+/// the ingress log line may read (`sourceId`, `source_id`, `agent_id`) so the
+/// event is always attributed to Codex.
+///
+/// coupling: the per-event summary and message text mirror
+/// `plugins/pets-driven/hooks/forward-codex` — change both together.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CodexHookEvent {
+    pub hook_event_name: String,
+    pub cwd: String,
+    pub summary: String,
+    pub message: String,
+    #[serde(rename = "sourceId")]
+    pub source_id_camel: String,
+    pub source_id: String,
+    pub agent_id: String,
+}
+
+impl CodexHookEvent {
+    /// The Codex source id used under every source key.
+    pub const SOURCE_ID: &'static str = "codex";
+
+    /// Synthesize the fallback event for a Codex lifecycle `event_name`, or
+    /// `None` when the event is not one the app expresses.
+    pub fn synthesize(event_name: &str, cwd: impl Into<String>) -> Option<Self> {
+        let (summary, message) = match event_name {
+            "UserPromptSubmit" => ("Codex prompt received", "Codex started working"),
+            "PermissionRequest" => ("Codex needs permission", "Codex needs permission"),
+            "Stop" => ("Codex turn completed", "Codex turn completed"),
+            _ => return None,
+        };
+
+        Some(Self {
+            hook_event_name: event_name.to_string(),
+            cwd: cwd.into(),
+            summary: summary.to_string(),
+            message: message.to_string(),
+            source_id_camel: Self::SOURCE_ID.to_string(),
+            source_id: Self::SOURCE_ID.to_string(),
+            agent_id: Self::SOURCE_ID.to_string(),
+        })
+    }
+}
+
 /// The common `{ ok, error }` head every ingress reply carries. The rest of a
 /// reply (pets, personalities, assets, the pet view) is endpoint-specific and
 /// left to the client to read off the raw body; this is only what decides
@@ -223,6 +271,33 @@ mod tests {
             body,
             r#"{"hook_event_name":"Stop","cwd":"D:/proj","summary":"done"}"#
         );
+    }
+
+    #[test]
+    fn codex_event_synthesizes_source_ids_and_per_event_text() {
+        let started = CodexHookEvent::synthesize("UserPromptSubmit", "D:/proj").unwrap();
+        assert_eq!(started.summary, "Codex prompt received");
+        assert_eq!(started.message, "Codex started working");
+
+        let body = serde_json::to_string(&started).unwrap();
+        assert!(body.contains(r#""hook_event_name":"UserPromptSubmit""#));
+        assert!(body.contains(r#""sourceId":"codex""#));
+        assert!(body.contains(r#""source_id":"codex""#));
+        assert!(body.contains(r#""agent_id":"codex""#));
+        assert!(body.contains(r#""cwd":"D:/proj""#));
+    }
+
+    #[test]
+    fn codex_event_covers_permission_and_stop_but_rejects_unknown() {
+        assert_eq!(
+            CodexHookEvent::synthesize("PermissionRequest", "D:/proj").unwrap().message,
+            "Codex needs permission"
+        );
+        assert_eq!(
+            CodexHookEvent::synthesize("Stop", "D:/proj").unwrap().summary,
+            "Codex turn completed"
+        );
+        assert_eq!(CodexHookEvent::synthesize("Frobnicate", "D:/proj"), None);
     }
 
     #[test]
