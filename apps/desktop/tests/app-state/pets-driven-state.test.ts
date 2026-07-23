@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createEmptyPetsDrivenState,
   parsePetsDrivenState,
+  resetSettings,
   setPetSourceDirectory,
 } from "@/app-state/pets-driven-state";
 
@@ -175,6 +176,58 @@ describe("parsePetsDrivenState", () => {
     });
 
     expect(state.petSourceDirectory).toBeNull();
+  });
+});
+
+describe("resetSettings", () => {
+  it("restores every setting and keeps the pets", () => {
+    const configured = parsePetsDrivenState({
+      schemaVersion: 1,
+      registeredWorkingDirectories: [
+        {
+          id: "wd-1",
+          path: "D:\\projects\\alpha",
+          petId: "pet-1",
+          agentSourceId: "agent-1",
+          createdAt: 10,
+          updatedAt: 20,
+        },
+      ],
+      pets: [
+        {
+          id: "pet-1",
+          workingDirectoryId: "wd-1",
+          assetId: "bloop",
+          profileId: "profile-1",
+          name: "Bloop",
+          adoptedAt: 100,
+          archived: false,
+          visible: true,
+          memo: "watch the auth flow",
+        },
+      ],
+      petProfiles: [{ id: "profile-1", petAssetId: "bloop", personalityId: "playful" }],
+      sessionCommand: "pwsh -NoLogo -Command codex",
+      terminalShell: "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      petSourceDirectory: "D:\\pets\\mine",
+    });
+
+    const reset = resetSettings(configured);
+    const defaults = createEmptyPetsDrivenState();
+
+    expect(reset.sessionCommand).toBe(defaults.sessionCommand);
+    expect(reset.terminalShell).toBeNull();
+    expect(reset.petSourceDirectory).toBeNull();
+
+    // The pet, its profile, its memo and the folder it watches are user data:
+    // a settings reset must not be a way to lose them.
+    expect(reset.pets).toBe(configured.pets);
+    expect(reset.petProfiles).toBe(configured.petProfiles);
+    expect(reset.registeredWorkingDirectories).toBe(configured.registeredWorkingDirectories);
+  });
+
+  it("is the empty state when nothing was adopted", () => {
+    expect(resetSettings(createEmptyPetsDrivenState())).toEqual(createEmptyPetsDrivenState());
   });
 });
 

@@ -146,3 +146,57 @@ describe("SettingsSection", () => {
     expect(onChangePetFolder).toHaveBeenCalled();
   });
 });
+
+describe("SettingsSection reset", () => {
+  it("asks before resetting anything", () => {
+    const onResetAllSettings = vi.fn();
+    setup({ onResetAllSettings });
+
+    // Pressing the action only opens the confirm; nothing is reset yet. A
+    // destructive action one stray click away is the bug this guards.
+    fireEvent.click(screen.getByText("Reset all settings", { selector: "button" }));
+
+    expect(screen.getByText("Reset every setting?")).toBeInTheDocument();
+    expect(onResetAllSettings).not.toHaveBeenCalled();
+  });
+
+  it("resets once the second step is confirmed", () => {
+    const onResetAllSettings = vi.fn();
+    setup({ onResetAllSettings });
+
+    fireEvent.click(screen.getByText("Reset all settings", { selector: "button" }));
+    fireEvent.click(screen.getByText("Yes, reset settings"));
+
+    expect(onResetAllSettings).toHaveBeenCalledTimes(1);
+    // The confirm closes again, so a second reset needs both steps again.
+    expect(screen.queryByText("Reset every setting?")).not.toBeInTheDocument();
+  });
+
+  it("backs out of the confirm without resetting", () => {
+    const onResetAllSettings = vi.fn();
+    setup({ onResetAllSettings });
+
+    fireEvent.click(screen.getByText("Reset all settings", { selector: "button" }));
+    fireEvent.click(screen.getByText("Keep my settings"));
+
+    expect(onResetAllSettings).not.toHaveBeenCalled();
+    expect(screen.queryByText("Reset every setting?")).not.toBeInTheDocument();
+  });
+
+  it("leaves the pets out of the reset", () => {
+    // Settings only: the section says so, and it has no pet-touching callback
+    // to reach for. The state-level guarantee is pinned by `resetSettings` in
+    // tests/app-state/pets-driven-state.test.ts and by the Rust unit tests on
+    // apply_settings_reset.
+    const props = setup();
+
+    fireEvent.click(screen.getByText("Reset all settings", { selector: "button" }));
+    expect(screen.getByText(/Your pets, their folders and their looks are not touched\./));
+
+    fireEvent.click(screen.getByText("Yes, reset settings"));
+
+    expect(props.onChangePetFolder).not.toHaveBeenCalled();
+    expect(props.onResetPetFolder).not.toHaveBeenCalled();
+    expect(props.onCommand).not.toHaveBeenCalled();
+  });
+});
