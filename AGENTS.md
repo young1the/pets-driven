@@ -27,6 +27,7 @@ pnpm test:e2e         # Playwright, desktop only
 | Path | What it owns | Docs |
 | --- | --- | --- |
 | `apps/desktop` | Tauri shell, pet windows, agent event ingress | `apps/desktop/AGENTS.md` |
+| `crates/pets-driven-core` | Authoritative Pet + Registered Working Directory state behind a repository seam | — |
 | `apps/web` | Landing site + Remotion demo video | `apps/web/AGENTS.md` |
 | `packages/pet-engine` | ECS simulation, personalities, sprite state | `packages/pet-engine/AGENTS.md` |
 | `packages/design-system` | Tokens and shared React components | `packages/design-system/AGENTS.md` |
@@ -40,6 +41,7 @@ graph TD
   desktop[apps/desktop] --> engine[packages/pet-engine]
   desktop --> ds[packages/design-system]
   desktop --> i18n[packages/i18n]
+  desktop --> core[crates/pets-driven-core]
   web[apps/web] --> engine
   web --> ds
   web --> i18n
@@ -47,6 +49,8 @@ graph TD
 ```
 
 `pet-engine` depends on nothing in the workspace and must stay that way. Full graph, runtime event flow, and a ripple table: `ARCHITECTURE.md`.
+
+The Rust side is a Cargo workspace (root `Cargo.toml`) with two members: the desktop Tauri crate and `crates/pets-driven-core`. The core owns the persisted Pet and Registered Working Directory behavior behind a `StateRepository` seam, and depends only on `serde`, `serde_json`, and `thiserror` — never on Tauri, so a future CLI can link it without the desktop shell. The desktop crate supplies the one production file repository and maps core commit events to Tauri events and pet-window effects.
 
 ## Non-obvious rules
 

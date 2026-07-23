@@ -41,7 +41,7 @@ sequenceDiagram
   participant CC as Claude Code
   participant Hook as plugins/pets-driven hooks
   participant Ingress as claude_hook_ingress (Rust)
-  participant Store as state_store (Rust)
+  participant Store as pets-driven-core (Rust)
   participant Sim as pet-engine world tick
   participant Win as pet window overlay
 
@@ -53,7 +53,7 @@ sequenceDiagram
   Win->>Win: render sprite row + attention badge
 ```
 
-Anchors for each hop: `plugins/pets-driven/hooks/`, `apps/desktop/src-tauri/src/claude_hook_ingress.rs`, `apps/desktop/src-tauri/src/state_store.rs`, `apps/desktop/src-tauri/src/pet_windows.rs`, and the frontend transport in `apps/desktop/src/pet-window/pet-window-transport.ts`.
+Anchors for each hop: `plugins/pets-driven/hooks/`, `apps/desktop/src-tauri/src/claude_hook_ingress.rs`, `crates/pets-driven-core` (the authoritative state transaction) with the desktop file adapter in `apps/desktop/src-tauri/src/state_repository.rs`, `apps/desktop/src-tauri/src/pet_windows.rs`, and the frontend transport in `apps/desktop/src/pet-window/pet-window-transport.ts`.
 
 **The pet window owns no simulation state.** It is a separate always-on-top overlay driven entirely by frame events from the main window, so a bug in what a pet *shows* is a projection bug, not a simulation bug — see `apps/desktop/src/pet-window/pet-window-projection.ts` before touching engine code.
 
