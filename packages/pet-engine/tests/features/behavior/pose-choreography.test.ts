@@ -88,4 +88,32 @@ describe("getExpressivePoseState", () => {
     expect(getExpressivePoseState("beckon", 700)).toBe("waving");
     expect(getExpressivePoseState("greet", 700)).toBe("idle");
   });
+
+  /**
+   * PET-23: releasing a settled task drops the waiting/review row that was
+   * pinned by the task hold, so without a pose the pet just stands there. Both
+   * acknowledge beats must answer with a wave on their opening frame.
+   */
+  it.each([
+    "acknowledge-waiting",
+    "acknowledge-completed",
+  ] as const)("opens the %s beat on a wave, not on the status row it just left", (reason) => {
+    expect(getExpressivePoseState(reason, 0)).toBe("waving");
+  });
+
+  it("gives the two acknowledge beats different rhythms", () => {
+    // waiting is a brisk double wave-off; completed is a fuller, prouder sweep.
+    // At 400ms the relieved one has already settled while the proud one is
+    // still mid-wave, so the two do not read as the same animation.
+    expect(getExpressivePoseState("acknowledge-waiting", 400)).toBe("idle");
+    expect(getExpressivePoseState("acknowledge-completed", 400)).toBe("waving");
+  });
+
+  it("loops the acknowledge beats so they fill the whole 3s claim", () => {
+    // acknowledge-waiting is 1440ms long; at 1440 it must be back on the wave
+    // rather than frozen on the closing idle.
+    expect(getExpressivePoseState("acknowledge-waiting", 1_440)).toBe("waving");
+    // acknowledge-completed is 1840ms long.
+    expect(getExpressivePoseState("acknowledge-completed", 1_840)).toBe("waving");
+  });
 });

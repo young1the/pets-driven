@@ -282,6 +282,62 @@ describe("pet animation state", () => {
     expect(animationState()).toBe("running-right");
   });
 
+  /**
+   * PET-23: the acknowledge claim is the one user-interaction claim allowed to
+   * hold a pose. Releasing a settled task removes the TaskMovementHold that was
+   * pinning the waiting/review row, so before this the pet dropped straight to
+   * `idle` and the release read as nothing happening.
+   */
+  it.each([
+    "acknowledge-waiting",
+    "acknowledge-completed",
+  ] as const)("waves off a dismissed task on the %s claim", (reason) => {
+    const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
+
+    setTravel(0, 0);
+    scenario.world.setComponent("pet-a", { type: "Steering", mode: "stand" });
+    scenario.world.setComponent("pet-a", {
+      type: "BehaviorDecisionState",
+      source: "user-interaction",
+      decidedAt: 0,
+      expiresAt: 3_000,
+      reason,
+      lastAutonomousReason: null,
+      lastAutonomousAt: null,
+    });
+
+    expect(animationState()).toBe("waving");
+  });
+
+  /**
+   * The allow-list is deliberately narrow: every other user claim (drag, throw,
+   * petting, keyboard control) must leave the body alone rather than freeze it
+   * into a pose.
+   */
+  it.each([
+    "petting",
+    "dragging",
+    "throw",
+    "keyboard-control",
+    "hover-greet",
+  ] as const)("does not pose the pet for the %s user claim", (reason) => {
+    const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
+
+    setTravel(0, 0);
+    scenario.world.setComponent("pet-a", { type: "Steering", mode: "stand" });
+    scenario.world.setComponent("pet-a", {
+      type: "BehaviorDecisionState",
+      source: "user-interaction",
+      decidedAt: 0,
+      expiresAt: 3_000,
+      reason,
+      lastAutonomousReason: null,
+      lastAutonomousAt: null,
+    });
+
+    expect(animationState()).toBe("idle");
+  });
+
   it("derives travel displacement from Transform, not physics velocity", () => {
     const { scenario } = petBodyAnimationState("pet-a");
 

@@ -17,6 +17,28 @@ const TRAVEL_DISPLACEMENT_THRESHOLD = 0.1;
 // throw the jump/airborne tags did not already flag), keeping the jumping row.
 const AIRBORNE_DISPLACEMENT_THRESHOLD = 0.5;
 
+/**
+ * The only user-interaction claims allowed to hold an expressive pose.
+ *
+ * A pose normally belongs to an autonomous claim — a pet standing still because
+ * it *chose* to. The acknowledge beat is the exception: the user has just
+ * released a settled task, the task hold that was pinning the waiting/review
+ * row is gone, and the pet has nothing left to play but `idle`, so the release
+ * looked like nothing happened (PET-23). Letting these two reasons resolve a
+ * choreography gives the release an actual answer — a wave-off.
+ *
+ * Kept as an explicit allow-list rather than a blanket `user-interaction` check:
+ * dragging, throwing, petting and keyboard control are all user claims too, and
+ * none of them should be able to freeze the body into a pose.
+ */
+const POSED_USER_INTERACTION_REASONS = new Set(["acknowledge-waiting", "acknowledge-completed"]);
+
+function isPosedUserInteraction(decision: { source: string; reason: string }): boolean {
+  return (
+    decision.source === "user-interaction" && POSED_USER_INTERACTION_REASONS.has(decision.reason)
+  );
+}
+
 type TravelDirection = "left" | "right";
 
 function getTravelDirection(dx: number): TravelDirection | null {
@@ -112,7 +134,7 @@ export function getPetAnimationState(
     const pose = getExpressivePoseState(signatureReaction.pose, now - signatureReaction.startedAt);
     if (pose) return pose;
   }
-  if (decision?.source === "autonomous") {
+  if (decision && (decision.source === "autonomous" || isPosedUserInteraction(decision))) {
     const pose = getExpressivePoseState(decision.reason, now - decision.decidedAt);
     if (pose) return pose;
   }

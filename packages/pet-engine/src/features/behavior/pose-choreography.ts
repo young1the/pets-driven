@@ -26,9 +26,11 @@ export type PoseChoreography = readonly ChoreographyBeat[];
  * looks again; `meditate` alternates slowly; `inspect` shuffles closer between
  * looks. Same nine rows, thirteen readable behaviors.
  *
- * Invariant: every entry's FIRST beat is the row that pose used to hold, so a
- * freshly-claimed pose still reads exactly as before and only its continuation
- * is new.
+ * Invariant: every expressive-activity entry's FIRST beat is the row that pose
+ * used to hold, so a freshly-claimed pose still reads exactly as before and
+ * only its continuation is new. The acknowledge beats at the bottom are exempt:
+ * they replace no earlier row, because before them the acknowledge claim had no
+ * pose at all.
  */
 const EXPRESSIVE_POSE_CHOREOGRAPHY: Partial<Record<string, PoseChoreography>> = {
   // Wave, pause, wave again — an eager hello rather than one long wave.
@@ -169,6 +171,29 @@ const EXPRESSIVE_POSE_CHOREOGRAPHY: Partial<Record<string, PoseChoreography>> = 
     { state: "review", durationMs: 620 },
     { state: "idle", durationMs: 380 },
     { state: "review", durationMs: 340 },
+  ],
+  // ── Acknowledge beats ─────────────────────────────────────────────────────
+  // Unlike every entry above, these two are not autonomous activities: they are
+  // keyed by the `acknowledge-<status>` claim raised when the user releases a
+  // settled task (by petting or by double-click). Without them the pet dropped
+  // its waiting/review pose and simply stood there, so the release read as
+  // nothing happening (PET-23). Both open on `waving` — the wave IS the answer,
+  // and reopening on the status row the pet just left would read as still
+  // holding it. See pet-animation-state.ts for why these reasons are allowed to
+  // pose despite not being autonomous.
+  // The ask is over: a brisk wave-off, then settle.
+  "acknowledge-waiting": [
+    { state: "waving", durationMs: 300 },
+    { state: "idle", durationMs: 200 },
+    { state: "waving", durationMs: 300 },
+    { state: "idle", durationMs: 640 },
+  ],
+  // A fuller, prouder sweep with a satisfied stand between passes.
+  "acknowledge-completed": [
+    { state: "waving", durationMs: 520 },
+    { state: "idle", durationMs: 360 },
+    { state: "waving", durationMs: 260 },
+    { state: "idle", durationMs: 700 },
   ],
 };
 
