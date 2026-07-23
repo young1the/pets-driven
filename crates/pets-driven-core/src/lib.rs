@@ -36,8 +36,8 @@ pub use asset_id::is_valid_asset_id;
 pub use clock::{Clock, IdSource, SystemClock, SystemIdSource};
 pub use error::{CoreError, RepositoryError, ValidationError};
 pub use model::{
-    Commit, CoreEvent, HatchPet, Patch, PetId, PetPatch, PetView, RemovedPet, SettingsPatch,
-    StateSnapshot,
+    required_string_field, Commit, CoreEvent, HatchPet, Patch, PetId, PetPatch, PetView,
+    RemovedPet, SettingsPatch, StateSnapshot,
 };
 pub use personalities::{personality_preset, PERSONALITY_IDS};
 pub use repository::{FailingReplaceRepository, MemoryStateRepository, StateRepository};

@@ -5,7 +5,7 @@ use std::{
 
 use tauri::Manager;
 
-use crate::state_store;
+use crate::state_commands;
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -40,12 +40,10 @@ fn petdex_pets_root() -> Result<PathBuf, String> {
 }
 
 pub(crate) fn validate_asset_id(asset_id: &str) -> Result<(), String> {
-    let valid = !asset_id.is_empty()
-        && asset_id
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_');
-
-    if valid {
+    // The addressability rule lives in pets-driven-core so scanning pet packages
+    // and hatching agree on which ids are valid; this thin wrapper keeps the
+    // desktop callers' `Result<(), String>` surface.
+    if pets_driven_core::is_valid_asset_id(asset_id) {
         Ok(())
     } else {
         Err("Invalid Codex pet asset id".to_string())
@@ -220,7 +218,7 @@ pub(crate) fn list_hatchable_pet_assets(app: &tauri::AppHandle) -> Vec<Hatchable
 /// entry of the legacy v2 `petSourceDirectories` list, else the Petdex default
 /// (`~/.petdex/pets`).
 fn designated_pet_source_root(app: &tauri::AppHandle) -> Option<PathBuf> {
-    if let Ok(state) = state_store::read_state_pub(app) {
+    if let Ok(state) = state_commands::read_state(app) {
         if let Some(path) = state
             .get("petSourceDirectory")
             .and_then(|value| value.as_str())

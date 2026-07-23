@@ -3,7 +3,8 @@ mod claude_plugin;
 mod embedded_terminal;
 mod pet_assets;
 mod pet_windows;
-mod state_store;
+mod state_commands;
+mod state_repository;
 mod terminal_channel;
 
 use tauri::{
@@ -19,6 +20,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(embedded_terminal::EmbeddedTerminalSessions::default())
         .setup(|app| {
+            // Build the one authoritative core over the JSON file repository and
+            // manage it before anything can touch state (the ingress thread and
+            // the Tauri commands both reach persisted state only through it).
+            app.manage(state_commands::PetsDrivenCoreState(
+                state_commands::build_core(app.handle().clone()),
+            ));
+
             let claude_hook_ingress_status = claude_hook_ingress::create_status_handle();
             app.manage(claude_hook_ingress::ClaudeHookIngressSharedStatus(
                 claude_hook_ingress_status.clone(),
@@ -72,13 +80,13 @@ pub fn run() {
             claude_plugin::plan_claude_plugin_command,
             claude_plugin::install_claude_plugin,
             claude_plugin::uninstall_claude_plugin,
-            state_store::read_pets_driven_state,
-            state_store::write_pets_driven_state,
-            state_store::hatch_pet_record,
-            state_store::update_pet_record,
-            state_store::delete_pet_record,
-            state_store::update_pets_driven_settings,
-            state_store::reset_pets_driven_settings,
+            state_commands::read_pets_driven_state,
+            state_commands::write_pets_driven_state,
+            state_commands::hatch_pet_record,
+            state_commands::update_pet_record,
+            state_commands::delete_pet_record,
+            state_commands::update_pets_driven_settings,
+            state_commands::reset_pets_driven_settings,
             pet_assets::list_codex_pet_packages,
             pet_assets::load_codex_pet_spritesheet,
             pet_assets::get_default_pet_source_directory,

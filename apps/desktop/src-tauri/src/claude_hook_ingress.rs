@@ -7,7 +7,11 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
+
+use pets_driven_core::{CoreError, CoreEvent, HatchPet, PetId, PetPatch, PetsDrivenCore};
+
+use crate::state_commands::{core_error_http_status, PetsDrivenCoreState};
 
 const CLAUDE_HOOK_INGRESS_EVENT: &str = "claude-hook:received:v1";
 const CLAUDE_HOOK_INGRESS_PATH: &str = "/claude-hook";
@@ -194,53 +198,74 @@ fn parse_http_request(request: &[u8]) -> Result<(String, serde_json::Value), Str
     Ok((path.to_string(), payload))
 }
 
-use crate::state_store::hatch_input_field;
+/// The one core instance, from Tauri-managed state.
+fn core(app: &tauri::AppHandle) -> std::sync::Arc<PetsDrivenCore> {
+    app.state::<PetsDrivenCoreState>().0.clone()
+}
 
-/// Unlike the `hatch_pet_record` command, the HTTP endpoint requires a folder:
-/// an agent hook only ever hatches for the directory it is running in.
-fn hatch_input_from_payload(
-    payload: &serde_json::Value,
-) -> Result<crate::state_store::HatchInput, String> {
-    hatch_input_field(payload, "cwd")?;
+/// Reply with a typed error, mapping the [`CoreError`] variant to a status.
+fn write_core_error(stream: &mut TcpStream, error: &CoreError) {
+    let _ = write_http_response(
+        stream,
+        core_error_http_status(error),
+        &format!(
+            r#"{{"ok":false,"error":{}}}"#,
+            serde_json::json!(error.to_string())
+        ),
+    );
+}
 
-    crate::state_store::hatch_input_from_payload(payload)
+/// Map the domain events of a successful commit onto the webview: a state
+/// change refreshes any live view, and a show/hide drives the pet window.
+fn emit_core_events(app: &tauri::AppHandle, events: &[CoreEvent]) {
+    for event in events {
+        match event {
+            CoreEvent::StateChanged => {
+                let _ = app.emit_to("main", PETS_DRIVEN_STATE_CHANGED_EVENT, ());
+            }
+            CoreEvent::PetShown { pet_id } => {
+                let _ = app.emit_to(
+                    "main",
+                    PETS_DRIVEN_PET_COMMAND_EVENT,
+                    serde_json::json!({ "action": "show", "petId": pet_id.as_str() }),
+                );
+            }
+            CoreEvent::PetHidden { pet_id } => {
+                let _ = app.emit_to(
+                    "main",
+                    PETS_DRIVEN_PET_COMMAND_EVENT,
+                    serde_json::json!({ "action": "hide", "petId": pet_id.as_str() }),
+                );
+            }
+        }
+    }
+}
+
+/// Read a Pet Birth request off an ingress payload. Unlike the
+/// `hatch_pet_record` command, the HTTP endpoint requires a folder: an agent
+/// hook only ever hatches for the directory it is running in.
+fn hatch_input_from_payload(payload: &serde_json::Value) -> Result<HatchPet, CoreError> {
+    // Enforce the folder first, reusing the same message the endpoint has always
+    // returned for a missing field.
+    pets_driven_core::required_string_field(payload, "cwd")?;
+    HatchPet::from_json(payload)
 }
 
 fn handle_hatch_request(app: &tauri::AppHandle, payload: &serde_json::Value, stream: &mut TcpStream) {
     let input = match hatch_input_from_payload(payload) {
         Ok(input) => input,
         Err(error) => {
-            let _ = write_http_response(
-                stream,
-                "400 Bad Request",
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
+            write_core_error(stream, &error);
             return;
         }
     };
 
-    match crate::state_store::hatch_pet(app, input) {
-        Ok(next_state) => {
-            let _ = app.emit_to("main", PETS_DRIVEN_STATE_CHANGED_EVENT, ());
-            if let Some(pet_id) = crate::state_store::find_pet_id_by_cwd(
-                &next_state,
-                hatch_input_field(payload, "cwd").unwrap_or_default().as_str(),
-            ) {
-                let _ = app.emit_to(
-                    "main",
-                    PETS_DRIVEN_PET_COMMAND_EVENT,
-                    serde_json::json!({ "action": "show", "petId": pet_id }),
-                );
-            }
+    match core(app).hatch(input) {
+        Ok(commit) => {
+            emit_core_events(app, &commit.events);
             let _ = write_http_response(stream, "200 OK", r#"{"ok":true}"#);
         }
-        Err(error) => {
-            let _ = write_http_response(
-                stream,
-                "409 Conflict",
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
-        }
+        Err(error) => write_core_error(stream, &error),
     }
 }
 
@@ -250,46 +275,33 @@ fn handle_show_hide_request(
     stream: &mut TcpStream,
     action: &str,
 ) {
-    let cwd = match hatch_input_field(payload, "cwd") {
+    let cwd = match pets_driven_core::required_string_field(payload, "cwd") {
         Ok(cwd) => cwd,
         Err(error) => {
-            let _ = write_http_response(
-                stream,
-                "400 Bad Request",
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
+            write_core_error(stream, &error);
             return;
         }
     };
 
-    let state = match crate::state_store::read_state_pub(app) {
-        Ok(state) => state,
-        Err(error) => {
-            let _ = write_http_response(
-                stream,
-                "500 Internal Server Error",
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
-            return;
-        }
-    };
-
-    match crate::state_store::find_pet_id_by_cwd(&state, &cwd) {
-        Some(pet_id) => {
-            let _ = app.emit_to(
-                "main",
-                PETS_DRIVEN_PET_COMMAND_EVENT,
-                serde_json::json!({ "action": action, "petId": pet_id }),
-            );
+    match core(app).pet_by_working_directory(&cwd) {
+        Ok(Some(pet)) => {
+            if let Some(pet_id) = pet.id() {
+                let _ = app.emit_to(
+                    "main",
+                    PETS_DRIVEN_PET_COMMAND_EVENT,
+                    serde_json::json!({ "action": action, "petId": pet_id }),
+                );
+            }
             let _ = write_http_response(stream, "200 OK", r#"{"ok":true}"#);
         }
-        None => {
+        Ok(None) => {
             let _ = write_http_response(
                 stream,
                 "404 Not Found",
                 r#"{"ok":false,"error":"No pet found for that working directory"}"#,
             );
         }
+        Err(error) => write_core_error(stream, &error),
     }
 }
 
@@ -404,10 +416,10 @@ fn handle_ping_request(stream: &mut TcpStream) {
 }
 
 fn handle_options_request(app: &tauri::AppHandle, stream: &mut TcpStream) {
-    let personalities: Vec<serde_json::Value> = crate::state_store::PERSONALITY_IDS
+    let personalities: Vec<serde_json::Value> = pets_driven_core::PERSONALITY_IDS
         .iter()
         .filter_map(|id| {
-            crate::state_store::personality_preset(id)
+            pets_driven_core::personality_preset(id)
                 .map(|traits| serde_json::json!({ "id": id, "traits": traits }))
         })
         .collect();
@@ -424,19 +436,12 @@ fn handle_options_request(app: &tauri::AppHandle, stream: &mut TcpStream) {
 }
 
 fn handle_list_pets_request(app: &tauri::AppHandle, stream: &mut TcpStream) {
-    match crate::state_store::read_state_pub(app) {
-        Ok(state) => {
-            let pets = crate::state_store::list_pets_view(&state);
+    match core(app).list_pets() {
+        Ok(pets) => {
             let body = serde_json::json!({ "ok": true, "pets": pets }).to_string();
             let _ = write_http_response(stream, "200 OK", &body);
         }
-        Err(error) => {
-            let _ = write_http_response(
-                stream,
-                "500 Internal Server Error",
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
-        }
+        Err(error) => write_core_error(stream, &error),
     }
 }
 
@@ -447,43 +452,31 @@ fn handle_get_pet_request(
     payload: &serde_json::Value,
     stream: &mut TcpStream,
 ) {
-    let state = match crate::state_store::read_state_pub(app) {
-        Ok(state) => state,
-        Err(error) => {
-            let _ = write_http_response(
-                stream,
-                "500 Internal Server Error",
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
-            return;
-        }
+    // `petId` takes precedence over `cwd` when both are given, matching the
+    // documented endpoint contract; a `petId` that resolves to no pet is a 404,
+    // not a fall-through to the `cwd`.
+    let core = core(app);
+    let pet = if let Some(pet_id) = payload.get("petId").and_then(|value| value.as_str()) {
+        core.pet(&PetId::new(pet_id))
+    } else if let Some(cwd) = payload.get("cwd").and_then(|value| value.as_str()) {
+        core.pet_by_working_directory(cwd)
+    } else {
+        Ok(None)
     };
 
-    let pet_id = payload
-        .get("petId")
-        .and_then(|value| value.as_str())
-        .map(str::to_string)
-        .or_else(|| {
-            payload
-                .get("cwd")
-                .and_then(|value| value.as_str())
-                .and_then(|cwd| crate::state_store::find_pet_id_by_cwd(&state, cwd))
-        });
-
-    let pet = pet_id.and_then(|pet_id| crate::state_store::find_pet_view(&state, &pet_id));
-
     match pet {
-        Some(pet) => {
+        Ok(Some(pet)) => {
             let body = serde_json::json!({ "ok": true, "pet": pet }).to_string();
             let _ = write_http_response(stream, "200 OK", &body);
         }
-        None => {
+        Ok(None) => {
             let _ = write_http_response(
                 stream,
                 "404 Not Found",
                 r#"{"ok":false,"error":"No matching pet"}"#,
             );
         }
+        Err(error) => write_core_error(stream, &error),
     }
 }
 
@@ -495,41 +488,23 @@ fn handle_update_pet_request(
     payload: &serde_json::Value,
     stream: &mut TcpStream,
 ) {
-    let input = match crate::state_store::pet_update_input_from_payload(payload) {
-        Ok(input) => input,
+    let (pet_id, patch) = match PetPatch::from_json(payload) {
+        Ok(parsed) => parsed,
         Err(error) => {
-            let _ = write_http_response(
-                stream,
-                "400 Bad Request",
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
+            write_core_error(stream, &error);
             return;
         }
     };
-    let pet_id = input.pet_id.clone();
 
-    match crate::state_store::update_pet(app, input) {
-        Ok(next_state) => {
-            let _ = app.emit_to("main", PETS_DRIVEN_STATE_CHANGED_EVENT, ());
-            let pet = crate::state_store::find_pet_view(&next_state, &pet_id);
-            let body = serde_json::json!({ "ok": true, "pet": pet }).to_string();
+    // The status now comes from the error variant, not a message prefix:
+    // PetNotFound -> 404, WorkingDirectoryOccupied -> 409, validation -> 400.
+    match core(app).update_pet(&pet_id, patch) {
+        Ok(commit) => {
+            emit_core_events(app, &commit.events);
+            let body = serde_json::json!({ "ok": true, "pet": commit.value }).to_string();
             let _ = write_http_response(stream, "200 OK", &body);
         }
-        Err(error) => {
-            let status = if error.starts_with("No pet found") {
-                "404 Not Found"
-            } else if error.starts_with("Working directory already has pet") {
-                // Same shape as /pets-driven/hatch: the folder is taken.
-                "409 Conflict"
-            } else {
-                "400 Bad Request"
-            };
-            let _ = write_http_response(
-                stream,
-                status,
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
-        }
+        Err(error) => write_core_error(stream, &error),
     }
 }
 
@@ -547,26 +522,15 @@ fn handle_delete_pet_request(
         return;
     };
 
-    match crate::state_store::remove_pet(app, pet_id) {
-        Ok(_next_state) => {
-            let _ = app.emit_to("main", PETS_DRIVEN_STATE_CHANGED_EVENT, ());
-            // Tear down any open window for the now-deleted pet; `hidePet` on
-            // the frontend closes the window and no-ops safely on a pet id
-            // that is no longer in state.
-            let _ = app.emit_to(
-                "main",
-                PETS_DRIVEN_PET_COMMAND_EVENT,
-                serde_json::json!({ "action": "hide", "petId": pet_id }),
-            );
+    // The commit's PetHidden event tears down any open window for the
+    // now-deleted pet; `hidePet` on the frontend closes the window and no-ops
+    // safely on a pet id that is no longer in state.
+    match core(app).remove_pet(&PetId::new(pet_id)) {
+        Ok(commit) => {
+            emit_core_events(app, &commit.events);
             let _ = write_http_response(stream, "200 OK", r#"{"ok":true}"#);
         }
-        Err(error) => {
-            let _ = write_http_response(
-                stream,
-                "404 Not Found",
-                &format!(r#"{{"ok":false,"error":{}}}"#, serde_json::json!(error)),
-            );
-        }
+        Err(error) => write_core_error(stream, &error),
     }
 }
 
@@ -880,7 +844,10 @@ mod tests {
 
         assert_eq!(path, "/pets-driven/hatch");
         let input = hatch_input_from_payload(&parsed).expect("payload should map to hatch input");
-        assert_eq!(input.cwd.as_deref(), Some("D:/proj"));
+        assert_eq!(
+            input.working_directory.as_ref().map(|cwd| cwd.as_str()),
+            Some("D:/proj")
+        );
         assert_eq!(input.asset_id, "cato");
         assert_eq!(input.name, "Rex");
         assert_eq!(input.personality_id, "playful");
@@ -915,7 +882,10 @@ mod tests {
         let (path, parsed) = parse_http_request(request.as_bytes()).expect("should parse");
 
         assert_eq!(path, "/pets-driven/show");
-        assert_eq!(hatch_input_field(&parsed, "cwd").unwrap(), "D:/my-project");
+        assert_eq!(
+            pets_driven_core::required_string_field(&parsed, "cwd").unwrap(),
+            "D:/my-project"
+        );
     }
 
     #[test]
