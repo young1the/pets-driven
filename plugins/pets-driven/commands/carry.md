@@ -59,12 +59,3 @@ and what state the work is in.
    rejoins the base; just name the options so they know the shapes available —
    fast-forward merge, cherry-pick, or push + PR (all run from the source repo) —
    without spelling out full command sequences here.
-
-   Optionally let the bound pet acknowledge the handoff is ready:
-
-   ```bash
-   "${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" forward attach
-   ```
-
-   A connection error just means the pets-driven desktop app is not running — the
-   handoff still stands.

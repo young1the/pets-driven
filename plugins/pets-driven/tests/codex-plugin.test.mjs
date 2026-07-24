@@ -93,9 +93,7 @@ if (process.platform === "win32") {
   assert.deepEqual(JSON.parse(printResult.stdout), codexPayload);
 }
 
-const attachSkill = readFileSync(join(pluginRoot, "skills", "attach", "SKILL.md"), "utf8");
 const hatchSkill = readFileSync(join(pluginRoot, "skills", "hatch", "SKILL.md"), "utf8");
-assert.match(attachSkill, /\.\.\/\.\.\/commands\/attach\.md/);
 assert.match(hatchSkill, /\.\.\/\.\.\/commands\/hatch\.md/);
 
 const marketplace = readJson(marketplacePath);

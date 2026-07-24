@@ -20,13 +20,7 @@ The repository comes in one of two shapes:
 - A **remote URL** → `git clone "<url>" "<target-folder>"`.
 - A **local git repo** → `git -C "<local-repo>" worktree add "<target-folder>" -b "<branch>"`.
 
-The target folder must be empty or not yet exist. After the code is in place,
-ping the pet so it reacts:
-
-```bash
-plugins/pets-driven/hooks/run-hook.cmd forward attach
-```
-
-To target a different folder, append that folder as the final quoted argument.
-The script builds JSON and escapes Windows paths safely, so pass plain quoted
-arguments instead of hand-writing JSON.
+The target folder must be empty or not yet exist. Once the code is in place, if
+no pet is bound to this folder yet, offer to hatch one (see the `hatch` skill);
+a bound pet reacts to the agent's work automatically when the desktop app is
+running.

@@ -29,9 +29,4 @@ git status --short                        # uncommitted work
 — then write a short handoff block: location (worktree path, branch, source
 repo), a plain-language summary of what changed and why, the commit list, and
 where to `cd` to continue. Name the integration options (fast-forward merge,
-cherry-pick, push + PR) only briefly; the next agent decides. Optionally ping the
-bound pet that the handoff is ready:
-
-```bash
-plugins/pets-driven/hooks/run-hook.cmd forward attach
-```
+cherry-pick, push + PR) only briefly; the next agent decides.

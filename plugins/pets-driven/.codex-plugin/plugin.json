@@ -11,12 +11,11 @@
   "interface": {
     "displayName": "pets-driven",
     "shortDescription": "Let pets react to Codex lifecycle events",
-    "longDescription": "pets-driven bundles Codex lifecycle hooks and shared attach/hatch workflows so pets can react to prompt, permission, and turn-completion events for the working directory Codex is using.",
+    "longDescription": "pets-driven bundles Codex lifecycle hooks and a shared hatch workflow so pets can react to prompt, permission, and turn-completion events for the working directory Codex is using.",
     "developerName": "pets-driven",
     "category": "Developer Tools",
     "capabilities": ["Interactive"],
     "defaultPrompt": [
-      "Connect this Codex thread to pets-driven.",
       "Hatch a pets-driven pet for this folder."
     ],
     "brandColor": "#2563EB",

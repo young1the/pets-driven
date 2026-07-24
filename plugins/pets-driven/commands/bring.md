@@ -62,18 +62,10 @@ at a time, and stop if the user cancels.
    Do not run dependency installs or builds unless the user asks — keep this
    step to bringing in the code.
 
-5. **Connect the pet.** The folder is now ready for a pets-driven pet. If a pet
-   is already adopted on this folder, ping it so it acknowledges the new work:
-
-   ```bash
-   "${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" forward attach
-   ```
-
-   If no pet is adopted yet, tell the user they can hatch one for this folder
-   with `/pets-driven:hatch`. A connection error (non-zero exit, no JSON) just
-   means the pets-driven desktop app is not running — the repository was still
-   brought in successfully, so report success and mention the app must be running
-   for the pet to react.
+5. **Hand off to a pet.** The folder is now ready for a pets-driven pet. If no
+   pet is bound to this folder yet, tell the user they can hatch one with
+   `/pets-driven:hatch`. Once a pet is bound and the desktop app is running, it
+   reacts to the agent's work automatically — nothing to run here.
 
 6. **Report the result:** the target folder, whether it was a clone or a
-   worktree, the checked-out branch, and the pet connection status.
+   worktree, the checked-out branch, and whether a pet is bound here.
