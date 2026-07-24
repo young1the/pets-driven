@@ -37,6 +37,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 #[command(
     name = "pdd",
     version,
+    disable_version_flag = true,
     about = "Command-line client for pets-driven",
     long_about = "Command-line client for pets-driven.\n\n\
         State commands read and write the shared state file directly: the desktop \
@@ -49,6 +50,9 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
         Run `pdd presets` to list personality ids."
 )]
 struct Cli {
+    /// Print version. Accepts both `-v` and `-V`.
+    #[arg(short = 'v', short_alias = 'V', long = "version", action = clap::ArgAction::Version)]
+    version: Option<bool>,
     #[command(subcommand)]
     command: Command,
 }
