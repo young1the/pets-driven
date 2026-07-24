@@ -70,11 +70,32 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            if window.label() == "main" {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+            if window.label() != "main" {
+                return;
+            }
+
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
                     let _ = window.hide();
                 }
+                // Minimize instead of hide-to-tray freezes the pet overlays.
+                // Windows marks a minimized WebView2 window occluded, and
+                // Chromium clamps this webview's timers to a stop — including
+                // the setInterval in the simulation host that places and shows
+                // every pet overlay window (`place_pet_windows`). A pet asked to
+                // show while the app is minimized is created hidden and then
+                // never placed, so it never appears; a tray-hidden window is not
+                // occluded and keeps ticking, which is why show works there.
+                // Redirect a minimize to the same hide-to-tray path so the sim
+                // stays alive and pets show and animate regardless.
+                tauri::WindowEvent::Resized(_) => {
+                    if window.is_minimized().unwrap_or(false) {
+                        let _ = window.unminimize();
+                        let _ = window.hide();
+                    }
+                }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![
