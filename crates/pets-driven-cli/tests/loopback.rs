@@ -76,76 +76,6 @@ fn mock_ingress(response_body: &'static str) -> (String, thread::JoinHandle<Capt
     (origin, handle)
 }
 
-/// Start a mock ingress that serves a fixed sequence of replies, one per
-/// connection, capturing each request. Used to exercise the Codex forward's
-/// fallback from `/codex-hook` to `/claude-hook`.
-fn mock_ingress_sequence(
-    replies: Vec<(u16, &'static str)>,
-) -> (String, thread::JoinHandle<Vec<CapturedRequest>>) {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
-    let origin = listener.local_addr().expect("addr").to_string();
-
-    let handle = thread::spawn(move || {
-        let mut captured = Vec::new();
-        for (status, body) in replies {
-            let (mut stream, _) = listener.accept().expect("accept");
-
-            let mut buffer = Vec::new();
-            let mut chunk = [0u8; 1024];
-            let header_end = loop {
-                if let Some(position) = buffer.windows(4).position(|window| window == b"\r\n\r\n") {
-                    break position;
-                }
-                let read = stream.read(&mut chunk).expect("read request");
-                if read == 0 {
-                    break buffer.len();
-                }
-                buffer.extend_from_slice(&chunk[..read]);
-            };
-
-            let headers = String::from_utf8_lossy(&buffer[..header_end]).to_string();
-            let content_length = headers
-                .lines()
-                .find_map(|line| {
-                    let (name, value) = line.split_once(':')?;
-                    name.trim()
-                        .eq_ignore_ascii_case("content-length")
-                        .then(|| value.trim().parse::<usize>().ok())
-                        .flatten()
-                })
-                .unwrap_or(0);
-            let body_start = header_end + 4;
-            while buffer.len() < body_start + content_length {
-                let read = stream.read(&mut chunk).expect("read body");
-                if read == 0 {
-                    break;
-                }
-                buffer.extend_from_slice(&chunk[..read]);
-            }
-
-            let request_line = headers.lines().next().unwrap_or_default().to_string();
-            let request_body =
-                String::from_utf8_lossy(&buffer[body_start..body_start + content_length]).to_string();
-
-            let status_text = if status == 200 { "OK" } else { "Not Found" };
-            let response = format!(
-                "HTTP/1.1 {status} {status_text}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
-                body.len()
-            );
-            stream.write_all(response.as_bytes()).expect("write response");
-            stream.flush().ok();
-
-            captured.push(CapturedRequest {
-                request_line,
-                body: request_body,
-            });
-        }
-        captured
-    });
-
-    (origin, handle)
-}
-
 fn args(items: &[&str]) -> Vec<String> {
     items.iter().map(|item| item.to_string()).collect()
 }
@@ -209,10 +139,8 @@ fn attach_forwards_a_notification_to_the_hook_route() {
 }
 
 #[test]
-fn codex_forward_falls_back_to_the_legacy_route_on_a_non_2xx_reply() {
-    // The Codex route answers 404 (an older desktop without /codex-hook), so the
-    // CLI retries the same body on the legacy /claude-hook route.
-    let (origin, server) = mock_ingress_sequence(vec![(404, r#"{"ok":false}"#), (200, r#"{"ok":true}"#)]);
+fn codex_forward_posts_a_synthesized_event_to_the_codex_route() {
+    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
 
     let mut out = Vec::new();
     let mut err = Vec::new();
@@ -227,16 +155,13 @@ fn codex_forward_falls_back_to_the_legacy_route_on_a_non_2xx_reply() {
 
     let captured = server.join().expect("server thread");
     assert_eq!(code, 0);
-    assert_eq!(captured.len(), 2);
-    assert_eq!(captured[0].request_line, "POST /codex-hook HTTP/1.1");
-    assert_eq!(captured[1].request_line, "POST /claude-hook HTTP/1.1");
-    // The same synthesized body is sent to both routes.
-    assert!(captured[0].body.contains(r#""summary":"Codex turn completed""#));
-    assert_eq!(captured[0].body, captured[1].body);
+    assert_eq!(captured.request_line, "POST /codex-hook HTTP/1.1");
+    assert!(captured.body.contains(r#""summary":"Codex turn completed""#));
+    assert!(captured.body.contains(r#""sourceId":"codex""#));
 }
 
 #[test]
-fn codex_forward_uses_the_codex_route_on_success() {
+fn codex_forward_relays_a_real_stdin_payload_unchanged() {
     let (origin, server) = mock_ingress(r#"{"ok":true}"#);
 
     let payload = br#"{"hook_event_name":"Stop","cwd":"D:/proj","sourceId":"codex"}"#;
@@ -253,7 +178,6 @@ fn codex_forward_uses_the_codex_route_on_success() {
 
     let captured = server.join().expect("server thread");
     assert_eq!(code, 0);
-    // A real stdin payload is forwarded unchanged to the Codex route.
     assert_eq!(captured.request_line, "POST /codex-hook HTTP/1.1");
     assert_eq!(captured.body.as_bytes(), payload);
 }

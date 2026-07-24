@@ -6,11 +6,11 @@ authors = ["pets-driven"]
 license = "MIT"
 edition = "2021"
 
-# The binary is `pets`, not `pets-driven`: the desktop crate already owns the
-# `pets-driven` binary name in this workspace, and the two must not collide in
-# the shared target directory.
+# The binary is `pdd`: short for pets-driven, and distinct from the desktop
+# crate's `pets-driven` binary so the two never collide in the shared target
+# directory.
 [[bin]]
-name = "pets"
+name = "pdd"
 path = "src/main.rs"
 
 [lib]

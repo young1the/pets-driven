@@ -31,31 +31,17 @@ impl std::fmt::Display for TransportError {
 
 impl std::error::Error for TransportError {}
 
-/// A parsed HTTP reply: the status code and the response body bytes. The status
-/// lets a caller distinguish an accepted request from a rejection (the Codex
-/// forward uses it to fall back to the legacy route on a non-2xx reply).
-#[derive(Debug)]
-pub struct HttpResponse {
-    pub status: u16,
-    pub body: Vec<u8>,
-}
-
-impl HttpResponse {
-    /// Whether the reply is a 2xx success.
-    pub fn is_success(&self) -> bool {
-        (200..300).contains(&self.status)
-    }
-}
-
 /// POST `body` as `application/json` to `path` at `origin` (a `host:port`
-/// authority), returning the parsed reply. `timeout` bounds connect, read, and
-/// write so a stopped or wedged app never blocks the caller.
+/// authority), returning the response body bytes. The status code is not
+/// surfaced: the CLI prints whatever the app replies regardless. `timeout`
+/// bounds connect, read, and write so a stopped or wedged app never blocks the
+/// caller.
 pub fn post_json(
     origin: &str,
     path: &str,
     body: &[u8],
     timeout: Duration,
-) -> Result<HttpResponse, TransportError> {
+) -> Result<Vec<u8>, TransportError> {
     let address = origin
         .to_socket_addrs()
         .map_err(|error| TransportError::Resolve(error.to_string()))?
@@ -81,27 +67,17 @@ pub fn post_json(
     let mut raw = Vec::new();
     stream.read_to_end(&mut raw).map_err(TransportError::Io)?;
 
-    parse_response(&raw)
+    response_body(&raw)
 }
 
-/// Split a raw HTTP reply into its status code and body. Content-Length framing
-/// is implicit because the ingress always sends `Connection: close`, so the body
-/// is everything after the header terminator.
-fn parse_response(raw: &[u8]) -> Result<HttpResponse, TransportError> {
+/// The body of a raw HTTP reply: everything after the header terminator.
+/// Content-Length framing is implicit because the ingress always sends
+/// `Connection: close`.
+fn response_body(raw: &[u8]) -> Result<Vec<u8>, TransportError> {
     let header_end = raw
         .windows(4)
         .position(|window| window == b"\r\n\r\n")
         .ok_or_else(|| TransportError::Io(io::Error::new(io::ErrorKind::InvalidData, "no HTTP header terminator")))?;
 
-    let status = std::str::from_utf8(&raw[..header_end])
-        .ok()
-        .and_then(|headers| headers.lines().next())
-        .and_then(|status_line| status_line.split_whitespace().nth(1))
-        .and_then(|code| code.parse::<u16>().ok())
-        .unwrap_or(0);
-
-    Ok(HttpResponse {
-        status,
-        body: raw[header_end + 4..].to_vec(),
-    })
+    Ok(raw[header_end + 4..].to_vec())
 }

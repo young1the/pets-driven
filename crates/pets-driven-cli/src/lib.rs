@@ -21,7 +21,7 @@
 //! * `summary EVENT TEXT` — forward a task summary for the current folder.
 //! * `forward` (the default) — forward a hook event read from stdin, unchanged.
 //! * `forward-codex [EVENT]` — forward a Codex event, synthesizing one when
-//!   stdin is empty, to the Codex route with a legacy Claude-route fallback.
+//!   stdin is empty.
 
 mod transport;
 
@@ -171,21 +171,36 @@ pub fn run_with<O: Write, E: Write>(
     err: &mut E,
 ) -> i32 {
     let (command, rest) = match args.split_first() {
-        None => ("forward", &[][..]),
+        // Bare `pdd` prints help rather than blocking on stdin: the hook always
+        // invokes an explicit `forward` / `forward-codex`, so no-args is a human
+        // asking what the tool does.
+        None => {
+            let _ = write!(out, "{}", help_text());
+            return 0;
+        }
         Some((first, rest)) => (first.as_str(), rest),
     };
 
-    // Codex forwarding is special: it may synthesize a body when stdin is empty
-    // and it tries the Codex route before the legacy Claude route, so it does
-    // not fit the single-request shape the other commands share.
-    if command == "forward-codex" {
-        return run_codex_forward(rest, cwd, origin, stdin);
+    match command {
+        "help" | "--help" | "-h" => {
+            let _ = write!(out, "{}", help_text());
+            return 0;
+        }
+        "version" | "--version" | "-V" => {
+            let _ = writeln!(out, "pdd {}", env!("CARGO_PKG_VERSION"));
+            return 0;
+        }
+        // Codex forwarding is special: it may synthesize a body when stdin is
+        // empty, so it does not fit the single-request shape the others share.
+        "forward-codex" => return run_codex_forward(rest, cwd, origin, stdin),
+        _ => {}
     }
 
     let request = match prepare(command, rest, cwd, stdin) {
         Ok(request) => request,
         Err(UsageError(message)) => {
-            let _ = writeln!(err, "pets: {message}");
+            let _ = writeln!(err, "pdd: {message}");
+            let _ = writeln!(err, "Run 'pdd --help' for usage.");
             return 2;
         }
     };
@@ -204,8 +219,8 @@ pub fn run_with<O: Write, E: Write>(
         }
         Mode::Authoritative => {
             match transport::post_json(origin, request.path, &request.body, AUTHORITATIVE_TIMEOUT) {
-                Ok(response) => {
-                    let _ = out.write_all(&response.body);
+                Ok(body) => {
+                    let _ = out.write_all(&body);
                     let _ = writeln!(out);
                 }
                 Err(TransportError::Connect(_) | TransportError::Resolve(_)) => {
@@ -241,6 +256,46 @@ pub fn run() -> i32 {
     let mut err = std::io::stderr();
 
     run_with(&args, &origin, &cwd, read_stdin, &mut out, &mut err)
+}
+
+/// The `--help` text.
+fn help_text() -> String {
+    format!(
+        "\
+pdd {version} — command-line client for the running pets-driven desktop app
+
+The desktop app is the only writer of pets-driven state, so every command goes
+through its local ingress; nothing here touches the state file directly.
+
+USAGE:
+    pdd <COMMAND> [ARGS]
+
+COMMANDS:
+    status                          Report whether the desktop app is running
+    list                            List every pet the app knows about
+    options                         List hatchable assets and personality presets
+    hatch <ASSET> <NAME> <PRESET> [CWD]
+                                    Adopt a pet bound to a folder (default: cwd)
+    bind <PET_ID> [CWD]             Bind a pet to a folder (default: cwd)
+    unbind <PET_ID>                 Detach a pet from its folder
+    attach                          Tell the app an agent attached to this folder
+    summary <EVENT> <TEXT>          Forward a task summary for this folder
+    forward                         Forward a hook event read from stdin, unchanged
+    forward-codex [EVENT]           Forward a Codex event, synthesized when stdin
+                                    is empty (default event: UserPromptSubmit)
+    help, --help, -h                Show this help
+    version, --version, -V          Show the version
+
+ENVIRONMENT:
+    PETS_DRIVEN_INGRESS_ORIGIN      Override the ingress origin
+                                    (default: {origin})
+
+If the app is not running, a command answers with a small JSON object whose
+error is \"app-not-running\" and still exits 0.
+",
+        version = env!("CARGO_PKG_VERSION"),
+        origin = protocol::DEFAULT_INGRESS_ORIGIN,
+    )
 }
 
 /// Read the whole hook body from stdin, as bytes, so a non-ASCII payload passes
@@ -282,10 +337,9 @@ fn codex_forward_body(stdin: &[u8], event_name: &str, cwd: &str) -> Option<Vec<u
     protocol::CodexHookEvent::synthesize(event_name, cwd).map(|event| json_body(&event))
 }
 
-/// Forward a Codex lifecycle event. Tries the Codex route first and falls back
-/// to the legacy Claude route when the app rejects or cannot serve it (an older
-/// desktop that predates `/codex-hook`), mirroring the shell forwarder. Always
-/// fire-and-forget: a hook must never surface an error to the agent.
+/// Forward a Codex lifecycle event to the Codex route, fire-and-forget: a hook
+/// must never surface an error to the agent. When stdin is empty the event is
+/// synthesized; a lifecycle event with no synthesized form sends nothing.
 fn run_codex_forward(
     args: &[String],
     cwd: &str,
@@ -294,21 +348,10 @@ fn run_codex_forward(
 ) -> i32 {
     let event_name = args.first().map(String::as_str).unwrap_or("UserPromptSubmit");
 
-    let Some(body) = codex_forward_body(&stdin(), event_name, cwd) else {
-        // Nothing to send: an empty payload for an event with no synthesized
-        // form. Exit cleanly, like the script.
-        return 0;
-    };
-
-    let delivered = matches!(
-        transport::post_json(origin, protocol::paths::CODEX_HOOK, &body, FIRE_AND_FORGET_TIMEOUT),
-        Ok(ref response) if response.is_success()
-    );
-
-    if !delivered {
+    if let Some(body) = codex_forward_body(&stdin(), event_name, cwd) {
         let _ = transport::post_json(
             origin,
-            protocol::paths::CLAUDE_HOOK,
+            protocol::paths::CODEX_HOOK,
             &body,
             FIRE_AND_FORGET_TIMEOUT,
         );
@@ -450,6 +493,46 @@ mod tests {
         let error = prepare("frobnicate", &[], "D:/proj", || Vec::new())
             .expect_err("an unknown command should be a usage error");
         assert_eq!(error, UsageError("unknown command: frobnicate".to_string()));
+    }
+
+    #[test]
+    fn help_and_bare_invocation_print_usage_and_exit_zero() {
+        for command in [&[][..], &["--help"][..], &["-h"][..], &["help"][..]] {
+            let mut out = Vec::new();
+            let mut err = Vec::new();
+            let code = run_with(
+                &args(command),
+                protocol::DEFAULT_INGRESS_ORIGIN,
+                "D:/proj",
+                Vec::new,
+                &mut out,
+                &mut err,
+            );
+            assert_eq!(code, 0);
+            let text = String::from_utf8(out).unwrap();
+            assert!(text.contains("USAGE:"));
+            assert!(text.contains("forward-codex"));
+            assert!(err.is_empty());
+        }
+    }
+
+    #[test]
+    fn version_prints_the_crate_version() {
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = run_with(
+            &args(&["--version"]),
+            protocol::DEFAULT_INGRESS_ORIGIN,
+            "D:/proj",
+            Vec::new,
+            &mut out,
+            &mut err,
+        );
+        assert_eq!(code, 0);
+        assert_eq!(
+            String::from_utf8(out).unwrap().trim_end(),
+            format!("pdd {}", env!("CARGO_PKG_VERSION"))
+        );
     }
 
     #[test]
