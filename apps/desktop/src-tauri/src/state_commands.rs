@@ -1,32 +1,36 @@
 //! The desktop adapters over [`PetsDrivenCore`].
 //!
-//! One core instance is built at setup over the [`JsonFileStateRepository`] and
-//! managed as Tauri state; every Tauri command and the HTTP ingress reach
-//! persisted state only through it. These commands are thin: they parse the
-//! webview's JSON payload into a typed core input, run the core method, and
-//! return the persisted snapshot for the caller to render. They do not emit
-//! presentation events — the webview re-renders from the returned state — so a
-//! command ignores `Commit::events`. The HTTP ingress is the adapter that maps
-//! those events to Tauri events and Pet Window effects.
+//! One core instance is built at setup over the shared
+//! [`pets_driven_fs::FileStateRepository`] and managed as Tauri state; every
+//! Tauri command and the HTTP ingress reach persisted state only through it.
+//! The repository is the *same* one the `pdd` CLI uses — the same file, the same
+//! cross-process lock — so the two processes serialise their writes and neither
+//! loses the other's change. These commands are thin: they parse the webview's
+//! JSON payload into a typed core input, run the core method, and return the
+//! persisted snapshot for the caller to render. They do not emit presentation
+//! events — the webview re-renders from the returned state — so a command
+//! ignores `Commit::events`. The HTTP ingress is the adapter that maps those
+//! events to Tauri events and Pet Window effects.
 
 use std::sync::Arc;
 
 use pets_driven_core::{
-    CoreError, HatchPet, PetId, PetPatch, PetsDrivenCore, SettingsPatch, StateSnapshot,
+    CoreError, HatchPet, PetId, PetPatch, PetsDrivenCore, RepositoryError, SettingsPatch,
+    StateSnapshot,
 };
+use pets_driven_fs::FileStateRepository;
 use serde_json::Value;
 use tauri::Manager;
-
-use crate::state_repository::JsonFileStateRepository;
 
 /// The Tauri-managed handle to the one core instance for this process.
 pub(crate) struct PetsDrivenCoreState(pub(crate) Arc<PetsDrivenCore>);
 
-/// Build the core over the JSON file repository rooted at the app data
-/// directory. Infallible: the repository resolves its path lazily, so no I/O
-/// happens here.
-pub(crate) fn build_core(app: tauri::AppHandle) -> Arc<PetsDrivenCore> {
-    Arc::new(PetsDrivenCore::new(Arc::new(JsonFileStateRepository::new(app))))
+/// Build the core over the shared on-disk state repository, resolved to the same
+/// `state.v1.json` the CLI writes. Fails only if the OS data directory cannot be
+/// resolved.
+pub(crate) fn build_core() -> Result<Arc<PetsDrivenCore>, RepositoryError> {
+    let repository = FileStateRepository::discover()?;
+    Ok(Arc::new(PetsDrivenCore::new(Arc::new(repository))))
 }
 
 /// Fetch the managed core.

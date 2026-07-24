@@ -4,7 +4,7 @@ mod embedded_terminal;
 mod pet_assets;
 mod pet_windows;
 mod state_commands;
-mod state_repository;
+mod state_watch;
 mod terminal_channel;
 
 use tauri::{
@@ -20,12 +20,16 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(embedded_terminal::EmbeddedTerminalSessions::default())
         .setup(|app| {
-            // Build the one authoritative core over the JSON file repository and
+            // Build the one core over the shared on-disk state repository and
             // manage it before anything can touch state (the ingress thread and
             // the Tauri commands both reach persisted state only through it).
             app.manage(state_commands::PetsDrivenCoreState(
-                state_commands::build_core(app.handle().clone()),
+                state_commands::build_core().map_err(|error| error.to_string())?,
             ));
+
+            // The CLI can write the same state file while the app runs; watch it
+            // so an external change (a `pdd` hatch, say) reloads the webview.
+            state_watch::start(app.handle().clone());
 
             let claude_hook_ingress_status = claude_hook_ingress::create_status_handle();
             app.manage(claude_hook_ingress::ClaudeHookIngressSharedStatus(
