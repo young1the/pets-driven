@@ -90,6 +90,15 @@ enum Command {
         /// Pet id (from `pdd list`)
         pet: String,
     },
+    /// Permanently remove a pet (and hide its window)
+    Delete {
+        /// Pet id to remove (from `pdd list`). Omit to remove the pet bound to
+        /// --cwd (or the current directory).
+        pet: Option<String>,
+        /// Remove the pet bound to this folder instead of by id
+        #[arg(short, long)]
+        cwd: Option<String>,
+    },
     /// Show the running app's pet window for a folder (defaults to the cwd)
     Show {
         /// Folder whose pet to show (default: the current directory)
@@ -215,6 +224,57 @@ fn run_show_hide<O: Write>(origin: &str, path: &str, cwd: &str, out: &mut O) -> 
     0
 }
 
+/// Remove a pet: resolve it (by id or by folder), hide its window in the
+/// running app (best-effort, while it is still in state), then delete it.
+fn run_delete<O: Write>(
+    core: &PetsDrivenCore,
+    origin: &str,
+    pet: Option<String>,
+    folder: String,
+    out: &mut O,
+) -> i32 {
+    // Resolve the target pet and the folder to hide.
+    let (pet_id, cwd) = match pet {
+        Some(id) => match core.pet(&PetId::new(&id)) {
+            Ok(Some(view)) => (PetId::new(id), view.working_directory().map(str::to_string)),
+            Ok(None) => {
+                print_json(out, &error_json(format!("No pet found with id {id}")));
+                return 1;
+            }
+            Err(error) => return report_core_error(out, &error),
+        },
+        None => match core.pet_by_working_directory(&folder) {
+            Ok(Some(view)) => match view.id() {
+                Some(id) => (PetId::new(id), Some(folder)),
+                None => {
+                    print_json(out, &error_json("resolved pet has no id"));
+                    return 1;
+                }
+            },
+            Ok(None) => {
+                print_json(out, &error_json(format!("No pet bound to {folder}")));
+                return 1;
+            }
+            Err(error) => return report_core_error(out, &error),
+        },
+    };
+
+    // Close the overlay window while the pet is still in state (the hide route
+    // resolves the pet by folder). Best-effort: a stopped app is fine.
+    if let Some(cwd) = &cwd {
+        let body = serde_json::json!({ "cwd": cwd }).to_string();
+        let _ = transport::post_json(origin, protocol::paths::HIDE, body.as_bytes(), FIRE_AND_FORGET_TIMEOUT);
+    }
+
+    match core.remove_pet(&pet_id) {
+        Ok(_commit) => {
+            print_json(out, &serde_json::json!({ "ok": true, "removed": pet_id.as_str() }));
+            0
+        }
+        Err(error) => report_core_error(out, &error),
+    }
+}
+
 fn run_update<O: Write>(core: &PetsDrivenCore, pet_id: &PetId, patch: PetPatch, out: &mut O) -> i32 {
     match core.update_pet(pet_id, patch) {
         Ok(commit) => {
@@ -299,7 +359,12 @@ pub fn run_with<O: Write, E: Write>(
             out,
         ),
 
-        Command::Status | Command::List | Command::Hatch { .. } | Command::Bind { .. } | Command::Unbind { .. } => {
+        Command::Status
+        | Command::List
+        | Command::Hatch { .. }
+        | Command::Bind { .. }
+        | Command::Unbind { .. }
+        | Command::Delete { .. } => {
             let core = match open_core() {
                 Ok(core) => core,
                 Err(message) => {
@@ -349,6 +414,10 @@ pub fn run_with<O: Write, E: Write>(
                     },
                     out,
                 ),
+                Command::Delete { pet, cwd: folder } => {
+                    let folder = folder.unwrap_or_else(|| cwd.to_string());
+                    run_delete(&core, origin, pet, folder, out)
+                }
                 // The outer match already excluded the other variants.
                 Command::Forward { .. }
                 | Command::Presets
@@ -535,6 +604,30 @@ mod tests {
             &mut unbind_out,
         );
         assert_eq!(parse_out(&unbind_out)["pet"]["cwd"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn delete_by_folder_removes_the_pet() {
+        let core = core_with_empty_state();
+        run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), REFUSED, &mut Vec::new());
+
+        let mut out = Vec::new();
+        let code = run_delete(&core, REFUSED, None, "D:/proj".to_string(), &mut out);
+        assert_eq!(code, 0);
+        assert_eq!(parse_out(&out)["ok"], true);
+
+        let mut list_out = Vec::new();
+        run_list(&core, &mut list_out);
+        assert!(parse_out(&list_out)["pets"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn delete_of_an_unbound_folder_reports_not_found() {
+        let core = core_with_empty_state();
+        let mut out = Vec::new();
+        let code = run_delete(&core, REFUSED, None, "D:/nobody".to_string(), &mut out);
+        assert_eq!(code, 1);
+        assert!(parse_out(&out)["error"].as_str().unwrap().contains("No pet bound"));
     }
 
     #[test]
