@@ -110,13 +110,13 @@ describe("petting releases the agent task state", () => {
     expect(components.getComponent("pet", "AgentChannelState")).toBeUndefined();
   });
 
-  it("confirms a settled release with a heart even when the personality cue isn't one", () => {
+  it("surfaces the personality's own acknowledge cue on a settled release", () => {
     const components = storeWithStrokedPet([
       { type: "Transform", position: { x: 0, y: 0 } },
       { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
       { type: "PetIdentity", name: "Pet" },
-      // "playful" normally acknowledges "waiting" with a sparkle, not a heart —
-      // proves the release override wins over the personality's acknowledge cue.
+      // "playful" acknowledges "waiting" with an excited sparkle — the release
+      // now shows that personality cue instead of a unified heart.
       {
         type: "Personality",
         catalogId: "playful",
@@ -135,8 +135,8 @@ describe("petting releases the agent task state", () => {
     expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
     expect(components.getComponent("pet", "PetExpressionState")).toMatchObject({
       source: "acknowledge",
-      mood: "love",
-      emote: "heart",
+      mood: "excited",
+      emote: "sparkle",
     });
   });
 
@@ -254,24 +254,28 @@ describe("double-clicking releases a settled agent task", () => {
   });
 
   /**
-   * PET-23: the double-click dismissal used to reuse petting's heart, which made
-   * the two gestures identical on screen. This pair of assertions is the guard
+   * PET-23: the double-click dismissal used to reuse petting's expression, which
+   * made the two gestures identical on screen. The dismissal keeps a fixed
+   * happy/note cue while the petting release shows the personality's own
+   * acknowledge cue, so they stay distinct. This pair of assertions is the guard
    * against them being unified again — if one of them starts failing because the
    * cues match, that is the regression, not a stale expectation.
    */
-  it("stays visually distinct from the petting release, which keeps the heart", () => {
+  it("stays visually distinct from the petting release, which shows the personality cue", () => {
     const dismissed = storeWithTappablePet("completed");
     runUserInteractionBehaviorSystem(dismissed, tapAt(0, 0), createManualClock(0));
     runUserInteractionBehaviorSystem(dismissed, tapAt(0, 0), createManualClock(100));
 
-    // Same status, same acknowledge beat — only the gesture differs.
+    // Same status, same acknowledge beat — only the gesture differs. "lazy"
+    // acknowledges "completed" with a sleepy/zzz cue, unlike the dismissal's
+    // fixed happy/note.
     const petted = storeWithStrokedPet([
       { type: "Transform", position: { x: 0, y: 0 } },
       { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
       { type: "PetIdentity", name: "Pet" },
       {
         type: "Personality",
-        catalogId: "playful",
+        catalogId: "lazy",
         openness: 0.5,
         conscientiousness: 0.5,
         extraversion: 0.5,
@@ -286,7 +290,7 @@ describe("double-clicking releases a settled agent task", () => {
     const dismissCue = dismissed.getComponent("pet", "PetExpressionState");
     const pettingCue = petted.getComponent("pet", "PetExpressionState");
 
-    expect(pettingCue).toMatchObject({ source: "acknowledge", mood: "love", emote: "heart" });
+    expect(pettingCue).toMatchObject({ source: "acknowledge", mood: "sleepy", emote: "zzz" });
     expect(dismissCue).toMatchObject({ mood: "happy", emote: "note" });
     expect(dismissCue?.emote).not.toBe(pettingCue?.emote);
     expect(dismissCue?.mood).not.toBe(pettingCue?.mood);

@@ -650,11 +650,11 @@ function horizontalOscillation(
 
 // Petting acknowledges whatever the agent reported: the movement hold lifts
 // and the task state clears no matter the status — working included, so a
-// stroke also dismisses a stale "working" report. Releasing an agent state is
-// always confirmed with a love/heart beat (so the stroke visibly "accepts" the
-// report); settled statuses (waiting/failed/completed) additionally speak the
-// personality acknowledge line, while a released "working" state keeps the
-// plain petting love reaction set by the caller.
+// stroke also dismisses a stale "working" report. Settled statuses
+// (waiting/failed/completed) speak the personality acknowledge line and show
+// that personality's own acknowledge cue (mood + emote), so the pet reacts in
+// character to being accepted. A released "working" state has no acknowledge
+// beat, so it keeps the plain petting love reaction set by the caller.
 function releaseAgentTaskOnPetting(
   components: ComponentStore,
   id: string,
@@ -680,15 +680,15 @@ function releaseAgentTaskOnPetting(
       id,
       utteranceChannel({ message: feedback.speech, source: "interaction", now, durationMs }),
     );
-    // Releasing a reported task always reads as a heart, no matter the
-    // personality's usual acknowledge cue — the stroke is an affectionate
-    // "got it", so the emote is unified even though the spoken line stays
-    // personality-specific (feedback.speech above).
+    // The release surfaces the personality's own acknowledge cue rather than a
+    // unified heart — a playful pet sparkles, a lazy one keeps dozing. The
+    // double-click dismissal keeps its fixed happy/note cue, so the two
+    // gestures stay visually distinct on the same settled task (PET-23).
     components.setComponent(id, {
       type: "PetExpressionState",
       source: "acknowledge",
-      mood: "love",
-      emote: "heart",
+      mood: feedback.mood,
+      emote: feedback.emote,
       label: null,
       startedAt: now,
       expiresAt: now + durationMs,

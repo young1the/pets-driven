@@ -176,6 +176,24 @@ export function personalitySpeechProfile(
   };
 }
 
+/**
+ * `emote: "none"` is a legitimate resting cue, but an acknowledgement beat has
+ * to put *something* over the sprite — `presentPetExpression()` renders nothing
+ * for "none", so an understated personality (reserved, steady, aloof, shrewd)
+ * would silently show no emote at all. These per-mood substitutes keep the
+ * acknowledgement visible while staying quiet enough to suit those characters
+ * (a drifting "···" rather than a louder symbol). Never resolves back to "none".
+ */
+const ACKNOWLEDGE_EMOTE_FALLBACK: Record<PetExpressionMood, PetExpressionEmote> = {
+  working: "dots",
+  happy: "note",
+  love: "heart",
+  excited: "sparkle",
+  thinking: "dots",
+  sleepy: "zzz",
+  confused: "exclaim",
+};
+
 export function personalityAcknowledgeFeedback(
   catalogId: PetPersonalityId | undefined,
   status: AgentTaskStatus,
@@ -186,7 +204,8 @@ export function personalityAcknowledgeFeedback(
   return {
     speech: `${baseSpeechKey(catalogId, ACKNOWLEDGE_SLOT[status])}.${randomSpeechVariant(random)}`,
     mood: cue.mood,
-    emote: cue.emote,
+    // Guarantee a renderable emote so the acknowledge cue always surfaces.
+    emote: cue.emote === "none" ? ACKNOWLEDGE_EMOTE_FALLBACK[cue.mood] : cue.emote,
   };
 }
 

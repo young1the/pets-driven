@@ -1,4 +1,7 @@
-import { PERSONALITY_REGISTRY } from "@pets-driven/pet-engine/pets/personalities/registry";
+import {
+  PERSONALITY_REGISTRY,
+  type PetPersonalityId,
+} from "@pets-driven/pet-engine/pets/personalities/registry";
 import {
   PERSONALITY_VOICE_PROFILES,
   PET_SPEECH_KEY_PREFIX,
@@ -60,10 +63,24 @@ describe("Personality Catalog voice profiles", () => {
     expect(failed?.speech).toMatch(
       new RegExp(`^${PET_SPEECH_KEY_PREFIX}\\.skittish\\.ackFailed\\.[0-7]$`),
     );
+    // "steady" waiting is a silent (`emote: "none"`) cue in the profile; the
+    // feedback substitutes a renderable emote so the acknowledgement still shows.
     expect(personalityAcknowledgeFeedback("steady", "waiting", random)).toMatchObject({
       mood: "working",
-      emote: "none",
+      emote: "dots",
     });
+  });
+
+  it("never surfaces a silent emote — every settled acknowledgement renders", () => {
+    const random = createSeededRandom(9);
+    // presentPetExpression() drops `emote: "none"`, so a raw "none" cue would
+    // leave the sprite with no acknowledge symbol. Every catalog personality ×
+    // settled status must resolve to a renderable emote.
+    for (const id of Object.keys(PERSONALITY_VOICE_PROFILES) as PetPersonalityId[]) {
+      for (const status of ["waiting", "failed", "completed"] as const) {
+        expect(personalityAcknowledgeFeedback(id, status, random)?.emote).not.toBe("none");
+      }
+    }
   });
 
   it("leaves legacy personalities and non-freezing task states unchanged", () => {
