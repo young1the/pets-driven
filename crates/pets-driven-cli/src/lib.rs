@@ -139,7 +139,7 @@ fn report_core_error<O: Write>(out: &mut O, error: &CoreError) -> i32 {
 fn parse_hatch(args: &[String], cwd: &str) -> Result<HatchPet, UsageError> {
     let asset_id = required_arg(args, 0, "hatch", "ASSET")?;
     let name = required_arg(args, 1, "hatch", "NAME")?;
-    let personality_id = resolve_preset(&required_arg(args, 2, "hatch", "PRESET")?);
+    let personality_id = resolve_preset(&required_arg(args, 2, "hatch", "PRESET")?)?;
     let folder = args.get(3).cloned().unwrap_or_else(|| cwd.to_string());
 
     Ok(HatchPet {
@@ -150,14 +150,22 @@ fn parse_hatch(args: &[String], cwd: &str) -> Result<HatchPet, UsageError> {
     })
 }
 
-/// Resolve the `PRESET` argument: `auto` or `random` (case-insensitive) picks a
-/// personality at random; anything else is passed through for the core to
-/// validate.
-fn resolve_preset(preset: &str) -> String {
-    if preset.eq_ignore_ascii_case("auto") || preset.eq_ignore_ascii_case("random") {
-        random_personality().to_string()
+/// Resolve the `PRESET` argument. A leading `@` marks a directive — `@auto` /
+/// `@random` (case-insensitive) pick a personality at random. Without the `@`
+/// the value is a literal personality id, passed through for the core to
+/// validate. The prefix keeps the directive from ever colliding with a real
+/// value, and `@` (not `$`) is used because a shell would expand `$random`.
+fn resolve_preset(preset: &str) -> Result<String, UsageError> {
+    let Some(directive) = preset.strip_prefix('@') else {
+        return Ok(preset.to_string());
+    };
+
+    if directive.eq_ignore_ascii_case("auto") || directive.eq_ignore_ascii_case("random") {
+        Ok(random_personality().to_string())
     } else {
-        preset.to_string()
+        Err(UsageError(format!(
+            "unknown preset directive '@{directive}'; use @auto or a personality id"
+        )))
     }
 }
 
@@ -305,7 +313,7 @@ COMMANDS:
     list                            List every pet in state
     hatch <ASSET> <NAME> <PRESET> [CWD]
                                     Adopt a pet bound to a folder (default: cwd).
-                                    PRESET may be 'auto' to pick one at random.
+                                    PRESET may be @auto to pick one at random.
     bind <PET_ID> [CWD]             Bind a pet to a folder (default: cwd)
     unbind <PET_ID>                 Detach a pet from its folder
     forward [EVENT]                 Forward a hook event to the running app: the
@@ -315,7 +323,7 @@ COMMANDS:
     version, --version, -V          Show the version
 
 PRESETS:
-    {presets} (or 'auto')
+    {presets} (or @auto)
 
 ENVIRONMENT:
     PETS_DRIVEN_STATE_PATH          Override the state file path (must match the
@@ -499,15 +507,17 @@ mod tests {
     }
 
     #[test]
-    fn preset_passes_a_named_personality_through() {
-        assert_eq!(resolve_preset("playful"), "playful");
-        assert_eq!(resolve_preset("shrewd"), "shrewd");
+    fn preset_passes_a_bare_personality_through() {
+        // No `@` prefix: a literal id, including one that happens to look like a
+        // keyword. `random` here is a pet name / bare value, not the directive.
+        assert_eq!(resolve_preset("playful").unwrap(), "playful");
+        assert_eq!(resolve_preset("random").unwrap(), "random");
     }
 
     #[test]
-    fn preset_auto_picks_a_known_personality() {
-        for keyword in ["auto", "AUTO", "random", "Random"] {
-            let picked = resolve_preset(keyword);
+    fn preset_at_auto_picks_a_known_personality() {
+        for directive in ["@auto", "@AUTO", "@random", "@Random"] {
+            let picked = resolve_preset(directive).unwrap();
             assert!(
                 PERSONALITY_IDS.contains(&picked.as_str()),
                 "auto preset picked an unknown personality: {picked}"
@@ -516,12 +526,21 @@ mod tests {
     }
 
     #[test]
-    fn hatch_auto_preset_hatches_a_pet_with_a_real_personality() {
+    fn an_unknown_preset_directive_is_a_usage_error() {
+        let error = resolve_preset("@bogus").expect_err("an unknown @directive should be rejected");
+        assert_eq!(
+            error,
+            UsageError("unknown preset directive '@bogus'; use @auto or a personality id".to_string())
+        );
+    }
+
+    #[test]
+    fn hatch_at_auto_preset_hatches_a_pet_with_a_real_personality() {
         let core = core_with_empty_state();
         let mut out = Vec::new();
         let code = run_hatch(
             &core,
-            parse_hatch(&args(&["cato", "Rex", "auto"]), "D:/proj").unwrap(),
+            parse_hatch(&args(&["cato", "Rex", "@auto"]), "D:/proj").unwrap(),
             &mut out,
         );
         assert_eq!(code, 0);
