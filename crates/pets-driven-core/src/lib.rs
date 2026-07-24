@@ -40,7 +40,9 @@ pub use model::{
     RemovedPet, SettingsPatch, StateSnapshot,
 };
 pub use personalities::{personality_preset, PERSONALITY_IDS};
-pub use repository::{FailingReplaceRepository, MemoryStateRepository, StateRepository};
+pub use repository::{
+    FailingReplaceRepository, MemoryStateRepository, StateRepository, WriteTransaction,
+};
 pub use state_v1::{empty_state, SCHEMA_VERSION};
 pub use working_directory::{comparable_path, is_valid_working_directory, WorkingDirectoryPath};
 
@@ -135,19 +137,26 @@ impl PetsDrivenCore {
         &self,
         op: impl FnOnce(&Value, u64, &dyn IdSource) -> Result<(Value, T, Vec<CoreEvent>), CoreError>,
     ) -> Result<Commit<T>, CoreError> {
+        // The process-local mutex serialises threads within this process; the
+        // repository's write transaction serialises against other processes.
+        // Both are needed: a cross-process file lock does not serialise threads
+        // that share the process.
         let _guard = self
             .transaction_lock
             .lock()
             .map_err(|error| CoreError::Transaction(error.to_string()))?;
 
-        let bytes = self.repository.load()?;
+        let mut transaction = self.repository.begin_write()?;
+        let bytes = transaction.load()?;
         let state = state_v1::decode(bytes)?;
         let now = self.clock.now_ms();
 
         let (next, value, events) = op(&state, now, self.ids.as_ref())?;
 
         let encoded = state_v1::encode(&next)?;
-        self.repository.replace(&encoded)?;
+        transaction.replace(&encoded)?;
+        // Dropping the transaction releases the write lock.
+        drop(transaction);
 
         Ok(Commit {
             snapshot: StateSnapshot::from_value(next),
@@ -246,8 +255,10 @@ impl PetsDrivenCore {
             .lock()
             .map_err(|error| CoreError::Transaction(error.to_string()))?;
 
+        let mut transaction = self.repository.begin_write()?;
         let encoded = state_v1::encode(&document)?;
-        self.repository.replace(&encoded)?;
+        transaction.replace(&encoded)?;
+        drop(transaction);
 
         Ok(Commit {
             snapshot: StateSnapshot::from_value(document),

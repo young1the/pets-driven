@@ -1,0 +1,19 @@
+[package]
+name = "pets-driven-fs"
+version = "0.2.0"
+description = "The shared on-disk state repository for pets-driven (file + cross-process lock)"
+authors = ["pets-driven"]
+license = "MIT"
+edition = "2021"
+
+[lib]
+name = "pets_driven_fs"
+
+# The production persistence adapter, shared by the desktop and the CLI so both
+# processes write the same state.v1.json through one cross-process lock. Depends
+# on the core for the repository trait, on fslock for the advisory lock, and on
+# dirs to resolve the same OS data directory Tauri uses.
+[dependencies]
+pets-driven-core = { path = "../pets-driven-core" }
+fslock = "0.2"
+dirs = "5"

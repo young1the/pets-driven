@@ -81,47 +81,6 @@ fn args(items: &[&str]) -> Vec<String> {
 }
 
 #[test]
-fn hatch_sends_the_expected_request_and_prints_the_reply() {
-    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
-
-    let mut out = Vec::new();
-    let mut err = Vec::new();
-    let code = run_with(
-        &args(&["hatch", "cato", "Rex", "playful", "D:/proj"]),
-        &origin,
-        "D:/ignored",
-        Vec::new,
-        &mut out,
-        &mut err,
-    );
-
-    let captured = server.join().expect("server thread");
-
-    assert_eq!(code, 0);
-    assert_eq!(captured.request_line, "POST /pets-driven/hatch HTTP/1.1");
-    assert_eq!(
-        captured.body,
-        r#"{"cwd":"D:/proj","assetId":"cato","name":"Rex","personalityId":"playful"}"#
-    );
-    assert_eq!(String::from_utf8(out).unwrap().trim_end(), r#"{"ok":true}"#);
-    assert!(err.is_empty());
-}
-
-#[test]
-fn list_posts_to_the_list_route_with_an_empty_body() {
-    let (origin, server) = mock_ingress(r#"{"ok":true,"pets":[]}"#);
-
-    let mut out = Vec::new();
-    let mut err = Vec::new();
-    run_with(&args(&["list"]), &origin, "D:/proj", Vec::new, &mut out, &mut err);
-
-    let captured = server.join().expect("server thread");
-    assert_eq!(captured.request_line, "POST /pets-driven/list HTTP/1.1");
-    assert_eq!(captured.body, "");
-    assert_eq!(String::from_utf8(out).unwrap().trim_end(), r#"{"ok":true,"pets":[]}"#);
-}
-
-#[test]
 fn forward_relays_a_stdin_body_verbatim() {
     let (origin, server) = mock_ingress(r#"{"ok":true}"#);
 

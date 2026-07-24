@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "apps/desktop/src-tauri",
     "crates/pets-driven-core",
+    "crates/pets-driven-fs",
     "crates/pets-driven-protocol",
     "crates/pets-driven-cli",
 ]
