@@ -79,6 +79,19 @@ fn resolve_pet_spritesheet_path(pet_dir: &Path) -> Option<PathBuf> {
     spritesheet_path.exists().then_some(spritesheet_path)
 }
 
+/// Resolve the spritesheet for `asset_id` across the given pet roots, returning
+/// the first that resolves. `list_hatchable_pet_assets` offers both the bundled
+/// pets and the designated folder as hatchable, so loading must search both —
+/// otherwise a hatched built-in (including the CLI's random default, which is
+/// always a bundled id) never finds its sheet and always renders the fallback
+/// pet. Roots are searched in order, so bundled wins on id collision to match
+/// the hatchable listing's precedence.
+fn resolve_asset_spritesheet_path(roots: &[PathBuf], asset_id: &str) -> Option<PathBuf> {
+    roots
+        .iter()
+        .find_map(|root| resolve_pet_spritesheet_path(&root.join(asset_id)))
+}
+
 /// Discover the pet packages under `pets_root`. A pet's asset id is its
 /// directory name, not any `id` field in the manifest, so keying a package
 /// by anything else would break sprite loading the moment the two disagree.
@@ -275,17 +288,20 @@ pub(crate) fn load_codex_pet_spritesheet(
 ) -> Result<tauri::ipc::Response, String> {
     validate_asset_id(&asset_id)?;
 
-    // Resolve the sprite from the same single designated folder used for listing,
-    // so a listed pack and its loaded sprite always come from the one folder.
-    if let Some(root) = designated_pet_source_root(&app) {
-        let pet_dir = root.join(&asset_id);
+    // Search the bundled pets first, then the designated folder, matching the
+    // hatchable listing's precedence. Loading only the designated folder meant a
+    // pet hatched with a bundled asset id (every `pdd hatch` without `--asset`
+    // picks one) could never resolve its sheet and always fell back.
+    let roots: Vec<PathBuf> = [bundled_pets_dir(&app), designated_pet_source_root(&app)]
+        .into_iter()
+        .flatten()
+        .collect();
 
-        if let Some(spritesheet_path) = resolve_pet_spritesheet_path(&pet_dir) {
-            let bytes = fs::read(&spritesheet_path)
-                .map_err(|error| format!("Could not read Codex pet spritesheet: {error}"))?;
+    if let Some(spritesheet_path) = resolve_asset_spritesheet_path(&roots, &asset_id) {
+        let bytes = fs::read(&spritesheet_path)
+            .map_err(|error| format!("Could not read Codex pet spritesheet: {error}"))?;
 
-            return Ok(tauri::ipc::Response::new(bytes));
-        }
+        return Ok(tauri::ipc::Response::new(bytes));
     }
 
     Err(format!(
@@ -421,6 +437,54 @@ mod tests {
         assert_eq!(ids, vec!["abe", "zed"]);
 
         fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn resolves_a_bundled_asset_when_the_designated_folder_lacks_it() {
+        // The designated folder is empty (a fresh install); the asset lives only
+        // in the bundled pets. Loading must still find it, so a CLI-hatched
+        // built-in does not fall back.
+        let designated = unique_temp_dir();
+        let bundled = unique_temp_dir();
+        write_pet(&bundled, "bloop", r#"{"displayName":"Bloop"}"#, true);
+
+        let roots = vec![bundled.clone(), designated.clone()];
+        let resolved = resolve_asset_spritesheet_path(&roots, "bloop");
+
+        assert_eq!(resolved, Some(bundled.join("bloop").join("spritesheet.webp")));
+
+        fs::remove_dir_all(&designated).ok();
+        fs::remove_dir_all(&bundled).ok();
+    }
+
+    #[test]
+    fn bundled_wins_over_the_designated_folder_on_id_collision() {
+        // Both roots carry the same id; bundled is searched first, matching the
+        // hatchable listing's bundled-wins precedence.
+        let designated = unique_temp_dir();
+        let bundled = unique_temp_dir();
+        write_pet(&designated, "cato", r#"{"displayName":"Cato"}"#, true);
+        write_pet(&bundled, "cato", r#"{"displayName":"Cato"}"#, true);
+
+        let roots = vec![bundled.clone(), designated.clone()];
+        let resolved = resolve_asset_spritesheet_path(&roots, "cato");
+
+        assert_eq!(resolved, Some(bundled.join("cato").join("spritesheet.webp")));
+
+        fs::remove_dir_all(&designated).ok();
+        fs::remove_dir_all(&bundled).ok();
+    }
+
+    #[test]
+    fn returns_none_when_no_root_has_the_asset() {
+        let designated = unique_temp_dir();
+        let bundled = unique_temp_dir();
+
+        let roots = vec![bundled.clone(), designated.clone()];
+        assert_eq!(resolve_asset_spritesheet_path(&roots, "missing"), None);
+
+        fs::remove_dir_all(&designated).ok();
+        fs::remove_dir_all(&bundled).ok();
     }
 
     #[test]
