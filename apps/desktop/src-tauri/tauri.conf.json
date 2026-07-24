@@ -14,8 +14,7 @@
         "label": "main",
         "title": "Pets Driven",
         "width": 1200,
-        "height": 800,
-        "additionalBrowserArgs": "--disable-backgrounding-occluded-windows --disable-background-timer-throttling --disable-renderer-backgrounding --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection"
+        "height": 800
       }
     ],
     "security": {
