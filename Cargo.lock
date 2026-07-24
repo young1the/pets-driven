@@ -2450,6 +2450,7 @@ name = "pets-driven"
 version = "0.2.0"
 dependencies = [
  "pets-driven-core",
+ "pets-driven-fs",
  "portable-pty",
  "serde",
  "serde_json",
