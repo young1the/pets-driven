@@ -21,3 +21,6 @@ workspaces/
 apps/web/public/codex-pets/
 apps/desktop/public/codex-pets/
 apps/desktop/public/fallback-pets/
+
+# Staged pdd CLI sidecar for the desktop installer (built by scripts/stage-cli.mjs).
+apps/desktop/src-tauri/binaries/

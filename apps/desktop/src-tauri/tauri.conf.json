@@ -4,7 +4,7 @@
   "identifier": "com.petsdriven.desktop",
   "build": {
     "beforeDevCommand": "pnpm run dev:tauri",
-    "beforeBuildCommand": "pnpm run build:playground",
+    "beforeBuildCommand": "pnpm run build:playground && node ../../scripts/stage-cli.mjs",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../dist"
   },
@@ -32,9 +32,11 @@
       "../../../plugins": "plugins",
       "../../../pets": "pets"
     },
+    "externalBin": ["binaries/pdd"],
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerHooks": "installer-hooks.nsh"
       }
     },
     "icon": [
