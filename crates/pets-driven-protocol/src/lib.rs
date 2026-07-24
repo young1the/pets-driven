@@ -117,51 +117,13 @@ impl UnbindRequest {
     }
 }
 
-/// A hook event forwarded to `/claude-hook`. The field names are the hook
-/// payload's own snake_case names, not the camelCase the pets-driven endpoints
-/// use, so this is serialized without a rename.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct HookEvent {
-    pub hook_event_name: String,
-    pub cwd: String,
-    /// A human-facing line, present on the synthesized attach ping.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub message: Option<String>,
-    /// A task summary, present on a synthesized summary event.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub summary: Option<String>,
-}
-
-impl HookEvent {
-    /// The attach ping: a `Notification` for `cwd` that tells the app an agent
-    /// attached to that folder.
-    pub fn attach(cwd: impl Into<String>) -> Self {
-        Self {
-            hook_event_name: "Notification".to_string(),
-            cwd: cwd.into(),
-            message: Some("Agent attached".to_string()),
-            summary: None,
-        }
-    }
-
-    /// A summary event carrying a task summary line for `cwd`.
-    pub fn summary(hook_event_name: impl Into<String>, cwd: impl Into<String>, summary: impl Into<String>) -> Self {
-        Self {
-            hook_event_name: hook_event_name.into(),
-            cwd: cwd.into(),
-            message: None,
-            summary: Some(summary.into()),
-        }
-    }
-}
-
-/// A synthesized Codex lifecycle event, forwarded to [`paths::CODEX_HOOK`] (with
-/// a legacy fallback to [`paths::CLAUDE_HOOK`]).
+/// A synthesized agent lifecycle event, forwarded to the hook route when a hook
+/// fires with no usable stdin payload of its own (the Codex case — Claude hooks
+/// always deliver a full payload the client forwards unchanged).
 ///
-/// Codex hooks can fire with no useful stdin payload, so the client synthesizes
-/// one per lifecycle event. The source identity is emitted under all three keys
-/// the ingress log line may read (`sourceId`, `source_id`, `agent_id`) so the
-/// event is always attributed to Codex.
+/// The source identity is emitted under all three keys the ingress reads
+/// (`sourceId`, `source_id`, `agent_id`) so the event is always attributed to
+/// its agent, regardless of which hook route carries it.
 ///
 /// coupling: the per-event summary and message text mirror
 /// `plugins/pets-driven/hooks/forward-codex` — change both together.
@@ -253,24 +215,6 @@ mod tests {
     fn unbind_request_sends_an_explicit_null_cwd() {
         let body = serde_json::to_string(&UnbindRequest::new("pet-1")).unwrap();
         assert_eq!(body, r#"{"petId":"pet-1","cwd":null}"#);
-    }
-
-    #[test]
-    fn attach_event_uses_snake_case_hook_fields() {
-        let body = serde_json::to_string(&HookEvent::attach("D:/proj")).unwrap();
-        assert_eq!(
-            body,
-            r#"{"hook_event_name":"Notification","cwd":"D:/proj","message":"Agent attached"}"#
-        );
-    }
-
-    #[test]
-    fn summary_event_omits_the_absent_message() {
-        let body = serde_json::to_string(&HookEvent::summary("Stop", "D:/proj", "done")).unwrap();
-        assert_eq!(
-            body,
-            r#"{"hook_event_name":"Stop","cwd":"D:/proj","summary":"done"}"#
-        );
     }
 
     #[test]

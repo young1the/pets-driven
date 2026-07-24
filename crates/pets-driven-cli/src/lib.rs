@@ -17,11 +17,8 @@
 //! * `hatch ASSET NAME PRESET [CWD]` — create a pet bound to a folder.
 //! * `bind PET_ID [CWD]`  — bind a pet to a folder (defaults to the cwd).
 //! * `unbind PET_ID`      — detach a pet from its folder.
-//! * `attach`  — tell the app an agent attached to the current folder.
-//! * `summary EVENT TEXT` — forward a task summary for the current folder.
-//! * `forward` (the default) — forward a hook event read from stdin, unchanged.
-//! * `forward-codex [EVENT]` — forward a Codex event, synthesizing one when
-//!   stdin is empty.
+//! * `forward [EVENT]` — forward an agent hook event: the stdin payload
+//!   unchanged when present, or a synthesized event when stdin is empty.
 
 mod transport;
 
@@ -29,8 +26,6 @@ use std::io::{Read, Write};
 use std::time::Duration;
 
 use pets_driven_protocol as protocol;
-
-use transport::TransportError;
 
 /// Authoritative queries and mutations wait up to this long for the app's
 /// answer.
@@ -40,23 +35,13 @@ const AUTHORITATIVE_TIMEOUT: Duration = Duration::from_secs(5);
 /// blocks the agent.
 const FIRE_AND_FORGET_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Whether a command waits for and prints the app's answer, or fires and
-/// forgets.
-#[derive(Debug, PartialEq, Eq)]
-enum Mode {
-    /// Wait for the reply and print it; a connection failure prints the
-    /// app-not-running answer.
-    Authoritative,
-    /// POST and return immediately, ignoring the reply and any failure.
-    FireAndForget,
-}
-
-/// A resolved request ready to send.
+/// A resolved authoritative request ready to send: a query or mutation whose
+/// reply the caller waits for and prints. Hook forwarding does not go through
+/// this — it is fire-and-forget and handled directly.
 #[derive(Debug, PartialEq, Eq)]
 struct PreparedRequest {
     path: &'static str,
     body: Vec<u8>,
-    mode: Mode,
 }
 
 /// A bad command line: a missing argument or an unknown command.
@@ -80,40 +65,26 @@ fn json_body<T: serde::Serialize>(value: &T) -> Vec<u8> {
     serde_json::to_vec(value).expect("protocol request types always serialize")
 }
 
-/// Turn a parsed command line into the request to send. `cwd` is the working
-/// directory a command reads or defaults to; `stdin` yields the forwarded hook
-/// body and is only read for the default forward command.
-fn prepare(
-    command: &str,
-    args: &[String],
-    cwd: &str,
-    stdin: impl FnOnce() -> Vec<u8>,
-) -> Result<PreparedRequest, UsageError> {
-    let authoritative = |path, body| PreparedRequest {
-        path,
-        body,
-        mode: Mode::Authoritative,
-    };
-    let fire = |path, body| PreparedRequest {
-        path,
-        body,
-        mode: Mode::FireAndForget,
-    };
+/// Turn a parsed query/mutation command line into the request to send. `cwd` is
+/// the working directory a command reads or defaults to. Hook forwarding is not
+/// handled here — see [`run_forward`].
+fn prepare(command: &str, args: &[String], cwd: &str) -> Result<PreparedRequest, UsageError> {
+    let request = |path, body| PreparedRequest { path, body };
 
     match command {
         // Read-only lookups. The app answers from its own state.
-        "status" | "ping" => Ok(authoritative(protocol::paths::PING, Vec::new())),
-        "options" => Ok(authoritative(protocol::paths::OPTIONS, Vec::new())),
-        "list" => Ok(authoritative(protocol::paths::LIST, Vec::new())),
+        "status" | "ping" => Ok(request(protocol::paths::PING, Vec::new())),
+        "options" => Ok(request(protocol::paths::OPTIONS, Vec::new())),
+        "list" => Ok(request(protocol::paths::LIST, Vec::new())),
 
-        // Authoritative mutations. The response tells "app not running" apart
-        // from a rejection (an occupied folder, an unknown pet).
+        // Mutations. The response tells "app not running" apart from a rejection
+        // (an occupied folder, an unknown pet).
         "hatch" => {
             let asset_id = required_arg(args, 0, "hatch", "ASSET")?;
             let name = required_arg(args, 1, "hatch", "NAME")?;
             let personality_id = required_arg(args, 2, "hatch", "PRESET")?;
             let folder = args.get(3).cloned().unwrap_or_else(|| cwd.to_string());
-            Ok(authoritative(
+            Ok(request(
                 protocol::paths::HATCH,
                 json_body(&protocol::HatchRequest {
                     cwd: folder,
@@ -126,34 +97,18 @@ fn prepare(
         "bind" => {
             let pet_id = required_arg(args, 0, "bind", "PET_ID")?;
             let folder = args.get(1).cloned().unwrap_or_else(|| cwd.to_string());
-            Ok(authoritative(
+            Ok(request(
                 protocol::paths::PET_UPDATE,
                 json_body(&protocol::BindRequest { pet_id, cwd: folder }),
             ))
         }
         "unbind" => {
             let pet_id = required_arg(args, 0, "unbind", "PET_ID")?;
-            Ok(authoritative(
+            Ok(request(
                 protocol::paths::PET_UPDATE,
                 json_body(&protocol::UnbindRequest::new(pet_id)),
             ))
         }
-
-        // Fire-and-forget hook forwards.
-        "attach" => Ok(fire(
-            protocol::paths::CLAUDE_HOOK,
-            json_body(&protocol::HookEvent::attach(cwd)),
-        )),
-        "summary" => {
-            let event_name = required_arg(args, 0, "summary", "EVENT_NAME")?;
-            let text = required_arg(args, 1, "summary", "SUMMARY")?;
-            Ok(fire(
-                protocol::paths::CLAUDE_HOOK,
-                json_body(&protocol::HookEvent::summary(event_name, cwd, text)),
-            ))
-        }
-        // The default: forward a hook event read from stdin, unchanged.
-        "forward" => Ok(fire(protocol::paths::CLAUDE_HOOK, stdin())),
 
         other => Err(UsageError(format!("unknown command: {other}"))),
     }
@@ -172,8 +127,8 @@ pub fn run_with<O: Write, E: Write>(
 ) -> i32 {
     let (command, rest) = match args.split_first() {
         // Bare `pdd` prints help rather than blocking on stdin: the hook always
-        // invokes an explicit `forward` / `forward-codex`, so no-args is a human
-        // asking what the tool does.
+        // invokes an explicit `forward`, so no-args is a human asking what the
+        // tool does.
         None => {
             let _ = write!(out, "{}", help_text());
             return 0;
@@ -190,13 +145,13 @@ pub fn run_with<O: Write, E: Write>(
             let _ = writeln!(out, "pdd {}", env!("CARGO_PKG_VERSION"));
             return 0;
         }
-        // Codex forwarding is special: it may synthesize a body when stdin is
-        // empty, so it does not fit the single-request shape the others share.
-        "forward-codex" => return run_codex_forward(rest, cwd, origin, stdin),
+        // Hook forwarding is fire-and-forget and may synthesize a body when
+        // stdin is empty, so it does not fit the authoritative request shape.
+        "forward" => return run_forward(rest, cwd, origin, stdin),
         _ => {}
     }
 
-    let request = match prepare(command, rest, cwd, stdin) {
+    let request = match prepare(command, rest, cwd) {
         Ok(request) => request,
         Err(UsageError(message)) => {
             let _ = writeln!(err, "pdd: {message}");
@@ -205,38 +160,18 @@ pub fn run_with<O: Write, E: Write>(
         }
     };
 
-    match request.mode {
-        Mode::FireAndForget => {
-            // Ignore the reply and any failure: a hook forward must not surface
-            // an error to the agent, and an unopened app is expected.
-            let _ = transport::post_json(
-                origin,
-                request.path,
-                &request.body,
-                FIRE_AND_FORGET_TIMEOUT,
-            );
-            0
+    match transport::post_json(origin, request.path, &request.body, AUTHORITATIVE_TIMEOUT) {
+        Ok(body) => {
+            let _ = out.write_all(&body);
+            let _ = writeln!(out);
         }
-        Mode::Authoritative => {
-            match transport::post_json(origin, request.path, &request.body, AUTHORITATIVE_TIMEOUT) {
-                Ok(body) => {
-                    let _ = out.write_all(&body);
-                    let _ = writeln!(out);
-                }
-                Err(TransportError::Connect(_) | TransportError::Resolve(_)) => {
-                    // The app is not reachable: answer with the structured
-                    // app-not-running value instead of a transport error.
-                    let _ = writeln!(out, "{}", protocol::APP_NOT_RUNNING_JSON);
-                }
-                Err(TransportError::Io(_)) => {
-                    // A mid-request I/O fault is reported the same friendly way:
-                    // from the caller's view the app did not answer.
-                    let _ = writeln!(out, "{}", protocol::APP_NOT_RUNNING_JSON);
-                }
-            }
-            0
+        // Any transport failure means the app did not answer: report the
+        // structured app-not-running value instead of a transport error.
+        Err(_) => {
+            let _ = writeln!(out, "{}", protocol::APP_NOT_RUNNING_JSON);
         }
     }
+    0
 }
 
 /// The process entry point: resolve the ingress origin, working directory, and
@@ -278,10 +213,8 @@ COMMANDS:
                                     Adopt a pet bound to a folder (default: cwd)
     bind <PET_ID> [CWD]             Bind a pet to a folder (default: cwd)
     unbind <PET_ID>                 Detach a pet from its folder
-    attach                          Tell the app an agent attached to this folder
-    summary <EVENT> <TEXT>          Forward a task summary for this folder
-    forward                         Forward a hook event read from stdin, unchanged
-    forward-codex [EVENT]           Forward a Codex event, synthesized when stdin
+    forward [EVENT]                 Forward an agent hook event: the stdin payload
+                                    unchanged, or a synthesized event when stdin
                                     is empty (default event: UserPromptSubmit)
     help, --help, -h                Show this help
     version, --version, -V          Show the version
@@ -312,11 +245,12 @@ fn strip_bom(bytes: &[u8]) -> &[u8] {
     bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]).unwrap_or(bytes)
 }
 
-/// Resolve the body to forward for a Codex event: the real stdin payload when
-/// present, otherwise a synthesized event. Returns `None` when there is nothing
-/// to send — an empty payload for a lifecycle event the app does not express —
-/// so the caller simply exits without posting.
-fn codex_forward_body(stdin: &[u8], event_name: &str, cwd: &str) -> Option<Vec<u8>> {
+/// Resolve the body to forward: the real stdin payload when present, otherwise a
+/// synthesized event for `event_name`. Claude hooks always deliver a payload, so
+/// synthesis is only reached by an agent (Codex) whose hook fires with no stdin.
+/// Returns `None` when there is nothing to send — an empty payload for a
+/// lifecycle event the app does not express — so the caller simply exits.
+fn forward_body(stdin: &[u8], event_name: &str, cwd: &str) -> Option<Vec<u8>> {
     let payload = strip_bom(stdin);
 
     // A real payload is forwarded unchanged. Only a blank body or a bare `{}`
@@ -337,10 +271,11 @@ fn codex_forward_body(stdin: &[u8], event_name: &str, cwd: &str) -> Option<Vec<u
     protocol::CodexHookEvent::synthesize(event_name, cwd).map(|event| json_body(&event))
 }
 
-/// Forward a Codex lifecycle event to the Codex route, fire-and-forget: a hook
-/// must never surface an error to the agent. When stdin is empty the event is
-/// synthesized; a lifecycle event with no synthesized form sends nothing.
-fn run_codex_forward(
+/// Forward an agent lifecycle event to the hook route, fire-and-forget: a hook
+/// must never surface an error to the agent. A real stdin payload is forwarded
+/// unchanged; an empty one is synthesized from `[EVENT]` (default
+/// `UserPromptSubmit`), and an event with no synthesized form sends nothing.
+fn run_forward(
     args: &[String],
     cwd: &str,
     origin: &str,
@@ -348,10 +283,10 @@ fn run_codex_forward(
 ) -> i32 {
     let event_name = args.first().map(String::as_str).unwrap_or("UserPromptSubmit");
 
-    if let Some(body) = codex_forward_body(&stdin(), event_name, cwd) {
+    if let Some(body) = forward_body(&stdin(), event_name, cwd) {
         let _ = transport::post_json(
             origin,
-            protocol::paths::CODEX_HOOK,
+            protocol::paths::CLAUDE_HOOK,
             &body,
             FIRE_AND_FORGET_TIMEOUT,
         );
@@ -369,11 +304,11 @@ mod tests {
     }
 
     fn prepared(command: &str, rest: &[&str], cwd: &str) -> PreparedRequest {
-        prepare(command, &args(rest), cwd, || b"STDIN".to_vec()).expect("should prepare")
+        prepare(command, &args(rest), cwd).expect("should prepare")
     }
 
     #[test]
-    fn status_list_and_options_send_no_body_and_wait() {
+    fn status_list_and_options_send_no_body() {
         for (command, path) in [
             ("status", protocol::paths::PING),
             ("list", protocol::paths::LIST),
@@ -382,7 +317,6 @@ mod tests {
             let request = prepared(command, &[], "D:/proj");
             assert_eq!(request.path, path);
             assert!(request.body.is_empty());
-            assert_eq!(request.mode, Mode::Authoritative);
         }
     }
 
@@ -390,7 +324,6 @@ mod tests {
     fn hatch_builds_a_camel_case_body_and_defaults_cwd() {
         let request = prepared("hatch", &["cato", "Rex", "playful"], "D:/proj");
         assert_eq!(request.path, protocol::paths::HATCH);
-        assert_eq!(request.mode, Mode::Authoritative);
         assert_eq!(
             String::from_utf8(request.body).unwrap(),
             r#"{"cwd":"D:/proj","assetId":"cato","name":"Rex","personalityId":"playful"}"#
@@ -411,7 +344,7 @@ mod tests {
 
     #[test]
     fn hatch_missing_an_argument_is_a_usage_error() {
-        let error = prepare("hatch", &args(&["cato", "Rex"]), "D:/proj", || Vec::new())
+        let error = prepare("hatch", &args(&["cato", "Rex"]), "D:/proj")
             .expect_err("a hatch without a preset should be a usage error");
         assert_eq!(error, UsageError("hatch: missing required argument PRESET".to_string()));
     }
@@ -437,46 +370,26 @@ mod tests {
     }
 
     #[test]
-    fn attach_synthesizes_a_notification_for_the_cwd_and_fires() {
-        let request = prepared("attach", &[], "D:/proj");
-        assert_eq!(request.path, protocol::paths::CLAUDE_HOOK);
-        assert_eq!(request.mode, Mode::FireAndForget);
-        assert_eq!(
-            String::from_utf8(request.body).unwrap(),
-            r#"{"hook_event_name":"Notification","cwd":"D:/proj","message":"Agent attached"}"#
-        );
-    }
-
-    #[test]
-    fn the_default_command_forwards_stdin_unchanged() {
-        let request =
-            prepare("forward", &[], "D:/proj", || b"{\"raw\":true}".to_vec()).expect("prepare");
-        assert_eq!(request.path, protocol::paths::CLAUDE_HOOK);
-        assert_eq!(request.mode, Mode::FireAndForget);
-        assert_eq!(request.body, b"{\"raw\":true}");
-    }
-
-    #[test]
-    fn codex_forward_passes_a_real_stdin_payload_through() {
-        let body = codex_forward_body(br#"{"hook_event_name":"Stop","cwd":"D:/x"}"#, "Stop", "D:/proj")
+    fn forward_passes_a_real_stdin_payload_through() {
+        let body = forward_body(br#"{"hook_event_name":"Stop","cwd":"D:/x"}"#, "Stop", "D:/proj")
             .expect("a real payload should be forwarded");
         assert_eq!(body, br#"{"hook_event_name":"Stop","cwd":"D:/x"}"#);
     }
 
     #[test]
-    fn codex_forward_strips_a_utf8_bom_before_deciding() {
+    fn forward_strips_a_utf8_bom_before_deciding() {
         // A BOM in front of `{}` must still count as an empty payload, so the
         // event is synthesized rather than forwarded as-is.
         let mut stdin = vec![0xEF, 0xBB, 0xBF];
         stdin.extend_from_slice(b"{}");
-        let body = codex_forward_body(&stdin, "Stop", "D:/proj").expect("should synthesize");
+        let body = forward_body(&stdin, "Stop", "D:/proj").expect("should synthesize");
         let text = String::from_utf8(body).unwrap();
         assert!(text.contains(r#""summary":"Codex turn completed""#));
     }
 
     #[test]
-    fn codex_forward_synthesizes_when_stdin_is_empty() {
-        let body = codex_forward_body(b"", "UserPromptSubmit", "D:/proj").expect("should synthesize");
+    fn forward_synthesizes_when_stdin_is_empty() {
+        let body = forward_body(b"", "UserPromptSubmit", "D:/proj").expect("should synthesize");
         let text = String::from_utf8(body).unwrap();
         assert!(text.contains(r#""hook_event_name":"UserPromptSubmit""#));
         assert!(text.contains(r#""sourceId":"codex""#));
@@ -484,13 +397,13 @@ mod tests {
     }
 
     #[test]
-    fn codex_forward_has_nothing_to_send_for_an_unknown_empty_event() {
-        assert_eq!(codex_forward_body(b"   ", "Frobnicate", "D:/proj"), None);
+    fn forward_has_nothing_to_send_for_an_unknown_empty_event() {
+        assert_eq!(forward_body(b"   ", "Frobnicate", "D:/proj"), None);
     }
 
     #[test]
     fn an_unknown_command_is_a_usage_error() {
-        let error = prepare("frobnicate", &[], "D:/proj", || Vec::new())
+        let error = prepare("frobnicate", &[], "D:/proj")
             .expect_err("an unknown command should be a usage error");
         assert_eq!(error, UsageError("unknown command: frobnicate".to_string()));
     }
@@ -511,7 +424,7 @@ mod tests {
             assert_eq!(code, 0);
             let text = String::from_utf8(out).unwrap();
             assert!(text.contains("USAGE:"));
-            assert!(text.contains("forward-codex"));
+            assert!(text.contains("forward [EVENT]"));
             assert!(err.is_empty());
         }
     }

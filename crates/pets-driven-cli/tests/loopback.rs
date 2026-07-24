@@ -122,74 +122,13 @@ fn list_posts_to_the_list_route_with_an_empty_body() {
 }
 
 #[test]
-fn attach_forwards_a_notification_to_the_hook_route() {
-    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
-
-    let mut out = Vec::new();
-    let mut err = Vec::new();
-    let code = run_with(&args(&["attach"]), &origin, "D:/proj", Vec::new, &mut out, &mut err);
-
-    let captured = server.join().expect("server thread");
-    assert_eq!(code, 0);
-    assert_eq!(captured.request_line, "POST /claude-hook HTTP/1.1");
-    assert!(captured.body.contains(r#""hook_event_name":"Notification""#));
-    assert!(captured.body.contains(r#""cwd":"D:/proj""#));
-    // Fire-and-forget prints nothing.
-    assert!(out.is_empty());
-}
-
-#[test]
-fn codex_forward_posts_a_synthesized_event_to_the_codex_route() {
-    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
-
-    let mut out = Vec::new();
-    let mut err = Vec::new();
-    let code = run_with(
-        &args(&["forward-codex", "Stop"]),
-        &origin,
-        "D:/proj",
-        Vec::new, // empty stdin -> synthesized Stop event
-        &mut out,
-        &mut err,
-    );
-
-    let captured = server.join().expect("server thread");
-    assert_eq!(code, 0);
-    assert_eq!(captured.request_line, "POST /codex-hook HTTP/1.1");
-    assert!(captured.body.contains(r#""summary":"Codex turn completed""#));
-    assert!(captured.body.contains(r#""sourceId":"codex""#));
-}
-
-#[test]
-fn codex_forward_relays_a_real_stdin_payload_unchanged() {
-    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
-
-    let payload = br#"{"hook_event_name":"Stop","cwd":"D:/proj","sourceId":"codex"}"#;
-    let mut out = Vec::new();
-    let mut err = Vec::new();
-    let code = run_with(
-        &args(&["forward-codex", "Stop"]),
-        &origin,
-        "D:/proj",
-        || payload.to_vec(),
-        &mut out,
-        &mut err,
-    );
-
-    let captured = server.join().expect("server thread");
-    assert_eq!(code, 0);
-    assert_eq!(captured.request_line, "POST /codex-hook HTTP/1.1");
-    assert_eq!(captured.body.as_bytes(), payload);
-}
-
-#[test]
 fn forward_relays_a_stdin_body_verbatim() {
     let (origin, server) = mock_ingress(r#"{"ok":true}"#);
 
     let payload = br#"{"hook_event_name":"Stop","cwd":"D:/proj"}"#;
     let mut out = Vec::new();
     let mut err = Vec::new();
-    run_with(
+    let code = run_with(
         &args(&["forward"]),
         &origin,
         "D:/proj",
@@ -199,6 +138,31 @@ fn forward_relays_a_stdin_body_verbatim() {
     );
 
     let captured = server.join().expect("server thread");
+    assert_eq!(code, 0);
     assert_eq!(captured.request_line, "POST /claude-hook HTTP/1.1");
     assert_eq!(captured.body.as_bytes(), payload);
+    // Fire-and-forget prints nothing.
+    assert!(out.is_empty());
+}
+
+#[test]
+fn forward_synthesizes_an_event_when_stdin_is_empty() {
+    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
+
+    let mut out = Vec::new();
+    let mut err = Vec::new();
+    let code = run_with(
+        &args(&["forward", "Stop"]),
+        &origin,
+        "D:/proj",
+        Vec::new, // empty stdin -> synthesized Stop event
+        &mut out,
+        &mut err,
+    );
+
+    let captured = server.join().expect("server thread");
+    assert_eq!(code, 0);
+    assert_eq!(captured.request_line, "POST /claude-hook HTTP/1.1");
+    assert!(captured.body.contains(r#""summary":"Codex turn completed""#));
+    assert!(captured.body.contains(r#""sourceId":"codex""#));
 }
