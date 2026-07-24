@@ -28,6 +28,7 @@ use std::time::Duration;
 
 use pets_driven_core::{
     CoreError, HatchPet, Patch, PetId, PetPatch, PetsDrivenCore, WorkingDirectoryPath,
+    PERSONALITY_IDS,
 };
 use pets_driven_fs::FileStateRepository;
 use pets_driven_protocol as protocol;
@@ -138,7 +139,7 @@ fn report_core_error<O: Write>(out: &mut O, error: &CoreError) -> i32 {
 fn parse_hatch(args: &[String], cwd: &str) -> Result<HatchPet, UsageError> {
     let asset_id = required_arg(args, 0, "hatch", "ASSET")?;
     let name = required_arg(args, 1, "hatch", "NAME")?;
-    let personality_id = required_arg(args, 2, "hatch", "PRESET")?;
+    let personality_id = resolve_preset(&required_arg(args, 2, "hatch", "PRESET")?);
     let folder = args.get(3).cloned().unwrap_or_else(|| cwd.to_string());
 
     Ok(HatchPet {
@@ -147,6 +148,28 @@ fn parse_hatch(args: &[String], cwd: &str) -> Result<HatchPet, UsageError> {
         name,
         personality_id,
     })
+}
+
+/// Resolve the `PRESET` argument: `auto` or `random` (case-insensitive) picks a
+/// personality at random; anything else is passed through for the core to
+/// validate.
+fn resolve_preset(preset: &str) -> String {
+    if preset.eq_ignore_ascii_case("auto") || preset.eq_ignore_ascii_case("random") {
+        random_personality().to_string()
+    } else {
+        preset.to_string()
+    }
+}
+
+/// A personality id chosen at random. The randomness lives here, in the CLI
+/// adapter, so the core stays deterministic. A coarse clock-derived index is
+/// plenty for picking a personality.
+fn random_personality() -> &'static str {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_nanos())
+        .unwrap_or(0);
+    PERSONALITY_IDS[(nanos as usize) % PERSONALITY_IDS.len()]
 }
 
 fn parse_bind(args: &[String], cwd: &str) -> Result<(PetId, PetPatch), UsageError> {
@@ -281,7 +304,8 @@ COMMANDS:
     status                          Show the state file path and pet count
     list                            List every pet in state
     hatch <ASSET> <NAME> <PRESET> [CWD]
-                                    Adopt a pet bound to a folder (default: cwd)
+                                    Adopt a pet bound to a folder (default: cwd).
+                                    PRESET may be 'auto' to pick one at random.
     bind <PET_ID> [CWD]             Bind a pet to a folder (default: cwd)
     unbind <PET_ID>                 Detach a pet from its folder
     forward [EVENT]                 Forward a hook event to the running app: the
@@ -289,6 +313,9 @@ COMMANDS:
                                     event when stdin is empty
     help, --help, -h                Show this help
     version, --version, -V          Show the version
+
+PRESETS:
+    {presets} (or 'auto')
 
 ENVIRONMENT:
     PETS_DRIVEN_STATE_PATH          Override the state file path (must match the
@@ -298,6 +325,7 @@ ENVIRONMENT:
 ",
         version = env!("CARGO_PKG_VERSION"),
         origin = protocol::DEFAULT_INGRESS_ORIGIN,
+        presets = PERSONALITY_IDS.join(", "),
     )
 }
 
@@ -468,6 +496,37 @@ mod tests {
         let status = parse_out(&out);
         assert_eq!(status["ok"], true);
         assert_eq!(status["pets"], 1);
+    }
+
+    #[test]
+    fn preset_passes_a_named_personality_through() {
+        assert_eq!(resolve_preset("playful"), "playful");
+        assert_eq!(resolve_preset("shrewd"), "shrewd");
+    }
+
+    #[test]
+    fn preset_auto_picks_a_known_personality() {
+        for keyword in ["auto", "AUTO", "random", "Random"] {
+            let picked = resolve_preset(keyword);
+            assert!(
+                PERSONALITY_IDS.contains(&picked.as_str()),
+                "auto preset picked an unknown personality: {picked}"
+            );
+        }
+    }
+
+    #[test]
+    fn hatch_auto_preset_hatches_a_pet_with_a_real_personality() {
+        let core = core_with_empty_state();
+        let mut out = Vec::new();
+        let code = run_hatch(
+            &core,
+            parse_hatch(&args(&["cato", "Rex", "auto"]), "D:/proj").unwrap(),
+            &mut out,
+        );
+        assert_eq!(code, 0);
+        let personality = parse_out(&out)["pet"]["personalityId"].as_str().unwrap().to_string();
+        assert!(PERSONALITY_IDS.contains(&personality.as_str()));
     }
 
     #[test]
