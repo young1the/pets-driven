@@ -26,5 +26,5 @@ path = "src/lib.rs"
 pets-driven-core = { path = "../pets-driven-core" }
 pets-driven-fs = { path = "../pets-driven-fs" }
 pets-driven-protocol = { path = "../pets-driven-protocol" }
-serde = "1"
+clap = { version = "4", features = ["derive"] }
 serde_json = "1"
