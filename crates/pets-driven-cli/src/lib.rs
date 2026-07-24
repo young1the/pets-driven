@@ -57,18 +57,19 @@ enum Command {
     List,
     /// List the personality ids `hatch` accepts
     Presets,
-    /// Adopt a pet bound to a folder
+    /// Adopt a pet bound to a folder. Only a name is required; the asset,
+    /// personality, and folder default to a random asset, a random personality,
+    /// and the current directory.
     Hatch {
-        /// Pet asset id (see the desktop's asset catalog)
-        #[arg(short, long)]
-        asset: String,
-        /// Display name
-        #[arg(short, long)]
+        /// Display name for the new pet
         name: String,
-        /// Personality id, or `@auto` to pick one at random
+        /// Pet asset id (default: a random built-in asset)
         #[arg(short, long)]
-        personality: String,
-        /// Folder to bind (defaults to the current directory)
+        asset: Option<String>,
+        /// Personality id (default: a random personality)
+        #[arg(short, long)]
+        personality: Option<String>,
+        /// Folder to bind (default: the current directory)
         #[arg(short, long)]
         cwd: Option<String>,
     },
@@ -181,33 +182,39 @@ fn run_update<O: Write>(core: &PetsDrivenCore, pet_id: &PetId, patch: PetPatch, 
     }
 }
 
-/// Resolve the `--personality` value. A leading `@` marks a directive — `@auto`
-/// / `@random` (case-insensitive) pick a personality at random. Without the `@`
-/// the value is a literal personality id, passed through for the core to
-/// validate. The prefix keeps the directive from ever colliding with a real
-/// value, and `@` (not `$`) is used because a shell would expand `$random`.
-fn resolve_preset(personality: &str) -> Result<String, String> {
-    let Some(directive) = personality.strip_prefix('@') else {
-        return Ok(personality.to_string());
-    };
+/// The pet assets shipped with the app, used to pick one at random when
+/// `--asset` is omitted. They ship with every install, so a random pick is
+/// always resolvable.
+///
+/// coupling: keep in sync with the built-in packs in repo-root `pets/` (and the
+/// list asserted in `apps/desktop/src-tauri/src/pet_assets.rs` tests).
+const BUILTIN_PET_ASSETS: [&str; 6] = ["bloop", "cato", "fenn", "mochi", "otto", "pip"];
 
-    if directive.eq_ignore_ascii_case("auto") || directive.eq_ignore_ascii_case("random") {
-        Ok(random_personality().to_string())
-    } else {
-        Err(format!(
-            "unknown personality directive '@{directive}'; use @auto or a personality id"
-        ))
-    }
-}
+/// A random index into a slice of `len`. The randomness lives here, in the CLI
+/// adapter, so the core stays deterministic; a per-call salt mixed into the
+/// clock keeps two picks in the same command (asset and personality) from
+/// landing on a correlated value.
+fn random_index(len: usize) -> usize {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static SALT: AtomicU64 = AtomicU64::new(0);
 
-/// A personality id chosen at random. The randomness lives here, in the CLI
-/// adapter, so the core stays deterministic.
-fn random_personality() -> &'static str {
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map(|elapsed| elapsed.as_nanos())
+        .map(|elapsed| elapsed.as_nanos() as u64)
         .unwrap_or(0);
-    PERSONALITY_IDS[(nanos as usize) % PERSONALITY_IDS.len()]
+    let salt = SALT.fetch_add(0x9E37_79B9_7F4A_7C15, Ordering::Relaxed);
+
+    ((nanos ^ salt) as usize) % len
+}
+
+/// A personality id chosen at random from the core catalog.
+fn random_personality() -> &'static str {
+    PERSONALITY_IDS[random_index(PERSONALITY_IDS.len())]
+}
+
+/// A built-in pet asset id chosen at random.
+fn random_asset() -> &'static str {
+    BUILTIN_PET_ASSETS[random_index(BUILTIN_PET_ASSETS.len())]
 }
 
 // ---- Dispatch --------------------------------------------------------------
@@ -247,20 +254,16 @@ pub fn run_with<O: Write, E: Write>(
             match cli.command {
                 Command::Status => run_status(&core, out),
                 Command::List => run_list(&core, out),
-                Command::Hatch { asset, name, personality, cwd: folder } => {
-                    let personality_id = match resolve_preset(&personality) {
-                        Ok(id) => id,
-                        Err(message) => {
-                            let _ = writeln!(err, "pdd: {message}");
-                            return 2;
-                        }
-                    };
+                Command::Hatch { name, asset, personality, cwd: folder } => {
+                    let asset_id = asset.unwrap_or_else(|| random_asset().to_string());
+                    let personality_id =
+                        personality.unwrap_or_else(|| random_personality().to_string());
                     let folder = folder.unwrap_or_else(|| cwd.to_string());
                     run_hatch(
                         &core,
                         HatchPet {
                             working_directory: Some(WorkingDirectoryPath::new(folder)),
-                            asset_id: asset,
+                            asset_id,
                             name,
                             personality_id,
                         },
@@ -410,7 +413,7 @@ mod tests {
             working_directory: Some(WorkingDirectoryPath::new(cwd)),
             asset_id: asset.to_string(),
             name: name.to_string(),
-            personality_id: resolve_preset(personality).unwrap(),
+            personality_id: personality.to_string(),
         }
     }
 
@@ -470,43 +473,21 @@ mod tests {
     }
 
     #[test]
-    fn preset_passes_a_bare_personality_through() {
-        // No `@` prefix: a literal id, including one that looks like a keyword.
-        assert_eq!(resolve_preset("playful").unwrap(), "playful");
-        assert_eq!(resolve_preset("random").unwrap(), "random");
-    }
-
-    #[test]
-    fn preset_at_auto_picks_a_known_personality() {
-        for directive in ["@auto", "@AUTO", "@random", "@Random"] {
-            let picked = resolve_preset(directive).unwrap();
-            assert!(PERSONALITY_IDS.contains(&picked.as_str()), "picked unknown: {picked}");
+    fn random_defaults_come_from_the_catalogs() {
+        for _ in 0..50 {
+            assert!(PERSONALITY_IDS.contains(&random_personality()));
+            assert!(BUILTIN_PET_ASSETS.contains(&random_asset()));
         }
     }
 
     #[test]
-    fn an_unknown_preset_directive_is_an_error() {
-        assert_eq!(
-            resolve_preset("@bogus"),
-            Err("unknown personality directive '@bogus'; use @auto or a personality id".to_string())
-        );
-    }
-
-    #[test]
-    fn a_missing_required_flag_is_a_usage_error() {
+    fn hatch_requires_a_name() {
         let mut out = Vec::new();
         let mut err = Vec::new();
-        // hatch without --personality
-        let code = run_with(
-            &args(&["hatch", "--asset", "cato", "--name", "Rex"]),
-            "127.0.0.1:1",
-            "D:/proj",
-            Vec::new,
-            &mut out,
-            &mut err,
-        );
+        let code = run_with(&args(&["hatch"]), "127.0.0.1:1", "D:/proj", Vec::new, &mut out, &mut err);
         assert_eq!(code, 2);
-        assert!(String::from_utf8(err).unwrap().contains("--personality"));
+        // clap names the missing positional in its error.
+        assert!(String::from_utf8(err).unwrap().to_lowercase().contains("name"));
     }
 
     #[test]
