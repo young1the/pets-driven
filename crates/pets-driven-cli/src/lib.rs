@@ -162,14 +162,27 @@ fn run_presets<O: Write>(out: &mut O) -> i32 {
     0
 }
 
-fn run_hatch<O: Write>(core: &PetsDrivenCore, input: HatchPet, out: &mut O) -> i32 {
+fn run_hatch<O: Write>(core: &PetsDrivenCore, input: HatchPet, origin: &str, out: &mut O) -> i32 {
     match core.hatch(input) {
         Ok(commit) => {
+            // Ask the running app to show the new pet's overlay window. The app
+            // reloads state (picking up the pet we just wrote) before showing,
+            // so this is safe right after the write. Fire-and-forget: a stopped
+            // app just means the pet appears on next launch.
+            if let Some(cwd) = commit.value.working_directory() {
+                show_pet(origin, cwd);
+            }
             print_json(out, &serde_json::json!({ "ok": true, "pet": commit.value }));
             0
         }
         Err(error) => report_core_error(out, &error),
     }
+}
+
+/// Best-effort request to the running app to show the pet registered to `cwd`.
+fn show_pet(origin: &str, cwd: &str) {
+    let body = serde_json::json!({ "cwd": cwd }).to_string();
+    let _ = transport::post_json(origin, protocol::paths::SHOW, body.as_bytes(), FIRE_AND_FORGET_TIMEOUT);
 }
 
 fn run_update<O: Write>(core: &PetsDrivenCore, pet_id: &PetId, patch: PetPatch, out: &mut O) -> i32 {
@@ -267,6 +280,7 @@ pub fn run_with<O: Write, E: Write>(
                             name,
                             personality_id,
                         },
+                        origin,
                         out,
                     )
                 }
@@ -396,6 +410,10 @@ mod tests {
     use super::*;
     use pets_driven_core::MemoryStateRepository;
 
+    /// A loopback port that refuses instantly, so the best-effort show ping after
+    /// a hatch fails fast without a running app.
+    const REFUSED: &str = "127.0.0.1:1";
+
     fn args(items: &[&str]) -> Vec<String> {
         items.iter().map(|item| item.to_string()).collect()
     }
@@ -422,7 +440,7 @@ mod tests {
         let core = core_with_empty_state();
 
         let mut out = Vec::new();
-        assert_eq!(run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), &mut out), 0);
+        assert_eq!(run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), REFUSED, &mut out), 0);
         let hatched = parse_out(&out);
         assert_eq!(hatched["pet"]["name"], "Rex");
         assert_eq!(hatched["pet"]["cwd"], "D:/proj");
@@ -435,10 +453,10 @@ mod tests {
     #[test]
     fn hatch_rejects_an_occupied_folder_with_exit_one() {
         let core = core_with_empty_state();
-        run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), &mut Vec::new());
+        run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), REFUSED, &mut Vec::new());
 
         let mut out = Vec::new();
-        let code = run_hatch(&core, hatch_input("otto", "Blue", "reserved", "D:/proj"), &mut out);
+        let code = run_hatch(&core, hatch_input("otto", "Blue", "reserved", "D:/proj"), REFUSED, &mut out);
 
         assert_eq!(code, 1);
         assert_eq!(parse_out(&out)["ok"], false);
@@ -449,7 +467,7 @@ mod tests {
     fn bind_then_unbind_moves_and_clears_the_folder() {
         let core = core_with_empty_state();
         let mut hatch_out = Vec::new();
-        run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), &mut hatch_out);
+        run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), REFUSED, &mut hatch_out);
         let pet_id = parse_out(&hatch_out)["pet"]["id"].as_str().unwrap().to_string();
 
         let mut bind_out = Vec::new();

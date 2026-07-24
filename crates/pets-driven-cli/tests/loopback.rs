@@ -4,7 +4,11 @@
 
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use std::path::PathBuf;
+use std::process::Command;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use pets_driven_cli::run_with;
 
@@ -78,6 +82,51 @@ fn mock_ingress(response_body: &'static str) -> (String, thread::JoinHandle<Capt
 
 fn args(items: &[&str]) -> Vec<String> {
     items.iter().map(|item| item.to_string()).collect()
+}
+
+fn unique_temp_dir() -> PathBuf {
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let dir = std::env::temp_dir().join(format!(
+        "pdd-loopback-{}-{}-{}",
+        std::process::id(),
+        COUNTER.fetch_add(1, Ordering::Relaxed),
+        nanos
+    ));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+#[test]
+fn hatch_asks_the_running_app_to_show_the_new_pet() {
+    // Drive the real `pdd` binary so the whole path runs: it writes the pet to a
+    // temp state file, then posts /pets-driven/show to the (mock) app. Using a
+    // subprocess keeps the env overrides from racing other in-process tests.
+    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
+    let dir = unique_temp_dir();
+    let state_path = dir.join("state.v1.json");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_pdd"))
+        .args(["hatch", "cato", "--cwd", "/work/x"])
+        .env("PETS_DRIVEN_STATE_PATH", &state_path)
+        .env("PETS_DRIVEN_INGRESS_ORIGIN", &origin)
+        .output()
+        .expect("run pdd");
+
+    let captured = server.join().expect("server thread");
+
+    assert!(output.status.success(), "pdd hatch failed: {output:?}");
+    assert_eq!(captured.request_line, "POST /pets-driven/show HTTP/1.1");
+    assert!(
+        captured.body.contains(r#""cwd":"/work/x""#),
+        "unexpected show body: {}",
+        captured.body
+    );
+    // The pet was still persisted.
+    let state = std::fs::read_to_string(&state_path).unwrap();
+    assert!(state.contains("\"name\": \"cato\""));
+
+    std::fs::remove_dir_all(&dir).ok();
 }
 
 #[test]

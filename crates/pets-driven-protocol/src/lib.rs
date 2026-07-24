@@ -21,13 +21,16 @@ pub const DEFAULT_INGRESS_PORT: u16 = 43187;
 /// directly.
 pub const DEFAULT_INGRESS_ORIGIN: &str = "127.0.0.1:43187";
 
-/// The hook ingress routes. Kept in sync with the path constants in the desktop
-/// `claude_hook_ingress`.
+/// The ingress routes a local client posts to. Kept in sync with the path
+/// constants in the desktop `claude_hook_ingress`.
 pub mod paths {
     /// Routes a Claude Code hook event to the pet whose folder matches its cwd.
     pub const CLAUDE_HOOK: &str = "/claude-hook";
     /// The same routing as [`CLAUDE_HOOK`], for Codex.
     pub const CODEX_HOOK: &str = "/codex-hook";
+    /// Shows the running app's overlay window for the pet registered to a
+    /// folder. Body: `{"cwd": "<folder>"}`. A no-op (404) if no pet is there.
+    pub const SHOW: &str = "/pets-driven/show";
 }
 
 /// Normalize a caller-supplied ingress origin into a `host:port` authority.
