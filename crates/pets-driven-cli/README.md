@@ -16,6 +16,11 @@ The desktop installer ships `pdd` and adds it to your PATH.
 | `pdd list` | Every pet in state | no |
 | `pdd presets` | Personality ids `hatch` accepts | no |
 | `pdd hatch <NAME> [--asset <ID>] [--personality <ID>] [--cwd <DIR>]` | Adopt a pet bound to a folder (asset, personality, and folder default to a random asset, a random personality, and the cwd) | no (also pings the app to show it) |
+
+When `hatch` picks a random asset (no `--asset`), it prefers the pets you
+installed in your designated pet source folder (`petSourceDirectory` in state,
+otherwise `~/.petdex/pets`), and only falls back to the six built-ins when that
+folder holds no pet. So once you add your own pets, new worktrees get *those*.
 | `pdd bind <PET_ID> [--cwd <DIR>]` | Bind a pet to a folder | no |
 | `pdd unbind <PET_ID>` | Detach a pet from its folder | no |
 | `pdd delete [PET_ID] [--cwd <DIR>]` | Remove a pet (and hide its window) | no (hides best-effort) |

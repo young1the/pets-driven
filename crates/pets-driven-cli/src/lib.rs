@@ -67,11 +67,12 @@ enum Command {
     Presets,
     /// Adopt a pet bound to a folder. Only a name is required; the asset,
     /// personality, and folder default to a random asset, a random personality,
-    /// and the current directory.
+    /// and the current directory. The random asset is drawn from the pets you
+    /// installed in your pet source folder, falling back to the built-ins.
     Hatch {
         /// Display name for the new pet
         name: String,
-        /// Pet asset id (default: a random built-in asset)
+        /// Pet asset id (default: a random installed pet, else a built-in)
         #[arg(short, long)]
         asset: Option<String>,
         /// Personality id (default: a random personality)
@@ -324,6 +325,25 @@ fn random_asset() -> &'static str {
     BUILTIN_PET_ASSETS[random_index(BUILTIN_PET_ASSETS.len())]
 }
 
+/// The asset id for a `hatch` that gave no `--asset`. The pets the user
+/// installed in their designated pet folder come first, so someone who added
+/// their own pets gets one of those instead of a bundled default; the built-in
+/// catalog is the fallback when the user has installed none (or state cannot be
+/// read).
+fn choose_random_asset(core: &PetsDrivenCore) -> String {
+    let user_ids = core
+        .snapshot()
+        .ok()
+        .map(|snapshot| pets_driven_fs::user_asset_ids(snapshot.as_value()))
+        .unwrap_or_default();
+
+    if !user_ids.is_empty() {
+        return user_ids[random_index(user_ids.len())].clone();
+    }
+
+    random_asset().to_string()
+}
+
 // ---- Dispatch --------------------------------------------------------------
 
 /// Run the CLI with every input injected, for testing. Returns the process exit
@@ -381,7 +401,7 @@ pub fn run_with<O: Write, E: Write>(
                 Command::Status => run_status(&core, out),
                 Command::List => run_list(&core, out),
                 Command::Hatch { name, asset, personality, cwd: folder } => {
-                    let asset_id = asset.unwrap_or_else(|| random_asset().to_string());
+                    let asset_id = asset.unwrap_or_else(|| choose_random_asset(&core));
                     let personality_id =
                         personality.unwrap_or_else(|| random_personality().to_string());
                     let folder = folder.unwrap_or_else(|| cwd.to_string());

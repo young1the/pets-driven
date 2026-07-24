@@ -2596,6 +2596,7 @@ dependencies = [
  "dirs 5.0.1",
  "fslock",
  "pets-driven-core",
+ "serde_json",
 ]
 
 [[package]]
