@@ -29,6 +29,10 @@ use pets_driven_protocol as protocol;
 /// blocks the agent.
 const FIRE_AND_FORGET_TIMEOUT: Duration = Duration::from_secs(2);
 
+/// A command that waits for the app's reply (show/hide) bounds the wait a little
+/// longer, but still short so a wedged app does not hang the terminal.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
+
 #[derive(Parser)]
 #[command(
     name = "pdd",
@@ -85,6 +89,16 @@ enum Command {
     Unbind {
         /// Pet id (from `pdd list`)
         pet: String,
+    },
+    /// Show the running app's pet window for a folder (defaults to the cwd)
+    Show {
+        /// Folder whose pet to show (default: the current directory)
+        cwd: Option<String>,
+    },
+    /// Hide the running app's pet window for a folder (defaults to the cwd)
+    Hide {
+        /// Folder whose pet to hide (default: the current directory)
+        cwd: Option<String>,
     },
     /// Forward a hook event to the running app
     Forward {
@@ -180,9 +194,25 @@ fn run_hatch<O: Write>(core: &PetsDrivenCore, input: HatchPet, origin: &str, out
 }
 
 /// Best-effort request to the running app to show the pet registered to `cwd`.
+/// Fire-and-forget: used as a side effect of `hatch`, it never blocks or prints.
 fn show_pet(origin: &str, cwd: &str) {
     let body = serde_json::json!({ "cwd": cwd }).to_string();
     let _ = transport::post_json(origin, protocol::paths::SHOW, body.as_bytes(), FIRE_AND_FORGET_TIMEOUT);
+}
+
+/// Show or hide the running app's pet window for `cwd`, printing the app's
+/// reply. A show/hide needs the app, so an unreachable app is reported as
+/// `app-not-running` (still exit 0 — a stopped app is a normal answer).
+fn run_show_hide<O: Write>(origin: &str, path: &str, cwd: &str, out: &mut O) -> i32 {
+    let body = serde_json::json!({ "cwd": cwd }).to_string();
+    match transport::post_json(origin, path, body.as_bytes(), REQUEST_TIMEOUT) {
+        Ok(reply) => {
+            let _ = out.write_all(&reply);
+            let _ = writeln!(out);
+        }
+        Err(_) => print_json(out, &error_json("app-not-running")),
+    }
+    0
 }
 
 fn run_update<O: Write>(core: &PetsDrivenCore, pet_id: &PetId, patch: PetPatch, out: &mut O) -> i32 {
@@ -255,6 +285,20 @@ pub fn run_with<O: Write, E: Write>(
         Command::Forward { event } => run_forward(event.as_deref(), cwd, origin, stdin),
         Command::Presets => run_presets(out),
 
+        // Live presentation signals for the running app; no state change.
+        Command::Show { cwd: folder } => run_show_hide(
+            origin,
+            protocol::paths::SHOW,
+            &folder.unwrap_or_else(|| cwd.to_string()),
+            out,
+        ),
+        Command::Hide { cwd: folder } => run_show_hide(
+            origin,
+            protocol::paths::HIDE,
+            &folder.unwrap_or_else(|| cwd.to_string()),
+            out,
+        ),
+
         Command::Status | Command::List | Command::Hatch { .. } | Command::Bind { .. } | Command::Unbind { .. } => {
             let core = match open_core() {
                 Ok(core) => core,
@@ -306,7 +350,10 @@ pub fn run_with<O: Write, E: Write>(
                     out,
                 ),
                 // The outer match already excluded the other variants.
-                Command::Forward { .. } | Command::Presets => unreachable!(),
+                Command::Forward { .. }
+                | Command::Presets
+                | Command::Show { .. }
+                | Command::Hide { .. } => unreachable!(),
             }
         }
     }

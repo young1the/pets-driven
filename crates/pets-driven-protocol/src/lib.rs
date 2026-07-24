@@ -31,6 +31,9 @@ pub mod paths {
     /// Shows the running app's overlay window for the pet registered to a
     /// folder. Body: `{"cwd": "<folder>"}`. A no-op (404) if no pet is there.
     pub const SHOW: &str = "/pets-driven/show";
+    /// Hides the running app's overlay window for the pet registered to a
+    /// folder. Body: `{"cwd": "<folder>"}`. A no-op (404) if no pet is there.
+    pub const HIDE: &str = "/pets-driven/hide";
 }
 
 /// Normalize a caller-supplied ingress origin into a `host:port` authority.

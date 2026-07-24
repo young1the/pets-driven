@@ -130,6 +130,45 @@ fn hatch_asks_the_running_app_to_show_the_new_pet() {
 }
 
 #[test]
+fn show_posts_the_folder_and_prints_the_reply() {
+    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
+
+    let mut out = Vec::new();
+    let mut err = Vec::new();
+    let code = run_with(&args(&["show", "/work/x"]), &origin, "D:/proj", Vec::new, &mut out, &mut err);
+
+    let captured = server.join().expect("server thread");
+    assert_eq!(code, 0);
+    assert_eq!(captured.request_line, "POST /pets-driven/show HTTP/1.1");
+    assert_eq!(captured.body, r#"{"cwd":"/work/x"}"#);
+    assert_eq!(String::from_utf8(out).unwrap().trim_end(), r#"{"ok":true}"#);
+}
+
+#[test]
+fn hide_defaults_to_the_cwd_and_posts_the_hide_route() {
+    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
+
+    let mut out = Vec::new();
+    let mut err = Vec::new();
+    // No folder argument -> uses the injected cwd.
+    run_with(&args(&["hide"]), &origin, "D:/here", Vec::new, &mut out, &mut err);
+
+    let captured = server.join().expect("server thread");
+    assert_eq!(captured.request_line, "POST /pets-driven/hide HTTP/1.1");
+    assert_eq!(captured.body, r#"{"cwd":"D:/here"}"#);
+}
+
+#[test]
+fn show_reports_app_not_running_when_unreachable() {
+    // Port 1 refuses instantly, standing in for a stopped app.
+    let mut out = Vec::new();
+    let mut err = Vec::new();
+    let code = run_with(&args(&["show", "/work/x"]), "127.0.0.1:1", "D:/proj", Vec::new, &mut out, &mut err);
+    assert_eq!(code, 0);
+    assert!(String::from_utf8(out).unwrap().contains("app-not-running"));
+}
+
+#[test]
 fn forward_relays_a_stdin_body_verbatim() {
     let (origin, server) = mock_ingress(r#"{"ok":true}"#);
 
