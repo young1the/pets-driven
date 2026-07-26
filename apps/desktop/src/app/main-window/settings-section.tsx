@@ -5,12 +5,28 @@ import {
   TerminalPreview,
 } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
-import { type CSSProperties, useState } from "react";
+import { useState } from "react";
 import type { ClaudeHookIngressActivity } from "@/adapters/agent-events/claude-hook-ingress";
 import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { HookActivityPanel } from "@/app/main-window/hook-activity-panel";
 import { PluginRunTerminal } from "@/app/main-window/plugin-run-terminal";
+import {
+  connectionCard,
+  connectionText,
+  dangerAction,
+  hint,
+  inputStyle,
+  label,
+  rowStyle,
+  seg,
+  segWrap,
+  selectStyle,
+  smallAction,
+  smallCaps,
+  statusDot,
+  swatch,
+} from "@/app/main-window/settings-section.styles";
 import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 import type { ClaudePluginRun } from "@/app/use-claude-plugin";
@@ -81,138 +97,6 @@ function folderName(path: string): string {
 
   return parts[parts.length - 1] || path;
 }
-
-// Shared token-driven styles so the whole screen follows the app theme/accent.
-const label: CSSProperties = {
-  display: "block",
-  fontFamily: "var(--font-display)",
-  fontWeight: 600,
-  fontSize: "15.5px",
-  color: "var(--text-strong)",
-  margin: 0,
-};
-const hint: CSSProperties = {
-  fontSize: "12.5px",
-  color: "var(--text-muted)",
-  margin: "4px 0 12px",
-  lineHeight: 1.45,
-};
-const rowStyle = (last = false): CSSProperties => ({
-  padding: "22px 0",
-  borderBottom: last ? "none" : "1px solid var(--border-soft)",
-});
-const segWrap: CSSProperties = {
-  display: "inline-flex",
-  padding: "4px",
-  gap: "4px",
-  borderRadius: "12px",
-  background: "var(--surface-sunken)",
-  flexWrap: "wrap",
-};
-const seg = (active: boolean): CSSProperties => ({
-  border: 0,
-  cursor: "pointer",
-  padding: "7px 16px",
-  borderRadius: "9px",
-  fontFamily: "var(--font-body)",
-  fontWeight: 700,
-  fontSize: "13px",
-  background: active ? "var(--color-primary)" : "transparent",
-  color: active ? "var(--color-on-primary)" : "var(--text-muted)",
-  transition: "background 140ms ease, color 140ms ease",
-});
-const inputStyle: CSSProperties = {
-  flex: 1,
-  minWidth: 0,
-  boxSizing: "border-box",
-  border: "1.5px solid var(--border-default)",
-  background: "var(--surface-card)",
-  borderRadius: "12px",
-  padding: "11px 14px",
-  fontFamily: "var(--font-mono)",
-  fontSize: "13px",
-  color: "var(--text-strong)",
-  outline: "none",
-};
-const selectStyle: CSSProperties = {
-  flex: 1,
-  minWidth: 0,
-  boxSizing: "border-box",
-  border: "1.5px solid var(--border-default)",
-  background: "var(--surface-card)",
-  borderRadius: "12px",
-  padding: "11px 14px",
-  fontFamily: "var(--font-body)",
-  fontSize: "13px",
-  color: "var(--text-strong)",
-  cursor: "pointer",
-  outline: "none",
-};
-const swatch = (hex: string, on: boolean): CSSProperties => ({
-  width: "34px",
-  height: "34px",
-  borderRadius: "999px",
-  cursor: "pointer",
-  background: hex,
-  border: `3px solid ${on ? "var(--text-strong)" : "transparent"}`,
-  boxShadow: on ? "0 0 0 3px var(--surface-card)" : "none",
-  transition: "transform 140ms ease",
-});
-const connectionCard: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-  padding: "12px 14px",
-  border: "1px solid var(--border-soft)",
-  borderRadius: "14px",
-  background: "var(--surface-sunken)",
-};
-const connectionText: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  minWidth: 0,
-  flex: 1,
-};
-/** The trailing action buttons inside a card row (connection, pet folder). */
-const smallAction: CSSProperties = {
-  border: 0,
-  cursor: "pointer",
-  padding: "8px 14px",
-  borderRadius: "12px",
-  fontFamily: "var(--font-body)",
-  fontWeight: 700,
-  fontSize: "12.5px",
-  background: "var(--surface-card)",
-  color: "var(--text-strong)",
-  whiteSpace: "nowrap",
-};
-const TONE_COLORS: Partial<Record<BadgeTone, string>> = {
-  success: "#2f9e63",
-  info: "#3f82d9",
-  danger: "#d9544f",
-};
-/** The one destructive action on this screen, colored so it reads as one. */
-const dangerAction: CSSProperties = {
-  ...smallAction,
-  background: TONE_COLORS.danger,
-  color: "#ffffff",
-};
-const statusDot = (tone: BadgeTone): CSSProperties => ({
-  width: "10px",
-  height: "10px",
-  flex: "none",
-  borderRadius: "999px",
-  background: TONE_COLORS[tone] ?? "var(--text-muted)",
-});
-const smallCaps: CSSProperties = {
-  display: "block",
-  fontSize: "11px",
-  fontWeight: 800,
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
-  color: "var(--text-muted)",
-  margin: "0 0 8px",
-};
 
 export function SettingsSection({
   command,
