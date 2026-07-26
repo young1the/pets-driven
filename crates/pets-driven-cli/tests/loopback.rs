@@ -130,6 +130,27 @@ fn hatch_asks_the_running_app_to_show_the_new_pet() {
 }
 
 #[test]
+fn hatch_without_a_name_names_the_pet_after_the_folder() {
+    let dir = unique_temp_dir();
+    let state_path = dir.join("state.v1.json");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_pdd"))
+        .args(["hatch", "--cwd", "/work/atlas"])
+        .env("PETS_DRIVEN_STATE_PATH", &state_path)
+        // A port that refuses instantly: the show ping after a hatch is
+        // best-effort, and this test only cares about the persisted pet.
+        .env("PETS_DRIVEN_INGRESS_ORIGIN", "127.0.0.1:1")
+        .output()
+        .expect("run pdd");
+
+    assert!(output.status.success(), "pdd hatch failed: {output:?}");
+    let state = std::fs::read_to_string(&state_path).unwrap();
+    assert!(state.contains("\"name\": \"atlas\""), "unexpected state: {state}");
+
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
 fn show_posts_the_folder_and_prints_the_reply() {
     let (origin, server) = mock_ingress(r#"{"ok":true}"#);
 

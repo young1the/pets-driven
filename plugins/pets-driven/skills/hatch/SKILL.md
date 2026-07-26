@@ -20,15 +20,17 @@ The command shapes are:
 ```bash
 pdd list                                       # existing pets + their cwd
 pdd presets                                    # personality ids hatch accepts
+pdd hatch                                      # name from the folder, random asset + personality
 pdd hatch "<name>"                             # random asset + personality, current folder
 pdd hatch "<name>" --asset <id> --personality <id> --cwd "<folder>"
 pdd bind "<petId>"                             # bind a pet to this folder (--cwd for another)
 pdd unbind "<petId>"                           # release it (cwd -> null)
 ```
 
-Only a name is required to hatch: the asset (look) and personality default to a
-random pick and the folder to the current directory. Pass `--asset`,
-`--personality`, or `--cwd` to choose any of them.
+Nothing is required to hatch: the name defaults to the bound folder's own name,
+the asset (look) and personality to a random pick, and the folder to the current
+directory. Pass a name, `--asset`, `--personality`, or `--cwd` to choose any of
+them.
 
 A pet's `cwd` may be `null` — that pet exists with no folder bound and receives
 no agent events. Offer to `bind` such a pet rather than hatching a new one when

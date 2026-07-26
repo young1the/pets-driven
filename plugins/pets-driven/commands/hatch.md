@@ -28,9 +28,10 @@ not installed, say so and stop.)
    `null`**: that pet exists with no folder bound. Offer to `bind` it to this
    folder (see below) instead of hatching a new one.
 
-2. **Ask for a name.** That is the only required value — the asset (look) and
-   personality default to a random pick, and the folder to the current
-   directory. Offer to let the user choose either:
+2. **Ask for a name.** Nothing is required: an omitted name defaults to the
+   bound folder's own name, the asset (look) and personality to a random pick,
+   and the folder to the current directory. Suggest the folder's name and let
+   the user accept it. Offer to let the user choose either:
    - **Personality** — run `pdd presets` for the authoritative id list, or
      recommend one from the leading behaviors below and pass `--personality`:
      - `playful` — romps and chases; explores and engages freely.
@@ -54,6 +55,7 @@ not installed, say so and stop.)
    request and escapes paths safely:
 
    ```bash
+   pdd hatch                                             # name from the folder, random asset + personality
    pdd hatch "<name>"                                    # random asset + personality, current folder
    pdd hatch "<name>" --personality <id>                 # choose the personality
    pdd hatch "<name>" --asset <id> --personality <id> --cwd "<folder>"

@@ -65,13 +65,14 @@ enum Command {
     List,
     /// List the personality ids `hatch` accepts
     Presets,
-    /// Adopt a pet bound to a folder. Only a name is required; the asset,
-    /// personality, and folder default to a random asset, a random personality,
-    /// and the current directory. The random asset is drawn from the pets you
-    /// installed in your pet source folder, falling back to the built-ins.
+    /// Adopt a pet bound to a folder. Nothing is required: the name defaults to
+    /// the folder's own name, and the asset, personality, and folder default to
+    /// a random asset, a random personality, and the current directory. The
+    /// random asset is drawn from the pets you installed in your pet source
+    /// folder, falling back to the built-ins.
     Hatch {
-        /// Display name for the new pet
-        name: String,
+        /// Display name for the new pet (default: the bound folder's name)
+        name: Option<String>,
         /// Pet asset id (default: a random installed pet, else a built-in)
         #[arg(short, long)]
         asset: Option<String>,
@@ -344,6 +345,20 @@ fn choose_random_asset(core: &PetsDrivenCore) -> String {
     random_asset().to_string()
 }
 
+/// The display name for a `hatch` that gave none: the bound folder's own name,
+/// so `pdd hatch` in `D:/work/atlas` adopts a pet called "atlas". Both
+/// separators are split on because a folder reaches us as a plain string —
+/// `--cwd` may be typed either way on Windows — and trailing ones are ignored.
+/// A path with no named segment (a bare drive or filesystem root) falls back to
+/// the folder itself.
+fn folder_name(folder: &str) -> String {
+    folder
+        .rsplit(['/', '\\'])
+        .find(|segment| !segment.is_empty())
+        .unwrap_or(folder)
+        .to_string()
+}
+
 // ---- Dispatch --------------------------------------------------------------
 
 /// Run the CLI with every input injected, for testing. Returns the process exit
@@ -405,6 +420,7 @@ pub fn run_with<O: Write, E: Write>(
                     let personality_id =
                         personality.unwrap_or_else(|| random_personality().to_string());
                     let folder = folder.unwrap_or_else(|| cwd.to_string());
+                    let name = name.unwrap_or_else(|| folder_name(&folder));
                     run_hatch(
                         &core,
                         HatchPet {
@@ -663,13 +679,13 @@ mod tests {
     }
 
     #[test]
-    fn hatch_requires_a_name() {
-        let mut out = Vec::new();
-        let mut err = Vec::new();
-        let code = run_with(&args(&["hatch"]), "127.0.0.1:1", "D:/proj", Vec::new, &mut out, &mut err);
-        assert_eq!(code, 2);
-        // clap names the missing positional in its error.
-        assert!(String::from_utf8(err).unwrap().to_lowercase().contains("name"));
+    fn folder_name_falls_back_to_the_last_named_segment() {
+        assert_eq!(folder_name("D:/work/atlas"), "atlas");
+        assert_eq!(folder_name(r"D:\work\atlas"), "atlas");
+        assert_eq!(folder_name("D:/work/atlas/"), "atlas");
+        assert_eq!(folder_name("/home/kanye/atlas"), "atlas");
+        // A bare root has no named segment; keep the folder itself.
+        assert_eq!(folder_name("/"), "/");
     }
 
     #[test]
