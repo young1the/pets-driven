@@ -1020,6 +1020,13 @@ button.pd-onb__empty-card:disabled {
   min-width: 0;
 }
 
+/* The choose-step lede is a single short line — keep it from wrapping onto the
+   several lines its 560px cap would otherwise force. */
+.pd-onb__list-head-text .pd-onb__lede {
+  max-width: none;
+  white-space: nowrap;
+}
+
 .pd-onb__list-tools {
   display: flex;
   align-items: center;
@@ -1054,7 +1061,7 @@ button.pd-onb__empty-card:disabled {
 
 .pd-asset-card {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
   align-content: start;
   flex: 0 0 190px;
   scroll-snap-align: start;
@@ -1084,6 +1091,13 @@ button.pd-onb__empty-card:disabled {
   color: var(--text-muted);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
+  /* Cap the blurb at two lines so a long description does not stretch the card
+     tall enough to force the strip to scroll. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .app-back-button {

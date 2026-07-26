@@ -363,27 +363,6 @@ export function AdoptPetFlow({
   const totalSteps = STEP_ORDER.length;
   const stepNumber = STEP_ORDER.indexOf(step) + 1;
 
-  function renderSourceFolder() {
-    if (!state.petSourceDirectory) {
-      return null;
-    }
-
-    return (
-      <div className="pd-onb__sources">
-        <span className="pd-onb__sources-label">{t("onboarding.sourceFoldersLabel")}</span>
-        <div className="pd-onb__source">
-          <span className="pd-onb__source-icon" aria-hidden>
-            📁
-          </span>
-          <span className="pd-onb__source-text">
-            <b>{folderName(state.petSourceDirectory)}</b>
-            <small>{state.petSourceDirectory}</small>
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <main aria-label={t("onboarding.pageAria")} className="pd-onb">
       <div aria-hidden className="pd-onb__dots" />
@@ -466,7 +445,6 @@ export function AdoptPetFlow({
                   {t("onboarding.changeFolder")}
                 </button>
               </div>
-              {renderSourceFolder()}
             </>
           ) : (
             <div className="pd-onb__empty">
@@ -527,8 +505,6 @@ export function AdoptPetFlow({
                   </span>
                 </button>
               </div>
-
-              {renderSourceFolder()}
             </div>
           )}
           <div className="pd-onb__footer">
