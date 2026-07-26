@@ -357,22 +357,31 @@ export function presentPetStatus(
   // Name the session partner on the ambient social label ("Chatting with Otto").
   const base = withPartnerName(activityBase, partnerName);
 
+  // A running agent task keeps a persistent working capsule so the floating pet
+  // always signals "working" (vs an idle pet, which shows no capsule) — not just
+  // during a transient agent-channel line. The ambient activity still owns the
+  // label; fall back to "Working" only when the row/activity gives no label of
+  // its own, so the capsule is never empty.
+  const workLabelled = (): IntentPresentation => {
+    const hasLabel = base.labelKey !== null || base.label !== null;
+    return {
+      ...base,
+      label: hasLabel ? base.label : "Working",
+      labelKey: hasLabel ? base.labelKey : "working",
+    };
+  };
+
+  /**
+   * Tone for a capsule carrying an ambient line. Color is reserved for the work
+   * lifecycle, so a spoken line must not drop a *working* pet to the neutral
+   * ambient tone — the pet going grey mid-task reads as the task having been
+   * released, which is exactly what it is not.
+   */
+  const ambientTone: PetStatusTone = working ? "work" : "ambient";
+
   if (!overlay) {
-    // A running agent task keeps a persistent working capsule so the floating
-    // pet always signals "working" (vs an idle pet, which shows no capsule) —
-    // not just during a transient agent-channel line. The ambient activity
-    // still owns the label; fall back to "Working" only when the row/activity
-    // gives no label of its own, so the capsule is never empty.
     if (working) {
-      const hasLabel = base.labelKey !== null || base.label !== null;
-      return {
-        ...base,
-        tone: "work",
-        label: hasLabel ? base.label : "Working",
-        labelKey: hasLabel ? base.labelKey : "working",
-        message: null,
-        showCapsule: true,
-      };
+      return { ...workLabelled(), tone: "work", message: null, showCapsule: true };
     }
     return { ...base, tone: "ambient", message: null, showCapsule: false };
   }
@@ -391,9 +400,14 @@ export function presentPetStatus(
 
   if (overlay.kind === "agent-channel") {
     // A null status is a plain spoken line (social/idle/interaction): keep the
-    // ambient activity capsule (mood/label/emote) and just carry the message.
+    // activity capsule (mood/label/emote) and just carry the message.
     if (overlay.status === null) {
-      return { ...base, tone: "ambient", message: overlay.message ?? null, showCapsule: true };
+      return {
+        ...(working ? workLabelled() : base),
+        tone: ambientTone,
+        message: overlay.message ?? null,
+        showCapsule: true,
+      };
     }
     const agentBase = presentationFromAgentStatus(overlay.status);
     return {
@@ -412,7 +426,7 @@ export function presentPetStatus(
   // there is no fixed label key.
   return {
     ...base,
-    tone: "ambient",
+    tone: ambientTone,
     label: overlay.label,
     labelKey: null,
     message: null,

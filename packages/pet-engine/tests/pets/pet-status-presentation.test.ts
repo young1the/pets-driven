@@ -245,6 +245,51 @@ describe("presentPetStatus", () => {
     expect(fussing.emote).toBe("sweat");
   });
 
+  /**
+   * Color is reserved for the work lifecycle, so a spoken line must not drop a
+   * working pet to the neutral ambient tone — going grey mid-task reads as the
+   * task having been released.
+   */
+  it("keeps the work tone and label when a working pet speaks an ambient line", () => {
+    const presentation = presentPetStatus(
+      "running",
+      { kind: "agent-channel", status: null, label: null, message: "hi there" },
+      "headsDown",
+      null,
+      true,
+    );
+
+    expect(presentation.tone).toBe("work");
+    expect(presentation.labelKey).toBe("headsDown");
+    expect(presentation.message).toBe("hi there");
+  });
+
+  it("falls back to the Working label for a working pet with a line but no activity", () => {
+    const presentation = presentPetStatus(
+      "running",
+      { kind: "agent-channel", status: null, label: null, message: "hi there" },
+      null,
+      null,
+      true,
+    );
+
+    expect(presentation.tone).toBe("work");
+    expect(presentation.labelKey).toBe("working");
+  });
+
+  it("keeps a non-working pet's spoken line ambient", () => {
+    const presentation = presentPetStatus(
+      "idle",
+      { kind: "agent-channel", status: null, label: null, message: "hi there" },
+      "chatting",
+      null,
+      false,
+    );
+
+    expect(presentation.tone).toBe("ambient");
+    expect(presentation.labelKey).toBe("chatting");
+  });
+
   it("still hides the capsule for an idle (not working) pet with no overlay", () => {
     const presentation = presentPetStatus("running", null, "exploring", null, false);
 

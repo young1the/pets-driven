@@ -1435,6 +1435,16 @@ function isPendingReactionStillOverlapping(
   );
 }
 
+/**
+ * Whether the pet is mid-agent-lifecycle: working, or holding a waiting /
+ * failed / completed report the user has not acknowledged yet. Only a pet with
+ * no live task (or none at all) counts as idle.
+ */
+function hasLiveAgentTask(components: ComponentStore, id: string): boolean {
+  const status = components.getComponent(id, "AgentTaskState")?.status;
+  return status !== undefined && status !== "idle";
+}
+
 // Priority 4: Autonomous idle behaviors (speech, wandering).
 export function runAutonomousBehaviorSystem(
   components: ComponentStore,
@@ -1450,6 +1460,13 @@ export function runAutonomousBehaviorSystem(
       if (isClaimed(components, id, "autonomous", now)) return;
       // Already saying something (social line, agent status, …)? Stay quiet.
       if (components.getComponent(id, "AgentChannelState")?.message) return;
+      // A pet with a live agent task is not idle, and this is *idle* companion
+      // chatter: its lines are ambient ("fancy a race?"), it claims over the
+      // working pose for the bubble's whole life, and the resulting ambient
+      // capsule made a busy pet read as one whose task had been released.
+      // Work-lifecycle speech (task started, attention, acknowledge) is
+      // unaffected — it rides the agent channel, not this system.
+      if (hasLiveAgentTask(components, id)) return;
       if (clock.now() - activity.lastActiveAt >= idleConversation.idleAfterMs) {
         setIdleSpeech(
           components,

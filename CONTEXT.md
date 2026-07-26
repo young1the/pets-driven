@@ -355,6 +355,7 @@ _Avoid_: Social Session, relationship, copied personality
 - A **Pet**'s **Mood** also shapes candidate **Decisions** after the **Pet Profile** and **Drives** are applied.
 - A **Personality Catalog** entry defines two signature **Activities** that other entries do not select; signature activities use sustained claims and choreography so their identity is readable on the **Pet Surface**.
 - A **Personality Catalog** entry also defines one **Working Style**; while the **Agent Work State** is working, the **Pet** alternates that style's sustained pose with short pacing walks, and the pose it holds is the **Activity** it reports.
+- A **Pet** with a live **Agent Work State** (working, waiting, completed, or failed) does not start ambient idle dialogue, and no spoken line takes its presentation out of the work tone — a **Pet** mid-task never reads as one whose task was released.
 - A nearby idle **Pet** able to socialize considers each observed signature **Activity** once and may start a **Signature Reaction**.
 - A **Signature Reaction** uses the responder's own personality to choose join, cheer, watch, or keep-distance; joining borrows the source signature's readable pose without changing the responder's **Pet Profile**.
 - At most two **Pets** respond to one signature **Activity** occurrence, keeping the moment readable.
