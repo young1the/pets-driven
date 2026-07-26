@@ -57,10 +57,34 @@
     "eyebrow": "내 무리",
     "greeting": "안녕하세요,",
     "greetings": {
-      "morning": ["좋은 아침이에요,", "상쾌한 아침이에요,", "굿모닝이에요,", "활기찬 아침이에요,", "오늘도 힘내요,"],
-      "afternoon": ["좋은 오후예요,", "나른한 오후네요,", "오후도 화이팅이에요,", "따뜻한 오후네요,", "점심은 드셨어요,"],
-      "evening": ["좋은 저녁이에요,", "하루를 마무리할 시간이에요,", "편안한 저녁이에요,", "고생한 하루였어요,", "노을이 예쁜 저녁이에요,"],
-      "night": ["늦게까지 일하네요,", "야근 중이신가요,", "아직 깨어 있네요,", "포근한 밤이에요,", "무리하지 말아요,"]
+      "morning": [
+        "좋은 아침이에요,",
+        "상쾌한 아침이에요,",
+        "굿모닝이에요,",
+        "활기찬 아침이에요,",
+        "오늘도 힘내요,"
+      ],
+      "afternoon": [
+        "좋은 오후예요,",
+        "나른한 오후네요,",
+        "오후도 화이팅이에요,",
+        "따뜻한 오후네요,",
+        "점심은 드셨어요,"
+      ],
+      "evening": [
+        "좋은 저녁이에요,",
+        "하루를 마무리할 시간이에요,",
+        "편안한 저녁이에요,",
+        "고생한 하루였어요,",
+        "노을이 예쁜 저녁이에요,"
+      ],
+      "night": [
+        "늦게까지 일하네요,",
+        "야근 중이신가요,",
+        "아직 깨어 있네요,",
+        "포근한 밤이에요,",
+        "무리하지 말아요,"
+      ]
     },
     "greetingName": "트레이너님!",
     "addPet": "펫 추가하기",
@@ -93,7 +117,7 @@
     "accentColor": "앱 강조 색상",
     "accentColorDesc": "앱 전반의 강조와 활성 상태에 사용되는 색입니다.",
     "agentConnection": "에이전트 연결",
-    "agentConnectionDesc": "펫이 Claude Code 작업에 반응하려면 이 플러그인이 필요해요.",
+    "agentConnectionDesc": "Claude Code와 Codex를 연결하면 에이전트가 일할 때 펫이 반응해요.",
     "defaultTerminal": "기본 터미널",
     "defaultTerminalDesc": "인앱 터미널이 여는 셸이에요. 시스템에서 감지한 목록에서 고르거나, ‘시스템 기본값’을 선택하면 COMSPEC / SHELL을 따라요.",
     "defaultTerminalSystem": "시스템 기본값",
@@ -152,6 +176,27 @@
     "notInstalledHint": "플러그인을 설치하면 에이전트가 일할 때 펫이 반응해요.",
     "cliMissing": "Claude Code CLI를 찾지 못했어요. 먼저 Claude Code를 설치한 뒤 다시 시도해 주세요.",
     "error": "Claude Code와 통신하는 중 문제가 생겼어요.",
+    "run": {
+      "install": "플러그인 설치 중",
+      "uninstall": "플러그인 제거 중",
+      "close": "닫기"
+    }
+  },
+  "codexPlugin": {
+    "title": "Codex 플러그인",
+    "checking": "Codex 확인 중…",
+    "install": "설치",
+    "installing": "진행 중…",
+    "reinstall": "다시 설치",
+    "uninstall": "제거",
+    "retry": "다시 시도",
+    "installed": "설치됨",
+    "installedVersion": "설치됨 · v{{version}}",
+    "installedHint": "Codex가 연결됐어요. 새 대화에서 /hooks를 열고 pets-driven 훅을 신뢰해 주세요.",
+    "notInstalledHint": "플러그인을 설치하면 Codex가 일할 때 펫이 반응해요.",
+    "cliMissing": "Codex CLI를 찾지 못했어요. 먼저 Codex를 설치한 뒤 다시 시도해 주세요.",
+    "error": "Codex와 통신하는 중 문제가 생겼어요.",
+    "hookTrustHint": "새 Codex 대화에서 /hooks를 열고 pets-driven 훅을 신뢰해 주세요.",
     "run": {
       "install": "플러그인 설치 중",
       "uninstall": "플러그인 제거 중",
@@ -327,7 +372,8 @@
     "claudeConnected": "Claude 연결됨",
     "claudeNotConnected": "아직 Claude가 연결되지 않음",
     "codexName": "Codex",
-    "comingSoon": "곧 지원 예정",
+    "codexConnected": "Codex 연결됨",
+    "codexNotConnected": "아직 Codex가 연결되지 않음",
     "connectLater": "나중에 연결할게요",
     "finish": "완료 →",
     "doneEyebrow": "모두 준비됐어요 ✨",
@@ -336,7 +382,7 @@
     "goToHome": "홈으로 이동",
     "petsFolderPreviewLabel": "설치된 모습",
     "pluginTerminalLabel": "실시간 터미널",
-    "pluginTerminalHint": "Claude Code를 연결하시나요? 여기서 바로 실행하고 과정을 지켜보세요."
+    "pluginTerminalHint": "에이전트를 연결하시나요? 여기서 설치 명령을 바로 실행하고 과정을 지켜보세요."
   },
   "personality": {
     "role": "펫",

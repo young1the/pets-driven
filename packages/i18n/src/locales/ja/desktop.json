@@ -57,10 +57,34 @@
     "eyebrow": "うちの群れ",
     "greeting": "こんにちは、",
     "greetings": {
-      "morning": ["おはようございます、", "気持ちのいい朝ですね、", "おはよう、", "元気な朝ですね、", "今日も頑張りましょう、"],
-      "afternoon": ["こんにちは、", "いい一日になっていますか、", "お昼どきですね、", "あたたかい午後ですね、", "お昼は食べましたか、"],
-      "evening": ["こんばんは、", "そろそろ一日の終わりですね、", "いい夕暮れですね、", "今日もおつかれさまでした、", "夕焼けがきれいですね、"],
-      "night": ["夜ふかしですね、", "遅くまでおつかれさま、", "まだ起きていますね、", "おだやかな夜ですね、", "無理しないでくださいね、"]
+      "morning": [
+        "おはようございます、",
+        "気持ちのいい朝ですね、",
+        "おはよう、",
+        "元気な朝ですね、",
+        "今日も頑張りましょう、"
+      ],
+      "afternoon": [
+        "こんにちは、",
+        "いい一日になっていますか、",
+        "お昼どきですね、",
+        "あたたかい午後ですね、",
+        "お昼は食べましたか、"
+      ],
+      "evening": [
+        "こんばんは、",
+        "そろそろ一日の終わりですね、",
+        "いい夕暮れですね、",
+        "今日もおつかれさまでした、",
+        "夕焼けがきれいですね、"
+      ],
+      "night": [
+        "夜ふかしですね、",
+        "遅くまでおつかれさま、",
+        "まだ起きていますね、",
+        "おだやかな夜ですね、",
+        "無理しないでくださいね、"
+      ]
     },
     "greetingName": "トレーナーさん！",
     "addPet": "ペットを追加",
@@ -93,7 +117,7 @@
     "accentColor": "アプリのアクセントカラー",
     "accentColorDesc": "アプリ全体のハイライトや、選択中の状態に使う色です。",
     "agentConnection": "エージェント接続",
-    "agentConnectionDesc": "ペットはこのプラグインを通してClaude Codeの作業に反応します。",
+    "agentConnectionDesc": "Claude CodeとCodexを接続すると、エージェントの作業にペットが反応します。",
     "defaultTerminal": "既定のターミナル",
     "defaultTerminalDesc": "アプリ内ターミナルが開くシェルです。システムから検出したものが並びます。「システムの既定」を選ぶと COMSPEC / SHELL に従います。",
     "defaultTerminalSystem": "システムの既定",
@@ -152,6 +176,27 @@
     "notInstalledHint": "プラグインを入れると、エージェントが働くあいだペットが反応します。",
     "cliMissing": "Claude Code CLIが見つかりません。先にClaude Codeをインストールしてから戻ってきてください。",
     "error": "Claude Codeとのやり取りで問題が起きました。",
+    "run": {
+      "install": "プラグインをインストール中",
+      "uninstall": "プラグインを削除中",
+      "close": "閉じる"
+    }
+  },
+  "codexPlugin": {
+    "title": "Codexプラグイン",
+    "checking": "Codexを確認中…",
+    "install": "インストール",
+    "installing": "処理中…",
+    "reinstall": "再インストール",
+    "uninstall": "削除",
+    "retry": "もう一度試す",
+    "installed": "インストール済み",
+    "installedVersion": "インストール済み · v{{version}}",
+    "installedHint": "Codexを接続しました。新しいスレッドで /hooks を開き、pets-drivenのフックを信頼してください。",
+    "notInstalledHint": "プラグインを入れると、Codexが働くあいだペットが反応します。",
+    "cliMissing": "Codex CLIが見つかりません。先にCodexをインストールしてから戻ってきてください。",
+    "error": "Codexとのやり取りで問題が起きました。",
+    "hookTrustHint": "新しいCodexスレッドで /hooks を開き、pets-drivenのフックを信頼してください。",
     "run": {
       "install": "プラグインをインストール中",
       "uninstall": "プラグインを削除中",
@@ -327,7 +372,8 @@
     "claudeConnected": "Claude 接続済み",
     "claudeNotConnected": "Claudeはまだ未接続",
     "codexName": "Codex",
-    "comingSoon": "近日対応",
+    "codexConnected": "Codex 接続済み",
+    "codexNotConnected": "Codexはまだ未接続",
     "connectLater": "後でつなぎます",
     "finish": "完了 →",
     "doneEyebrow": "準備できました ✨",
@@ -336,7 +382,7 @@
     "goToHome": "ホームへ",
     "petsFolderPreviewLabel": "インストール済みの見た目",
     "pluginTerminalLabel": "ライブターミナル",
-    "pluginTerminalHint": "Claude Codeをつなぎますか？ ここでそのまま実行して、様子を見てみましょう。"
+    "pluginTerminalHint": "エージェントをつなぎますか？ ここでインストールコマンドを実行して、様子を見てみましょう。"
   },
   "personality": {
     "role": "ペット",

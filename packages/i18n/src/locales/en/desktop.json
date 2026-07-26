@@ -57,10 +57,34 @@
     "eyebrow": "Your pack",
     "greeting": "Hello,",
     "greetings": {
-      "morning": ["Good morning,", "Rise and shine,", "Morning,", "Off to a fresh start,", "Have a great day,"],
-      "afternoon": ["Good afternoon,", "Hope your day's going well,", "Afternoon,", "Keep it up this afternoon,", "Had lunch yet,"],
-      "evening": ["Good evening,", "Winding down for the day,", "Evening,", "Nice work today,", "Lovely evening,"],
-      "night": ["Working late,", "Burning the midnight oil,", "Still up,", "Cozy night,", "Don't overdo it,"]
+      "morning": [
+        "Good morning,",
+        "Rise and shine,",
+        "Morning,",
+        "Off to a fresh start,",
+        "Have a great day,"
+      ],
+      "afternoon": [
+        "Good afternoon,",
+        "Hope your day's going well,",
+        "Afternoon,",
+        "Keep it up this afternoon,",
+        "Had lunch yet,"
+      ],
+      "evening": [
+        "Good evening,",
+        "Winding down for the day,",
+        "Evening,",
+        "Nice work today,",
+        "Lovely evening,"
+      ],
+      "night": [
+        "Working late,",
+        "Burning the midnight oil,",
+        "Still up,",
+        "Cozy night,",
+        "Don't overdo it,"
+      ]
     },
     "greetingName": "Trainer!",
     "addPet": "Add a pet",
@@ -93,7 +117,7 @@
     "accentColor": "App accent color",
     "accentColorDesc": "The color used across the app for highlights and active states.",
     "agentConnection": "Agent connection",
-    "agentConnectionDesc": "Your pets react to Claude Code sessions through this plugin.",
+    "agentConnectionDesc": "Connect Claude Code and Codex so your pets react while agents work.",
     "defaultTerminal": "Default terminal",
     "defaultTerminalDesc": "The shell the in-app terminal opens, detected from your system. Pick “System default” to follow COMSPEC / SHELL.",
     "defaultTerminalSystem": "System default",
@@ -152,6 +176,27 @@
     "notInstalledHint": "Install the plugin so your pets react while agents work.",
     "cliMissing": "Claude Code CLI not found. Install Claude Code first, then come back.",
     "error": "Something went wrong talking to Claude Code.",
+    "run": {
+      "install": "Installing the plugin",
+      "uninstall": "Removing the plugin",
+      "close": "Close"
+    }
+  },
+  "codexPlugin": {
+    "title": "Codex plugin",
+    "checking": "Checking Codex…",
+    "install": "Install",
+    "installing": "Working…",
+    "reinstall": "Reinstall",
+    "uninstall": "Remove",
+    "retry": "Try again",
+    "installed": "Installed",
+    "installedVersion": "Installed · v{{version}}",
+    "installedHint": "Codex is connected. In a new thread, open /hooks and trust the pets-driven hooks.",
+    "notInstalledHint": "Install the plugin so your pets react while Codex works.",
+    "cliMissing": "Codex CLI not found. Install Codex first, then come back.",
+    "error": "Something went wrong talking to Codex.",
+    "hookTrustHint": "In a new Codex thread, open /hooks and trust the pets-driven hooks.",
     "run": {
       "install": "Installing the plugin",
       "uninstall": "Removing the plugin",
@@ -327,7 +372,8 @@
     "claudeConnected": "Claude connected",
     "claudeNotConnected": "Claude not connected yet",
     "codexName": "Codex",
-    "comingSoon": "Coming soon",
+    "codexConnected": "Codex connected",
+    "codexNotConnected": "Codex not connected yet",
     "connectLater": "I'll connect later",
     "finish": "Finish →",
     "doneEyebrow": "All set ✨",
@@ -336,7 +382,7 @@
     "goToHome": "Go to home",
     "petsFolderPreviewLabel": "Installed looks",
     "pluginTerminalLabel": "Live terminal",
-    "pluginTerminalHint": "Connecting Claude Code? Run it right here and watch it happen."
+    "pluginTerminalHint": "Connecting an agent? Run the install command right here and watch it happen."
   },
   "personality": {
     "role": "Pet",
