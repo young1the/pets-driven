@@ -17,6 +17,11 @@ function setup(overrides = {}) {
       tone: "success" as const,
       summary: "your pets are following along.",
       lastSignal: "Last signal: nothing has arrived yet",
+      endpoint: "http://127.0.0.1:43187/claude-hook",
+      error: null as string | null,
+      activity: [] as { at: number; label: string; accepted: boolean }[],
+      rejectedCount: 0,
+      onSendTest: vi.fn().mockResolvedValue("HTTP/1.1 200 OK"),
     },
     plugin: {
       state: "not-installed" as const,
@@ -59,21 +64,34 @@ describe("SettingsSection", () => {
     expect(onTerminalShell).toHaveBeenCalledWith("");
   });
 
-  it("states the connection as one line, with no ingress URL or test action", () => {
+  it("states the connection as one line, keeping the endpoint and test action folded away", () => {
+    // The card itself stays a sentence. The endpoint and the self-test are a
+    // diagnostic for when that sentence is not enough, so they sit inside a
+    // collapsed disclosure rather than on the card.
     setup({ plugin: { state: "installed" as const, version: "0.1.0", error: null } });
 
     expect(
       screen.getByText("Installed · v0.1.0 — your pets are following along."),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Send test event")).not.toBeInTheDocument();
-    expect(screen.queryByText(/127\.0\.0\.1/)).not.toBeInTheDocument();
+    expect(screen.getByText("Connection details").closest("details")?.open).toBe(false);
   });
 
   it("shows the last hook signal on the connection card, whatever the plugin state", () => {
     // This line is the only hook-traffic read-out a release build has: the
     // debug tab is stripped by the DEV gate in main-window.tsx, so it has to
     // read on the settings card even before the plugin is installed.
-    setup({ hook: { tone: "info" as const, summary: "", lastSignal: "Last signal: PreToolUse" } });
+    setup({
+      hook: {
+        tone: "info" as const,
+        summary: "",
+        lastSignal: "Last signal: PreToolUse",
+        endpoint: "http://127.0.0.1:43187/claude-hook",
+        error: null,
+        activity: [],
+        rejectedCount: 0,
+        onSendTest: vi.fn(),
+      },
+    });
 
     expect(screen.getByText("Last signal: PreToolUse")).toBeInTheDocument();
   });

@@ -272,6 +272,11 @@ export function MainWindowSurface({
           // already re-renders this surface every couple of seconds, so the
           // relative time stays current without a clock of its own.
           lastSignal: describeHookLastSignal(claudeHookIngressStatus, t, Date.now()),
+          endpoint: claudeHookIngressStatus.url,
+          error: claudeHookIngressStatus.error,
+          activity: claudeHookIngressStatus.recent,
+          rejectedCount: claudeHookIngressStatus.rejectedCount,
+          onSendTest: () => desktopGateway.sendTestHookEvent(),
         },
         plugin: claudePlugin.status,
         pluginBusy: claudePlugin.busy,

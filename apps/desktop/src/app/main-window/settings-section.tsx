@@ -1,8 +1,10 @@
 import { type BadgeTone, FolderIcon, TerminalPreview } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
 import { type CSSProperties, useState } from "react";
+import type { ClaudeHookIngressActivity } from "@/adapters/agent-events/claude-hook-ingress";
 import type { ClaudePluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
+import { HookActivityPanel } from "@/app/main-window/hook-activity-panel";
 import { PluginRunTerminal } from "@/app/main-window/plugin-run-terminal";
 import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
@@ -23,8 +25,19 @@ export interface SettingsSectionProps {
    * `summary` says whether the listener is up; `lastSignal` is the one line
    * that says whether a hook actually arrived, and it is the only place a
    * release build can answer that — keep it out of the dev-only debug tab.
+   * The rest feeds the collapsed diagnostics panel below the card, for when
+   * that one line says "nothing has arrived yet" and the user needs to know why.
    */
-  hook: { tone: BadgeTone; summary: string; lastSignal: string };
+  hook: {
+    tone: BadgeTone;
+    summary: string;
+    lastSignal: string;
+    endpoint: string;
+    error: string | null;
+    activity: ClaudeHookIngressActivity[];
+    rejectedCount: number;
+    onSendTest: () => Promise<string>;
+  };
   /** Bundled Claude Code plugin install state; null while the check runs. */
   plugin: ClaudePluginStatus | null;
   pluginBusy: boolean;
@@ -414,6 +427,13 @@ export function SettingsSection({
                 </button>
               ) : null}
             </div>
+            <HookActivityPanel
+              activity={hook.activity}
+              endpoint={hook.endpoint}
+              error={hook.error}
+              onSendTest={hook.onSendTest}
+              rejectedCount={hook.rejectedCount}
+            />
             {pluginRun && (
               <PluginRunTerminal
                 available={terminalAvailable}

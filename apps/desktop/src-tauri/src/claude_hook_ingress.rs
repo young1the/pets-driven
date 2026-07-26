@@ -1,7 +1,7 @@
 use std::{
     env,
     io::{Read, Write},
-    net::{TcpListener, TcpStream},
+    net::{SocketAddr, TcpListener, TcpStream},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -29,17 +29,44 @@ const PETS_DRIVEN_PET_DELETE_PATH: &str = "/pets-driven/pet/delete";
 const PETS_DRIVEN_API_PATH: &str = "/pets-driven/api";
 const PETS_DRIVEN_STATE_CHANGED_EVENT: &str = "pets-driven:state-changed";
 const PETS_DRIVEN_PET_COMMAND_EVENT: &str = "pets-driven:pet-command";
+/// Cap on the self-test's loopback round trip. It talks to a listener in this
+/// same process, so anything slower than this means the listener is wedged and
+/// the button should say so rather than hang the settings tab.
+const SELF_TEST_TIMEOUT: Duration = Duration::from_secs(2);
 
 pub(crate) type ClaudeHookIngressStatusHandle = Arc<Mutex<ClaudeHookIngressStatus>>;
 
 pub(crate) struct ClaudeHookIngressSharedStatus(pub(crate) ClaudeHookIngressStatusHandle);
 
+/// How many recent ingress requests the status keeps. Long enough to show that
+/// a session is producing a stream of hooks, short enough that the status stays
+/// a small poll response.
+const INGRESS_ACTIVITY_LIMIT: usize = 12;
+
+/// One line of the in-app ingress activity log — the release build's substitute
+/// for tailing stderr.
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ClaudeHookIngressActivity {
+    /// Unix epoch milliseconds when the request reached the ingress.
+    at: u64,
+    /// `hook_event_name` for an accepted hook, the HTTP status for a rejected
+    /// request.
+    ///
+    /// PRIVACY: both are routing facts, never payload. See `last_event_name`.
+    label: String,
+    /// `false` for a request the ingress turned away, so the log separates
+    /// "nothing is arriving" from "something arrives and bounces".
+    accepted: bool,
+}
+
 /// What the settings tab can say about the ingress without a console.
 ///
-/// `state` only ever answers "did the listener claim the port"; the three
-/// `last_event_*` / `received_count` fields answer the separate question "is a
-/// hook actually arriving", which is invisible in a release build otherwise
-/// (the process has no console, so the `eprintln!` traces below go nowhere).
+/// `state` only ever answers "did the listener claim the port"; the
+/// `last_event_*`, `received_count`, `rejected_count` and `recent` fields answer
+/// the separate question "is a hook actually arriving", which is invisible in a
+/// release build otherwise (the process has no console, so the `eprintln!`
+/// traces below go nowhere).
 #[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ClaudeHookIngressStatus {
@@ -51,6 +78,10 @@ pub(crate) struct ClaudeHookIngressStatus {
     last_event_at: Option<u64>,
     /// Hook events accepted since the app started. Never persisted.
     received_count: u64,
+    /// Requests the ingress turned away since the app started. A hook that is
+    /// posted but malformed, or aimed at a path this build does not serve,
+    /// otherwise looks exactly like no hook at all.
+    rejected_count: u64,
     /// The most recent event's `hook_event_name`.
     ///
     /// PRIVACY: this is the only payload-derived value that leaves this module,
@@ -58,6 +89,8 @@ pub(crate) struct ClaudeHookIngressStatus {
     /// already uses. Hook payloads carry `prompt` and `tool_input.command` in
     /// clear text; nothing outside that whitelist may be copied in here.
     last_event_name: Option<String>,
+    /// The last `INGRESS_ACTIVITY_LIMIT` requests, newest first.
+    recent: Vec<ClaudeHookIngressActivity>,
 }
 
 impl ClaudeHookIngressStatus {
@@ -68,7 +101,9 @@ impl ClaudeHookIngressStatus {
             error,
             last_event_at: None,
             received_count: 0,
+            rejected_count: 0,
             last_event_name: None,
+            recent: Vec::new(),
         }
     }
 
@@ -84,12 +119,40 @@ impl ClaudeHookIngressStatus {
         Self::with_state("error", Some(error))
     }
 
+    /// Push one line onto the activity log, newest first, dropping the oldest
+    /// past the cap so a long session cannot grow the poll response.
+    fn push_activity(&mut self, label: String, accepted: bool, at: u64) {
+        self.recent.insert(
+            0,
+            ClaudeHookIngressActivity {
+                at,
+                label,
+                accepted,
+            },
+        );
+        self.recent.truncate(INGRESS_ACTIVITY_LIMIT);
+    }
+
     /// Fold one accepted hook event into the status. `received_at` is injected
     /// so the counter can be tested without a clock.
     fn record_event(&mut self, payload: &serde_json::Value, received_at: u64) {
         self.received_count = self.received_count.saturating_add(1);
         self.last_event_at = Some(received_at);
         self.last_event_name = claude_hook_event_name(payload).map(str::to_string);
+        self.push_activity(
+            self.last_event_name
+                .clone()
+                .unwrap_or_else(|| "-".to_string()),
+            true,
+            received_at,
+        );
+    }
+
+    /// Fold one turned-away request into the status. `status` is the HTTP status
+    /// this module chose, never anything read out of the request.
+    fn record_rejection(&mut self, status: &str, rejected_at: u64) {
+        self.rejected_count = self.rejected_count.saturating_add(1);
+        self.push_activity(status.to_string(), false, rejected_at);
     }
 }
 
@@ -192,7 +255,8 @@ fn parse_http_request(request: &[u8]) -> Result<(String, serde_json::Value), Str
     let payload = if body.trim().is_empty() {
         serde_json::json!({})
     } else {
-        serde_json::from_str(body).map_err(|error| format!("Could not parse ingress JSON: {error}"))?
+        serde_json::from_str(body)
+            .map_err(|error| format!("Could not parse ingress JSON: {error}"))?
     };
 
     Ok((path.to_string(), payload))
@@ -251,7 +315,11 @@ fn hatch_input_from_payload(payload: &serde_json::Value) -> Result<HatchPet, Cor
     HatchPet::from_json(payload)
 }
 
-fn handle_hatch_request(app: &tauri::AppHandle, payload: &serde_json::Value, stream: &mut TcpStream) {
+fn handle_hatch_request(
+    app: &tauri::AppHandle,
+    payload: &serde_json::Value,
+    stream: &mut TcpStream,
+) {
     let input = match hatch_input_from_payload(payload) {
         Ok(input) => input,
         Err(error) => {
@@ -403,7 +471,8 @@ fn api_endpoint_descriptors() -> serde_json::Value {
 }
 
 fn handle_api_request(stream: &mut TcpStream) {
-    let body = serde_json::json!({ "ok": true, "endpoints": api_endpoint_descriptors() }).to_string();
+    let body =
+        serde_json::json!({ "ok": true, "endpoints": api_endpoint_descriptors() }).to_string();
     let _ = write_http_response(stream, "200 OK", &body);
 }
 
@@ -557,7 +626,9 @@ fn claude_hook_payload_first_string_field<'a>(
 /// `claude_hook_ingress_log_line` keeps to. Everything else on a hook payload —
 /// `prompt`, `message`, `tool_input.command` — is user content and stays here.
 fn claude_hook_event_name(payload: &serde_json::Value) -> Option<&str> {
-    payload.get("hook_event_name").and_then(|value| value.as_str())
+    payload
+        .get("hook_event_name")
+        .and_then(|value| value.as_str())
 }
 
 fn claude_hook_ingress_log_line(payload: &serde_json::Value) -> String {
@@ -612,6 +683,15 @@ fn record_claude_hook_ingress_event(
     }
 }
 
+/// Mark that a request reached the ingress and was turned away. Only the HTTP
+/// status this module picked is recorded — the reason text can quote the
+/// request, so it stays on stderr.
+fn record_claude_hook_ingress_rejection(status: &ClaudeHookIngressStatusHandle, http_status: &str) {
+    if let Ok(mut current_status) = status.lock() {
+        current_status.record_rejection(http_status, unix_epoch_millis());
+    }
+}
+
 fn handle_claude_hook_connection(
     app: tauri::AppHandle,
     status: ClaudeHookIngressStatusHandle,
@@ -621,6 +701,7 @@ fn handle_claude_hook_connection(
         Ok(request) => request,
         Err(error) => {
             eprintln!("[pets-driven-hook] rejected 400: {error}");
+            record_claude_hook_ingress_rejection(&status, "400 Bad Request");
             let _ = write_http_response(
                 &mut stream,
                 "400 Bad Request",
@@ -686,6 +767,7 @@ fn handle_claude_hook_connection(
             }
             _ => {
                 eprintln!("[pets-driven-hook] rejected 404: unknown ingress path {path}");
+                record_claude_hook_ingress_rejection(&status, "404 Not Found");
                 let _ = write_http_response(
                     &mut stream,
                     "404 Not Found",
@@ -697,6 +779,7 @@ fn handle_claude_hook_connection(
             // The reason (never the payload) goes to stderr: forward's post()
             // discards responses, so a silent 400 here is invisible on both ends.
             eprintln!("[pets-driven-hook] rejected 400: {error}");
+            record_claude_hook_ingress_rejection(&status, "400 Bad Request");
             let _ = write_http_response(
                 &mut stream,
                 "400 Bad Request",
@@ -755,11 +838,16 @@ pub(crate) fn get_claude_hook_ingress_status(
         .map_err(|error| format!("Could not read Claude hook ingress status: {error}"))
 }
 
+/// Post a synthetic hook to this app's own ingress and return its HTTP status
+/// line.
+///
+/// It deliberately goes over the loopback socket rather than emitting the event
+/// straight to the window: the question a release build cannot answer is whether
+/// the *listener* is reachable and routing, so the self-test has to travel the
+/// same path a real hook does — bind, parse, record, emit. A direct emit would
+/// pass even with the port taken by another process.
 #[tauri::command]
-pub(crate) fn emit_test_claude_hook_ingress_event(
-    app: tauri::AppHandle,
-    cwd: Option<String>,
-) -> Result<(), String> {
+pub(crate) fn send_test_claude_hook_ingress_event(cwd: Option<String>) -> Result<String, String> {
     let cwd = cwd.unwrap_or_else(|| {
         env::current_dir()
             .map(|path| path.display().to_string())
@@ -770,10 +858,38 @@ pub(crate) fn emit_test_claude_hook_ingress_event(
         "sourceId": "agent-a",
         "cwd": cwd,
         "message": "Test Claude hook",
-    });
+    })
+    .to_string();
 
-    app.emit_to("main", CLAUDE_HOOK_INGRESS_EVENT, payload)
-        .map_err(|error| format!("Could not emit Claude hook test event: {error}"))
+    post_to_own_ingress(CLAUDE_HOOK_INGRESS_PATH, &payload)
+}
+
+/// The status line of a loopback POST to our own ingress, e.g. `HTTP/1.1 200 OK`.
+fn post_to_own_ingress(path: &str, body: &str) -> Result<String, String> {
+    let address = SocketAddr::from(([127, 0, 0, 1], CLAUDE_HOOK_INGRESS_PORT));
+    let mut stream = TcpStream::connect_timeout(&address, SELF_TEST_TIMEOUT)
+        .map_err(|error| format!("Could not reach the ingress at {address}: {error}"))?;
+
+    stream.set_read_timeout(Some(SELF_TEST_TIMEOUT)).ok();
+    stream.set_write_timeout(Some(SELF_TEST_TIMEOUT)).ok();
+
+    let request = format!(
+        "POST {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+        body.as_bytes().len()
+    );
+
+    stream
+        .write_all(request.as_bytes())
+        .map_err(|error| format!("Could not post the test hook: {error}"))?;
+
+    let mut response = Vec::new();
+    stream
+        .read_to_end(&mut response)
+        .map_err(|error| format!("Could not read the ingress response: {error}"))?;
+
+    let text = String::from_utf8_lossy(&response);
+
+    Ok(text.lines().next().unwrap_or_default().trim().to_string())
 }
 
 #[cfg(test)]
@@ -805,7 +921,11 @@ mod tests {
             .as_array()
             .expect("descriptors should be a JSON array")
             .iter()
-            .map(|descriptor| descriptor["path"].as_str().expect("descriptor should have a path"))
+            .map(|descriptor| {
+                descriptor["path"]
+                    .as_str()
+                    .expect("descriptor should have a path")
+            })
             .collect();
 
         for expected in [
@@ -822,7 +942,10 @@ mod tests {
             PETS_DRIVEN_PET_DELETE_PATH,
             PETS_DRIVEN_API_PATH,
         ] {
-            assert!(paths.contains(&expected), "missing api descriptor for {expected}");
+            assert!(
+                paths.contains(&expected),
+                "missing api descriptor for {expected}"
+            );
         }
     }
 
@@ -838,8 +961,10 @@ mod tests {
     #[test]
     fn hatch_ingress_parses_path_and_body() {
         let body = r#"{"cwd":"D:/proj","assetId":"cato","name":"Rex","personalityId":"playful"}"#;
-        let request =
-            format!("POST /pets-driven/hatch HTTP/1.1\r\nContent-Length: {}\r\n\r\n{body}", body.len());
+        let request = format!(
+            "POST /pets-driven/hatch HTTP/1.1\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        );
         let (path, parsed) = parse_http_request(request.as_bytes()).expect("request should parse");
 
         assert_eq!(path, "/pets-driven/hatch");
@@ -877,8 +1002,10 @@ mod tests {
     #[test]
     fn show_hide_ingress_parses_cwd_field() {
         let body = r#"{"cwd":"D:/my-project"}"#;
-        let request =
-            format!("POST /pets-driven/show HTTP/1.1\r\nContent-Length: {}\r\n\r\n{body}", body.len());
+        let request = format!(
+            "POST /pets-driven/show HTTP/1.1\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        );
         let (path, parsed) = parse_http_request(request.as_bytes()).expect("should parse");
 
         assert_eq!(path, "/pets-driven/show");
@@ -932,7 +1059,10 @@ mod tests {
     fn claude_hook_ingress_status_counts_events_and_keeps_the_latest_time() {
         let mut status = ClaudeHookIngressStatus::listening();
 
-        status.record_event(&serde_json::json!({ "hook_event_name": "PreToolUse" }), 1_000);
+        status.record_event(
+            &serde_json::json!({ "hook_event_name": "PreToolUse" }),
+            1_000,
+        );
         assert_eq!(status.received_count, 1);
         assert_eq!(status.last_event_at, Some(1_000));
         assert_eq!(status.last_event_name.as_deref(), Some("PreToolUse"));
@@ -990,5 +1120,79 @@ mod tests {
         assert_eq!(status.url, "http://127.0.0.1:43187/claude-hook");
         assert_eq!(status.state, "error");
         assert_eq!(status.error, Some("address already in use".to_string()));
+    }
+
+    #[test]
+    fn claude_hook_ingress_activity_lists_arrivals_newest_first() {
+        let mut status = ClaudeHookIngressStatus::listening();
+
+        status.record_event(
+            &serde_json::json!({ "hook_event_name": "PreToolUse" }),
+            1_000,
+        );
+        status.record_event(&serde_json::json!({ "hook_event_name": "Stop" }), 2_000);
+
+        let labels: Vec<&str> = status
+            .recent
+            .iter()
+            .map(|line| line.label.as_str())
+            .collect();
+        assert_eq!(labels, vec!["Stop", "PreToolUse"]);
+        assert!(status.recent.iter().all(|line| line.accepted));
+        assert_eq!(status.recent[0].at, 2_000);
+    }
+
+    #[test]
+    fn claude_hook_ingress_activity_separates_rejections_from_arrivals() {
+        // "Nothing is arriving" and "something arrives and bounces" look
+        // identical without this: both leave receivedCount at zero.
+        let mut status = ClaudeHookIngressStatus::listening();
+
+        status.record_rejection("404 Not Found", 500);
+        status.record_event(&serde_json::json!({ "hook_event_name": "Stop" }), 900);
+
+        assert_eq!(status.received_count, 1);
+        assert_eq!(status.rejected_count, 1);
+        assert_eq!(status.recent[1].label, "404 Not Found");
+        assert!(!status.recent[1].accepted);
+        assert!(status.recent[0].accepted);
+    }
+
+    #[test]
+    fn claude_hook_ingress_activity_stays_bounded() {
+        let mut status = ClaudeHookIngressStatus::listening();
+
+        for index in 0..(INGRESS_ACTIVITY_LIMIT as u64 + 5) {
+            status.record_event(&serde_json::json!({ "hook_event_name": "Stop" }), index);
+        }
+
+        assert_eq!(status.recent.len(), INGRESS_ACTIVITY_LIMIT);
+        // The cap drops the oldest, never the newest.
+        assert_eq!(status.recent[0].at, INGRESS_ACTIVITY_LIMIT as u64 + 4);
+        assert_eq!(status.received_count, INGRESS_ACTIVITY_LIMIT as u64 + 5);
+    }
+
+    #[test]
+    fn claude_hook_ingress_activity_keeps_only_routing_fields() {
+        // The activity log is polled straight into the settings tab, so it is
+        // bound by the same whitelist as the rest of the status.
+        let mut status = ClaudeHookIngressStatus::listening();
+        status.record_event(
+            &serde_json::json!({
+                "hook_event_name": "PreToolUse",
+                "cwd": "D:\\cms",
+                "prompt": "secret user prompt",
+                "tool_input": { "command": "secret command" },
+            }),
+            1_700_000_000_000,
+        );
+
+        let serialized = serde_json::to_string(&status.recent).expect("activity should serialize");
+
+        assert!(serialized.contains("\"label\":\"PreToolUse\""));
+        assert!(serialized.contains("\"accepted\":true"));
+        assert!(!serialized.contains("secret user prompt"));
+        assert!(!serialized.contains("secret command"));
+        assert!(!serialized.contains("cms"));
     }
 }

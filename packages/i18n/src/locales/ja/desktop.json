@@ -118,6 +118,17 @@
       "minutesAgo": "{{n}}分前",
       "hoursAgo": "{{n}}時間前",
       "daysAgo": "{{n}}日前"
+    },
+    "diagnostics": {
+      "title": "接続の詳細",
+      "endpoint": "エンドポイント",
+      "endpointUnknown": "デスクトップアプリの外では確認できません",
+      "errorLabel": "エラー",
+      "sendTest": "テストイベントを送る",
+      "testing": "送信中…",
+      "recent": "最近の受信",
+      "rejected": "拒否{{n}}件",
+      "empty": "まだアプリに届いたものはありません。"
     }
   },
   "claudePlugin": {

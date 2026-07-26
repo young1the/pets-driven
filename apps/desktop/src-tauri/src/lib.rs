@@ -79,7 +79,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             claude_hook_ingress::get_claude_hook_ingress_status,
-            claude_hook_ingress::emit_test_claude_hook_ingress_event,
+            claude_hook_ingress::send_test_claude_hook_ingress_event,
             claude_plugin::get_claude_plugin_status,
             claude_plugin::plan_claude_plugin_command,
             claude_plugin::install_claude_plugin,

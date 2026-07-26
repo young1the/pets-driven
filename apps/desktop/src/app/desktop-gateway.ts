@@ -150,6 +150,13 @@ export type DesktopGateway = {
 
   /** Current status of the Claude hook ingress listener. */
   getClaudeHookIngressStatus(): Promise<ClaudeHookIngressStatus>;
+  /**
+   * Post a synthetic hook to our own ingress and resolve with its HTTP status
+   * line. It travels the real loopback socket, so a success proves the listener
+   * is reachable and routing — the one thing a packaged build, with no console
+   * to read, otherwise cannot check.
+   */
+  sendTestHookEvent(): Promise<string>;
   /** Close every open pet overlay window. */
   closeAllPetWindows(): Promise<void>;
   /**
@@ -368,11 +375,21 @@ export const desktopGateway: DesktopGateway = {
         error: null,
         lastEventAt: null,
         receivedCount: 0,
+        rejectedCount: 0,
         lastEventName: null,
+        recent: [],
       };
     }
 
     return await invoke<ClaudeHookIngressStatus>("get_claude_hook_ingress_status");
+  },
+
+  async sendTestHookEvent(): Promise<string> {
+    if (!isTauri()) {
+      throw new Error("The hook ingress self-test is only available in the desktop app.");
+    }
+
+    return await invoke<string>("send_test_claude_hook_ingress_event", {});
   },
 
   async closeAllPetWindows() {

@@ -16,9 +16,29 @@ export type ClaudeHookIngressStatus = {
   /** Hook events accepted since the app started. Not persisted across restarts. */
   receivedCount: number;
   /**
+   * Requests the ingress turned away since the app started. A hook posted to a
+   * path this build does not serve, or with a body it cannot parse, otherwise
+   * looks exactly like no hook at all.
+   */
+  rejectedCount: number;
+  /**
    * The most recent event's `hook_event_name`, or null when the payload carried
    * none. The backend copies nothing else off a hook payload — see the privacy
    * note on the Rust struct.
    */
   lastEventName: string | null;
+  /** The last twelve requests, newest first. */
+  recent: ClaudeHookIngressActivity[];
+};
+
+/** Mirrors `ClaudeHookIngressActivity` in the same Rust module. */
+export type ClaudeHookIngressActivity = {
+  /** Unix epoch milliseconds when the request reached the ingress. */
+  at: number;
+  /**
+   * `hook_event_name` for an accepted hook, the HTTP status for a rejected one.
+   * Both are routing facts; no payload field ever appears here.
+   */
+  label: string;
+  accepted: boolean;
 };

@@ -47,8 +47,8 @@ from the app's own frontend through `@tauri-apps/api`'s `invoke()`.
 
 | Command | Module | Args | Returns | Description |
 | --- | --- | --- | --- | --- |
-| `get_claude_hook_ingress_status` | `claude_hook_ingress` | — | `{ url, state, error? }` | Current status of the local HTTP ingress (pending / listening / error). |
-| `emit_test_claude_hook_ingress_event` | `claude_hook_ingress` | `cwd?` | `()` | Emits a synthetic hook event for the given (or current) `cwd`, for manual testing. |
+| `get_claude_hook_ingress_status` | `claude_hook_ingress` | — | `{ url, state, error?, lastEventAt?, lastEventName?, receivedCount, rejectedCount, recent[] }` | Status of the local HTTP ingress (pending / listening / error) plus the traffic it has seen. `recent` is the last 12 requests, newest first, each `{ at, label, accepted }` — a release build has no console, so this is where "is a hook arriving?" gets answered. |
+| `send_test_claude_hook_ingress_event` | `claude_hook_ingress` | `cwd?` | HTTP status line | Posts a synthetic hook to our own loopback ingress for the given (or current) `cwd`. Travels the real socket, so it proves the listener is reachable and routing. |
 | `get_claude_plugin_status` | `claude_plugin` | — | `ClaudePluginStatus` | Whether the Claude Code plugin is installed. |
 | `install_claude_plugin` | `claude_plugin` | — | `ClaudePluginStatus` | Installs the bundled Claude Code plugin. |
 | `uninstall_claude_plugin` | `claude_plugin` | — | `ClaudePluginStatus` | Uninstalls the Claude Code plugin. |

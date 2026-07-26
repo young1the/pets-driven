@@ -118,6 +118,17 @@
       "minutesAgo": "{{n}}분 전",
       "hoursAgo": "{{n}}시간 전",
       "daysAgo": "{{n}}일 전"
+    },
+    "diagnostics": {
+      "title": "연결 상세",
+      "endpoint": "주소",
+      "endpointUnknown": "데스크톱 앱 밖에서는 확인할 수 없어요",
+      "errorLabel": "오류",
+      "sendTest": "테스트 이벤트 보내기",
+      "testing": "보내는 중…",
+      "recent": "최근 수신",
+      "rejected": "거절 {{n}}건",
+      "empty": "아직 앱에 도착한 게 없어요."
     }
   },
   "claudePlugin": {

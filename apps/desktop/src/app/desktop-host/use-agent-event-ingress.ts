@@ -14,7 +14,9 @@ function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
     error: isTauri() ? null : "Claude hook ingress is only available in Tauri.",
     lastEventAt: null,
     receivedCount: 0,
+    rejectedCount: 0,
     lastEventName: null,
+    recent: [],
   };
 }
 

@@ -118,6 +118,17 @@
       "minutesAgo": "{{n}}m ago",
       "hoursAgo": "{{n}}h ago",
       "daysAgo": "{{n}}d ago"
+    },
+    "diagnostics": {
+      "title": "Connection details",
+      "endpoint": "Endpoint",
+      "endpointUnknown": "not available outside the desktop app",
+      "errorLabel": "Error",
+      "sendTest": "Send a test event",
+      "testing": "Sending…",
+      "recent": "Recent traffic",
+      "rejected": "{{n}} turned away",
+      "empty": "Nothing has reached the app yet."
     }
   },
   "claudePlugin": {
