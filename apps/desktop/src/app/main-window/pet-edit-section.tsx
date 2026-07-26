@@ -182,32 +182,6 @@ export function PetEditSection({
             </label>
 
             <div style={{ marginTop: "18px" }}>
-              <span style={fieldLabelStyle}>{t("edit.look")}</span>
-              {assetOptions.length > 0 ? (
-                <>
-                  <PetLookStrip
-                    onSelect={(assetId) => onAssetId?.(assetId)}
-                    packages={assetOptions}
-                    selectedAssetId={pet.assetId}
-                  />
-                  <p
-                    style={{
-                      margin: "6px 0 0",
-                      fontSize: "12.5px",
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    {t("edit.lookHint")}
-                  </p>
-                </>
-              ) : (
-                <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)" }}>
-                  {t("edit.lookEmpty")}
-                </p>
-              )}
-            </div>
-
-            <div style={{ marginTop: "18px" }}>
               <span style={fieldLabelStyle}>{t("edit.workingFolder")}</span>
               <div
                 style={{
@@ -301,6 +275,49 @@ export function PetEditSection({
               </div>
             </div>
 
+            <label style={{ display: "block", marginTop: "18px" }}>
+              <span style={fieldLabelStyle}>{t("edit.note")}</span>
+              <textarea
+                onChange={(event) => onMemo(event.target.value)}
+                placeholder={t("edit.notePlaceholder")}
+                rows={3}
+                style={{
+                  ...textControlStyle,
+                  fontFamily: "var(--font-body)",
+                  fontSize: "14px",
+                  lineHeight: 1.5,
+                  resize: "none",
+                }}
+                value={pet.memo}
+              />
+            </label>
+
+            <div style={{ marginTop: "18px" }}>
+              <span style={fieldLabelStyle}>{t("edit.look")}</span>
+              {assetOptions.length > 0 ? (
+                <>
+                  <PetLookStrip
+                    onSelect={(assetId) => onAssetId?.(assetId)}
+                    packages={assetOptions}
+                    selectedAssetId={pet.assetId}
+                  />
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: "12.5px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    {t("edit.lookHint")}
+                  </p>
+                </>
+              ) : (
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)" }}>
+                  {t("edit.lookEmpty")}
+                </p>
+              )}
+            </div>
+
             <div style={{ marginTop: "18px" }}>
               <span style={fieldLabelStyle}>{t("edit.personality")}</span>
               <div role="radiogroup" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -333,23 +350,6 @@ export function PetEditSection({
                 })}
               </div>
             </div>
-
-            <label style={{ display: "block", marginTop: "18px" }}>
-              <span style={fieldLabelStyle}>{t("edit.note")}</span>
-              <textarea
-                onChange={(event) => onMemo(event.target.value)}
-                placeholder={t("edit.notePlaceholder")}
-                rows={3}
-                style={{
-                  ...textControlStyle,
-                  fontFamily: "var(--font-body)",
-                  fontSize: "14px",
-                  lineHeight: 1.5,
-                  resize: "none",
-                }}
-                value={pet.memo}
-              />
-            </label>
 
             <div
               style={{
