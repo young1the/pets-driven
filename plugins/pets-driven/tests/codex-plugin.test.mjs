@@ -50,6 +50,23 @@ for (const eventName of [
   assert.doesNotMatch(commandHook.command, /PLUGIN_ROOT|plugins\/cache|run-hook|bash/i);
 }
 
+const claudeHookConfig = readJson(join(pluginRoot, "hooks", "hooks.json"));
+for (const eventName of [
+  "UserPromptSubmit",
+  "PreToolUse",
+  "PostToolUse",
+  "PermissionRequest",
+  "Notification",
+  "StopFailure",
+  "Stop",
+]) {
+  assert.equal(
+    Array.isArray(claudeHookConfig.hooks[eventName]),
+    true,
+    `Claude ${eventName} should be configured`,
+  );
+}
+
 const hatchSkill = readFileSync(join(pluginRoot, "skills", "hatch", "SKILL.md"), "utf8");
 assert.match(hatchSkill, /\.\.\/\.\.\/commands\/hatch\.md/);
 
