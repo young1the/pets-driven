@@ -2,6 +2,7 @@ import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personali
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-ingress";
 import { PetsDrivenApp } from "@/app/pets-driven-app";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
@@ -415,6 +416,118 @@ describe("pet window product route", () => {
     expect(petAFrame?.window.x).toBeLessThan(342);
     expect(petBFrame?.window.x).toBeGreaterThan(310);
     expect(petBFrame?.window.x).toBeLessThan(342);
+  });
+
+  it("preserves an existing pet's agent state when another pet is added", async () => {
+    const stateAfterHatch: PetsDrivenState = {
+      ...testPetsDrivenState,
+      pets: [
+        ...testPetsDrivenState.pets,
+        {
+          id: "pet-b",
+          workingDirectoryId: null,
+          assetId: "boba",
+          profileId: "profile-pet-b",
+          name: "Boba",
+          adoptedAt: 2,
+          archived: false,
+          visible: true,
+        },
+      ],
+      petProfiles: [
+        ...testPetsDrivenState.petProfiles,
+        {
+          id: "profile-pet-b",
+          petAssetId: "boba",
+          personalityId: "playful",
+          personality: createPlayfulPersonality(),
+        },
+      ],
+    };
+
+    invokeMock.mockImplementation(async (command) => {
+      if (command === "list_codex_pet_packages") {
+        return [
+          {
+            id: "boba",
+            displayName: "Boba",
+            description: "A cozy Petdex pet.",
+            spritesheetPath: "boba/spritesheet.webp",
+          },
+        ];
+      }
+      if (command === "get_claude_hook_ingress_status") {
+        return {
+          url: "http://127.0.0.1:43187/claude-hook",
+          state: "listening",
+          error: null,
+        };
+      }
+      if (command === "read_pets_driven_state") {
+        return testPetsDrivenState;
+      }
+      if (command === "hatch_pet_record") {
+        return stateAfterHatch;
+      }
+
+      return undefined;
+    });
+
+    render(<PetsDrivenApp />);
+
+    await screen.findByRole("button", { name: "Open Otto's details" });
+    showAllAdoptedPets();
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({ petId: "pet-a" }),
+      );
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
+        payload: {
+          hook_event_name: "PermissionRequest",
+          session_id: "session-a",
+          cwd: "D:\\cms",
+          message: "Allow Edit?",
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          petId: "pet-a",
+          overlay: expect.objectContaining({ kind: "agent-channel", status: "waiting" }),
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add a pet" }));
+    fireEvent.click(await screen.findByText("Boba"));
+    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Looks good/ }));
+    tauriEventMocks.emitTo.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /Adopt without a folder/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Open Pets-Driven/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText("1 on the desktop")).toBeInTheDocument();
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          petId: "pet-a",
+          overlay: expect.objectContaining({ kind: "agent-channel", status: "waiting" }),
+        }),
+      );
+    });
   });
 
   it("opens the pet context menu popup when body.contextmenu input arrives at the host", async () => {

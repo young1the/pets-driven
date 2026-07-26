@@ -260,7 +260,7 @@ function PetsDrivenHostApp() {
             devFixture?.petPackages === "empty" ? EMPTY_PET_PACKAGES_GATEWAY : desktopGateway
           }
           onDone={() => navigate("home")}
-          onStateChange={applyPetsDrivenState}
+          onStateChange={applyReloadedPetsDrivenState}
           state={petsDrivenState}
         />
       </Suspense>
