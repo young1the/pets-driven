@@ -54,12 +54,11 @@ export type PetActivityKind =
   | "preening"
   | "scanningNervously"
   | "appraising"
-  // Working beats — what the pet is doing while its bound agent runs.
+  // Working beats — what the pet is doing while its bound agent runs. One per
+  // work-* decision kind; adding a kind without an activity here leaves the
+  // capsule on the flat "Working" fallback.
   | "headsDown"
-  | "tinkering"
   | "mullingOver"
-  | "fussingOver"
-  | "dawdling"
   | "pacing";
 
 /**

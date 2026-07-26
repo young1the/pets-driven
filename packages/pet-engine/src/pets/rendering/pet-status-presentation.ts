@@ -178,12 +178,10 @@ const SIGNATURE_ROW_ACTIVITY: ReadonlySet<PetActivityKind> = new Set([
   "preening",
   "scanningNervously",
   "appraising",
-  // Working poses whose choreography leans on the review/failed rows between
-  // work passes — a pondering pet must still read as "Mulling it over", not
-  // "Reviewing".
-  "tinkering",
+  // work-review holds the `review` row, which is otherwise task-owned — without
+  // this exemption a reviewing pet would read as "Reviewing" rather than
+  // "Mulling it over".
   "mullingOver",
-  "fussingOver",
 ]);
 
 /** English localization fallbacks; hosts translate via labelKey (petStatus.*). */
@@ -234,10 +232,7 @@ const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   scanningNervously: "Scanning nervously",
   appraising: "Appraising",
   headsDown: "Heads down",
-  tinkering: "Tinkering away",
   mullingOver: "Mulling it over",
-  fussingOver: "Fussing over it",
-  dawdling: "Taking it easy",
   pacing: "Pacing about",
 };
 
@@ -298,10 +293,7 @@ const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   // Working beats keep the "working" mood family so the capsule still reads as
   // agent work; the emote is what carries the personality.
   headsDown: activityEntry("headsDown", "working", "none"),
-  tinkering: activityEntry("tinkering", "working", "note"),
   mullingOver: activityEntry("mullingOver", "thinking", "dots"),
-  fussingOver: activityEntry("fussingOver", "confused", "sweat"),
-  dawdling: activityEntry("dawdling", "sleepy", "zzz"),
   pacing: activityEntry("pacing", "working", "dots"),
 };
 

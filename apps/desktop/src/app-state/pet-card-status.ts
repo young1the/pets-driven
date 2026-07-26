@@ -124,10 +124,7 @@ const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
   scanningNervously: "Scanning nervously",
   appraising: "Appraising",
   headsDown: "Heads down",
-  tinkering: "Tinkering away",
   mullingOver: "Mulling it over",
-  fussingOver: "Fussing over it",
-  dawdling: "Taking it easy",
   pacing: "Pacing about",
 };
 
