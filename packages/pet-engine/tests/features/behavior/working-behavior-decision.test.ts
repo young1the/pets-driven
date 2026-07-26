@@ -2,6 +2,7 @@ import { createComponentStore } from "@pets-driven/pet-engine/core/component-sto
 import {
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
+  runCollisionBehaviorSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/personalities/registry";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
@@ -64,6 +65,37 @@ describe("working behavior in the general decision pipeline", () => {
     runBehaviorPlanningSystem(store, createManualClock(100));
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).not.toBeNull();
     expect(store.getComponent("pet", "Steering")?.mode).toBe("pursue");
+  });
+
+  /**
+   * BehaviorDecisionSystem only re-decides for a pet that is standing with no
+   * motion target, so any system that clears a working pet's target must leave
+   * its steering coherent. Leaving a travel mode behind stranded the pet
+   * "pursuing nothing": it held its first work decision for the entire task and
+   * never picked another behavior.
+   */
+  it("stays re-decidable after a collision interrupts its work", () => {
+    const store = makeWorkingPet("playful");
+    store.spawn("other", [
+      { type: "Transform", position: { x: 508, y: 500 } },
+      { type: "PhysicsBody", width: 32, height: 48, shape: "rectangle" },
+      { type: "Steering", mode: "stand" },
+      { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+    ]);
+    store.setComponent("pet", { type: "Steering", mode: "pursue" });
+    store.setComponent("pet", {
+      type: "MotionTarget",
+      targetEntityId: null,
+      targetPosition: { x: 560, y: 500 },
+    });
+
+    runCollisionBehaviorSystem(store, BOUNDS, createManualClock(500));
+
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
+
+    runBehaviorDecisionSystem(store, createManualClock(600), createSeededRandom(3), BOUNDS);
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.kind).toMatch(/^work-/);
   });
 
   it("makes a restless personality pace more often than a steady one", () => {

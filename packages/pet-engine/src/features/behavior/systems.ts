@@ -1191,9 +1191,14 @@ export function runCollisionBehaviorSystem(
         targetEntityId: null,
         targetPosition: null,
       });
+      // `stand`, not a travel mode: the target was just cleared, so there is
+      // nothing to pursue. BehaviorDecisionSystem only re-decides for a pet
+      // that is standing with no target, so leaving a travel mode here strands
+      // a working pet in "pursuing nothing" — it then holds its first work
+      // decision for the rest of the task and never picks another behavior.
       components.setComponent(entity.id, {
         type: "Steering" as const,
-        mode: "pursue",
+        mode: "stand",
       });
 
       const existing = components.getComponent(entity.id, "BehaviorDecisionState");
