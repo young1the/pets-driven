@@ -235,8 +235,6 @@
     "folderLede": "Registering a folder is the moment your pet comes to life. One pet watches one folder.",
     "folderOptionalHint": "Optional — you can choose or change the folder later from the pet's settings.",
     "folderWatchedBy": "{{name}} watches this",
-    "chooseAnother": "Choose another folder…",
-    "chooseAnotherHint": "Browse your machine, or create a new one",
     "adopt": "Adopt into this folder →",
     "adoptNoFolder": "Adopt without a folder →",
     "summaryWatchesNone": "No folder yet",

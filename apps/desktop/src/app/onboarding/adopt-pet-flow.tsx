@@ -260,15 +260,6 @@ export function AdoptPetFlow({
     setStep("profile");
   }
 
-  async function browseFolder() {
-    const picked = await gateway.pickDirectory();
-
-    if (picked) {
-      setSelectedFolderPath(picked);
-      setAdoptionError(null);
-    }
-  }
-
   async function completeBirth() {
     if (!assetId || !isValidPetName(name)) {
       return;
@@ -658,20 +649,6 @@ export function AdoptPetFlow({
                   </span>
                 </div>
               )}
-
-            <button
-              className="pd-onb__folder pd-onb__folder--browse"
-              onClick={() => void browseFolder()}
-              type="button"
-            >
-              <span className="pd-onb__folder-icon" aria-hidden>
-                ＋
-              </span>
-              <span className="pd-onb__folder-text">
-                <b>{t("onboarding.chooseAnother")}</b>
-                <small>{t("onboarding.chooseAnotherHint")}</small>
-              </span>
-            </button>
           </div>
 
           {adoptionError && (
