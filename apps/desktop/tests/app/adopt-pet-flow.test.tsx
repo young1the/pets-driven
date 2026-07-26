@@ -195,6 +195,34 @@ describe("AdoptPetFlow pet source folders", () => {
   });
 });
 
+describe("AdoptPetFlow watch folder", () => {
+  // On a first adoption no working directory is registered yet, so the folder
+  // list is empty and the OS picker is the only way to choose one. Without it
+  // the step offers nothing to click.
+  it("picks a watch folder from the empty folder step", async () => {
+    const gateway = createGateway([
+      {
+        id: "boba",
+        displayName: "Boba",
+        description: "A cozy Petdex pet.",
+        spritesheetPath: "boba/spritesheet.webp",
+      },
+    ]);
+    gateway.pickDirectory = vi.fn().mockResolvedValue("D:\\work\\atlas");
+    renderOnboarding(gateway);
+
+    fireEvent.click(await screen.findByText("Boba"));
+    fireEvent.click(screen.getByText("Continue →"));
+    fireEvent.click(screen.getByText("Looks good →"));
+
+    expect(screen.getByText("Adopt without a folder →")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Choose another folder…"));
+
+    expect(await screen.findByText("D:\\work\\atlas")).toBeInTheDocument();
+    expect(screen.getByText("Adopt into this folder →")).toBeInTheDocument();
+  });
+});
+
 describe("AdoptPetFlow done step", () => {
   // Connecting the agent is the setup wizard's job, not the adoption flow's.
   // The done step celebrates the new pet and gets out of the way.

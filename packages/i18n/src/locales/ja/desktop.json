@@ -235,6 +235,8 @@
     "folderLede": "フォルダを登録した瞬間に、ペットに命が宿ります。1匹のペットが1つのフォルダを見守ります。",
     "folderOptionalHint": "任意です — フォルダはあとからペットの設定で選んだり変えたりできます。",
     "folderWatchedBy": "{{name}}が見守っています",
+    "chooseAnother": "別のフォルダを選ぶ…",
+    "chooseAnotherHint": "パソコンの中を見るか、新しく作りましょう",
     "adopt": "このフォルダに迎える →",
     "adoptNoFolder": "フォルダなしで迎える →",
     "summaryWatchesNone": "まだありません",

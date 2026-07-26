@@ -235,6 +235,8 @@
     "folderLede": "폴더를 등록하는 순간 펫이 살아나요. 펫 하나가 폴더 하나를 지켜봐요.",
     "folderOptionalHint": "선택 사항이에요 — 폴더는 나중에 펫 설정에서 고르거나 바꿀 수 있어요.",
     "folderWatchedBy": "{{name}}이(가) 지켜보는 중",
+    "chooseAnother": "다른 폴더 선택…",
+    "chooseAnotherHint": "기기를 둘러보거나 새로 만들어요",
     "adopt": "이 폴더로 입양하기 →",
     "adoptNoFolder": "폴더 없이 입양하기 →",
     "summaryWatchesNone": "아직 없음",
