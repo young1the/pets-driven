@@ -4,10 +4,8 @@ import type { AssetCatalog } from "@pets-driven/pet-engine/pets/rendering/pet-sp
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type AgentEvent, createAgentEvent } from "@/adapters/agent-events/agent-event";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
-import {
-  type ClaudeHookEventName,
-  createAgentEventFromClaudeHook,
-} from "@/adapters/agent-events/claude-hook-adapter";
+import { createAgentEventFromHook } from "@/adapters/agent-events/agent-hook-adapter";
+import type { ClaudeHookEventName } from "@/adapters/agent-events/claude-hook-adapter";
 import { AgentEventPanel } from "./agent-event-panel";
 import { BehaviorLab } from "./behavior-lab";
 import { drawWorld } from "./canvas-renderer";
@@ -116,10 +114,13 @@ export function DemoPlaygroundView() {
   const handleClaudeHookPayload = useCallback(
     (payload: unknown) => {
       try {
-        const agentEvent = createAgentEventFromClaudeHook(payload, {
-          defaultSourceId: selectedPetId === "pet-b" ? "agent-b" : "agent-a",
-          now: scenarioRef.current.clock.now(),
-        });
+        const agentEvent = createAgentEventFromHook(
+          { provider: "claude", payload },
+          {
+            defaultSourceId: selectedPetId === "pet-b" ? "agent-b" : "agent-a",
+            now: scenarioRef.current.clock.now(),
+          },
+        );
         setLastHookName(
           (payload as { hook_event_name?: ClaudeHookEventName }).hook_event_name ?? null,
         );

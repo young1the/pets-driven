@@ -1,13 +1,16 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
-import type { ClaudeHookIngressStatus } from "@/adapters/agent-events/claude-hook-ingress";
+import type {
+  AgentHookIngressEvent,
+  AgentHookIngressStatus,
+} from "@/adapters/agent-events/agent-hook-ingress";
 import type { PetCommandEvent } from "@/adapters/agent-events/hatch-ingress";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
 
 const CLAUDE_HOOK_STATUS_REFRESH_MS = 2000;
 
-function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
+function defaultClaudeHookIngressStatus(): AgentHookIngressStatus {
   return {
     url: "",
     state: isTauri() ? "pending" : "error",
@@ -22,7 +25,7 @@ function defaultClaudeHookIngressStatus(): ClaudeHookIngressStatus {
 
 type UseAgentEventIngressParams = {
   /** A routed Claude hook payload arrived; fan it into the live sim worlds. */
-  onAgentHookEvent: (payload: unknown) => void;
+  onAgentHookEvent: (event: AgentHookIngressEvent) => void;
   /** The backend persisted a state change (e.g. a hatch); reload from disk. */
   onBackendStateChanged: () => void;
   /** The backend asked to show/hide a pet after reloading state. */
@@ -40,7 +43,7 @@ export function useAgentEventIngress({
   onBackendStateChanged,
   onPetCommand,
 }: UseAgentEventIngressParams) {
-  const [claudeHookIngressStatus, setClaudeHookIngressStatus] = useState<ClaudeHookIngressStatus>(
+  const [claudeHookIngressStatus, setClaudeHookIngressStatus] = useState<AgentHookIngressStatus>(
     defaultClaudeHookIngressStatus,
   );
 
@@ -88,7 +91,7 @@ export function useAgentEventIngress({
     let unlisten: (() => void) | undefined;
 
     void desktopGateway
-      .subscribeClaudeHookIngress((payload) => onAgentHookEvent(payload))
+      .subscribeAgentHookIngress((event) => onAgentHookEvent(event))
       .then((stop) => {
         unlisten = stop;
       });

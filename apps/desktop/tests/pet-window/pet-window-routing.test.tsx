@@ -2,7 +2,7 @@ import { createPlayfulPersonality } from "@pets-driven/pet-engine/pets/personali
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CLAUDE_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/claude-hook-ingress";
+import { AGENT_HOOK_INGRESS_EVENT } from "@/adapters/agent-events/agent-hook-ingress";
 import { PetsDrivenApp } from "@/app/pets-driven-app";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 import { PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
@@ -479,7 +479,7 @@ describe("pet window product route", () => {
     showAllAdoptedPets();
 
     await waitFor(() => {
-      expect(tauriEventMocks.listeners.has(CLAUDE_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(AGENT_HOOK_INGRESS_EVENT)).toBe(true);
       expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
         "pet-window-pet-a",
         PET_WINDOW_FRAME_EVENT,
@@ -488,12 +488,15 @@ describe("pet window product route", () => {
     });
 
     act(() => {
-      tauriEventMocks.listeners.get(CLAUDE_HOOK_INGRESS_EVENT)?.({
+      tauriEventMocks.listeners.get(AGENT_HOOK_INGRESS_EVENT)?.({
         payload: {
-          hook_event_name: "PermissionRequest",
-          session_id: "session-a",
-          cwd: "D:\\cms",
-          message: "Allow Edit?",
+          provider: "claude",
+          payload: {
+            hook_event_name: "PermissionRequest",
+            session_id: "session-a",
+            cwd: "D:\\cms",
+            message: "Allow Edit?",
+          },
         },
       });
     });

@@ -1,4 +1,10 @@
 import { type AgentEvent, createAgentEvent } from "./agent-event";
+import type { AgentHookAdapter } from "./agent-hook-adapter";
+
+export type ClaudeHookAdapterOptions = {
+  defaultSourceId?: string;
+  now?: number;
+};
 
 export type ClaudeHookEventName =
   | "UserPromptSubmit"
@@ -40,7 +46,7 @@ const CLAUDE_HOOK_EVENT_NAMES = new Set<ClaudeHookEventName>([
 
 export function createAgentEventFromClaudeHook(
   payload: unknown,
-  options: { defaultSourceId?: string; now?: number } = {},
+  options: ClaudeHookAdapterOptions = {},
 ): AgentEvent {
   const hook = parseClaudeHookPayload(payload);
   const sourceId = firstNonEmpty(
@@ -59,12 +65,14 @@ export function createAgentEventFromClaudeHook(
     sourceId,
     at: Number.isFinite(hook.timestamp) ? (hook.timestamp as number) : (options.now ?? Date.now()),
     summary: summaryForHook(hook),
-    // Only a tool pulse carries a tool: it is what the pet acts out, and the
-    // lifecycle events have no tool to speak of. Absent (every Codex hook) is a
-    // supported answer, not a gap.
     tool: type === "tool.used" ? hook.tool_name : undefined,
   });
 }
+
+export const CLAUDE_HOOK_ADAPTER: AgentHookAdapter = {
+  provider: "claude",
+  toAgentEvent: createAgentEventFromClaudeHook,
+};
 
 function parseClaudeHookPayload(payload: unknown): ClaudeHookPayload {
   if (!payload || typeof payload !== "object") {

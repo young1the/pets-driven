@@ -2,7 +2,7 @@ import { useTranslation } from "@pets-driven/i18n";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { isTauri } from "@tauri-apps/api/core";
 import { useCallback, useMemo, useRef } from "react";
-import type { ClaudeHookIngressStatus } from "@/adapters/agent-events/claude-hook-ingress";
+import type { AgentHookIngressStatus } from "@/adapters/agent-events/agent-hook-ingress";
 import type { AppView } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
 import type { HomePetView } from "@/app/main-window/home-section";
@@ -30,7 +30,7 @@ export interface MainWindowSurfaceProps {
   mainTab: MainWindowTab;
   setMainTab: (tab: MainWindowTab) => void;
   toast: string | null;
-  claudeHookIngressStatus: ClaudeHookIngressStatus;
+  claudeHookIngressStatus: AgentHookIngressStatus;
   claudePlugin: ReturnType<typeof useAgentPlugin>;
   codexPlugin: ReturnType<typeof useAgentPlugin>;
   navigate: (view: AppView) => void;

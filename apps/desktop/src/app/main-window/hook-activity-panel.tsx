@@ -1,6 +1,6 @@
 import { useTranslation } from "@pets-driven/i18n";
 import { type CSSProperties, useState } from "react";
-import type { ClaudeHookIngressActivity } from "@/adapters/agent-events/claude-hook-ingress";
+import type { AgentHookIngressActivity } from "@/adapters/agent-events/agent-hook-ingress";
 
 export interface HookActivityPanelProps {
   /** The loopback endpoint the hook script posts to; empty outside Tauri. */
@@ -8,7 +8,7 @@ export interface HookActivityPanelProps {
   /** The listener's bind failure, when it has one. */
   error: string | null;
   /** The last requests the ingress saw, newest first. */
-  activity: ClaudeHookIngressActivity[];
+  activity: AgentHookIngressActivity[];
   /** Requests turned away since the app started. */
   rejectedCount: number;
   /**

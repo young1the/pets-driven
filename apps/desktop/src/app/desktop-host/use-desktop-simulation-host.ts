@@ -9,7 +9,8 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import { currentMonitor, cursorPosition } from "@tauri-apps/api/window";
 import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
-import { createAgentEventFromClaudeHook } from "@/adapters/agent-events/claude-hook-adapter";
+import { createAgentEventFromHook } from "@/adapters/agent-events/agent-hook-adapter";
+import type { AgentHookIngressEvent } from "@/adapters/agent-events/agent-hook-ingress";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
 import {
@@ -63,18 +64,19 @@ function petWindowPlaygroundLabelForPetId(petId: string) {
   return index >= 0 ? `pet-window-playground-${index + 1}` : null;
 }
 
-function routeClaudeHookPayloadToRegisteredWorkingDirectory(
-  payload: unknown,
+function routeAgentHookToRegisteredWorkingDirectory(
+  event: AgentHookIngressEvent,
   state: PetsDrivenState,
-): unknown | null {
+): AgentHookIngressEvent | null {
+  const { payload } = event;
   if (!payload || typeof payload !== "object") {
-    return payload;
+    return event;
   }
 
   const cwd = (payload as { cwd?: unknown }).cwd;
 
   if (typeof cwd !== "string" || cwd.trim().length === 0) {
-    return payload;
+    return event;
   }
 
   const workingDirectory = resolveRegisteredWorkingDirectoryForCwd(state, cwd);
@@ -84,8 +86,11 @@ function routeClaudeHookPayloadToRegisteredWorkingDirectory(
   }
 
   return {
-    ...payload,
-    sourceId: workingDirectory.agentSourceId,
+    ...event,
+    payload: {
+      ...payload,
+      sourceId: workingDirectory.agentSourceId,
+    },
   };
 }
 
@@ -184,17 +189,14 @@ export function useDesktopSimulationHost({
   // are merely added to or removed from an already-running world.
   const adoptedHasVisiblePets = adoptedSimKey.length > 0;
 
-  // Fan a routed Claude hook event into every live world. Only the pet whose
+  // Fan a routed agent hook event into every live world. Only the pet whose
   // AgentBinding.sourceId matches reacts; the others ignore it. Each world
   // stamps the event with its own clock since they advance independently.
-  function pushAgentHookEvent(payload: unknown) {
+  function pushAgentHookEvent(event: AgentHookIngressEvent) {
     try {
-      const routedPayload = routeClaudeHookPayloadToRegisteredWorkingDirectory(
-        payload,
-        stateRef.current,
-      );
+      const routedEvent = routeAgentHookToRegisteredWorkingDirectory(event, stateRef.current);
 
-      if (!routedPayload) {
+      if (!routedEvent) {
         return;
       }
 
@@ -203,7 +205,7 @@ export function useDesktopSimulationHost({
           continue;
         }
 
-        const agentEvent = createAgentEventFromClaudeHook(routedPayload, {
+        const agentEvent = createAgentEventFromHook(routedEvent, {
           defaultSourceId: "agent-a",
           now: scenario.clock.now(),
         });

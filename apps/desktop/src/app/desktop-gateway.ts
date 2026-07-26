@@ -3,9 +3,11 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
-  CLAUDE_HOOK_INGRESS_EVENT,
-  type ClaudeHookIngressStatus,
-} from "@/adapters/agent-events/claude-hook-ingress";
+  AGENT_HOOK_INGRESS_EVENT,
+  type AgentHookIngressEvent,
+  type AgentHookIngressStatus,
+  isAgentHookIngressEvent,
+} from "@/adapters/agent-events/agent-hook-ingress";
 import {
   PETS_DRIVEN_PET_COMMAND_EVENT,
   PETS_DRIVEN_STATE_CHANGED_EVENT,
@@ -188,8 +190,8 @@ export type DesktopGateway = {
   /** Whether we're running inside the Tauri desktop shell (vs. browser/tests). */
   isDesktopRuntime(): boolean;
 
-  /** Current status of the Claude hook ingress listener. */
-  getClaudeHookIngressStatus(): Promise<ClaudeHookIngressStatus>;
+  /** Current status of the shared agent hook ingress listener. */
+  getClaudeHookIngressStatus(): Promise<AgentHookIngressStatus>;
   /**
    * Post a synthetic hook to our own ingress and resolve with its HTTP status
    * line. It travels the real loopback socket, so a success proves the listener
@@ -223,7 +225,7 @@ export type DesktopGateway = {
   // App-level event subscriptions. Each resolves to an unsubscribe handle;
   // outside Tauri they subscribe to nothing and the handle is a no-op. The
   // handler receives the domain payload directly, never a Tauri Event wrapper.
-  subscribeClaudeHookIngress(handler: (payload: unknown) => void): Promise<Unsubscribe>;
+  subscribeAgentHookIngress(handler: (event: AgentHookIngressEvent) => void): Promise<Unsubscribe>;
   subscribePetsDrivenStateChanged(handler: () => void): Promise<Unsubscribe>;
   subscribePetCommand(handler: (event: PetCommandEvent) => void): Promise<Unsubscribe>;
 
@@ -471,7 +473,7 @@ export const desktopGateway: DesktopGateway = {
     return isTauri();
   },
 
-  async getClaudeHookIngressStatus(): Promise<ClaudeHookIngressStatus> {
+  async getClaudeHookIngressStatus(): Promise<AgentHookIngressStatus> {
     if (!isTauri()) {
       return {
         url: "",
@@ -485,7 +487,7 @@ export const desktopGateway: DesktopGateway = {
       };
     }
 
-    return await invoke<ClaudeHookIngressStatus>("get_claude_hook_ingress_status");
+    return await invoke<AgentHookIngressStatus>("get_claude_hook_ingress_status");
   },
 
   async sendTestHookEvent(): Promise<string> {
@@ -555,12 +557,16 @@ export const desktopGateway: DesktopGateway = {
     return await invoke<ForeignWindow | null>("connect_window");
   },
 
-  async subscribeClaudeHookIngress(handler) {
+  async subscribeAgentHookIngress(handler) {
     if (!isTauri()) {
       return NOOP_UNSUBSCRIBE;
     }
 
-    return await listen<unknown>(CLAUDE_HOOK_INGRESS_EVENT, (event) => handler(event.payload));
+    return await listen<unknown>(AGENT_HOOK_INGRESS_EVENT, (event) => {
+      if (isAgentHookIngressEvent(event.payload)) {
+        handler(event.payload);
+      }
+    });
   },
 
   async subscribePetsDrivenStateChanged(handler) {

@@ -6,7 +6,7 @@ import {
 } from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
 import { useState } from "react";
-import type { ClaudeHookIngressActivity } from "@/adapters/agent-events/claude-hook-ingress";
+import type { AgentHookIngressActivity } from "@/adapters/agent-events/agent-hook-ingress";
 import type { AgentPluginProvider, AgentPluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { HookActivityPanel } from "@/app/main-window/hook-activity-panel";
@@ -65,7 +65,7 @@ export interface SettingsSectionProps {
     lastSignal: string;
     endpoint: string;
     error: string | null;
-    activity: ClaudeHookIngressActivity[];
+    activity: AgentHookIngressActivity[];
     rejectedCount: number;
     onSendTest: () => Promise<string>;
   };

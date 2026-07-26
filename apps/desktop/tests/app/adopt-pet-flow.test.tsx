@@ -82,7 +82,7 @@ function createGateway(
     focusForeignWindow: vi.fn().mockResolvedValue(false),
     startSession: vi.fn().mockResolvedValue(null),
     connectForeignWindow: vi.fn().mockResolvedValue(null),
-    subscribeClaudeHookIngress: vi.fn().mockResolvedValue(() => {}),
+    subscribeAgentHookIngress: vi.fn().mockResolvedValue(() => {}),
     subscribePetsDrivenStateChanged: vi.fn().mockResolvedValue(() => {}),
     subscribePetCommand: vi.fn().mockResolvedValue(() => {}),
     openTerminal: vi.fn().mockResolvedValue(""),

@@ -13,7 +13,7 @@ use pets_driven_core::{CoreError, CoreEvent, HatchPet, PetId, PetPatch, PetsDriv
 
 use crate::state_commands::{core_error_http_status, PetsDrivenCoreState};
 
-const CLAUDE_HOOK_INGRESS_EVENT: &str = "claude-hook:received:v1";
+const AGENT_HOOK_INGRESS_EVENT: &str = "agent-hook:received:v1";
 const CLAUDE_HOOK_INGRESS_PATH: &str = "/claude-hook";
 const CODEX_HOOK_INGRESS_PATH: &str = "/codex-hook";
 const CLAUDE_HOOK_INGRESS_PORT: u16 = 43187;
@@ -164,8 +164,19 @@ fn claude_hook_ingress_url() -> String {
     format!("http://127.0.0.1:{CLAUDE_HOOK_INGRESS_PORT}{CLAUDE_HOOK_INGRESS_PATH}")
 }
 
-fn is_agent_hook_ingress_path(path: &str) -> bool {
-    path == CLAUDE_HOOK_INGRESS_PATH || path == CODEX_HOOK_INGRESS_PATH
+fn agent_hook_provider(path: &str) -> Option<&'static str> {
+    match path {
+        CLAUDE_HOOK_INGRESS_PATH => Some("claude"),
+        CODEX_HOOK_INGRESS_PATH => Some("codex"),
+        _ => None,
+    }
+}
+
+fn agent_hook_ingress_event(path: &str, payload: &serde_json::Value) -> Option<serde_json::Value> {
+    Some(serde_json::json!({
+        "provider": agent_hook_provider(path)?,
+        "payload": payload,
+    }))
 }
 
 fn http_body_start(request: &[u8]) -> Option<usize> {
@@ -713,13 +724,15 @@ fn handle_claude_hook_connection(
 
     match parse_http_request(&request) {
         Ok((path, payload)) => match path.as_str() {
-            path if is_agent_hook_ingress_path(path) => {
+            path if agent_hook_provider(path).is_some() => {
                 eprintln!("{}", claude_hook_ingress_log_line(&payload));
                 // A release build has no console for the line above, so the
                 // same arrival is also folded into the polled status.
                 record_claude_hook_ingress_event(&status, &payload);
 
-                match app.emit_to("main", CLAUDE_HOOK_INGRESS_EVENT, payload) {
+                let event =
+                    agent_hook_ingress_event(path, &payload).expect("guarded agent hook path");
+                match app.emit_to("main", AGENT_HOOK_INGRESS_EVENT, event) {
                     Ok(()) => {
                         let _ = write_http_response(&mut stream, "200 OK", r#"{"ok":true}"#);
                     }
@@ -994,9 +1007,24 @@ mod tests {
 
     #[test]
     fn agent_hook_ingress_accepts_claude_and_codex_paths() {
-        assert!(is_agent_hook_ingress_path("/claude-hook"));
-        assert!(is_agent_hook_ingress_path("/codex-hook"));
-        assert!(!is_agent_hook_ingress_path("/unknown"));
+        assert_eq!(agent_hook_provider("/claude-hook"), Some("claude"));
+        assert_eq!(agent_hook_provider("/codex-hook"), Some("codex"));
+        assert_eq!(agent_hook_provider("/unknown"), None);
+    }
+
+    #[test]
+    fn agent_hook_ingress_preserves_provider_identity_in_the_event() {
+        let payload = serde_json::json!({ "hook_event_name": "PreToolUse" });
+
+        assert_eq!(
+            agent_hook_ingress_event("/claude-hook", &payload),
+            Some(serde_json::json!({ "provider": "claude", "payload": payload }))
+        );
+        assert_eq!(
+            agent_hook_ingress_event("/codex-hook", &payload),
+            Some(serde_json::json!({ "provider": "codex", "payload": payload }))
+        );
+        assert_eq!(agent_hook_ingress_event("/unknown", &payload), None);
     }
 
     #[test]

@@ -1,4 +1,4 @@
-import type { ClaudeHookIngressStatus } from "@/adapters/agent-events/claude-hook-ingress";
+import type { AgentHookIngressStatus } from "@/adapters/agent-events/agent-hook-ingress";
 
 const SECOND_MS = 1_000;
 const MINUTE_MS = 60 * SECOND_MS;
@@ -42,7 +42,7 @@ function formatSignalAge(elapsedMs: number, t: Translate): string {
  * ingress `eprintln!` traces go to a console the packaged app does not have.
  */
 export function describeHookLastSignal(
-  status: Pick<ClaudeHookIngressStatus, "lastEventAt" | "receivedCount" | "lastEventName">,
+  status: Pick<AgentHookIngressStatus, "lastEventAt" | "receivedCount" | "lastEventName">,
   t: Translate,
   now: number,
 ): string {
