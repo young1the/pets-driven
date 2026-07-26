@@ -3,7 +3,7 @@
   "productName": "Pets Driven",
   "identifier": "com.petsdriven.desktop",
   "build": {
-    "beforeDevCommand": "pnpm run dev:tauri",
+    "beforeDevCommand": "node ../../scripts/stage-cli.mjs && pnpm run dev:tauri",
     "beforeBuildCommand": "pnpm run build:playground && node ../../scripts/stage-cli.mjs",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../dist"
