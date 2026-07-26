@@ -117,6 +117,52 @@ describe("agent event adapters", () => {
     expect(classifyToolActivity(tool)).toBe(activity);
   });
 
+  /**
+   * Case is the only separator a built-in name has. Lowercasing before
+   * splitting collapses `WebSearch` into one token that matches nothing, which
+   * silently left most of a Claude session unclassified.
+   */
+  it.each([
+    ["Grep", "study"],
+    ["Glob", "study"],
+    ["WebSearch", "study"],
+    ["WebFetch", "study"],
+    ["NotebookRead", "study"],
+    ["Task", "study"],
+    ["ExitPlanMode", "study"],
+    ["TodoWrite", "study"],
+    ["Edit", "edit"],
+    ["MultiEdit", "edit"],
+    ["Write", "edit"],
+    ["NotebookEdit", "edit"],
+    ["BashOutput", "run"],
+    ["KillShell", "run"],
+  ] as const)("classifies the built-in tool %s as %s", (tool, activity) => {
+    expect(classifyToolActivity(tool)).toBe(activity);
+  });
+
+  /** The server segment must not be scanned: `mcp__test__…` is not a shell run. */
+  it.each([
+    ["mcp__test__read_file", "study"],
+    ["mcp__build__list_items", "study"],
+    ["mcp__linear__get_issue", "study"],
+    ["mcp__linear__create_issue", "edit"],
+    ["mcp__github__update_pull_request", "edit"],
+    ["mcp__ci__run_pipeline", "run"],
+  ] as const)("classifies the MCP tool %s as %s", (tool, activity) => {
+    expect(classifyToolActivity(tool)).toBe(activity);
+  });
+
+  it.each([
+    undefined,
+    "",
+    "   ",
+    "Frobnicate",
+    "mcp__thing__quux",
+  ])("leaves %p unclassified rather than guessing", (tool) => {
+    expect(classifyToolActivity(tool)).toBeUndefined();
+  });
+
   it("rejects unsupported provider hooks independently", () => {
     expect(() => createAgentEventFromClaudeHook({ hook_event_name: "SessionStart" })).toThrow(
       "Unsupported Claude hook event: SessionStart",
