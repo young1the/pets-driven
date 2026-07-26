@@ -62,7 +62,7 @@ import {
   PhysicsTransformSyncSystemPre,
 } from "@pets-driven/pet-engine/features/physics/systems";
 import { SignatureReactionSystem } from "@pets-driven/pet-engine/features/social/signature-reactions";
-import { SocialInteractionSystem } from "@pets-driven/pet-engine/features/social/systems";
+import { SocialInteractionSystem } from "@pets-driven/pet-engine/features/social/social-systems";
 
 export type PhaseName = "PRE_UPDATE" | "BEHAVIOR" | "UPDATE" | "POST_UPDATE" | "SIMULATE";
 
