@@ -58,9 +58,11 @@ from the app's own frontend through `@tauri-apps/api`'s `invoke()`.
 | `update_pet_record` | `state_store` | `input: { petId, name?, assetId?, personalityId?, visible?, archived?, memo?, scale?, cwd? }` | JSON state | Patches one pet. Omitted fields are left alone; `assetId` re-skins the pet (pet record and profile together); `cwd: null` detaches the pet from its folder. |
 | `delete_pet_record` | `state_store` | `petId` | JSON state | Removes a pet, its profile, and any working directory it holds. |
 | `update_pets_driven_settings` | `state_store` | `input: { sessionCommand?, terminalShell?, petSourceDirectory? }` | JSON state | Patches the app-wide settings. |
-| `list_codex_pet_packages` | `pet_assets` | — | `CodexPetPackage[]` | Lists pet packages found in the user's designated Petdex source folder. |
+| `list_codex_pet_packages` | `pet_assets` | — | `CodexPetPackage[]` | Lists pet packages from the bundled built-ins merged with the designated source folder (the re-skin catalog). |
+| `list_designated_pet_packages` | `pet_assets` | — | `CodexPetPackage[]` | Lists pet packages in the designated source folder alone (no bundled built-ins); onboarding uses this so its count reflects the real folder. |
 | `load_codex_pet_spritesheet` | `pet_assets` | `assetId` | binary IPC response | Loads a pet's spritesheet image bytes from the designated source folder. |
-| `get_default_pet_source_directory` | `pet_assets` | — | `string` | Absolute path to the default Petdex pets root. |
+| `list_pet_source_directory_options` | `pet_assets` | — | `PetSourceDirectoryOption[]` | Well-known pet folders the onboarding dropdown offers (Petdex `~/.petdex/pets`, Codex `~/.codex/pets`), each with a stable `kind` and resolved `path`. |
+| `copy_bundled_pets_to_source_directory` | `pet_assets` | — | `number` | Copies the app's bundled pets into the designated pet folder (skipping any already present); returns how many were newly copied. |
 | `open_adopted_pet_window` | `pet_windows` | `petId, assetId` | `()` | Opens the always-on-top overlay window for an adopted pet. |
 | `open_pet_window_playground` | `pet_windows` | `count?` | `()` | Opens N playground pet windows for visual testing. |
 | `close_pet_window_playground` | `pet_windows` | — | `()` | Closes all playground pet windows. |

@@ -18,19 +18,11 @@ use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 
-/// The Petdex default user pet folder, `~/.petdex/pets`. `PETDEX_HOME` overrides
-/// the `~/.petdex` part; otherwise it hangs off the user profile / home dir.
-pub fn petdex_pets_root() -> Option<PathBuf> {
-    std::env::var_os("PETDEX_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("USERPROFILE").map(|home| PathBuf::from(home).join(".petdex")))
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".petdex")))
-        .map(|home| home.join("pets"))
-}
-
 /// The single designated user pet folder, read from the persisted `document`:
 /// the `petSourceDirectory` string when set, else the first non-empty entry of
-/// the legacy `petSourceDirectories` list, else the Petdex default.
+/// the legacy `petSourceDirectories` list. `None` when the user has not
+/// designated a folder — there is no implicit default, so the caller falls back
+/// to the bundled built-ins rather than to any well-known location.
 pub fn designated_pet_source_root(document: &Value) -> Option<PathBuf> {
     if let Some(path) = document.get("petSourceDirectory").and_then(Value::as_str) {
         let trimmed = path.trim();
@@ -50,7 +42,7 @@ pub fn designated_pet_source_root(document: &Value) -> Option<PathBuf> {
         }
     }
 
-    petdex_pets_root()
+    None
 }
 
 /// The asset ids the user installed in `document`'s designated pet folder,
@@ -199,6 +191,20 @@ mod tests {
         assert_eq!(
             designated_pet_source_root(&document),
             Some(PathBuf::from("D:/legacy"))
+        );
+    }
+
+    #[test]
+    fn designated_root_is_none_without_a_configured_folder() {
+        // No folder set and no legacy list: there is no implicit default, so the
+        // caller sees `None` and falls back to the bundled built-ins.
+        assert_eq!(designated_pet_source_root(&serde_json::json!({})), None);
+        assert_eq!(
+            designated_pet_source_root(&serde_json::json!({
+                "petSourceDirectory": "   ",
+                "petSourceDirectories": [""],
+            })),
+            None
         );
     }
 

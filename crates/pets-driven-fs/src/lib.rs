@@ -22,9 +22,7 @@ use fslock::LockFile;
 use pets_driven_core::{RepositoryError, StateRepository, WriteTransaction};
 
 mod pet_source;
-pub use pet_source::{
-    asset_ids_in, designated_pet_source_root, petdex_pets_root, user_asset_ids,
-};
+pub use pet_source::{asset_ids_in, designated_pet_source_root, user_asset_ids};
 
 /// The Tauri bundle identifier. The state directory is
 /// `<os data dir>/<APP_IDENTIFIER>`, matching Tauri v2's `app_data_dir()`.

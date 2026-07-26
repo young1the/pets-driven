@@ -231,43 +231,82 @@ pub(crate) fn list_hatchable_pet_assets(app: &tauri::AppHandle) -> Vec<Hatchable
 
 /// The single designated user pet folder, read straight from the persisted
 /// state file: the v3 `petSourceDirectory` string when set, else the first
-/// entry of the legacy v2 `petSourceDirectories` list, else the Petdex default
-/// (`~/.petdex/pets`).
+/// entry of the legacy v2 `petSourceDirectories` list. `None` when the user has
+/// not designated a folder — there is no implicit default, so callers fall back
+/// to the bundled pets alone rather than to `~/.petdex/pets`.
 fn designated_pet_source_root(app: &tauri::AppHandle) -> Option<PathBuf> {
-    if let Ok(state) = state_commands::read_state(app) {
-        if let Some(path) = state
-            .get("petSourceDirectory")
-            .and_then(|value| value.as_str())
-        {
-            let trimmed = path.trim();
-            if !trimmed.is_empty() {
-                return Some(PathBuf::from(trimmed));
-            }
-        }
+    let state = state_commands::read_state(app).ok()?;
 
-        if let Some(directories) = state
-            .get("petSourceDirectories")
-            .and_then(|value| value.as_array())
-        {
-            for directory in directories {
-                if let Some(path) = directory.as_str() {
-                    let trimmed = path.trim();
-                    if !trimmed.is_empty() {
-                        return Some(PathBuf::from(trimmed));
-                    }
+    if let Some(path) = state
+        .get("petSourceDirectory")
+        .and_then(|value| value.as_str())
+    {
+        let trimmed = path.trim();
+        if !trimmed.is_empty() {
+            return Some(PathBuf::from(trimmed));
+        }
+    }
+
+    if let Some(directories) = state
+        .get("petSourceDirectories")
+        .and_then(|value| value.as_array())
+    {
+        for directory in directories {
+            if let Some(path) = directory.as_str() {
+                let trimmed = path.trim();
+                if !trimmed.is_empty() {
+                    return Some(PathBuf::from(trimmed));
                 }
             }
         }
     }
 
-    petdex_pets_root().ok()
+    None
 }
 
-/// The Petdex default pet folder as a display string, so the frontend can show
-/// where pets land when no custom folder is designated.
+/// The Codex pet folder, `~/.codex/pets`, where the Codex CLI keeps its pets.
+/// Unlike the Petdex root this is not overridable — it always hangs off the user
+/// profile / home dir.
+fn codex_pets_root() -> Option<PathBuf> {
+    env::var_os("USERPROFILE")
+        .map(PathBuf::from)
+        .or_else(|| env::var_os("HOME").map(PathBuf::from))
+        .map(|home| home.join(".codex").join("pets"))
+}
+
+/// A well-known pet folder the onboarding dropdown offers. `kind` is a stable
+/// identifier the frontend maps to a translated label; `path` is the resolved
+/// absolute directory.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PetSourceDirectoryOption {
+    kind: String,
+    path: String,
+}
+
+/// The well-known pet folders the onboarding dropdown offers, in display order:
+/// the Petdex default (`~/.petdex/pets`) and the Codex folder (`~/.codex/pets`).
+/// Each carries a stable `kind` the frontend labels. A root that cannot be
+/// resolved (no home dir) is omitted rather than erroring.
 #[tauri::command]
-pub(crate) fn get_default_pet_source_directory() -> Result<String, String> {
-    Ok(petdex_pets_root()?.display().to_string())
+pub(crate) fn list_pet_source_directory_options() -> Vec<PetSourceDirectoryOption> {
+    let mut options = Vec::new();
+
+    if let Ok(petdex) = petdex_pets_root() {
+        options.push(PetSourceDirectoryOption {
+            kind: "petdex".to_string(),
+            path: petdex.display().to_string(),
+        });
+    }
+
+    if let Some(codex) = codex_pets_root() {
+        options.push(PetSourceDirectoryOption {
+            kind: "codex".to_string(),
+            path: codex.display().to_string(),
+        });
+    }
+
+    options
 }
 
 /// Merge pet packages from several roots into one wearable catalog. Earlier
@@ -291,6 +330,63 @@ fn merge_pet_packages(roots: &[PathBuf]) -> Vec<CodexPetPackage> {
     packages
 }
 
+/// Recursively copy `source` into `dest`, creating directories as needed. Pet
+/// folders are shallow (a manifest plus a spritesheet), but a nested layout is
+/// copied faithfully so this never silently drops a pet's assets.
+fn copy_dir_all(source: &Path, dest: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(dest)?;
+
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let target = dest.join(entry.file_name());
+
+        if entry.file_type()?.is_dir() {
+            copy_dir_all(&entry.path(), &target)?;
+        } else {
+            fs::copy(entry.path(), &target)?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Copy the pets bundled with the app into the designated pet source folder, so
+/// the defaults the app ships with physically live there — e.g. so a Codex
+/// agent reading `~/.codex/pets` finds them, not just this app's merged view.
+/// A pet already present in the folder is left untouched (never overwritten);
+/// resolves with how many pets were newly copied.
+#[tauri::command]
+pub(crate) fn copy_bundled_pets_to_source_directory(
+    app: tauri::AppHandle,
+) -> Result<usize, String> {
+    let Some(bundled) = bundled_pets_dir(&app) else {
+        return Err("Could not locate the bundled pets to copy.".to_string());
+    };
+    let Some(target) = designated_pet_source_root(&app) else {
+        return Err("Could not resolve the pet source folder.".to_string());
+    };
+
+    fs::create_dir_all(&target)
+        .map_err(|error| format!("Could not create the pet folder: {error}"))?;
+
+    let mut copied = 0usize;
+
+    for package in read_pet_packages(&bundled)? {
+        let dest_dir = target.join(&package.id);
+
+        // The user's own copy of a pet id wins — only fill in what is missing.
+        if dest_dir.exists() {
+            continue;
+        }
+
+        copy_dir_all(&bundled.join(&package.id), &dest_dir)
+            .map_err(|error| format!("Could not copy pet '{}': {error}", package.id))?;
+        copied += 1;
+    }
+
+    Ok(copied)
+}
+
 #[tauri::command]
 pub(crate) fn list_codex_pet_packages(
     app: tauri::AppHandle,
@@ -307,6 +403,23 @@ pub(crate) fn list_codex_pet_packages(
         .collect();
 
     Ok(merge_pet_packages(&roots))
+}
+
+/// The pet packages in the user's designated folder alone — not the bundled
+/// built-ins. The onboarding pets-folder step uses this so its count and preview
+/// reflect what is actually in the chosen folder (empty until the user installs
+/// or copies pets in), rather than always showing the app's defaults the way
+/// `list_codex_pet_packages` does for the re-skin catalog. Empty when no folder
+/// is designated, or the folder is missing, unreadable, or holds no pet.
+#[tauri::command]
+pub(crate) fn list_designated_pet_packages(
+    app: tauri::AppHandle,
+) -> Result<Vec<CodexPetPackage>, String> {
+    let packages = designated_pet_source_root(&app)
+        .map(|root| read_pet_packages(&root).unwrap_or_default())
+        .unwrap_or_default();
+
+    Ok(packages)
 }
 
 #[tauri::command]
