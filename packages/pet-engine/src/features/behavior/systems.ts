@@ -25,6 +25,13 @@ import {
   personalityAcknowledgeFeedback,
   resolveSpeechVariant,
 } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
+import {
+  jitteredFocusHoldMs,
+  WORKING_FOCUS_REASONS,
+  WORKING_PACE_CLAIM_MS,
+  WORKING_PACE_REASON,
+  workingStyle,
+} from "@pets-driven/pet-engine/pets/personalities/working-styles";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
@@ -156,8 +163,8 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
 };
 
 const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
-  "working-focus",
-  "working-wander",
+  ...WORKING_FOCUS_REASONS,
+  WORKING_PACE_REASON,
   "collision-flee",
   "collision-engage",
   "collision-avoid",
@@ -1004,6 +1011,17 @@ export function runTaskMovementHoldSystem(
   });
 }
 
+/**
+ * The working state, in character.
+ *
+ * A working pet alternates two beats: it paces to a nearby spot, or it holds a
+ * stationary *working pose* — heads-down, tinkering, pondering, fussing or
+ * loafing, picked by personality (see working-styles.ts). The pose is a claim
+ * reason, so the existing choreography and activity-label machinery turn it
+ * into a rhythm of sprite rows and a specific status label; the hold length and
+ * pacing frequency are what make a steady pet plant itself while a mischievous
+ * one keeps bouncing off.
+ */
 export function runWorkingBehaviorSystem(
   components: ComponentStore,
   clock: Clock,
@@ -1021,10 +1039,9 @@ export function runWorkingBehaviorSystem(
       const existing = components.getComponent(id, "BehaviorDecisionState");
       if (existing && existing.expiresAt > now) return;
 
-      const distractionScore =
-        (1 - personality.conscientiousness) * 0.7 + personality.extraversion * 0.3;
+      const style = workingStyle(personality);
 
-      if (distractionScore > 0.5) {
+      if (random.next() < style.paceChance) {
         const target = pickWanderPosition(
           transform.position.x,
           transform.position.y,
@@ -1040,11 +1057,18 @@ export function runWorkingBehaviorSystem(
           targetPosition: target,
         });
         setPetSteering(components, id, "pursue");
-        claim(components, id, "autonomous", now, "working-wander", now + 750);
+        claim(components, id, "autonomous", now, WORKING_PACE_REASON, now + WORKING_PACE_CLAIM_MS);
         return;
       }
 
-      claim(components, id, "autonomous", now, "working-focus", now + 1500);
+      claim(
+        components,
+        id,
+        "autonomous",
+        now,
+        style.focusReason,
+        now + jitteredFocusHoldMs(style, random.next()),
+      );
     },
   );
 }

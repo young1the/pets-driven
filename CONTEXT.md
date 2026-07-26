@@ -200,6 +200,10 @@ _Avoid_: status (bare), behavior, activity
 What a **Pet** is autonomously doing in the **Simulation World** right now (for example exploring, hopping, chatting), computed by the simulation. The second, independent axis, separate from **Agent Work State**.
 _Avoid_: behavior, status, intent
 
+**Working Style**:
+How a **Pet** occupies itself while its **Agent Work State** is working — the pose its **Personality Catalog** entry holds (heads down, tinkering, mulling over, fussing over, taking it easy) and how often it breaks off to pace. It is what a working **Pet** reports as its **Activity**.
+_Avoid_: agent work state, signature activity, idle
+
 **Pet Status Card**:
 A card presentation of a **Pet** that combines its **Agent Work State** (as tone and color) and its **Activity** (as label) into a single chip. Presentation only, not a domain concept.
 _Avoid_: status, pet state
@@ -350,6 +354,7 @@ _Avoid_: Social Session, relationship, copied personality
 - A **Pet**'s motion is produced by a top-down chain each frame: **Drives** and perception feed a **Decision**, the **Decision** sets a **Locomotion**, the **Locomotion** gates **Steering**, and **Steering** hands force to the physics engine; the **Activity** is a read-only label derived from that state.
 - A **Pet**'s **Mood** also shapes candidate **Decisions** after the **Pet Profile** and **Drives** are applied.
 - A **Personality Catalog** entry defines two signature **Activities** that other entries do not select; signature activities use sustained claims and choreography so their identity is readable on the **Pet Surface**.
+- A **Personality Catalog** entry also defines one **Working Style**; while the **Agent Work State** is working, the **Pet** alternates that style's sustained pose with short pacing walks, and the pose it holds is the **Activity** it reports.
 - A nearby idle **Pet** able to socialize considers each observed signature **Activity** once and may start a **Signature Reaction**.
 - A **Signature Reaction** uses the responder's own personality to choose join, cheer, watch, or keep-distance; joining borrows the source signature's readable pose without changing the responder's **Pet Profile**.
 - At most two **Pets** respond to one signature **Activity** occurrence, keeping the moment readable.

@@ -168,6 +168,31 @@ describe("derivePetActivity", () => {
     }
   });
 
+  it("maps the working poses so a working pet reads by personality", () => {
+    const cases: Array<[string, string]> = [
+      ["working-focus", "headsDown"],
+      ["working-tinker", "tinkering"],
+      ["working-ponder", "mullingOver"],
+      ["working-fuss", "fussingOver"],
+      ["working-loaf", "dawdling"],
+    ];
+    for (const [reason, expected] of cases) {
+      const store = storeWith([
+        steering("stand"),
+        decision(reason, { decidedAt: 0, expiresAt: 2_000 }),
+      ]);
+      expect(derivePetActivity(store, "pet", 500)).toBe(expected);
+    }
+  });
+
+  it("reads the working pacing beat as pacing while the walk outlives its claim", () => {
+    // The pacing claim only lives 750ms; the walk it started runs longer, so
+    // the label has to survive on a non-idle intent like the other movement
+    // reasons.
+    const store = storeWith([steering("pursue"), decision("working-wander", { expiresAt: 750 })]);
+    expect(derivePetActivity(store, "pet", 1_200)).toBe("pacing");
+  });
+
   it("reads a standing chat session as chatting (idle but unexpired claim)", () => {
     // Chat play phase stops the pets (idle) but the session re-claims each
     // tick, so the social claim stays unexpired and owns the Activity.

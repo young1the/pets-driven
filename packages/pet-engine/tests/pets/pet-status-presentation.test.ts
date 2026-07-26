@@ -220,6 +220,31 @@ describe("presentPetStatus", () => {
     expect(presentation.labelKey).toBe("exploring");
   });
 
+  it("names the working pose instead of a flat Working capsule", () => {
+    const headsDown = presentPetStatus("running", null, "headsDown", null, true);
+    expect(headsDown.label).toBe("Heads down");
+    expect(headsDown.tone).toBe("work");
+
+    const dawdling = presentPetStatus("idle", null, "dawdling", null, true);
+    expect(dawdling.label).toBe("Taking it easy");
+    expect(dawdling.emote).toBe("zzz");
+  });
+
+  /**
+   * The working poses borrow the review/failed rows between work passes. Those
+   * rows are task-owned, so without the signature exemption a pondering pet
+   * would read as "Reviewing" and an anxious one as "Stuck".
+   */
+  it("keeps the working label on the task rows its choreography borrows", () => {
+    const mulling = presentPetStatus("review", null, "mullingOver", null, true);
+    expect(mulling.labelKey).toBe("mullingOver");
+    expect(mulling.label).toBe("Mulling it over");
+
+    const fussing = presentPetStatus("failed", null, "fussingOver", null, true);
+    expect(fussing.labelKey).toBe("fussingOver");
+    expect(fussing.emote).toBe("sweat");
+  });
+
   it("still hides the capsule for an idle (not working) pet with no overlay", () => {
     const presentation = presentPetStatus("running", null, "exploring", null, false);
 

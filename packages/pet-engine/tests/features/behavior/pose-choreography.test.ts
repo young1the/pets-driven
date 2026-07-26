@@ -109,6 +109,43 @@ describe("getExpressivePoseState", () => {
     expect(getExpressivePoseState("acknowledge-completed", 400)).toBe("waving");
   });
 
+  /**
+   * Working is the state the user watches longest, and it used to be one
+   * unbroken `running` row for every pet. Each style still *opens* on that work
+   * row — a working pet must read as working from the first frame — and only
+   * the continuation carries the personality.
+   */
+  it.each([
+    "working-focus",
+    "working-tinker",
+    "working-ponder",
+    "working-fuss",
+    "working-loaf",
+  ] as const)("opens the %s beat on the work row", (reason) => {
+    expect(getExpressivePoseState(reason, 0)).toBe("running");
+  });
+
+  it("separates the working poses once they are actually held", () => {
+    const reasons = [
+      "working-focus",
+      "working-tinker",
+      "working-ponder",
+      "working-fuss",
+      "working-loaf",
+    ] as const;
+
+    // At 600ms the heads-down pet is still working, the tinkerer is checking
+    // its result, the ponderer is thinking, the anxious one has flinched, and
+    // the loafer has already settled — five rows from one shared opening.
+    expect(reasons.map((reason) => getExpressivePoseState(reason, 600))).toEqual([
+      "running",
+      "review",
+      "running",
+      "failed",
+      "idle",
+    ]);
+  });
+
   it("loops the acknowledge beats so they fill the whole 3s claim", () => {
     // acknowledge-waiting is 1440ms long; at 1440 it must be back on the wave
     // rather than frozen on the closing idle.

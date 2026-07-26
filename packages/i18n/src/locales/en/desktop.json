@@ -513,7 +513,13 @@
     "centering": "Centering",
     "preening": "Preening",
     "scanningNervously": "Scanning nervously",
-    "appraising": "Appraising"
+    "appraising": "Appraising",
+    "headsDown": "Heads down",
+    "tinkering": "Tinkering away",
+    "mullingOver": "Mulling it over",
+    "fussingOver": "Fussing over it",
+    "dawdling": "Taking it easy",
+    "pacing": "Pacing about"
   },
   "toast": {
     "onDesktop": "{{name}} is on the desktop",

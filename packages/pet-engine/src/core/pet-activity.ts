@@ -53,7 +53,14 @@ export type PetActivityKind =
   | "centering"
   | "preening"
   | "scanningNervously"
-  | "appraising";
+  | "appraising"
+  // Working beats — what the pet is doing while its bound agent runs.
+  | "headsDown"
+  | "tinkering"
+  | "mullingOver"
+  | "fussingOver"
+  | "dawdling"
+  | "pacing";
 
 /**
  * Reasons that describe a *movement* the pet may still be executing after the
@@ -80,7 +87,14 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "collision-avoid": "keepingDistance",
   "wander-near": "exploring",
   "wander-far": "exploring",
-  "working-wander": "exploring",
+  // Working beats. The pacing one is a movement reason (the walk outlives its
+  // claim); the focus poses hold a stationary claim and read from it directly.
+  "working-wander": "pacing",
+  "working-focus": "headsDown",
+  "working-tinker": "tinkering",
+  "working-ponder": "mullingOver",
+  "working-fuss": "fussingOver",
+  "working-loaf": "dawdling",
   "request-climb": "climbing",
   "request-jump": "hopping",
   "collision-jump": "hopping",

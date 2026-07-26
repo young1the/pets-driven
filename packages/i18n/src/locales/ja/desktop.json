@@ -513,7 +513,13 @@
     "centering": "心を整え中",
     "preening": "毛づくろい中",
     "scanningNervously": "きょろきょろ中",
-    "appraising": "値ぶみ中"
+    "appraising": "値ぶみ中",
+    "headsDown": "没頭中",
+    "tinkering": "いじくり中",
+    "mullingOver": "じっくり考え中",
+    "fussingOver": "そわそわ確認中",
+    "dawdling": "のんびり作業中",
+    "pacing": "うろうろ中"
   },
   "toast": {
     "onDesktop": "{{name}}がデスクトップに出てきました",

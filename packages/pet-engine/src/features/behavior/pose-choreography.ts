@@ -172,6 +172,42 @@ const EXPRESSIVE_POSE_CHOREOGRAPHY: Partial<Record<string, PoseChoreography>> = 
     { state: "idle", durationMs: 380 },
     { state: "review", durationMs: 340 },
   ],
+  // ── Working beats ─────────────────────────────────────────────────────────
+  // Held while the bound agent is working (see working-styles.ts). Before these,
+  // every working pet stood on one unbroken `running` row, so the state the user
+  // watches longest was also the least alive. Each style keeps `running` as its
+  // work row and differs in what it does *between* passes, so the personality
+  // reads without a single new sprite. `working-focus` opens on `running`, the
+  // row it used to hold, per the invariant above.
+  // Long heads-down passes with a short breath — the unbroken worker.
+  "working-focus": [
+    { state: "running", durationMs: 1_100 },
+    { state: "idle", durationMs: 260 },
+  ],
+  // Fiddle, check the result, fiddle again, then a pleased little flourish.
+  "working-tinker": [
+    { state: "running", durationMs: 520 },
+    { state: "review", durationMs: 300 },
+    { state: "running", durationMs: 420 },
+    { state: "waving", durationMs: 240 },
+  ],
+  // A pass of work, then a long look up to think it through.
+  "working-ponder": [
+    { state: "running", durationMs: 620 },
+    { state: "review", durationMs: 700 },
+    { state: "idle", durationMs: 320 },
+  ],
+  // Work, flinch at it, re-check — the anxious worker who never quite trusts it.
+  "working-fuss": [
+    { state: "running", durationMs: 480 },
+    { state: "failed", durationMs: 300 },
+    { state: "review", durationMs: 420 },
+  ],
+  // A short burst of effort inside a long, easy pause.
+  "working-loaf": [
+    { state: "running", durationMs: 420 },
+    { state: "idle", durationMs: 900 },
+  ],
   // ── Acknowledge beats ─────────────────────────────────────────────────────
   // Unlike every entry above, these two are not autonomous activities: they are
   // keyed by the `acknowledge-<status>` claim raised when the user releases a

@@ -265,6 +265,39 @@ describe("pet animation state", () => {
     expect(animationState()).toBe(expected);
   });
 
+  /**
+   * A working pet used to hold the `running` row for the entire task, so the
+   * state the user watches longest never changed picture. The working pose
+   * claim gives the hold a rhythm — the row must move on as the claim ages.
+   */
+  it("plays a working pose as a rhythm instead of one frozen work row", () => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "PetIdentity", name: "Otto" },
+          { type: "AgentTaskState", status: "working", since: 0 },
+          { type: "Steering", mode: "stand" },
+          {
+            type: "BehaviorDecisionState",
+            source: "autonomous",
+            decidedAt: 0,
+            expiresAt: 2_000,
+            reason: "working-ponder",
+            lastAutonomousReason: "working-ponder",
+            lastAutonomousAt: 0,
+          },
+        ],
+      },
+    ]);
+
+    // Opens on the work row, looks up to think, then settles — and loops.
+    expect(getPetAnimationState(store, "pet", 0)).toBe("running");
+    expect(getPetAnimationState(store, "pet", 900)).toBe("review");
+    expect(getPetAnimationState(store, "pet", 1_400)).toBe("idle");
+    expect(getPetAnimationState(store, "pet", 1_700)).toBe("running");
+  });
+
   it("keeps travel over an expressive pose while the pet is moving", () => {
     const { scenario, setTravel, animationState } = petBodyAnimationState("pet-a");
 
