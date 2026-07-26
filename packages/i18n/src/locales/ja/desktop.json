@@ -95,13 +95,18 @@
     "defaultTerminal": "既定のターミナル",
     "defaultTerminalDesc": "アプリ内ターミナルが開くシェルです。システムから検出したものが並びます。「システムの既定」を選ぶと COMSPEC / SHELL に従います。",
     "defaultTerminalSystem": "システムの既定",
-    "resetAll": "すべての設定をリセット",
-    "resetAllDesc": "この画面のすべての設定を既定値に戻します。ペットはそのまま残り、削除されません。",
+    "resetAll": "リセット",
+    "resetAllDesc": "すべての設定を既定値に戻すか、すべてのペットを削除してようこそ画面からやり直します。",
     "resetAllAction": "すべての設定をリセット",
     "resetAllConfirmTitle": "すべての設定をリセットしますか？",
     "resetAllConfirmHint": "ターミナル、ペットフォルダ、外観、言語が既定値に戻ります。ペットとそのフォルダ、見た目には手を触れません。",
     "resetAllCancel": "設定はこのまま",
-    "resetAllConfirm": "はい、リセットします"
+    "resetAllConfirm": "はい、リセットします",
+    "resetPetsAction": "すべてのペットをリセット",
+    "resetPetsConfirmTitle": "すべてのペットを削除しますか？",
+    "resetPetsConfirmHint": "すべてのペットと監視フォルダ、見た目が削除され、ようこそ画面に戻ります。元に戻せません。",
+    "resetPetsCancel": "ペットはこのまま",
+    "resetPetsConfirm": "はい、すべて削除します"
   },
   "hook": {
     "summary": {

@@ -60,6 +60,13 @@ export interface SettingsSectionProps {
    * `resetAllSettings` in app/desktop-host/use-pet-roster-actions.ts.
    */
   onResetAllSettings: () => void;
+  /**
+   * Remove every pet and return to onboarding. The counterpart to
+   * `onResetAllSettings`: this one deletes the roster and leaves settings alone,
+   * so it sits behind its own confirm — see `resetPets` in
+   * app/desktop-host/use-pet-roster-actions.ts.
+   */
+  onResetPets: () => void;
 }
 
 function folderName(path: string): string {
@@ -219,14 +226,17 @@ export function SettingsSection({
   onChangePetFolder,
   onResetPetFolder,
   onResetAllSettings,
+  onResetPets,
 }: SettingsSectionProps) {
   const { t } = useTranslation("desktop");
   const { locale, setLocale, reset: resetLocale } = useDesktopLocale();
   const { mode, setMode, accent, setAccent, reset: resetTheme } = useDesktopTheme();
   const shellOptions = useTerminalShellOptions();
   // Step one of the two-step confirm: asking swaps the button for the confirm
-  // card, so a single stray click can never reset anything.
+  // card, so a single stray click can never reset anything. The two resets get
+  // their own flag so opening one closes the other rather than arming both.
   const [resetAsked, setResetAsked] = useState(false);
+  const [resetPetsAsked, setResetPetsAsked] = useState(false);
 
   // Appearance and language live in these providers rather than in the state
   // document, so the reset has to tell them directly — otherwise the screen
@@ -236,6 +246,11 @@ export function SettingsSection({
     resetTheme();
     resetLocale();
     onResetAllSettings();
+  }
+
+  function confirmResetPets() {
+    setResetPetsAsked(false);
+    onResetPets();
   }
   // A previously-saved shell that the current system probe didn't surface still
   // needs an entry so the dropdown can show what is actually persisted.
@@ -499,8 +514,10 @@ export function SettingsSection({
             </div>
           </div>
 
-          {/* Reset — settings only. Last on the screen because it undoes every
-              row above it, and behind a confirm because it cannot be undone. */}
+          {/* Reset — two destructive actions share this last row: settings only,
+              or the whole pet roster. Each keeps its own two-step confirm, and
+              only one can be armed at a time, so a stray confirm can never hit
+              the wrong action. */}
           <div style={rowStyle(true)}>
             <span style={label}>{t("settings.resetAll")}</span>
             <p style={hint}>{t("settings.resetAllDesc")}</p>
@@ -519,10 +536,46 @@ export function SettingsSection({
                   {t("settings.resetAllConfirm")}
                 </button>
               </div>
+            ) : resetPetsAsked ? (
+              <div className="pd-settings-confirm">
+                <span className="pd-settings-confirm__copy">
+                  <b className="pd-settings-confirm__title">
+                    {t("settings.resetPetsConfirmTitle")}
+                  </b>
+                  <small className="pd-settings-confirm__hint">
+                    {t("settings.resetPetsConfirmHint")}
+                  </small>
+                </span>
+                <button onClick={() => setResetPetsAsked(false)} style={smallAction} type="button">
+                  {t("settings.resetPetsCancel")}
+                </button>
+                <button onClick={confirmResetPets} style={dangerAction} type="button">
+                  {t("settings.resetPetsConfirm")}
+                </button>
+              </div>
             ) : (
-              <button onClick={() => setResetAsked(true)} style={dangerAction} type="button">
-                {t("settings.resetAllAction")}
-              </button>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <button
+                  onClick={() => {
+                    setResetPetsAsked(false);
+                    setResetAsked(true);
+                  }}
+                  style={dangerAction}
+                  type="button"
+                >
+                  {t("settings.resetAllAction")}
+                </button>
+                <button
+                  onClick={() => {
+                    setResetAsked(false);
+                    setResetPetsAsked(true);
+                  }}
+                  style={dangerAction}
+                  type="button"
+                >
+                  {t("settings.resetPetsAction")}
+                </button>
+              </div>
             )}
           </div>
         </div>

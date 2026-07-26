@@ -39,6 +39,7 @@ function setup(overrides = {}) {
     onChangePetFolder: vi.fn(),
     onResetPetFolder: vi.fn(),
     onResetAllSettings: vi.fn(),
+    onResetPets: vi.fn(),
     ...overrides,
   };
   render(<SettingsSection {...props} />);
@@ -216,5 +217,58 @@ describe("SettingsSection reset", () => {
     expect(props.onChangePetFolder).not.toHaveBeenCalled();
     expect(props.onResetPetFolder).not.toHaveBeenCalled();
     expect(props.onCommand).not.toHaveBeenCalled();
+  });
+});
+
+describe("SettingsSection reset pets", () => {
+  it("asks before removing any pet", () => {
+    const onResetPets = vi.fn();
+    setup({ onResetPets });
+
+    // Same guard as the settings reset: the first click only opens the confirm.
+    fireEvent.click(screen.getByText("Reset all pets", { selector: "button" }));
+
+    expect(screen.getByText("Remove every pet?")).toBeInTheDocument();
+    expect(onResetPets).not.toHaveBeenCalled();
+  });
+
+  it("removes the pets once the second step is confirmed", () => {
+    const onResetPets = vi.fn();
+    setup({ onResetPets });
+
+    fireEvent.click(screen.getByText("Reset all pets", { selector: "button" }));
+    fireEvent.click(screen.getByText("Yes, remove every pet"));
+
+    expect(onResetPets).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Remove every pet?")).not.toBeInTheDocument();
+  });
+
+  it("backs out of the confirm without removing anything", () => {
+    const onResetPets = vi.fn();
+    setup({ onResetPets });
+
+    fireEvent.click(screen.getByText("Reset all pets", { selector: "button" }));
+    fireEvent.click(screen.getByText("Keep my pets"));
+
+    expect(onResetPets).not.toHaveBeenCalled();
+    expect(screen.queryByText("Remove every pet?")).not.toBeInTheDocument();
+  });
+
+  it("arms only one reset at a time", () => {
+    // The two actions share one row: arming the settings reset replaces the
+    // whole button group with its confirm, so the pets action isn't even on
+    // screen to be clicked by mistake. Cancelling brings both buttons back.
+    setup();
+
+    fireEvent.click(screen.getByText("Reset all settings", { selector: "button" }));
+    expect(screen.getByText("Reset every setting?")).toBeInTheDocument();
+    expect(screen.queryByText("Reset all pets", { selector: "button" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Keep my settings"));
+    fireEvent.click(screen.getByText("Reset all pets", { selector: "button" }));
+    expect(screen.getByText("Remove every pet?")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Reset all settings", { selector: "button" }),
+    ).not.toBeInTheDocument();
   });
 });

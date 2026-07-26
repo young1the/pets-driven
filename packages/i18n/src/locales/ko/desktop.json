@@ -95,13 +95,18 @@
     "defaultTerminal": "기본 터미널",
     "defaultTerminalDesc": "인앱 터미널이 여는 셸이에요. 시스템에서 감지한 목록에서 고르거나, ‘시스템 기본값’을 선택하면 COMSPEC / SHELL을 따라요.",
     "defaultTerminalSystem": "시스템 기본값",
-    "resetAll": "모든 설정 초기화",
-    "resetAllDesc": "이 화면의 모든 설정을 기본값으로 되돌려요. 펫은 그대로 남고, 삭제되지 않아요.",
+    "resetAll": "초기화",
+    "resetAllDesc": "모든 설정을 기본값으로 되돌리거나, 모든 펫을 삭제하고 시작 화면부터 다시 시작해요.",
     "resetAllAction": "모든 설정 초기화",
     "resetAllConfirmTitle": "모든 설정을 초기화할까요?",
     "resetAllConfirmHint": "터미널, 펫 폴더, 테마, 언어가 기본값으로 돌아가요. 펫과 펫의 폴더, 모습은 건드리지 않아요.",
     "resetAllCancel": "설정 유지하기",
-    "resetAllConfirm": "네, 초기화할게요"
+    "resetAllConfirm": "네, 초기화할게요",
+    "resetPetsAction": "모든 펫 초기화",
+    "resetPetsConfirmTitle": "모든 펫을 삭제할까요?",
+    "resetPetsConfirmHint": "모든 펫과 감시 폴더, 모습이 삭제되고 시작 화면으로 돌아가요. 되돌릴 수 없어요.",
+    "resetPetsCancel": "펫 유지하기",
+    "resetPetsConfirm": "네, 모두 삭제할게요"
   },
   "hook": {
     "summary": {

@@ -51,6 +51,7 @@ const settings = {
   onChangePetFolder: vi.fn(),
   onResetPetFolder: vi.fn(),
   onResetAllSettings: vi.fn(),
+  onResetPets: vi.fn(),
 };
 const debug = { groups: [], error: null };
 const terminal = {

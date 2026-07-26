@@ -287,6 +287,7 @@ export function MainWindowSurface({
         onChangePetFolder: () => onChangePetSourceFolder(),
         onResetPetFolder: () => onResetPetFolder(),
         onResetAllSettings: () => onResetAllSettings(),
+        onResetPets: () => onResetPets(),
       }}
       terminal={{
         available: isTauri(),
