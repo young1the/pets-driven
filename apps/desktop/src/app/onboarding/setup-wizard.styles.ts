@@ -203,7 +203,8 @@ export const folderIcon: CSSProperties = {
 // Stacked action+label buttons ("browse Petdex" / "add via terminal").
 export const petGetActions: CSSProperties = {
   display: "flex",
-  flexDirection: "column",
+  flexDirection: "row",
+  flexWrap: "wrap",
   gap: "10px",
   marginTop: "18px",
 };
