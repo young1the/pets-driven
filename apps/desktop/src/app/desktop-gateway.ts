@@ -52,6 +52,13 @@ export type CodexPetPackage = {
 /** A selectable shell for the in-app terminal. Mirrors the Rust `TerminalShellOption`. */
 export type TerminalShellOption = { label: string; path: string };
 
+/**
+ * A well-known pet folder the onboarding dropdown offers. `kind` is a stable
+ * identifier the frontend maps to a translated label; `path` is the resolved
+ * absolute directory. Mirrors the Rust `PetSourceDirectoryOption`.
+ */
+export type PetSourceDirectoryOption = { kind: "petdex" | "codex"; path: string };
+
 export type ClaudePluginState = "cli-missing" | "not-installed" | "installed" | "error";
 
 /** Install state of the bundled Claude Code plugin, as reported by the CLI. */
@@ -124,6 +131,12 @@ export type DesktopGateway = {
    */
   resetSettings(): Promise<PetsDrivenState | null>;
   listPetPackages(): Promise<CodexPetPackage[]>;
+  /**
+   * Pet packages in the designated folder alone — no bundled built-ins. The
+   * onboarding pets-folder step uses this so its count reflects the real folder,
+   * not the always-present defaults. Empty outside Tauri.
+   */
+  listDesignatedPetPackages(): Promise<CodexPetPackage[]>;
   /** Shells the in-app terminal can spawn, detected from the system. Empty outside Tauri. */
   listTerminalShells(): Promise<TerminalShellOption[]>;
   openAdoptedPetWindow(petId: string, assetId: string): Promise<void>;
@@ -142,8 +155,17 @@ export type DesktopGateway = {
    * longer exists so the caller can tell the user; a no-op outside Tauri.
    */
   revealPath(path: string): Promise<void>;
-  /** The Petdex default pet folder (~/.petdex/pets); null outside Tauri. */
-  getDefaultPetSourceDirectory(): Promise<string | null>;
+  /**
+   * The well-known pet folders the onboarding dropdown offers (Petdex and Codex),
+   * with their resolved absolute paths. Empty outside Tauri.
+   */
+  listPetSourceDirectoryOptions(): Promise<PetSourceDirectoryOption[]>;
+  /**
+   * Copy the pets bundled with the app into the designated pet source folder so
+   * they physically live there. Pets already present are left untouched.
+   * Resolves with the number of pets newly copied; 0 outside Tauri.
+   */
+  copyBundledPetsToSourceDirectory(): Promise<number>;
   getClaudePluginStatus(): Promise<ClaudePluginStatus>;
   /** Resolve the `claude` line to run in the terminal for an install/uninstall. */
   planClaudePluginCommand(action: ClaudePluginAction): Promise<ClaudePluginPlan>;
@@ -280,6 +302,14 @@ export const desktopGateway: DesktopGateway = {
     }));
   },
 
+  async listDesignatedPetPackages() {
+    if (!isTauri()) {
+      return [];
+    }
+
+    return await invoke<CodexPetPackage[]>("list_designated_pet_packages");
+  },
+
   async listTerminalShells() {
     if (!isTauri()) {
       return [];
@@ -332,16 +362,24 @@ export const desktopGateway: DesktopGateway = {
     await invoke("reveal_path", { path });
   },
 
-  async getDefaultPetSourceDirectory() {
+  async listPetSourceDirectoryOptions() {
     if (!isTauri()) {
-      return null;
+      return [];
     }
 
     try {
-      return await invoke<string>("get_default_pet_source_directory");
+      return await invoke<PetSourceDirectoryOption[]>("list_pet_source_directory_options");
     } catch {
-      return null;
+      return [];
     }
+  },
+
+  async copyBundledPetsToSourceDirectory() {
+    if (!isTauri()) {
+      return 0;
+    }
+
+    return await invoke<number>("copy_bundled_pets_to_source_directory");
   },
 
   async getClaudePluginStatus() {
