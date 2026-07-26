@@ -180,8 +180,11 @@ fn bundled_pets_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
         }
     }
 
-    let dev_candidate =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("..").join("pets");
+    let dev_candidate = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("..")
+        .join("pets");
 
     if dev_candidate.is_dir() {
         Some(dev_candidate)
@@ -267,18 +270,43 @@ pub(crate) fn get_default_pet_source_directory() -> Result<String, String> {
     Ok(petdex_pets_root()?.display().to_string())
 }
 
+/// Merge pet packages from several roots into one wearable catalog. Earlier
+/// roots win on id collision, so the result agrees with
+/// `resolve_asset_spritesheet_path` about which directory backs an id.
+fn merge_pet_packages(roots: &[PathBuf]) -> Vec<CodexPetPackage> {
+    let mut packages: Vec<CodexPetPackage> = Vec::new();
+
+    for root in roots {
+        for package in read_pet_packages(root).unwrap_or_default() {
+            if packages.iter().any(|existing| existing.id == package.id) {
+                continue;
+            }
+
+            packages.push(package);
+        }
+    }
+
+    packages.sort_by_key(|package| package.display_name.to_lowercase());
+
+    packages
+}
+
 #[tauri::command]
 pub(crate) fn list_codex_pet_packages(
     app: tauri::AppHandle,
 ) -> Result<Vec<CodexPetPackage>, String> {
-    // Only the single designated folder is scanned; the app's bundled pets are
-    // deliberately excluded. A missing or unreadable folder yields an empty list
-    // rather than an error, so a fresh (empty) Petdex folder just shows no pets.
-    let Some(root) = designated_pet_source_root(&app) else {
-        return Ok(Vec::new());
-    };
+    // Both the bundled pets and the designated folder are scanned, matching what
+    // `list_hatchable_pet_assets` offers and what `load_codex_pet_spritesheet`
+    // can resolve. Listing only the designated folder meant a stock install (an
+    // empty Petdex folder) had nothing to wear, so the pet edit screen showed
+    // "no installed looks" and an already-hatched pet could never be re-skinned.
+    // A missing or unreadable root contributes nothing rather than erroring.
+    let roots: Vec<PathBuf> = [bundled_pets_dir(&app), designated_pet_source_root(&app)]
+        .into_iter()
+        .flatten()
+        .collect();
 
-    Ok(read_pet_packages(&root).unwrap_or_default())
+    Ok(merge_pet_packages(&roots))
 }
 
 #[tauri::command]
@@ -451,7 +479,10 @@ mod tests {
         let roots = vec![bundled.clone(), designated.clone()];
         let resolved = resolve_asset_spritesheet_path(&roots, "bloop");
 
-        assert_eq!(resolved, Some(bundled.join("bloop").join("spritesheet.webp")));
+        assert_eq!(
+            resolved,
+            Some(bundled.join("bloop").join("spritesheet.webp"))
+        );
 
         fs::remove_dir_all(&designated).ok();
         fs::remove_dir_all(&bundled).ok();
@@ -469,7 +500,10 @@ mod tests {
         let roots = vec![bundled.clone(), designated.clone()];
         let resolved = resolve_asset_spritesheet_path(&roots, "cato");
 
-        assert_eq!(resolved, Some(bundled.join("cato").join("spritesheet.webp")));
+        assert_eq!(
+            resolved,
+            Some(bundled.join("cato").join("spritesheet.webp"))
+        );
 
         fs::remove_dir_all(&designated).ok();
         fs::remove_dir_all(&bundled).ok();
@@ -482,6 +516,45 @@ mod tests {
 
         let roots = vec![bundled.clone(), designated.clone()];
         assert_eq!(resolve_asset_spritesheet_path(&roots, "missing"), None);
+
+        fs::remove_dir_all(&designated).ok();
+        fs::remove_dir_all(&bundled).ok();
+    }
+
+    #[test]
+    fn the_wearable_catalog_includes_bundled_pets_when_the_designated_folder_is_empty() {
+        // A stock install: nothing in the Petdex folder yet. The edit screen's
+        // look picker must still offer the built-ins, or an already-hatched pet
+        // can never change its asset.
+        let designated = unique_temp_dir();
+        let bundled = unique_temp_dir();
+        write_pet(&bundled, "bloop", r#"{"displayName":"Bloop"}"#, true);
+
+        let packages = merge_pet_packages(&[bundled.clone(), designated.clone()]);
+
+        let ids: Vec<&str> = packages.iter().map(|p| p.id.as_str()).collect();
+        assert_eq!(ids, vec!["bloop"]);
+
+        fs::remove_dir_all(&designated).ok();
+        fs::remove_dir_all(&bundled).ok();
+    }
+
+    #[test]
+    fn the_wearable_catalog_dedupes_by_id_and_sorts_across_roots() {
+        // Bundled is listed first, so it wins the collision — the same
+        // precedence resolve_asset_spritesheet_path uses to find the sheet.
+        let designated = unique_temp_dir();
+        let bundled = unique_temp_dir();
+        write_pet(&bundled, "cato", r#"{"displayName":"Cato"}"#, true);
+        write_pet(&designated, "cato", r#"{"displayName":"Impostor"}"#, true);
+        write_pet(&designated, "abe", r#"{"displayName":"Abe"}"#, true);
+
+        let packages = merge_pet_packages(&[bundled.clone(), designated.clone()]);
+
+        let ids: Vec<&str> = packages.iter().map(|p| p.id.as_str()).collect();
+        assert_eq!(ids, vec!["abe", "cato"]);
+        let cato = packages.iter().find(|p| p.id == "cato").unwrap();
+        assert_eq!(cato.display_name, "Cato");
 
         fs::remove_dir_all(&designated).ok();
         fs::remove_dir_all(&bundled).ok();

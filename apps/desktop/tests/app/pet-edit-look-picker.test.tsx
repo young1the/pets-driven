@@ -17,7 +17,6 @@ const pet = {
   folder: "core",
   cwd: null,
   memo: "",
-  deployed: false,
   personalityId: "steady" as PetPersonalityId,
 };
 
@@ -36,7 +35,6 @@ function setup(overrides: Record<string, unknown> = {}) {
     onPersonalityId: vi.fn(),
     onPickFolder: vi.fn(),
     onClearFolder: vi.fn(),
-    onToggleDeployed: vi.fn(),
     onDelete: vi.fn(),
     onDone: vi.fn(),
     ...overrides,

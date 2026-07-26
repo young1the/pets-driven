@@ -13,6 +13,7 @@ import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-op
 import { PetdexTerminalDialog } from "@/app/onboarding/petdex-terminal-dialog";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
 import { Wordmark } from "@/app/onboarding/wordmark";
+import { PetLookStrip } from "@/app/pet-assets/pet-look-strip";
 import { buildLaunchLine, parseLaunchLine } from "@/app/session-launch-line";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 import { useClaudePlugin } from "@/app/use-claude-plugin";
@@ -96,43 +97,6 @@ function DoneHeroPet({ assetId }: { assetId: string }) {
       size={PET_CELL_SIZE}
     />
   ) : null;
-}
-
-/** One small, idling sprite + name — a compact preview cell for the strip. */
-function PetLookCell({ pet, elapsedMs }: { pet: CodexPetPackage; elapsedMs: number }) {
-  const spritesheetUrl = usePetSpritesheetUrl(pet.id);
-
-  return (
-    <div style={petLookCell} title={pet.displayName}>
-      <div style={petLookStage}>
-        {spritesheetUrl ? (
-          <PetSprite
-            alt={`${pet.displayName} preview`}
-            animationState="idle"
-            elapsedMs={elapsedMs}
-            imageUrl={spritesheetUrl}
-            scale={0.42}
-            showStatusBubble={false}
-            size={PET_CELL_SIZE}
-          />
-        ) : null}
-      </div>
-      <span style={petLookName}>{pet.displayName}</span>
-    </div>
-  );
-}
-
-/** A simple, scrollable row of installed pet looks shown on the pets-folder step. */
-function PetLookStrip({ packages }: { packages: CodexPetPackage[] }) {
-  const elapsedMs = useAnimationClock();
-
-  return (
-    <div style={petLookStrip}>
-      {packages.map((pet) => (
-        <PetLookCell elapsedMs={elapsedMs} key={pet.id} pet={pet} />
-      ))}
-    </div>
-  );
 }
 
 const rail: CSSProperties = {
@@ -508,43 +472,6 @@ const fieldHint: CSSProperties = {
   margin: "6px 0 0",
   maxWidth: "460px",
   lineHeight: 1.4,
-};
-const petLookStrip: CSSProperties = {
-  display: "flex",
-  gap: "10px",
-  overflowX: "auto",
-  padding: "4px 2px 8px",
-  marginTop: "12px",
-};
-const petLookCell: CSSProperties = {
-  flex: "none",
-  width: "84px",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: "6px",
-  padding: "10px 8px",
-  borderRadius: "14px",
-  border: "1px solid var(--border-soft)",
-  background: "var(--surface-card)",
-};
-const petLookStage: CSSProperties = {
-  width: "48px",
-  height: "48px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  overflow: "hidden",
-};
-const petLookName: CSSProperties = {
-  fontFamily: "var(--font-body)",
-  fontSize: "11.5px",
-  fontWeight: 700,
-  color: "var(--text-strong)",
-  maxWidth: "100%",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
 };
 // A fixed-height flex column so TerminalSection (.pd-eterm) fills it and renders
 // its own frame — mirrors how the main window hosts it. No overflow:hidden here,
@@ -930,7 +857,9 @@ export function SetupWizard({
               </div>
 
               {petPackages.length > 0 ? (
-                <PetLookStrip packages={petPackages} />
+                <div style={{ marginTop: "12px" }}>
+                  <PetLookStrip packages={petPackages} />
+                </div>
               ) : looksFound !== null ? (
                 <div style={emptyStrip}>{t("setupWizard.petsFolderEmpty")}</div>
               ) : null}

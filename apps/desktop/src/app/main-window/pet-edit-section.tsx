@@ -12,7 +12,7 @@ import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet
 import type { CodexPetPackage } from "@/app/desktop-gateway";
 import { PetPortrait } from "@/app/main-window/pet-portrait";
 import { PERSONALITY_OPTIONS, personalityTitleKey } from "@/app/onboarding/personality-options";
-import { PetAssetGrid } from "@/app/pet-assets/pet-asset-grid";
+import { PetLookStrip } from "@/app/pet-assets/pet-look-strip";
 
 export interface PetEditView {
   id: string;
@@ -94,7 +94,9 @@ export function PetEditSection({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "280px 1fr",
+            // minmax(0, …) so the details column can shrink below the look
+            // picker's min-content width — the picker scrolls itself.
+            gridTemplateColumns: "280px minmax(0, 1fr)",
             gap: "30px",
             marginTop: "20px",
             alignItems: "start",
@@ -126,21 +128,10 @@ export function PetEditSection({
               borderRadius: "24px",
               boxShadow: "var(--shadow-lg)",
               padding: "26px 26px 24px",
+              minWidth: 0,
             }}
           >
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "var(--text-subtle)",
-              }}
-            >
-              {t("edit.details")}
-            </span>
-
-            <label style={{ display: "block", marginTop: "14px" }}>
+            <label style={{ display: "block" }}>
               <span style={fieldLabelStyle}>{t("edit.name")}</span>
               <input
                 onChange={(event) => onName(event.target.value)}
@@ -158,7 +149,7 @@ export function PetEditSection({
               <span style={fieldLabelStyle}>{t("edit.look")}</span>
               {assetOptions.length > 0 ? (
                 <>
-                  <PetAssetGrid
+                  <PetLookStrip
                     onSelect={(assetId) => onAssetId?.(assetId)}
                     packages={assetOptions}
                     selectedAssetId={pet.assetId}
