@@ -57,10 +57,10 @@
     "eyebrow": "Your pack",
     "greeting": "Hello,",
     "greetings": {
-      "morning": ["Good morning,", "Rise and shine,", "Morning,"],
-      "afternoon": ["Good afternoon,", "Hope your day's going well,", "Afternoon,"],
-      "evening": ["Good evening,", "Winding down for the day,", "Evening,"],
-      "night": ["Working late,", "Burning the midnight oil,", "Still up,"]
+      "morning": ["Good morning,", "Rise and shine,", "Morning,", "Off to a fresh start,", "Have a great day,"],
+      "afternoon": ["Good afternoon,", "Hope your day's going well,", "Afternoon,", "Keep it up this afternoon,", "Had lunch yet,"],
+      "evening": ["Good evening,", "Winding down for the day,", "Evening,", "Nice work today,", "Lovely evening,"],
+      "night": ["Working late,", "Burning the midnight oil,", "Still up,", "Cozy night,", "Don't overdo it,"]
     },
     "greetingName": "Trainer!",
     "addPet": "Add a pet",
