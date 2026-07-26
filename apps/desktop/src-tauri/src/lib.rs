@@ -99,6 +99,7 @@ pub fn run() {
             pet_assets::copy_bundled_pets_to_source_directory,
             reveal::reveal_path,
             pet_windows::open_adopted_pet_window,
+            pet_windows::open_adopted_pet_windows,
             pet_windows::open_pet_window_playground,
             pet_windows::close_all_pet_windows,
             pet_windows::close_adopted_pet_window,

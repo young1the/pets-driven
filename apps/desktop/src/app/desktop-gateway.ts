@@ -140,6 +140,13 @@ export type DesktopGateway = {
   /** Shells the in-app terminal can spawn, detected from the system. Empty outside Tauri. */
   listTerminalShells(): Promise<TerminalShellOption[]>;
   openAdoptedPetWindow(petId: string, assetId: string): Promise<void>;
+  /**
+   * Open several adopted pets' overlay windows in one shell call. "Show all"
+   * uses this so a large roster is deployed in a single IPC hop instead of one
+   * per pet — see open_adopted_pet_windows in pet_windows.rs. A no-op outside
+   * Tauri or when the batch is empty.
+   */
+  openAdoptedPetWindows(specs: ReadonlyArray<{ petId: string; assetId: string }>): Promise<void>;
   closeAdoptedPetWindow(petId: string): Promise<void>;
   openPetContextMenu(
     petId: string,
@@ -324,6 +331,14 @@ export const desktopGateway: DesktopGateway = {
     }
 
     await invoke("open_adopted_pet_window", { petId, assetId });
+  },
+
+  async openAdoptedPetWindows(specs) {
+    if (!isTauri() || specs.length === 0) {
+      return;
+    }
+
+    await invoke("open_adopted_pet_windows", { specs });
   },
 
   async closeAdoptedPetWindow(petId) {

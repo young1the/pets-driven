@@ -252,11 +252,31 @@ export function usePetRosterActions({
     }
   }
 
+  /**
+   * Deploy every home pet in one shot. Marking them visible one at a time ran a
+   * full `applyState` per pet — an O(n²) cascade of re-renders — and opened each
+   * window over its own IPC call, which is what made a large roster stutter.
+   * Both halves are now batched: a single visibility patch and a single window
+   * request. See `openAdoptedPetWindows` / `open_adopted_pet_windows`.
+   */
   function showAllPets() {
-    for (const pet of stateRef.current.pets.filter((p) => !p.archived)) {
-      setPetVisibility(pet.id, true);
-      void desktopGateway.openAdoptedPetWindow(pet.id, pet.assetId).catch(() => {});
+    const current = stateRef.current;
+    const deployable = current.pets.filter((pet) => !pet.archived);
+    if (deployable.length === 0) {
+      return;
     }
+
+    const deployableIds = new Set(deployable.map((pet) => pet.id));
+    applyState({
+      ...current,
+      pets: current.pets.map((pet) =>
+        deployableIds.has(pet.id) ? { ...pet, visible: true } : pet,
+      ),
+    });
+
+    void desktopGateway
+      .openAdoptedPetWindows(deployable.map((pet) => ({ petId: pet.id, assetId: pet.assetId })))
+      .catch(() => {});
   }
 
   function hideAllPets() {

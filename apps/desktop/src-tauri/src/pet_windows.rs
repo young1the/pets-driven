@@ -91,25 +91,30 @@ pub(crate) async fn open_pet_window_playground(
     Ok(())
 }
 
-#[tauri::command]
-pub(crate) async fn open_adopted_pet_window(
-    app: tauri::AppHandle,
-    pet_id: String,
-    asset_id: String,
+/// Create one adopted pet's overlay window, or no-op if it already exists.
+///
+/// Shared by the single-pet command and the batch opener so both build the
+/// window identically. The window is created hidden; the simulation shows it on
+/// its first placement (see place_pet_windows) so it never flashes at the origin.
+fn build_adopted_pet_window(
+    app: &tauri::AppHandle,
+    pet_id: &str,
+    asset_id: &str,
 ) -> Result<(), String> {
-    validate_asset_id(&pet_id).map_err(|_| "Invalid pet id".to_string())?;
-    validate_asset_id(&asset_id)?;
+    validate_asset_id(pet_id).map_err(|_| "Invalid pet id".to_string())?;
+    validate_asset_id(asset_id)?;
 
     let label = format!("pet-window-{pet_id}");
-    let url = format!(
-        "{PET_OVERLAY_ENTRY}?surface=pet-window&petId={pet_id}&assetId={asset_id}&windowIndex=1"
-    );
 
     if app.get_webview_window(&label).is_some() {
         return Ok(());
     }
 
-    WebviewWindowBuilder::new(&app, label.clone(), WebviewUrl::App(url.into()))
+    let url = format!(
+        "{PET_OVERLAY_ENTRY}?surface=pet-window&petId={pet_id}&assetId={asset_id}&windowIndex=1"
+    );
+
+    WebviewWindowBuilder::new(app, label.clone(), WebviewUrl::App(url.into()))
         .title("Pet Window")
         .inner_size(192.0, 268.0)
         .position(120.0, 120.0)
@@ -125,6 +130,51 @@ pub(crate) async fn open_adopted_pet_window(
         .map_err(|error| format!("Could not create {label}: {error}"))?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub(crate) async fn open_adopted_pet_window(
+    app: tauri::AppHandle,
+    pet_id: String,
+    asset_id: String,
+) -> Result<(), String> {
+    build_adopted_pet_window(&app, &pet_id, &asset_id)
+}
+
+/// One pet's window request for the batch opener.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AdoptedPetWindowSpec {
+    pet_id: String,
+    asset_id: String,
+}
+
+/// Open every home pet's overlay window in one shell call.
+///
+/// "Show all" used to invoke open_adopted_pet_window once per pet, so a large
+/// roster paid a full IPC round trip per window on the main thread and visibly
+/// stuttered — the same per-pet-IPC problem place_pet_windows already solved for
+/// movement. The host now hands the whole batch over once and the windows are
+/// built natively in a single hop. One pet's failure is collected and reported
+/// rather than aborting the rest of the batch.
+#[tauri::command]
+pub(crate) async fn open_adopted_pet_windows(
+    app: tauri::AppHandle,
+    specs: Vec<AdoptedPetWindowSpec>,
+) -> Result<(), String> {
+    let mut errors = Vec::new();
+
+    for spec in specs {
+        if let Err(error) = build_adopted_pet_window(&app, &spec.pet_id, &spec.asset_id) {
+            errors.push(error);
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors.join("; "))
+    }
 }
 
 /// One pet's screen placement for a single simulation frame.
