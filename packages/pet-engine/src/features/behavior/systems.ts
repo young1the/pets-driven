@@ -4,6 +4,10 @@ import {
   statusFreezesMovement,
 } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
+import {
+  agentToolFamily,
+  workingPoseForToolFamily,
+} from "@pets-driven/pet-engine/features/agent/tool-families";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import { clampDrive } from "@pets-driven/pet-engine/features/drives/systems";
 import type {
@@ -27,9 +31,12 @@ import {
 } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import {
   jitteredFocusHoldMs,
+  resolveWorkingPose,
+  TOOL_ACTIVITY_FRESHNESS_MS,
   WORKING_FOCUS_REASONS,
   WORKING_PACE_CLAIM_MS,
   WORKING_PACE_REASON,
+  type WorkingFocusReason,
   workingStyle,
 } from "@pets-driven/pet-engine/pets/personalities/working-styles";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
@@ -939,6 +946,37 @@ export function runAgentTaskEventSystem(
           recordPetExperience(components, id, "task-started", now);
         }
 
+        if (event.type === "tool.used") {
+          recordAgentToolActivity(components, id, event.tool, now);
+
+          // A tool call on an already-working pet is a heartbeat, not news: it
+          // must not re-speak the task-started line, re-take the 5s agent-event
+          // claim (which starved the working poses entirely — tools fire far
+          // faster than the claim expires), reset `since`, or log another
+          // task-started experience. All it does is refresh the work.
+          const current = components.getComponent(id, "AgentTaskState");
+          if (current?.status === "working") {
+            activity.lastActiveAt = event.at;
+            continue;
+          }
+
+          // From any other status, tool activity means the agent picked the
+          // work back up — including out of a waiting or settled report, which
+          // the resumed work supersedes.
+          setAgentTaskState(
+            components,
+            id,
+            "working",
+            event,
+            event.summary ?? resolveSpeechVariant(speechProfile.taskStarted, random),
+            now,
+          );
+          applyTaskMovementHold(components, id, "working", event.at);
+          activity.lastActiveAt = event.at;
+          claim(components, id, "agent-event", now, "task.started");
+          recordPetExperience(components, id, "task-started", now);
+        }
+
         if (event.type === "task.waiting" || event.type === "attention.requested") {
           setAgentTaskState(
             components,
@@ -978,6 +1016,24 @@ export function runAgentTaskEventSystem(
       }
     },
   );
+}
+
+/**
+ * Record what kind of work the agent's latest tool call represents. An
+ * unplaceable or absent tool name still records the pulse (with a null family)
+ * so a later placeable one is not judged against a stale timestamp.
+ */
+function recordAgentToolActivity(
+  components: ComponentStore,
+  id: string,
+  tool: string | undefined,
+  now: number,
+): void {
+  components.setComponent(id, {
+    type: "AgentToolActivity",
+    family: agentToolFamily(tool),
+    at: now,
+  });
 }
 
 /**
@@ -1061,16 +1117,33 @@ export function runWorkingBehaviorSystem(
         return;
       }
 
+      const pose = resolveWorkingPose(style, freshToolPose(components, id, now), random.next());
       claim(
         components,
         id,
         "autonomous",
         now,
-        style.focusReason,
+        pose,
         now + jitteredFocusHoldMs(style, random.next()),
       );
     },
   );
+}
+
+/**
+ * The pose the agent's latest tool call implies, or null when there is nothing
+ * to act out: no pulse yet, a tool the pet could not place (every Codex hook),
+ * or a pulse old enough that miming it would be pretending.
+ */
+function freshToolPose(
+  components: ComponentStore,
+  id: string,
+  now: number,
+): WorkingFocusReason | null {
+  const toolActivity = components.getComponent(id, "AgentToolActivity");
+  if (!toolActivity?.family) return null;
+  if (now - toolActivity.at > TOOL_ACTIVITY_FRESHNESS_MS) return null;
+  return workingPoseForToolFamily(toolActivity.family);
 }
 
 // Priority 3: Collision avoidance (entity overlap).

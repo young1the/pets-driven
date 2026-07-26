@@ -38,6 +38,14 @@ export type WorkingStyle = {
   paceChance: number;
   /** How long one focus beat is held before the pet re-decides. */
   focusHoldMs: number;
+  /**
+   * Probability (0..1) of acting out the *agent's* current kind of work rather
+   * than this personality's own pose, when the agent reported a tool it can
+   * place. Two signals share one body, so this decides which one wins a given
+   * beat: a diligent pet mirrors the work closely, a lazy or aloof one mostly
+   * does its own thing regardless of what the agent is up to.
+   */
+  toolFollow: number;
 };
 
 /**
@@ -50,19 +58,29 @@ export type WorkingStyle = {
  * personalities converge in practice (same lesson as behavior-signatures.ts).
  */
 export const PERSONALITY_WORKING_STYLES: Record<PetPersonalityId, WorkingStyle> = {
-  playful: { focusReason: "working-tinker", paceChance: 0.45, focusHoldMs: 1_100 },
-  attentive: { focusReason: "working-ponder", paceChance: 0.3, focusHoldMs: 1_500 },
-  reserved: { focusReason: "working-focus", paceChance: 0.15, focusHoldMs: 2_000 },
-  curious: { focusReason: "working-tinker", paceChance: 0.4, focusHoldMs: 1_200 },
-  steady: { focusReason: "working-focus", paceChance: 0.1, focusHoldMs: 2_200 },
-  feisty: { focusReason: "working-tinker", paceChance: 0.4, focusHoldMs: 1_000 },
-  gentle: { focusReason: "working-ponder", paceChance: 0.25, focusHoldMs: 1_600 },
-  mischievous: { focusReason: "working-tinker", paceChance: 0.5, focusHoldMs: 900 },
-  lazy: { focusReason: "working-loaf", paceChance: 0.05, focusHoldMs: 2_600 },
-  zen: { focusReason: "working-ponder", paceChance: 0.05, focusHoldMs: 2_600 },
-  aloof: { focusReason: "working-loaf", paceChance: 0.2, focusHoldMs: 1_800 },
-  skittish: { focusReason: "working-fuss", paceChance: 0.45, focusHoldMs: 800 },
-  shrewd: { focusReason: "working-ponder", paceChance: 0.15, focusHoldMs: 2_000 },
+  playful: { focusReason: "working-tinker", paceChance: 0.45, focusHoldMs: 1_100, toolFollow: 0.6 },
+  attentive: {
+    focusReason: "working-ponder",
+    paceChance: 0.3,
+    focusHoldMs: 1_500,
+    toolFollow: 0.85,
+  },
+  reserved: { focusReason: "working-focus", paceChance: 0.15, focusHoldMs: 2_000, toolFollow: 0.6 },
+  curious: { focusReason: "working-tinker", paceChance: 0.4, focusHoldMs: 1_200, toolFollow: 0.75 },
+  steady: { focusReason: "working-focus", paceChance: 0.1, focusHoldMs: 2_200, toolFollow: 0.9 },
+  feisty: { focusReason: "working-tinker", paceChance: 0.4, focusHoldMs: 1_000, toolFollow: 0.55 },
+  gentle: { focusReason: "working-ponder", paceChance: 0.25, focusHoldMs: 1_600, toolFollow: 0.7 },
+  mischievous: {
+    focusReason: "working-tinker",
+    paceChance: 0.5,
+    focusHoldMs: 900,
+    toolFollow: 0.45,
+  },
+  lazy: { focusReason: "working-loaf", paceChance: 0.05, focusHoldMs: 2_600, toolFollow: 0.3 },
+  zen: { focusReason: "working-ponder", paceChance: 0.05, focusHoldMs: 2_600, toolFollow: 0.5 },
+  aloof: { focusReason: "working-loaf", paceChance: 0.2, focusHoldMs: 1_800, toolFollow: 0.35 },
+  skittish: { focusReason: "working-fuss", paceChance: 0.45, focusHoldMs: 800, toolFollow: 0.5 },
+  shrewd: { focusReason: "working-ponder", paceChance: 0.15, focusHoldMs: 2_000, toolFollow: 0.8 },
 };
 
 // Trait-derived fallback bounds for pets with no catalog identity (custom
@@ -125,7 +143,19 @@ export function workingStyle(personality: PersonalityComponent): WorkingStyle {
     focusReason: derivedFocusReason(personality),
     paceChance: derivedPaceChance(personality),
     focusHoldMs: derivedFocusHoldMs(personality),
+    toolFollow: derivedToolFollow(personality),
   };
+}
+
+/**
+ * How much a trait-only pet mirrors the agent's work. Conscientiousness is
+ * follow-through — a diligent pet tracks what the agent is doing; low
+ * conscientiousness with low extraversion is the pet that keeps to its own
+ * rhythm no matter what.
+ */
+function derivedToolFollow(p: PersonalityComponent): number {
+  const follow = 0.35 + p.conscientiousness * 0.5 + p.openness * 0.15 - p.neuroticism * 0.1;
+  return clamp(follow, 0.3, 0.9);
 }
 
 /**
@@ -136,6 +166,29 @@ export function workingStyle(personality: PersonalityComponent): WorkingStyle {
 export function jitteredFocusHoldMs(style: WorkingStyle, roll: number): number {
   const factor = 1 - FOCUS_HOLD_JITTER + roll * FOCUS_HOLD_JITTER * 2;
   return Math.round(style.focusHoldMs * factor);
+}
+
+/**
+ * How long a tool pulse keeps describing the pet's work. Agents call tools in
+ * bursts with quiet stretches between them (a long think, a build, the user
+ * reading a diff); past this the pose no longer reflects anything real, so the
+ * pet returns to its own personality rather than miming a stale tool.
+ */
+export const TOOL_ACTIVITY_FRESHNESS_MS = 12_000;
+
+/**
+ * The pose to hold this beat: the agent's current kind of work, or the pet's
+ * own. `toolPose` is what the last tool pulse implies (null when the agent
+ * named no placeable tool — every Codex hook — or the pulse has gone stale).
+ * `roll` decides between the two, weighted by the personality's toolFollow.
+ */
+export function resolveWorkingPose(
+  style: WorkingStyle,
+  toolPose: WorkingFocusReason | null,
+  roll: number,
+): WorkingFocusReason {
+  if (!toolPose) return style.focusReason;
+  return roll < style.toolFollow ? toolPose : style.focusReason;
 }
 
 /** Whether a claim reason is one of the working beats. */

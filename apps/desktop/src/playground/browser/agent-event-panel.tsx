@@ -7,12 +7,25 @@ type AgentEventPanelProps = {
   lastEvent: AgentEvent | null;
   lastHookName: ClaudeHookEventName | null;
   error: string | null;
-  onSendSampleHook: (hookEventName: ClaudeHookEventName) => void;
+  onSendSampleHook: (hookEventName: ClaudeHookEventName, tool?: string) => void;
 };
 
-const SAMPLE_HOOKS: Array<{ hookEventName: ClaudeHookEventName; label: string }> = [
+/**
+ * The three tool buttons send different *kinds* of work, since that is what the
+ * pet acts out (see the engine's tool-families). "Tool (?)" is the agent that
+ * reports no tool name at all — the Codex case, where the pet keeps its own
+ * personality pose.
+ */
+const SAMPLE_HOOKS: Array<{
+  hookEventName: ClaudeHookEventName;
+  label: string;
+  tool?: string;
+}> = [
   { hookEventName: "UserPromptSubmit", label: "Prompt" },
-  { hookEventName: "PreToolUse", label: "Tool" },
+  { hookEventName: "PreToolUse", label: "Tool: read", tool: "Read" },
+  { hookEventName: "PreToolUse", label: "Tool: edit", tool: "Edit" },
+  { hookEventName: "PreToolUse", label: "Tool: run", tool: "Bash" },
+  { hookEventName: "PreToolUse", label: "Tool: ?" },
   { hookEventName: "PermissionRequest", label: "Waiting" },
   { hookEventName: "PostToolUseFailure", label: "Failed" },
   { hookEventName: "TaskCompleted", label: "Done" },
@@ -33,8 +46,8 @@ export function AgentEventPanel({
       <div className="agent-event-panel__actions">
         {SAMPLE_HOOKS.map((sample) => (
           <Button
-            key={sample.hookEventName}
-            onClick={() => onSendSampleHook(sample.hookEventName)}
+            key={sample.label}
+            onClick={() => onSendSampleHook(sample.hookEventName, sample.tool)}
             size="sm"
             variant="neutral"
           >

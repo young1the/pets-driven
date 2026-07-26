@@ -52,11 +52,17 @@ export function createAgentEventFromClaudeHook(
     "agent-a",
   );
 
+  const type = toAgentEventType(hook.hook_event_name);
+
   return createAgentEvent({
-    type: toAgentEventType(hook.hook_event_name),
+    type,
     sourceId,
     at: Number.isFinite(hook.timestamp) ? (hook.timestamp as number) : (options.now ?? Date.now()),
     summary: summaryForHook(hook),
+    // Only a tool pulse carries a tool: it is what the pet acts out, and the
+    // lifecycle events have no tool to speak of. Absent (every Codex hook) is a
+    // supported answer, not a gap.
+    tool: type === "tool.used" ? hook.tool_name : undefined,
   });
 }
 
@@ -77,6 +83,17 @@ function parseClaudeHookPayload(payload: unknown): ClaudeHookPayload {
 }
 
 function toAgentEventType(hookEventName: ClaudeHookEventName): AgentEvent["type"] {
+  // Tool hooks are the heartbeat of a task already running, not the start of a
+  // new one. Reporting them as task.started re-fired the whole start beat
+  // (speech line, 5s priority claim, mood entry) several times a second, which
+  // pinned the pet under an agent-event claim for the entire session.
+  if (
+    hookEventName === "PreToolUse" ||
+    hookEventName === "PostToolUse" ||
+    hookEventName === "PostToolBatch"
+  ) {
+    return "tool.used";
+  }
   if (hookEventName === "PermissionRequest" || hookEventName === "Notification") {
     return "task.waiting";
   }

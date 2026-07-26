@@ -17,7 +17,7 @@ const WORKING_ACTIVITIES = [
  * directly. Before the working styles this ran for an entire task without the
  * sprite row or the status label ever changing — the pet simply stood there.
  */
-function runWorkingTask(seconds: number) {
+function runWorkingTask(seconds: number, tools?: { every: number; names: string[] }) {
   const { world, clock } = createDemoScenario();
   world.pushEvent({ kind: "agent", type: "task.started", sourceId: "agent-a", at: 0 });
 
@@ -28,6 +28,17 @@ function runWorkingTask(seconds: number) {
 
   for (let tick = 0; tick < ticks; tick += 1) {
     clock.advanceBy(16);
+    // A live agent calls tools in a steady stream; each one is a pulse, not a
+    // new task.
+    if (tools && tick > 0 && tick % Math.round(tools.every / 16) === 0) {
+      world.pushEvent({
+        kind: "agent",
+        type: "tool.used",
+        sourceId: "agent-a",
+        at: clock.now(),
+        tool: tools.names[(tick / Math.round(tools.every / 16)) % tools.names.length],
+      });
+    }
     world.step(16);
     const snapshot = world.snapshot();
     const pet = snapshot.pets.find((entry) => entry.sourceId === "agent-a");
@@ -72,6 +83,33 @@ describe("a working pet stays alive on screen", () => {
     const { activities } = runWorkingTask(20);
 
     expect([...activities].some((activity) => WORKING_ACTIVITIES.includes(activity))).toBe(true);
+  });
+
+  /**
+   * The realistic case: a live agent fires a tool hook every ~1.5s for the
+   * whole task. Reporting each one as task.started took a fresh 5s priority
+   * claim every time, so the pet was pinned under it start to finish and not
+   * one working pose ever reached the screen (measured: 1200 of 1200 ticks).
+   */
+  it("still plays its working poses under a stream of tool hooks", () => {
+    const { activities } = runWorkingTask(20, {
+      every: 1_500,
+      names: ["Read", "Edit", "Bash"],
+    });
+
+    expect([...activities].some((activity) => WORKING_ACTIVITIES.includes(activity))).toBe(true);
+  });
+
+  it("acts out more than one kind of work as the agent switches tools", () => {
+    const { activities } = runWorkingTask(30, {
+      every: 1_500,
+      names: ["Read", "Grep", "Edit", "Write", "Bash"],
+    });
+
+    const workingActivities = [...activities].filter((activity) =>
+      WORKING_ACTIVITIES.includes(activity),
+    );
+    expect(workingActivities.length).toBeGreaterThan(1);
   });
 
   /**

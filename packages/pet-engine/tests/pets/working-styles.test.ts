@@ -4,6 +4,7 @@ import {
   isWorkingReason,
   jitteredFocusHoldMs,
   PERSONALITY_WORKING_STYLES,
+  resolveWorkingPose,
   WORKING_FOCUS_REASONS,
   workingStyle,
 } from "@pets-driven/pet-engine/pets/personalities/working-styles";
@@ -40,6 +41,38 @@ describe("PERSONALITY_WORKING_STYLES", () => {
       expect(style.paceChance).toBeGreaterThan(0);
       expect(style.paceChance).toBeLessThan(0.6);
     }
+  });
+
+  /**
+   * Both signals — what the agent is doing and who the pet is — have to survive
+   * in the same body: no personality mirrors the agent every single beat, and
+   * none ignores it entirely.
+   */
+  it("leaves room for both the agent's work and the pet's own character", () => {
+    for (const style of Object.values(PERSONALITY_WORKING_STYLES)) {
+      expect(style.toolFollow).toBeGreaterThanOrEqual(0.3);
+      expect(style.toolFollow).toBeLessThanOrEqual(0.9);
+    }
+    expect(PERSONALITY_WORKING_STYLES.steady.toolFollow).toBeGreaterThan(
+      PERSONALITY_WORKING_STYLES.lazy.toolFollow,
+    );
+  });
+});
+
+describe("resolveWorkingPose", () => {
+  const style = PERSONALITY_WORKING_STYLES.steady; // own pose: working-focus, follow 0.9
+
+  it("acts out the agent's work when the roll falls inside toolFollow", () => {
+    expect(resolveWorkingPose(style, "working-tinker", 0.1)).toBe("working-tinker");
+  });
+
+  it("keeps its own pose when the roll falls outside", () => {
+    expect(resolveWorkingPose(style, "working-tinker", 0.95)).toBe("working-focus");
+  });
+
+  /** No usable tool (Codex, or a stale pulse) is a normal state, not a gap. */
+  it("keeps its own pose when there is no tool work to act out", () => {
+    expect(resolveWorkingPose(style, null, 0)).toBe("working-focus");
   });
 });
 

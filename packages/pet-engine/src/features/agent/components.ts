@@ -32,6 +32,22 @@ export type TaskMovementHoldComponent = {
   since: number;
 };
 
+/**
+ * The kind of work the bound agent was last seen doing, from its tool-use
+ * hooks. Written on every tool pulse and read by the working behavior to pick
+ * a pose, so the pet acts out real work instead of an unrelated loop.
+ *
+ * `family` is null when the agent reported no usable tool name (every Codex
+ * hook, and MCP tools whose names say nothing) — the pet then keeps its own
+ * personality's pose. Stale entries are ignored rather than cleaned up: a pet
+ * whose agent stopped calling tools falls back to its personality on its own.
+ */
+export type AgentToolActivityComponent = {
+  type: "AgentToolActivity";
+  family: import("@pets-driven/pet-engine/features/agent/tool-families").AgentToolFamily | null;
+  at: number;
+};
+
 export type AgentChannelSource =
   // Agent-driven statuses (carry a working/waiting/failed/completed status).
   | "agent-task"

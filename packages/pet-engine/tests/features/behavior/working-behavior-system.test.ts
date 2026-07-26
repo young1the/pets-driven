@@ -18,6 +18,17 @@ function alwaysPaces(): RandomSource {
   return { next: () => 0 };
 }
 
+/**
+ * Scripted rolls, in the order the system draws them: pace check, then the
+ * personality-vs-tool pose roll, then the hold jitter. The last value repeats.
+ */
+function rolls(...values: number[]): RandomSource {
+  let index = 0;
+  return {
+    next: () => values[Math.min(index++, values.length - 1)] ?? 0.5,
+  };
+}
+
 function makeStore(opts: {
   status: "working" | "idle";
   conscientiousness?: number;
@@ -27,6 +38,7 @@ function makeStore(opts: {
   catalogId?: PetPersonalityId;
   motionTarget?: { x: number; y: number } | null;
   existingClaim?: { source: "agent-event" | "autonomous"; expiresAt: number };
+  toolActivity?: { family: "study" | "edit" | "run" | null; at: number };
 }) {
   const components: import("@pets-driven/pet-engine/core/components").Component[] = [
     { type: "AgentTaskState", status: opts.status, since: 0 },
@@ -53,6 +65,14 @@ function makeStore(opts: {
       shape: "rectangle" as const,
     },
   ];
+
+  if (opts.toolActivity) {
+    components.push({
+      type: "AgentToolActivity",
+      family: opts.toolActivity.family,
+      at: opts.toolActivity.at,
+    });
+  }
 
   if (opts.existingClaim) {
     components.push({
@@ -207,6 +227,65 @@ describe("runWorkingBehaviorSystem", () => {
     const mischievousHold =
       mischievous.getComponent("pet", "BehaviorDecisionState")?.expiresAt ?? 0;
     expect(steadyHold).toBeGreaterThan(mischievousHold);
+  });
+
+  // Tool hooks say what the agent is actually doing; the pet acts that out
+  // instead of miming an unrelated loop. steady's own pose is working-focus, so
+  // any other pose here can only have come from the tool.
+  it.each([
+    ["study", "working-ponder"],
+    ["edit", "working-tinker"],
+    ["run", "working-focus"],
+  ] as const)("acts out the agent's %s tool work", (family, reason) => {
+    const store = makeStore({
+      status: "working",
+      catalogId: "steady",
+      toolActivity: { family, at: 100 },
+    });
+
+    // Rolls: no pacing, follow the tool, mid jitter.
+    runWorkingBehaviorSystem(store, createManualClock(600), rolls(0.99, 0.1, 0.5), BOUNDS);
+
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe(reason);
+  });
+
+  it("keeps its own pose when the roll falls outside the personality's tool-follow", () => {
+    const store = makeStore({
+      status: "working",
+      catalogId: "lazy",
+      toolActivity: { family: "edit", at: 100 },
+    });
+
+    // lazy follows the agent only 30% of the time — a 0.8 roll is its own beat.
+    runWorkingBehaviorSystem(store, createManualClock(600), rolls(0.99, 0.8, 0.5), BOUNDS);
+
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("working-loaf");
+  });
+
+  /** Codex reports no tool name, so the pulse carries no family to act out. */
+  it("falls back to the personality pose when the agent named no tool", () => {
+    const store = makeStore({
+      status: "working",
+      catalogId: "skittish",
+      toolActivity: { family: null, at: 100 },
+    });
+
+    runWorkingBehaviorSystem(store, createManualClock(600), rolls(0.99, 0, 0.5), BOUNDS);
+
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("working-fuss");
+  });
+
+  /** A long gap between tools means the last one no longer describes anything. */
+  it("stops acting out a tool once its pulse goes stale", () => {
+    const store = makeStore({
+      status: "working",
+      catalogId: "steady",
+      toolActivity: { family: "study", at: 100 },
+    });
+
+    runWorkingBehaviorSystem(store, createManualClock(30_000), rolls(0.99, 0, 0.5), BOUNDS);
+
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("working-focus");
   });
 
   it("a restless pet paces far more often than a diligent one", () => {

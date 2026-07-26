@@ -26,11 +26,31 @@ describe("agent event adapter", () => {
     });
   });
 
+  it("carries the reported tool on a tool pulse world event", () => {
+    const event = createAgentEvent({
+      type: "tool.used",
+      sourceId: "agent-a",
+      at: 10,
+      summary: "Bash tool activity",
+      tool: "Bash",
+    });
+
+    expect(toWorldEvent(event)).toEqual({
+      kind: "agent",
+      type: "tool.used",
+      sourceId: "agent-a",
+      at: 10,
+      summary: "Bash tool activity",
+      tool: "Bash",
+    });
+  });
+
   it.each([
     ["UserPromptSubmit", "task.started", "New prompt received"],
-    ["PreToolUse", "task.started", "Bash tool activity"],
-    ["PostToolUse", "task.started", "Bash tool activity"],
-    ["PostToolBatch", "task.started", "Working"],
+    // Tool hooks are the heartbeat of a running task, not a new task each time.
+    ["PreToolUse", "tool.used", "Bash tool activity"],
+    ["PostToolUse", "tool.used", "Bash tool activity"],
+    ["PostToolBatch", "tool.used", "Working"],
     ["PermissionRequest", "task.waiting", "Permission required"],
     ["Notification", "task.waiting", "Needs attention"],
     ["PostToolUseFailure", "task.failed", "Task failed"],
@@ -38,11 +58,13 @@ describe("agent event adapter", () => {
     ["Stop", "task.completed", "Task completed"],
     ["TaskCompleted", "task.completed", "Task completed"],
   ] as const)("maps Claude %s hooks into %s agent events", (hookEventName, type, summary) => {
+    const toolName = hookEventName.includes("Tool") ? "Bash" : undefined;
+
     expect(
       createAgentEventFromClaudeHook(
         {
           hook_event_name: hookEventName,
-          tool_name: hookEventName.includes("Tool") ? "Bash" : undefined,
+          tool_name: toolName,
         },
         { defaultSourceId: "agent-a", now: 10 },
       ),
@@ -51,7 +73,20 @@ describe("agent event adapter", () => {
       sourceId: "agent-a",
       at: 10,
       summary,
+      // Only a pulse carries the tool; a failure hook named "…ToolUseFailure"
+      // is a lifecycle event and drops it.
+      tool: type === "tool.used" ? toolName : undefined,
     });
+  });
+
+  it("leaves the tool absent for an agent that reports none (Codex)", () => {
+    const event = createAgentEventFromClaudeHook(
+      { hook_event_name: "PreToolUse", summary: "Codex tool started" },
+      { defaultSourceId: "codex", now: 10 },
+    );
+
+    expect(event.type).toBe("tool.used");
+    expect(event.tool).toBeUndefined();
   });
 
   it("prefers explicit Claude hook source and summary fields", () => {

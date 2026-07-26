@@ -167,12 +167,14 @@ export function DemoPlaygroundView() {
     };
   }, [handleAgentEventInput, handleClaudeHookPayload]);
 
-  function sendSampleHook(hookEventName: ClaudeHookEventName) {
+  function sendSampleHook(hookEventName: ClaudeHookEventName, tool?: string) {
     handleClaudeHookPayload({
       hook_event_name: hookEventName,
       sourceId: selectedPetId === "pet-b" ? "agent-b" : "agent-a",
       at: scenarioRef.current.clock.now(),
-      tool_name: hookEventName.includes("Tool") ? "Bash" : undefined,
+      // Omitted on purpose for the "Tool: ?" sample: an agent that reports no
+      // tool name (Codex) must still work, with the pet keeping its own pose.
+      tool_name: tool,
     });
     advanceFrame();
   }

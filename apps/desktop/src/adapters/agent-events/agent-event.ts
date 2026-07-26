@@ -1,10 +1,21 @@
-export type AgentEventType = "task.started" | "task.waiting" | "task.completed" | "task.failed";
+export type AgentEventType =
+  | "task.started"
+  | "tool.used"
+  | "task.waiting"
+  | "task.completed"
+  | "task.failed";
 
 export type AgentEvent = {
   type: AgentEventType;
   sourceId: string;
   at: number;
   summary?: string;
+  /**
+   * The tool a `tool.used` event reports, when the agent names one. Claude
+   * hooks carry `tool_name`; Codex hooks carry nothing, and the pet then falls
+   * back to its own personality rather than acting out work it cannot place.
+   */
+  tool?: string;
 };
 
 type AgentEventInput = {
@@ -12,10 +23,12 @@ type AgentEventInput = {
   sourceId: string;
   at: number;
   summary?: string;
+  tool?: string;
 };
 
 const AGENT_EVENT_TYPES = new Set<AgentEventType>([
   "task.started",
+  "tool.used",
   "task.waiting",
   "task.completed",
   "task.failed",

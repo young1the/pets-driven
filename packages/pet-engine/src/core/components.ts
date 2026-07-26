@@ -5,6 +5,7 @@ export type {
   AgentChannelSource,
   AgentChannelStateComponent,
   AgentChannelStatus,
+  AgentToolActivityComponent,
   CompletionBehaviorComponent,
   CompletionIntent,
   IdleConversationComponent,
@@ -104,6 +105,7 @@ import type {
   ActivityStateComponent,
   AgentBindingComponent,
   AgentChannelStateComponent,
+  AgentToolActivityComponent,
   CompletionBehaviorComponent,
   IdleConversationComponent,
   SpeechProfileComponent,
@@ -193,6 +195,7 @@ export type Component =
   | PerceptionComponent
   | AgentBindingComponent
   | AgentTaskStateComponent
+  | AgentToolActivityComponent
   | PersonalityComponent
   | AirborneTagComponent
   | BehaviorDecisionStateComponent

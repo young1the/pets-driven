@@ -204,6 +204,10 @@ _Avoid_: behavior, status, intent
 How a **Pet** occupies itself while its **Agent Work State** is working — the pose its **Personality Catalog** entry holds (heads down, tinkering, mulling over, fussing over, taking it easy) and how often it breaks off to pace. It is what a working **Pet** reports as its **Activity**.
 _Avoid_: agent work state, signature activity, idle
 
+**Tool Pulse**:
+A single tool call by an **Agent Source**, forwarded through the **Agent Event Feed**. It refreshes an already-running task rather than starting a new one, and reports the kind of work — reading, editing, or running something — that the **Pet** acts out. An **Agent Source** that reports no tool name emits the pulse without one.
+_Avoid_: task start, agent work state, tool log
+
 **Pet Status Card**:
 A card presentation of a **Pet** that combines its **Agent Work State** (as tone and color) and its **Activity** (as label) into a single chip. Presentation only, not a domain concept.
 _Avoid_: status, pet state
@@ -356,6 +360,9 @@ _Avoid_: Social Session, relationship, copied personality
 - A **Personality Catalog** entry defines two signature **Activities** that other entries do not select; signature activities use sustained claims and choreography so their identity is readable on the **Pet Surface**.
 - A **Personality Catalog** entry also defines one **Working Style**; while the **Agent Work State** is working, the **Pet** alternates that style's sustained pose with short pacing walks, and the pose it holds is the **Activity** it reports.
 - A **Pet** with a live **Agent Work State** (working, waiting, completed, or failed) does not start ambient idle dialogue, and no spoken line takes its presentation out of the work tone — a **Pet** mid-task never reads as one whose task was released.
+- A **Tool Pulse** keeps a working **Pet** working: it never re-announces the task, and on a **Pet** holding a settled report it means the **Agent Source** resumed.
+- A **Tool Pulse** decides which **Working Style** pose the **Pet** plays for a beat, weighted by its **Personality Catalog** entry; a pulse with no reported tool, or one too old to still describe the work, leaves the **Pet** its own pose.
+- A **Tool Pulse** never changes what a **Pet** says or the label it shows: the tool identity reaches the user as movement only, so **Agent Sources** that report tool names and ones that do not read the same.
 - A nearby idle **Pet** able to socialize considers each observed signature **Activity** once and may start a **Signature Reaction**.
 - A **Signature Reaction** uses the responder's own personality to choose join, cheer, watch, or keep-distance; joining borrows the source signature's readable pose without changing the responder's **Pet Profile**.
 - At most two **Pets** respond to one signature **Activity** occurrence, keeping the moment readable.
