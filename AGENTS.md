@@ -27,10 +27,10 @@ pnpm test:e2e         # Playwright, desktop only
 | Path | What it owns | Docs |
 | --- | --- | --- |
 | `apps/desktop` | Tauri shell, pet windows, agent event ingress | `apps/desktop/AGENTS.md` |
-| `crates/pets-driven-core` | Authoritative Pet + Registered Working Directory state behind a repository seam | — |
-| `crates/pets-driven-fs` | Shared on-disk `state.v1.json` repository with a cross-process file lock | — |
-| `crates/pets-driven-protocol` | Hook-forwarding wire contract (routes, synthesized event) | — |
-| `crates/pets-driven-cli` | The `pdd` CLI: direct state ops + live hook forwarding | — |
+| `crates/pets-driven-core` | Authoritative Pet + Registered Working Directory state behind a repository seam | `crates/AGENTS.md` |
+| `crates/pets-driven-fs` | Shared on-disk `state.v1.json` repository with a cross-process file lock | `crates/AGENTS.md` |
+| `crates/pets-driven-protocol` | Hook-forwarding wire contract (routes, synthesized event) | `crates/AGENTS.md` |
+| `crates/pets-driven-cli` | The `pdd` CLI: direct state ops + live hook forwarding | `crates/AGENTS.md` |
 | `apps/web` | Landing site + Remotion demo video | `apps/web/AGENTS.md` |
 | `packages/pet-engine` | ECS simulation, personalities, sprite state | `packages/pet-engine/AGENTS.md` |
 | `packages/design-system` | Tokens and shared React components | `packages/design-system/AGENTS.md` |
