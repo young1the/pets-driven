@@ -190,7 +190,6 @@ export function MainWindowSurface({
         folder: editDirPath ?? "",
         cwd: editDirPath ? shortWorkingDir(editDirPath) : null,
         memo: editingPet.memo ?? "",
-        deployed: editingPet.visible,
         personalityId: profileFor(editingPet)?.personalityId,
       }
     : null;
@@ -240,8 +239,6 @@ export function MainWindowSurface({
         onPersonalityId: (value) => editPetId && onSetPetPersonality(editPetId, value),
         onPickFolder: () => editPetId && onPickFolderForPet(editPetId),
         onClearFolder: () => editPetId && onClearFolderForPet(editPetId),
-        onToggleDeployed: () =>
-          editPetId && (editingPet?.visible ? onHidePet(editPetId) : onShowPet(editPetId)),
         onDelete: () => editPetId && onDeletePet(editPetId),
         onDone: () => setEditPetId(null),
       }}

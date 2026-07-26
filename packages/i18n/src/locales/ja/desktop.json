@@ -163,8 +163,6 @@
     "clearFolder": "フォルダを外す",
     "note": "メモ",
     "notePlaceholder": "このペットについてのメモを書いてみましょう…",
-    "showOnDesktop": "デスクトップに表示",
-    "showOnDesktopHint": "このペットを相棒としてデスクトップに出しておきます。",
     "deletePet": "ペットを削除",
     "done": "完了"
   },

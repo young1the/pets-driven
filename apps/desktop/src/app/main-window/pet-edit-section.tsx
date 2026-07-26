@@ -4,7 +4,6 @@ import {
   CloseIcon,
   FolderIcon,
   PetShowcaseCard,
-  Switch,
   TrashIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
@@ -23,7 +22,6 @@ export interface PetEditView {
   folder: string;
   cwd: string | null;
   memo: string;
-  deployed: boolean;
   personalityId: PetPersonalityId | undefined;
 }
 
@@ -41,7 +39,6 @@ export interface PetEditSectionProps {
   onPersonalityId: (value: PetPersonalityId) => void;
   onPickFolder: () => void;
   onClearFolder: () => void;
-  onToggleDeployed: () => void;
   onDelete: () => void;
   onDone: () => void;
 }
@@ -77,7 +74,6 @@ export function PetEditSection({
   onPersonalityId,
   onPickFolder,
   onClearFolder,
-  onToggleDeployed,
   onDelete,
   onDone,
 }: PetEditSectionProps) {
@@ -293,37 +289,6 @@ export function PetEditSection({
                 value={pet.memo}
               />
             </label>
-
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "12px 14px",
-                background: "var(--surface-sunken)",
-                borderRadius: "14px",
-              }}
-            >
-              <Switch
-                checked={pet.deployed}
-                onChange={onToggleDeployed}
-                size="sm"
-                className="pd-edit-deploy-toggle"
-              >
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: "14px",
-                      color: "var(--text-strong)",
-                    }}
-                  >
-                    {t("edit.showOnDesktop")}
-                  </div>
-                  <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
-                    {t("edit.showOnDesktopHint")}
-                  </div>
-                </div>
-              </Switch>
-            </div>
 
             <div
               style={{

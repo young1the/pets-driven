@@ -158,11 +158,6 @@
   cursor: grabbing;
 }
 
-.pd-edit-deploy-toggle {
-  width: 100%;
-  align-items: center;
-}
-
 /* In-field status dot. The working variant pulses a soft ring so an actively
    working pet reads as "busy" at a glance, distinct from a static idle dot. */
 .pd-field-dot--working {

@@ -163,8 +163,6 @@
     "clearFolder": "Clear folder",
     "note": "Note",
     "notePlaceholder": "Add a note about this pet…",
-    "showOnDesktop": "Show on desktop",
-    "showOnDesktopHint": "Keep this pet out on the desktop as a companion.",
     "deletePet": "Delete pet",
     "done": "Done"
   },

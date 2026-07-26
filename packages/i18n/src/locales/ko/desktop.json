@@ -163,8 +163,6 @@
     "clearFolder": "폴더 연결 해제",
     "note": "메모",
     "notePlaceholder": "이 펫에 대한 메모를 남겨 보세요…",
-    "showOnDesktop": "데스크탑에 표시",
-    "showOnDesktopHint": "이 펫을 데스크탑에 동무로 내보내 두세요.",
     "deletePet": "펫 삭제",
     "done": "완료"
   },

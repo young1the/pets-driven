@@ -18,7 +18,6 @@ const edit = {
   onPersonalityId: vi.fn(),
   onPickFolder: vi.fn(),
   onClearFolder: vi.fn(),
-  onToggleDeployed: vi.fn(),
   onDelete: vi.fn(),
   onDone: vi.fn(),
 };
@@ -108,10 +107,9 @@ describe("MainWindow", () => {
         gradient: { from: "#8B7FE8", to: "#6F5FD6" },
         folder: "core",
         memo: "",
-        deployed: false,
       },
     });
-    expect(screen.getByText("Pet details")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Otto")).toBeInTheDocument();
   });
 
   it("coaches the pets-driven skills on the terminal tab", () => {

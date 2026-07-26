@@ -12,7 +12,6 @@ const pet = {
   folder: "core",
   cwd: null,
   memo: "Watch the auth queue",
-  deployed: false,
   personalityId: "steady" as PetPersonalityId,
 };
 
@@ -24,7 +23,6 @@ function setup(overrides = {}) {
     onPersonalityId: vi.fn(),
     onPickFolder: vi.fn(),
     onClearFolder: vi.fn(),
-    onToggleDeployed: vi.fn(),
     onDelete: vi.fn(),
     onDone: vi.fn(),
     ...overrides,
@@ -70,13 +68,6 @@ describe("PetEditSection", () => {
     setup({ onDone });
     fireEvent.click(screen.getByText("Done"));
     expect(onDone).toHaveBeenCalled();
-  });
-
-  it("toggles show-on-desktop by clicking its label text", () => {
-    const onToggleDeployed = vi.fn();
-    setup({ onToggleDeployed });
-    fireEvent.click(screen.getByText("Show on desktop"));
-    expect(onToggleDeployed).toHaveBeenCalledTimes(1);
   });
 
   it("clears the folder via the clear button when a folder is set", () => {
