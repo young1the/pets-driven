@@ -28,7 +28,7 @@ import {
   SpeechExpirationSystem,
   TaskMovementHoldSystem,
   WorkingBehaviorSystem,
-} from "@pets-driven/pet-engine/features/behavior/systems";
+} from "@pets-driven/pet-engine/features/behavior/behavior-systems";
 import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
 import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
 import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
