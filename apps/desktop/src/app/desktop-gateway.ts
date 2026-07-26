@@ -59,11 +59,12 @@ export type TerminalShellOption = { label: string; path: string };
  */
 export type PetSourceDirectoryOption = { kind: "petdex" | "codex"; path: string };
 
-export type ClaudePluginState = "cli-missing" | "not-installed" | "installed" | "error";
+export type AgentPluginProvider = "claude" | "codex";
+export type AgentPluginState = "cli-missing" | "not-installed" | "installed" | "error";
 
-/** Install state of the bundled Claude Code plugin, as reported by the CLI. */
-export type ClaudePluginStatus = {
-  state: ClaudePluginState;
+/** Install state of a bundled agent plugin, as reported by the provider CLI. */
+export type AgentPluginStatus = {
+  state: AgentPluginState;
   version: string | null;
   error: string | null;
 };
@@ -72,12 +73,12 @@ export type ClaudePluginStatus = {
  * What to run in the in-app terminal to install or remove the plugin. `line` is
  * null when preparation already failed, in which case `status` carries the why.
  */
-export type ClaudePluginPlan = {
+export type AgentPluginPlan = {
   line: string | null;
-  status: ClaudePluginStatus;
+  status: AgentPluginStatus;
 };
 
-export type ClaudePluginAction = "install" | "uninstall";
+export type AgentPluginAction = "install" | "uninstall";
 
 /**
  * Thin gateway over the Tauri commands the app shell and onboarding need.
@@ -173,11 +174,16 @@ export type DesktopGateway = {
    * Resolves with the number of pets newly copied; 0 outside Tauri.
    */
   copyBundledPetsToSourceDirectory(): Promise<number>;
-  getClaudePluginStatus(): Promise<ClaudePluginStatus>;
+  getClaudePluginStatus(): Promise<AgentPluginStatus>;
   /** Resolve the `claude` line to run in the terminal for an install/uninstall. */
-  planClaudePluginCommand(action: ClaudePluginAction): Promise<ClaudePluginPlan>;
-  installClaudePlugin(): Promise<ClaudePluginStatus>;
-  uninstallClaudePlugin(): Promise<ClaudePluginStatus>;
+  planClaudePluginCommand(action: AgentPluginAction): Promise<AgentPluginPlan>;
+  installClaudePlugin(): Promise<AgentPluginStatus>;
+  uninstallClaudePlugin(): Promise<AgentPluginStatus>;
+  getCodexPluginStatus(): Promise<AgentPluginStatus>;
+  /** Resolve the `codex` line to run in the terminal for an install/uninstall. */
+  planCodexPluginCommand(action: AgentPluginAction): Promise<AgentPluginPlan>;
+  installCodexPlugin(): Promise<AgentPluginStatus>;
+  uninstallCodexPlugin(): Promise<AgentPluginStatus>;
 
   /** Whether we're running inside the Tauri desktop shell (vs. browser/tests). */
   isDesktopRuntime(): boolean;
@@ -230,7 +236,7 @@ export type DesktopGateway = {
   subscribeTerminalExit(handler: (event: TerminalExitEvent) => void): Promise<Unsubscribe>;
 };
 
-const CLAUDE_PLUGIN_UNAVAILABLE: ClaudePluginStatus = {
+const AGENT_PLUGIN_UNAVAILABLE: AgentPluginStatus = {
   state: "cli-missing",
   version: null,
   error: null,
@@ -399,34 +405,66 @@ export const desktopGateway: DesktopGateway = {
 
   async getClaudePluginStatus() {
     if (!isTauri()) {
-      return CLAUDE_PLUGIN_UNAVAILABLE;
+      return AGENT_PLUGIN_UNAVAILABLE;
     }
 
-    return await invoke<ClaudePluginStatus>("get_claude_plugin_status");
+    return await invoke<AgentPluginStatus>("get_claude_plugin_status");
   },
 
-  async planClaudePluginCommand(action: ClaudePluginAction) {
+  async planClaudePluginCommand(action: AgentPluginAction) {
     if (!isTauri()) {
-      return { line: null, status: CLAUDE_PLUGIN_UNAVAILABLE };
+      return { line: null, status: AGENT_PLUGIN_UNAVAILABLE };
     }
 
-    return await invoke<ClaudePluginPlan>("plan_claude_plugin_command", { action });
+    return await invoke<AgentPluginPlan>("plan_claude_plugin_command", { action });
   },
 
   async installClaudePlugin() {
     if (!isTauri()) {
-      return CLAUDE_PLUGIN_UNAVAILABLE;
+      return AGENT_PLUGIN_UNAVAILABLE;
     }
 
-    return await invoke<ClaudePluginStatus>("install_claude_plugin");
+    return await invoke<AgentPluginStatus>("install_claude_plugin");
   },
 
   async uninstallClaudePlugin() {
     if (!isTauri()) {
-      return CLAUDE_PLUGIN_UNAVAILABLE;
+      return AGENT_PLUGIN_UNAVAILABLE;
     }
 
-    return await invoke<ClaudePluginStatus>("uninstall_claude_plugin");
+    return await invoke<AgentPluginStatus>("uninstall_claude_plugin");
+  },
+
+  async getCodexPluginStatus() {
+    if (!isTauri()) {
+      return AGENT_PLUGIN_UNAVAILABLE;
+    }
+
+    return await invoke<AgentPluginStatus>("get_codex_plugin_status");
+  },
+
+  async planCodexPluginCommand(action: AgentPluginAction) {
+    if (!isTauri()) {
+      return { line: null, status: AGENT_PLUGIN_UNAVAILABLE };
+    }
+
+    return await invoke<AgentPluginPlan>("plan_codex_plugin_command", { action });
+  },
+
+  async installCodexPlugin() {
+    if (!isTauri()) {
+      return AGENT_PLUGIN_UNAVAILABLE;
+    }
+
+    return await invoke<AgentPluginStatus>("install_codex_plugin");
+  },
+
+  async uninstallCodexPlugin() {
+    if (!isTauri()) {
+      return AGENT_PLUGIN_UNAVAILABLE;
+    }
+
+    return await invoke<AgentPluginStatus>("uninstall_codex_plugin");
   },
 
   isDesktopRuntime() {

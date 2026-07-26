@@ -1,5 +1,6 @@
 mod claude_hook_ingress;
 mod claude_plugin;
+mod codex_plugin;
 mod embedded_terminal;
 mod pet_assets;
 mod pet_windows;
@@ -85,6 +86,10 @@ pub fn run() {
             claude_plugin::plan_claude_plugin_command,
             claude_plugin::install_claude_plugin,
             claude_plugin::uninstall_claude_plugin,
+            codex_plugin::get_codex_plugin_status,
+            codex_plugin::plan_codex_plugin_command,
+            codex_plugin::install_codex_plugin,
+            codex_plugin::uninstall_codex_plugin,
             state_commands::read_pets_driven_state,
             state_commands::write_pets_driven_state,
             state_commands::hatch_pet_record,

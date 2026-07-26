@@ -67,7 +67,7 @@ import { Wordmark } from "@/app/onboarding/wordmark";
 import { PetLookStrip } from "@/app/pet-assets/pet-look-strip";
 import { buildLaunchLine, parseLaunchLine } from "@/app/session-launch-line";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
-import { useClaudePlugin } from "@/app/use-claude-plugin";
+import { useAgentPlugin } from "@/app/use-agent-plugin";
 import { type PetsDrivenState, setPetSourceDirectory } from "@/app-state/pets-driven-state";
 
 const PETDEX_URL = "https://petdex.dev";
@@ -153,7 +153,8 @@ export function SetupWizard({
   const { t } = useTranslation("desktop");
   const { mode, setMode, accent, setAccent } = useDesktopTheme();
   const { locale, setLocale } = useDesktopLocale();
-  const claudePlugin = useClaudePlugin(gateway);
+  const claudePlugin = useAgentPlugin(gateway, "claude");
+  const codexPlugin = useAgentPlugin(gateway, "codex");
   const [step, setStep] = useState<WizardStep>("welcome");
   const [looksFound, setLooksFound] = useState<number | null>(null);
   const [petPackages, setPetPackages] = useState<CodexPetPackage[]>([]);
@@ -312,15 +313,20 @@ export function SetupWizard({
         ? t("settings.themeDark")
         : t("settings.themeSystem");
 
-  const pluginHint = !claudePlugin.status
-    ? t("claudePlugin.checking")
-    : claudePlugin.status.state === "installed"
-      ? t("claudePlugin.installedHint")
-      : claudePlugin.status.state === "cli-missing"
-        ? t("claudePlugin.cliMissing")
-        : claudePlugin.status.state === "error"
-          ? (claudePlugin.status.error ?? t("claudePlugin.error"))
-          : t("claudePlugin.notInstalledHint");
+  function pluginHint(plugin: typeof claudePlugin) {
+    const key = `${plugin.provider}Plugin`;
+    return !plugin.status
+      ? t(`${key}.checking`)
+      : plugin.status.state === "installed"
+        ? t(`${key}.installedHint`)
+        : plugin.status.state === "cli-missing"
+          ? t(`${key}.cliMissing`)
+          : plugin.status.state === "error"
+            ? (plugin.status.error ?? t(`${key}.error`))
+            : t(`${key}.notInstalledHint`);
+  }
+
+  const pluginRun = claudePlugin.run ?? codexPlugin.run;
 
   return (
     <main
@@ -663,8 +669,8 @@ export function SetupWizard({
                   <b style={{ display: "block", color: "var(--text-strong)", fontSize: "15px" }}>
                     {t("setupWizard.claudeName")}
                   </b>
-                  <span style={pluginSubtitle} title={pluginHint}>
-                    {pluginHint}
+                  <span style={pluginSubtitle} title={pluginHint(claudePlugin)}>
+                    {pluginHint(claudePlugin)}
                   </span>
                 </div>
                 {claudePlugin.status?.state === "installed" ? (
@@ -679,14 +685,27 @@ export function SetupWizard({
                   </Button>
                 ) : null}
               </div>
-              <div style={pluginCard(false, true)}>
+              <div style={pluginCard(codexPlugin.status?.state === "installed", false)}>
                 <span style={{ ...pluginBadge, background: "var(--ink-900)" }}>‹›</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <b style={{ display: "block", color: "var(--text-strong)", fontSize: "15px" }}>
                     {t("setupWizard.codexName")}
                   </b>
-                  <span style={pluginSubtitle}>{t("setupWizard.comingSoon")}</span>
+                  <span style={pluginSubtitle} title={pluginHint(codexPlugin)}>
+                    {pluginHint(codexPlugin)}
+                  </span>
                 </div>
+                {codexPlugin.status?.state === "installed" ? (
+                  <span className="pd-onb__connect-ok">✓ {t("codexPlugin.installed")}</span>
+                ) : codexPlugin.status && codexPlugin.status.state !== "cli-missing" ? (
+                  <Button disabled={codexPlugin.busy} onClick={() => codexPlugin.install()}>
+                    {codexPlugin.busy
+                      ? t("codexPlugin.installing")
+                      : codexPlugin.status.state === "error"
+                        ? t("codexPlugin.retry")
+                        : t("codexPlugin.install")}
+                  </Button>
+                ) : null}
               </div>
             </div>
 
@@ -696,11 +715,13 @@ export function SetupWizard({
             <p style={fieldHint}>{t("setupWizard.pluginTerminalHint")}</p>
             {/* While an install is running, this slot shows that run instead of
                 a blank shell — same place, so the step's layout does not jump. */}
-            {claudePlugin.run ? (
+            {pluginRun ? (
               <PluginRunTerminal
                 available={isTauri()}
-                onClose={claudePlugin.dismissRun}
-                run={claudePlugin.run}
+                onClose={
+                  pluginRun.provider === "claude" ? claudePlugin.dismissRun : codexPlugin.dismissRun
+                }
+                run={pluginRun}
               />
             ) : (
               <div style={inlineTermShell}>
@@ -748,6 +769,11 @@ export function SetupWizard({
                   {claudePlugin.status?.state === "installed"
                     ? t("setupWizard.claudeConnected")
                     : t("setupWizard.claudeNotConnected")}
+                </span>
+                <span style={doneChip}>
+                  {codexPlugin.status?.state === "installed"
+                    ? t("setupWizard.codexConnected")
+                    : t("setupWizard.codexNotConnected")}
                 </span>
               </div>
               <div style={doneActions}>

@@ -47,6 +47,25 @@ function createGateway(
       version: null,
       error: null,
     }),
+    getCodexPluginStatus: vi.fn().mockResolvedValue({
+      state: "not-installed",
+      version: null,
+      error: null,
+    }),
+    planCodexPluginCommand: vi.fn().mockResolvedValue({
+      line: "codex plugin add pets-driven@pets-driven",
+      status: { state: "not-installed", version: null, error: null },
+    }),
+    installCodexPlugin: vi.fn().mockResolvedValue({
+      state: "installed",
+      version: "0.1.0",
+      error: null,
+    }),
+    uninstallCodexPlugin: vi.fn().mockResolvedValue({
+      state: "not-installed",
+      version: null,
+      error: null,
+    }),
     isDesktopRuntime: vi.fn().mockReturnValue(false),
     loadPetSpritesheet: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
     getClaudeHookIngressStatus: vi.fn().mockResolvedValue({

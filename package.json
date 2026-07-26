@@ -18,7 +18,7 @@
     "build:playground": "pnpm --filter pets-driven build:playground",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test && pnpm test:scripts",
-    "test:scripts": "node --test \"scripts/*.test.mjs\"",
+    "test:scripts": "node --test \"scripts/*.test.mjs\" \"plugins/pets-driven/tests/*.test.mjs\"",
     "test:e2e": "pnpm --filter pets-driven test:e2e",
     "tauri": "pnpm --filter pets-driven tauri",
     "sync-pets": "node scripts/sync-pet-assets.mjs",

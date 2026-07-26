@@ -13,7 +13,7 @@ import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import { usePetAssetOptions } from "@/app/pet-assets/use-pet-asset-options";
 import { personalityRoleLabelKey } from "@/app/pet-presentation";
 import { parseLaunchLine, promptForShell } from "@/app/session-launch-line";
-import type { useClaudePlugin } from "@/app/use-claude-plugin";
+import type { useAgentPlugin } from "@/app/use-agent-plugin";
 import { getWorkingDirectoryForPet } from "@/app-state/pet-adoption";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
 import type { PetPatch, PetRecord, PetsDrivenState } from "@/app-state/pets-driven-state";
@@ -31,7 +31,8 @@ export interface MainWindowSurfaceProps {
   setMainTab: (tab: MainWindowTab) => void;
   toast: string | null;
   claudeHookIngressStatus: ClaudeHookIngressStatus;
-  claudePlugin: ReturnType<typeof useClaudePlugin>;
+  claudePlugin: ReturnType<typeof useAgentPlugin>;
+  codexPlugin: ReturnType<typeof useAgentPlugin>;
   navigate: (view: AppView) => void;
   onShowPet: (petId: string) => void;
   onHidePet: (petId: string) => void;
@@ -85,6 +86,7 @@ export function MainWindowSurface({
   toast,
   claudeHookIngressStatus,
   claudePlugin,
+  codexPlugin,
   navigate,
   onShowPet,
   onHidePet,
@@ -273,17 +275,31 @@ export function MainWindowSurface({
           lastSignal: describeHookLastSignal(claudeHookIngressStatus, t, Date.now()),
           endpoint: claudeHookIngressStatus.url,
           error: claudeHookIngressStatus.error,
-          activity: claudeHookIngressStatus.recent,
-          rejectedCount: claudeHookIngressStatus.rejectedCount,
+          activity: claudeHookIngressStatus.recent ?? [],
+          rejectedCount: claudeHookIngressStatus.rejectedCount ?? 0,
           onSendTest: () => desktopGateway.sendTestHookEvent(),
         },
-        plugin: claudePlugin.status,
-        pluginBusy: claudePlugin.busy,
-        pluginRun: claudePlugin.run,
+        plugins: [
+          {
+            provider: "claude",
+            status: claudePlugin.status,
+            busy: claudePlugin.busy,
+            run: claudePlugin.run,
+            onInstall: () => claudePlugin.install(),
+            onUninstall: () => claudePlugin.uninstall(),
+            onCloseRun: () => claudePlugin.dismissRun(),
+          },
+          {
+            provider: "codex",
+            status: codexPlugin.status,
+            busy: codexPlugin.busy,
+            run: codexPlugin.run,
+            onInstall: () => codexPlugin.install(),
+            onUninstall: () => codexPlugin.uninstall(),
+            onCloseRun: () => codexPlugin.dismissRun(),
+          },
+        ],
         terminalAvailable: isTauri(),
-        onInstallPlugin: () => claudePlugin.install(),
-        onUninstallPlugin: () => claudePlugin.uninstall(),
-        onClosePluginRun: () => claudePlugin.dismissRun(),
         petSourceDirectory: state.petSourceDirectory,
         onChangePetFolder: () => onChangePetSourceFolder(),
         onOpenPetFolder: () => onRevealFolder(state.petSourceDirectory),

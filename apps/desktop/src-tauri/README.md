@@ -50,8 +50,13 @@ from the app's own frontend through `@tauri-apps/api`'s `invoke()`.
 | `get_claude_hook_ingress_status` | `claude_hook_ingress` | — | `{ url, state, error?, lastEventAt?, lastEventName?, receivedCount, rejectedCount, recent[] }` | Status of the local HTTP ingress (pending / listening / error) plus the traffic it has seen. `recent` is the last 12 requests, newest first, each `{ at, label, accepted }` — a release build has no console, so this is where "is a hook arriving?" gets answered. |
 | `send_test_claude_hook_ingress_event` | `claude_hook_ingress` | `cwd?` | HTTP status line | Posts a synthetic hook to our own loopback ingress for the given (or current) `cwd`. Travels the real socket, so it proves the listener is reachable and routing. |
 | `get_claude_plugin_status` | `claude_plugin` | — | `ClaudePluginStatus` | Whether the Claude Code plugin is installed. |
+| `plan_claude_plugin_command` | `claude_plugin` | `action` | `ClaudePluginPlan` | Prepares the visible Claude Code install or removal command and refreshes its bundled marketplace. |
 | `install_claude_plugin` | `claude_plugin` | — | `ClaudePluginStatus` | Installs the bundled Claude Code plugin. |
 | `uninstall_claude_plugin` | `claude_plugin` | — | `ClaudePluginStatus` | Uninstalls the Claude Code plugin. |
+| `get_codex_plugin_status` | `codex_plugin` | — | `CodexPluginStatus` | Whether the Codex plugin is installed in both the user's canonical Codex home and any active launcher-specific home. |
+| `plan_codex_plugin_command` | `codex_plugin` | `action` | `CodexPluginPlan` | Prepares the visible Codex install or removal command and registers its bundled marketplace in every relevant Codex home. |
+| `install_codex_plugin` | `codex_plugin` | — | `CodexPluginStatus` | Installs the bundled Codex plugin. |
+| `uninstall_codex_plugin` | `codex_plugin` | — | `CodexPluginStatus` | Uninstalls the Codex plugin. |
 | `read_pets_driven_state` | `state_store` | — | JSON state | Reads the full persisted pets-driven state. |
 | `write_pets_driven_state` | `state_store` | `state` | `()` | Overwrites the full persisted state document. Last-writer-wins, so it is reserved for the flows that own the whole document (the Settings reset) — every other mutation uses the four commands below. |
 | `hatch_pet_record` | `state_store` | `input: { assetId, name, personalityId, cwd? }` | JSON state | Adopts a pet. Same as `POST /pets-driven/hatch`, except `cwd` may be null (a pet with no folder bound). |
@@ -76,3 +81,10 @@ from the app's own frontend through `@tauri-apps/api`'s `invoke()`.
 | `terminal_write` | `embedded_terminal` | `id, data` | `()` | Writes input to an embedded PTY session. |
 | `terminal_resize` | `embedded_terminal` | `id, cols, rows` | `()` | Resizes an embedded PTY session. |
 | `terminal_close` | `embedded_terminal` | `id` | `()` | Closes and removes an embedded PTY session. |
+
+Codex plugin commands target both an inherited `CODEX_HOME` and the user's
+canonical Codex home when those paths differ. Agent launchers may point their
+child process at a generated runtime home, which is the configuration the
+currently running agent reads. The canonical home remains the durable source
+that survives launcher restarts, so updating both makes Hook Setup effective
+immediately without losing it on the next launch.

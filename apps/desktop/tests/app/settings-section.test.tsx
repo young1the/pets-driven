@@ -2,8 +2,24 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SettingsSection } from "@/app/main-window/settings-section";
 
-function setup(overrides = {}) {
-  const props = {
+function plugin(
+  provider: "claude" | "codex",
+  state: "cli-missing" | "not-installed" | "installed" | "error",
+  version: string | null = null,
+) {
+  return {
+    provider,
+    status: { state, version, error: null },
+    busy: false,
+    run: null,
+    onCloseRun: vi.fn(),
+    onInstall: vi.fn(),
+    onUninstall: vi.fn(),
+  };
+}
+
+function setupProps(overrides = {}) {
+  return {
     command: "claude --resume",
     onCommand: vi.fn(),
     terminalShell: "",
@@ -23,17 +39,8 @@ function setup(overrides = {}) {
       rejectedCount: 0,
       onSendTest: vi.fn().mockResolvedValue("HTTP/1.1 200 OK"),
     },
-    plugin: {
-      state: "not-installed" as const,
-      version: null,
-      error: null,
-    },
-    pluginBusy: false,
-    pluginRun: null,
+    plugins: [plugin("claude", "not-installed"), plugin("codex", "cli-missing")],
     terminalAvailable: false,
-    onClosePluginRun: vi.fn(),
-    onInstallPlugin: vi.fn(),
-    onUninstallPlugin: vi.fn(),
     petSourceDirectory: null as string | null,
     onChangePetFolder: vi.fn(),
     onOpenPetFolder: vi.fn(),
@@ -42,6 +49,10 @@ function setup(overrides = {}) {
     onResetPets: vi.fn(),
     ...overrides,
   };
+}
+
+function setup(overrides = {}) {
+  const props = setupProps(overrides);
   render(<SettingsSection {...props} />);
   return props;
 }
@@ -69,7 +80,7 @@ describe("SettingsSection", () => {
     // The card itself stays a sentence. The endpoint and the self-test are a
     // diagnostic for when that sentence is not enough, so they sit inside a
     // collapsed disclosure rather than on the card.
-    setup({ plugin: { state: "installed" as const, version: "0.1.0", error: null } });
+    setup({ plugins: [plugin("claude", "installed", "0.1.0")] });
 
     expect(
       screen.getByText("Installed · v0.1.0 — your pets are following along."),
@@ -98,42 +109,52 @@ describe("SettingsSection", () => {
   });
 
   it("installs the Claude plugin when not installed", () => {
-    const onInstallPlugin = vi.fn();
-    setup({ onInstallPlugin });
+    const claude = plugin("claude", "not-installed");
+    setup({ plugins: [claude] });
 
     fireEvent.click(screen.getByText("Install"));
-    expect(onInstallPlugin).toHaveBeenCalled();
+    expect(claude.onInstall).toHaveBeenCalled();
   });
 
   it("offers reinstall and remove when the plugin is installed", () => {
-    const onInstallPlugin = vi.fn();
-    const onUninstallPlugin = vi.fn();
-    setup({
-      plugin: { state: "installed" as const, version: "0.1.0", error: null },
-      onInstallPlugin,
-      onUninstallPlugin,
-    });
+    const claude = plugin("claude", "installed", "0.1.0");
+    setup({ plugins: [claude] });
 
     expect(
       screen.getByText("Installed · v0.1.0 — your pets are following along."),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Reinstall"));
-    expect(onInstallPlugin).toHaveBeenCalled();
+    expect(claude.onInstall).toHaveBeenCalled();
 
     fireEvent.click(screen.getByText("Remove"));
-    expect(onUninstallPlugin).toHaveBeenCalled();
+    expect(claude.onUninstall).toHaveBeenCalled();
   });
 
   it("hides plugin actions and explains when the CLI is missing", () => {
-    setup({
-      plugin: { state: "cli-missing" as const, version: null, error: null },
-    });
+    setup({ plugins: [plugin("claude", "cli-missing")] });
 
     expect(
       screen.getByText("Claude Code CLI not found. Install Claude Code first, then come back."),
     ).toBeInTheDocument();
     expect(screen.queryByText("Install")).not.toBeInTheDocument();
+  });
+
+  it("installs Codex and explains the one-time hook trust step", () => {
+    const codex = plugin("codex", "not-installed");
+    const { rerender } = render(<SettingsSection {...setupProps({ plugins: [codex] })} />);
+
+    fireEvent.click(screen.getByText("Install"));
+    expect(codex.onInstall).toHaveBeenCalled();
+
+    const installed = {
+      ...codex,
+      status: { state: "installed" as const, version: "0.1.0", error: null },
+    };
+    rerender(<SettingsSection {...setupProps({ plugins: [installed] })} />);
+    expect(
+      screen.getByText("In a new Codex thread, open /hooks and trust the pets-driven hooks."),
+    ).toBeInTheDocument();
   });
 
   it("reads as no folder set, with no folder actions, when none is designated", () => {

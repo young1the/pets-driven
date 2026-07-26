@@ -13,7 +13,7 @@ import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import type { MainWindowTab } from "@/app/main-window/main-window";
 import { MainWindowSurface } from "@/app/main-window/main-window-surface";
 import { pushSearchParams } from "@/app/spa-navigation";
-import { useClaudePlugin } from "@/app/use-claude-plugin";
+import { useAgentPlugin } from "@/app/use-agent-plugin";
 import {
   carryOverPetVisibility,
   createEmptyPetsDrivenState,
@@ -72,7 +72,8 @@ function PetsDrivenHostApp() {
     petsDrivenStateRef.current,
   );
   const [petWindowError, setPetWindowError] = useState<string | null>(null);
-  const claudePlugin = useClaudePlugin(desktopGateway);
+  const claudePlugin = useAgentPlugin(desktopGateway, "claude");
+  const codexPlugin = useAgentPlugin(desktopGateway, "codex");
   const [mainTab, setMainTab] = useState<MainWindowTab>(devFixture?.tab ?? "home");
   const [editPetId, setEditPetId] = useState<string | null>(devFixture?.editPetId ?? null);
   const [toast, setToast] = useState<string | null>(null);
@@ -270,6 +271,7 @@ function PetsDrivenHostApp() {
     <MainWindowSurface
       claudeHookIngressStatus={claudeHookIngressStatus}
       claudePlugin={claudePlugin}
+      codexPlugin={codexPlugin}
       editPetId={editPetId}
       mainTab={mainTab}
       navigate={navigate}

@@ -16,7 +16,7 @@ graph TD
     i18n["packages/i18n<br/>locales + i18next"]
   end
   assets[("pets/<br/>canonical pet assets")]
-  plugin["plugins/pets-driven<br/>Claude Code plugin"]
+  plugin["plugins/pets-driven<br/>Claude Code + Codex plugin"]
 
   desktop --> engine
   desktop --> ds
@@ -38,14 +38,14 @@ Solid edges are `workspace:*` runtime dependencies declared in each `package.jso
 
 ```mermaid
 sequenceDiagram
-  participant CC as Claude Code
+  participant Agent as Claude Code / Codex
   participant Hook as plugins/pets-driven hooks
   participant Ingress as claude_hook_ingress (Rust)
   participant Store as pets-driven-core (Rust)
   participant Sim as pet-engine world tick
   participant Win as pet window overlay
 
-  CC->>Hook: hook fires on task/attention event
+  Agent->>Hook: hook fires on task/attention event
   Hook->>Ingress: HTTP POST to the local ingress port
   Ingress->>Store: persist agent + pet state
   Store->>Sim: event feeds the simulation

@@ -59,8 +59,6 @@ pub fn normalize_origin(raw: &str) -> String {
 /// (`sourceId`, `source_id`, `agent_id`) so the event is always attributed to
 /// its agent.
 ///
-/// coupling: the per-event summary and message text mirror
-/// `plugins/pets-driven/hooks/forward-codex` — change both together.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct CodexHookEvent {
     pub hook_event_name: String,
@@ -82,6 +80,8 @@ impl CodexHookEvent {
     pub fn synthesize(event_name: &str, cwd: impl Into<String>) -> Option<Self> {
         let (summary, message) = match event_name {
             "UserPromptSubmit" => ("Codex prompt received", "Codex started working"),
+            "PreToolUse" => ("Codex tool started", "Codex is using a tool"),
+            "PostToolUse" => ("Codex tool completed", "Codex finished using a tool"),
             "PermissionRequest" => ("Codex needs permission", "Codex needs permission"),
             "Stop" => ("Codex turn completed", "Codex turn completed"),
             _ => return None,
@@ -118,13 +118,29 @@ mod tests {
     }
 
     #[test]
-    fn codex_event_covers_permission_and_stop_but_rejects_unknown() {
+    fn codex_event_covers_tool_permission_and_stop_events_but_rejects_unknown() {
         assert_eq!(
-            CodexHookEvent::synthesize("PermissionRequest", "D:/proj").unwrap().message,
+            CodexHookEvent::synthesize("PreToolUse", "D:/proj")
+                .unwrap()
+                .message,
+            "Codex is using a tool"
+        );
+        assert_eq!(
+            CodexHookEvent::synthesize("PostToolUse", "D:/proj")
+                .unwrap()
+                .summary,
+            "Codex tool completed"
+        );
+        assert_eq!(
+            CodexHookEvent::synthesize("PermissionRequest", "D:/proj")
+                .unwrap()
+                .message,
             "Codex needs permission"
         );
         assert_eq!(
-            CodexHookEvent::synthesize("Stop", "D:/proj").unwrap().summary,
+            CodexHookEvent::synthesize("Stop", "D:/proj")
+                .unwrap()
+                .summary,
             "Codex turn completed"
         );
         assert_eq!(CodexHookEvent::synthesize("Frobnicate", "D:/proj"), None);

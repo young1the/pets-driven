@@ -186,7 +186,7 @@ fn forward_relays_a_stdin_body_verbatim() {
 
     let captured = server.join().expect("server thread");
     assert_eq!(code, 0);
-    assert_eq!(captured.request_line, "POST /claude-hook HTTP/1.1");
+    assert_eq!(captured.request_line, "POST /codex-hook HTTP/1.1");
     assert_eq!(captured.body.as_bytes(), payload);
     // Fire-and-forget prints nothing.
     assert!(out.is_empty());
@@ -209,7 +209,7 @@ fn forward_synthesizes_an_event_when_stdin_is_empty() {
 
     let captured = server.join().expect("server thread");
     assert_eq!(code, 0);
-    assert_eq!(captured.request_line, "POST /claude-hook HTTP/1.1");
+    assert_eq!(captured.request_line, "POST /codex-hook HTTP/1.1");
     assert!(captured.body.contains(r#""summary":"Codex turn completed""#));
     assert!(captured.body.contains(r#""sourceId":"codex""#));
 }

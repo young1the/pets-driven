@@ -536,7 +536,7 @@ fn run_forward(event: Option<&str>, cwd: &str, origin: &str, stdin: impl FnOnce(
     if let Some(body) = forward_body(&stdin(), event_name, cwd) {
         let _ = transport::post_json(
             origin,
-            protocol::paths::CLAUDE_HOOK,
+            protocol::paths::CODEX_HOOK,
             &body,
             FIRE_AND_FORGET_TIMEOUT,
         );

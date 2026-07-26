@@ -7,7 +7,7 @@ import {
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
 import { useState } from "react";
 import type { ClaudeHookIngressActivity } from "@/adapters/agent-events/claude-hook-ingress";
-import type { ClaudePluginStatus } from "@/app/desktop-gateway";
+import type { AgentPluginProvider, AgentPluginStatus } from "@/app/desktop-gateway";
 import { locales, useDesktopLocale } from "@/app/i18n/desktop-locale";
 import { HookActivityPanel } from "@/app/main-window/hook-activity-panel";
 import { PluginRunTerminal } from "@/app/main-window/plugin-run-terminal";
@@ -29,7 +29,17 @@ import {
 } from "@/app/main-window/settings-section.styles";
 import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
-import type { ClaudePluginRun } from "@/app/use-claude-plugin";
+import type { AgentPluginRun } from "@/app/use-agent-plugin";
+
+export type AgentPluginConnection = {
+  provider: AgentPluginProvider;
+  status: AgentPluginStatus | null;
+  busy: boolean;
+  run: AgentPluginRun | null;
+  onInstall: () => void;
+  onUninstall: () => void;
+  onCloseRun: () => void;
+};
 
 export interface SettingsSectionProps {
   command: string;
@@ -59,16 +69,10 @@ export interface SettingsSectionProps {
     rejectedCount: number;
     onSendTest: () => Promise<string>;
   };
-  /** Bundled Claude Code plugin install state; null while the check runs. */
-  plugin: ClaudePluginStatus | null;
-  pluginBusy: boolean;
-  /** An install/uninstall the in-app terminal is showing; null when idle. */
-  pluginRun: ClaudePluginRun | null;
+  /** The bundled Agent Source plugins and their provider-owned install state. */
+  plugins: AgentPluginConnection[];
   /** Whether the app is running inside Tauri, so a PTY can be spawned. */
   terminalAvailable: boolean;
-  onInstallPlugin: () => void;
-  onUninstallPlugin: () => void;
-  onClosePluginRun: () => void;
   /** The single folder scanned for pet packs; null = no folder designated. */
   petSourceDirectory: string | null;
   onChangePetFolder: () => void;
@@ -104,13 +108,8 @@ export function SettingsSection({
   onTerminalShell,
   preview,
   hook,
-  plugin,
-  pluginBusy,
-  pluginRun,
+  plugins,
   terminalAvailable,
-  onInstallPlugin,
-  onUninstallPlugin,
-  onClosePluginRun,
   petSourceDirectory,
   onChangePetFolder,
   onOpenPetFolder,
@@ -147,29 +146,32 @@ export function SettingsSection({
   const hasCustomShell =
     terminalShell.trim() !== "" && !shellOptions.some((option) => option.path === terminalShell);
 
-  // The hook only says anything useful once the plugin exists to feed it, so
-  // the two fold into a single line: what is installed, and whether the pets
-  // are actually seeing the agent because of it.
-  const installedLabel = plugin?.version
-    ? t("claudePlugin.installedVersion", { version: plugin.version })
-    : t("claudePlugin.installed");
-  const pluginHintText = !plugin
-    ? t("claudePlugin.checking")
-    : plugin.state === "installed"
-      ? `${installedLabel} — ${hook.summary}`
-      : plugin.state === "cli-missing"
-        ? t("claudePlugin.cliMissing")
-        : plugin.state === "error"
-          ? (plugin.error ?? t("claudePlugin.error"))
-          : t("claudePlugin.notInstalledHint");
-  const connectionTone: BadgeTone =
-    !plugin || plugin.state === "cli-missing"
-      ? "neutral"
-      : plugin.state === "installed"
-        ? hook.tone
-        : plugin.state === "error"
-          ? "danger"
-          : "neutral";
+  function pluginPresentation(connection: AgentPluginConnection) {
+    const { provider, status } = connection;
+    const key = `${provider}Plugin`;
+    const installedLabel = status?.version
+      ? t(`${key}.installedVersion`, { version: status.version })
+      : t(`${key}.installed`);
+    const text = !status
+      ? t(`${key}.checking`)
+      : status.state === "installed"
+        ? `${installedLabel} — ${hook.summary}`
+        : status.state === "cli-missing"
+          ? t(`${key}.cliMissing`)
+          : status.state === "error"
+            ? (status.error ?? t(`${key}.error`))
+            : t(`${key}.notInstalledHint`);
+    const tone: BadgeTone =
+      !status || status.state === "cli-missing"
+        ? "neutral"
+        : status.state === "installed"
+          ? hook.tone
+          : status.state === "error"
+            ? "danger"
+            : "neutral";
+
+    return { key, text, tone };
+  }
 
   return (
     <div style={{ padding: "38px 24px 64px", minHeight: "100%" }}>
@@ -288,64 +290,72 @@ export function SettingsSection({
             </div>
           </div>
 
-          {/* Agent connection — one card: the Claude Code plugin, and what it
-              is (or is not) doing for the pets right now. */}
+          {/* Agent connection — one card per Agent Source, with one shared
+              ingress diagnostic because every provider enters the same feed. */}
           <div style={rowStyle()}>
             <span style={label}>{t("settings.agentConnection")}</span>
             <p style={hint}>{t("settings.agentConnectionDesc")}</p>
-            <div style={connectionCard}>
-              <span aria-hidden style={statusDot(connectionTone)} />
-              <span style={connectionText}>
-                <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
-                  {t("claudePlugin.title")}
-                </b>
-                <small style={{ color: "var(--text-muted)" }}>{pluginHintText}</small>
-                {/* Its own line rather than more text appended to the hint:
-                    this is the traffic read-out, it changes while the card is
-                    on screen, and a later "dropped because …" reason belongs
-                    beside it here rather than in the plugin sentence above. */}
-                <small style={{ color: "var(--text-subtle)", marginTop: "3px" }}>
-                  {hook.lastSignal}
-                </small>
-              </span>
-              {plugin?.state === "installed" ? (
-                <>
-                  <button
-                    disabled={pluginBusy}
-                    onClick={onInstallPlugin}
-                    style={smallAction}
-                    type="button"
-                  >
-                    {pluginBusy ? t("claudePlugin.installing") : t("claudePlugin.reinstall")}
-                  </button>
-                  <button
-                    disabled={pluginBusy}
-                    onClick={onUninstallPlugin}
-                    style={smallAction}
-                    type="button"
-                  >
-                    {t("claudePlugin.uninstall")}
-                  </button>
-                </>
-              ) : plugin && plugin.state !== "cli-missing" ? (
-                <button
-                  disabled={pluginBusy}
-                  onClick={onInstallPlugin}
-                  style={{
-                    ...smallAction,
-                    background: "var(--color-primary)",
-                    color: "var(--color-on-primary)",
-                  }}
-                  type="button"
-                >
-                  {pluginBusy
-                    ? t("claudePlugin.installing")
-                    : plugin.state === "error"
-                      ? t("claudePlugin.retry")
-                      : t("claudePlugin.install")}
-                </button>
-              ) : null}
-            </div>
+            {plugins.map((connection) => {
+              const presentation = pluginPresentation(connection);
+
+              return (
+                <div key={connection.provider} style={connectionCard}>
+                  <span aria-hidden style={statusDot(presentation.tone)} />
+                  <span style={connectionText}>
+                    <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
+                      {t(`${presentation.key}.title`)}
+                    </b>
+                    <small style={{ color: "var(--text-muted)" }}>{presentation.text}</small>
+                    {connection.provider === "codex" &&
+                      connection.status?.state === "installed" && (
+                        <small style={{ color: "var(--text-subtle)", marginTop: "3px" }}>
+                          {t("codexPlugin.hookTrustHint")}
+                        </small>
+                      )}
+                  </span>
+                  {connection.status?.state === "installed" ? (
+                    <>
+                      <button
+                        disabled={connection.busy}
+                        onClick={connection.onInstall}
+                        style={smallAction}
+                        type="button"
+                      >
+                        {connection.busy
+                          ? t(`${presentation.key}.installing`)
+                          : t(`${presentation.key}.reinstall`)}
+                      </button>
+                      <button
+                        disabled={connection.busy}
+                        onClick={connection.onUninstall}
+                        style={smallAction}
+                        type="button"
+                      >
+                        {t(`${presentation.key}.uninstall`)}
+                      </button>
+                    </>
+                  ) : connection.status && connection.status.state !== "cli-missing" ? (
+                    <button
+                      disabled={connection.busy}
+                      onClick={connection.onInstall}
+                      style={{
+                        ...smallAction,
+                        background: "var(--color-primary)",
+                        color: "var(--color-on-primary)",
+                      }}
+                      type="button"
+                    >
+                      {connection.busy
+                        ? t(`${presentation.key}.installing`)
+                        : connection.status.state === "error"
+                          ? t(`${presentation.key}.retry`)
+                          : t(`${presentation.key}.install`)}
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+            <small style={{ color: "var(--text-subtle)" }}>{hook.lastSignal}</small>
             <HookActivityPanel
               activity={hook.activity}
               endpoint={hook.endpoint}
@@ -353,12 +363,16 @@ export function SettingsSection({
               onSendTest={hook.onSendTest}
               rejectedCount={hook.rejectedCount}
             />
-            {pluginRun && (
-              <PluginRunTerminal
-                available={terminalAvailable}
-                onClose={onClosePluginRun}
-                run={pluginRun}
-              />
+            {plugins.map(
+              (connection) =>
+                connection.run && (
+                  <PluginRunTerminal
+                    available={terminalAvailable}
+                    key={connection.provider}
+                    onClose={connection.onCloseRun}
+                    run={connection.run}
+                  />
+                ),
             )}
           </div>
 

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,62 +34,20 @@ function commandHookFor(eventName) {
   return commandHook;
 }
 
-for (const eventName of ["UserPromptSubmit", "PermissionRequest", "Stop"]) {
+for (const eventName of [
+  "UserPromptSubmit",
+  "PreToolUse",
+  "PostToolUse",
+  "PermissionRequest",
+  "Stop",
+]) {
   const commandHook = commandHookFor(eventName);
 
-  assert.match(commandHook.command, /\.codex\/plugins\/cache\/pets-driven\/pets-driven\/0\.1\.0/);
-  assert.match(commandHook.commandWindows, /\$env:PLUGIN_ROOT/);
-  assert.match(commandHook.commandWindows, /\$env:USERPROFILE/);
-  assert.doesNotMatch(commandHook.commandWindows, /%USERPROFILE%/);
-
-  // The payload must reach the hook script as raw stdin bytes. Reading it into a
-  // PowerShell string and piping that to the script round-trips it through the
-  // console encoding and $OutputEncoding (ASCII on Windows PowerShell 5.1),
-  // which turns every non-ASCII character -- a Korean prompt, a Korean path --
-  // into "?". The child inherits stdin instead.
-  assert.doesNotMatch(commandHook.commandWindows, /\[Console\]::In/);
-  assert.doesNotMatch(commandHook.commandWindows, /\$payload/);
-}
-
-if (process.platform === "win32") {
-  // Non-ASCII in both a path and a prompt: the two places a Korean user hits
-  // the encoding boundary between Codex, PowerShell and the hook script.
-  const codexPayload = {
-    hook_event_name: "UserPromptSubmit",
-    cwd: "D:\\pets-driven\\기타개선",
-    session_id: "codex-session",
-    prompt: "안녕 한국어 테스트",
-  };
-  const result = spawnSync(
-    "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-    ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", commandHookFor("UserPromptSubmit").commandWindows],
-    {
-      cwd: pluginRoot,
-      env: { ...process.env, PLUGIN_ROOT: pluginRoot },
-      input: JSON.stringify(codexPayload),
-      encoding: "utf8",
-    },
-  );
-
-  assert.equal(result.status, 0, result.stderr || result.stdout);
-
-  const printCommand = commandHookFor("UserPromptSubmit").commandWindows.replace(
-    "forward-codex UserPromptSubmit",
-    "forward-codex --print UserPromptSubmit",
-  );
-  const printResult = spawnSync(
-    "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-    ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", printCommand],
-    {
-      cwd: pluginRoot,
-      env: { ...process.env, PLUGIN_ROOT: pluginRoot },
-      input: JSON.stringify(codexPayload),
-      encoding: "utf8",
-    },
-  );
-
-  assert.equal(printResult.status, 0, printResult.stderr || printResult.stdout);
-  assert.deepEqual(JSON.parse(printResult.stdout), codexPayload);
+  // pdd inherits the hook payload on stdin, so Windows paths and non-ASCII
+  // prompts never cross a PowerShell-string or Git Bash encoding boundary.
+  assert.equal(commandHook.command, `pdd forward ${eventName}`);
+  assert.equal(commandHook.commandWindows, commandHook.command);
+  assert.doesNotMatch(commandHook.command, /PLUGIN_ROOT|plugins\/cache|run-hook|bash/i);
 }
 
 const hatchSkill = readFileSync(join(pluginRoot, "skills", "hatch", "SKILL.md"), "utf8");

@@ -1,6 +1,6 @@
 import { useTranslation } from "@pets-driven/i18n";
 import { lazy, Suspense } from "react";
-import type { ClaudePluginRun } from "@/app/use-claude-plugin";
+import type { AgentPluginRun } from "@/app/use-agent-plugin";
 import "@/app/main-window/terminal-section.css";
 import "@/app/main-window/plugin-run-terminal.css";
 
@@ -11,7 +11,7 @@ const EmbeddedTerminal = lazy(() =>
 );
 
 export interface PluginRunTerminalProps {
-  run: ClaudePluginRun;
+  run: AgentPluginRun;
   /** Whether the app is running inside Tauri (PTY available). */
   available: boolean;
   onClose: () => void;
@@ -19,11 +19,11 @@ export interface PluginRunTerminalProps {
 
 /**
  * The plugin install/uninstall running where the user can see it: a real shell
- * with the `claude` line typed in, live output, and a prompt left behind so
+ * with the provider CLI line typed in, live output, and a prompt left behind so
  * they can answer a question, retry, or check things by hand.
  *
  * Deliberately spawns the OS default shell rather than the one picked in
- * settings — a shell like WSL has its own `claude` install, which would not be
+ * settings — a shell like WSL has its own agent CLI install, which would not be
  * the one the status probes report on.
  */
 export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminalProps) {
@@ -38,9 +38,11 @@ export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminal
             <span />
             <span />
           </span>
-          <span className="pd-plugin-run__title">{t(`claudePlugin.run.${run.action}`)}</span>
+          <span className="pd-plugin-run__title">
+            {t(`${run.provider}Plugin.run.${run.action}`)}
+          </span>
           <button className="pd-eterm__restart" onClick={onClose} type="button">
-            {t("claudePlugin.run.close")}
+            {t(`${run.provider}Plugin.run.close`)}
           </button>
         </div>
 

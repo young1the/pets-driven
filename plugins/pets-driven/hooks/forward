@@ -62,7 +62,9 @@ request() {
 
 json_escape() {
   # Escape backslashes and double quotes so a path embeds safely in JSON.
-  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+  local escaped="${1//\\/\\\\}"
+  escaped="${escaped//\"/\\\"}"
+  printf '%s' "$escaped"
 }
 
 attach_body() {

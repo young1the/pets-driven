@@ -5,8 +5,34 @@
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"${PLUGIN_ROOT:-$HOME/.codex/plugins/cache/pets-driven/pets-driven/0.1.0}\"; [ -f \"$root/hooks/run-hook.cmd\" ] || exit 0; \"$root/hooks/run-hook.cmd\" forward-codex UserPromptSubmit",
-            "commandWindows": "$root = if ($env:PLUGIN_ROOT) { $env:PLUGIN_ROOT } else { Join-Path $env:USERPROFILE '.codex\\plugins\\cache\\pets-driven\\pets-driven\\0.1.0' }; $hook = Join-Path $root 'hooks\\run-hook.cmd'; if (Test-Path -LiteralPath $hook) { & $hook forward-codex UserPromptSubmit }",
+            "command": "pdd forward UserPromptSubmit",
+            "commandWindows": "pdd forward UserPromptSubmit",
+            "timeout": 5,
+            "statusMessage": "Notifying pets-driven"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pdd forward PreToolUse",
+            "commandWindows": "pdd forward PreToolUse",
+            "timeout": 5,
+            "statusMessage": "Notifying pets-driven"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pdd forward PostToolUse",
+            "commandWindows": "pdd forward PostToolUse",
             "timeout": 5,
             "statusMessage": "Notifying pets-driven"
           }
@@ -18,8 +44,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"${PLUGIN_ROOT:-$HOME/.codex/plugins/cache/pets-driven/pets-driven/0.1.0}\"; [ -f \"$root/hooks/run-hook.cmd\" ] || exit 0; \"$root/hooks/run-hook.cmd\" forward-codex PermissionRequest",
-            "commandWindows": "$root = if ($env:PLUGIN_ROOT) { $env:PLUGIN_ROOT } else { Join-Path $env:USERPROFILE '.codex\\plugins\\cache\\pets-driven\\pets-driven\\0.1.0' }; $hook = Join-Path $root 'hooks\\run-hook.cmd'; if (Test-Path -LiteralPath $hook) { & $hook forward-codex PermissionRequest }",
+            "command": "pdd forward PermissionRequest",
+            "commandWindows": "pdd forward PermissionRequest",
             "timeout": 5,
             "statusMessage": "Notifying pets-driven"
           }
@@ -31,8 +57,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"${PLUGIN_ROOT:-$HOME/.codex/plugins/cache/pets-driven/pets-driven/0.1.0}\"; [ -f \"$root/hooks/run-hook.cmd\" ] || exit 0; \"$root/hooks/run-hook.cmd\" forward-codex Stop",
-            "commandWindows": "$root = if ($env:PLUGIN_ROOT) { $env:PLUGIN_ROOT } else { Join-Path $env:USERPROFILE '.codex\\plugins\\cache\\pets-driven\\pets-driven\\0.1.0' }; $hook = Join-Path $root 'hooks\\run-hook.cmd'; if (Test-Path -LiteralPath $hook) { & $hook forward-codex Stop }",
+            "command": "pdd forward Stop",
+            "commandWindows": "pdd forward Stop",
             "timeout": 5,
             "statusMessage": "Notifying pets-driven"
           }

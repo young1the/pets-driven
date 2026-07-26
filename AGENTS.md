@@ -35,7 +35,7 @@ pnpm test:e2e         # Playwright, desktop only
 | `packages/pet-engine` | ECS simulation, personalities, sprite state | `packages/pet-engine/AGENTS.md` |
 | `packages/design-system` | Tokens and shared React components | `packages/design-system/AGENTS.md` |
 | `packages/i18n` | Locales, i18next setup, translation catalog | `packages/i18n/AGENTS.md` |
-| `plugins/pets-driven` | Claude Code plugin: hooks, commands, skills | — |
+| `plugins/pets-driven` | Shared Claude Code + Codex plugin: hooks, commands, skills | — |
 | `pets/` | Canonical built-in pet definitions and spritesheets | `pets/README.md` |
 | `scripts/` | Asset sync, version bump, install test | — |
 
