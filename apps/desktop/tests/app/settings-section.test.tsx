@@ -35,7 +35,6 @@ function setup(overrides = {}) {
     onInstallPlugin: vi.fn(),
     onUninstallPlugin: vi.fn(),
     petSourceDirectory: null as string | null,
-    defaultPetSourceDirectory: "C:\\Users\\me\\.petdex\\pets",
     onChangePetFolder: vi.fn(),
     onOpenPetFolder: vi.fn(),
     onResetPetFolder: vi.fn(),
@@ -137,15 +136,16 @@ describe("SettingsSection", () => {
     expect(screen.queryByText("Install")).not.toBeInTheDocument();
   });
 
-  it("shows the Petdex default folder when no custom folder is set", () => {
+  it("reads as no folder set, with no folder actions, when none is designated", () => {
     setup();
 
-    expect(screen.getByText("Petdex default folder")).toBeInTheDocument();
-    expect(screen.getByText("C:\\Users\\me\\.petdex\\pets")).toBeInTheDocument();
-    expect(screen.queryByText("Back to default")).not.toBeInTheDocument();
+    expect(screen.getByText("No folder set")).toBeInTheDocument();
+    // Nothing to open or clear until the user actually designates a folder.
+    expect(screen.queryByText("Open in Explorer")).not.toBeInTheDocument();
+    expect(screen.queryByText("Clear folder")).not.toBeInTheDocument();
   });
 
-  it("shows a custom folder and resets it to the default", () => {
+  it("shows a custom folder and clears it", () => {
     const onResetPetFolder = vi.fn();
     setup({
       petSourceDirectory: "D:\\pets\\mine",
@@ -154,7 +154,7 @@ describe("SettingsSection", () => {
 
     expect(screen.getByText("D:\\pets\\mine")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Back to default"));
+    fireEvent.click(screen.getByText("Clear folder"));
     expect(onResetPetFolder).toHaveBeenCalled();
   });
 
@@ -166,9 +166,9 @@ describe("SettingsSection", () => {
     expect(onChangePetFolder).toHaveBeenCalled();
   });
 
-  it("opens the pet source folder in Explorer", () => {
+  it("opens the designated pet source folder in Explorer", () => {
     const onOpenPetFolder = vi.fn();
-    setup({ onOpenPetFolder });
+    setup({ petSourceDirectory: "D:\\pets\\mine", onOpenPetFolder });
 
     fireEvent.click(screen.getByText("Open in Explorer"));
     expect(onOpenPetFolder).toHaveBeenCalled();

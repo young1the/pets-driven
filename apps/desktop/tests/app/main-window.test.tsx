@@ -48,7 +48,6 @@ const settings = {
   onInstallPlugin: vi.fn(),
   onUninstallPlugin: vi.fn(),
   petSourceDirectory: null as string | null,
-  defaultPetSourceDirectory: null as string | null,
   onChangePetFolder: vi.fn(),
   onOpenPetFolder: vi.fn(),
   onResetPetFolder: vi.fn(),
