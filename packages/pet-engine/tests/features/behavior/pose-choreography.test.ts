@@ -116,22 +116,20 @@ describe("getExpressivePoseState", () => {
    * the continuation carries the personality.
    */
   it.each([
-    "working-focus",
-    "working-tinker",
-    "working-ponder",
-    "working-fuss",
-    "working-loaf",
-  ] as const)("opens the %s beat on the work row", (reason) => {
-    expect(getExpressivePoseState(reason, 0)).toBe("running");
+    ["work-focus", "running"],
+    ["work-review", "review"],
+  ] as const)("holds %s on one native row", (reason, row) => {
+    expect(getExpressivePoseState(reason, 0)).toBe(row);
+    expect(getExpressivePoseState(reason, 5_000)).toBe(row);
   });
 
-  it("separates the working poses once they are actually held", () => {
+  it("keeps working behaviors on their native row for the whole hold", () => {
     const reasons = [
-      "working-focus",
-      "working-tinker",
-      "working-ponder",
-      "working-fuss",
-      "working-loaf",
+      "work-focus",
+      "work-review",
+      "work-focus",
+      "work-review",
+      "work-focus",
     ] as const;
 
     // At 600ms the heads-down pet is still working, the tinkerer is checking
@@ -141,8 +139,8 @@ describe("getExpressivePoseState", () => {
       "running",
       "review",
       "running",
-      "failed",
-      "idle",
+      "review",
+      "running",
     ]);
   });
 

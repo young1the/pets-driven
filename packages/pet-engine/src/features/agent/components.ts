@@ -33,18 +33,13 @@ export type TaskMovementHoldComponent = {
 };
 
 /**
- * The kind of work the bound agent was last seen doing, from its tool-use
- * hooks. Written on every tool pulse and read by the working behavior to pick
- * a pose, so the pet acts out real work instead of an unrelated loop.
- *
- * `family` is null when the agent reported no usable tool name (every Codex
- * hook, and MCP tools whose names say nothing) — the pet then keeps its own
- * personality's pose. Stale entries are ignored rather than cleaned up: a pet
- * whose agent stopped calling tools falls back to its personality on its own.
+ * Latest provider-neutral activity context from tool-use hooks. Pulses refresh
+ * this component without interrupting a live behavior. The next ordinary
+ * decision may use a fresh value as a small score bias.
  */
-export type AgentToolActivityComponent = {
-  type: "AgentToolActivity";
-  family: import("@pets-driven/pet-engine/features/agent/tool-families").AgentToolFamily | null;
+export type AgentActivitySignalComponent = {
+  type: "AgentActivitySignal";
+  activity: "study" | "edit" | "run" | null;
   at: number;
 };
 

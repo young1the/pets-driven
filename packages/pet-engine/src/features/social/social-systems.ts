@@ -9,7 +9,7 @@ import { runSocialInteractionSystem } from "./systems";
 
 export const SocialInteractionSystem: SimulationSystem<WorldStepContext> = {
   name: "SocialInteractionSystem",
-  dependsOn: ["WorkingBehaviorSystem"],
+  dependsOn: ["CollisionBehaviorSystem"],
   reads: [
     "CanSocialize",
     "Personality",

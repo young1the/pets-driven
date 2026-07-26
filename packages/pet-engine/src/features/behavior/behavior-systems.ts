@@ -15,7 +15,6 @@ import {
   runPettingDetectionSystem,
   runRompProgressSystem,
   runTaskMovementHoldSystem,
-  runWorkingBehaviorSystem,
 } from "./systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────
@@ -112,6 +111,7 @@ export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
   reads: ["AgentBinding", "SpeechProfile", "ActivityState", "MoodState", "RecentExperienceMemory"],
   writes: [
     "AgentTaskState",
+    "AgentActivitySignal",
     "AgentChannelState",
     "ActivityState",
     "BehaviorDecisionState",
@@ -175,26 +175,9 @@ export const CollisionBehaviorSystem: SimulationSystem<WorldStepContext> = {
   },
 };
 
-export const WorkingBehaviorSystem: SimulationSystem<WorldStepContext> = {
-  name: "WorkingBehaviorSystem",
-  dependsOn: ["CollisionBehaviorSystem"],
-  reads: [
-    "AgentTaskState",
-    "Personality",
-    "MotionTarget",
-    "Transform",
-    "BehaviorDecisionState",
-    "PhysicsBody",
-  ],
-  writes: ["MotionTarget", "Steering", "BehaviorDecisionState"],
-  update(ctx) {
-    runWorkingBehaviorSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
-  },
-};
-
 export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
   name: "BehaviorDecisionSystem",
-  dependsOn: ["WorkingBehaviorSystem"],
+  dependsOn: ["CollisionBehaviorSystem"],
   reads: [
     "Steering",
     "MotionTarget",
@@ -216,6 +199,7 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     "Drives",
     "MoodState",
     "TaskMovementHold",
+    "AgentActivitySignal",
     // B4: bump-to-greet eligibility (drops collision-engage for social pairs).
     "CanSocialize",
     "SocialSessionMember",

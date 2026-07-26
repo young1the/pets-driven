@@ -1,197 +1,70 @@
 import type { PersonalityComponent } from "@pets-driven/pet-engine/features/behavior/components";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/personalities/registry";
 
-/**
- * The stationary beat a pet holds while its bound agent is working.
- *
- * A working pet used to have exactly two states — stand on the "running" row
- * forever, or take a short walk — so thirteen catalog personalities all looked
- * identical during the one state the user watches the most. These reasons give
- * the hold a *character*: each names a pose choreography (see
- * pose-choreography.ts) and a canonical activity label, so a working pet reads
- * as its own personality rather than a generic busy sprite.
- *
- * `working-focus` stays first and keeps its name: it is the pre-existing beat,
- * and its choreography still opens on the `running` row it used to hold.
- */
-export const WORKING_FOCUS_REASONS = [
-  "working-focus", // heads-down, steady work with a breath between passes
-  "working-tinker", // restless fiddling, glancing at the result
-  "working-ponder", // works, then looks up to think it through
-  "working-fuss", // anxious re-checking
-  "working-loaf", // works in the gaps between long, easy pauses
-] as const;
-
-export type WorkingFocusReason = (typeof WORKING_FOCUS_REASONS)[number];
-
-/**
- * Claim reason for the pacing beat — a short walk to a nearby spot. Unchanged
- * from the original wander beat so existing collision/claim bookkeeping that
- * names it keeps working.
- */
-export const WORKING_PACE_REASON = "working-wander";
-
-export type WorkingStyle = {
-  /** The stationary beat this personality plays while the agent works. */
-  focusReason: WorkingFocusReason;
-  /** Probability (0..1) of pacing to a nearby spot instead of holding the beat. */
-  paceChance: number;
-  /** How long one focus beat is held before the pet re-decides. */
-  focusHoldMs: number;
-  /**
-   * Probability (0..1) of acting out the *agent's* current kind of work rather
-   * than this personality's own pose, when the agent reported a tool it can
-   * place. Two signals share one body, so this decides which one wins a given
-   * beat: a diligent pet mirrors the work closely, a lazy or aloof one mostly
-   * does its own thing regardless of what the agent is up to.
-   */
-  toolFollow: number;
+export type WorkingBehaviorStyle = {
+  focusScore: number;
+  reviewScore: number;
+  paceScore: number;
+  holdMs: number;
 };
 
 /**
- * Working identity per Personality Catalog entry.
- *
- * Two axes carry the difference: *what the hold looks like* (focusReason) and
- * *how restless the pet is* (paceChance / focusHoldMs). A steady pet plants
- * itself for two seconds at a time; a mischievous one is off pacing every other
- * beat. Values are deliberately spread — near-identical numbers made the
- * personalities converge in practice (same lesson as behavior-signatures.ts).
+ * Minimum time a stationary work behavior remains readable. Hook pulses never
+ * restart this window; they can only influence the next ordinary decision.
  */
-export const PERSONALITY_WORKING_STYLES: Record<PetPersonalityId, WorkingStyle> = {
-  playful: { focusReason: "working-tinker", paceChance: 0.45, focusHoldMs: 1_100, toolFollow: 0.6 },
-  attentive: {
-    focusReason: "working-ponder",
-    paceChance: 0.3,
-    focusHoldMs: 1_500,
-    toolFollow: 0.85,
-  },
-  reserved: { focusReason: "working-focus", paceChance: 0.15, focusHoldMs: 2_000, toolFollow: 0.6 },
-  curious: { focusReason: "working-tinker", paceChance: 0.4, focusHoldMs: 1_200, toolFollow: 0.75 },
-  steady: { focusReason: "working-focus", paceChance: 0.1, focusHoldMs: 2_200, toolFollow: 0.9 },
-  feisty: { focusReason: "working-tinker", paceChance: 0.4, focusHoldMs: 1_000, toolFollow: 0.55 },
-  gentle: { focusReason: "working-ponder", paceChance: 0.25, focusHoldMs: 1_600, toolFollow: 0.7 },
-  mischievous: {
-    focusReason: "working-tinker",
-    paceChance: 0.5,
-    focusHoldMs: 900,
-    toolFollow: 0.45,
-  },
-  lazy: { focusReason: "working-loaf", paceChance: 0.05, focusHoldMs: 2_600, toolFollow: 0.3 },
-  zen: { focusReason: "working-ponder", paceChance: 0.05, focusHoldMs: 2_600, toolFollow: 0.5 },
-  aloof: { focusReason: "working-loaf", paceChance: 0.2, focusHoldMs: 1_800, toolFollow: 0.35 },
-  skittish: { focusReason: "working-fuss", paceChance: 0.45, focusHoldMs: 800, toolFollow: 0.5 },
-  shrewd: { focusReason: "working-ponder", paceChance: 0.15, focusHoldMs: 2_000, toolFollow: 0.8 },
+export const MIN_WORKING_BEHAVIOR_HOLD_MS = 1_200;
+export const TOOL_ACTIVITY_FRESHNESS_MS = 12_000;
+
+export const PERSONALITY_WORKING_STYLES: Record<PetPersonalityId, WorkingBehaviorStyle> = {
+  playful: { focusScore: 0.45, reviewScore: 0.5, paceScore: 0.9, holdMs: 1_300 },
+  attentive: { focusScore: 0.7, reviewScore: 1.0, paceScore: 0.45, holdMs: 1_700 },
+  reserved: { focusScore: 0.9, reviewScore: 0.55, paceScore: 0.2, holdMs: 2_100 },
+  curious: { focusScore: 0.55, reviewScore: 1.0, paceScore: 0.65, holdMs: 1_500 },
+  steady: { focusScore: 1.1, reviewScore: 0.7, paceScore: 0.15, holdMs: 2_300 },
+  feisty: { focusScore: 0.65, reviewScore: 0.4, paceScore: 0.85, holdMs: 1_300 },
+  gentle: { focusScore: 0.65, reviewScore: 0.85, paceScore: 0.35, holdMs: 1_800 },
+  mischievous: { focusScore: 0.35, reviewScore: 0.55, paceScore: 1.0, holdMs: 1_200 },
+  lazy: { focusScore: 0.7, reviewScore: 0.35, paceScore: 0.1, holdMs: 2_600 },
+  zen: { focusScore: 0.6, reviewScore: 0.95, paceScore: 0.1, holdMs: 2_600 },
+  aloof: { focusScore: 0.65, reviewScore: 0.75, paceScore: 0.3, holdMs: 2_000 },
+  skittish: { focusScore: 0.45, reviewScore: 0.7, paceScore: 0.95, holdMs: 1_200 },
+  shrewd: { focusScore: 0.8, reviewScore: 1.05, paceScore: 0.2, holdMs: 2_100 },
 };
-
-// Trait-derived fallback bounds for pets with no catalog identity (custom
-// personalities, fixtures, older saved state). Chosen so the derived styles land
-// inside the same range the catalog table spans.
-const MIN_FOCUS_HOLD_MS = 800;
-const MAX_FOCUS_HOLD_MS = 2_600;
-const BASE_FOCUS_HOLD_MS = 1_500;
-
-/** Jitter band applied to a focus hold so repeats never land on the same beat. */
-const FOCUS_HOLD_JITTER = 0.25;
-
-/** How long the pacing claim lives — the walk itself outlives it. */
-export const WORKING_PACE_CLAIM_MS = 750;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-/**
- * The pre-catalog distraction score: low conscientiousness plus high
- * extraversion means a pet that keeps wandering off mid-task. Kept as the
- * trait-only pacing tendency, now read as a probability rather than a hard
- * threshold, so an uncatalogued pet still mixes both beats.
- */
-function derivedPaceChance(p: PersonalityComponent): number {
-  const distraction = (1 - p.conscientiousness) * 0.7 + p.extraversion * 0.3;
-  return clamp(distraction * 0.6, 0.05, 0.5);
-}
-
-function derivedFocusReason(p: PersonalityComponent): WorkingFocusReason {
-  if (p.neuroticism >= 0.65) return "working-fuss";
-  if (p.conscientiousness >= 0.65) return "working-focus";
-  if (p.conscientiousness <= 0.35 && p.extraversion <= 0.4) return "working-loaf";
-  if (p.openness >= 0.6) return "working-tinker";
-  return "working-ponder";
-}
-
-function derivedFocusHoldMs(p: PersonalityComponent): number {
-  const holdMs =
-    BASE_FOCUS_HOLD_MS +
-    p.conscientiousness * 900 -
-    p.neuroticism * 500 -
-    p.extraversion * 300 +
-    (1 - p.openness) * 200;
-  return Math.round(clamp(holdMs, MIN_FOCUS_HOLD_MS, MAX_FOCUS_HOLD_MS));
-}
-
-/**
- * The working style for a pet: its catalog entry when it has one, otherwise a
- * style derived from raw OCEAN traits so every pet gets a characterful hold.
- */
-export function workingStyle(personality: PersonalityComponent): WorkingStyle {
+/** Working behavior weights for catalog and custom personalities. */
+export function workingStyle(personality: PersonalityComponent): WorkingBehaviorStyle {
   const catalogStyle = personality.catalogId
     ? PERSONALITY_WORKING_STYLES[personality.catalogId]
     : undefined;
   if (catalogStyle) return catalogStyle;
 
   return {
-    focusReason: derivedFocusReason(personality),
-    paceChance: derivedPaceChance(personality),
-    focusHoldMs: derivedFocusHoldMs(personality),
-    toolFollow: derivedToolFollow(personality),
+    focusScore: 0.35 + personality.conscientiousness * 0.75,
+    reviewScore: 0.3 + personality.openness * 0.75,
+    paceScore: clamp(
+      (1 - personality.conscientiousness) * 0.65 + personality.extraversion * 0.35,
+      0.1,
+      1,
+    ),
+    holdMs: Math.round(
+      clamp(
+        1_500 +
+          personality.conscientiousness * 900 -
+          personality.neuroticism * 400 -
+          personality.extraversion * 200,
+        MIN_WORKING_BEHAVIOR_HOLD_MS,
+        2_600,
+      ),
+    ),
   };
 }
 
-/**
- * How much a trait-only pet mirrors the agent's work. Conscientiousness is
- * follow-through — a diligent pet tracks what the agent is doing; low
- * conscientiousness with low extraversion is the pet that keeps to its own
- * rhythm no matter what.
- */
-function derivedToolFollow(p: PersonalityComponent): number {
-  const follow = 0.35 + p.conscientiousness * 0.5 + p.openness * 0.15 - p.neuroticism * 0.1;
-  return clamp(follow, 0.3, 0.9);
-}
-
-/**
- * A focus hold with jitter applied. Re-claiming the same beat restarts its
- * choreography, so identical hold lengths would lock a pet into one repeating
- * loop; the jitter keeps successive holds landing on different beats.
- */
-export function jitteredFocusHoldMs(style: WorkingStyle, roll: number): number {
-  const factor = 1 - FOCUS_HOLD_JITTER + roll * FOCUS_HOLD_JITTER * 2;
-  return Math.round(style.focusHoldMs * factor);
-}
-
-/**
- * How long a tool pulse keeps describing the pet's work. Agents call tools in
- * bursts with quiet stretches between them (a long think, a build, the user
- * reading a diff); past this the pose no longer reflects anything real, so the
- * pet returns to its own personality rather than miming a stale tool.
- */
-export const TOOL_ACTIVITY_FRESHNESS_MS = 12_000;
-
-/**
- * The pose to hold this beat: the agent's current kind of work, or the pet's
- * own. `toolPose` is what the last tool pulse implies (null when the agent
- * named no placeable tool — every Codex hook — or the pulse has gone stale).
- * `roll` decides between the two, weighted by the personality's toolFollow.
- */
-export function resolveWorkingPose(
-  style: WorkingStyle,
-  toolPose: WorkingFocusReason | null,
-  roll: number,
-): WorkingFocusReason {
-  if (!toolPose) return style.focusReason;
-  return roll < style.toolFollow ? toolPose : style.focusReason;
-}
-
-/** Whether a claim reason is one of the working beats. */
-export function isWorkingReason(reason: string): boolean {
-  return reason === WORKING_PACE_REASON || WORKING_FOCUS_REASONS.includes(reason as never);
+/** Mild jitter keeps repeated decisions organic without weakening the hold threshold. */
+export function workingBehaviorHoldMs(style: WorkingBehaviorStyle, roll: number): number {
+  const jittered = Math.round(style.holdMs * (0.9 + roll * 0.2));
+  return Math.max(MIN_WORKING_BEHAVIOR_HOLD_MS, jittered);
 }

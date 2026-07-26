@@ -27,7 +27,6 @@ import {
   RompProgressSystem,
   SpeechExpirationSystem,
   TaskMovementHoldSystem,
-  WorkingBehaviorSystem,
 } from "@pets-driven/pet-engine/features/behavior/behavior-systems";
 import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
 import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
@@ -83,7 +82,6 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     PetExpressionExpirationSystem,
     AgentTaskEventSystem, // priority 2: external agent events → task state
     CollisionBehaviorSystem, // priority 3: overlap startle → reaction/bump-to-greet
-    WorkingBehaviorSystem, // priority 4a: working-state focus or wandering
     SocialInteractionSystem, // priority 4 (social): pet-to-pet greet/chat/chase sessions
     BehaviorDecisionSystem, // priority 5 (autonomous): personality-weighted next behavior (emits token)
     SignatureReactionSystem, // social echo: nearby pets answer fresh personality signatures

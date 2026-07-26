@@ -5,25 +5,31 @@ export type AgentEventType =
   | "task.completed"
   | "task.failed";
 
-export type AgentEvent = {
-  type: AgentEventType;
+export type AgentActivity = "study" | "edit" | "run";
+
+type AgentEventBase = {
   sourceId: string;
   at: number;
-  summary?: string;
-  /**
-   * The tool a `tool.used` event reports, when the agent names one. Claude
-   * hooks carry `tool_name`; Codex hooks carry nothing, and the pet then falls
-   * back to its own personality rather than acting out work it cannot place.
-   */
-  tool?: string;
 };
 
-type AgentEventInput = {
+export type AgentEvent =
+  | (AgentEventBase & {
+      type: Exclude<AgentEventType, "tool.used">;
+      summary?: string;
+    })
+  | (AgentEventBase & {
+      type: "tool.used";
+      /**
+       * Provider-neutral work context. Adapters may omit it when a hook does
+       * not identify a tool or the tool cannot be classified.
+       */
+      activity?: AgentActivity;
+    });
+
+type AgentEventInput = AgentEventBase & {
   type: string;
-  sourceId: string;
-  at: number;
   summary?: string;
-  tool?: string;
+  activity?: AgentActivity;
 };
 
 const AGENT_EVENT_TYPES = new Set<AgentEventType>([
@@ -47,5 +53,19 @@ export function createAgentEvent(input: AgentEventInput): AgentEvent {
     throw new Error("Agent event at must be a finite number.");
   }
 
-  return input as AgentEvent;
+  if (input.type === "tool.used") {
+    return {
+      type: "tool.used",
+      sourceId: input.sourceId,
+      at: input.at,
+      activity: input.activity,
+    };
+  }
+
+  return {
+    type: input.type as Exclude<AgentEventType, "tool.used">,
+    sourceId: input.sourceId,
+    at: input.at,
+    summary: input.summary,
+  };
 }

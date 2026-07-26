@@ -51,6 +51,24 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     mood: "sleepy",
     tone: "calm",
   },
+  "work-focus": {
+    emote: "dots",
+    label: "Focusing",
+    mood: "working",
+    tone: "calm",
+  },
+  "work-review": {
+    emote: "question",
+    label: "Reviewing",
+    mood: "thinking",
+    tone: "curious",
+  },
+  "work-pace": {
+    emote: "dots",
+    label: "Pacing",
+    mood: "working",
+    tone: "motion",
+  },
   "approach-pet": {
     emote: "heart",
     label: "Approaching pet",

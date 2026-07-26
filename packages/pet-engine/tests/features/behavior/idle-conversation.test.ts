@@ -29,8 +29,8 @@ function makeChattyStore(agentTask?: { status: AgentTaskStatus; workingPose?: bo
       source: "autonomous",
       decidedAt: 9_000,
       expiresAt: 11_000,
-      reason: "working-ponder",
-      lastAutonomousReason: "working-ponder",
+      reason: "work-review",
+      lastAutonomousReason: "work-review",
       lastAutonomousAt: 9_000,
     });
   }
@@ -70,7 +70,7 @@ describe("idle companion chatter", () => {
     run(store);
 
     expect(store.getComponent("pet", "AgentChannelState")).toBeUndefined();
-    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("working-ponder");
+    expect(store.getComponent("pet", "BehaviorDecisionState")?.reason).toBe("work-review");
   });
 
   it.each([

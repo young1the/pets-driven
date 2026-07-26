@@ -1,5 +1,6 @@
 import { type AgentEvent, createAgentEvent } from "./agent-event";
 import type { AgentHookAdapter } from "./agent-hook-adapter";
+import { classifyToolActivity } from "./tool-activity";
 
 export type ClaudeHookAdapterOptions = {
   defaultSourceId?: string;
@@ -64,8 +65,8 @@ export function createAgentEventFromClaudeHook(
     type,
     sourceId,
     at: Number.isFinite(hook.timestamp) ? (hook.timestamp as number) : (options.now ?? Date.now()),
-    summary: summaryForHook(hook),
-    tool: type === "tool.used" ? hook.tool_name : undefined,
+    summary: type === "tool.used" ? undefined : summaryForHook(hook),
+    activity: type === "tool.used" ? classifyToolActivity(hook.tool_name) : undefined,
   });
 }
 
@@ -117,13 +118,6 @@ function toAgentEventType(hookEventName: ClaudeHookEventName): AgentEvent["type"
 function summaryForHook(hook: ClaudeHookPayload): string {
   const explicitSummary = firstNonEmpty(hook.summary, hook.message, hook.prompt);
   if (explicitSummary) return explicitSummary;
-
-  if (
-    hook.tool_name &&
-    (hook.hook_event_name === "PreToolUse" || hook.hook_event_name === "PostToolUse")
-  ) {
-    return `${hook.tool_name} tool activity`;
-  }
 
   switch (hook.hook_event_name) {
     case "UserPromptSubmit":

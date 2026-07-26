@@ -1,11 +1,11 @@
 export type { AgentTaskStateComponent } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 export type {
   ActivityStateComponent,
+  AgentActivitySignalComponent,
   AgentBindingComponent,
   AgentChannelSource,
   AgentChannelStateComponent,
   AgentChannelStatus,
-  AgentToolActivityComponent,
   CompletionBehaviorComponent,
   CompletionIntent,
   IdleConversationComponent,
@@ -103,9 +103,9 @@ export type {
 import type { AgentTaskStateComponent } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import type {
   ActivityStateComponent,
+  AgentActivitySignalComponent,
   AgentBindingComponent,
   AgentChannelStateComponent,
-  AgentToolActivityComponent,
   CompletionBehaviorComponent,
   IdleConversationComponent,
   SpeechProfileComponent,
@@ -195,7 +195,7 @@ export type Component =
   | PerceptionComponent
   | AgentBindingComponent
   | AgentTaskStateComponent
-  | AgentToolActivityComponent
+  | AgentActivitySignalComponent
   | PersonalityComponent
   | AirborneTagComponent
   | BehaviorDecisionStateComponent

@@ -4,10 +4,6 @@ import {
   statusFreezesMovement,
 } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
-import {
-  agentToolFamily,
-  workingPoseForToolFamily,
-} from "@pets-driven/pet-engine/features/agent/tool-families";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import { clampDrive } from "@pets-driven/pet-engine/features/drives/systems";
 import type {
@@ -30,13 +26,8 @@ import {
   resolveSpeechVariant,
 } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import {
-  jitteredFocusHoldMs,
-  resolveWorkingPose,
   TOOL_ACTIVITY_FRESHNESS_MS,
-  WORKING_FOCUS_REASONS,
-  WORKING_PACE_CLAIM_MS,
-  WORKING_PACE_REASON,
-  type WorkingFocusReason,
+  workingBehaviorHoldMs,
   workingStyle,
 } from "@pets-driven/pet-engine/pets/personalities/working-styles";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
@@ -169,9 +160,10 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   appraise: 10_000,
 };
 
-const WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
-  ...WORKING_FOCUS_REASONS,
-  WORKING_PACE_REASON,
+const COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
+  "work-focus",
+  "work-review",
+  "work-pace",
   "collision-flee",
   "collision-engage",
   "collision-avoid",
@@ -926,8 +918,6 @@ export function runAgentTaskEventSystem(
   components.forEach(
     ["AgentBinding", "SpeechProfile", "ActivityState"],
     (id, [agent, speechProfile, activity]) => {
-      if (isClaimed(components, id, "agent-event", now)) return;
-
       for (const event of agentEvents) {
         if (agent.sourceId !== event.sourceId) continue;
 
@@ -942,39 +932,33 @@ export function runAgentTaskEventSystem(
           );
           applyTaskMovementHold(components, id, "working", event.at);
           activity.lastActiveAt = event.at;
-          claim(components, id, "agent-event", now, "task.started");
+          releaseAgentEventClaim(components, id, now);
           recordPetExperience(components, id, "task-started", now);
         }
 
         if (event.type === "tool.used") {
-          recordAgentToolActivity(components, id, event.tool, now);
-
           // A tool call on an already-working pet is a heartbeat, not news: it
           // must not re-speak the task-started line, re-take the 5s agent-event
           // claim (which starved the working poses entirely — tools fire far
           // faster than the claim expires), reset `since`, or log another
           // task-started experience. All it does is refresh the work.
           const current = components.getComponent(id, "AgentTaskState");
+          if (current?.status === "completed" || current?.status === "failed") {
+            continue;
+          }
+
+          recordAgentActivitySignal(components, id, event.activity, event.at);
           if (current?.status === "working") {
             activity.lastActiveAt = event.at;
             continue;
           }
 
-          // From any other status, tool activity means the agent picked the
-          // work back up — including out of a waiting or settled report, which
-          // the resumed work supersedes.
-          setAgentTaskState(
-            components,
-            id,
-            "working",
-            event,
-            event.summary ?? resolveSpeechVariant(speechProfile.taskStarted, random),
-            now,
-          );
+          // Waiting is resumable after the user resolves attention. Terminal
+          // states above stay terminal even when an async tool hook arrives late.
+          setAgentTaskState(components, id, "working", event, null, now);
           applyTaskMovementHold(components, id, "working", event.at);
           activity.lastActiveAt = event.at;
-          claim(components, id, "agent-event", now, "task.started");
-          recordPetExperience(components, id, "task-started", now);
+          releaseAgentEventClaim(components, id, now);
         }
 
         if (event.type === "task.waiting" || event.type === "attention.requested") {
@@ -1019,21 +1003,28 @@ export function runAgentTaskEventSystem(
 }
 
 /**
- * Record what kind of work the agent's latest tool call represents. An
- * unplaceable or absent tool name still records the pulse (with a null family)
- * so a later placeable one is not judged against a stale timestamp.
+ * Record the neutral activity hint carried by the latest agent pulse.
+ * Unknown activity still advances the heartbeat so stale hints cannot affect
+ * a later behavior decision.
  */
-function recordAgentToolActivity(
+function recordAgentActivitySignal(
   components: ComponentStore,
   id: string,
-  tool: string | undefined,
-  now: number,
+  activity: "study" | "edit" | "run" | undefined,
+  at: number,
 ): void {
   components.setComponent(id, {
-    type: "AgentToolActivity",
-    family: agentToolFamily(tool),
-    at: now,
+    type: "AgentActivitySignal",
+    activity: activity ?? null,
+    at,
   });
+}
+
+function releaseAgentEventClaim(components: ComponentStore, id: string, now: number): void {
+  const decision = components.getComponent(id, "BehaviorDecisionState");
+  if (decision?.source === "agent-event" && decision.expiresAt > now) {
+    decision.expiresAt = now;
+  }
 }
 
 /**
@@ -1065,85 +1056,6 @@ export function runTaskMovementHoldSystem(
   components.forEach(["TaskMovementHold"], (id) => {
     stopPetMovement(components, physics, id);
   });
-}
-
-/**
- * The working state, in character.
- *
- * A working pet alternates two beats: it paces to a nearby spot, or it holds a
- * stationary *working pose* — heads-down, tinkering, pondering, fussing or
- * loafing, picked by personality (see working-styles.ts). The pose is a claim
- * reason, so the existing choreography and activity-label machinery turn it
- * into a rhythm of sprite rows and a specific status label; the hold length and
- * pacing frequency are what make a steady pet plant itself while a mischievous
- * one keeps bouncing off.
- */
-export function runWorkingBehaviorSystem(
-  components: ComponentStore,
-  clock: Clock,
-  random: RandomSource,
-  bounds: { x?: number; y?: number; width: number; height: number },
-): void {
-  const now = clock.now();
-
-  components.forEach(
-    ["AgentTaskState", "Personality", "MotionTarget", "Transform"],
-    (id, [agentTask, personality, motion, transform]) => {
-      if (agentTask.status !== "working") return;
-      if (motion.targetPosition !== null || motion.targetEntityId !== null) return;
-
-      const existing = components.getComponent(id, "BehaviorDecisionState");
-      if (existing && existing.expiresAt > now) return;
-
-      const style = workingStyle(personality);
-
-      if (random.next() < style.paceChance) {
-        const target = pickWanderPosition(
-          transform.position.x,
-          transform.position.y,
-          bounds,
-          random,
-          "near",
-          personality,
-          petWidth(components, id),
-        );
-        components.setComponent(id, {
-          type: "MotionTarget",
-          targetEntityId: null,
-          targetPosition: target,
-        });
-        setPetSteering(components, id, "pursue");
-        claim(components, id, "autonomous", now, WORKING_PACE_REASON, now + WORKING_PACE_CLAIM_MS);
-        return;
-      }
-
-      const pose = resolveWorkingPose(style, freshToolPose(components, id, now), random.next());
-      claim(
-        components,
-        id,
-        "autonomous",
-        now,
-        pose,
-        now + jitteredFocusHoldMs(style, random.next()),
-      );
-    },
-  );
-}
-
-/**
- * The pose the agent's latest tool call implies, or null when there is nothing
- * to act out: no pulse yet, a tool the pet could not place (every Codex hook),
- * or a pulse old enough that miming it would be pretending.
- */
-function freshToolPose(
-  components: ComponentStore,
-  id: string,
-  now: number,
-): WorkingFocusReason | null {
-  const toolActivity = components.getComponent(id, "AgentToolActivity");
-  if (!toolActivity?.family) return null;
-  if (now - toolActivity.at > TOOL_ACTIVITY_FRESHNESS_MS) return null;
-  return workingPoseForToolFamily(toolActivity.family);
 }
 
 // Priority 3: Collision avoidance (entity overlap).
@@ -1289,7 +1201,7 @@ export function runCollisionBehaviorSystem(
         existing &&
         (existing.source === "collision" ||
           (existing.source === "autonomous" &&
-            WORKING_COLLISION_EXPIRABLE_AUTONOMOUS_REASONS.has(existing.reason)))
+            COLLISION_EXPIRABLE_AUTONOMOUS_REASONS.has(existing.reason)))
       ) {
         existing.expiresAt = now;
       }
@@ -1657,6 +1569,7 @@ function applyArrivalDwell(
 ): void {
   const personality = components.getComponent(id, "Personality");
   if (!personality) return;
+  if (components.getComponent(id, "AgentTaskState")?.status === "working") return;
   // A live claim blocks the dwell — unless it is itself just bookkeeping
   // (idle-companion speech re-claims every ~1.5s and must not eat rest beats).
   const existing = components.getComponent(id, "BehaviorDecisionState");
@@ -2274,6 +2187,63 @@ export function runBehaviorDecisionSystem(
         return;
       }
 
+      const agentTask = components.getComponent(id, "AgentTaskState");
+      if (agentTask?.status === "working") {
+        const style = workingStyle(personality);
+        const signal = components.getComponent(id, "AgentActivitySignal");
+        const freshActivity =
+          signal && now - signal.at <= TOOL_ACTIVITY_FRESHNESS_MS ? signal.activity : null;
+        const holdMs = workingBehaviorHoldMs(style, random.next());
+        const workingCandidates: Candidate[] = [
+          {
+            kind: "work-focus",
+            score: style.focusScore + (freshActivity === "edit" ? 0.35 : 0),
+            build: () => ({ activityDurationMs: holdMs }),
+          },
+          {
+            kind: "work-review",
+            score: style.reviewScore + (freshActivity === "study" ? 0.35 : 0),
+            build: () => ({ activityDurationMs: holdMs }),
+          },
+          {
+            kind: "work-pace",
+            score: style.paceScore + (freshActivity === "run" ? 0.35 : 0),
+            build: () => ({
+              activityDurationMs: holdMs,
+              targetPosition: pickWanderPosition(
+                petX,
+                petY,
+                bounds,
+                random,
+                "near",
+                personality,
+                petWidth(components, id),
+              ),
+            }),
+          },
+        ];
+        const workingSelection = softmaxSample(workingCandidates, personality.neuroticism, random);
+        const winner = workingSelection.winner;
+        const tokenFields = winner.build();
+        components.setComponent(id, {
+          type: "BehaviorDecisionToken",
+          kind: winner.kind,
+          decidedAt: now,
+          consumed: false,
+          selectionTrace: workingSelection.trace,
+          ...tokenFields,
+        });
+        claim(
+          components,
+          id,
+          "autonomous",
+          now,
+          winner.kind,
+          now + (tokenFields.activityDurationMs ?? holdMs),
+        );
+        return;
+      }
+
       // Read world context from this pet's Perception snapshot.
       const perception = components.getComponent(id, "Perception");
       const perceptionAnchor = perception?.userAnchor;
@@ -2688,6 +2658,7 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
     if (token.consumed) return;
     switch (token.kind) {
       case "wander-near":
+      case "work-pace":
         components.setComponent(id, {
           type: "MotionTarget",
           targetEntityId: null,
@@ -2746,6 +2717,11 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         break;
       case "idle-stay":
         // Intentional no-op: intent stays idle, target stays null.
+        break;
+      case "work-focus":
+      case "work-review":
+        setPetSteering(components, id, "stand");
+        clearMotionTarget(components, id);
         break;
       case "play-romp": {
         const durationMs = token.activityDurationMs ?? ROMP_BASE_MS;

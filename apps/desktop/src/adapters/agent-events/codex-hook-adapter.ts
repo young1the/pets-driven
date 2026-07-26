@@ -1,5 +1,6 @@
 import { type AgentEvent, createAgentEvent } from "./agent-event";
 import type { AgentHookAdapter } from "./agent-hook-adapter";
+import { classifyToolActivity } from "./tool-activity";
 
 export type CodexHookAdapterOptions = {
   defaultSourceId?: string;
@@ -53,8 +54,8 @@ export function createAgentEventFromCodexHook(
     type,
     sourceId,
     at: Number.isFinite(hook.timestamp) ? (hook.timestamp as number) : (options.now ?? Date.now()),
-    summary: summaryForHook(hook),
-    tool: type === "tool.used" ? hook.tool_name : undefined,
+    summary: type === "tool.used" ? undefined : summaryForHook(hook),
+    activity: type === "tool.used" ? classifyToolActivity(hook.tool_name) : undefined,
   });
 }
 

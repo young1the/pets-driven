@@ -168,13 +168,10 @@ describe("derivePetActivity", () => {
     }
   });
 
-  it("maps the working poses so a working pet reads by personality", () => {
+  it("maps working behaviors selected by personality", () => {
     const cases: Array<[string, string]> = [
-      ["working-focus", "headsDown"],
-      ["working-tinker", "tinkering"],
-      ["working-ponder", "mullingOver"],
-      ["working-fuss", "fussingOver"],
-      ["working-loaf", "dawdling"],
+      ["work-focus", "headsDown"],
+      ["work-review", "mullingOver"],
     ];
     for (const [reason, expected] of cases) {
       const store = storeWith([
@@ -189,7 +186,7 @@ describe("derivePetActivity", () => {
     // The pacing claim only lives 750ms; the walk it started runs longer, so
     // the label has to survive on a non-idle intent like the other movement
     // reasons.
-    const store = storeWith([steering("pursue"), decision("working-wander", { expiresAt: 750 })]);
+    const store = storeWith([steering("pursue"), decision("work-pace", { expiresAt: 750 })]);
     expect(derivePetActivity(store, "pet", 1_200)).toBe("pacing");
   });
 

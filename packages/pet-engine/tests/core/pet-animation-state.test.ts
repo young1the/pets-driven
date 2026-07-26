@@ -283,8 +283,8 @@ describe("pet animation state", () => {
             source: "autonomous",
             decidedAt: 0,
             expiresAt: 2_000,
-            reason: "working-ponder",
-            lastAutonomousReason: "working-ponder",
+            reason: "work-review",
+            lastAutonomousReason: "work-review",
             lastAutonomousAt: 0,
           },
         ],
@@ -292,10 +292,10 @@ describe("pet animation state", () => {
     ]);
 
     // Opens on the work row, looks up to think, then settles — and loops.
-    expect(getPetAnimationState(store, "pet", 0)).toBe("running");
+    expect(getPetAnimationState(store, "pet", 0)).toBe("review");
     expect(getPetAnimationState(store, "pet", 900)).toBe("review");
-    expect(getPetAnimationState(store, "pet", 1_400)).toBe("idle");
-    expect(getPetAnimationState(store, "pet", 1_700)).toBe("running");
+    expect(getPetAnimationState(store, "pet", 1_400)).toBe("review");
+    expect(getPetAnimationState(store, "pet", 1_700)).toBe("review");
   });
 
   it("keeps travel over an expressive pose while the pet is moving", () => {

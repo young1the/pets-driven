@@ -89,12 +89,9 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "wander-far": "exploring",
   // Working beats. The pacing one is a movement reason (the walk outlives its
   // claim); the focus poses hold a stationary claim and read from it directly.
-  "working-wander": "pacing",
-  "working-focus": "headsDown",
-  "working-tinker": "tinkering",
-  "working-ponder": "mullingOver",
-  "working-fuss": "fussingOver",
-  "working-loaf": "dawdling",
+  "work-pace": "pacing",
+  "work-focus": "headsDown",
+  "work-review": "mullingOver",
   "request-climb": "climbing",
   "request-jump": "hopping",
   "collision-jump": "hopping",

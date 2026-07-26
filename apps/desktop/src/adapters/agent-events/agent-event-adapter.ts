@@ -8,8 +8,7 @@ export function toWorldEvent(event: AgentEvent): AgentWorldEvent {
       type: "tool.used",
       sourceId: event.sourceId,
       at: event.at,
-      summary: event.summary,
-      tool: event.tool,
+      activity: event.activity,
     };
   }
 

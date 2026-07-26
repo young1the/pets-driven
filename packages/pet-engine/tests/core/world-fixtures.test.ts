@@ -215,7 +215,6 @@ describe("demo scenario", () => {
       "PetExpressionExpirationSystem",
       "AgentTaskEventSystem",
       "CollisionBehaviorSystem",
-      "WorkingBehaviorSystem",
       "SocialInteractionSystem",
       "BehaviorDecisionSystem",
       "SignatureReactionSystem",
@@ -377,6 +376,7 @@ describe("demo scenario", () => {
       ],
       writes: [
         "AgentTaskState",
+        "AgentActivitySignal",
         "AgentChannelState",
         "ActivityState",
         "BehaviorDecisionState",
@@ -418,21 +418,8 @@ describe("demo scenario", () => {
       ],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
-      name: "WorkingBehaviorSystem",
-      dependsOn: ["CollisionBehaviorSystem"],
-      reads: [
-        "AgentTaskState",
-        "Personality",
-        "MotionTarget",
-        "Transform",
-        "BehaviorDecisionState",
-        "PhysicsBody",
-      ],
-      writes: ["MotionTarget", "Steering", "BehaviorDecisionState"],
-    });
-    expect(scenario.world.systemPlan()).toContainEqual({
       name: "BehaviorDecisionSystem",
-      dependsOn: ["WorkingBehaviorSystem"],
+      dependsOn: ["CollisionBehaviorSystem"],
       reads: [
         "Steering",
         "MotionTarget",
@@ -454,6 +441,7 @@ describe("demo scenario", () => {
         "Drives",
         "MoodState",
         "TaskMovementHold",
+        "AgentActivitySignal",
         "CanSocialize",
         "SocialSessionMember",
       ],

@@ -61,6 +61,10 @@ export type BehaviorDecisionKind =
   | "request-jump"
   | "request-climb"
   | "idle-stay"
+  // Work-context behaviors use the ordinary decision/token/planning pipeline.
+  | "work-focus"
+  | "work-review"
+  | "work-pace"
   // Phase 3 — social reactions driven by Perception.nearbyPets
   | "approach-pet"
   | "flee-from-pet"

@@ -25,7 +25,9 @@ function makeStore() {
   ]);
 }
 
-function agentEvent(type: AgentWorldEvent["type"]): AgentWorldEvent {
+type LifecycleAgentEvent = Exclude<AgentWorldEvent, { type: "tool.used" | "attention.requested" }>;
+
+function agentEvent(type: LifecycleAgentEvent["type"]): LifecycleAgentEvent {
   return {
     kind: "agent",
     type,
@@ -82,6 +84,31 @@ describe("runAgentTaskEventSystem → AgentTaskState", () => {
     runAgentTaskEventSystem(failStore, [agentEvent("task.failed")], createManualClock(100));
     expect(failStore.getComponent("pet", "AgentTaskState")?.status).toBe("failed");
     expect(failStore.getComponent("pet", "TaskMovementHold")).toBeDefined();
+  });
+
+  it("ingests lifecycle facts even while a user behavior claim is active", () => {
+    const store = makeStore();
+    store.setComponent("pet", {
+      type: "BehaviorDecisionState",
+      source: "user-interaction",
+      decidedAt: 0,
+      expiresAt: 5_000,
+      reason: "petting",
+      lastAutonomousReason: null,
+      lastAutonomousAt: null,
+    });
+
+    runAgentTaskEventSystem(
+      store,
+      [agentEvent("task.started"), { ...agentEvent("task.completed"), at: 200 }],
+      createManualClock(200),
+    );
+
+    expect(store.getComponent("pet", "AgentTaskState")?.status).toBe("completed");
+    expect(store.getComponent("pet", "TaskMovementHold")).toEqual({
+      type: "TaskMovementHold",
+      since: 200,
+    });
   });
 
   it("passes event.summary through to AgentChannelState.message", () => {
