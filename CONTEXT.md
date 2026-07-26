@@ -201,11 +201,11 @@ What a **Pet** is autonomously doing in the **Simulation World** right now (for 
 _Avoid_: behavior, status, intent
 
 **Working Style**:
-How a **Pet** occupies itself while its **Agent Work State** is working — the pose its **Personality Catalog** entry holds (heads down, tinkering, mulling over, fussing over, taking it easy) and how often it breaks off to pace. It is what a working **Pet** reports as its **Activity**.
+How a **Pet** chooses among work-related **Decisions** while its **Agent Work State** is working: focus, review, or a short pacing walk. Its **Personality Catalog** entry weights those candidates and controls how long a stationary choice remains readable.
 _Avoid_: agent work state, signature activity, idle
 
 **Tool Pulse**:
-A single tool call by an **Agent Source**, forwarded through the **Agent Event Feed**. It refreshes an already-running task rather than starting a new one, and reports the kind of work — reading, editing, or running something — that the **Pet** acts out. An **Agent Source** that reports no tool name emits the pulse without one.
+A single tool call by an **Agent Source**, forwarded through the **Agent Event Feed**. It is a heartbeat rather than a task start. A provider adapter may classify it as study, edit, or run activity; this context can bias the next work-related **Decision**, but never interrupts the current one.
 _Avoid_: task start, agent work state, tool log
 
 **Pet Status Card**:
@@ -358,11 +358,11 @@ _Avoid_: Social Session, relationship, copied personality
 - A **Pet**'s motion is produced by a top-down chain each frame: **Drives** and perception feed a **Decision**, the **Decision** sets a **Locomotion**, the **Locomotion** gates **Steering**, and **Steering** hands force to the physics engine; the **Activity** is a read-only label derived from that state.
 - A **Pet**'s **Mood** also shapes candidate **Decisions** after the **Pet Profile** and **Drives** are applied.
 - A **Personality Catalog** entry defines two signature **Activities** that other entries do not select; signature activities use sustained claims and choreography so their identity is readable on the **Pet Surface**.
-- A **Personality Catalog** entry also defines one **Working Style**; while the **Agent Work State** is working, the **Pet** alternates that style's sustained pose with short pacing walks, and the pose it holds is the **Activity** it reports.
+- A **Personality Catalog** entry also defines one **Working Style**; while the **Agent Work State** is working, the ordinary behavior selector ranks work-focus, work-review, and work-pace candidates from that style.
 - A **Pet** with a live **Agent Work State** (working, waiting, completed, or failed) does not start ambient idle dialogue, and no spoken line takes its presentation out of the work tone — a **Pet** mid-task never reads as one whose task was released.
-- A **Tool Pulse** keeps a working **Pet** working: it never re-announces the task, and on a **Pet** holding a settled report it means the **Agent Source** resumed.
-- A **Tool Pulse** decides which **Working Style** pose the **Pet** plays for a beat, weighted by its **Personality Catalog** entry; a pulse with no reported tool, or one too old to still describe the work, leaves the **Pet** its own pose.
-- A **Tool Pulse** never changes what a **Pet** says or the label it shows: the tool identity reaches the user as movement only, so **Agent Sources** that report tool names and ones that do not read the same.
+- A **Tool Pulse** keeps a working **Pet** working without re-announcing the task, and may resume a waiting task after attention is resolved. It never reopens a completed or failed task; only a new task-start event does that.
+- A **Tool Pulse** never replaces a live **Decision**. Bursts coalesce into the latest activity context, and the current work behavior remains visible for its minimum hold before the next ordinary selection.
+- A **Tool Pulse** never changes what a **Pet** says or the label it shows. Raw provider tool names stop at the adapter boundary.
 - A nearby idle **Pet** able to socialize considers each observed signature **Activity** once and may start a **Signature Reaction**.
 - A **Signature Reaction** uses the responder's own personality to choose join, cheer, watch, or keep-distance; joining borrows the source signature's readable pose without changing the responder's **Pet Profile**.
 - At most two **Pets** respond to one signature **Activity** occurrence, keeping the moment readable.

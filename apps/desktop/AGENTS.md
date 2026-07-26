@@ -19,7 +19,7 @@ pnpm test:e2e                                 # playwright test
 
 - `src/app/` — the main window UI; `src/app-state/` holds adoption, card status, and surface state
 - `src/pet-window/` — the overlay surface: transport, layout, projection, sprite, hit region, fixtures
-- `src/adapters/agent-events/` — turns incoming agent events into app state
+- `src/adapters/agent-events/` — keeps each provider's raw hook contract behind its own adapter and emits the app-owned `AgentEvent` interface
 - `src/playground/` — simulation playground; entry points are `main.tsx` and `playground-main.tsx` beside them
 - `src-tauri/src/` — Rust: `claude_hook_ingress.rs`, `state_store.rs`, `pet_windows.rs`, `terminal_channel.rs`, `embedded_terminal.rs`, `pet_assets.rs`, `claude_plugin.rs`, `codex_plugin.rs`
 - `tests/` — vitest; `e2e/` — Playwright
@@ -37,6 +37,7 @@ pnpm test:e2e                                 # playwright test
 - **The pet window renders, it does not simulate.** It is a separate 192x268 always-on-top window driven entirely by frame events from the main window. Wrong-looking output is usually projection, not simulation — check `src/pet-window/pet-window-projection.ts` and `src/pet-window/pet-window-layout.ts` first.
 - **Gotcha: the OS window never shrinks to fit a small pet.** The projection must center the fixed window rather than the scaled frame, and every vertical term must be scaled, or small pets sink and the collision capsule clips.
 - **Note: the pet-window routing suite has a known flaky case** — the "resets the adopted pet simulation" case in the `tests/pet-window/` routing suite fails intermittently on unrelated changes. Confirm it fails on a clean tree before blaming your diff.
-- **Hook events are not all lifecycle events.** `claude-hook-adapter.ts` maps `PreToolUse`/`PostToolUse`/`PostToolBatch` to a `tool.used` pulse, not `task.started`: they fire many times per task and the engine treats a task start as news (speech, priority claim, mood entry). Only the pulse carries `tool_name`, and only as far as the pose the pet plays — no label or spoken line ever names a tool, so an agent that reports tool names and one that does not (Codex) read the same.
+- **Provider hook payloads never enter the engine directly.** The Rust ingress emits a provider envelope, `claude-hook-adapter.ts` and `codex-hook-adapter.ts` parse their own contracts, and both target the app-owned `AgentEvent` interface. Adding a provider means adding an adapter, not widening another provider's payload type.
+- **Hook events are not all lifecycle events.** Tool hooks map to a `tool.used` pulse, not `task.started`: they fire many times per task. Raw tool names stop at the adapter boundary; an optional study/edit/run activity may bias the next behavior, but it never becomes speech or a direct animation command.
 - **Fixture state is development-only and in-memory.** It is served only from a loopback host and never reads or overwrites persisted Tauri state, so it is safe to explore but useless for reproducing a persistence bug.
 - **Rust and TypeScript state must move together.** `state_store.rs` owns persisted state; a new persisted field needs the Rust side, the adapter, and the app-state module updated in the same change.
