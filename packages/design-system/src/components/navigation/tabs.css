@@ -29,14 +29,11 @@
   border-radius: var(--radius-pill);
   white-space: nowrap;
   /* Selection, not decoration: the pill recolors in answer to a click the user
-     already made, so it has to read as instant. At --dur-fast (140ms) the tab
-     was still fading a full frame after the new panel had rendered, which is
-     what made switching tabs feel laggy. --dur-instant keeps a little easing
-     without putting the confirmation behind the panel it confirms. */
-  transition:
-    color var(--dur-instant) var(--ease-out),
-    background-color var(--dur-instant) var(--ease-out),
-    box-shadow var(--dur-instant) var(--ease-out);
+     already made, so it has to read as instant. Fading it at all puts the
+     confirmation behind the panel it confirms — at --dur-fast (140ms) the tab
+     was still mid-fade a full frame after the new panel had rendered, and even
+     --dur-instant (80ms) left a perceptible lag. There is no transition here on
+     purpose: the pill must land on the same frame as the click. */
 }
 .pd-tab:hover {
   color: var(--text-strong);
