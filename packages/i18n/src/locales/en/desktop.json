@@ -79,6 +79,7 @@
     "petSourcesDesc": "The folder scanned for pet packs. Defaults to ~/.petdex/pets, where Petdex installs your pets. The built-in pets always show alongside it.",
     "petdexDefaultFolder": "Petdex default folder",
     "changePetFolder": "Use a different folder",
+    "openPetFolder": "Open in Explorer",
     "resetPetFolder": "Back to default",
     "language": "Language",
     "languageDesc": "Choose the language for the Pets-Driven interface.",
@@ -179,6 +180,7 @@
     "workingFolder": "Working folder",
     "chooseFolder": "Choose a folder…",
     "clearFolder": "Clear folder",
+    "openFolder": "Open in Explorer",
     "note": "Note",
     "notePlaceholder": "Add a note about this pet…",
     "deletePet": "Delete pet",
@@ -299,6 +301,7 @@
     "petdexOpen": "Open Petdex →",
     "petdexDefaultFolder": "Petdex default folder",
     "changePetFolder": "Use a different folder",
+    "openPetFolder": "Open in Explorer",
     "resetPetFolder": "Back to default",
     "petsFolderScanning": "Looking for pet looks…",
     "petsFolderFound": "{{count}} looks found — new installs show up here instantly",
@@ -463,6 +466,7 @@
     "diagnosticsCopied": "Pet diagnostics copied",
     "diagnosticsReady": "Pet diagnostics ready",
     "folderOccupied": "That folder already belongs to another pet",
+    "folderMissing": "That folder is no longer on disk",
     "settingsReset": "Settings are back to their defaults"
   },
   "confirm": {

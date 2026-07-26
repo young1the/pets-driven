@@ -22,6 +22,7 @@ function setup(overrides = {}) {
     onMemo: vi.fn(),
     onPersonalityId: vi.fn(),
     onPickFolder: vi.fn(),
+    onOpenFolder: vi.fn(),
     onClearFolder: vi.fn(),
     onDelete: vi.fn(),
     onDone: vi.fn(),
@@ -108,5 +109,17 @@ describe("PetEditSection", () => {
   it("hides the clear button when no folder is set", () => {
     setup({ pet: { ...pet, folder: "" } });
     expect(screen.queryByRole("button", { name: "Clear folder" })).toBeNull();
+  });
+
+  it("opens the working folder in Explorer when a folder is set", () => {
+    const onOpenFolder = vi.fn();
+    setup({ onOpenFolder });
+    fireEvent.click(screen.getByRole("button", { name: "Open in Explorer" }));
+    expect(onOpenFolder).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides the open button when no folder is set", () => {
+    setup({ pet: { ...pet, folder: "" } });
+    expect(screen.queryByRole("button", { name: "Open in Explorer" })).toBeNull();
   });
 });

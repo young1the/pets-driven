@@ -1,4 +1,9 @@
-import { type BadgeTone, FolderIcon, TerminalPreview } from "@pets-driven/design-system";
+import {
+  type BadgeTone,
+  ExternalLinkIcon,
+  FolderIcon,
+  TerminalPreview,
+} from "@pets-driven/design-system";
 import { localeLabels, useTranslation } from "@pets-driven/i18n";
 import { type CSSProperties, useState } from "react";
 import type { ClaudeHookIngressActivity } from "@/adapters/agent-events/claude-hook-ingress";
@@ -53,6 +58,8 @@ export interface SettingsSectionProps {
   /** The resolved Petdex default path shown when no custom folder is set. */
   defaultPetSourceDirectory: string | null;
   onChangePetFolder: () => void;
+  /** Reveal the effective pet folder (custom or the Petdex default) in Explorer. */
+  onOpenPetFolder: () => void;
   onResetPetFolder: () => void;
   /**
    * Put every persisted setting back to its default. Destructive enough to sit
@@ -224,6 +231,7 @@ export function SettingsSection({
   petSourceDirectory,
   defaultPetSourceDirectory,
   onChangePetFolder,
+  onOpenPetFolder,
   onResetPetFolder,
   onResetAllSettings,
   onResetPets,
@@ -373,6 +381,15 @@ export function SettingsSection({
                   {petSourceDirectory ?? defaultPetSourceDirectory ?? "~/.petdex/pets"}
                 </small>
               </span>
+              <button
+                onClick={onOpenPetFolder}
+                style={{ ...smallAction, display: "inline-flex", alignItems: "center", gap: "6px" }}
+                title={t("settings.openPetFolder")}
+                type="button"
+              >
+                <ExternalLinkIcon size={14} />
+                {t("settings.openPetFolder")}
+              </button>
               <button onClick={onChangePetFolder} style={smallAction} type="button">
                 {t("settings.changePetFolder")}
               </button>

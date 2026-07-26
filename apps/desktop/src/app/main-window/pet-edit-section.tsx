@@ -2,6 +2,7 @@ import {
   BackIcon,
   Button,
   CloseIcon,
+  ExternalLinkIcon,
   FolderIcon,
   PetShowcaseCard,
   Select,
@@ -44,6 +45,8 @@ export interface PetEditSectionProps {
   onMemo: (value: string) => void;
   onPersonalityId: (value: PetPersonalityId) => void;
   onPickFolder: () => void;
+  /** Reveal the pet's bound working folder in the OS file manager. */
+  onOpenFolder: () => void;
   onClearFolder: () => void;
   onDelete: () => void;
   onDone: () => void;
@@ -79,6 +82,7 @@ export function PetEditSection({
   onMemo,
   onPersonalityId,
   onPickFolder,
+  onOpenFolder,
   onClearFolder,
   onDelete,
   onDone,
@@ -253,25 +257,46 @@ export function PetEditSection({
                   </span>
                 </button>
                 {pet.folder && (
-                  <button
-                    onClick={onClearFolder}
-                    aria-label={t("edit.clearFolder")}
-                    title={t("edit.clearFolder")}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flex: "none",
-                      border: "none",
-                      background: "transparent",
-                      color: "var(--text-subtle)",
-                      padding: "2px",
-                      cursor: "pointer",
-                    }}
-                    type="button"
-                  >
-                    <CloseIcon size={16} />
-                  </button>
+                  <>
+                    <button
+                      onClick={onOpenFolder}
+                      aria-label={t("edit.openFolder")}
+                      title={t("edit.openFolder")}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flex: "none",
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--text-subtle)",
+                        padding: "2px",
+                        cursor: "pointer",
+                      }}
+                      type="button"
+                    >
+                      <ExternalLinkIcon size={16} />
+                    </button>
+                    <button
+                      onClick={onClearFolder}
+                      aria-label={t("edit.clearFolder")}
+                      title={t("edit.clearFolder")}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flex: "none",
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--text-subtle)",
+                        padding: "2px",
+                        cursor: "pointer",
+                      }}
+                      type="button"
+                    >
+                      <CloseIcon size={16} />
+                    </button>
+                  </>
                 )}
               </div>
             </div>

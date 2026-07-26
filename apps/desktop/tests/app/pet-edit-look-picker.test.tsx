@@ -34,6 +34,7 @@ function setup(overrides: Record<string, unknown> = {}) {
     onMemo: vi.fn(),
     onPersonalityId: vi.fn(),
     onPickFolder: vi.fn(),
+    onOpenFolder: vi.fn(),
     onClearFolder: vi.fn(),
     onDelete: vi.fn(),
     onDone: vi.fn(),

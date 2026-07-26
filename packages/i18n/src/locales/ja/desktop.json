@@ -79,6 +79,7 @@
     "petSourcesDesc": "ペットパックを探すフォルダです。既定はPetdexがペットをインストールする ~/.petdex/pets です。組み込みのペットは常に一緒に表示されます。",
     "petdexDefaultFolder": "Petdexの既定フォルダ",
     "changePetFolder": "別のフォルダを使う",
+    "openPetFolder": "エクスプローラーで開く",
     "resetPetFolder": "既定のフォルダに戻す",
     "language": "言語",
     "languageDesc": "Pets-Drivenの表示言語を選んでください。",
@@ -179,6 +180,7 @@
     "workingFolder": "作業フォルダ",
     "chooseFolder": "フォルダを選ぶ…",
     "clearFolder": "フォルダを外す",
+    "openFolder": "エクスプローラーで開く",
     "note": "メモ",
     "notePlaceholder": "このペットについてのメモを書いてみましょう…",
     "deletePet": "ペットを削除",
@@ -299,6 +301,7 @@
     "petdexOpen": "Petdexを開く →",
     "petdexDefaultFolder": "Petdexの既定フォルダ",
     "changePetFolder": "別のフォルダを使う",
+    "openPetFolder": "エクスプローラーで開く",
     "resetPetFolder": "既定のフォルダに戻す",
     "petsFolderScanning": "ペットの見た目を探しています…",
     "petsFolderFound": "見た目が{{count}}件見つかりました — 新しく入れるとすぐ反映されます",
@@ -463,6 +466,7 @@
     "diagnosticsCopied": "ペットの診断情報をコピーしました",
     "diagnosticsReady": "ペットの診断情報の準備ができました",
     "folderOccupied": "そのフォルダはすでに別のペットのものです",
+    "folderMissing": "そのフォルダはもう見つかりません",
     "settingsReset": "設定が既定値に戻りました"
   },
   "confirm": {

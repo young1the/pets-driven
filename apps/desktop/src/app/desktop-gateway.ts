@@ -137,6 +137,11 @@ export type DesktopGateway = {
   ): Promise<void>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
+  /**
+   * Reveal a folder in the OS file manager (Explorer). Rejects when the path no
+   * longer exists so the caller can tell the user; a no-op outside Tauri.
+   */
+  revealPath(path: string): Promise<void>;
   /** The Petdex default pet folder (~/.petdex/pets); null outside Tauri. */
   getDefaultPetSourceDirectory(): Promise<string | null>;
   getClaudePluginStatus(): Promise<ClaudePluginStatus>;
@@ -317,6 +322,14 @@ export const desktopGateway: DesktopGateway = {
     const selection = await open({ directory: true, multiple: false });
 
     return typeof selection === "string" ? selection : null;
+  },
+
+  async revealPath(path) {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("reveal_path", { path });
   },
 
   async getDefaultPetSourceDirectory() {

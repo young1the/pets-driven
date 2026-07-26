@@ -50,6 +50,8 @@ export interface MainWindowSurfaceProps {
   onSetLaunchCommand: (command: string) => void;
   onChangePetSourceFolder: () => void;
   onResetPetFolder: () => void;
+  /** Open a configured folder in the OS file manager; null path is a no-op. */
+  onRevealFolder: (path: string | null) => void;
   /** Settings only — the pet roster is user data and survives it. */
   onResetAllSettings: () => void;
 }
@@ -102,6 +104,7 @@ export function MainWindowSurface({
   onSetLaunchCommand,
   onChangePetSourceFolder,
   onResetPetFolder,
+  onRevealFolder,
   onResetAllSettings,
 }: MainWindowSurfaceProps) {
   const { t } = useTranslation("desktop");
@@ -238,6 +241,7 @@ export function MainWindowSurface({
         onMemo: (value) => editPetId && onPatchPet(editPetId, { memo: value }),
         onPersonalityId: (value) => editPetId && onSetPetPersonality(editPetId, value),
         onPickFolder: () => editPetId && onPickFolderForPet(editPetId),
+        onOpenFolder: () => onRevealFolder(editDirPath),
         onClearFolder: () => editPetId && onClearFolderForPet(editPetId),
         onDelete: () => editPetId && onDeletePet(editPetId),
         onDone: () => setEditPetId(null),
@@ -285,6 +289,7 @@ export function MainWindowSurface({
         petSourceDirectory: state.petSourceDirectory,
         defaultPetSourceDirectory: defaultPetSourceFolder,
         onChangePetFolder: () => onChangePetSourceFolder(),
+        onOpenPetFolder: () => onRevealFolder(state.petSourceDirectory ?? defaultPetSourceFolder),
         onResetPetFolder: () => onResetPetFolder(),
         onResetAllSettings: () => onResetAllSettings(),
         onResetPets: () => onResetPets(),

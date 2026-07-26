@@ -37,6 +37,7 @@ function setup(overrides = {}) {
     petSourceDirectory: null as string | null,
     defaultPetSourceDirectory: "C:\\Users\\me\\.petdex\\pets",
     onChangePetFolder: vi.fn(),
+    onOpenPetFolder: vi.fn(),
     onResetPetFolder: vi.fn(),
     onResetAllSettings: vi.fn(),
     onResetPets: vi.fn(),
@@ -163,6 +164,14 @@ describe("SettingsSection", () => {
 
     fireEvent.click(screen.getByText("Use a different folder"));
     expect(onChangePetFolder).toHaveBeenCalled();
+  });
+
+  it("opens the pet source folder in Explorer", () => {
+    const onOpenPetFolder = vi.fn();
+    setup({ onOpenPetFolder });
+
+    fireEvent.click(screen.getByText("Open in Explorer"));
+    expect(onOpenPetFolder).toHaveBeenCalled();
   });
 });
 

@@ -128,6 +128,7 @@ function PetsDrivenHostApp() {
     clearFolderForPet,
     applyPetSourceFolder,
     changePetSourceFolder,
+    revealFolder,
     setLaunchCommand,
   } = usePetRosterActions({
     stateRef: petsDrivenStateRef,
@@ -295,6 +296,7 @@ function PetsDrivenHostApp() {
       onPickFolderForPet={(petId: string) => void pickFolderForPet(petId)}
       onResetAllSettings={() => void resetAllSettings()}
       onResetPetFolder={() => applyPetSourceFolder(null)}
+      onRevealFolder={(path: string | null) => void revealFolder(path)}
       onResetPets={() => void resetPets()}
       onSetLaunchCommand={setLaunchCommand}
       onSeedWatchedFolders={seedWatchedFolders}

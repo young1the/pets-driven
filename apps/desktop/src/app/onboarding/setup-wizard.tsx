@@ -1,5 +1,5 @@
 import type { PetName } from "@pets-driven/design-system";
-import { Button, PetAvatar, TerminalIcon } from "@pets-driven/design-system";
+import { Button, ExternalLinkIcon, PetAvatar, TerminalIcon } from "@pets-driven/design-system";
 import { localeLabels, locales, useTranslation } from "@pets-driven/i18n";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
@@ -235,6 +235,13 @@ export function SetupWizard({
 
     if (picked) {
       await applyPetSourceDirectory(picked);
+    }
+  }
+
+  async function revealPetFolder() {
+    const path = state.petSourceDirectory ?? defaultPetFolder;
+    if (path) {
+      await gateway.revealPath(path).catch(() => {});
     }
   }
 
@@ -505,6 +512,21 @@ export function SetupWizard({
                       ? folderName(state.petSourceDirectory)
                       : t("setupWizard.petdexDefaultFolder")}
                   </span>
+                </button>
+                <button
+                  onClick={() => void revealPetFolder()}
+                  style={{
+                    ...textLink,
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                  title={t("setupWizard.openPetFolder")}
+                  type="button"
+                >
+                  <ExternalLinkIcon size={15} />
+                  {t("setupWizard.openPetFolder")}
                 </button>
                 {state.petSourceDirectory && (
                   <button

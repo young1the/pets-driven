@@ -23,6 +23,7 @@ function createGateway(
     closeAdoptedPetWindow: vi.fn(),
     openPetContextMenu: vi.fn(),
     pickDirectory: vi.fn(),
+    revealPath: vi.fn(),
     getDefaultPetSourceDirectory: vi.fn().mockResolvedValue(null),
     getClaudePluginStatus: vi.fn().mockResolvedValue({
       state: "not-installed",
@@ -53,6 +54,7 @@ function createGateway(
       receivedCount: 0,
       lastEventName: null,
     }),
+    sendTestHookEvent: vi.fn().mockResolvedValue("HTTP/1.1 200 OK"),
     closeAllPetWindows: vi.fn().mockResolvedValue(undefined),
     placePetWindows: vi.fn().mockResolvedValue([]),
     focusForeignWindow: vi.fn().mockResolvedValue(false),

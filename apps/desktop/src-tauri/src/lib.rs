@@ -3,6 +3,7 @@ mod claude_plugin;
 mod embedded_terminal;
 mod pet_assets;
 mod pet_windows;
+mod reveal;
 mod state_commands;
 mod state_watch;
 mod terminal_channel;
@@ -94,6 +95,7 @@ pub fn run() {
             pet_assets::list_codex_pet_packages,
             pet_assets::load_codex_pet_spritesheet,
             pet_assets::get_default_pet_source_directory,
+            reveal::reveal_path,
             pet_windows::open_adopted_pet_window,
             pet_windows::open_pet_window_playground,
             pet_windows::close_all_pet_windows,

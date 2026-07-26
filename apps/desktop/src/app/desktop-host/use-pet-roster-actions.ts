@@ -345,6 +345,24 @@ export function usePetRosterActions({
     }
   }
 
+  /**
+   * Open a configured folder in the OS file manager. Shared by the pet-source
+   * setting and a pet's working folder, so the caller passes the already
+   * resolved path (the effective default, or the pet's bound directory). A
+   * folder that has since been deleted rejects, which becomes a toast rather
+   * than a silent no-op.
+   */
+  async function revealFolder(path: string | null) {
+    if (!path) {
+      return;
+    }
+    try {
+      await desktopGateway.revealPath(path);
+    } catch {
+      flashToast(t("toast.folderMissing"));
+    }
+  }
+
   function setLaunchCommand(command: string) {
     updateSessionCommand(buildLaunchLine(stateRef.current.terminalShell ?? "", command));
   }
@@ -367,6 +385,7 @@ export function usePetRosterActions({
     clearFolderForPet,
     applyPetSourceFolder,
     changePetSourceFolder,
+    revealFolder,
     setLaunchCommand,
   };
 }
