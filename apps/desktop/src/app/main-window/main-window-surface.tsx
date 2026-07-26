@@ -32,7 +32,6 @@ export interface MainWindowSurfaceProps {
   toast: string | null;
   claudeHookIngressStatus: ClaudeHookIngressStatus;
   claudePlugin: ReturnType<typeof useClaudePlugin>;
-  defaultPetSourceFolder: string | null;
   navigate: (view: AppView) => void;
   onShowPet: (petId: string) => void;
   onHidePet: (petId: string) => void;
@@ -86,7 +85,6 @@ export function MainWindowSurface({
   toast,
   claudeHookIngressStatus,
   claudePlugin,
-  defaultPetSourceFolder,
   navigate,
   onShowPet,
   onHidePet,
@@ -287,9 +285,8 @@ export function MainWindowSurface({
         onUninstallPlugin: () => claudePlugin.uninstall(),
         onClosePluginRun: () => claudePlugin.dismissRun(),
         petSourceDirectory: state.petSourceDirectory,
-        defaultPetSourceDirectory: defaultPetSourceFolder,
         onChangePetFolder: () => onChangePetSourceFolder(),
-        onOpenPetFolder: () => onRevealFolder(state.petSourceDirectory ?? defaultPetSourceFolder),
+        onOpenPetFolder: () => onRevealFolder(state.petSourceDirectory),
         onResetPetFolder: () => onResetPetFolder(),
         onResetAllSettings: () => onResetAllSettings(),
         onResetPets: () => onResetPets(),

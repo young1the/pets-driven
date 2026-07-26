@@ -38,6 +38,7 @@ const PlaygroundApp = lazy(() =>
 const EMPTY_PET_PACKAGES_GATEWAY = {
   ...desktopGateway,
   listPetPackages: async () => [],
+  listDesignatedPetPackages: async () => [],
 };
 function createInitialPetsDrivenState(): PetsDrivenState {
   return createEmptyPetsDrivenState();
@@ -75,21 +76,7 @@ function PetsDrivenHostApp() {
   const [mainTab, setMainTab] = useState<MainWindowTab>(devFixture?.tab ?? "home");
   const [editPetId, setEditPetId] = useState<string | null>(devFixture?.editPetId ?? null);
   const [toast, setToast] = useState<string | null>(null);
-  const [defaultPetSourceFolder, setDefaultPetSourceFolder] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    let isActive = true;
-    void desktopGateway.getDefaultPetSourceDirectory().then((path) => {
-      if (isActive) {
-        setDefaultPetSourceFolder(path);
-      }
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
 
   function applyPetsDrivenState(next: PetsDrivenState) {
     petsDrivenStateRef.current = next;
@@ -283,7 +270,6 @@ function PetsDrivenHostApp() {
     <MainWindowSurface
       claudeHookIngressStatus={claudeHookIngressStatus}
       claudePlugin={claudePlugin}
-      defaultPetSourceFolder={defaultPetSourceFolder}
       editPetId={editPetId}
       mainTab={mainTab}
       navigate={navigate}

@@ -69,13 +69,12 @@ export interface SettingsSectionProps {
   onInstallPlugin: () => void;
   onUninstallPlugin: () => void;
   onClosePluginRun: () => void;
-  /** The single folder scanned for pet packs; null = the Petdex default. */
+  /** The single folder scanned for pet packs; null = no folder designated. */
   petSourceDirectory: string | null;
-  /** The resolved Petdex default path shown when no custom folder is set. */
-  defaultPetSourceDirectory: string | null;
   onChangePetFolder: () => void;
-  /** Reveal the effective pet folder (custom or the Petdex default) in Explorer. */
+  /** Reveal the designated pet folder in Explorer. Only shown when one is set. */
   onOpenPetFolder: () => void;
+  /** Clear the designated folder, dropping back to the bundled pets alone. */
   onResetPetFolder: () => void;
   /**
    * Put every persisted setting back to its default. Destructive enough to sit
@@ -113,7 +112,6 @@ export function SettingsSection({
   onUninstallPlugin,
   onClosePluginRun,
   petSourceDirectory,
-  defaultPetSourceDirectory,
   onChangePetFolder,
   onOpenPetFolder,
   onResetPetFolder,
@@ -250,9 +248,7 @@ export function SettingsSection({
               </span>
               <span style={connectionText}>
                 <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
-                  {petSourceDirectory
-                    ? folderName(petSourceDirectory)
-                    : t("settings.petdexDefaultFolder")}
+                  {petSourceDirectory ? folderName(petSourceDirectory) : t("settings.noPetFolder")}
                 </b>
                 <small
                   style={{
@@ -262,24 +258,31 @@ export function SettingsSection({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {petSourceDirectory ?? defaultPetSourceDirectory ?? "~/.petdex/pets"}
+                  {petSourceDirectory ?? t("settings.noPetFolderHint")}
                 </small>
               </span>
-              <button
-                onClick={onOpenPetFolder}
-                style={{ ...smallAction, display: "inline-flex", alignItems: "center", gap: "6px" }}
-                title={t("settings.openPetFolder")}
-                type="button"
-              >
-                <ExternalLinkIcon size={14} />
-                {t("settings.openPetFolder")}
-              </button>
+              {petSourceDirectory && (
+                <button
+                  onClick={onOpenPetFolder}
+                  style={{
+                    ...smallAction,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                  title={t("settings.openPetFolder")}
+                  type="button"
+                >
+                  <ExternalLinkIcon size={14} />
+                  {t("settings.openPetFolder")}
+                </button>
+              )}
               <button onClick={onChangePetFolder} style={smallAction} type="button">
                 {t("settings.changePetFolder")}
               </button>
               {petSourceDirectory && (
                 <button onClick={onResetPetFolder} style={smallAction} type="button">
-                  {t("settings.resetPetFolder")}
+                  {t("settings.clearPetFolder")}
                 </button>
               )}
             </div>
