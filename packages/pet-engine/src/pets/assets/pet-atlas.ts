@@ -3,16 +3,23 @@ export const PET_CELL_SIZE = {
   height: 208,
 } as const;
 
-export type PetAnimationState =
-  | "idle"
-  | "running-right"
-  | "running-left"
-  | "waving"
-  | "jumping"
-  | "failed"
-  | "waiting"
-  | "running"
-  | "review";
+/**
+ * Every animation row in the atlas, in spritesheet order. A value (not just a
+ * type) so hosts can offer a picker over the rows without restating the list.
+ */
+export const PET_ANIMATION_STATES = [
+  "idle",
+  "running-right",
+  "running-left",
+  "waving",
+  "jumping",
+  "failed",
+  "waiting",
+  "running",
+  "review",
+] as const;
+
+export type PetAnimationState = (typeof PET_ANIMATION_STATES)[number];
 
 const PET_ANIMATION_ROWS: Record<PetAnimationState, number> = {
   idle: 0,

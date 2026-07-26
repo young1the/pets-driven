@@ -4,12 +4,18 @@ import {
   CloseIcon,
   FolderIcon,
   PetShowcaseCard,
+  Select,
   TrashIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
+import {
+  PET_ANIMATION_STATES,
+  type PetAnimationState,
+} from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { useState } from "react";
 import type { CodexPetPackage } from "@/app/desktop-gateway";
-import { PetPortrait } from "@/app/main-window/pet-portrait";
+import { AnimatedPetPortrait } from "@/app/main-window/pet-portrait";
 import { PERSONALITY_OPTIONS, personalityTitleKey } from "@/app/onboarding/personality-options";
 import { PetLookStrip } from "@/app/pet-assets/pet-look-strip";
 
@@ -78,6 +84,7 @@ export function PetEditSection({
   onDone,
 }: PetEditSectionProps) {
   const { t } = useTranslation("desktop");
+  const [animationState, setAnimationState] = useState<PetAnimationState>("idle");
   const previewNote = pet.memo.trim().length > 0 ? pet.memo : t("common.noNote");
 
   return (
@@ -110,10 +117,39 @@ export function PetEditSection({
                 gradient={pet.gradient}
                 name={pet.name}
                 note={previewNote}
-                portrait={<PetPortrait assetId={pet.assetId} name={pet.name} />}
+                portrait={
+                  <AnimatedPetPortrait
+                    animationState={animationState}
+                    assetId={pet.assetId}
+                    name={pet.name}
+                  />
+                }
                 role={pet.role}
                 cwd={pet.cwd ?? undefined}
               />
+
+              <div style={{ marginTop: "16px" }}>
+                <span style={fieldLabelStyle}>{t("edit.animation")}</span>
+                <Select
+                  aria-label={t("edit.animation")}
+                  onChange={(event) => setAnimationState(event.target.value as PetAnimationState)}
+                  options={PET_ANIMATION_STATES.map((state) => ({
+                    value: state,
+                    label: t(`edit.animationStates.${state}`),
+                  }))}
+                  size="sm"
+                  value={animationState}
+                />
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: "12.5px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {t("edit.animationHint")}
+                </p>
+              </div>
             </div>
           </div>
 

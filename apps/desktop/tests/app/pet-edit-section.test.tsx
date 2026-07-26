@@ -70,6 +70,34 @@ describe("PetEditSection", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  it("offers every atlas animation, idling by default", () => {
+    setup();
+    const picker = screen.getByLabelText("Animation") as HTMLSelectElement;
+    expect(picker.value).toBe("idle");
+    expect([...picker.options].map((option) => option.value)).toEqual([
+      "idle",
+      "running-right",
+      "running-left",
+      "waving",
+      "jumping",
+      "failed",
+      "waiting",
+      "running",
+      "review",
+    ]);
+  });
+
+  it("plays the picked animation on the card portrait", async () => {
+    setup();
+    const picker = screen.getByLabelText("Animation");
+    fireEvent.change(picker, { target: { value: "jumping" } });
+
+    expect((picker as HTMLSelectElement).value).toBe("jumping");
+    // The atlas draws "jumping" from row 4, whatever frame the clock is on.
+    const portrait = await screen.findByRole("img", { name: "Otto portrait" });
+    expect(portrait.style.backgroundPosition.split(" ")[1]).toBe("-832px");
+  });
+
   it("clears the folder via the clear button when a folder is set", () => {
     const onClearFolder = vi.fn();
     setup({ onClearFolder });

@@ -1,8 +1,9 @@
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import { type CSSProperties, useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import type { CodexPetPackage } from "@/app/desktop-gateway";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
+import { useAnimationClock } from "@/app/pet-assets/use-animation-clock";
 
 type PetLookStripProps = {
   packages: CodexPetPackage[];
@@ -13,35 +14,6 @@ type PetLookStripProps = {
   selectedAssetId?: string | null;
   onSelect?: (assetId: string) => void;
 };
-
-function useAnimationClock() {
-  const [elapsedMs, setElapsedMs] = useState(0);
-
-  useEffect(() => {
-    let isActive = true;
-    let frame = 0;
-
-    const tick = (next: number) => {
-      if (!isActive) {
-        return;
-      }
-
-      setElapsedMs(next);
-      frame = window.requestAnimationFrame(tick);
-    };
-
-    frame = window.requestAnimationFrame(tick);
-
-    return () => {
-      isActive = false;
-      if (frame) {
-        window.cancelAnimationFrame(frame);
-      }
-    };
-  }, []);
-
-  return elapsedMs;
-}
 
 /** One small, idling sprite + name — a compact preview cell for the strip. */
 function PetLookCell({

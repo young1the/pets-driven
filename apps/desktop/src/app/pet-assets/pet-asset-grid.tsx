@@ -2,44 +2,15 @@ import { Badge, Card } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
-import { useEffect, useState } from "react";
 import type { CodexPetPackage } from "@/app/desktop-gateway";
 import { usePetSpritesheetUrl } from "@/app/onboarding/use-pet-spritesheet-url";
+import { useAnimationClock } from "@/app/pet-assets/use-animation-clock";
 
 type PetAssetGridProps = {
   packages: CodexPetPackage[];
   selectedAssetId: string | null;
   onSelect: (assetId: string) => void;
 };
-
-function useAnimationClock() {
-  const [elapsedMs, setElapsedMs] = useState(0);
-
-  useEffect(() => {
-    let isActive = true;
-    let animationFrame = 0;
-
-    const tick = (nextElapsedMs: number) => {
-      if (!isActive) {
-        return;
-      }
-
-      setElapsedMs(nextElapsedMs);
-      animationFrame = window.requestAnimationFrame(tick);
-    };
-
-    animationFrame = window.requestAnimationFrame(tick);
-
-    return () => {
-      isActive = false;
-      if (animationFrame) {
-        window.cancelAnimationFrame(animationFrame);
-      }
-    };
-  }, []);
-
-  return elapsedMs;
-}
 
 function PetAssetCard({
   pet,
