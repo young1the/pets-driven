@@ -1,9 +1,7 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runFeintProgressSystem } from "@pets-driven/pet-engine/features/behavior/activity-progress-systems";
-import {
-  runBehaviorDecisionSystem,
-  runBehaviorPlanningSystem,
-} from "@pets-driven/pet-engine/features/behavior/systems";
+import { runBehaviorPlanningSystem } from "@pets-driven/pet-engine/features/behavior/planning-system";
+import { runBehaviorDecisionSystem } from "@pets-driven/pet-engine/features/behavior/systems";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";

@@ -1,9 +1,7 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runAgentTaskEventSystem } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
-import {
-  runBehaviorDecisionSystem,
-  runBehaviorPlanningSystem,
-} from "@pets-driven/pet-engine/features/behavior/systems";
+import { runBehaviorPlanningSystem } from "@pets-driven/pet-engine/features/behavior/planning-system";
+import { runBehaviorDecisionSystem } from "@pets-driven/pet-engine/features/behavior/systems";
 import type { AgentWorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";

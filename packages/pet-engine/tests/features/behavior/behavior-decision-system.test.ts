@@ -1,9 +1,7 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { createDemoScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
-import {
-  runBehaviorDecisionSystem,
-  runBehaviorPlanningSystem,
-} from "@pets-driven/pet-engine/features/behavior/systems";
+import { runBehaviorPlanningSystem } from "@pets-driven/pet-engine/features/behavior/planning-system";
+import { runBehaviorDecisionSystem } from "@pets-driven/pet-engine/features/behavior/systems";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";

@@ -20,7 +20,8 @@ import {
   runAgentChannelMessageExpirationSystem,
   runPetExpressionExpirationSystem,
 } from "@pets-driven/pet-engine/features/behavior/expiration-systems";
-import { runBehaviorDecisionSystem, runBehaviorPlanningSystem } from "./systems";
+import { runBehaviorPlanningSystem } from "@pets-driven/pet-engine/features/behavior/planning-system";
+import { runBehaviorDecisionSystem } from "./systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────
 // Thin SimulationSystem wrappers over the run* behavior functions in
