@@ -1,12 +1,15 @@
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
+import {
+  runAgentTaskEventSystem,
+  runTaskMovementHoldSystem,
+} from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
 import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/autonomous-speech-system";
 import {
   runAgentChannelMessageExpirationSystem,
   runPetExpressionExpirationSystem,
 } from "@pets-driven/pet-engine/features/behavior/expiration-systems";
 import {
-  runAgentTaskEventSystem,
   runArrivalBehaviorSystem,
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
@@ -16,7 +19,6 @@ import {
   runPersonalSpaceSystem,
   runPettingDetectionSystem,
   runRompProgressSystem,
-  runTaskMovementHoldSystem,
 } from "./systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────

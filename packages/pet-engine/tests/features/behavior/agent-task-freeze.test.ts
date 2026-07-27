@@ -1,5 +1,5 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
-import { runTaskMovementHoldSystem } from "@pets-driven/pet-engine/features/behavior/systems";
+import { runTaskMovementHoldSystem } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
 import { describe, expect, it } from "vitest";
 
 function makeStore(held: boolean) {

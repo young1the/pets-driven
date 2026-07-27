@@ -1,6 +1,6 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import { runAgentTaskEventSystem } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
 import {
-  runAgentTaskEventSystem,
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
