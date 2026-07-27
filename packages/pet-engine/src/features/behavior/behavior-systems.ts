@@ -1,6 +1,11 @@
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
 import {
+  runFeintProgressSystem,
+  runPersonalSpaceSystem,
+  runRompProgressSystem,
+} from "@pets-driven/pet-engine/features/behavior/activity-progress-systems";
+import {
   runAgentTaskEventSystem,
   runTaskMovementHoldSystem,
 } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
@@ -18,9 +23,6 @@ import {
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
   runCollisionBehaviorSystem,
-  runFeintProgressSystem,
-  runPersonalSpaceSystem,
-  runRompProgressSystem,
 } from "./systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────

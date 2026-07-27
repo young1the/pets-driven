@@ -1,9 +1,9 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import { runRompProgressSystem } from "@pets-driven/pet-engine/features/behavior/activity-progress-systems";
 import {
   runArrivalBehaviorSystem,
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
-  runRompProgressSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";

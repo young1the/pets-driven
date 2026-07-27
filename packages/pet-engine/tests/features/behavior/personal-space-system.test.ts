@@ -1,5 +1,5 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
-import { runPersonalSpaceSystem } from "@pets-driven/pet-engine/features/behavior/systems";
+import { runPersonalSpaceSystem } from "@pets-driven/pet-engine/features/behavior/activity-progress-systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";
 
