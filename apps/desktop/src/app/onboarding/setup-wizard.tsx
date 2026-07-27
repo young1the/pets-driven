@@ -713,9 +713,19 @@ export function SetupWizard({
               {t("setupWizard.pluginTerminalLabel")}
             </div>
             <p style={fieldHint}>{t("setupWizard.pluginTerminalHint")}</p>
-            {/* While an install is running, this slot shows that run instead of
-                a blank shell — same place, so the step's layout does not jump. */}
-            {pluginRun ? (
+            <div style={inlineTermShell}>
+              <TerminalSection
+                available={isTauri()}
+                initialCwd={state.petSourceDirectory ?? null}
+                pickDirectory={() => gateway.pickDirectory()}
+                shell={state.terminalShell}
+              />
+            </div>
+
+            {/* An install opens over the step rather than replacing this shell,
+                so the user keeps the terminal they were already using and the
+                run is closed deliberately instead of being swapped away. */}
+            {pluginRun && (
               <PluginRunTerminal
                 available={isTauri()}
                 onClose={
@@ -723,15 +733,6 @@ export function SetupWizard({
                 }
                 run={pluginRun}
               />
-            ) : (
-              <div style={inlineTermShell}>
-                <TerminalSection
-                  available={isTauri()}
-                  initialCwd={state.petSourceDirectory ?? null}
-                  pickDirectory={() => gateway.pickDirectory()}
-                  shell={state.terminalShell}
-                />
-              </div>
             )}
 
             <div style={footer}>

@@ -302,3 +302,51 @@ describe("SettingsSection reset pets", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+const REVIEW_HINT =
+  "The command is typed in below, not run yet. Read it over, then press Enter in the terminal to run it.";
+
+function running(provider: "claude" | "codex") {
+  return {
+    ...plugin(provider, "not-installed"),
+    run: { provider, action: "install" as const, line: `${provider}-install-line` },
+  };
+}
+
+describe("SettingsSection plugin run", () => {
+  it("opens the run in a modal rather than inline under the cards", () => {
+    setup({ plugins: [running("claude"), plugin("codex", "cli-missing")] });
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Claude Code plugin");
+    expect(dialog).toHaveTextContent(REVIEW_HINT);
+  });
+
+  it("shows one run at a time, even with a run on both providers", () => {
+    // Two terminals used to render side by side, each prefilled and each
+    // grabbing focus on mount — so Enter could run the command the user was
+    // not reading. A modal is one at a time by construction.
+    setup({ plugins: [running("claude"), running("codex")] });
+
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  });
+
+  it("leaves Escape to whatever is running in the shell", () => {
+    const claude = running("claude");
+    setup({ plugins: [claude] });
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(claude.onCloseRun).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("closes only when the user says so", () => {
+    const claude = running("claude");
+    setup({ plugins: [claude] });
+
+    fireEvent.click(screen.getByText("Close"));
+
+    expect(claude.onCloseRun).toHaveBeenCalled();
+  });
+});

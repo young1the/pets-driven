@@ -1,25 +1,32 @@
-/* The install terminal is embedded in a settings/onboarding card rather than
-   filling a tab, so it needs a fixed height instead of `flex: 1`. Everything
-   inside reuses the `pd-eterm__*` chrome from terminal-section.css. */
-.pd-plugin-run {
-  margin-top: 10px;
-  height: 260px;
-  display: flex;
-  flex-direction: column;
+/* Widen the shared Dialog into a terminal panel and left-align its body, the
+   same treatment PetdexTerminalDialog gives it. Everything inside the frame
+   reuses the `pd-eterm__*` chrome from terminal-section.css. */
+.pd-plugin-run-dialog.pd-dialog {
+  max-width: 720px;
+}
+
+.pd-plugin-run-dialog .pd-dialog__body {
+  text-align: left;
 }
 
 /* The command is waiting at the prompt, not running, so say so above the
    terminal — otherwise the shell just looks stuck with text in it. */
 .pd-plugin-run__hint {
-  flex: none;
-  margin: 0;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
-  color: var(--term-fg);
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1.45;
+  margin: 0 0 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pd-plugin-run__frame {
+  height: 340px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--term-bg);
+  border: 1px solid var(--border-soft);
 }
 
 .pd-plugin-run__title {

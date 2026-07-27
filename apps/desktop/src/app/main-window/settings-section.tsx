@@ -126,6 +126,7 @@ export function SettingsSection({
   // their own flag so opening one closes the other rather than arming both.
   const [resetAsked, setResetAsked] = useState(false);
   const [resetPetsAsked, setResetPetsAsked] = useState(false);
+  const activeRun = plugins.find((connection) => connection.run);
 
   // Appearance and language live in these providers rather than in the state
   // document, so the reset has to tell them directly — otherwise the screen
@@ -363,16 +364,14 @@ export function SettingsSection({
               onSendTest={hook.onSendTest}
               rejectedCount={hook.rejectedCount}
             />
-            {plugins.map(
-              (connection) =>
-                connection.run && (
-                  <PluginRunTerminal
-                    available={terminalAvailable}
-                    key={connection.provider}
-                    onClose={connection.onCloseRun}
-                    run={connection.run}
-                  />
-                ),
+            {/* One at a time: the run is a modal, so the buttons that could
+                start the other provider's are unreachable until it closes. */}
+            {activeRun?.run && (
+              <PluginRunTerminal
+                available={terminalAvailable}
+                onClose={activeRun.onCloseRun}
+                run={activeRun.run}
+              />
             )}
           </div>
 

@@ -1,3 +1,4 @@
+import { Button, Dialog } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import { lazy, Suspense } from "react";
 import type { AgentPluginRun } from "@/app/use-agent-plugin";
@@ -27,6 +28,14 @@ export interface PluginRunTerminalProps {
  * assumes someone is at the keyboard anyway. So the app types, the user reads,
  * and Enter stays theirs.
  *
+ * It is a modal because an install is one thing at a time: the surface behind
+ * it — a settings card, an onboarding step — keeps its own layout, and the
+ * other provider's buttons are out of reach until this run is closed, so two
+ * terminals can never sit there prefilled with the user unsure which one their
+ * Enter goes to. Closing is deliberate (button or footer): Escape belongs to
+ * whatever is running in the shell, and a stray scrim click must not kill an
+ * install midway.
+ *
  * Deliberately spawns the OS default shell rather than the one picked in
  * settings — a shell like WSL has its own agent CLI install, which would not be
  * the one the status probes report on.
@@ -35,8 +44,21 @@ export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminal
   const { t } = useTranslation("desktop");
 
   return (
-    <div className="pd-plugin-run">
-      <div className="pd-eterm__frame">
+    <Dialog
+      className="pd-plugin-run-dialog"
+      dismissible={false}
+      footer={
+        <Button onClick={onClose} variant="ghost">
+          {t(`${run.provider}Plugin.run.close`)}
+        </Button>
+      }
+      onClose={onClose}
+      open
+      title={t(`${run.provider}Plugin.title`)}
+    >
+      <p className="pd-plugin-run__hint">{t("terminal.reviewHint")}</p>
+
+      <div className="pd-plugin-run__frame">
         <div className="pd-eterm__bar">
           <span aria-hidden className="pd-eterm__dots">
             <span />
@@ -46,27 +68,21 @@ export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminal
           <span className="pd-plugin-run__title">
             {t(`${run.provider}Plugin.run.${run.action}`)}
           </span>
-          <button className="pd-eterm__restart" onClick={onClose} type="button">
-            {t(`${run.provider}Plugin.run.close`)}
-          </button>
         </div>
 
         {available ? (
-          <>
-            <p className="pd-plugin-run__hint">{t("terminal.reviewHint")}</p>
-            <Suspense fallback={<div className="pd-eterm__view" />}>
-              <EmbeddedTerminal
-                className="pd-eterm__view"
-                exitedLabel={t("terminal.exited")}
-                key={run.line}
-                prefill={run.line}
-              />
-            </Suspense>
-          </>
+          <Suspense fallback={<div className="pd-eterm__view" />}>
+            <EmbeddedTerminal
+              className="pd-eterm__view"
+              exitedLabel={t("terminal.exited")}
+              key={run.line}
+              prefill={run.line}
+            />
+          </Suspense>
         ) : (
           <div className="pd-eterm__unavailable">{t("terminal.unavailable")}</div>
         )}
       </div>
-    </div>
+    </Dialog>
   );
 }

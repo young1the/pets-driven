@@ -13,6 +13,13 @@ export interface DialogProps {
   pet?: ReactNode;
   footer?: ReactNode;
   showClose?: boolean;
+  /**
+   * Whether Escape and a click on the scrim close the dialog. Turn it off when
+   * the content owns the keyboard or holds work that a stray click must not
+   * destroy — a live terminal is both, since Escape there belongs to the shell.
+   * The close button and footer stay, so there is always a deliberate way out.
+   */
+  dismissible?: boolean;
   className?: string;
   children?: ReactNode;
 }
@@ -24,11 +31,12 @@ export function Dialog({
   pet,
   footer,
   showClose = true,
+  dismissible = true,
   className = "",
   children,
 }: DialogProps) {
   useEffect(() => {
-    if (!open) {
+    if (!open || !dismissible) {
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
@@ -38,7 +46,7 @@ export function Dialog({
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, dismissible]);
 
   if (!open) {
     return null;
@@ -51,7 +59,7 @@ export function Dialog({
       className="pd-dialog__scrim"
       onClick={(event) => {
         // Close only when the scrim itself is clicked, not the panel inside it.
-        if (event.target === event.currentTarget) {
+        if (dismissible && event.target === event.currentTarget) {
           onClose?.();
         }
       }}
