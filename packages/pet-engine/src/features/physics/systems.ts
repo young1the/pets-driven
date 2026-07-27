@@ -177,7 +177,6 @@ export const PhysicsIntegrationSystem: SimulationSystem<WorldStepContext> = {
   name: "PhysicsIntegrationSystem",
   dependsOn: [
     "WalkSystem",
-    "CollisionEscapeSystem",
     "JumpSystem",
     "WallClimbSystem",
     "SteeringForceSystem",

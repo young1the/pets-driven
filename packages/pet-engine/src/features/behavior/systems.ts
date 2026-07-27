@@ -181,8 +181,9 @@ const WANDER_BASE_BODY_MULTIPLIER = 3;
 const PET_ENGAGE_STOP_WIDTH_MULTIPLIER = 2.5;
 
 // B3: after reacting to a specific neighbor, ignore further collisions with
-// that same neighbor for this long. Physical separation (CollisionEscape) is
-// not gated — only the behavioral re-reaction is suppressed.
+// that same neighbor for this long. Physical separation is not gated — the
+// Matter solver keeps pushing the bodies apart; only the behavioral
+// re-reaction is suppressed.
 const PAIR_COLLISION_COOLDOWN_MS = 6_000;
 const COLLISION_MEMORY_MAX_ENTRIES = 8;
 

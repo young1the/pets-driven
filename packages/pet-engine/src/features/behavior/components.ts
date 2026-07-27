@@ -205,7 +205,8 @@ export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   // ordering where any overlap killed a running session. While a social
   // claim is live the collision guards also skip the pet entirely, so
   // session members shrug off bumps; physical separation stays with the
-  // claim-independent CollisionEscapeSystem. User touches and agent events
+  // Matter solver, which resolves overlap regardless of any claim. User
+  // touches and agent events
   // still interrupt sessions.
   social: 3,
   collision: 4,
