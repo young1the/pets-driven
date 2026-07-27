@@ -10,6 +10,7 @@ import {
   runTaskMovementHoldSystem,
 } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
 import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/autonomous-speech-system";
+import { runCollisionBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/collision-systems";
 import {
   runHoverReactionSystem,
   runPettingDetectionSystem,
@@ -22,7 +23,6 @@ import {
   runArrivalBehaviorSystem,
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
-  runCollisionBehaviorSystem,
 } from "./systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────

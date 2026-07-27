@@ -1,8 +1,8 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import { runCollisionBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/collision-systems";
 import {
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
-  runCollisionBehaviorSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/personalities/registry";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
