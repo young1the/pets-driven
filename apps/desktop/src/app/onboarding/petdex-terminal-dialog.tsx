@@ -32,6 +32,9 @@ export function PetdexTerminalDialog({
   return (
     <Dialog
       className="pd-petdex-term-dialog"
+      // Escape belongs to whatever is running in the shell, and a stray click
+      // on the scrim must not kill an install partway. The close button stays.
+      dismissible={false}
       onClose={onClose}
       open={open}
       title={t("onboarding.terminalTitle")}
