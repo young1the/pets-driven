@@ -214,6 +214,12 @@ pub(crate) fn apply_pet_update(
             if let Some(scale) = patch.scale {
                 object.insert("scale".to_string(), serde_json::json!(scale));
             }
+            if let Some(swap_running_directions) = patch.swap_running_directions {
+                object.insert(
+                    "swapRunningDirections".to_string(),
+                    serde_json::json!(swap_running_directions),
+                );
+            }
         }
     }
 
@@ -447,6 +453,7 @@ mod tests {
             archived: None,
             memo: None,
             scale: None,
+            swap_running_directions: None,
             working_directory: Patch::Keep,
         }
     }
@@ -651,6 +658,58 @@ mod tests {
         assert_eq!(pet["name"], "Rexy");
         assert_eq!(pet["memo"], "likes naps");
         assert_eq!(pet["scale"], 1.4);
+    }
+
+    /// The running-direction swap is a per-pet property of the *look*, so it has
+    /// to survive on disk the same way the memo and scale do — a pet wearing a
+    /// reversed spritesheet must not face backwards again after a restart.
+    #[test]
+    fn apply_pet_update_persists_the_running_direction_swap() {
+        let on = apply_pet_update(
+            &hatched_state(),
+            &PetId::new("pet-1"),
+            &PetPatch {
+                swap_running_directions: Some(true),
+                ..blank_patch()
+            },
+            &sample_working_directory_ids(),
+            2000,
+        )
+        .expect("turning the swap on should succeed");
+
+        assert_eq!(on["pets"][0]["swapRunningDirections"], true);
+
+        let off = apply_pet_update(
+            &on,
+            &PetId::new("pet-1"),
+            &PetPatch {
+                swap_running_directions: Some(false),
+                ..blank_patch()
+            },
+            &sample_working_directory_ids(),
+            3000,
+        )
+        .expect("turning the swap off should succeed");
+
+        assert_eq!(off["pets"][0]["swapRunningDirections"], false);
+    }
+
+    #[test]
+    fn pet_patch_reads_the_running_direction_swap_off_the_wire() {
+        let (pet_id, patch) = PetPatch::from_json(&serde_json::json!({
+            "petId": "pet-1",
+            "swapRunningDirections": true,
+        }))
+        .expect("a boolean swap should parse");
+
+        assert_eq!(pet_id, PetId::new("pet-1"));
+        assert_eq!(patch.swap_running_directions, Some(true));
+
+        // Omitted means "leave it alone", not "turn it off".
+        let (_, untouched) = PetPatch::from_json(&serde_json::json!({ "petId": "pet-1" }))
+            .expect("an omitted swap should parse");
+
+        assert_eq!(untouched.swap_running_directions, None);
     }
 
     #[test]

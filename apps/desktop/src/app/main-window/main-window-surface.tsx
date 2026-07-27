@@ -194,6 +194,7 @@ export function MainWindowSurface({
         cwd: editDirPath ? shortWorkingDir(editDirPath) : null,
         memo: editingPet.memo ?? "",
         personalityId: profileFor(editingPet)?.personalityId,
+        swapRunningDirections: editingPet.swapRunningDirections ?? false,
       }
     : null;
 
@@ -240,6 +241,8 @@ export function MainWindowSurface({
         onName: (value) => editPetId && onPatchPet(editPetId, { name: value }),
         onMemo: (value) => editPetId && onPatchPet(editPetId, { memo: value }),
         onPersonalityId: (value) => editPetId && onSetPetPersonality(editPetId, value),
+        onSwapRunningDirections: (value) =>
+          editPetId && onPatchPet(editPetId, { swapRunningDirections: value }),
         onPickFolder: () => editPetId && onPickFolderForPet(editPetId),
         onOpenFolder: () => onRevealFolder(editDirPath),
         onClearFolder: () => editPetId && onClearFolderForPet(editPetId),

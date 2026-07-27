@@ -218,6 +218,8 @@
       "running": "作業中",
       "review": "確認中"
     },
+    "swapRunningDirections": "走りの左右を入れ替える",
+    "swapRunningDirectionsHint": "走りの2行が左右逆に描かれている見た目に使います。",
     "workingFolder": "作業フォルダ",
     "chooseFolder": "フォルダを選ぶ…",
     "clearFolder": "フォルダを外す",

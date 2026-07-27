@@ -583,15 +583,26 @@ export function useDesktopSimulationHost({
         return sameKeys ? current : nextStatuses;
       });
 
+      const pets = stateRef.current.pets;
+      const dirs = stateRef.current.registeredWorkingDirectories;
+      // Read off the roster each tick rather than cached in a ref like the
+      // scale map: nothing else has to be resized to follow it, so the toggle
+      // in the edit screen simply lands on the next frame.
+      const swapRunningByPetId: Record<string, boolean> = {};
+      for (const pet of pets) {
+        if (pet.swapRunningDirections) {
+          swapRunningByPetId[pet.id] = true;
+        }
+      }
+
       const projections = projectWorldSnapshotToPetWindows(
         snapshot,
         bounds,
         adoptedHostSequenceRef.current,
         adoptedScaleByPetIdRef.current,
+        swapRunningByPetId,
       );
 
-      const pets = stateRef.current.pets;
-      const dirs = stateRef.current.registeredWorkingDirectories;
       // Where each pet stands is settled natively in one batch; what each pet
       // looks like is a per-window event. Splitting the two is what keeps a
       // roomful of pets cheap: walking changes position every tick but the

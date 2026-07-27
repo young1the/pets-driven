@@ -250,6 +250,55 @@ describe("pet window projection", () => {
     expect(projection.frame.sprite.decisionEmote).toBeNull();
   });
 
+  it("carries the other directional row for a pet with its running rows swapped", () => {
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshotFixture(),
+      { x: 0, y: 0, width: 960, height: 540 },
+      12,
+      undefined,
+      { "pet-a": true },
+    );
+
+    // The world says the pet travels left; its spritesheet draws that art in
+    // the running-right row, so that is the row the window has to play.
+    expect(projection.frame.sprite.animationState).toBe("running-right");
+  });
+
+  it("leaves the directional row alone for a pet that is not swapped", () => {
+    const [swappedOff] = projectWorldSnapshotToPetWindows(
+      snapshotFixture(),
+      { x: 0, y: 0, width: 960, height: 540 },
+      12,
+      undefined,
+      { "pet-a": false },
+    );
+    const [otherPetSwapped] = projectWorldSnapshotToPetWindows(
+      snapshotFixture(),
+      { x: 0, y: 0, width: 960, height: 540 },
+      12,
+      undefined,
+      { "pet-b": true },
+    );
+
+    expect(swappedOff.frame.sprite.animationState).toBe("running-left");
+    expect(otherPetSwapped.frame.sprite.animationState).toBe("running-left");
+  });
+
+  it("leaves a non-directional row alone even for a swapped pet", () => {
+    const snapshot = snapshotFixture();
+    snapshot.bodies[0] = { ...snapshot.bodies[0], animationState: "waving" };
+
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 0, y: 0, width: 960, height: 540 },
+      12,
+      undefined,
+      { "pet-a": true },
+    );
+
+    expect(projection.frame.sprite.animationState).toBe("waving");
+  });
+
   it("maps playground x coordinates across the full desktop projection width", () => {
     const [projection] = projectWorldSnapshotToPetWindows(
       snapshotFixture(),

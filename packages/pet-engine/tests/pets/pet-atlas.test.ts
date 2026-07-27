@@ -1,6 +1,8 @@
 import {
   getAtlasFrame,
   msUntilNextAtlasFrame,
+  PET_ANIMATION_STATES,
+  resolveRunningDirection,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { describe, expect, it } from "vitest";
 
@@ -27,6 +29,35 @@ describe("pet atlas", () => {
       sourceY: 208,
     });
     expect(getAtlasFrame("running-left", 0)).toMatchObject({
+      rowIndex: 2,
+      sourceY: 416,
+    });
+  });
+
+  it("leaves every row alone when the running directions are not swapped", () => {
+    for (const state of PET_ANIMATION_STATES) {
+      expect(resolveRunningDirection(state, false)).toBe(state);
+    }
+  });
+
+  it("trades the two running rows when the directions are swapped", () => {
+    expect(resolveRunningDirection("running-right", true)).toBe("running-left");
+    expect(resolveRunningDirection("running-left", true)).toBe("running-right");
+  });
+
+  it("leaves the non-directional rows alone when the directions are swapped", () => {
+    for (const state of PET_ANIMATION_STATES) {
+      if (state === "running-right" || state === "running-left") {
+        continue;
+      }
+      expect(resolveRunningDirection(state, true)).toBe(state);
+    }
+  });
+
+  it("draws the other directional row for a swapped pet", () => {
+    // The point of the swap: a sheet whose rows are reversed still plays the
+    // art that faces right when the pet travels right.
+    expect(getAtlasFrame(resolveRunningDirection("running-right", true), 0)).toMatchObject({
       rowIndex: 2,
       sourceY: 416,
     });

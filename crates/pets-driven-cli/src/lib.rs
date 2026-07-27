@@ -155,6 +155,7 @@ fn empty_pet_patch() -> PetPatch {
         archived: None,
         memo: None,
         scale: None,
+        swap_running_directions: None,
         working_directory: Patch::Keep,
     }
 }

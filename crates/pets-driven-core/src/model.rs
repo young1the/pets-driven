@@ -124,6 +124,10 @@ pub struct PetPatch {
     pub archived: Option<bool>,
     pub memo: Option<String>,
     pub scale: Option<f64>,
+    /// Trade the pet's two directional running rows for one another. Set for a
+    /// Pet Asset whose spritesheet draws left/right the opposite way round from
+    /// the atlas, which would otherwise run backwards on this pet.
+    pub swap_running_directions: Option<bool>,
     /// The pet's registered working directory: [`Patch::Keep`] leaves the
     /// current binding, [`Patch::Clear`] detaches it (the pet keeps living with
     /// no folder), and [`Patch::Set`] re-binds the pet to that folder.
@@ -160,6 +164,9 @@ impl PetPatch {
             archived: payload.get("archived").and_then(|value| value.as_bool()),
             memo: payload.get("memo").and_then(|value| value.as_str()).map(str::to_string),
             scale: payload.get("scale").and_then(|value| value.as_f64()),
+            swap_running_directions: payload
+                .get("swapRunningDirections")
+                .and_then(|value| value.as_bool()),
             working_directory,
         };
 

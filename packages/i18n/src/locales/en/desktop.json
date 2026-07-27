@@ -218,6 +218,8 @@
       "running": "Working",
       "review": "Reviewing"
     },
+    "swapRunningDirections": "Swap running left/right",
+    "swapRunningDirectionsHint": "For a look whose spritesheet draws the two running rows the other way round.",
     "workingFolder": "Working folder",
     "chooseFolder": "Choose a folder…",
     "clearFolder": "Clear folder",

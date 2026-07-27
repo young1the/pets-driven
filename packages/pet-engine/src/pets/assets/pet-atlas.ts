@@ -45,6 +45,30 @@ const PET_ANIMATION_DURATIONS: Record<PetAnimationState, number[]> = {
   review: [150, 150, 150, 150, 150, 280],
 };
 
+/**
+ * The directional travel rows, optionally traded for one another.
+ *
+ * Rendering stays row-only — nothing is mirrored — so a "reversed" pet simply
+ * plays the *other* directional row. Spritesheets found in the wild often draw
+ * the two running rows the opposite way round from this atlas, and a pet
+ * wearing one of those runs backwards in both directions. `swapped` is the
+ * pet's own opt-in, so a sheet that follows the canonical row order (every
+ * built-in pet) passes through untouched.
+ */
+export function resolveRunningDirection(
+  animationState: PetAnimationState,
+  swapped: boolean,
+): PetAnimationState {
+  if (!swapped) {
+    return animationState;
+  }
+
+  if (animationState === "running-right") return "running-left";
+  if (animationState === "running-left") return "running-right";
+
+  return animationState;
+}
+
 export function getAtlasFrame(animationState: PetAnimationState, elapsedMs: number) {
   const durations = PET_ANIMATION_DURATIONS[animationState];
   const loopDuration = durations.reduce((sum, duration) => sum + duration, 0);

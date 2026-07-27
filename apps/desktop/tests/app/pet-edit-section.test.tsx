@@ -13,6 +13,7 @@ const pet = {
   cwd: null,
   memo: "Watch the auth queue",
   personalityId: "steady" as PetPersonalityId,
+  swapRunningDirections: false,
 };
 
 function setup(overrides = {}) {
@@ -21,6 +22,7 @@ function setup(overrides = {}) {
     onName: vi.fn(),
     onMemo: vi.fn(),
     onPersonalityId: vi.fn(),
+    onSwapRunningDirections: vi.fn(),
     onPickFolder: vi.fn(),
     onOpenFolder: vi.fn(),
     onClearFolder: vi.fn(),
@@ -97,6 +99,47 @@ describe("PetEditSection", () => {
     // The atlas draws "jumping" from row 4, whatever frame the clock is on.
     const portrait = await screen.findByRole("img", { name: "Otto portrait" });
     expect(portrait.style.backgroundPosition.split(" ")[1]).toBe("-832px");
+  });
+
+  it("offers the running-direction swap unchecked by default", () => {
+    const onSwapRunningDirections = vi.fn();
+    setup({ onSwapRunningDirections });
+    const swap = screen.getByLabelText("Swap running left/right") as HTMLInputElement;
+
+    expect(swap.checked).toBe(false);
+    fireEvent.click(swap);
+    expect(onSwapRunningDirections).toHaveBeenCalledWith(true);
+  });
+
+  it("turns the swap back off once it is on", () => {
+    const onSwapRunningDirections = vi.fn();
+    setup({ pet: { ...pet, swapRunningDirections: true }, onSwapRunningDirections });
+    const swap = screen.getByLabelText("Swap running left/right") as HTMLInputElement;
+
+    expect(swap.checked).toBe(true);
+    fireEvent.click(swap);
+    expect(onSwapRunningDirections).toHaveBeenCalledWith(false);
+  });
+
+  it("previews the other directional row for a swapped pet", async () => {
+    setup({ pet: { ...pet, swapRunningDirections: true } });
+    fireEvent.change(screen.getByLabelText("Animation"), {
+      target: { value: "running-right" },
+    });
+
+    // "Running right" is picked, but the swapped sheet draws it in row 2.
+    const portrait = await screen.findByRole("img", { name: "Otto portrait" });
+    expect(portrait.style.backgroundPosition.split(" ")[1]).toBe("-416px");
+  });
+
+  it("keeps the picked row for a pet that is not swapped", async () => {
+    setup();
+    fireEvent.change(screen.getByLabelText("Animation"), {
+      target: { value: "running-right" },
+    });
+
+    const portrait = await screen.findByRole("img", { name: "Otto portrait" });
+    expect(portrait.style.backgroundPosition.split(" ")[1]).toBe("-208px");
   });
 
   it("clears the folder via the clear button when a folder is set", () => {

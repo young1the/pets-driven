@@ -29,6 +29,12 @@ export type PetRecord = {
   archived: boolean;
   visible: boolean;
   scale?: number;
+  /**
+   * Trade the pet's two directional running rows for one another, for a Pet
+   * Asset whose spritesheet draws left/right the opposite way round from the
+   * atlas. Off for every built-in pet; see `resolveRunningDirection`.
+   */
+  swapRunningDirections?: boolean;
   /** Free-form user note shown in the pet-edit screen. */
   memo?: string;
 };
@@ -37,7 +43,9 @@ export type PetRecord = {
  * The pet fields the app can patch and persist. `visible` is deliberately out:
  * it is runtime-only, so a toggle has nothing to save.
  */
-export type PetPatch = Partial<Pick<PetRecord, "name" | "memo" | "archived" | "scale">>;
+export type PetPatch = Partial<
+  Pick<PetRecord, "name" | "memo" | "archived" | "scale" | "swapRunningDirections">
+>;
 
 export type PetsDrivenState = {
   schemaVersion: 1;

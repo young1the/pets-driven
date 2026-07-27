@@ -1,6 +1,7 @@
 import {
   BackIcon,
   Button,
+  Checkbox,
   CloseIcon,
   ExternalLinkIcon,
   FolderIcon,
@@ -12,6 +13,7 @@ import { useTranslation } from "@pets-driven/i18n";
 import {
   PET_ANIMATION_STATES,
   type PetAnimationState,
+  resolveRunningDirection,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
 import { useState } from "react";
@@ -30,6 +32,8 @@ export interface PetEditView {
   cwd: string | null;
   memo: string;
   personalityId: PetPersonalityId | undefined;
+  /** Whether this pet's two directional running rows are traded for one another. */
+  swapRunningDirections: boolean;
 }
 
 export interface PetEditSectionProps {
@@ -44,6 +48,11 @@ export interface PetEditSectionProps {
   onName: (value: string) => void;
   onMemo: (value: string) => void;
   onPersonalityId: (value: PetPersonalityId) => void;
+  /**
+   * Trade the pet's two directional running rows for one another, for a
+   * spritesheet that draws left/right the opposite way round from the atlas.
+   */
+  onSwapRunningDirections: (value: boolean) => void;
   onPickFolder: () => void;
   /** Reveal the pet's bound working folder in the OS file manager. */
   onOpenFolder: () => void;
@@ -81,6 +90,7 @@ export function PetEditSection({
   onName,
   onMemo,
   onPersonalityId,
+  onSwapRunningDirections,
   onPickFolder,
   onOpenFolder,
   onClearFolder,
@@ -123,7 +133,13 @@ export function PetEditSection({
                 note={previewNote}
                 portrait={
                   <AnimatedPetPortrait
-                    animationState={animationState}
+                    // The preview plays the row the desktop pet would play, so
+                    // the swap below can be judged against the label the picker
+                    // shows ("Running right" really running right).
+                    animationState={resolveRunningDirection(
+                      animationState,
+                      pet.swapRunningDirections,
+                    )}
                     assetId={pet.assetId}
                     name={pet.name}
                   />
@@ -153,6 +169,23 @@ export function PetEditSection({
                 >
                   {t("edit.animationHint")}
                 </p>
+
+                <div style={{ marginTop: "12px" }}>
+                  <Checkbox
+                    checked={pet.swapRunningDirections}
+                    label={t("edit.swapRunningDirections")}
+                    onChange={(event) => onSwapRunningDirections(event.target.checked)}
+                  />
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: "12.5px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    {t("edit.swapRunningDirectionsHint")}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

@@ -1,5 +1,8 @@
 import type { PetSnapshot, WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
-import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
+import {
+  PET_CELL_SIZE,
+  resolveRunningDirection,
+} from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import {
   clampPetWindowScale,
   DEFAULT_PET_WINDOW_SCALE,
@@ -37,11 +40,18 @@ export type PetWindowProjectionBounds = {
   height: number;
 };
 
+/**
+ * @param swapRunningByPetId Pets whose spritesheet draws the two running rows
+ *   the opposite way round from the atlas, so the frame must carry the *other*
+ *   directional row. A per-pet property of the look, like `scaleByPetId`, which
+ *   is why it is resolved here rather than anywhere in the engine.
+ */
 export function projectWorldSnapshotToPetWindows(
   snapshot: WorldSnapshot,
   bounds: PetWindowProjectionBounds,
   sequence: number,
   scaleByPetId?: Record<string, number>,
+  swapRunningByPetId?: Record<string, boolean>,
 ): PetWindowProjection[] {
   const scaleX = bounds.width / snapshot.width;
   const scaleY = bounds.height / snapshot.height;
@@ -100,7 +110,10 @@ export function projectWorldSnapshotToPetWindows(
             decisionEmote: pet.expression
               ? presentPetExpression(pet.expression)
               : presentBehaviorDecisionToken(pet.decision?.reason),
-            animationState: body.animationState ?? "idle",
+            animationState: resolveRunningDirection(
+              body.animationState ?? "idle",
+              swapRunningByPetId?.[pet.id] ?? false,
+            ),
             activity: pet.activity ?? null,
             partnerName: pet.social?.partnerName ?? null,
             working: pet.agentTask?.status === "working",

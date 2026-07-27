@@ -18,6 +18,7 @@ const pet = {
   cwd: null,
   memo: "",
   personalityId: "steady" as PetPersonalityId,
+  swapRunningDirections: false,
 };
 
 const assetOptions: CodexPetPackage[] = [
@@ -33,6 +34,7 @@ function setup(overrides: Record<string, unknown> = {}) {
     onName: vi.fn(),
     onMemo: vi.fn(),
     onPersonalityId: vi.fn(),
+    onSwapRunningDirections: vi.fn(),
     onPickFolder: vi.fn(),
     onOpenFolder: vi.fn(),
     onClearFolder: vi.fn(),
