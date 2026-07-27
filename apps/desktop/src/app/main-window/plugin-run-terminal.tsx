@@ -36,9 +36,10 @@ export interface PluginRunTerminalProps {
  * whatever is running in the shell, and a stray scrim click must not kill an
  * install midway.
  *
- * Once the command has been accepted, closing gets a confirm in front of it —
- * the close tears down the PTY, which mid-install leaves the plugin half
- * written. Before Enter there is nothing to lose, so it closes straight away.
+ * While the command is running, closing gets a confirm in front of it — the
+ * close tears down the PTY, which mid-install leaves the plugin half written.
+ * Before Enter, and again once the install has finished and the shell is back
+ * at its prompt, there is nothing to lose, so it closes straight away.
  *
  * Deliberately spawns the OS default shell rather than the one picked in
  * settings — a shell like WSL has its own agent CLI install, which would not be
@@ -46,11 +47,21 @@ export interface PluginRunTerminalProps {
  */
 export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminalProps) {
   const { t } = useTranslation("desktop");
-  const [submitted, setSubmitted] = useState(false);
+  const [running, setRunning] = useState(false);
   const [confirmingClose, setConfirmingClose] = useState(false);
 
+  function handleRunningChange(next: boolean) {
+    setRunning(next);
+    // The command finished while the confirm was up, so the thing it was
+    // guarding is gone — drop the question rather than leave it asking about a
+    // run that is already over.
+    if (!next) {
+      setConfirmingClose(false);
+    }
+  }
+
   function requestClose() {
-    if (submitted) {
+    if (running) {
       setConfirmingClose(true);
       return;
     }
@@ -104,7 +115,7 @@ export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminal
               className="pd-eterm__view"
               exitedLabel={t("terminal.exited")}
               key={run.line}
-              onPrefillSubmitted={() => setSubmitted(true)}
+              onRunningChange={handleRunningChange}
               prefill={run.line}
             />
           </Suspense>

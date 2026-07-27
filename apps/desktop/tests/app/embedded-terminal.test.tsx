@@ -1,5 +1,5 @@
 import { act, render } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { desktopGateway } from "@/app/desktop-gateway";
 import { EmbeddedTerminal } from "@/app/main-window/embedded-terminal";
 
@@ -55,6 +55,7 @@ function stubGateway() {
   vi.spyOn(desktopGateway, "writeTerminal").mockResolvedValue(undefined);
   vi.spyOn(desktopGateway, "resizeTerminal").mockResolvedValue(undefined);
   vi.spyOn(desktopGateway, "closeTerminal").mockResolvedValue(undefined);
+  vi.spyOn(desktopGateway, "isTerminalBusy").mockResolvedValue(false);
   vi.spyOn(desktopGateway, "subscribeTerminalExit").mockResolvedValue(() => {});
   vi.spyOn(desktopGateway, "subscribeTerminalData").mockImplementation(async (fn) => {
     handler = fn;
@@ -145,9 +146,10 @@ describe("EmbeddedTerminal prefill", () => {
   });
 });
 
-describe("EmbeddedTerminal submit signal", () => {
+describe("EmbeddedTerminal running signal", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.useFakeTimers();
     paste.mockReset();
     focus.mockReset();
     window.ResizeObserver = class {
@@ -158,11 +160,15 @@ describe("EmbeddedTerminal submit signal", () => {
     stubGateway();
   });
 
-  async function renderWithPrefill(onPrefillSubmitted: () => void) {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function renderWithPrefill(onRunningChange: (running: boolean) => void) {
     render(
       <EmbeddedTerminal
         exitedLabel="[exited]"
-        onPrefillSubmitted={onPrefillSubmitted}
+        onRunningChange={onRunningChange}
         prefill={COMMAND}
       />,
     );
@@ -170,47 +176,111 @@ describe("EmbeddedTerminal submit signal", () => {
     emitData(SESSION_ID, "user@host:~$ ");
   }
 
-  it("reports the command as accepted when Enter reaches the shell", async () => {
-    const onPrefillSubmitted = vi.fn();
-    await renderWithPrefill(onPrefillSubmitted);
+  /** Lets the busy poll fire and its answer settle. */
+  async function letThePollRun() {
+    await act(async () => {
+      // Comfortably past one interval; extra firings only re-ask the same thing.
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+    });
+  }
 
-    expect(onPrefillSubmitted).not.toHaveBeenCalled();
+  it("reports the command as running when Enter reaches the shell", async () => {
+    const onRunningChange = vi.fn();
+    await renderWithPrefill(onRunningChange);
+
+    expect(onRunningChange).not.toHaveBeenCalled();
 
     type("\r");
 
-    expect(onPrefillSubmitted).toHaveBeenCalledTimes(1);
+    expect(onRunningChange).toHaveBeenCalledWith(true);
   });
 
   it("stays quiet while the user is still editing the command", async () => {
-    const onPrefillSubmitted = vi.fn();
-    await renderWithPrefill(onPrefillSubmitted);
+    const onRunningChange = vi.fn();
+    await renderWithPrefill(onRunningChange);
 
     type("");
     type("--force");
 
-    expect(onPrefillSubmitted).not.toHaveBeenCalled();
+    expect(onRunningChange).not.toHaveBeenCalled();
   });
 
-  it("reports once, not for every later Enter the running command reads", async () => {
+  it("reports the start once, not for every Enter the running command reads", async () => {
     // The install asks npx to confirm; those keystrokes are answers to it, not
-    // a second acceptance of the command.
-    const onPrefillSubmitted = vi.fn();
-    await renderWithPrefill(onPrefillSubmitted);
+    // a second start.
+    const onRunningChange = vi.fn();
+    await renderWithPrefill(onRunningChange);
 
     type("\r");
     type("y\r");
 
-    expect(onPrefillSubmitted).toHaveBeenCalledTimes(1);
+    expect(onRunningChange).toHaveBeenCalledTimes(1);
   });
 
-  it("says nothing when the terminal was never prefilled", async () => {
-    const onPrefillSubmitted = vi.fn();
-    render(<EmbeddedTerminal exitedLabel="[exited]" onPrefillSubmitted={onPrefillSubmitted} />);
+  it("reports the command as done once the shell has nothing running", async () => {
+    // The prompt is back, so closing the session interrupts nothing — this is
+    // the whole reason the caller is told, and it is why the poll exists.
+    vi.spyOn(desktopGateway, "isTerminalBusy").mockResolvedValue(false);
+    const onRunningChange = vi.fn();
+    await renderWithPrefill(onRunningChange);
+    type("\r");
+
+    await letThePollRun();
+
+    expect(onRunningChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("keeps the command running for as long as the shell is busy", async () => {
+    vi.spyOn(desktopGateway, "isTerminalBusy").mockResolvedValue(true);
+    const onRunningChange = vi.fn();
+    await renderWithPrefill(onRunningChange);
+    type("\r");
+
+    await letThePollRun();
+
+    expect(onRunningChange).toHaveBeenCalledTimes(1);
+    expect(onRunningChange).toHaveBeenCalledWith(true);
+  });
+
+  it("treats a probe it cannot answer as still running", async () => {
+    // Guessing "done" here would hand the caller permission to kill an install.
+    vi.spyOn(desktopGateway, "isTerminalBusy").mockRejectedValue(new Error("no such session"));
+    const onRunningChange = vi.fn();
+    await renderWithPrefill(onRunningChange);
+    type("\r");
+
+    await letThePollRun();
+
+    expect(onRunningChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it("stops asking once the terminal is gone", async () => {
+    vi.spyOn(desktopGateway, "isTerminalBusy").mockResolvedValue(true);
+    const { unmount } = render(
+      <EmbeddedTerminal exitedLabel="[exited]" onRunningChange={vi.fn()} prefill={COMMAND} />,
+    );
+    await openSession();
+    emitData(SESSION_ID, "user@host:~$ ");
+    type("\r");
+    await letThePollRun();
+
+    unmount();
+    vi.mocked(desktopGateway.isTerminalBusy).mockClear();
+    await letThePollRun();
+
+    expect(desktopGateway.isTerminalBusy).not.toHaveBeenCalled();
+  });
+
+  it("reports a command the user typed themselves, prefill or not", async () => {
+    // The signal is about what the shell is doing, not about our command.
+    const onRunningChange = vi.fn();
+    render(<EmbeddedTerminal exitedLabel="[exited]" onRunningChange={onRunningChange} />);
     await openSession();
     emitData(SESSION_ID, "user@host:~$ ");
 
     type("ls\r");
 
-    expect(onPrefillSubmitted).not.toHaveBeenCalled();
+    expect(onRunningChange).toHaveBeenCalledWith(true);
   });
 });

@@ -80,14 +80,21 @@ export interface EmbeddedTerminalProps {
    */
   prefill?: string | null;
   /**
-   * Fired once, when Enter first reaches the shell after `prefill` landed —
-   * the moment the user accepts the command. Until then the session is
-   * disposable; after it, tearing it down interrupts whatever is running.
+   * Fired on every change to whether the shell has a command running: true on
+   * the Enter that starts one, false once it is back at its prompt. While it is
+   * false the session is disposable; while it is true, tearing it down
+   * interrupts the command.
    */
-  onPrefillSubmitted?: () => void;
+  onRunningChange?: (running: boolean) => void;
   exitedLabel: string;
   className?: string;
 }
+
+/**
+ * How often to ask the OS whether the shell is still busy. Only runs between
+ * an Enter and the command finishing, so it costs nothing at an idle prompt.
+ */
+const BUSY_POLL_MS = 700;
 
 /**
  * A live in-app terminal backed by a Rust PTY. Mounts one xterm instance and
@@ -98,15 +105,15 @@ export function EmbeddedTerminal({
   cwd,
   shell,
   prefill,
-  onPrefillSubmitted,
+  onRunningChange,
   exitedLabel,
   className,
 }: EmbeddedTerminalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Held in a ref rather than read from the closure: a callback prop in the
   // effect's deps would restart the PTY on every render of the parent.
-  const onPrefillSubmittedRef = useRef(onPrefillSubmitted);
-  onPrefillSubmittedRef.current = onPrefillSubmitted;
+  const onRunningChangeRef = useRef(onRunningChange);
+  onRunningChangeRef.current = onRunningChange;
 
   useEffect(() => {
     if (!desktopGateway.isDesktopRuntime()) {
@@ -123,9 +130,46 @@ export function EmbeddedTerminal({
     // lands truncated or overwritten — and a command the user cannot read is
     // one they cannot review. Hold it until the session's first byte arrives.
     let pendingPrefill = prefill ? toSingleLine(prefill) : "";
-    // The prefilled command is on screen and the user has not accepted it yet.
-    let awaitingSubmit = false;
+    // Whether we have told the parent a command is running, and the poll that
+    // watches for it finishing.
+    let running = false;
+    let busyPollId: number | null = null;
     const unlisteners: Array<() => void> = [];
+
+    function stopBusyPoll() {
+      if (busyPollId !== null) {
+        window.clearInterval(busyPollId);
+        busyPollId = null;
+      }
+    }
+
+    /**
+     * Watch for the command finishing. The shell prints its prompt with the
+     * same bytes it prints everything else, so the output stream cannot tell us
+     * this — only the OS can, by way of what the shell has spawned.
+     */
+    function startBusyPoll() {
+      stopBusyPoll();
+      busyPollId = window.setInterval(() => {
+        const id = sessionId;
+        if (!id) {
+          return;
+        }
+        void desktopGateway
+          .isTerminalBusy(id)
+          .then((busy) => {
+            if (disposed || busy || !running) {
+              return;
+            }
+            running = false;
+            stopBusyPoll();
+            onRunningChangeRef.current?.(false);
+          })
+          // A probe we cannot answer leaves `running` as it is: the parent keeps
+          // treating the session as busy, which is the harmless direction.
+          .catch(() => {});
+      }, BUSY_POLL_MS);
+    }
 
     const term = new Terminal({
       cursorBlink: true,
@@ -197,9 +241,6 @@ export function EmbeddedTerminal({
               const line = pendingPrefill;
               pendingPrefill = "";
               insertForReview(term, line);
-              // Set after the paste, so the paste's own data does not count as
-              // the user's Enter.
-              awaitingSubmit = true;
             }
           }),
         );
@@ -219,11 +260,14 @@ export function EmbeddedTerminal({
       if (sessionId) {
         void desktopGateway.writeTerminal(sessionId, data).catch(() => {});
       }
-      // Enter is the keystroke the prefill was waiting for. Report it once:
-      // from here the session is running the user's command, not holding it.
-      if (awaitingSubmit && data.includes("\r")) {
-        awaitingSubmit = false;
-        onPrefillSubmittedRef.current?.();
+      // Enter hands the line to the shell, so from here on assume a command is
+      // running until the OS says otherwise. Answers typed into something
+      // already running arrive the same way, hence the `running` guard —
+      // starting is a transition, not every carriage return.
+      if (!running && sessionId && data.includes("\r")) {
+        running = true;
+        startBusyPoll();
+        onRunningChangeRef.current?.(true);
       }
     });
 
@@ -247,6 +291,7 @@ export function EmbeddedTerminal({
       // A restart is a deliberate clean slate; text queued for the session
       // being torn down must not land in the one that replaces it.
       pendingPrefill = "";
+      stopBusyPoll();
       resizeObserver.disconnect();
       dataDisposable.dispose();
       for (const stop of unlisteners) {

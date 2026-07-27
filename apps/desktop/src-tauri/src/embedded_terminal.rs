@@ -315,6 +315,76 @@ pub(crate) fn terminal_resize(
     Ok(())
 }
 
+/// Whether the shell is running something rather than sitting at its prompt.
+///
+/// Only the OS can answer this: the shell prints its prompt with the same bytes
+/// it prints everything else, so watching the output stream is guesswork. On
+/// Unix the tty knows which process group holds the foreground; Windows has no
+/// such notion, so we look for a live child of the shell instead.
+///
+/// A "no" is the safe direction to be wrong in — it costs a confirmation the
+/// user did not need, never a killed install — so an unknown session, a shell
+/// without a pid, and a failed snapshot all report idle.
+#[cfg(unix)]
+fn shell_is_busy(session: &TerminalSession, shell_pid: u32) -> bool {
+    match session.master.process_group_leader() {
+        Some(leader) => leader as u32 != shell_pid,
+        None => false,
+    }
+}
+
+#[cfg(windows)]
+fn shell_is_busy(_session: &TerminalSession, shell_pid: u32) -> bool {
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32First, Process32Next, PROCESSENTRY32, TH32CS_SNAPPROCESS,
+    };
+
+    // ConPTY's own host process is parented to us, not to the shell, so it does
+    // not show up here — anything that does is something the shell started.
+    unsafe {
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snapshot == INVALID_HANDLE_VALUE {
+            return false;
+        }
+
+        let mut entry: PROCESSENTRY32 = std::mem::zeroed();
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32>() as u32;
+        let mut busy = false;
+        let mut more = Process32First(snapshot, &mut entry);
+        while more != 0 {
+            if entry.th32ParentProcessID == shell_pid {
+                busy = true;
+                break;
+            }
+            more = Process32Next(snapshot, &mut entry);
+        }
+
+        CloseHandle(snapshot);
+        busy
+    }
+}
+
+/// Report whether a session's shell is busy, so the frontend can tell a close
+/// that costs nothing from one that interrupts a running command.
+#[tauri::command]
+pub(crate) fn terminal_is_busy(
+    sessions: State<'_, EmbeddedTerminalSessions>,
+    id: String,
+) -> Result<bool, String> {
+    let store = sessions
+        .0
+        .lock()
+        .map_err(|_| "terminal session store is poisoned".to_string())?;
+    let Some(session) = store.get(&id) else {
+        return Ok(false);
+    };
+    let Some(shell_pid) = session.child.process_id() else {
+        return Ok(false);
+    };
+    Ok(shell_is_busy(session, shell_pid))
+}
+
 /// Kill a session's shell and forget it. Idempotent: closing an unknown id is a
 /// no-op so the frontend can call it freely on unmount.
 #[tauri::command]

@@ -89,6 +89,7 @@ function createGateway(
     writeTerminal: vi.fn().mockResolvedValue(undefined),
     resizeTerminal: vi.fn().mockResolvedValue(undefined),
     closeTerminal: vi.fn().mockResolvedValue(undefined),
+    isTerminalBusy: vi.fn().mockResolvedValue(false),
     subscribeTerminalData: vi.fn().mockResolvedValue(() => {}),
     subscribeTerminalExit: vi.fn().mockResolvedValue(() => {}),
   };
