@@ -1,10 +1,10 @@
 {
   "metadata": {
     "title": "Pets-Driven — a cute way to develop with AI agents",
-    "description": "Development is over. Give your pets a task and watch the pack take it from here — a cute way to develop with AI agents."
+    "description": "You don't code anymore. Your pack does. Give your pets a task and watch them take it from here — a cute way to develop with AI agents."
   },
   "hero": {
-    "headline": "Development is over.",
+    "headline": "You don't code anymore. Your pack does.",
     "watching": "a new era is coming",
     "tagline": "a cute way to develop with AI agents",
     "scroll": "scroll"
@@ -15,9 +15,9 @@
     "body": "One pet per project. Soon your desktop will be bustling with them."
   },
   "cta": {
-    "title": "Bring home your pet today.",
-    "body": "Start a new way to develop — with your pets.",
-    "button": "Adopt your pack",
+    "title": "Choose your starter.",
+    "body": "Pick one folder. That's your first pet.",
+    "button": "Hatch your first",
     "note": "Downloads the Windows installer.",
     "sourceLink": "View the source on GitHub"
   }
