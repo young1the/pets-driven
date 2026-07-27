@@ -115,6 +115,40 @@ export type BehaviorDecisionKind =
   | "beckon" // waiting row — an expectant "come here" (lonely, agreeable)
   | "fret"; // failed row — an anxious sulk (high N)
 
+/**
+ * The subset of `BehaviorDecisionKind` that is a sustained, stationary pose —
+ * no locomotion, one held atlas row, a duration and a mood cue. Split out so
+ * the pose tables can be exhaustive over exactly these kinds.
+ */
+export type ExpressivePoseKind =
+  | "greet"
+  | "groom"
+  | "observe"
+  | "beckon"
+  | "fret"
+  | "nap"
+  | "meditate"
+  | "keep-watch"
+  | "peek"
+  | "inspect"
+  | "follow-routine"
+  | "offer-comfort"
+  | "stand-lookout"
+  // Second signature pose per personality.
+  | "caper"
+  | "check-in"
+  | "hide-away"
+  | "explore-nook"
+  | "tidy-up"
+  | "posture"
+  | "nurture"
+  | "scheme"
+  | "lounge"
+  | "center"
+  | "preen"
+  | "startle-scan"
+  | "appraise";
+
 export type BehaviorDecisionTokenComponent = {
   type: "BehaviorDecisionToken";
   kind: BehaviorDecisionKind;

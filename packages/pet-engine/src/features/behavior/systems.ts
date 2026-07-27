@@ -4,6 +4,52 @@ import {
   statusFreezesMovement,
 } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
+import {
+  EXPRESSIVE_POSE_CUES,
+  EXPRESSIVE_POSE_DURATIONS,
+  expressivePoseDurationMs,
+  FEINT_APPROACH_MS,
+  FEINT_BASE_MS,
+  FEINT_EXTRA_MS,
+  FEINT_RETREAT_BODY_WIDTHS,
+  JUMP_ENERGY_COST,
+  ROMP_BASE_MS,
+  ROMP_END_CUE_MS,
+  ROMP_EXTRA_MS,
+  ROMP_HOP_ENERGY_COST,
+  ROMP_HOP_INTERVAL_BASE_MS,
+  ROMP_HOP_INTERVAL_JITTER_MS,
+  ROMP_HOP_RANGE_MAX_BODY_WIDTHS,
+  ROMP_HOP_RANGE_MIN_BODY_WIDTHS,
+  ROMP_SPEED_FACTOR,
+  STRUT_BODY_WIDTHS,
+  STRUT_DURATION_MS,
+  STRUT_SPEED_FACTOR,
+  WITHDRAW_BODY_WIDTHS,
+  WITHDRAW_DURATION_MS,
+} from "@pets-driven/pet-engine/features/behavior/activity-tuning";
+import {
+  adjustDrive,
+  arrivalDwellMs,
+  claim,
+  clearMotionTarget,
+  isClaimed,
+  isClaimedBySameOrHigherPriority,
+  MAKE_ROOM_REASON,
+  SPEECH_BUBBLE_DURATION_MS,
+  setIdleSpeech,
+  stopPetMovement,
+  type VelocityWriter,
+} from "@pets-driven/pet-engine/features/behavior/claim";
+import {
+  COLLISION_TARGET_MARGIN,
+  clamp,
+  clampToBoundsX,
+  clampToBoundsY,
+  DEFAULT_BEHAVIOR_BODY_WIDTH,
+  normalize,
+  petWidth,
+} from "@pets-driven/pet-engine/features/behavior/geometry";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import { clampDrive } from "@pets-driven/pet-engine/features/drives/systems";
 import type {
@@ -79,14 +125,11 @@ import {
   scoreWithdraw,
 } from "./decision-scores";
 
-const DEFAULT_BEHAVIOR_BODY_WIDTH = 32;
 const COLLISION_REACTION_WIDTH_MULTIPLIER = 6;
-const COLLISION_TARGET_MARGIN = 48;
 const USER_PROXIMITY_RADIUS = 96;
 const APPROACH_PET_SUCCESS_RADIUS = 64;
 const APPROACH_PET_TIMEOUT_MS = 4_000;
 const APPROACH_PET_SUCCESS_CUE_MS = 1_000;
-const SPEECH_BUBBLE_DURATION_MS = 3_000;
 
 // Cursor play — laser-pointer-style chase.
 const CHASE_CURSOR_SUCCESS_RADIUS = 48;
@@ -218,19 +261,13 @@ function recordPairReaction(
 // Magnitudes on the same 0..1 scale as DrivesComponent fields. "Substantial"
 // refills (catching a pet) are larger than "partial" ones (a friendly
 // collision reaction); costs are small enough that a pet needs several
-// jumps/climbs before it visibly tires.
+// jumps/climbs before it visibly tires. The jump cost itself is in
+// `activity-tuning.ts`, where the romp hop derives from it.
 const APPROACH_PET_SUCCESS_SOCIAL_REFILL = 0.5;
 const COLLISION_ENGAGE_SOCIAL_REFILL = 0.15;
 const WANDER_FAR_CURIOSITY_RELIEF = 0.35;
 const CLIMB_CURIOSITY_RELIEF = 0.3;
-const JUMP_ENERGY_COST = 0.08;
 const CLIMB_ENERGY_COST = 0.12;
-
-// ── Sustained activities ─────────────────────────────────────────────────
-// Lifelike behavior happens on the tens-of-seconds scale, not the sub-second
-// claim scale. Resting and playing are *activities with a duration*: their
-// autonomous claim lives for the whole activity, so the decision loop stops
-// re-rolling (and visibly pacing) every 500 ms.
 
 // idle-stay: a real rest. Introverts settle for much longer than extraverts.
 const IDLE_STAY_BASE_MS = 3_000;
@@ -247,150 +284,6 @@ const IDLE_STAY_JITTER_MS = 3_000;
 const WANDER_STUCK_TIMEOUT_MS = 2_500;
 const WANDER_PROGRESS_EPSILON = 2;
 
-// Arriving anywhere earns a beat of stillness before the next decision —
-// a pet that walks somewhere and immediately walks elsewhere reads as
-// aimless pacing. Extraverts dwell briefly; introverts linger.
-const ARRIVAL_DWELL_BASE_MS = 700;
-const ARRIVAL_DWELL_INTROVERSION_MS = 2_300;
-const ARRIVAL_DWELL_JITTER_MS = 1_000;
-
-// play-romp: playful pets string hops and dashes together for a while.
-const ROMP_BASE_MS = 4_000;
-const ROMP_EXTRA_MS = 4_000;
-const ROMP_HOP_INTERVAL_BASE_MS = 550;
-const ROMP_HOP_INTERVAL_JITTER_MS = 450;
-const ROMP_HOP_RANGE_MIN_BODY_WIDTHS = 2;
-const ROMP_HOP_RANGE_MAX_BODY_WIDTHS = 5;
-const ROMP_SPEED_FACTOR = 1.15;
-const ROMP_HOP_ENERGY_COST = JUMP_ENERGY_COST * 0.5;
-const ROMP_END_CUE_MS = 800;
-
-// play-feint: mischievous pets approach as if asking for attention, then turn
-// on their heel and dash away. The turn is time-based so the beat completes
-// even when the target moves or the pet cannot quite reach it.
-const FEINT_BASE_MS = 3_200;
-const FEINT_EXTRA_MS = 1_200;
-const FEINT_APPROACH_MS = 1_200;
-const FEINT_RETREAT_BODY_WIDTHS = 5;
-const WITHDRAW_BODY_WIDTHS = 5;
-const WITHDRAW_DURATION_MS = 3_500;
-const STRUT_BODY_WIDTHS = 6;
-const STRUT_DURATION_MS = 4_500;
-const STRUT_SPEED_FACTOR = 0.75;
-
-export type ExpressivePoseKind =
-  | "greet"
-  | "groom"
-  | "observe"
-  | "beckon"
-  | "fret"
-  | "nap"
-  | "meditate"
-  | "keep-watch"
-  | "peek"
-  | "inspect"
-  | "follow-routine"
-  | "offer-comfort"
-  | "stand-lookout"
-  // Second signature pose per personality.
-  | "caper"
-  | "check-in"
-  | "hide-away"
-  | "explore-nook"
-  | "tidy-up"
-  | "posture"
-  | "nurture"
-  | "scheme"
-  | "lounge"
-  | "center"
-  | "preen"
-  | "startle-scan"
-  | "appraise";
-
-// ── Expressive idle poses ──────────────────────────────────────────────────
-// Sustained, stationary gestures that exercise the otherwise agent-only sprite
-// rows during ordinary autonomous life (see BehaviorDecisionKind). Like
-// idle-stay and play-romp, each holds its autonomous claim for the whole pose
-// so the pet reads as genuinely doing something rather than twitching. Base +
-// jitter loosely track each row's sprite loop length so the animation completes
-// a few cycles.
-const EXPRESSIVE_POSE_DURATIONS: Record<ExpressivePoseKind, { base: number; jitter: number }> = {
-  greet: { base: 1_400, jitter: 800 },
-  groom: { base: 3_000, jitter: 1_500 },
-  observe: { base: 2_200, jitter: 1_200 },
-  beckon: { base: 1_800, jitter: 900 },
-  fret: { base: 1_600, jitter: 900 },
-  nap: { base: 7_000, jitter: 5_000 },
-  meditate: { base: 5_000, jitter: 3_000 },
-  "keep-watch": { base: 4_000, jitter: 2_000 },
-  peek: { base: 3_500, jitter: 2_000 },
-  inspect: { base: 3_000, jitter: 2_000 },
-  "follow-routine": { base: 4_000, jitter: 2_000 },
-  "offer-comfort": { base: 3_000, jitter: 1_500 },
-  "stand-lookout": { base: 2_500, jitter: 1_500 },
-  // Second signature poses — same tier as their sibling beats.
-  caper: { base: 3_000, jitter: 2_000 },
-  "check-in": { base: 3_000, jitter: 1_500 },
-  "hide-away": { base: 4_000, jitter: 2_500 },
-  "explore-nook": { base: 3_000, jitter: 2_000 },
-  "tidy-up": { base: 3_500, jitter: 2_000 },
-  posture: { base: 2_800, jitter: 1_500 },
-  nurture: { base: 3_000, jitter: 1_500 },
-  scheme: { base: 3_000, jitter: 2_000 },
-  lounge: { base: 6_000, jitter: 4_000 },
-  center: { base: 5_000, jitter: 3_000 },
-  preen: { base: 3_500, jitter: 2_000 },
-  "startle-scan": { base: 2_200, jitter: 1_500 },
-  appraise: { base: 3_500, jitter: 2_000 },
-};
-
-/** Mood/emote cue attached to each expressive pose (a PetExpressionState). */
-const EXPRESSIVE_POSE_CUES: Record<
-  ExpressivePoseKind,
-  { mood: PetExpressionMood; emote: PetExpressionEmote }
-> = {
-  greet: { mood: "happy", emote: "sparkle" },
-  // Humming while tidying — "none" left the most conscientious pose entirely
-  // unreadable next to a plain idle.
-  groom: { mood: "working", emote: "note" },
-  observe: { mood: "thinking", emote: "question" },
-  beckon: { mood: "love", emote: "heart" },
-  // Anxiety, not alarm. stand-lookout keeps the "!".
-  fret: { mood: "confused", emote: "sweat" },
-  nap: { mood: "sleepy", emote: "zzz" },
-  // Quiet inward calm, so it stops reading as a second greet.
-  meditate: { mood: "happy", emote: "dots" },
-  // Watchful rather than doting, so it separates from offer-comfort.
-  "keep-watch": { mood: "love", emote: "dots" },
-  // Peeking is passive watching; inspect below keeps the pointed "?".
-  peek: { mood: "thinking", emote: "dots" },
-  inspect: { mood: "thinking", emote: "question" },
-  // Intentionally unadorned: a routine is background life, not an event.
-  "follow-routine": { mood: "working", emote: "none" },
-  "offer-comfort": { mood: "love", emote: "heart" },
-  "stand-lookout": { mood: "confused", emote: "exclaim" },
-  // Second signature poses — each leans away from its sibling's cue so the two
-  // beats read as distinct moments of the same personality.
-  caper: { mood: "excited", emote: "note" },
-  "check-in": { mood: "love", emote: "heart" },
-  "hide-away": { mood: "thinking", emote: "dots" },
-  "explore-nook": { mood: "thinking", emote: "question" },
-  "tidy-up": { mood: "working", emote: "note" },
-  posture: { mood: "excited", emote: "exclaim" },
-  nurture: { mood: "love", emote: "heart" },
-  scheme: { mood: "excited", emote: "sparkle" },
-  lounge: { mood: "sleepy", emote: "zzz" },
-  center: { mood: "happy", emote: "dots" },
-  preen: { mood: "working", emote: "none" },
-  "startle-scan": { mood: "confused", emote: "sweat" },
-  appraise: { mood: "thinking", emote: "dots" },
-};
-
-function expressivePoseDurationMs(kind: ExpressivePoseKind, random: RandomSource): number {
-  const { base, jitter } = EXPRESSIVE_POSE_DURATIONS[kind];
-  return Math.round(base + random.next() * jitter);
-}
-
 // Personal space — a cosmetic "make-room" shuffle. Since pets are physical
 // ghosts to each other (they pass through freely), two idle pets can settle on
 // the exact same spot and render stacked. When that happens a grounded walker
@@ -399,7 +292,6 @@ function expressivePoseDurationMs(kind: ExpressivePoseKind, random: RandomSource
 // grinding/trembling that came from solid bodies. It only fires when a pet is
 // genuinely idle and unclaimed, so it never interrupts a session, chase, or
 // reaction.
-const MAKE_ROOM_REASON = "make-room";
 // Trigger only on real stacking: centers within this fraction of a body width.
 const PERSONAL_SPACE_TRIGGER_BODY_FRACTION = 0.55;
 // How far aside to step, in body widths.
@@ -420,143 +312,6 @@ function idleStayDurationMs(p: PersonalityComponent, random: RandomSource): numb
       random.next() * IDLE_STAY_JITTER_MS) *
       personalityIdleDurationScale(p.catalogId),
   );
-}
-
-/** Personality-scaled pause after reaching any destination. */
-function arrivalDwellMs(p: PersonalityComponent, random: RandomSource | undefined): number {
-  const jitter = random ? random.next() : 0.5;
-  return Math.round(
-    (ARRIVAL_DWELL_BASE_MS +
-      (1 - p.extraversion) * ARRIVAL_DWELL_INTROVERSION_MS +
-      jitter * ARRIVAL_DWELL_JITTER_MS) *
-      personalityArrivalDwellScale(p.catalogId),
-  );
-}
-
-/**
- * Applies a drive delta in place (component objects are mutated directly, same
- * pattern as ContactState/MotionTarget elsewhere in this file). No-ops when
- * the entity has no Drives component — satisfaction hooks stay optional so
- * pets without Drives are unaffected.
- */
-function adjustDrive(
-  components: ComponentStore,
-  id: string,
-  deltas: Partial<Pick<DrivesComponent, "social" | "energy" | "curiosity">>,
-): void {
-  const drives = components.getComponent(id, "Drives");
-  if (!drives) return;
-  if (deltas.social !== undefined) {
-    drives.social = clampDrive(drives.social + deltas.social);
-  }
-  if (deltas.energy !== undefined) {
-    drives.energy = clampDrive(drives.energy + deltas.energy);
-  }
-  if (deltas.curiosity !== undefined) {
-    drives.curiosity = clampDrive(drives.curiosity + deltas.curiosity);
-  }
-}
-
-// Duration of each claim in milliseconds
-const CLAIM_DURATION_MS: Record<BehaviorDecisionSource, number> = {
-  "user-interaction": 2000,
-  "agent-event": 5000,
-  collision: 1000,
-  // SocialInteractionSystem re-claims each tick while a session runs, so this
-  // is only the fallback lifetime for a claim it stops refreshing.
-  social: 750,
-  autonomous: 500,
-};
-
-function isClaimed(
-  components: ComponentStore,
-  id: string,
-  source: BehaviorDecisionSource,
-  now: number,
-): boolean {
-  const existing = components.getComponent(id, "BehaviorDecisionState");
-  if (!existing) return false;
-  if (existing.expiresAt <= now) return false;
-  return BEHAVIOR_PRIORITY[existing.source] < BEHAVIOR_PRIORITY[source];
-}
-
-function isClaimedBySameOrHigherPriority(
-  components: ComponentStore,
-  id: string,
-  source: BehaviorDecisionSource,
-  now: number,
-): boolean {
-  const existing = components.getComponent(id, "BehaviorDecisionState");
-  if (!existing) return false;
-  if (existing.expiresAt <= now) return false;
-  return BEHAVIOR_PRIORITY[existing.source] <= BEHAVIOR_PRIORITY[source];
-}
-
-function claim(
-  components: ComponentStore,
-  id: string,
-  source: BehaviorDecisionSource,
-  now: number,
-  reason: string,
-  customExpiresAt?: number,
-): void {
-  const existing = components.getComponent(id, "BehaviorDecisionState");
-  // When a higher-priority (non-autonomous) source overwrites an autonomous
-  // claim, carry the autonomous history forward so repeat-cooldowns survive.
-  // Bookkeeping reasons (arrival dwell, idle speech) are not decisions — they
-  // also carry history forward instead of becoming the history themselves.
-  const recordsNewHistory = source === "autonomous" && !BOOKKEEPING_AUTONOMOUS_REASONS.has(reason);
-  const existingIsRealAutonomous =
-    existing?.source === "autonomous" && !BOOKKEEPING_AUTONOMOUS_REASONS.has(existing.reason);
-  const lastAutonomousReason = recordsNewHistory
-    ? reason
-    : existingIsRealAutonomous
-      ? existing.reason
-      : (existing?.lastAutonomousReason ?? null);
-  const lastAutonomousAt = recordsNewHistory
-    ? now
-    : existingIsRealAutonomous
-      ? existing.decidedAt
-      : (existing?.lastAutonomousAt ?? null);
-
-  components.setComponent(id, {
-    type: "BehaviorDecisionState",
-    source,
-    decidedAt: now,
-    expiresAt: customExpiresAt ?? now + CLAIM_DURATION_MS[source],
-    reason,
-    lastAutonomousReason,
-    lastAutonomousAt,
-  });
-}
-
-/** Write a plain spoken line (source "idle") to the pet's channel with a TTL. */
-function setIdleSpeech(components: ComponentStore, id: string, line: string | null, now: number) {
-  components.setComponent(
-    id,
-    utteranceChannel({ message: line, source: "idle", now, durationMs: SPEECH_BUBBLE_DURATION_MS }),
-  );
-}
-
-function clearMotionTarget(components: ComponentStore, id: string): void {
-  components.setComponent(id, {
-    type: "MotionTarget",
-    targetEntityId: null,
-    targetPosition: null,
-  });
-}
-
-type VelocityWriter = {
-  setVelocity(id: string, velocity: Partial<Vector>): void;
-};
-
-function stopPetMovement(
-  components: ComponentStore,
-  physics: VelocityWriter | undefined,
-  id: string,
-): void {
-  clearMotionTarget(components, id);
-  physics?.setVelocity(id, { x: 0, y: 0 });
 }
 
 function setAgentTaskState(
@@ -3155,29 +2910,4 @@ export function runFeintProgressSystem(
       });
     }
   });
-}
-
-function normalize(v: Vector): Vector {
-  const len = Math.hypot(v.x, v.y);
-  return len === 0 ? { x: 1, y: 0 } : { x: v.x / len, y: v.y / len };
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function clampToBoundsX(value: number, bounds: { x?: number; width: number }, margin: number) {
-  const min = (bounds.x ?? 0) + margin;
-  const max = (bounds.x ?? 0) + bounds.width - margin;
-  return clamp(value, min, max);
-}
-
-function clampToBoundsY(value: number, bounds: { y?: number; height: number }, margin: number) {
-  const min = (bounds.y ?? 0) + margin;
-  const max = (bounds.y ?? 0) + bounds.height - margin;
-  return clamp(value, min, max);
-}
-
-function petWidth(components: ComponentStore, id: string): number {
-  return components.getComponent(id, "PhysicsBody")?.width ?? DEFAULT_BEHAVIOR_BODY_WIDTH;
 }
