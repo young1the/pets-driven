@@ -6,6 +6,10 @@ import {
 } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
 import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/autonomous-speech-system";
 import {
+  runHoverReactionSystem,
+  runPettingDetectionSystem,
+} from "@pets-driven/pet-engine/features/behavior/cursor-reaction-systems";
+import {
   runAgentChannelMessageExpirationSystem,
   runPetExpressionExpirationSystem,
 } from "@pets-driven/pet-engine/features/behavior/expiration-systems";
@@ -15,9 +19,7 @@ import {
   runBehaviorPlanningSystem,
   runCollisionBehaviorSystem,
   runFeintProgressSystem,
-  runHoverReactionSystem,
   runPersonalSpaceSystem,
-  runPettingDetectionSystem,
   runRompProgressSystem,
 } from "./systems";
 

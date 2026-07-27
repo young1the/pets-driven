@@ -2,7 +2,7 @@ import { createComponentStore } from "@pets-driven/pet-engine/core/component-sto
 import {
   hoverReactionFor,
   runHoverReactionSystem,
-} from "@pets-driven/pet-engine/features/behavior/systems";
+} from "@pets-driven/pet-engine/features/behavior/cursor-reaction-systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";
 
