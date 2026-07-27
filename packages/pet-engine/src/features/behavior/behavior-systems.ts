@@ -1,5 +1,6 @@
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
+import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/autonomous-speech-system";
 import {
   runAgentChannelMessageExpirationSystem,
   runPetExpressionExpirationSystem,
@@ -7,7 +8,6 @@ import {
 import {
   runAgentTaskEventSystem,
   runArrivalBehaviorSystem,
-  runAutonomousBehaviorSystem,
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
   runCollisionBehaviorSystem,

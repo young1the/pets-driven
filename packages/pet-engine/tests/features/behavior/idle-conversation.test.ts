@@ -1,7 +1,7 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { Component } from "@pets-driven/pet-engine/core/components";
 import type { AgentTaskStatus } from "@pets-driven/pet-engine/features/agent/agent-task-state";
-import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/systems";
+import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/autonomous-speech-system";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";
