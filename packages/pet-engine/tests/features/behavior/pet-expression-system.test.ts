@@ -1,5 +1,5 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
-import { runPetExpressionExpirationSystem } from "@pets-driven/pet-engine/features/behavior/systems";
+import { runPetExpressionExpirationSystem } from "@pets-driven/pet-engine/features/behavior/expiration-systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";
 

@@ -2,6 +2,9 @@ import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-s
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
 import {
   runAgentChannelMessageExpirationSystem,
+  runPetExpressionExpirationSystem,
+} from "@pets-driven/pet-engine/features/behavior/expiration-systems";
+import {
   runAgentTaskEventSystem,
   runArrivalBehaviorSystem,
   runAutonomousBehaviorSystem,
@@ -11,7 +14,6 @@ import {
   runFeintProgressSystem,
   runHoverReactionSystem,
   runPersonalSpaceSystem,
-  runPetExpressionExpirationSystem,
   runPettingDetectionSystem,
   runRompProgressSystem,
   runTaskMovementHoldSystem,
