@@ -11,7 +11,7 @@ export function clampDrive(value: number): number {
  * Cubic growth keeps low/mid drive pressure from meaningfully swaying a
  * decision, while values above roughly 0.7-0.8 shoot toward 1 — so crossing
  * that threshold visibly changes behavior instead of nudging scores along a
- * straight line. Score functions in features/behavior/systems.ts multiply this
+ * straight line. Score functions in features/behavior/decision-scores.ts multiply this
  * by a fixed weight per drive/behavior pairing.
  */
 export function driveResponseCurve(x: number): number {
@@ -33,7 +33,7 @@ const CURIOSITY_RISE_PER_MS = 1 / (2.5 * 60 * 1000); // 0 -> 1 over ~2.5 min wit
  * while the pet is pursuing a goal (MotionTarget/Steering "active"/"seek")
  * and recovers while idle; curiosity rises only while idle (no new stimuli).
  * Satisfaction hooks (approach-pet-success, collision-engage, wander-far,
- * request-jump/climb) live next to their triggers in behavior/systems.ts.
+ * request-jump/climb) live next to their triggers in behavior/planning-system.ts.
  */
 export function runDriveDecaySystem(components: ComponentStore, deltaMs: number): void {
   components.forEach(["Drives", "Steering"], (_id, [drives, intent]) => {

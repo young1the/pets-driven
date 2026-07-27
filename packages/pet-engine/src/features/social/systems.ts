@@ -1,14 +1,12 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
+import { claim } from "@pets-driven/pet-engine/features/behavior/claim";
 import type {
   PersonalityComponent,
   PetExpressionEmote,
   PetExpressionMood,
 } from "@pets-driven/pet-engine/features/behavior/components";
-import {
-  BEHAVIOR_PRIORITY,
-  BOOKKEEPING_AUTONOMOUS_REASONS,
-} from "@pets-driven/pet-engine/features/behavior/components";
+import { BEHAVIOR_PRIORITY } from "@pets-driven/pet-engine/features/behavior/components";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import { clampDrive } from "@pets-driven/pet-engine/features/drives/systems";
 import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
@@ -150,9 +148,10 @@ function isBlockedByHigherPriority(components: ComponentStore, id: string, now: 
 }
 
 /**
- * Write (or refresh) a social claim, carrying forward the most recent
- * autonomous decision so BehaviorDecisionSystem's repeat-cooldowns survive the
- * session — mirrors the carry-forward in features/behavior/systems.ts `claim`.
+ * Write (or refresh) a social claim. Sessions always supply their own expiry,
+ * so this is `claim` with the source fixed — including its carry-forward of
+ * the most recent autonomous decision, which is what keeps
+ * BehaviorDecisionSystem's repeat-cooldowns alive across a session.
  */
 function claimSocial(
   components: ComponentStore,
@@ -161,26 +160,7 @@ function claimSocial(
   reason: string,
   expiresAt: number,
 ): void {
-  const existing = components.getComponent(id, "BehaviorDecisionState");
-  // Look through bookkeeping claims (arrival dwell, idle speech) at the last
-  // genuine autonomous decision, mirroring features/behavior/systems.ts.
-  const existingIsRealAutonomous =
-    existing?.source === "autonomous" && !BOOKKEEPING_AUTONOMOUS_REASONS.has(existing.reason);
-  const lastAutonomousReason = existingIsRealAutonomous
-    ? existing.reason
-    : (existing?.lastAutonomousReason ?? null);
-  const lastAutonomousAt = existingIsRealAutonomous
-    ? existing.decidedAt
-    : (existing?.lastAutonomousAt ?? null);
-  components.setComponent(id, {
-    type: "BehaviorDecisionState",
-    source: "social",
-    decidedAt: now,
-    expiresAt,
-    reason,
-    lastAutonomousReason,
-    lastAutonomousAt,
-  });
+  claim(components, id, "social", now, reason, expiresAt);
 }
 
 /** Let the current social claim lapse now so lower priorities can take over. */

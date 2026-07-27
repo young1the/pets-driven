@@ -13,6 +13,7 @@ pnpm --filter @pets-driven/pet-engine typecheck   # tsc -p tsconfig.json
 
 - `src/core/` — world, entities, component store, tick pipeline (`phases.ts`, `simulation-system.ts`, `create-world.ts`)
 - `src/features/<name>/` — one slice per concern (`behavior`, `movement`, `physics`, `social`, `drives`, `mood`, `perception`, `cursor`, `contact`, `interaction`), each as `components.ts` (data) + `systems.ts` (logic); `agent` and `events` are data-only slices
+- `behavior` is the exception: too large for one `systems.ts`, so its logic is one file per system or system group (`decision-system.ts`, `planning-system.ts`, `collision-systems.ts`, …) over a shared base of `claim.ts`, `geometry.ts`, and `activity-tuning.ts`. `behavior-systems.ts` holds the descriptors `phases.ts` imports, and is the file to look at first
 - `src/pets/` — `personalities/`, `profiles/`, `constants/`, plus the React `rendering/` and `status/` components
 - `src/shared/` — `src/shared/random/seeded-random.ts`, `src/shared/time/manual-clock.ts`
 - `tests/` — mirrors `src/` one-to-one
@@ -25,7 +26,7 @@ pnpm --filter @pets-driven/pet-engine typecheck   # tsc -p tsconfig.json
 
 ## Non-obvious rules
 
-- **Imports go through the package's own subpath exports**, even inside the package: `@pets-driven/pet-engine/features/behavior/systems`, not a relative path. `package.json` maps `./*` → `./src/*.ts`. A new `.tsx` file needs its own explicit `exports` entry — the wildcard only covers `.ts`.
+- **Imports go through the package's own subpath exports**, even inside the package: `@pets-driven/pet-engine/features/behavior/claim`, not a relative path. `package.json` maps `./*` → `./src/*.ts`. A new `.tsx` file needs its own explicit `exports` entry — the wildcard only covers `.ts`.
 - **A system does not run until it is registered in `src/core/phases.ts`.** `SYSTEM_PHASES` is the single source of truth, and phase order is a contract: PRE_UPDATE (sync external state) → BEHAVIOR (priority-ordered claim/skip decisions) → UPDATE (locomotion state) → POST_UPDATE (force accumulation) → SIMULATE (physics integration). Placement within a phase matters; keep the inline `//` comments explaining why.
 - **Force constants in `src/pets/constants/pet-body.ts` are tuned for the default 32x38 body.** Matter.js mass scales with area, so a bigger body under the same walk force or jump impulse simply stops moving or jumping — scale forces with area instead of reusing the defaults.
 - **Sprite rendering is row-only.** There is no mirroring or facing flip: a new direction means a new spritesheet row. The intent → row mapping lives in `src/features/behavior/pet-animation-state.ts`.

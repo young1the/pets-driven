@@ -2,7 +2,7 @@
  * The Sims-style motive/need layer. Each value is 0..1 "unmet need" pressure —
  * higher means more pressing. Values passively drift via DriveDecaySystem
  * (see ./systems.ts) and are relieved by satisfying interactions wired into
- * features/behavior/systems.ts (approach-pet-success, collision-engage,
+ * features/behavior/ (approach-pet-success, collision-engage,
  * wander-far / request-climb, request-jump / request-climb).
  */
 export type DrivesComponent = {
