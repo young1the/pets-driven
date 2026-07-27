@@ -10,6 +10,7 @@ import {
   type BehaviorDecisionSource,
   BOOKKEEPING_AUTONOMOUS_REASONS,
   type PersonalityComponent,
+  type SteeringMode,
 } from "./components";
 
 /**
@@ -171,4 +172,8 @@ export function stopPetMovement(
 ): void {
   clearMotionTarget(components, id);
   physics?.setVelocity(id, { x: 0, y: 0 });
+}
+
+export function setPetSteering(components: ComponentStore, id: string, mode: SteeringMode): void {
+  components.setComponent(id, { type: "Steering", mode });
 }

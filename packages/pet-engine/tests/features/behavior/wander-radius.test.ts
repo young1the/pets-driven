@@ -1,5 +1,5 @@
 import type { PersonalityComponent } from "@pets-driven/pet-engine/core/components";
-import { wanderRadius } from "@pets-driven/pet-engine/features/behavior/systems";
+import { wanderRadius } from "@pets-driven/pet-engine/features/behavior/decision-candidates";
 import { describe, expect, it } from "vitest";
 
 function p(overrides: Partial<Omit<PersonalityComponent, "type">> = {}): PersonalityComponent {

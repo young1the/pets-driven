@@ -43,3 +43,13 @@ export function clampToBoundsY(
 export function petWidth(components: ComponentStore, id: string): number {
   return components.getComponent(id, "PhysicsBody")?.width ?? DEFAULT_BEHAVIOR_BODY_WIDTH;
 }
+
+/**
+ * Deterministic left/right tiebreak when two pets need to move apart but the
+ * geometry gives no direction (identical centers). Ordering by id means the
+ * pair always picks opposite sides.
+ */
+export function fallbackHorizontalDirection(id: string, otherId: string | undefined): -1 | 1 {
+  if (!otherId) return -1;
+  return id.localeCompare(otherId) <= 0 ? -1 : 1;
+}
