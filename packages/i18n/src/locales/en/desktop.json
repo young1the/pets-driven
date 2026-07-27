@@ -285,8 +285,8 @@
     "folderWatchedBy": "{{name}} watches this",
     "chooseAnother": "Choose another folder…",
     "chooseAnotherHint": "Browse your machine, or create a new one",
-    "adopt": "Adopt into this folder →",
-    "adoptNoFolder": "Adopt without a folder →",
+    "adopt": "Hatch it here →",
+    "adoptNoFolder": "Hatch now, pick a folder later →",
     "summaryWatchesNone": "No folder yet",
     "occupiedError": "That folder is already home to {{name}}. One pet watches one folder.",
     "anotherPet": "another pet",
@@ -391,7 +391,7 @@
     "role": "Pet",
     "playful": {
       "title": "Playful",
-      "blurb": "First to the party, last to nap. Explores every corner of the screen."
+      "blurb": "First to play, last to nap. Explores every corner of the screen."
     },
     "attentive": {
       "title": "Attentive",
@@ -535,7 +535,7 @@
     "deletePet": "Send {{name}} home for good? This removes the pet."
   },
   "errors": {
-    "noPetToPoke": "No adopted pet with a folder to poke."
+    "noPetToPoke": "No hatched pet with a folder to poke."
   },
   "petSpeech": {
     "playful": {

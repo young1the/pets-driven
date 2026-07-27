@@ -216,11 +216,11 @@ describe("AdoptPetFlow watch folder", () => {
     fireEvent.click(screen.getByText("Continue →"));
     fireEvent.click(screen.getByText("Looks good →"));
 
-    expect(screen.getByText("Adopt without a folder →")).toBeInTheDocument();
+    expect(screen.getByText("Hatch now, pick a folder later →")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Choose another folder…"));
 
     expect(await screen.findByText("D:\\work\\atlas")).toBeInTheDocument();
-    expect(screen.getByText("Adopt into this folder →")).toBeInTheDocument();
+    expect(screen.getByText("Hatch it here →")).toBeInTheDocument();
   });
 });
 
@@ -241,7 +241,7 @@ describe("AdoptPetFlow done step", () => {
     fireEvent.click(await screen.findByText("Boba"));
     fireEvent.click(screen.getByText("Continue →"));
     fireEvent.click(screen.getByText("Looks good →"));
-    fireEvent.click(screen.getByText("Adopt without a folder →"));
+    fireEvent.click(screen.getByText("Hatch now, pick a folder later →"));
 
     expect(await screen.findByText("Open Pets-Driven →")).toBeInTheDocument();
     expect(screen.queryByText("Connect Claude Code")).not.toBeInTheDocument();

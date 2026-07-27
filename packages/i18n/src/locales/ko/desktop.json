@@ -285,8 +285,8 @@
     "folderWatchedBy": "{{name}}이(가) 지켜보는 중",
     "chooseAnother": "다른 폴더 선택…",
     "chooseAnotherHint": "기기를 둘러보거나 새로 만들어요",
-    "adopt": "이 폴더로 입양하기 →",
-    "adoptNoFolder": "폴더 없이 입양하기 →",
+    "adopt": "이 폴더에서 부화시키기 →",
+    "adoptNoFolder": "먼저 부화시키고 폴더는 나중에 →",
     "summaryWatchesNone": "아직 없음",
     "occupiedError": "이 폴더는 이미 {{name}}의 집이에요. 펫 하나가 폴더 하나를 지켜봐요.",
     "anotherPet": "다른 펫",
@@ -391,7 +391,7 @@
     "role": "펫",
     "playful": {
       "title": "장난꾸러기",
-      "blurb": "파티엔 제일 먼저, 낮잠은 제일 늦게. 화면 구석구석을 탐험해요."
+      "blurb": "노는 건 제일 먼저, 낮잠은 제일 늦게. 화면 구석구석을 탐험해요."
     },
     "attentive": {
       "title": "세심함",
@@ -535,7 +535,7 @@
     "deletePet": "{{name}}을(를) 완전히 집으로 보낼까요? 펫이 삭제돼요."
   },
   "errors": {
-    "noPetToPoke": "찌를 폴더가 있는 입양된 펫이 없어요."
+    "noPetToPoke": "찌를 폴더가 있는 부화한 펫이 없어요."
   },
   "petSpeech": {
     "playful": {

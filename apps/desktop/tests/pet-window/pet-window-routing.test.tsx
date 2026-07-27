@@ -517,7 +517,7 @@ describe("pet window product route", () => {
     fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
     fireEvent.click(screen.getByRole("button", { name: /Looks good/ }));
     tauriEventMocks.emitTo.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: /Adopt without a folder/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Hatch now, pick a folder later/ }));
     fireEvent.click(await screen.findByRole("button", { name: /Open Pets-Driven/ }));
 
     await waitFor(() => {

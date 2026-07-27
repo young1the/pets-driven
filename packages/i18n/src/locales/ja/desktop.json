@@ -285,8 +285,8 @@
     "folderWatchedBy": "{{name}}が見守っています",
     "chooseAnother": "別のフォルダを選ぶ…",
     "chooseAnotherHint": "パソコンの中を見るか、新しく作りましょう",
-    "adopt": "このフォルダに迎える →",
-    "adoptNoFolder": "フォルダなしで迎える →",
+    "adopt": "このフォルダで孵す →",
+    "adoptNoFolder": "先に孵して、フォルダはあとで →",
     "summaryWatchesNone": "まだありません",
     "occupiedError": "そのフォルダはすでに{{name}}のおうちです。1匹のペットが1つのフォルダを見守ります。",
     "anotherPet": "別のペット",
@@ -535,7 +535,7 @@
     "deletePet": "{{name}}をずっとおうちに帰しますか？ このペットは削除されます。"
   },
   "errors": {
-    "noPetToPoke": "つつけるフォルダを持った、迎え入れ済みのペットがいません。"
+    "noPetToPoke": "つつけるフォルダを持った、孵ったペットがいません。"
   },
   "petSpeech": {
     "playful": {
