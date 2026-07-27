@@ -16,12 +16,12 @@ import {
   runHoverReactionSystem,
   runPettingDetectionSystem,
 } from "@pets-driven/pet-engine/features/behavior/cursor-reaction-systems";
+import { runBehaviorDecisionSystem } from "@pets-driven/pet-engine/features/behavior/decision-system";
 import {
   runAgentChannelMessageExpirationSystem,
   runPetExpressionExpirationSystem,
 } from "@pets-driven/pet-engine/features/behavior/expiration-systems";
 import { runBehaviorPlanningSystem } from "@pets-driven/pet-engine/features/behavior/planning-system";
-import { runBehaviorDecisionSystem } from "./systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────
 // Thin SimulationSystem wrappers over the run* behavior functions in

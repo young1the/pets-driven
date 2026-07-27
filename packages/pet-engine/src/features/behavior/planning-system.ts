@@ -13,7 +13,6 @@ import {
 } from "@pets-driven/pet-engine/features/behavior/activity-tuning";
 import {
   adjustDrive,
-  claim,
   clearMotionTarget,
   setPetSteering,
 } from "@pets-driven/pet-engine/features/behavior/claim";

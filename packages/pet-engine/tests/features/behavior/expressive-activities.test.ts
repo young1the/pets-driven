@@ -1,6 +1,6 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import { runBehaviorDecisionSystem } from "@pets-driven/pet-engine/features/behavior/decision-system";
 import { runBehaviorPlanningSystem } from "@pets-driven/pet-engine/features/behavior/planning-system";
-import { runBehaviorDecisionSystem } from "@pets-driven/pet-engine/features/behavior/systems";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";

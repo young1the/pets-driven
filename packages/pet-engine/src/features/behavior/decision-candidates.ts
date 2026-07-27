@@ -1,6 +1,7 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import {
   type BehaviorDecisionKind,
+  type BehaviorDecisionSelectionTrace,
   type BehaviorDecisionTokenComponent,
   BOOKKEEPING_AUTONOMOUS_REASONS,
   type PersonalityComponent,
@@ -9,6 +10,8 @@ import {
   clamp,
   DEFAULT_BEHAVIOR_BODY_WIDTH,
 } from "@pets-driven/pet-engine/features/behavior/geometry";
+import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
+import type { MoodStateComponent } from "@pets-driven/pet-engine/features/mood/components";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 
 /**
@@ -194,3 +197,82 @@ export function isNearUserAnchor(
   const distance = isFlying ? Math.hypot(dx, dy) : Math.abs(dx);
   return distance <= USER_PROXIMITY_RADIUS;
 }
+
+// ── Softmax sampling ─────────────────────────────────────────────────────
+//
+// Temperature T = T_BASE * (1 + ALPHA_T * neuroticism):
+//   • Low N  (e.g. 0.1) → T ≈ 0.28  → distribution concentrated on top scorer
+//   • High N (e.g. 0.9) → T ≈ 0.52  → distribution is more uniform / erratic
+//
+// A single random.next() call per selection; no per-candidate jitter.
+
+const T_BASE = 0.25;
+const ALPHA_T = 1.2;
+
+export function softmaxSample(
+  candidates: Candidate[],
+  neuroticism: number,
+  random: RandomSource,
+): { winner: Candidate; trace: BehaviorDecisionSelectionTrace } {
+  const T = T_BASE * (1 + ALPHA_T * neuroticism);
+  // Subtract max before exp() to prevent overflow when future phases add
+  // high-magnitude scores (approach-pet, flee, collision response, etc.).
+  let maxScore = -Infinity;
+  for (const candidate of candidates) {
+    if (candidate.score > maxScore) maxScore = candidate.score;
+  }
+
+  const weights = candidates.map((candidate) => Math.exp((candidate.score - maxScore) / T));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+
+  const randomRoll = random.next();
+  let r = randomRoll * total;
+  let winner = candidates[candidates.length - 1];
+  for (const [index, candidate] of candidates.entries()) {
+    r -= weights[index];
+    if (r <= 0) {
+      winner = candidate;
+      break;
+    }
+  }
+
+  let cumulativeProbability = 0;
+  const trace: BehaviorDecisionSelectionTrace = {
+    temperature: T,
+    randomRoll,
+    totalWeight: total,
+    selectedKind: winner.kind,
+    candidates: candidates.map((candidate, index) => {
+      const probability = weights[index] / total;
+      cumulativeProbability += probability;
+      return {
+        kind: candidate.kind,
+        score: candidate.score,
+        weight: weights[index],
+        probability,
+        cumulativeProbability,
+        selected: candidate.kind === winner.kind,
+      };
+    }),
+  };
+
+  return { winner, trace };
+}
+
+/**
+ * Everything the three decision branches read off the pet before choosing a
+ * pool. Assembled once per pet in BehaviorDecisionSystem so a branch takes one
+ * argument instead of nine.
+ */
+export type DecisionContext = {
+  components: ComponentStore;
+  id: string;
+  now: number;
+  random: RandomSource;
+  bounds: { x?: number; y?: number; width: number; height: number };
+  personality: PersonalityComponent;
+  petX: number;
+  petY: number;
+  drives: DrivesComponent | undefined;
+  mood: MoodStateComponent | undefined;
+};
