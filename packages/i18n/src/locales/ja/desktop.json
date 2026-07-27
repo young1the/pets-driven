@@ -21,6 +21,7 @@
     "restart": "新しいターミナル",
     "exited": "[プロセスが終了しました]",
     "unavailable": "アプリ内ターミナルはデスクトップアプリでのみ使えます。",
+    "reviewHint": "コマンドは下に入力済みで、まだ実行していません。内容を確認して、ターミナルで Enter を押してください。",
     "onboarding": {
       "showTips": "ヒント",
       "next": "次へ",
@@ -172,8 +173,8 @@
     "cliMissing": "Claude Code CLIが見つかりません。先にClaude Codeをインストールしてから戻ってきてください。",
     "error": "Claude Codeとのやり取りで問題が起きました。",
     "run": {
-      "install": "プラグインをインストール中",
-      "uninstall": "プラグインを削除中",
+      "install": "プラグインのインストール",
+      "uninstall": "プラグインの削除",
       "close": "閉じる"
     }
   },
@@ -193,8 +194,8 @@
     "error": "Codexとのやり取りで問題が起きました。",
     "hookTrustHint": "新しいCodexスレッドで /hooks を開き、pets-drivenのフックを信頼してください。",
     "run": {
-      "install": "プラグインをインストール中",
-      "uninstall": "プラグインを削除中",
+      "install": "プラグインのインストール",
+      "uninstall": "プラグインの削除",
       "close": "閉じる"
     }
   },

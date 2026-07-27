@@ -21,6 +21,7 @@
     "restart": "새 터미널",
     "exited": "[프로세스가 종료되었습니다]",
     "unavailable": "인앱 터미널은 데스크탑 앱에서만 사용할 수 있어요.",
+    "reviewHint": "명령을 아래에 입력해 뒀어요. 아직 실행되지 않았으니, 확인한 뒤 터미널에서 Enter를 누르세요.",
     "onboarding": {
       "showTips": "팁 보기",
       "next": "다음",
@@ -172,8 +173,8 @@
     "cliMissing": "Claude Code CLI를 찾지 못했어요. 먼저 Claude Code를 설치한 뒤 다시 시도해 주세요.",
     "error": "Claude Code와 통신하는 중 문제가 생겼어요.",
     "run": {
-      "install": "플러그인 설치 중",
-      "uninstall": "플러그인 제거 중",
+      "install": "플러그인 설치",
+      "uninstall": "플러그인 제거",
       "close": "닫기"
     }
   },
@@ -193,8 +194,8 @@
     "error": "Codex와 통신하는 중 문제가 생겼어요.",
     "hookTrustHint": "새 Codex 대화에서 /hooks를 열고 pets-driven 훅을 신뢰해 주세요.",
     "run": {
-      "install": "플러그인 설치 중",
-      "uninstall": "플러그인 제거 중",
+      "install": "플러그인 설치",
+      "uninstall": "플러그인 제거",
       "close": "닫기"
     }
   },

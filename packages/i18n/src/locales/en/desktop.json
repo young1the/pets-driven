@@ -21,6 +21,7 @@
     "restart": "New terminal",
     "exited": "[process exited]",
     "unavailable": "The in-app terminal is only available in the desktop app.",
+    "reviewHint": "The command is typed in below, not run yet. Read it over, then press Enter in the terminal to run it.",
     "onboarding": {
       "showTips": "Tips",
       "next": "Next",
@@ -172,8 +173,8 @@
     "cliMissing": "Claude Code CLI not found. Install Claude Code first, then come back.",
     "error": "Something went wrong talking to Claude Code.",
     "run": {
-      "install": "Installing the plugin",
-      "uninstall": "Removing the plugin",
+      "install": "Install the plugin",
+      "uninstall": "Remove the plugin",
       "close": "Close"
     }
   },
@@ -193,8 +194,8 @@
     "error": "Something went wrong talking to Codex.",
     "hookTrustHint": "In a new Codex thread, open /hooks and trust the pets-driven hooks.",
     "run": {
-      "install": "Installing the plugin",
-      "uninstall": "Removing the plugin",
+      "install": "Install the plugin",
+      "uninstall": "Remove the plugin",
       "close": "Close"
     }
   },

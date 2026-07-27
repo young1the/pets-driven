@@ -18,9 +18,14 @@ export interface PluginRunTerminalProps {
 }
 
 /**
- * The plugin install/uninstall running where the user can see it: a real shell
- * with the provider CLI line typed in, live output, and a prompt left behind so
- * they can answer a question, retry, or check things by hand.
+ * The plugin install/uninstall where the user can see it: a real shell with the
+ * provider CLI line typed in, live output, and a prompt left behind so they can
+ * answer a question, retry, or check things by hand.
+ *
+ * The line is typed in but *not* run. These commands install software, ask npx
+ * for confirmation, and are awkward to undo — and answering that confirmation
+ * assumes someone is at the keyboard anyway. So the app types, the user reads,
+ * and Enter stays theirs.
  *
  * Deliberately spawns the OS default shell rather than the one picked in
  * settings — a shell like WSL has its own agent CLI install, which would not be
@@ -47,14 +52,17 @@ export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminal
         </div>
 
         {available ? (
-          <Suspense fallback={<div className="pd-eterm__view" />}>
-            <EmbeddedTerminal
-              className="pd-eterm__view"
-              exitedLabel={t("terminal.exited")}
-              initialInput={run.line}
-              key={run.line}
-            />
-          </Suspense>
+          <>
+            <p className="pd-plugin-run__hint">{t("terminal.reviewHint")}</p>
+            <Suspense fallback={<div className="pd-eterm__view" />}>
+              <EmbeddedTerminal
+                className="pd-eterm__view"
+                exitedLabel={t("terminal.exited")}
+                key={run.line}
+                prefill={run.line}
+              />
+            </Suspense>
+          </>
         ) : (
           <div className="pd-eterm__unavailable">{t("terminal.unavailable")}</div>
         )}

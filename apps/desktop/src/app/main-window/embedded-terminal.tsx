@@ -48,17 +48,37 @@ function readXtermTheme() {
   };
 }
 
+/**
+ * A prefilled command is there to be *read* before it runs, so a newline would
+ * be an Enter the user never pressed. Flatten the text to a single line and
+ * leave the execute keystroke to them.
+ */
+function toSingleLine(text: string): string {
+  return text.replace(/[\r\n]+/g, " ").trim();
+}
+
+/**
+ * Put `line` in front of the cursor through xterm's paste path — the same one
+ * Ctrl+V takes, so bracketed paste is handled for us — and hand focus to the
+ * terminal, leaving the command one Enter away.
+ */
+function insertForReview(term: Terminal, line: string) {
+  term.paste(line);
+  term.focus();
+}
+
 export interface EmbeddedTerminalProps {
   /** Working directory to spawn the shell in; null uses the process default. */
   cwd?: string | null;
   /** Program to run; empty/undefined falls back to COMSPEC/SHELL in Rust. */
   shell?: string | null;
   /**
-   * A command typed into the shell once it starts, as if the user had entered
-   * it. The prompt stays afterwards, so they can watch it run and then keep
-   * working in the same session.
+   * A command typed into the shell's prompt once it is drawn, but *not* run:
+   * the user reads it, edits it if they want, and presses Enter themselves.
+   * Changing it restarts the session, so callers hand over one command per
+   * mount (and usually key the terminal on it).
    */
-  initialInput?: string | null;
+  prefill?: string | null;
   exitedLabel: string;
   className?: string;
 }
@@ -71,7 +91,7 @@ export interface EmbeddedTerminalProps {
 export function EmbeddedTerminal({
   cwd,
   shell,
-  initialInput,
+  prefill,
   exitedLabel,
   className,
 }: EmbeddedTerminalProps) {
@@ -88,6 +108,10 @@ export function EmbeddedTerminal({
 
     let disposed = false;
     let sessionId: string | null = null;
+    // The shell echoes what it reads, so text sent before the prompt is drawn
+    // lands truncated or overwritten — and a command the user cannot read is
+    // one they cannot review. Hold it until the session's first byte arrives.
+    let pendingPrefill = prefill ? toSingleLine(prefill) : "";
     const unlisteners: Array<() => void> = [];
 
     const term = new Terminal({
@@ -149,8 +173,17 @@ export function EmbeddedTerminal({
 
         unlisteners.push(
           await desktopGateway.subscribeTerminalData((payload) => {
-            if (payload.id === id) {
-              term.write(new Uint8Array(payload.data));
+            if (payload.id !== id) {
+              return;
+            }
+            term.write(new Uint8Array(payload.data));
+
+            // The prompt is on screen now, so the command goes in where the
+            // user can actually read it before deciding to run it.
+            if (pendingPrefill) {
+              const line = pendingPrefill;
+              pendingPrefill = "";
+              insertForReview(term, line);
             }
           }),
         );
@@ -161,12 +194,6 @@ export function EmbeddedTerminal({
             }
           }),
         );
-
-        // The shell buffers stdin, so this is safe to send before its prompt
-        // has finished drawing — it runs as soon as the shell reads a line.
-        if (initialInput) {
-          await desktopGateway.writeTerminal(id, `${initialInput}\r`);
-        }
       } catch (error) {
         term.write(`\r\n\x1b[31m${String(error)}\x1b[0m\r\n`);
       }
@@ -195,6 +222,9 @@ export function EmbeddedTerminal({
 
     return () => {
       disposed = true;
+      // A restart is a deliberate clean slate; text queued for the session
+      // being torn down must not land in the one that replaces it.
+      pendingPrefill = "";
       resizeObserver.disconnect();
       dataDisposable.dispose();
       for (const stop of unlisteners) {
@@ -205,7 +235,7 @@ export function EmbeddedTerminal({
       }
       term.dispose();
     };
-  }, [cwd, shell, initialInput, exitedLabel]);
+  }, [cwd, shell, prefill, exitedLabel]);
 
   return <div className={className} ref={containerRef} />;
 }

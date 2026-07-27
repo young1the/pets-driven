@@ -8,6 +8,20 @@
   flex-direction: column;
 }
 
+/* The command is waiting at the prompt, not running, so say so above the
+   terminal — otherwise the shell just looks stuck with text in it. */
+.pd-plugin-run__hint {
+  flex: none;
+  margin: 0;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  color: var(--term-fg);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .pd-plugin-run__title {
   flex: 1;
   min-width: 0;
