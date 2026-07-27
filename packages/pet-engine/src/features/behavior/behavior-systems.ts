@@ -9,6 +9,7 @@ import {
   runAgentTaskEventSystem,
   runTaskMovementHoldSystem,
 } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
+import { runArrivalBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/arrival-system";
 import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/autonomous-speech-system";
 import { runCollisionBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/collision-systems";
 import {
@@ -19,11 +20,7 @@ import {
   runAgentChannelMessageExpirationSystem,
   runPetExpressionExpirationSystem,
 } from "@pets-driven/pet-engine/features/behavior/expiration-systems";
-import {
-  runArrivalBehaviorSystem,
-  runBehaviorDecisionSystem,
-  runBehaviorPlanningSystem,
-} from "./systems";
+import { runBehaviorDecisionSystem, runBehaviorPlanningSystem } from "./systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────
 // Thin SimulationSystem wrappers over the run* behavior functions in

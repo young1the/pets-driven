@@ -1,7 +1,7 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runRompProgressSystem } from "@pets-driven/pet-engine/features/behavior/activity-progress-systems";
+import { runArrivalBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/arrival-system";
 import {
-  runArrivalBehaviorSystem,
   runBehaviorDecisionSystem,
   runBehaviorPlanningSystem,
 } from "@pets-driven/pet-engine/features/behavior/systems";
