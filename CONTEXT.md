@@ -40,21 +40,13 @@ _Avoid_: idle completion
 A **Terminal Channel** that is owned by a terminal outside the pets-driven app.
 _Avoid_: unmanaged terminal
 
-**Attach**:
-The act of registering a terminal as the active **Terminal Channel** for a **Working Directory**.
-_Avoid_: detect, auto-bind
-
-**Attach Command**:
-A command run inside an external terminal to attach it to the **Pet** for the current **Working Directory**.
-_Avoid_: automatic terminal discovery
-
 **Hook Bridge**:
 The command or adapter that forwards agent hook events to pets-driven with their **Working Directory** context.
 _Avoid_: trusted provider session identity
 
 **Hook Setup**:
 The service setting that installs or configures a **Hook Bridge** for agent event forwarding.
-_Avoid_: attach side effect
+_Avoid_: per-terminal registration
 
 **Workspace**:
 A saved collection of explicitly chosen **Working Directories** that pets-driven manages together.
@@ -295,13 +287,11 @@ _Avoid_: Social Session, relationship, copied personality
 - A minimized **Pet Overlay Action** keeps a visible compact indicator; its exact UI is undecided.
 - A completed task creates a **Review Hold** instead of automatically returning to idle.
 - A **Terminal Channel** may be owned by the pets-driven app or by an external terminal.
-- An **External Terminal Channel** becomes active only through **Attach**.
-- **Attach** is initiated by running an **Attach Command** from the external terminal.
-- An **Attach Command** from an unregistered **Working Directory** is ignored, does not create a **Pet**, and only reports that status in debug or verbose mode.
-- When multiple **Attach Commands** target the same **Working Directory**, the last attach wins.
+- An **External Terminal Channel** becomes active through its **Hook Bridge** events, with no separate registration step of its own.
+- A **Hook Bridge** event from an unregistered **Working Directory** is ignored and does not create a **Pet**.
 - A **Hook Bridge** identifies the relevant **Pet** by sending the event's **Working Directory** to pets-driven.
 - pets-driven resolves hook events through the current **Working Directory** to **Pet** mapping instead of trusting provider session ids.
-- **Hook Setup** is managed from service settings and is separate from **Attach**.
+- **Hook Setup** is managed from service settings.
 - In the MVP, **Hook Setup** is global and there is no per-directory hook enable or disable.
 - An **Agent Source** belongs to exactly one **Execution Environment**.
 - A **Workspace** contains one or more **Registered Working Directories**.
@@ -349,7 +339,7 @@ _Avoid_: Social Session, relationship, copied personality
 - On multiple monitors the **Screen Floor** is stepped, with one floor per monitor work area.
 - **Direct Manipulation** is separate from **Pet Context Menu** and **Pet Overlay Action**.
 - **Terminal Channel** commands are reached through **Pet Context Menu** or attention-related **Pet Overlay Action**, not primary pet-body interaction.
-- When a **Pet** lacks a **Launch Configuration**, terminal commands guide the user to launch settings or **Attach** instead of failing as an error.
+- When a **Pet** lacks a **Launch Configuration**, terminal commands guide the user to launch settings instead of failing as an error.
 - A **Registered Working Directory** may contain one **Instruction File**.
 - A **Pet** presents two independent axes: its **Agent Work State** and its **Activity**.
 - **Agent Work State** is reported by the **Agent Source** through the **Agent Event Feed**; **Activity** is computed by the **Simulation World**.
@@ -462,8 +452,7 @@ flowchart TD
 - "hide" was considered similar to archive; resolved: **Pet Visibility** is screen presentation, while **Pet Archive** is lifecycle state.
 - "pet click" was considered as context opening; resolved: primary pet-body interaction is **Direct Manipulation**, secondary click opens **Pet Context Menu**, and attached UI uses **Pet Overlay Action**.
 - "main screen" was considered as a dashboard or playground page; resolved: visible pets primarily live in individual **Pet Windows** on the desktop **Pet Surface**, while administrative flows use the **Management Surface**.
-- "Attach Command" was considered as a possible registration hint; resolved: attach only affects already registered directories and otherwise stays quiet unless debug or verbose mode is requested.
-- "duplicate attach" was considered invalid; resolved: attach is an explicit user intent, so the last attach wins for the active **Terminal Channel**.
+- "Attach Command" was considered as a way to register an external terminal; resolved: dropped entirely, because a **Hook Bridge** event already carries the **Working Directory** that identifies the **Pet**.
 - "Claude hook identity" was considered a source of truth; resolved: hook events carry **Working Directory** context and pets-driven maps that to the **Pet**.
 - "Terminal Channel" was considered required for hook expression; resolved: terminal linking is optional, while **Agent Event Feed** can still update pet expression.
 - "monitor/world coordinate" was used interchangeably; resolved: one **Simulation World** runs on one **World Coordinate Space** spanning the virtual desktop, distinct from monitor or screen geometry, and **Pet Windows** are projections of **Pet World Positions**.

@@ -113,7 +113,6 @@ commands and a hook bridge so your agent can hatch pets and report progress:
 | Command | What it does |
 |---------|--------------|
 | **`hatch`** | Create a pet for the current folder — choose its asset and personality. |
-| **`attach`** | Ping the pet bound to this folder to confirm the bridge is connected. |
 | **`bring`** | Pull a project into an agent's folder (`git clone` or `git worktree`) and hand it to a pet. |
 | **`carry`** | Summarize what an agent did and where the work lives into a compact handoff for the next agent. |
 

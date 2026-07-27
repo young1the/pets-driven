@@ -40,11 +40,6 @@
           "blurb": "Clones a remote repo or adds a worktree from a local one, so your pet has something to work on.",
           "example": "/pets-driven:bring github.com/acme/web into this folder and connect it to the pet"
         },
-        "attach": {
-          "title": "Check the connection",
-          "blurb": "Pings the pet bound to this folder to confirm the terminal is wired up.",
-          "example": "/pets-driven:attach tell me which pet this terminal is bound to"
-        },
         "carry": {
           "title": "Hand off to the next agent",
           "blurb": "Summarises what was done and where it lives (worktree, branch) so the next agent can pick it up.",

@@ -3,7 +3,6 @@
 #
 # Modes:
 #   forward                          read hook JSON from stdin, POST it unchanged
-#   forward attach                   synthesize a Notification ping for $PWD
 #   forward options                  print the hatchable assets and personality
 #                                    presets the app accepts
 #   forward list                     print every pet in the app's state
@@ -67,11 +66,6 @@ json_escape() {
   printf '%s' "$escaped"
 }
 
-attach_body() {
-  printf '{"hook_event_name":"Notification","cwd":"%s","message":"Agent attached"}' \
-    "$(json_escape "$PWD")"
-}
-
 # Convert a path to a real Windows path (D:\...) when cygpath is available, so
 # the desktop app can open it as a terminal working directory. Falls back to the
 # raw value off-Windows.
@@ -109,17 +103,6 @@ summary_body() {
 }
 
 self_check() {
-  local out
-  out="$(attach_body)"
-  case "$out" in
-    *'"hook_event_name":"Notification"'*) ;;
-    *) echo "FAIL: missing hook_event_name in: $out" >&2; exit 1 ;;
-  esac
-  case "$out" in
-    *"$(json_escape "$PWD")"*) ;;
-    *) echo "FAIL: cwd not embedded in: $out" >&2; exit 1 ;;
-  esac
-
   # A Windows path's backslashes must be escaped so the request JSON does not
   # inject control characters (a raw "\r" parses to a carriage return).
   local hatch
@@ -152,6 +135,10 @@ self_check() {
     *) echo "FAIL: missing hook_event_name in: $summary" >&2; exit 1 ;;
   esac
   case "$summary" in
+    *"$(json_escape "$PWD")"*) ;;
+    *) echo "FAIL: cwd not embedded in: $summary" >&2; exit 1 ;;
+  esac
+  case "$summary" in
     *'\"hi\"'*) ;;
     *) echo "FAIL: summary text not escaped: $summary" >&2; exit 1 ;;
   esac
@@ -162,7 +149,6 @@ self_check() {
 
 case "$1" in
   --self-check) self_check ;;
-  attach) post "$(attach_body)" ;;
   # Read-only lookups: the app answers from its own state, so the agent never
   # reads the state file or a pet asset folder itself.
   options) request /pets-driven/options; exit $? ;;

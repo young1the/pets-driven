@@ -5,7 +5,7 @@ import { PetPortrait } from "@/app/main-window/pet-portrait";
 import "@/app/main-window/terminal-onboarding.css";
 
 /** Order matters — this is the path we want a new user to walk. */
-const SKILL_IDS = ["hatch", "bring", "attach", "carry"] as const;
+const SKILL_IDS = ["hatch", "bring", "carry"] as const;
 
 /** The coach is Cato, regardless of which pets the user has adopted. */
 const COACH_ASSET_ID = "cato";
