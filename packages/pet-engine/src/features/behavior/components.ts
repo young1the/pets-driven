@@ -238,10 +238,11 @@ export const BEHAVIOR_PRIORITY: Record<BehaviorDecisionSource, number> = {
   // contact they cause must not tear them down — this reverses the original
   // ordering where any overlap killed a running session. While a social
   // claim is live the collision guards also skip the pet entirely, so
-  // session members shrug off bumps; physical separation stays with the
-  // Matter solver, which resolves overlap regardless of any claim. User
-  // touches and agent events
-  // still interrupt sessions.
+  // session members shrug off bumps. Nothing physical pulls them apart:
+  // pets pass through each other by design (see the collision filters in
+  // matter-physics-world), so the only separation is PersonalSpaceSystem's
+  // cosmetic step-aside for idle stacked pets. User touches and agent
+  // events still interrupt sessions.
   social: 3,
   collision: 4,
   autonomous: 5,

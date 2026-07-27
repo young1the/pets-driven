@@ -87,10 +87,16 @@ export function runBehaviorDecisionSystem(
       // Route to the personality-shaped reactive candidate pool instead of
       // the normal autonomous pool.
       const pendingReaction = components.getComponent(id, "PendingReaction");
-      if (pendingReaction && decidePendingReaction(context, pendingReaction)) return;
+      if (pendingReaction) {
+        decidePendingReaction(context, pendingReaction);
+        return;
+      }
 
       const agentTask = components.getComponent(id, "AgentTaskState");
-      if (agentTask?.status === "working" && decideWorkingBehavior(context)) return;
+      if (agentTask?.status === "working") {
+        decideWorkingBehavior(context);
+        return;
+      }
 
       decideAutonomousBehavior(context, claimedSurfaces);
     },

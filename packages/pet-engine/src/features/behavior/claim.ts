@@ -1,17 +1,17 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
-import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
-import { clampDrive } from "@pets-driven/pet-engine/features/drives/systems";
-import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
-import { personalityArrivalDwellScale } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
-import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import {
   BEHAVIOR_PRIORITY,
   type BehaviorDecisionSource,
   BOOKKEEPING_AUTONOMOUS_REASONS,
   type PersonalityComponent,
   type SteeringMode,
-} from "./components";
+} from "@pets-driven/pet-engine/features/behavior/components";
+import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
+import { clampDrive } from "@pets-driven/pet-engine/features/drives/systems";
+import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
+import { personalityArrivalDwellScale } from "@pets-driven/pet-engine/pets/personalities/behavior-signatures";
+import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 
 /**
  * The claim ladder every behavior system writes through, plus the small set of

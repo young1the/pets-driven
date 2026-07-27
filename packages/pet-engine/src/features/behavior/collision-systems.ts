@@ -43,9 +43,10 @@ const COLLISION_EXPIRABLE_AUTONOMOUS_REASONS = new Set<string>([
 export const PET_ENGAGE_STOP_WIDTH_MULTIPLIER = 2.5;
 
 // B3: after reacting to a specific neighbor, ignore further collisions with
-// that same neighbor for this long. Physical separation is not gated — the
-// Matter solver keeps pushing the bodies apart; only the behavioral
-// re-reaction is suppressed.
+// that same neighbor for this long. Only the behavioral re-reaction is
+// suppressed — the overlap itself persists, since pets pass through each
+// other and nothing pushes them apart but PersonalSpaceSystem's cosmetic
+// step-aside.
 const PAIR_COLLISION_COOLDOWN_MS = 6_000;
 const COLLISION_MEMORY_MAX_ENTRIES = 8;
 

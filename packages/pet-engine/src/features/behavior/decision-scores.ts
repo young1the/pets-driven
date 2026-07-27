@@ -1,6 +1,9 @@
+import type {
+  ExpressivePoseKind,
+  PersonalityComponent,
+} from "@pets-driven/pet-engine/features/behavior/components";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 import { driveResponseCurve } from "@pets-driven/pet-engine/features/drives/systems";
-import type { ExpressivePoseKind, PersonalityComponent } from "./components";
 
 // ── OCEAN score functions ────────────────────────────────────────────────────
 // Each reads PersonalityComponent axes plus, where noted, an optional Drives

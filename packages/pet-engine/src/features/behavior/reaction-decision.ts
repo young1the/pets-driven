@@ -35,11 +35,14 @@ const COLLISION_REACTION_WIDTH_MULTIPLIER = 6;
  * The reactive candidate pool: a PendingReaction whose deliberation latency has
  * elapsed picks a personality-shaped response to the pet it bumped into,
  * instead of going through the ordinary autonomous pool.
+ *
+ * Reaching this function decides the pet for the tick — it always emits a token
+ * and claims. The caller must not go on to another pool.
  */
 export function decidePendingReaction(
   { components, id, now, random, bounds, personality, petX, petY, mood }: DecisionContext,
   pendingReaction: PendingReactionComponent,
-): boolean {
+): void {
   const otherPos = pendingReaction.context.otherPosition ?? {
     x: petX + 100,
     y: petY,
@@ -182,5 +185,4 @@ export function decidePendingReaction(
   });
   claim(components, id, "autonomous", now, reactionWinner.kind);
   components.removeComponent(id, "PendingReaction");
-  return true;
 }

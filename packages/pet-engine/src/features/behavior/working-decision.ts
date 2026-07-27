@@ -16,6 +16,9 @@ import {
  * The work candidate pool. A pet bound to a working agent still goes through
  * the ordinary decision/token/planning pipeline — it just draws from
  * work-focus / work-review / work-pace instead of the autonomous pool.
+ *
+ * Reaching this function decides the pet for the tick — it always emits a token
+ * and claims. The caller must not go on to another pool.
  */
 export function decideWorkingBehavior({
   components,
@@ -26,7 +29,7 @@ export function decideWorkingBehavior({
   personality,
   petX,
   petY,
-}: DecisionContext): boolean {
+}: DecisionContext): void {
   const style = workingStyle(personality);
   const signal = components.getComponent(id, "AgentActivitySignal");
   const freshActivity =
@@ -79,5 +82,4 @@ export function decideWorkingBehavior({
     winner.kind,
     now + (tokenFields.activityDurationMs ?? holdMs),
   );
-  return true;
 }

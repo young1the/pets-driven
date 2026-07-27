@@ -1,5 +1,9 @@
+import type {
+  ExpressivePoseKind,
+  PetExpressionEmote,
+  PetExpressionMood,
+} from "@pets-driven/pet-engine/features/behavior/components";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
-import type { ExpressivePoseKind, PetExpressionEmote, PetExpressionMood } from "./components";
 
 // ── Sustained activities ─────────────────────────────────────────────────
 // Lifelike behavior happens on the tens-of-seconds scale, not the sub-second
