@@ -79,6 +79,12 @@ export interface EmbeddedTerminalProps {
    * mount (and usually key the terminal on it).
    */
   prefill?: string | null;
+  /**
+   * Fired once, when Enter first reaches the shell after `prefill` landed —
+   * the moment the user accepts the command. Until then the session is
+   * disposable; after it, tearing it down interrupts whatever is running.
+   */
+  onPrefillSubmitted?: () => void;
   exitedLabel: string;
   className?: string;
 }
@@ -92,10 +98,15 @@ export function EmbeddedTerminal({
   cwd,
   shell,
   prefill,
+  onPrefillSubmitted,
   exitedLabel,
   className,
 }: EmbeddedTerminalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // Held in a ref rather than read from the closure: a callback prop in the
+  // effect's deps would restart the PTY on every render of the parent.
+  const onPrefillSubmittedRef = useRef(onPrefillSubmitted);
+  onPrefillSubmittedRef.current = onPrefillSubmitted;
 
   useEffect(() => {
     if (!desktopGateway.isDesktopRuntime()) {
@@ -112,6 +123,8 @@ export function EmbeddedTerminal({
     // lands truncated or overwritten — and a command the user cannot read is
     // one they cannot review. Hold it until the session's first byte arrives.
     let pendingPrefill = prefill ? toSingleLine(prefill) : "";
+    // The prefilled command is on screen and the user has not accepted it yet.
+    let awaitingSubmit = false;
     const unlisteners: Array<() => void> = [];
 
     const term = new Terminal({
@@ -184,6 +197,9 @@ export function EmbeddedTerminal({
               const line = pendingPrefill;
               pendingPrefill = "";
               insertForReview(term, line);
+              // Set after the paste, so the paste's own data does not count as
+              // the user's Enter.
+              awaitingSubmit = true;
             }
           }),
         );
@@ -202,6 +218,12 @@ export function EmbeddedTerminal({
     const dataDisposable = term.onData((data) => {
       if (sessionId) {
         void desktopGateway.writeTerminal(sessionId, data).catch(() => {});
+      }
+      // Enter is the keystroke the prefill was waiting for. Report it once:
+      // from here the session is running the user's command, not holding it.
+      if (awaitingSubmit && data.includes("\r")) {
+        awaitingSubmit = false;
+        onPrefillSubmittedRef.current?.();
       }
     });
 

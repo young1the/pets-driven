@@ -6,6 +6,9 @@ import { EmbeddedTerminal } from "@/app/main-window/embedded-terminal";
 const paste = vi.fn();
 const focus = vi.fn();
 
+/** Whatever the component registered with `term.onData`, i.e. the keyboard. */
+let type: (data: string) => void = () => {};
+
 // xterm draws through a canvas and measures characters with it, neither of
 // which jsdom provides. The component only asks for a small surface of it, so
 // stand in for the real thing and watch what it is told to do.
@@ -19,7 +22,8 @@ vi.mock("@xterm/xterm", () => ({
     open() {}
     loadAddon() {}
     attachCustomKeyEventHandler() {}
-    onData() {
+    onData(handler: (data: string) => void) {
+      type = handler;
       return { dispose() {} };
     }
     dispose() {}
@@ -138,5 +142,75 @@ describe("EmbeddedTerminal prefill", () => {
     emitData(SESSION_ID, "user@host:~$ ");
 
     expect(paste).not.toHaveBeenCalled();
+  });
+});
+
+describe("EmbeddedTerminal submit signal", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    paste.mockReset();
+    focus.mockReset();
+    window.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+    stubGateway();
+  });
+
+  async function renderWithPrefill(onPrefillSubmitted: () => void) {
+    render(
+      <EmbeddedTerminal
+        exitedLabel="[exited]"
+        onPrefillSubmitted={onPrefillSubmitted}
+        prefill={COMMAND}
+      />,
+    );
+    await openSession();
+    emitData(SESSION_ID, "user@host:~$ ");
+  }
+
+  it("reports the command as accepted when Enter reaches the shell", async () => {
+    const onPrefillSubmitted = vi.fn();
+    await renderWithPrefill(onPrefillSubmitted);
+
+    expect(onPrefillSubmitted).not.toHaveBeenCalled();
+
+    type("\r");
+
+    expect(onPrefillSubmitted).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays quiet while the user is still editing the command", async () => {
+    const onPrefillSubmitted = vi.fn();
+    await renderWithPrefill(onPrefillSubmitted);
+
+    type("");
+    type("--force");
+
+    expect(onPrefillSubmitted).not.toHaveBeenCalled();
+  });
+
+  it("reports once, not for every later Enter the running command reads", async () => {
+    // The install asks npx to confirm; those keystrokes are answers to it, not
+    // a second acceptance of the command.
+    const onPrefillSubmitted = vi.fn();
+    await renderWithPrefill(onPrefillSubmitted);
+
+    type("\r");
+    type("y\r");
+
+    expect(onPrefillSubmitted).toHaveBeenCalledTimes(1);
+  });
+
+  it("says nothing when the terminal was never prefilled", async () => {
+    const onPrefillSubmitted = vi.fn();
+    render(<EmbeddedTerminal exitedLabel="[exited]" onPrefillSubmitted={onPrefillSubmitted} />);
+    await openSession();
+    emitData(SESSION_ID, "user@host:~$ ");
+
+    type("ls\r");
+
+    expect(onPrefillSubmitted).not.toHaveBeenCalled();
   });
 });

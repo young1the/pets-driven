@@ -1,6 +1,6 @@
 import { Button, Dialog } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { AgentPluginRun } from "@/app/use-agent-plugin";
 import "@/app/main-window/terminal-section.css";
 import "@/app/main-window/plugin-run-terminal.css";
@@ -36,23 +36,51 @@ export interface PluginRunTerminalProps {
  * whatever is running in the shell, and a stray scrim click must not kill an
  * install midway.
  *
+ * Once the command has been accepted, closing gets a confirm in front of it —
+ * the close tears down the PTY, which mid-install leaves the plugin half
+ * written. Before Enter there is nothing to lose, so it closes straight away.
+ *
  * Deliberately spawns the OS default shell rather than the one picked in
  * settings — a shell like WSL has its own agent CLI install, which would not be
  * the one the status probes report on.
  */
 export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminalProps) {
   const { t } = useTranslation("desktop");
+  const [submitted, setSubmitted] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+
+  function requestClose() {
+    if (submitted) {
+      setConfirmingClose(true);
+      return;
+    }
+    onClose();
+  }
 
   return (
     <Dialog
       className="pd-plugin-run-dialog"
       dismissible={false}
       footer={
-        <Button onClick={onClose} variant="ghost">
-          {t(`${run.provider}Plugin.run.close`)}
-        </Button>
+        confirmingClose ? (
+          <div className="pd-plugin-run__confirm">
+            <p className="pd-plugin-run__confirm-hint">{t("terminal.confirmClose.hint")}</p>
+            <div className="pd-plugin-run__confirm-actions">
+              <Button onClick={() => setConfirmingClose(false)} variant="ghost">
+                {t("terminal.confirmClose.keep")}
+              </Button>
+              <Button onClick={onClose} variant="neutral">
+                {t("terminal.confirmClose.close")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button onClick={requestClose} variant="ghost">
+            {t(`${run.provider}Plugin.run.close`)}
+          </Button>
+        )
       }
-      onClose={onClose}
+      onClose={requestClose}
       open
       title={t(`${run.provider}Plugin.title`)}
     >
@@ -76,6 +104,7 @@ export function PluginRunTerminal({ run, available, onClose }: PluginRunTerminal
               className="pd-eterm__view"
               exitedLabel={t("terminal.exited")}
               key={run.line}
+              onPrefillSubmitted={() => setSubmitted(true)}
               prefill={run.line}
             />
           </Suspense>

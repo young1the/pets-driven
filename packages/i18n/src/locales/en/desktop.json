@@ -22,6 +22,11 @@
     "exited": "[process exited]",
     "unavailable": "The in-app terminal is only available in the desktop app.",
     "reviewHint": "The command is typed in below, not run yet. Read it over, then press Enter in the terminal to run it.",
+    "confirmClose": {
+      "hint": "The command has started. Closing now stops it partway.",
+      "keep": "Keep it open",
+      "close": "Close anyway"
+    },
     "onboarding": {
       "showTips": "Tips",
       "next": "Next",
