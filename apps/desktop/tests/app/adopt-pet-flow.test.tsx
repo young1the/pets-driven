@@ -82,6 +82,8 @@ function createGateway(
     openPetOverlayWindow: vi.fn().mockResolvedValue(undefined),
     setPetOverlayInteractive: vi.fn().mockResolvedValue(undefined),
     closePetOverlayWindow: vi.fn().mockResolvedValue(undefined),
+    syncItemWindows: vi.fn().mockResolvedValue(undefined),
+    closeAllItemWindows: vi.fn().mockResolvedValue(undefined),
     focusForeignWindow: vi.fn().mockResolvedValue(false),
     startSession: vi.fn().mockResolvedValue(null),
     connectForeignWindow: vi.fn().mockResolvedValue(null),

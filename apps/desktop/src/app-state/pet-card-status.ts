@@ -79,6 +79,7 @@ function behaviorLabel(snapshot: PetSnapshot): {
 /** English source strings for the autonomous-behavior labels. */
 const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
   exploring: "Exploring",
+  fetchingItem: "Going for it!",
   climbing: "Climbing",
   hopping: "Hopping",
   midAir: "Mid-air",

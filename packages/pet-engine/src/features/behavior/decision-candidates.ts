@@ -30,6 +30,9 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   "seek-user": 4_000,
   "request-jump": 2_500,
   "request-climb": 6_000,
+  // Short: a trinket only exists for a while, and a pet that gave up on one
+  // (another pet got there first) should be free to try the next drop.
+  "fetch-item": 2_000,
   "idle-stay": 1_500,
   // Phase 3
   "approach-pet": 1_500,

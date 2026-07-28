@@ -161,6 +161,16 @@ export function createWorld(input: WorldDefinition) {
             : null,
           interaction: getInteractionSnapshot(componentStore, entity.id),
           social: getSocialSnapshot(componentStore, entity.id),
+          carrying: (() => {
+            const carried = componentStore.getComponent(entity.id, "CarriedItem");
+            return carried
+              ? {
+                  kind: carried.kind,
+                  pickedUpAt: carried.pickedUpAt,
+                  expiresAt: carried.expiresAt,
+                }
+              : null;
+          })(),
         };
       });
   }
@@ -322,6 +332,18 @@ export function createWorld(input: WorldDefinition) {
     return "none";
   }
 
+  function getWorldItemSnapshots(componentStore: ComponentStore) {
+    return componentStore.query("WorldItem", "Transform").map((entity) => {
+      const [item, transform] = entity.components;
+      return {
+        id: entity.id,
+        kind: item.kind,
+        position: { ...transform.position },
+        expiresAt: item.expiresAt,
+      };
+    });
+  }
+
   function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {
     return componentStore.query("Transform", "ClimbableSurface").map((entity) => {
       const [transform] = entity.components;
@@ -450,6 +472,7 @@ export function createWorld(input: WorldDefinition) {
         bodies,
         pets: getPetSnapshots(components),
         climbableSurfaces: getClimbableSurfaceSnapshots(components),
+        items: getWorldItemSnapshots(components),
       };
     },
   };

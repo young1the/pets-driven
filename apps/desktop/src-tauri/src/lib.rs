@@ -113,6 +113,8 @@ pub fn run() {
             pet_windows::open_pet_overlay_window,
             pet_windows::close_pet_overlay_window,
             pet_windows::set_pet_overlay_interactive,
+            pet_windows::sync_item_windows,
+            pet_windows::close_all_item_windows,
             terminal_channel::focus_window,
             terminal_channel::start_session,
             terminal_channel::connect_window,

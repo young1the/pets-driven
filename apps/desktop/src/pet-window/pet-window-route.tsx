@@ -35,6 +35,22 @@ export function petWindowRouteParams(): PetWindowRouteParams | null {
   };
 }
 
+/**
+ * Route the current URL to a pet overlay, or render nothing when it addresses
+ * another surface. Exists so the overlay entry can pull this whole module — the
+ * status card, the sprite atlas, the fixtures — behind one dynamic import: a
+ * trinket overlay shares the same entry and has no business parsing any of it.
+ */
+export function PetWindowEntry({
+  navigateSearchParams,
+}: {
+  navigateSearchParams?: (mutate: (params: URLSearchParams) => void) => void;
+}) {
+  const pet = petWindowRouteParams();
+
+  return pet ? <PetWindowSurface navigateSearchParams={navigateSearchParams} pet={pet} /> : null;
+}
+
 /** One pet overlay window, plus the dev-only fixture switcher when armed. */
 export function PetWindowSurface({
   pet,

@@ -109,6 +109,9 @@ export function moodAdjustedDecisionScore(
       return baseScore + negative * 0.2 + fear * 0.15;
     case "wander-far":
     case "request-climb":
+    // Crossing the room for a strange object takes the same nerve as venturing
+    // far or taking on a wall — a rattled pet leaves it where it lies.
+    case "fetch-item":
       return baseScore + mood.confidence * 0.18 - fear * 0.28;
     case "flee-from-pet":
     case "collision-flee":

@@ -187,6 +187,7 @@ const SIGNATURE_ROW_ACTIVITY: ReadonlySet<PetActivityKind> = new Set([
 /** English localization fallbacks; hosts translate via labelKey (petStatus.*). */
 const ACTIVITY_LABEL: Record<PetActivityKind, string> = {
   exploring: "Exploring",
+  fetchingItem: "Going for it!",
   climbing: "Climbing",
   hopping: "Hopping",
   midAir: "Mid-air",
@@ -246,6 +247,7 @@ function activityEntry(
 
 const ACTIVITY_PRESENTATION: Record<PetActivityKind, IntentPresentation> = {
   exploring: activityEntry("exploring", "happy", "none"),
+  fetchingItem: activityEntry("fetchingItem", "excited", "sparkle"),
   climbing: activityEntry("climbing", "excited", "none"),
   hopping: activityEntry("hopping", "excited", "sparkle"),
   midAir: activityEntry("midAir", "excited", "sparkle"),

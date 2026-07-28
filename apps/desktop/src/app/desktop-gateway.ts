@@ -230,6 +230,17 @@ export type DesktopGateway = {
    */
   setPetOverlayInteractive(interactive: boolean): Promise<void>;
   closePetOverlayWindow(): Promise<void>;
+  /**
+   * Reconcile the trinket overlay windows to exactly this set: new drops get a
+   * window, collected or faded ones lose theirs. Unlike pets these carry no
+   * frame stream — the window renders from its own URL — so this one call is
+   * the whole contract.
+   */
+  syncItemWindows(
+    items: ReadonlyArray<{ itemId: string; kind: string; x: number; y: number }>,
+  ): Promise<void>;
+  /** Close every open trinket overlay window. */
+  closeAllItemWindows(): Promise<void>;
 
   /** Raw spritesheet bytes for an installed pet asset (Tauri only). */
   loadPetSpritesheet(assetId: string): Promise<ArrayBuffer>;
@@ -558,6 +569,24 @@ export const desktopGateway: DesktopGateway = {
     }
 
     await invoke("close_pet_overlay_window");
+  },
+
+  async syncItemWindows(items) {
+    if (!isTauri()) {
+      return;
+    }
+
+    // No early return on an empty list: an empty set is the call that tears
+    // down the last trinket's window once a pet has taken it.
+    await invoke("sync_item_windows", { items });
+  },
+
+  async closeAllItemWindows() {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("close_all_item_windows");
   },
 
   async loadPetSpritesheet(assetId) {

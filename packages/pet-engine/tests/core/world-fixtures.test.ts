@@ -205,6 +205,9 @@ describe("demo scenario", () => {
       "PhysicsTransformSyncSystemPre",
       "PetCollisionSyncSystem",
       "ContactSystem",
+      "ItemSpawnSystem",
+      "ItemPickupSystem",
+      "ItemAbilityExpirySystem",
       "CursorInputSystem",
       "PerceptionSystem",
       // BEHAVIOR

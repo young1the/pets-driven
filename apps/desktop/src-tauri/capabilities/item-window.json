@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "item-window",
+  "description": "Permissions for the trinket overlay windows. Deliberately the bare core default: a trinket renders straight from its own URL, never invokes a command, and never places or resizes itself — the host reconciles the whole set through sync_item_windows.",
+  "windows": ["item-window-*"],
+  "permissions": ["core:default"]
+}

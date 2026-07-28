@@ -13,6 +13,10 @@ import {
   getWorldViewport,
   type MonitorWorkArea,
 } from "@pets-driven/pet-engine/core/monitor-geometry";
+import {
+  createItemSpawner,
+  ITEM_SPAWNER_ENTITY_ID,
+} from "@pets-driven/pet-engine/features/items/components";
 import { initialMoodState } from "@pets-driven/pet-engine/features/mood/systems";
 import {
   DEFAULT_PET_BODY_SIZE,
@@ -259,6 +263,21 @@ export function createDemoScenario(options?: {
             pressedCodes: [],
             vector: { x: 0, y: 0 },
           },
+        ],
+      },
+      {
+        // The playground is where trinkets are meant to be watched, so it runs
+        // a much tighter cadence than the desktop's occasional treat.
+        id: ITEM_SPAWNER_ENTITY_ID,
+        components: [
+          createItemSpawner(clock.now(), {
+            firstDropDelayMs: 2_000,
+            minIntervalMs: 6_000,
+            maxIntervalMs: 12_000,
+            maxOnScreen: 4,
+            itemLifetimeMs: 30_000,
+            abilityDurationMs: 20_000,
+          }),
         ],
       },
       {
@@ -669,6 +688,56 @@ export function deriveAdoptedPetLocomotion(
   return { canWalk, canJump, bodyMassScale };
 }
 
+/**
+ * How far in from a monitor's side edge a climbable column stands. A climbing
+ * pet is pinned to the surface's exact x (ClimbAttachmentSystem), so anything
+ * narrower than the widest adopted body's half-width would hang half the pet
+ * off the screen.
+ */
+const DESKTOP_CLIMB_SURFACE_INSET = 120;
+
+/**
+ * Climbable columns just inside each monitor's left and right edges.
+ *
+ * Without these the claws trinket would grant a capability with nothing in the
+ * world to use it on: `CanWallClimb` only ever engages when ContactSystem finds
+ * a ClimbableSurface nearby, and the live adopted world has never had one. They
+ * are inert for a pet without claws — every climb system bails immediately on a
+ * missing `CanWallClimb` — so they change nothing until a pet earns the ability.
+ */
+export function createDesktopClimbableSurfaces(monitors: MonitorWorkArea[]): EntityDeclaration[] {
+  return monitors.flatMap((monitor) => {
+    // Mid-height, so the climb target derived from it (surface y − 80) lands
+    // in the upper third of the screen rather than a hop above the taskbar.
+    const y = monitor.y + monitor.height / 2;
+    return [
+      {
+        id: `${monitor.id}-climb-left`,
+        components: [
+          { type: "ClimbableSurface" as const },
+          {
+            type: "Transform" as const,
+            position: { x: monitor.x + DESKTOP_CLIMB_SURFACE_INSET, y },
+          },
+        ],
+      },
+      {
+        id: `${monitor.id}-climb-right`,
+        components: [
+          { type: "ClimbableSurface" as const },
+          {
+            type: "Transform" as const,
+            position: {
+              x: monitor.x + monitor.width - DESKTOP_CLIMB_SURFACE_INSET,
+              y,
+            },
+          },
+        ],
+      },
+    ];
+  });
+}
+
 export type AdoptedPetScenarioInput = {
   id: string;
   name: string;
@@ -768,6 +837,14 @@ export function createAdoptedPetsScenario(
     clock,
     entities: [
       ...createMonitorBoundaryEntities(monitors, groundThickness),
+      ...createDesktopClimbableSurfaces(monitors),
+      {
+        // Scatters wings and claws across the desktop floor, which is the only
+        // way a pet in this world — every one of them built as a plain grounded
+        // walker — ever gets to fly or climb.
+        id: ITEM_SPAWNER_ENTITY_ID,
+        components: [createItemSpawner(clock.now())],
+      },
       {
         id: "user-anchor",
         components: [

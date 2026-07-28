@@ -66,6 +66,8 @@ Anchors for each hop: `plugins/pets-driven/hooks/`, `apps/desktop/src-tauri/src/
 | Color or token value | `packages/design-system` — `src/tokens/colors.css` **and** its `colors.ts` mirror (a test enforces the pair) |
 | New pet or spritesheet | repo-root `pets/`, then re-run `pnpm sync-pets`; never edit the generated `public/codex-pets` copies |
 | New simulation system | `packages/pet-engine` — register it in `src/core/phases.ts` or it never runs |
+| New world entity that is not a pet | `packages/pet-engine` — the snapshot in `src/core/create-world.ts`, then each host that draws it: the playground canvas and, for the desktop, its own overlay window (`sync_item_windows`) |
+| New behavior decision kind | `packages/pet-engine` — `features/behavior/components.ts`, a score, a planning case, plus the exhaustive `BEHAVIOR_TOKEN_PRESENTATION`; a new activity label also needs `core/pet-activity.ts`, `pets/rendering/pet-status-presentation.ts` and every `packages/i18n` bundle |
 | New user-facing string | `packages/i18n` — English bundle first, then the Korean one |
 | New agent hook event | `plugins/pets-driven/hooks/`, the Rust ingress, and the desktop adapter under `apps/desktop/src/adapters/agent-events/` |
 

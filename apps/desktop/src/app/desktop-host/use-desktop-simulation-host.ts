@@ -49,6 +49,7 @@ import {
 } from "@/pet-window/pet-window-messages";
 import {
   projectScreenPointToWorld,
+  projectWorldItemsToWindows,
   projectWorldSnapshotToPetWindows,
 } from "@/pet-window/pet-window-projection";
 
@@ -171,6 +172,10 @@ export function useDesktopSimulationHost({
     new Map(),
   );
   const adoptedScaleByPetIdRef = useRef<Record<string, number>>({});
+  // The trinket overlays the shell is currently showing, as one comparable key.
+  // Trinkets never move once they land, so this only changes on a drop, a
+  // pickup or a fade — a handful of shell calls a minute, not one per tick.
+  const adoptedItemWindowKeyRef = useRef<string>("");
   const adoptedHostBoundsRef = useRef<{
     x: number;
     y: number;
@@ -530,6 +535,11 @@ export function useDesktopSimulationHost({
         petOverlayCaptureUntilRef.current = 0;
         void desktopGateway.closePetOverlayWindow().catch(() => {});
       }
+
+      // No world means no trinkets; leaving their overlays up would strand
+      // glowing squares on an otherwise empty desktop.
+      adoptedItemWindowKeyRef.current = "";
+      void desktopGateway.closeAllItemWindows().catch(() => {});
       return;
     }
 
@@ -808,6 +818,23 @@ export function useDesktopSimulationHost({
         }
       }
 
+      // A trinket keeps its own tiny window in either mode — it is not drawn
+      // into the shared overlay — so this reconcile sits outside the split.
+      const itemPlacements = projectWorldItemsToWindows(snapshot, bounds);
+      const itemWindowKey = itemPlacements
+        .map((item) => `${item.itemId}:${item.kind}:${item.x}:${item.y}`)
+        .join("|");
+      if (itemWindowKey !== adoptedItemWindowKeyRef.current) {
+        adoptedItemWindowKeyRef.current = itemWindowKey;
+        emits.push(
+          desktopGateway.syncItemWindows(itemPlacements).catch(() => {
+            // A failed reconcile must not leave the cache claiming the shell is
+            // already showing this set, or the drop would never appear.
+            adoptedItemWindowKeyRef.current = "";
+          }),
+        );
+      }
+
       void Promise.all(emits).finally(() => {
         isBroadcasting = false;
       });
@@ -816,6 +843,10 @@ export function useDesktopSimulationHost({
     return () => {
       isActive = false;
       window.clearInterval(intervalId);
+      // The world is rebuilt from scratch on the next pass, so whatever was
+      // lying on the floor is gone with it — the overlays must go too.
+      adoptedItemWindowKeyRef.current = "";
+      void desktopGateway.closeAllItemWindows().catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adoptedHasVisiblePets, adoptedSimulationResetKey, overlayMode]);

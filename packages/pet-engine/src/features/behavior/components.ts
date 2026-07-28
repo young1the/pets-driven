@@ -60,6 +60,9 @@ export type BehaviorDecisionKind =
   | "seek-user"
   | "request-jump"
   | "request-climb"
+  // Goes and collects a trinket lying on the desktop, which grants the pet a
+  // locomotion capability it was not built with (see features/items).
+  | "fetch-item"
   | "idle-stay"
   // Work-context behaviors use the ordinary decision/token/planning pipeline.
   | "work-focus"
@@ -293,6 +296,8 @@ export type PetExpressionSource =
   | "romp"
   | "acknowledge"
   | "signature"
+  // The moment a pet collects a desktop trinket.
+  | "item"
   // Expressive idle poses and catalog-exclusive signature activities.
   | "expressive";
 
