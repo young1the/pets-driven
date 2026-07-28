@@ -3,6 +3,13 @@ import { runLocomotionModeSystem } from "@pets-driven/pet-engine/features/moveme
 import { describe, expect, it } from "vitest";
 
 describe("locomotion mode system", () => {
+  const approaching = (surfaceEntityId: string) => ({
+    type: "ClimbIntentState" as const,
+    phase: "approaching" as const,
+    surfaceEntityId,
+    targetY: 100,
+  });
+
   it("starts climb action without replacing walking locomotion", () => {
     const store = createComponentStore([
       {
@@ -17,6 +24,7 @@ describe("locomotion mode system", () => {
           },
           { type: "MotionTarget", targetEntityId: null, targetPosition: null },
           { type: "CanWallClimb", velocity: 0.004 },
+          approaching("wall-1"),
         ],
       },
     ]);
@@ -25,6 +33,66 @@ describe("locomotion mode system", () => {
 
     expect(store.getComponent("pet-a", "ClimbingTag")).toBeDefined();
     expect(store.getComponent("pet-a", "WalkingTag")).toBeDefined();
+  });
+
+  /**
+   * Standing next to a column is not asking to climb it.
+   *
+   * The pet used to enter a climb on proximity alone whenever its ordinary walk
+   * target happened to share the column's x — routine for a column pinned to
+   * the edge of the screen, which is exactly where a wandering pet ends up. The
+   * resulting climb can never move (only an approaching intent gives
+   * ClimbAttachmentSystem a target to raise the pet towards) and never ends
+   * (the decision layer skips a pet already climbing), so the pet stuck to the
+   * foot of the wall for good.
+   */
+  it("does not climb a surface the pet never asked to climb", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "WalkingTag" },
+          {
+            type: "ContactState",
+            grounded: true,
+            climbableSurfaceId: "wall-120",
+            climbableSurfacePosition: { x: 120, y: 500 },
+          },
+          // Walking to the same x as the column, but on its own business.
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 120 } },
+          { type: "CanWallClimb", velocity: 0.004 },
+        ],
+      },
+    ]);
+
+    runLocomotionModeSystem(store);
+
+    expect(store.getComponent("pet-a", "ClimbingTag")).toBeUndefined();
+    expect(store.getComponent("pet-a", "WalkingTag")).toBeDefined();
+  });
+
+  it("does not climb on a stale intent left attached by a finished climb", () => {
+    const store = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "WalkingTag" },
+          {
+            type: "ContactState",
+            grounded: true,
+            climbableSurfaceId: "wall-120",
+            climbableSurfacePosition: { x: 120, y: 500 },
+          },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 120 } },
+          { type: "CanWallClimb", velocity: 0.004 },
+          { ...approaching("wall-120"), phase: "attached" as const },
+        ],
+      },
+    ]);
+
+    runLocomotionModeSystem(store);
+
+    expect(store.getComponent("pet-a", "ClimbingTag")).toBeUndefined();
   });
 
   it("does not switch to climb when entity has no CanWallClimb", () => {
@@ -88,6 +156,7 @@ describe("locomotion mode system", () => {
           },
           { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 120 } },
           { type: "CanWallClimb", velocity: 0.004 },
+          approaching("wall-120"),
         ],
       },
     ]);
@@ -111,6 +180,7 @@ describe("locomotion mode system", () => {
           },
           { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 120 } },
           { type: "CanWallClimb", velocity: 0.004 },
+          approaching("wall-1"),
         ],
       },
       {
@@ -125,6 +195,7 @@ describe("locomotion mode system", () => {
           },
           { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 120, y: 140 } },
           { type: "CanWallClimb", velocity: 0.004 },
+          approaching("wall-1"),
         ],
       },
     ]);

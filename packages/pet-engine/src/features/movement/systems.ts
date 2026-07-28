@@ -528,11 +528,28 @@ function canEnterClimb(
   climbIntent: { phase: string; surfaceEntityId: string } | undefined,
 ): boolean {
   if (!contact.climbableSurfaceId || !contact.climbableSurfacePosition) return false;
-  // A stale "attached" intent from a completed climb must not re-trigger entry.
-  // Only an explicit "approaching" request (from BehaviorDecisionSystem) opens
-  // the gate. Undefined climbIntent is allowed for legacy/non-preference pets.
-  if (climbIntent && climbIntent.phase !== "approaching") return false;
-  if (climbIntent && contact.climbableSurfaceId !== climbIntent.surfaceEntityId) return false;
+  /**
+   * An approach the pet actually asked for is the only way into a climb.
+   *
+   * Without that requirement, merely *standing* near a column could start one:
+   * the surface check passed on proximity and the target check passed whenever
+   * the pet's ordinary walk target happened to share the column's x — which is
+   * routine, since a pet walking to the side of the screen and a column pinned
+   * to that same edge end up at the same place.
+   *
+   * A climb entered that way can never move. The target a climber rises towards
+   * is set by ClimbAttachmentSystem and only from an approaching intent, so
+   * WallClimbSystem has nothing to drive; the pet stands at the foot of the
+   * wall wearing ClimbingTag. Worse, it stays there: BehaviorDecisionSystem
+   * skips a pet that is already climbing, so it can never ask for the real
+   * climb that would have freed it. That deadlock swallowed every climb the
+   * claws trinket was supposed to grant.
+   *
+   * This also covers a stale "attached" intent from a finished climb, which
+   * must not re-trigger entry either.
+   */
+  if (climbIntent?.phase !== "approaching") return false;
+  if (contact.climbableSurfaceId !== climbIntent.surfaceEntityId) return false;
   if (!motion.targetPosition) return true;
   return (
     Math.abs(motion.targetPosition.x - contact.climbableSurfacePosition.x) <=
