@@ -40,7 +40,7 @@ export interface MainWindowSurfaceProps {
   onShowAllPets: () => void;
   onHideAllPets: () => void;
   /** Hand-drop a random trinket onto the desktop; returns whether one landed. */
-  onDropMysteryItem: () => boolean;
+  onDropTreat: () => boolean;
   onPatchPet: (petId: string, patch: PetPatch) => void;
   onSetPetPersonality: (petId: string, personalityId: PetPersonalityId) => void;
   onSetPetAsset: (petId: string, assetId: string) => void;
@@ -98,7 +98,7 @@ export function MainWindowSurface({
   onHidePet,
   onShowAllPets,
   onHideAllPets,
-  onDropMysteryItem,
+  onDropTreat,
   onPatchPet,
   onSetPetPersonality,
   onSetPetAsset,
@@ -123,7 +123,7 @@ export function MainWindowSurface({
   const hidePet = useStableCallback(onHidePet);
   const showAllPets = useStableCallback(onShowAllPets);
   const hideAllPets = useStableCallback(onHideAllPets);
-  const dropMysteryItem = useStableCallback(onDropMysteryItem);
+  const dropTreat = useStableCallback(onDropTreat);
   const editPet = useStableCallback(setEditPetId);
   const addPet = useStableCallback(() => navigate("adopt"));
 
@@ -181,9 +181,9 @@ export function MainWindowSurface({
       onAddPet: addPet,
       onShowAll: showAllPets,
       onHideAll: hideAllPets,
-      onDropItem: dropMysteryItem,
+      onDropItem: dropTreat,
     }),
-    [atHome, inField, showPet, hidePet, editPet, addPet, showAllPets, hideAllPets, dropMysteryItem],
+    [atHome, inField, showPet, hidePet, editPet, addPet, showAllPets, hideAllPets, dropTreat],
   );
 
   // Unmemoized derivations for the edit/settings sections (only rendered on

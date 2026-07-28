@@ -15,8 +15,8 @@
     "onDesktop": "데스크탑에 {{n}}마리",
     "showAll": "모두 보이기",
     "hideAll": "모두 숨기기",
-    "mysteryBox": "미스터리 박스",
-    "mysteryBoxHint": "무작위 아이템을 데스크탑에 떨어뜨려 펫이 줍게 합니다"
+    "treat": "펫 간식",
+    "treatHint": "간식을 데스크탑에 떨어뜨려 펫이 찾아 줍게 합니다"
   },
   "terminal": {
     "defaultFolder": "기본 폴더",

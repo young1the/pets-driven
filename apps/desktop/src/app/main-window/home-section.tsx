@@ -23,7 +23,7 @@ export interface HomeSectionProps {
   onAddPet: () => void;
   onShowAll: () => void;
   onHideAll: () => void;
-  /** Header mystery-box button: hand-drop a random trinket onto the desktop. */
+  /** Header treat button: hand-drop a random trinket onto the desktop. */
   onDropItem: () => void;
 }
 

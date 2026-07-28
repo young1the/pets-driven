@@ -89,13 +89,13 @@ export function MainWindow({
               // A pet has to be on the desktop to walk over and collect a
               // trinket; with none out, the drop would land on an empty floor.
               disabled={home.inField.length === 0}
-              iconLeft={<span aria-hidden="true">🎁</span>}
+              iconLeft={<span aria-hidden="true">🍪</span>}
               onClick={home.onDropItem}
               size="sm"
-              title={t("nav.mysteryBoxHint")}
+              title={t("nav.treatHint")}
               variant="accent"
             >
-              {t("nav.mysteryBox")}
+              {t("nav.treat")}
             </Button>
           </div>
         )}

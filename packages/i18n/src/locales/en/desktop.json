@@ -15,8 +15,8 @@
     "onDesktop": "{{n}} on the desktop",
     "showAll": "Show all",
     "hideAll": "Hide all",
-    "mysteryBox": "Mystery box",
-    "mysteryBoxHint": "Drop a random trinket on the desktop for a pet to collect"
+    "treat": "Pet treat",
+    "treatHint": "Drop a treat on the desktop for a pet to find and collect"
   },
   "terminal": {
     "defaultFolder": "Default folder",

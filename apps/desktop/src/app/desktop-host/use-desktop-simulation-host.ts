@@ -225,11 +225,11 @@ export function useDesktopSimulationHost({
 
   // Hand-drop a random trinket onto the desktop floor, in place of the
   // automatic ItemSpawner cadence (switched off in the adopted scenario). The
-  // main window's mystery-box button calls this; the next tick's snapshot picks
+  // main window's treat button calls this; the next tick's snapshot picks
   // up the new WorldItem and syncItemWindows spawns its overlay. Returns whether
   // a trinket actually landed — false when no world is live (no pets on the
   // desktop yet) or there was nowhere to place one.
-  function dropMysteryItem(): boolean {
+  function dropTreat(): boolean {
     const scenario = adoptedScenarioRef.current;
     if (!scenario) {
       return false;
@@ -930,5 +930,5 @@ export function useDesktopSimulationHost({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adoptedSimKey]);
 
-  return { petStatusById, pushAgentHookEvent, dropMysteryItem };
+  return { petStatusById, pushAgentHookEvent, dropTreat };
 }

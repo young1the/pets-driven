@@ -15,8 +15,8 @@
     "onDesktop": "デスクトップに{{n}}匹",
     "showAll": "すべて表示",
     "hideAll": "すべて隠す",
-    "mysteryBox": "ミステリーボックス",
-    "mysteryBoxHint": "ランダムなお守りをデスクトップに落として、ペットに拾わせます"
+    "treat": "ペットのおやつ",
+    "treatHint": "おやつをデスクトップに落として、ペットに見つけさせます"
   },
   "terminal": {
     "defaultFolder": "既定のフォルダ",

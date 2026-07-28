@@ -429,7 +429,7 @@ export function createWorld(input: WorldDefinition) {
     },
     /**
      * Host-facing entry point for a manual trinket drop — the main window's
-     * mystery-box button, in place of the automatic ItemSpawner cadence. Drops
+     * treat button, in place of the automatic ItemSpawner cadence. Drops
      * one random trinket onto a desktop floor now, ignoring maxOnScreen (a
      * button press should always land something). Uses the ItemSpawner's pool
      * and lifetime when the scenario has one, the tuned defaults otherwise.

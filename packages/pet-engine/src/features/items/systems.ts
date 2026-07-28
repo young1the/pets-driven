@@ -95,7 +95,7 @@ export type WorldItemDropParams = {
  * Drop one random trinket onto a desktop floor at `now`, tagging its entity id
  * with `sequence`. The one place a WorldItem is ever created, shared by the
  * scheduled ItemSpawner and by a host-driven manual drop (the main window's
- * mystery-box button). Returns the new entity id, or null when there was
+ * treat button). Returns the new entity id, or null when there was
  * nowhere to place one — an empty kind pool or no floor in view.
  *
  * Capacity (maxOnScreen) is deliberately the caller's concern: the scheduled

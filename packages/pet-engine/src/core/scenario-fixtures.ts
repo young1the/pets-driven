@@ -873,7 +873,7 @@ export function createAdoptedPetsScenario(
         // with — the only way a pet in this world, every one built as a plain
         // grounded walker, ever gets to fly or climb. Its automatic cadence is
         // switched off (nextDropAt never arrives): drops here are hand-triggered
-        // by the main window's mystery-box button via world.dropRandomItem(),
+        // by the main window's treat button via world.dropRandomItem(),
         // not scattered on a timer. The system still sweeps faded trinkets.
         id: ITEM_SPAWNER_ENTITY_ID,
         components: [createItemSpawner(clock.now(), { nextDropAt: Number.POSITIVE_INFINITY })],
