@@ -36,7 +36,7 @@ export type PetRecord = {
    */
   swapRunningDirections?: boolean;
   /** Free-form user note shown in the pet-edit screen. */
-  memo?: string;
+  note?: string;
 };
 
 /**
@@ -44,7 +44,7 @@ export type PetRecord = {
  * it is runtime-only, so a toggle has nothing to save.
  */
 export type PetPatch = Partial<
-  Pick<PetRecord, "name" | "memo" | "archived" | "scale" | "swapRunningDirections">
+  Pick<PetRecord, "name" | "note" | "archived" | "scale" | "swapRunningDirections">
 >;
 
 export type PetsDrivenState = {
@@ -136,11 +136,11 @@ function repairPetDirectoryLinks(state: PetsDrivenState): PetsDrivenState {
         (workingDirectory) => workingDirectory.petId === pet.id,
       );
       const workingDirectoryId = linkedDirectory ? linkedDirectory.id : null;
-      const memo = typeof pet.memo === "string" ? pet.memo : "";
+      const note = typeof pet.note === "string" ? pet.note : "";
 
-      return pet.workingDirectoryId === workingDirectoryId && pet.memo === memo
+      return pet.workingDirectoryId === workingDirectoryId && pet.note === note
         ? pet
-        : { ...pet, workingDirectoryId, memo };
+        : { ...pet, workingDirectoryId, note };
     }),
   };
 }

@@ -186,7 +186,7 @@ export function personalitySpeechProfile(
  */
 const ACKNOWLEDGE_EMOTE_FALLBACK: Record<PetExpressionMood, PetExpressionEmote> = {
   working: "dots",
-  happy: "note",
+  happy: "music",
   love: "heart",
   excited: "sparkle",
   thinking: "dots",

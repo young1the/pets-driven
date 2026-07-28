@@ -92,7 +92,7 @@ export const EXPRESSIVE_POSE_CUES: Record<
   greet: { mood: "happy", emote: "sparkle" },
   // Humming while tidying — "none" left the most conscientious pose entirely
   // unreadable next to a plain idle.
-  groom: { mood: "working", emote: "note" },
+  groom: { mood: "working", emote: "music" },
   observe: { mood: "thinking", emote: "question" },
   beckon: { mood: "love", emote: "heart" },
   // Anxiety, not alarm. stand-lookout keeps the "!".
@@ -111,11 +111,11 @@ export const EXPRESSIVE_POSE_CUES: Record<
   "stand-lookout": { mood: "confused", emote: "exclaim" },
   // Second signature poses — each leans away from its sibling's cue so the two
   // beats read as distinct moments of the same personality.
-  caper: { mood: "excited", emote: "note" },
+  caper: { mood: "excited", emote: "music" },
   "check-in": { mood: "love", emote: "heart" },
   "hide-away": { mood: "thinking", emote: "dots" },
   "explore-nook": { mood: "thinking", emote: "question" },
-  "tidy-up": { mood: "working", emote: "note" },
+  "tidy-up": { mood: "working", emote: "music" },
   posture: { mood: "excited", emote: "exclaim" },
   nurture: { mood: "love", emote: "heart" },
   scheme: { mood: "excited", emote: "sparkle" },

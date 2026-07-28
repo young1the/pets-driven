@@ -249,14 +249,14 @@ describe("double-clicking releases a settled agent task", () => {
     expect(components.getComponent("pet", "PetExpressionState")).toMatchObject({
       source: "acknowledge",
       mood: "happy",
-      emote: "note",
+      emote: "music",
     });
   });
 
   /**
    * PET-23: the double-click dismissal used to reuse petting's expression, which
    * made the two gestures identical on screen. The dismissal keeps a fixed
-   * happy/note cue while the petting release shows the personality's own
+   * happy/music cue while the petting release shows the personality's own
    * acknowledge cue, so they stay distinct. This pair of assertions is the guard
    * against them being unified again — if one of them starts failing because the
    * cues match, that is the regression, not a stale expectation.
@@ -268,7 +268,7 @@ describe("double-clicking releases a settled agent task", () => {
 
     // Same status, same acknowledge beat — only the gesture differs. "lazy"
     // acknowledges "completed" with a sleepy/zzz cue, unlike the dismissal's
-    // fixed happy/note.
+    // fixed happy/music.
     const petted = storeWithStrokedPet([
       { type: "Transform", position: { x: 0, y: 0 } },
       { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
@@ -291,7 +291,7 @@ describe("double-clicking releases a settled agent task", () => {
     const pettingCue = petted.getComponent("pet", "PetExpressionState");
 
     expect(pettingCue).toMatchObject({ source: "acknowledge", mood: "sleepy", emote: "zzz" });
-    expect(dismissCue).toMatchObject({ mood: "happy", emote: "note" });
+    expect(dismissCue).toMatchObject({ mood: "happy", emote: "music" });
     expect(dismissCue?.emote).not.toBe(pettingCue?.emote);
     expect(dismissCue?.mood).not.toBe(pettingCue?.mood);
   });

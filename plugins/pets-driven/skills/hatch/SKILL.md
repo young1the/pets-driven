@@ -26,9 +26,9 @@ pdd hatch "<name>" --asset <id> --personality <id> --cwd "<folder>"
 pdd bind "<petId>"                             # bind a pet to this folder (--cwd for another)
 pdd unbind "<petId>"                           # release it (cwd -> null)
 pdd update --name "<name>"                     # edit this folder's pet in place
-pdd update "<petId>" --asset <id> --personality <id> --memo "<text>" --scale <0.5-2>
-pdd memo                                       # print this folder's pet's note
-pdd memo "<text>"                              # write it (--clear erases, - reads stdin)
+pdd update "<petId>" --asset <id> --personality <id> --note "<text>" --scale <0.5-2>
+pdd note                                       # print this folder's pet's note
+pdd note "<text>"                              # write it (--clear erases, - reads stdin)
 ```
 
 Nothing is required to hatch: the name defaults to the bound folder's own name,

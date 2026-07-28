@@ -69,7 +69,7 @@ fn blank_patch() -> PetPatch {
         personality_id: None,
         visible: None,
         archived: None,
-        memo: None,
+        note: None,
         scale: None,
         swap_running_directions: None,
         working_directory: Patch::Keep,

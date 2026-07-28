@@ -122,7 +122,7 @@ pub struct PetPatch {
     pub personality_id: Option<String>,
     pub visible: Option<bool>,
     pub archived: Option<bool>,
-    pub memo: Option<String>,
+    pub note: Option<String>,
     pub scale: Option<f64>,
     /// Trade the pet's two directional running rows for one another. Set for a
     /// Pet Asset whose spritesheet draws left/right the opposite way round from
@@ -162,7 +162,7 @@ impl PetPatch {
                 .map(str::to_string),
             visible: payload.get("visible").and_then(|value| value.as_bool()),
             archived: payload.get("archived").and_then(|value| value.as_bool()),
-            memo: payload.get("memo").and_then(|value| value.as_str()).map(str::to_string),
+            note: payload.get("note").and_then(|value| value.as_str()).map(str::to_string),
             scale: payload.get("scale").and_then(|value| value.as_f64()),
             swap_running_directions: payload
                 .get("swapRunningDirections")

@@ -98,7 +98,7 @@ describe("parsePetsDrivenState", () => {
     expect(state.pets[1].workingDirectoryId).toBeNull();
   });
 
-  it("defaults memo to an empty string when missing", () => {
+  it("defaults note to an empty string when missing", () => {
     const state = parsePetsDrivenState({
       schemaVersion: 1,
       registeredWorkingDirectories: [],
@@ -117,10 +117,10 @@ describe("parsePetsDrivenState", () => {
       petProfiles: [],
     });
 
-    expect(state.pets[0].memo).toBe("");
+    expect(state.pets[0].note).toBe("");
   });
 
-  it("preserves an existing memo", () => {
+  it("preserves an existing note", () => {
     const state = parsePetsDrivenState({
       schemaVersion: 1,
       registeredWorkingDirectories: [],
@@ -134,13 +134,13 @@ describe("parsePetsDrivenState", () => {
           adoptedAt: 1,
           archived: false,
           visible: true,
-          memo: "watch the auth flow",
+          note: "watch the auth flow",
         },
       ],
       petProfiles: [],
     });
 
-    expect(state.pets[0].memo).toBe("watch the auth flow");
+    expect(state.pets[0].note).toBe("watch the auth flow");
   });
 
   it("defaults petSourceDirectory to null when missing", () => {
@@ -203,7 +203,7 @@ describe("resetSettings", () => {
           adoptedAt: 100,
           archived: false,
           visible: true,
-          memo: "watch the auth flow",
+          note: "watch the auth flow",
         },
       ],
       petProfiles: [{ id: "profile-1", petAssetId: "bloop", personalityId: "playful" }],
@@ -219,7 +219,7 @@ describe("resetSettings", () => {
     expect(reset.terminalShell).toBeNull();
     expect(reset.petSourceDirectory).toBeNull();
 
-    // The pet, its profile, its memo and the folder it watches are user data:
+    // The pet, its profile, its note and the folder it watches are user data:
     // a settings reset must not be a way to lose them.
     expect(reset.pets).toBe(configured.pets);
     expect(reset.petProfiles).toBe(configured.petProfiles);

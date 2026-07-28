@@ -18,8 +18,8 @@ The desktop installer ships `pdd` and adds it to your PATH.
 | `pdd hatch [NAME] [--asset <ID>] [--personality <ID>] [--cwd <DIR>]` | Adopt a pet bound to a folder (name defaults to the bound folder's own name; asset, personality, and folder default to a random asset, a random personality, and the cwd) | no (also pings the app to show it) |
 | `pdd bind <PET_ID> [--cwd <DIR>]` | Bind a pet to a folder | no |
 | `pdd unbind <PET_ID>` | Detach a pet from its folder | no |
-| `pdd update [PET_ID] [--cwd <DIR>] <FIELD…>` | Edit a living pet in place: rename, re-skin, change personality, memo, or size | no |
-| `pdd memo [TEXT] [--cwd <DIR>] [--pet <ID>] [--clear]` | Read, write, or erase the note on a pet's card | no |
+| `pdd update [PET_ID] [--cwd <DIR>] <FIELD…>` | Edit a living pet in place: rename, re-skin, change personality, note, or size | no |
+| `pdd note [TEXT] [--cwd <DIR>] [--pet <ID>] [--clear]` | Read, write, or erase the note on a pet's card | no |
 | `pdd delete [PET_ID] [--cwd <DIR>]` | Remove a pet (and hide its window) | no (hides best-effort) |
 | `pdd show [CWD]` | Show the pet window for a folder | yes |
 | `pdd hide [CWD]` | Hide the pet window for a folder | yes |
@@ -41,7 +41,7 @@ the fields you pass and leaves the rest, including the folder binding, alone:
 | `-n, --name <NAME>` | Display name |
 | `-a, --asset <ID>` | Pet asset — re-skins the pet, keeping its id, folder, and history |
 | `-p, --personality <ID>` | Personality preset (`pdd presets` lists the ids) |
-| `-m, --memo <TEXT>` | The note on the pet's card; pass `""` to clear it |
+| `--note <TEXT>` | The note on the pet's card; pass `""` to clear it (long-only: `-n` is `--name`) |
 | `-s, --scale <FACTOR>` | Window scale, between 0.5 and 2 |
 | `--swap-running-directions [BOOL]` | Trade the two running directions, for an asset whose spritesheet draws left/right the opposite way round. Bare means `true` |
 
@@ -58,23 +58,23 @@ from its state watcher within a second; no restart needed.
 
 ## Notes on a pet
 
-`memo` is `update --memo` with a shape built for notes: it reads as well as
+`note` is `update --note` with a shape built for notes: it reads as well as
 writes, so the note you leave on a folder's pet is one command away in either
 direction.
 
 ```bash
-pdd memo                          # print this folder's note
-pdd memo "chasing a flaky test"   # replace it
-pdd memo - <<'NOTE'               # take a multi-line note from stdin
+pdd note                          # print this folder's note
+pdd note "chasing a flaky test"   # replace it
+pdd note - <<'NOTE'               # take a multi-line note from stdin
 release blocked on the ingress fix
 retry after the desktop lands
 NOTE
-pdd memo --clear                  # erase it
-pdd memo "…" --pet "<petId>"      # target a pet by id instead of by folder
+pdd note --clear                  # erase it
+pdd note "…" --pet "<petId>"      # target a pet by id instead of by folder
 ```
 
-The answer is memo-shaped rather than the usual pet view (which carries no
-memo): `{"ok":true,"petId":"…","memo":"…"}`, with `memo` null when the pet has
+The answer is note-shaped rather than the usual pet view (which carries no
+note): `{"ok":true,"petId":"…","note":"…"}`, with `note` null when the pet has
 never been given one. A note piped in with `-` loses its surrounding
 whitespace, so a trailing newline from `echo` or a heredoc is not stored.
 

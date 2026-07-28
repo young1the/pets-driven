@@ -208,8 +208,8 @@ pub(crate) fn apply_pet_update(
             if let Some(archived) = patch.archived {
                 object.insert("archived".to_string(), serde_json::json!(archived));
             }
-            if let Some(memo) = &patch.memo {
-                object.insert("memo".to_string(), serde_json::json!(memo));
+            if let Some(note) = &patch.note {
+                object.insert("note".to_string(), serde_json::json!(note));
             }
             if let Some(scale) = patch.scale {
                 object.insert("scale".to_string(), serde_json::json!(scale));
@@ -451,7 +451,7 @@ mod tests {
             personality_id: None,
             visible: None,
             archived: None,
-            memo: None,
+            note: None,
             scale: None,
             swap_running_directions: None,
             working_directory: Patch::Keep,
@@ -571,7 +571,7 @@ mod tests {
                 name: Some("Rexy".to_string()),
                 personality_id: Some("reserved".to_string()),
                 visible: Some(false),
-                memo: Some("likes naps".to_string()),
+                note: Some("likes naps".to_string()),
                 ..blank_patch()
             },
             &sample_working_directory_ids(),
@@ -583,7 +583,7 @@ mod tests {
         assert_eq!(pet["name"], "Rexy");
         assert_eq!(pet["visible"], false);
         assert_eq!(pet["archived"], false);
-        assert_eq!(pet["memo"], "likes naps");
+        assert_eq!(pet["note"], "likes naps");
 
         let profile = &next["petProfiles"][0];
         assert_eq!(profile["personalityId"], "reserved");
@@ -633,7 +633,7 @@ mod tests {
             &hatched_state(),
             &PetId::new("pet-1"),
             &PetPatch {
-                memo: Some("likes naps".to_string()),
+                note: Some("likes naps".to_string()),
                 scale: Some(1.4),
                 ..blank_patch()
             },
@@ -656,12 +656,12 @@ mod tests {
 
         let pet = &next["pets"][0];
         assert_eq!(pet["name"], "Rexy");
-        assert_eq!(pet["memo"], "likes naps");
+        assert_eq!(pet["note"], "likes naps");
         assert_eq!(pet["scale"], 1.4);
     }
 
     /// The running-direction swap is a per-pet property of the *look*, so it has
-    /// to survive on disk the same way the memo and scale do — a pet wearing a
+    /// to survive on disk the same way the note and scale do — a pet wearing a
     /// reversed spritesheet must not face backwards again after a restart.
     #[test]
     fn apply_pet_update_persists_the_running_direction_swap() {

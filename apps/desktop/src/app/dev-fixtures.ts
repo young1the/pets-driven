@@ -51,7 +51,7 @@ type FixturePetInput = {
   personalityFactory: PersonalityFactory;
   visible?: boolean;
   archived?: boolean;
-  memo?: string;
+  note?: string;
   path?: string;
   scale?: number;
 };
@@ -63,7 +63,7 @@ const FIXTURE_PETS: FixturePetInput[] = [
     name: "Luna",
     personalityId: "playful",
     personalityFactory: createPlayfulPersonality,
-    memo: "Keeps the core simulation lively.",
+    note: "Keeps the core simulation lively.",
     path: "C:\\work\\pets-driven\\packages\\pet-engine",
   },
   {
@@ -72,7 +72,7 @@ const FIXTURE_PETS: FixturePetInput[] = [
     name: "Scout",
     personalityId: "attentive",
     personalityFactory: createAttentivePersonality,
-    memo: "Watches the desktop app.",
+    note: "Watches the desktop app.",
     path: "C:\\work\\pets-driven\\apps\\desktop",
     visible: true,
   },
@@ -82,7 +82,7 @@ const FIXTURE_PETS: FixturePetInput[] = [
     name: "Nori",
     personalityId: "curious",
     personalityFactory: createCuriousPersonality,
-    memo: "Not connected to a Working Directory yet.",
+    note: "Not connected to a Working Directory yet.",
   },
   {
     id: "fixture-fenn",
@@ -99,7 +99,7 @@ const FIXTURE_PETS: FixturePetInput[] = [
     name: "Bloop",
     personalityId: "gentle",
     personalityFactory: createGentlePersonality,
-    memo: "A calm companion with a larger display scale.",
+    note: "A calm companion with a larger display scale.",
     path: "C:\\work\\pets-driven\\plugins\\pets-driven",
     scale: 1.35,
     visible: true,
@@ -110,7 +110,7 @@ const FIXTURE_PETS: FixturePetInput[] = [
     name: "Pip With An Intentionally Long Display Name",
     personalityId: "steady",
     personalityFactory: createSteadyPersonality,
-    memo: "Long content fixture for checking card overflow and wrapping behavior.",
+    note: "Long content fixture for checking card overflow and wrapping behavior.",
     path: "C:\\work\\a-very-long-parent-directory\\a-very-long-working-directory-name",
   },
 ];
@@ -129,7 +129,7 @@ function createFixtureState(inputs: FixturePetInput[]): PetsDrivenState {
       archived: input.archived ?? false,
       visible: input.visible ?? false,
       scale: input.scale,
-      memo: input.memo ?? "",
+      note: input.note ?? "",
     };
   });
 

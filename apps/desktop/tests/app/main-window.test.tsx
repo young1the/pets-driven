@@ -14,7 +14,7 @@ const home = {
 };
 const edit = {
   onName: vi.fn(),
-  onMemo: vi.fn(),
+  onNote: vi.fn(),
   onPersonalityId: vi.fn(),
   onSwapRunningDirections: vi.fn(),
   onPickFolder: vi.fn(),
@@ -123,7 +123,7 @@ describe("MainWindow", () => {
         },
         gradient: { from: "#8B7FE8", to: "#6F5FD6" },
         folder: "core",
-        memo: "",
+        note: "",
       },
     });
     expect(screen.getByDisplayValue("Otto")).toBeInTheDocument();

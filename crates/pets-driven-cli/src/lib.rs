@@ -96,14 +96,14 @@ enum Command {
         /// Pet id (from `pdd list`)
         pet: String,
     },
-    /// Change a pet's editable fields (name, look, personality, memo, scale).
+    /// Change a pet's editable fields (name, look, personality, note, scale).
     /// Every field is optional on its own, but at least one is required — an
     /// update that changes nothing is a usage error rather than a silent no-op.
     #[command(group(
         ArgGroup::new("fields")
             .required(true)
             .multiple(true)
-            .args(["name", "asset", "personality", "memo", "scale", "swap_running_directions"])
+            .args(["name", "asset", "personality", "note", "scale", "swap_running_directions"])
     ))]
     Update {
         /// Pet id to update (from `pdd list`). Omit to update the pet bound to
@@ -122,8 +122,9 @@ enum Command {
         #[arg(short, long)]
         personality: Option<String>,
         /// New note on the pet's card. Pass an empty string to clear it.
-        #[arg(short, long)]
-        memo: Option<String>,
+        // Long-only on purpose: `-n` is `--name` on this same command.
+        #[arg(long)]
+        note: Option<String>,
         /// New window scale, between 0.5 and 2
         #[arg(short, long, value_parser = parse_scale)]
         scale: Option<f64>,
@@ -133,10 +134,10 @@ enum Command {
         #[arg(long, num_args = 0..=1, default_missing_value = "true")]
         swap_running_directions: Option<bool>,
     },
-    /// Read or write the note on a pet's card — the same field `update --memo`
+    /// Read or write the note on a pet's card — the same field `update --note`
     /// patches, with a shape built for notes: no argument prints the current
     /// note instead of failing.
-    Memo {
+    Note {
         /// The note to write. Omit to print the current note; pass `-` to read
         /// the note from stdin.
         text: Option<String>,
@@ -208,7 +209,7 @@ fn empty_pet_patch() -> PetPatch {
         personality_id: None,
         visible: None,
         archived: None,
-        memo: None,
+        note: None,
         scale: None,
         swap_running_directions: None,
         working_directory: Patch::Keep,
@@ -287,9 +288,9 @@ fn run_show_hide<O: Write>(origin: &str, path: &str, cwd: &str, out: &mut O) -> 
 }
 
 /// The note currently stored on a pet, or `None` when it has none. The pet
-/// view the core returns carries no memo, so this reads the field off the state
+/// view the core returns carries no note, so this reads the field off the state
 /// document — the pet itself is already known to exist by the time we get here.
-fn read_memo(core: &PetsDrivenCore, pet_id: &PetId) -> Result<Option<String>, CoreError> {
+fn read_note(core: &PetsDrivenCore, pet_id: &PetId) -> Result<Option<String>, CoreError> {
     let snapshot = core.snapshot()?;
 
     Ok(snapshot
@@ -300,15 +301,15 @@ fn read_memo(core: &PetsDrivenCore, pet_id: &PetId) -> Result<Option<String>, Co
             pets.iter()
                 .find(|pet| pet.get("id").and_then(|value| value.as_str()) == Some(pet_id.as_str()))
         })
-        .and_then(|pet| pet.get("memo"))
+        .and_then(|pet| pet.get("note"))
         .and_then(|value| value.as_str())
         .map(str::to_string))
 }
 
-/// Decode a note piped in for `pdd memo -`. Surrounding whitespace goes: a note
+/// Decode a note piped in for `pdd note -`. Surrounding whitespace goes: a note
 /// typed through a heredoc or `echo` arrives with a trailing newline nobody
 /// means to store.
-fn memo_from_stdin(bytes: &[u8]) -> Result<String, String> {
+fn note_from_stdin(bytes: &[u8]) -> Result<String, String> {
     std::str::from_utf8(strip_bom(bytes))
         .map(|text| text.trim().to_string())
         .map_err(|_| "the note piped in is not valid UTF-8".to_string())
@@ -316,18 +317,18 @@ fn memo_from_stdin(bytes: &[u8]) -> Result<String, String> {
 
 /// Read or write one pet's note. A `text` of `None` prints the stored note
 /// (`null` when there is none); `Some` replaces it, and an empty string erases
-/// it. Either way the answer is memo-shaped rather than the usual pet view,
-/// which carries no memo to show back.
-fn run_memo<O: Write>(
+/// it. Either way the answer is note-shaped rather than the usual pet view,
+/// which carries no note to show back.
+fn run_note<O: Write>(
     core: &PetsDrivenCore,
     pet_id: &PetId,
     text: Option<String>,
     out: &mut O,
 ) -> i32 {
-    let memo = match text {
+    let note = match text {
         Some(text) => {
             let patch = PetPatch {
-                memo: Some(text.clone()),
+                note: Some(text.clone()),
                 ..empty_pet_patch()
             };
             match core.update_pet(pet_id, patch) {
@@ -335,15 +336,15 @@ fn run_memo<O: Write>(
                 Err(error) => return report_core_error(out, &error),
             }
         }
-        None => match read_memo(core, pet_id) {
-            Ok(memo) => memo,
+        None => match read_note(core, pet_id) {
+            Ok(note) => note,
             Err(error) => return report_core_error(out, &error),
         },
     };
 
     print_json(
         out,
-        &serde_json::json!({ "ok": true, "petId": pet_id.as_str(), "memo": memo }),
+        &serde_json::json!({ "ok": true, "petId": pet_id.as_str(), "note": note }),
     );
     0
 }
@@ -557,7 +558,7 @@ pub fn run_with<O: Write, E: Write>(
         | Command::Bind { .. }
         | Command::Unbind { .. }
         | Command::Update { .. }
-        | Command::Memo { .. }
+        | Command::Note { .. }
         | Command::Delete { .. } => {
             let core = match open_core() {
                 Ok(core) => core,
@@ -615,7 +616,7 @@ pub fn run_with<O: Write, E: Write>(
                     name,
                     asset,
                     personality,
-                    memo,
+                    note,
                     scale,
                     swap_running_directions,
                 } => {
@@ -630,7 +631,7 @@ pub fn run_with<O: Write, E: Write>(
                                 name,
                                 asset_id: asset,
                                 personality_id: personality,
-                                memo,
+                                note,
                                 scale,
                                 swap_running_directions,
                                 ..empty_pet_patch()
@@ -640,12 +641,12 @@ pub fn run_with<O: Write, E: Write>(
                         Err(code) => code,
                     }
                 }
-                Command::Memo { text, cwd: folder, pet, clear } => {
+                Command::Note { text, cwd: folder, pet, clear } => {
                     let folder = folder.unwrap_or_else(|| cwd.to_string());
                     // `-` means the note is piped in, so it is resolved before
                     // the pet: a bad payload should not half-run the command.
                     let text = match text.as_deref() {
-                        Some("-") => match memo_from_stdin(&stdin()) {
+                        Some("-") => match note_from_stdin(&stdin()) {
                             Ok(text) => Some(text),
                             Err(message) => {
                                 print_json(out, &error_json(message));
@@ -659,7 +660,7 @@ pub fn run_with<O: Write, E: Write>(
                     };
 
                     match resolve_target(&core, pet, folder, out) {
-                        Ok((pet_id, _)) => run_memo(&core, &pet_id, text, out),
+                        Ok((pet_id, _)) => run_note(&core, &pet_id, text, out),
                         Err(code) => code,
                     }
                 }
@@ -870,7 +871,7 @@ mod tests {
             PetPatch {
                 name: Some("Blue".to_string()),
                 personality_id: Some("zen".to_string()),
-                memo: Some("on the release branch".to_string()),
+                note: Some("on the release branch".to_string()),
                 scale: Some(1.5),
                 ..empty_pet_patch()
             },
@@ -884,10 +885,10 @@ mod tests {
         // A field-only update leaves the folder binding alone.
         assert_eq!(updated["pet"]["cwd"], "D:/proj");
 
-        // The pet view carries neither memo nor scale, so read those off state.
+        // The pet view carries neither note nor scale, so read those off state.
         let snapshot = core.snapshot().expect("state reads back");
         let pet = &snapshot.as_value()["pets"][0];
-        assert_eq!(pet["memo"], "on the release branch");
+        assert_eq!(pet["note"], "on the release branch");
         assert_eq!(pet["scale"], 1.5);
     }
 
@@ -914,7 +915,7 @@ mod tests {
     }
 
     #[test]
-    fn memo_writes_then_reads_back_the_note() {
+    fn note_writes_then_reads_back() {
         let core = core_with_empty_state();
         run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), REFUSED, &mut Vec::new());
         let (pet_id, _) = resolve_target(&core, None, "D:/proj".to_string(), &mut Vec::new())
@@ -922,51 +923,51 @@ mod tests {
 
         // A pet hatched without one has no note at all.
         let mut empty_out = Vec::new();
-        assert_eq!(run_memo(&core, &pet_id, None, &mut empty_out), 0);
-        assert_eq!(parse_out(&empty_out)["memo"], serde_json::Value::Null);
+        assert_eq!(run_note(&core, &pet_id, None, &mut empty_out), 0);
+        assert_eq!(parse_out(&empty_out)["note"], serde_json::Value::Null);
 
         let mut write_out = Vec::new();
-        let code = run_memo(&core, &pet_id, Some("chasing a flaky test".to_string()), &mut write_out);
+        let code = run_note(&core, &pet_id, Some("chasing a flaky test".to_string()), &mut write_out);
         assert_eq!(code, 0);
-        assert_eq!(parse_out(&write_out)["memo"], "chasing a flaky test");
+        assert_eq!(parse_out(&write_out)["note"], "chasing a flaky test");
         assert_eq!(parse_out(&write_out)["petId"], pet_id.as_str());
 
         let mut read_out = Vec::new();
-        run_memo(&core, &pet_id, None, &mut read_out);
-        assert_eq!(parse_out(&read_out)["memo"], "chasing a flaky test");
+        run_note(&core, &pet_id, None, &mut read_out);
+        assert_eq!(parse_out(&read_out)["note"], "chasing a flaky test");
     }
 
     #[test]
-    fn memo_clears_to_an_empty_note() {
+    fn note_clears_to_an_empty_string() {
         let core = core_with_empty_state();
         run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), REFUSED, &mut Vec::new());
         let (pet_id, _) = resolve_target(&core, None, "D:/proj".to_string(), &mut Vec::new())
             .expect("the folder's pet resolves");
-        run_memo(&core, &pet_id, Some("temporary".to_string()), &mut Vec::new());
+        run_note(&core, &pet_id, Some("temporary".to_string()), &mut Vec::new());
 
         // What `--clear` sends: the empty note the desktop renders as no note.
-        run_memo(&core, &pet_id, Some(String::new()), &mut Vec::new());
+        run_note(&core, &pet_id, Some(String::new()), &mut Vec::new());
 
         let mut out = Vec::new();
-        run_memo(&core, &pet_id, None, &mut out);
-        assert_eq!(parse_out(&out)["memo"], "");
+        run_note(&core, &pet_id, None, &mut out);
+        assert_eq!(parse_out(&out)["note"], "");
     }
 
     #[test]
     fn a_piped_note_loses_its_surrounding_whitespace() {
-        assert_eq!(memo_from_stdin(b"  piped note\n"), Ok("piped note".to_string()));
+        assert_eq!(note_from_stdin(b"  piped note\n"), Ok("piped note".to_string()));
         // A BOM some shells prepend is not part of the note either.
-        assert_eq!(memo_from_stdin(b"\xEF\xBB\xBFwith a bom"), Ok("with a bom".to_string()));
-        assert!(memo_from_stdin(&[0xFF, 0xFE]).is_err());
+        assert_eq!(note_from_stdin(b"\xEF\xBB\xBFwith a bom"), Ok("with a bom".to_string()));
+        assert!(note_from_stdin(&[0xFF, 0xFE]).is_err());
     }
 
     #[test]
-    fn memo_rejects_a_note_alongside_clear() {
+    fn note_rejects_text_alongside_clear() {
         let mut out = Vec::new();
         let mut err = Vec::new();
         // Both at once is contradictory; clap rejects it before state is opened.
         let code = run_with(
-            &args(&["memo", "a note", "--clear"]),
+            &args(&["note", "a note", "--clear"]),
             REFUSED,
             "D:/proj",
             Vec::new,

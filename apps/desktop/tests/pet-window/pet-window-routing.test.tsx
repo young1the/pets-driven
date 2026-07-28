@@ -566,7 +566,7 @@ describe("pet window product route", () => {
     });
   });
 
-  it("saves the pet memo when menu.note-save arrives from the context menu popup", async () => {
+  it("saves the pet note when menu.note-save arrives from the context menu popup", async () => {
     render(<PetsDrivenApp />);
 
     await waitFor(() => {
@@ -583,18 +583,18 @@ describe("pet window product route", () => {
           kind: "menu.note-save",
           localPoint: { x: 0, y: 0 },
           screenPoint: { x: 0, y: 0 },
-          memo: "Great work today!",
+          note: "Great work today!",
           at: Date.now(),
         },
       });
     });
 
     await waitFor(() => {
-      // The memo goes over as a patch, not as the whole state document: a
+      // The note goes over as a patch, not as the whole state document: a
       // document write would carry this window's stale copy of the roster and
       // erase anything the backend hatched since it was loaded.
       expect(invokeMock).toHaveBeenCalledWith("update_pet_record", {
-        input: { petId: "pet-a", memo: "Great work today!" },
+        input: { petId: "pet-a", note: "Great work today!" },
       });
       expect(
         invokeMock.mock.calls.filter(([command]) => command === "write_pets_driven_state"),

@@ -443,7 +443,7 @@ fn api_endpoint_descriptors() -> serde_json::Value {
                 "personalityId": "string, optional, see /pets-driven/options",
                 "visible": "bool, optional",
                 "archived": "bool, optional",
-                "memo": "string, optional",
+                "note": "string, optional",
                 "cwd": "string or null, optional — a string re-binds the pet to that folder, null detaches it"
             },
             "description": "Patches one pet's editable fields. Only petId is required; omitted fields are left unchanged. A pet with cwd null keeps living with no folder bound, so no agent event routes to it. 409 if the requested folder already belongs to another pet."

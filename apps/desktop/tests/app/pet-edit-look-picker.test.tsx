@@ -16,7 +16,7 @@ const pet = {
   gradient: { from: "#8B7FE8", to: "#6F5FD6" },
   folder: "core",
   cwd: null,
-  memo: "",
+  note: "",
   personalityId: "steady" as PetPersonalityId,
   swapRunningDirections: false,
 };
@@ -32,7 +32,7 @@ function setup(overrides: Record<string, unknown> = {}) {
     assetOptions,
     onAssetId: vi.fn(),
     onName: vi.fn(),
-    onMemo: vi.fn(),
+    onNote: vi.fn(),
     onPersonalityId: vi.fn(),
     onSwapRunningDirections: vi.fn(),
     onPickFolder: vi.fn(),

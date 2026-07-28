@@ -1,6 +1,6 @@
 {
   "common": {
-    "noNote": "아직 메모가 없어요",
+    "noNote": "아직 노트가 없어요",
     "yourPet": "내 펫",
     "back": "뒤로"
   },
@@ -230,8 +230,8 @@
     "chooseFolder": "폴더를 선택하세요…",
     "clearFolder": "폴더 연결 해제",
     "openFolder": "탐색기에서 열기",
-    "note": "메모",
-    "notePlaceholder": "이 펫에 대한 메모를 남겨 보세요…",
+    "note": "노트",
+    "notePlaceholder": "이 펫에 대한 노트를 남겨 보세요…",
     "deletePet": "펫 삭제",
     "done": "완료"
   },
@@ -444,12 +444,12 @@
   },
   "contextMenu": {
     "cardAria": "펫 컨텍스트 메뉴",
-    "writeNote": "메모 작성하기",
+    "writeNote": "노트 작성하기",
     "chooseFolder": "폴더 지정하기",
     "close": "닫기",
-    "noteAria": "{{name}}에게 메모",
-    "noteHeader": "{{name}}에게 메모",
-    "notePlaceholder": "메모를 입력하세요",
+    "noteAria": "{{name}}에게 노트",
+    "noteHeader": "{{name}}에게 노트",
+    "notePlaceholder": "노트를 입력하세요",
     "cancel": "취소",
     "save": "저장",
     "findTerminal": "터미널 찾기"
@@ -458,7 +458,7 @@
     "connectPrompt": "연결할 터미널 창을 클릭하세요",
     "connectedTo": "{{title}} 창에 연결했어요",
     "connectCancelled": "연결하지 않았어요",
-    "noteBadgeAria": "메모 있음"
+    "noteBadgeAria": "노트 있음"
   },
   "petStatus": {
     "idle": "쉬는 중",

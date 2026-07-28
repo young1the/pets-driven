@@ -330,7 +330,7 @@ describe("SocialInteractionSystem — dance choreography", () => {
     for (const id of ["pet-a", "pet-b"]) {
       expect(store.getComponent(id, "PetExpressionState")).toMatchObject({
         mood: "excited",
-        emote: "note",
+        emote: "music",
       });
     }
     for (const id of ["pet-a", "pet-b"]) {

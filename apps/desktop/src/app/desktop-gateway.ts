@@ -114,7 +114,7 @@ export type DesktopGateway = {
     assetId?: string;
     personalityId?: string;
     archived?: boolean;
-    memo?: string;
+    note?: string;
     scale?: number;
     /** Trade the pet's two directional running rows for one another. */
     swapRunningDirections?: boolean;

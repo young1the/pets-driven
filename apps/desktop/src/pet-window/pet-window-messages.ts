@@ -44,7 +44,7 @@ export type PetWindowFrame = {
    * the note is edited from the context menu while the window is open, so the
    * pet has to learn about its own note without being reopened.
    */
-  memo?: string;
+  note?: string;
   window: PetWindowFrameWindow;
   sprite: PetWindowFrameSprite;
   overlay: PetWindowOverlay | null;
@@ -107,7 +107,7 @@ export type PetWindowInputEvent = {
   localPoint: { x: number; y: number };
   screenPoint: { x: number; y: number };
   button?: number;
-  memo?: string;
+  note?: string;
   at: number;
 };
 

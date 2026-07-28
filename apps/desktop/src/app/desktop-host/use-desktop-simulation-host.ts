@@ -238,12 +238,12 @@ export function useDesktopSimulationHost({
       }
       if (input.kind === "menu.note-save") {
         const current = stateRef.current;
-        const memo = input.memo ?? "";
+        const note = input.note ?? "";
         applyState({
           ...current,
-          pets: current.pets.map((p) => (p.id === input.petId ? { ...p, memo } : p)),
+          pets: current.pets.map((p) => (p.id === input.petId ? { ...p, note } : p)),
         });
-        void desktopGateway.updatePet({ petId: input.petId, memo });
+        void desktopGateway.updatePet({ petId: input.petId, note });
         return;
       }
       if (input.kind === "menu.pick-folder") {
@@ -256,7 +256,7 @@ export function useDesktopSimulationHost({
           .openPetContextMenu(
             input.petId,
             input.petName ?? pet?.name ?? input.petId,
-            pet?.memo ?? "",
+            pet?.note ?? "",
             input.screenPoint.x,
             input.screenPoint.y,
           )
@@ -633,7 +633,7 @@ export function useDesktopSimulationHost({
               cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
               // Always a string so clearing a note reaches the window as an
               // empty value rather than an absent key the window would ignore.
-              memo: petRecord.memo ?? "",
+              note: petRecord.note ?? "",
             }
           : projection.frame;
 

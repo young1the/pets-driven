@@ -30,7 +30,7 @@ export interface PetEditView {
   gradient: { from: string; to: string };
   folder: string;
   cwd: string | null;
-  memo: string;
+  note: string;
   personalityId: PetPersonalityId | undefined;
   /** Whether this pet's two directional running rows are traded for one another. */
   swapRunningDirections: boolean;
@@ -46,7 +46,7 @@ export interface PetEditSectionProps {
   assetOptions?: CodexPetPackage[];
   onAssetId?: (assetId: string) => void;
   onName: (value: string) => void;
-  onMemo: (value: string) => void;
+  onNote: (value: string) => void;
   onPersonalityId: (value: PetPersonalityId) => void;
   /**
    * Trade the pet's two directional running rows for one another, for a
@@ -88,7 +88,7 @@ export function PetEditSection({
   assetOptions = [],
   onAssetId,
   onName,
-  onMemo,
+  onNote,
   onPersonalityId,
   onSwapRunningDirections,
   onPickFolder,
@@ -99,7 +99,7 @@ export function PetEditSection({
 }: PetEditSectionProps) {
   const { t } = useTranslation("desktop");
   const [animationState, setAnimationState] = useState<PetAnimationState>("idle");
-  const previewNote = pet.memo.trim().length > 0 ? pet.memo : t("common.noNote");
+  const previewNote = pet.note.trim().length > 0 ? pet.note : t("common.noNote");
 
   return (
     <div style={{ padding: "26px 24px 48px" }}>
@@ -311,7 +311,7 @@ export function PetEditSection({
             <label style={{ display: "block", marginTop: "18px" }}>
               <span style={fieldLabelStyle}>{t("edit.note")}</span>
               <textarea
-                onChange={(event) => onMemo(event.target.value)}
+                onChange={(event) => onNote(event.target.value)}
                 placeholder={t("edit.notePlaceholder")}
                 rows={3}
                 style={{
@@ -321,7 +321,7 @@ export function PetEditSection({
                   lineHeight: 1.5,
                   resize: "none",
                 }}
-                value={pet.memo}
+                value={pet.note}
               />
             </label>
 

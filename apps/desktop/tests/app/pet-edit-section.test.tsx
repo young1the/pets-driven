@@ -11,7 +11,7 @@ const pet = {
   gradient: { from: "#8B7FE8", to: "#6F5FD6" },
   folder: "core",
   cwd: null,
-  memo: "Watch the auth queue",
+  note: "Watch the auth queue",
   personalityId: "steady" as PetPersonalityId,
   swapRunningDirections: false,
 };
@@ -20,7 +20,7 @@ function setup(overrides = {}) {
   const props = {
     pet,
     onName: vi.fn(),
-    onMemo: vi.fn(),
+    onNote: vi.fn(),
     onPersonalityId: vi.fn(),
     onSwapRunningDirections: vi.fn(),
     onPickFolder: vi.fn(),
@@ -50,13 +50,13 @@ describe("PetEditSection", () => {
     expect(onName).toHaveBeenCalledWith("Ottoman");
   });
 
-  it("edits the memo", () => {
-    const onMemo = vi.fn();
-    setup({ onMemo });
+  it("edits the note", () => {
+    const onNote = vi.fn();
+    setup({ onNote });
     fireEvent.change(screen.getByPlaceholderText("Add a note about this pet…"), {
       target: { value: "watch auth" },
     });
-    expect(onMemo).toHaveBeenCalledWith("watch auth");
+    expect(onNote).toHaveBeenCalledWith("watch auth");
   });
 
   it("changes the personality", () => {

@@ -29,7 +29,7 @@ Implemented in [`src/claude_hook_ingress.rs`](./src/claude_hook_ingress.rs).
 | POST | `/pets-driven/list` | — | `200` `{ ok, pets }` | Lists every pet in state: id, name, assetId, personalityId, cwd, visible, archived, adoptedAt. |
 | POST | `/pets-driven/pet` | `{ petId?, cwd? }` | `200` `{ ok, pet }` / `404` | Reads one pet by `petId` or by the `cwd` it's registered to (`petId` wins if both given). |
 | POST | `/pets-driven/hatch` | `{ cwd, assetId, name, personalityId }` | `200` `{ ok }` / `400` / `409` | Creates a new pet bound to `cwd`. `409` if that folder already has a pet. |
-| POST | `/pets-driven/pet/update` | `{ petId, name?, personalityId?, visible?, archived?, memo? }` | `200` `{ ok, pet }` / `400` / `404` | Patches one pet's editable fields. Only `petId` is required; omitted fields are left unchanged. |
+| POST | `/pets-driven/pet/update` | `{ petId, name?, personalityId?, visible?, archived?, note? }` | `200` `{ ok, pet }` / `400` / `404` | Patches one pet's editable fields. Only `petId` is required; omitted fields are left unchanged. |
 | POST | `/pets-driven/pet/delete` | `{ petId }` | `200` `{ ok }` / `404` | Permanently removes a pet, its personality profile, and its registered working directory. |
 | POST | `/pets-driven/show` | `{ cwd }` | `200` `{ ok }` / `404` | Shows the desktop window for the pet registered to `cwd`. |
 | POST | `/pets-driven/hide` | `{ cwd }` | `200` `{ ok }` / `404` | Hides the desktop window for the pet registered to `cwd`. |
@@ -60,7 +60,7 @@ from the app's own frontend through `@tauri-apps/api`'s `invoke()`.
 | `read_pets_driven_state` | `state_store` | — | JSON state | Reads the full persisted pets-driven state. |
 | `write_pets_driven_state` | `state_store` | `state` | `()` | Overwrites the full persisted state document. Last-writer-wins, so it is reserved for the flows that own the whole document (the Settings reset) — every other mutation uses the four commands below. |
 | `hatch_pet_record` | `state_store` | `input: { assetId, name, personalityId, cwd? }` | JSON state | Adopts a pet. Same as `POST /pets-driven/hatch`, except `cwd` may be null (a pet with no folder bound). |
-| `update_pet_record` | `state_store` | `input: { petId, name?, assetId?, personalityId?, visible?, archived?, memo?, scale?, cwd? }` | JSON state | Patches one pet. Omitted fields are left alone; `assetId` re-skins the pet (pet record and profile together); `cwd: null` detaches the pet from its folder. |
+| `update_pet_record` | `state_store` | `input: { petId, name?, assetId?, personalityId?, visible?, archived?, note?, scale?, cwd? }` | JSON state | Patches one pet. Omitted fields are left alone; `assetId` re-skins the pet (pet record and profile together); `cwd: null` detaches the pet from its folder. |
 | `delete_pet_record` | `state_store` | `petId` | JSON state | Removes a pet, its profile, and any working directory it holds. |
 | `update_pets_driven_settings` | `state_store` | `input: { sessionCommand?, terminalShell?, petSourceDirectory? }` | JSON state | Patches the app-wide settings. |
 | `list_codex_pet_packages` | `pet_assets` | — | `CodexPetPackage[]` | Lists pet packages from the bundled built-ins merged with the designated source folder (the re-skin catalog). |

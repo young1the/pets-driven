@@ -120,7 +120,7 @@ function releaseAgentTaskOnPetting(
     );
     // The release surfaces the personality's own acknowledge cue rather than a
     // unified heart — a playful pet sparkles, a lazy one keeps dozing. The
-    // double-click dismissal keeps its fixed happy/note cue, so the two
+    // double-click dismissal keeps its fixed happy/music cue, so the two
     // gestures stay visually distinct on the same settled task (PET-23).
     components.setComponent(id, {
       type: "PetExpressionState",

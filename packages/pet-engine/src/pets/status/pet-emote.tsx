@@ -37,7 +37,7 @@ function SparkSvg() {
   );
 }
 
-function NoteSvg() {
+function MusicSvg() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path d="M11 4h2v10.6a3.4 3.4 0 1 1-2-3.1V4zm2 0h6v2h-6V4z" fill="var(--comp-accent)" />
@@ -105,13 +105,13 @@ export function PetEmote({
           </span>
         </>
       )}
-      {kind === "note" && (
+      {kind === "music" && (
         <>
-          <span className="pd-emote__note pd-emote__note--1">
-            <NoteSvg />
+          <span className="pd-emote__music pd-emote__music--1">
+            <MusicSvg />
           </span>
-          <span className="pd-emote__note pd-emote__note--2">
-            <NoteSvg />
+          <span className="pd-emote__music pd-emote__music--2">
+            <MusicSvg />
           </span>
         </>
       )}

@@ -1,6 +1,6 @@
 {
   "common": {
-    "noNote": "まだメモはありません",
+    "noNote": "まだノートはありません",
     "yourPet": "あなたのペット",
     "back": "戻る"
   },
@@ -230,8 +230,8 @@
     "chooseFolder": "フォルダを選ぶ…",
     "clearFolder": "フォルダを外す",
     "openFolder": "エクスプローラーで開く",
-    "note": "メモ",
-    "notePlaceholder": "このペットについてのメモを書いてみましょう…",
+    "note": "ノート",
+    "notePlaceholder": "このペットについてのノートを書いてみましょう…",
     "deletePet": "ペットを削除",
     "done": "完了"
   },
@@ -444,12 +444,12 @@
   },
   "contextMenu": {
     "cardAria": "ペットのコンテキストメニュー",
-    "writeNote": "メモを書く",
+    "writeNote": "ノートを書く",
     "chooseFolder": "フォルダを選ぶ",
     "close": "閉じる",
-    "noteAria": "{{name}}へのメモ",
-    "noteHeader": "{{name}}へのメモ",
-    "notePlaceholder": "メモを入力…",
+    "noteAria": "{{name}}へのノート",
+    "noteHeader": "{{name}}へのノート",
+    "notePlaceholder": "ノートを入力…",
     "cancel": "キャンセル",
     "save": "保存",
     "findTerminal": "ターミナルを探す"
@@ -458,7 +458,7 @@
     "connectPrompt": "つなぎたいターミナルの窓をクリックしてください",
     "connectedTo": "{{title}}につながりました",
     "connectCancelled": "つながりませんでした",
-    "noteBadgeAria": "メモあり"
+    "noteBadgeAria": "ノートあり"
   },
   "petStatus": {
     "idle": "ひとやすみ",

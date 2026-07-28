@@ -166,7 +166,7 @@ function registerTapAndMaybeRelease(
 // The cue deliberately diverges from petting's (PET-23). Petting is the
 // affectionate gesture — it comforts the pet — so it keeps the love/heart beat.
 // A double-click is not affection: it is the user filing the Attention Hold
-// away, so the pet answers with a pleased "noted" (happy/note) instead. Keeping
+// away, so the pet answers with a pleased "noted" (happy/music) instead. Keeping
 // both gestures on the heart made the two indistinguishable on screen, which is
 // exactly what PET-23 reported; if you are tempted to unify them again, that is
 // the regression the acknowledge-cue tests guard against.
@@ -195,7 +195,7 @@ function releaseSettledTaskOnDoubleClick(
     type: "PetExpressionState",
     source: "acknowledge",
     mood: "happy",
-    emote: "note",
+    emote: "music",
     label: null,
     startedAt: now,
     expiresAt: now + ACKNOWLEDGE_FEEDBACK_MS,

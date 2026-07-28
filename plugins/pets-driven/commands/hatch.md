@@ -89,7 +89,7 @@ passed:
 pdd update --name "<name>"                    # rename this folder's pet
 pdd update --asset <id>                       # re-skin it, keeping its id and folder
 pdd update --personality <id>                 # re-temper it (`pdd presets` lists ids)
-pdd update "<petId>" --memo "<text>" --scale <0.5-2>
+pdd update "<petId>" --note "<text>" --scale <0.5-2>
 ```
 
 At least one field is required. The reply is the usual `{"ok":true,"pet":{…}}`
@@ -98,15 +98,15 @@ or `{"ok":false,"error":…}`.
 The note on a pet's card has its own command, which reads as well as writes:
 
 ```bash
-pdd memo                                      # print this folder's pet's note
-pdd memo "<text>"                             # replace it
-pdd memo -                                    # take a multi-line note from stdin
-pdd memo --clear                              # erase it
+pdd note                                      # print this folder's pet's note
+pdd note "<text>"                             # replace it
+pdd note -                                    # take a multi-line note from stdin
+pdd note --clear                              # erase it
 ```
 
-It answers `{"ok":true,"petId":"…","memo":"…"}`, with `memo` null when the pet
+It answers `{"ok":true,"petId":"…","note":"…"}`, with `note` null when the pet
 has no note yet. Read the note before overwriting it if the user asked to add
-to what is already there — `memo` replaces, it never appends.
+to what is already there — `note` replaces, it never appends.
 
 Take `<petId>` from `pdd list`. Binding answers `{"ok":true,"pet":{…}}` with the
 pet's new state, or `{"ok":false,"error":…}` when that folder already belongs to

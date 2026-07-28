@@ -21,7 +21,7 @@ export type PetEmoteKind =
   | "question"
   | "exclaim"
   /** Floating ♪ — playful, proud, humming to itself. */
-  | "note"
+  | "music"
   /** A flicked droplet — fluster and exertion, distinct from alarm ("!"). */
   | "sweat"
   /** Drifting "···" — quiet attention, distinct from a pointed "?". */

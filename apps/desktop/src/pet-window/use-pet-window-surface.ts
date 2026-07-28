@@ -156,8 +156,8 @@ function steadyActivity(
 }
 
 /** A blank note is no note: whitespace must not light up the card's badge. */
-function normalizeNote(memo: string | null): string | null {
-  const trimmed = memo?.trim();
+function normalizeNote(note: string | null): string | null {
+  const trimmed = note?.trim();
   return trimmed ? trimmed : null;
 }
 
@@ -273,7 +273,7 @@ export function usePetWindowSurface({
           setAssetId(frame.assetId);
         }
         if (frame.cwd !== undefined) cwdRef.current = frame.cwd || null;
-        if (frame.memo !== undefined) setNote(normalizeNote(frame.memo));
+        if (frame.note !== undefined) setNote(normalizeNote(frame.note));
 
         const steadiedActivity = steadyActivity(
           shownActivityRef.current,

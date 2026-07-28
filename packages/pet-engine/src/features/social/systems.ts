@@ -550,7 +550,7 @@ function choreographDance(
       components,
       id,
       "excited",
-      flourish ? "sparkle" : offsets[rank] === 0 ? "note" : "none",
+      flourish ? "sparkle" : offsets[rank] === 0 ? "music" : "none",
       now,
       400,
     );

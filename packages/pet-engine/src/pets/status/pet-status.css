@@ -125,34 +125,34 @@
 
 /* ♪ — playful / proud / humming. Drifts up and sways, unlike the sparkle's
    in-place twinkle, so the two never read as the same cue. */
-.pd-emote__note {
+.pd-emote__music {
   position: absolute;
   right: 4px;
   top: 10px;
 }
-.pd-emote__note svg,
-.pd-emote--sm .pd-emote__note svg {
+.pd-emote__music svg,
+.pd-emote--sm .pd-emote__music svg {
   width: 18px;
   height: 18px;
 }
-.pd-emote__note--2 {
+.pd-emote__music--2 {
   right: 20px;
   top: 2px;
 }
-.pd-emote__note--2 svg,
-.pd-emote--sm .pd-emote__note--2 svg {
+.pd-emote__music--2 svg,
+.pd-emote--sm .pd-emote__music--2 svg {
   width: 13px;
   height: 13px;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .pd-emote__note {
-    animation: pd-note-drift 2.2s var(--ease-in-out) infinite;
+  .pd-emote__music {
+    animation: pd-music-drift 2.2s var(--ease-in-out) infinite;
   }
-  .pd-emote__note--2 {
+  .pd-emote__music--2 {
     animation-delay: 0.7s;
   }
 }
-@keyframes pd-note-drift {
+@keyframes pd-music-drift {
   0% {
     opacity: 0;
     transform: translate(0, 6px) rotate(-8deg);

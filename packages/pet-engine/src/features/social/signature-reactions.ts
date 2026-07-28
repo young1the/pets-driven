@@ -261,7 +261,7 @@ function expressionFor(
   }
   if (QUIET_SIGNATURES.has(sourceKind)) return { mood: "happy", emote: "dots" };
   if (CARING_SIGNATURES.has(sourceKind)) return { mood: "love", emote: "heart" };
-  return { mood: "excited", emote: "note" };
+  return { mood: "excited", emote: "music" };
 }
 
 function keepDistanceTarget(

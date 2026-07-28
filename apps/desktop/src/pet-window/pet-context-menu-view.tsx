@@ -80,7 +80,7 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
     void petWindowTransport.setWindowSize(width, height);
   }, [view]);
 
-  function emitSignal(kind: PetWindowInputKind, memo?: string) {
+  function emitSignal(kind: PetWindowInputKind, note?: string) {
     sequenceRef.current += 1;
 
     petWindowTransport.sendInput({
@@ -91,7 +91,7 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
       kind,
       localPoint: { x: 0, y: 0 },
       screenPoint: { x: 0, y: 0 },
-      memo,
+      note,
       at: Date.now(),
     });
   }

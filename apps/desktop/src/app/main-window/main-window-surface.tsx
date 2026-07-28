@@ -134,7 +134,7 @@ export function MainWindowSurface({
             id: pet.id,
             name: pet.name,
             assetId: pet.assetId,
-            note: cardNote(pet.memo, t("common.noNote")),
+            note: cardNote(pet.note, t("common.noNote")),
             role: t(personalityRoleLabelKey(personalityId)),
             gradient: petGradient(pet.id),
             cwd: dirPath ? shortWorkingDir(dirPath) : null,
@@ -192,7 +192,7 @@ export function MainWindowSurface({
         gradient: petGradient(editingPet.id),
         folder: editDirPath ?? "",
         cwd: editDirPath ? shortWorkingDir(editDirPath) : null,
-        memo: editingPet.memo ?? "",
+        note: editingPet.note ?? "",
         personalityId: profileFor(editingPet)?.personalityId,
         swapRunningDirections: editingPet.swapRunningDirections ?? false,
       }
@@ -239,7 +239,7 @@ export function MainWindowSurface({
         assetOptions,
         onAssetId: (value) => editPetId && onSetPetAsset(editPetId, value),
         onName: (value) => editPetId && onPatchPet(editPetId, { name: value }),
-        onMemo: (value) => editPetId && onPatchPet(editPetId, { memo: value }),
+        onNote: (value) => editPetId && onPatchPet(editPetId, { note: value }),
         onPersonalityId: (value) => editPetId && onSetPetPersonality(editPetId, value),
         onSwapRunningDirections: (value) =>
           editPetId && onPatchPet(editPetId, { swapRunningDirections: value }),

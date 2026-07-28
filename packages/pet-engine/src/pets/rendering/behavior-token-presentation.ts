@@ -126,7 +126,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "spark",
   },
   "play-romp": {
-    emote: "note",
+    emote: "music",
     label: "Romping around",
     mood: "excited",
     tone: "spark",
@@ -144,7 +144,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "calm",
   },
   "play-feint": {
-    emote: "note",
+    emote: "music",
     label: "Playing a trick",
     mood: "excited",
     tone: "spark",
@@ -180,7 +180,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "calm",
   },
   strut: {
-    emote: "note",
+    emote: "music",
     label: "Strutting",
     mood: "excited",
     tone: "spark",
@@ -204,7 +204,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "calm",
   },
   groom: {
-    emote: "note",
+    emote: "music",
     label: "Tidying up",
     mood: "working",
     tone: "calm",
@@ -229,7 +229,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
   },
   // Second signature poses.
   caper: {
-    emote: "note",
+    emote: "music",
     label: "Capering about",
     mood: "excited",
     tone: "spark",
@@ -253,7 +253,7 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     tone: "curious",
   },
   "tidy-up": {
-    emote: "note",
+    emote: "music",
     label: "Tidying up",
     mood: "working",
     tone: "calm",

@@ -26,9 +26,9 @@ export function petGradient(petId: string): { from: string; to: string } {
   return PET_GRADIENTS[hashString(petId) % PET_GRADIENTS.length];
 }
 
-/** The pet's memo, or a fallback label when it is empty. */
-export function cardNote(memo: string | undefined, emptyLabel: string): string {
-  const trimmed = memo?.trim();
+/** The pet's note, or a fallback label when it is empty. */
+export function cardNote(note: string | undefined, emptyLabel: string): string {
+  const trimmed = note?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : emptyLabel;
 }
 
