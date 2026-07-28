@@ -16,17 +16,44 @@ The desktop installer ships `pdd` and adds it to your PATH.
 | `pdd list` | Every pet in state | no |
 | `pdd presets` | Personality ids `hatch` accepts | no |
 | `pdd hatch [NAME] [--asset <ID>] [--personality <ID>] [--cwd <DIR>]` | Adopt a pet bound to a folder (name defaults to the bound folder's own name; asset, personality, and folder default to a random asset, a random personality, and the cwd) | no (also pings the app to show it) |
+| `pdd bind <PET_ID> [--cwd <DIR>]` | Bind a pet to a folder | no |
+| `pdd unbind <PET_ID>` | Detach a pet from its folder | no |
+| `pdd update [PET_ID] [--cwd <DIR>] <FIELD…>` | Edit a living pet in place: rename, re-skin, change personality, memo, or size | no |
+| `pdd delete [PET_ID] [--cwd <DIR>]` | Remove a pet (and hide its window) | no (hides best-effort) |
+| `pdd show [CWD]` | Show the pet window for a folder | yes |
+| `pdd hide [CWD]` | Hide the pet window for a folder | yes |
+| `pdd forward [EVENT]` | Forward an agent hook event to the app | yes |
 
 When `hatch` picks a random asset (no `--asset`), it prefers the pets you
 installed in your designated pet source folder (`petSourceDirectory` in state,
 otherwise `~/.petdex/pets`), and only falls back to the six built-ins when that
 folder holds no pet. So once you add your own pets, new worktrees get *those*.
-| `pdd bind <PET_ID> [--cwd <DIR>]` | Bind a pet to a folder | no |
-| `pdd unbind <PET_ID>` | Detach a pet from its folder | no |
-| `pdd delete [PET_ID] [--cwd <DIR>]` | Remove a pet (and hide its window) | no (hides best-effort) |
-| `pdd show [CWD]` | Show the pet window for a folder | yes |
-| `pdd hide [CWD]` | Hide the pet window for a folder | yes |
-| `pdd forward [EVENT]` | Forward an agent hook event to the app | yes |
+
+## Updating a pet
+
+`update` targets the pet by id, or — with no id — the pet bound to `--cwd`
+(the current directory by default), the same way `delete` does. It patches only
+the fields you pass and leaves the rest, including the folder binding, alone:
+
+| Flag | Field |
+| --- | --- |
+| `-n, --name <NAME>` | Display name |
+| `-a, --asset <ID>` | Pet asset — re-skins the pet, keeping its id, folder, and history |
+| `-p, --personality <ID>` | Personality preset (`pdd presets` lists the ids) |
+| `-m, --memo <TEXT>` | The note on the pet's card; pass `""` to clear it |
+| `-s, --scale <FACTOR>` | Window scale, between 0.5 and 2 |
+| `--swap-running-directions [BOOL]` | Trade the two running directions, for an asset whose spritesheet draws left/right the opposite way round. Bare means `true` |
+
+```bash
+pdd update --name "Atlas"                 # rename this folder's pet
+pdd update --asset otto --personality zen # re-skin and re-temper it
+pdd update "<petId>" --scale 1.5          # target a pet by id instead
+```
+
+At least one field is required — an `update` that would change nothing is a
+usage error, not a silent no-op. The answer is the same `{"ok":true,"pet":{…}}`
+envelope the other state commands print. A running desktop picks the change up
+from its state watcher within a second; no restart needed.
 
 `pdd` and the desktop resolve the same state file automatically
 (`<os data dir>/com.petsdriven.desktop/state.v1.json`); set

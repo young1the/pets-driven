@@ -78,6 +78,23 @@ pdd bind "<petId>"
 pdd unbind "<petId>"
 ```
 
+## Editing a pet the user already has
+
+A living pet can be changed in place — no need to delete and re-hatch, which
+would give it a new id. `update` targets the pet by id, or the pet bound to
+`--cwd` (the current folder) when no id is given, and patches only the fields
+passed:
+
+```bash
+pdd update --name "<name>"                    # rename this folder's pet
+pdd update --asset <id>                       # re-skin it, keeping its id and folder
+pdd update --personality <id>                 # re-temper it (`pdd presets` lists ids)
+pdd update "<petId>" --memo "<text>" --scale <0.5-2>
+```
+
+At least one field is required. The reply is the usual `{"ok":true,"pet":{…}}`
+or `{"ok":false,"error":…}`.
+
 Take `<petId>` from `pdd list`. Binding answers `{"ok":true,"pet":{…}}` with the
 pet's new state, or `{"ok":false,"error":…}` when that folder already belongs to
 another pet — release that one first, or pick a different folder.

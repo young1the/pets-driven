@@ -25,6 +25,8 @@ pdd hatch "<name>"                             # random asset + personality, cur
 pdd hatch "<name>" --asset <id> --personality <id> --cwd "<folder>"
 pdd bind "<petId>"                             # bind a pet to this folder (--cwd for another)
 pdd unbind "<petId>"                           # release it (cwd -> null)
+pdd update --name "<name>"                     # edit this folder's pet in place
+pdd update "<petId>" --asset <id> --personality <id> --memo "<text>" --scale <0.5-2>
 ```
 
 Nothing is required to hatch: the name defaults to the bound folder's own name,
