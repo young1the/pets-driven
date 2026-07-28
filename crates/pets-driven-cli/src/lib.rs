@@ -17,7 +17,7 @@ use std::io::{Read, Write};
 use std::sync::Arc;
 use std::time::Duration;
 
-use clap::{Parser, Subcommand};
+use clap::{ArgGroup, Parser, Subcommand};
 use pets_driven_core::{
     CoreError, HatchPet, Patch, PetId, PetPatch, PetsDrivenCore, WorkingDirectoryPath,
     PERSONALITY_IDS,
@@ -95,6 +95,43 @@ enum Command {
     Unbind {
         /// Pet id (from `pdd list`)
         pet: String,
+    },
+    /// Change a pet's editable fields (name, look, personality, memo, scale).
+    /// Every field is optional on its own, but at least one is required — an
+    /// update that changes nothing is a usage error rather than a silent no-op.
+    #[command(group(
+        ArgGroup::new("fields")
+            .required(true)
+            .multiple(true)
+            .args(["name", "asset", "personality", "memo", "scale", "swap_running_directions"])
+    ))]
+    Update {
+        /// Pet id to update (from `pdd list`). Omit to update the pet bound to
+        /// --cwd (or the current directory).
+        pet: Option<String>,
+        /// Update the pet bound to this folder instead of by id
+        #[arg(short, long)]
+        cwd: Option<String>,
+        /// New display name
+        #[arg(short, long)]
+        name: Option<String>,
+        /// New pet asset id — re-skins the pet, keeping everything else
+        #[arg(short, long)]
+        asset: Option<String>,
+        /// New personality id (`pdd presets` lists them)
+        #[arg(short, long)]
+        personality: Option<String>,
+        /// New note on the pet's card. Pass an empty string to clear it.
+        #[arg(short, long)]
+        memo: Option<String>,
+        /// New window scale, between 0.5 and 2
+        #[arg(short, long, value_parser = parse_scale)]
+        scale: Option<f64>,
+        /// Trade the pet's two running directions, for an asset whose
+        /// spritesheet draws left/right the opposite way round. Takes an
+        /// optional true/false; bare means true.
+        #[arg(long, num_args = 0..=1, default_missing_value = "true")]
+        swap_running_directions: Option<bool>,
     },
     /// Permanently remove a pet (and hide its window)
     Delete {
@@ -231,6 +268,42 @@ fn run_show_hide<O: Write>(origin: &str, path: &str, cwd: &str, out: &mut O) -> 
     0
 }
 
+/// Resolve the pet a command targets: the explicit id when one was given,
+/// otherwise the pet bound to `folder`. Returns the pet and the folder it is
+/// bound to; on failure the envelope is already printed and the exit code is
+/// handed back for the caller to return.
+fn resolve_target<O: Write>(
+    core: &PetsDrivenCore,
+    pet: Option<String>,
+    folder: String,
+    out: &mut O,
+) -> Result<(PetId, Option<String>), i32> {
+    match pet {
+        Some(id) => match core.pet(&PetId::new(&id)) {
+            Ok(Some(view)) => Ok((PetId::new(id), view.working_directory().map(str::to_string))),
+            Ok(None) => {
+                print_json(out, &error_json(format!("No pet found with id {id}")));
+                Err(1)
+            }
+            Err(error) => Err(report_core_error(out, &error)),
+        },
+        None => match core.pet_by_working_directory(&folder) {
+            Ok(Some(view)) => match view.id() {
+                Some(id) => Ok((PetId::new(id), Some(folder))),
+                None => {
+                    print_json(out, &error_json("resolved pet has no id"));
+                    Err(1)
+                }
+            },
+            Ok(None) => {
+                print_json(out, &error_json(format!("No pet bound to {folder}")));
+                Err(1)
+            }
+            Err(error) => Err(report_core_error(out, &error)),
+        },
+    }
+}
+
 /// Remove a pet: resolve it (by id or by folder), hide its window in the
 /// running app (best-effort, while it is still in state), then delete it.
 fn run_delete<O: Write>(
@@ -240,30 +313,9 @@ fn run_delete<O: Write>(
     folder: String,
     out: &mut O,
 ) -> i32 {
-    // Resolve the target pet and the folder to hide.
-    let (pet_id, cwd) = match pet {
-        Some(id) => match core.pet(&PetId::new(&id)) {
-            Ok(Some(view)) => (PetId::new(id), view.working_directory().map(str::to_string)),
-            Ok(None) => {
-                print_json(out, &error_json(format!("No pet found with id {id}")));
-                return 1;
-            }
-            Err(error) => return report_core_error(out, &error),
-        },
-        None => match core.pet_by_working_directory(&folder) {
-            Ok(Some(view)) => match view.id() {
-                Some(id) => (PetId::new(id), Some(folder)),
-                None => {
-                    print_json(out, &error_json("resolved pet has no id"));
-                    return 1;
-                }
-            },
-            Ok(None) => {
-                print_json(out, &error_json(format!("No pet bound to {folder}")));
-                return 1;
-            }
-            Err(error) => return report_core_error(out, &error),
-        },
+    let (pet_id, cwd) = match resolve_target(core, pet, folder, out) {
+        Ok(target) => target,
+        Err(code) => return code,
     };
 
     // Close the overlay window while the pet is still in state (the hide route
@@ -360,6 +412,26 @@ fn folder_name(folder: &str) -> String {
         .to_string()
 }
 
+/// The window scale range the desktop accepts. A value outside it would be
+/// written to state and then silently clamped when the overlay is laid out, so
+/// `update` rejects it as a usage error instead.
+///
+/// coupling: keep in sync with `PET_WINDOW_MIN_SCALE` / `PET_WINDOW_MAX_SCALE`
+/// in `apps/desktop/src/pet-window/pet-window-layout.ts`.
+const SCALE_RANGE: (f64, f64) = (0.5, 2.0);
+
+/// Parse `--scale`, rejecting anything the desktop could not render at.
+fn parse_scale(raw: &str) -> Result<f64, String> {
+    let (min, max) = SCALE_RANGE;
+    let scale: f64 = raw.parse().map_err(|_| format!("`{raw}` is not a number"))?;
+
+    if !(min..=max).contains(&scale) {
+        return Err(format!("scale must be between {min} and {max}"));
+    }
+
+    Ok(scale)
+}
+
 // ---- Dispatch --------------------------------------------------------------
 
 /// Run the CLI with every input injected, for testing. Returns the process exit
@@ -404,6 +476,7 @@ pub fn run_with<O: Write, E: Write>(
         | Command::Hatch { .. }
         | Command::Bind { .. }
         | Command::Unbind { .. }
+        | Command::Update { .. }
         | Command::Delete { .. } => {
             let core = match open_core() {
                 Ok(core) => core,
@@ -455,6 +528,37 @@ pub fn run_with<O: Write, E: Write>(
                     },
                     out,
                 ),
+                Command::Update {
+                    pet,
+                    cwd: folder,
+                    name,
+                    asset,
+                    personality,
+                    memo,
+                    scale,
+                    swap_running_directions,
+                } => {
+                    let folder = folder.unwrap_or_else(|| cwd.to_string());
+                    // The desktop picks the write up from its state watcher, so
+                    // an update needs no signal to the running app.
+                    match resolve_target(&core, pet, folder, out) {
+                        Ok((pet_id, _)) => run_update(
+                            &core,
+                            &pet_id,
+                            PetPatch {
+                                name,
+                                asset_id: asset,
+                                personality_id: personality,
+                                memo,
+                                scale,
+                                swap_running_directions,
+                                ..empty_pet_patch()
+                            },
+                            out,
+                        ),
+                        Err(code) => code,
+                    }
+                }
                 Command::Delete { pet, cwd: folder } => {
                     let folder = folder.unwrap_or_else(|| cwd.to_string());
                     run_delete(&core, origin, pet, folder, out)
@@ -645,6 +749,74 @@ mod tests {
             &mut unbind_out,
         );
         assert_eq!(parse_out(&unbind_out)["pet"]["cwd"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn update_by_folder_patches_the_targeted_pet() {
+        let core = core_with_empty_state();
+        run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), REFUSED, &mut Vec::new());
+
+        let (pet_id, _) = resolve_target(&core, None, "D:/proj".to_string(), &mut Vec::new())
+            .expect("the folder's pet resolves");
+
+        let mut out = Vec::new();
+        let code = run_update(
+            &core,
+            &pet_id,
+            PetPatch {
+                name: Some("Blue".to_string()),
+                personality_id: Some("zen".to_string()),
+                memo: Some("on the release branch".to_string()),
+                scale: Some(1.5),
+                ..empty_pet_patch()
+            },
+            &mut out,
+        );
+
+        assert_eq!(code, 0);
+        let updated = parse_out(&out);
+        assert_eq!(updated["pet"]["name"], "Blue");
+        assert_eq!(updated["pet"]["personalityId"], "zen");
+        // A field-only update leaves the folder binding alone.
+        assert_eq!(updated["pet"]["cwd"], "D:/proj");
+
+        // The pet view carries neither memo nor scale, so read those off state.
+        let snapshot = core.snapshot().expect("state reads back");
+        let pet = &snapshot.as_value()["pets"][0];
+        assert_eq!(pet["memo"], "on the release branch");
+        assert_eq!(pet["scale"], 1.5);
+    }
+
+    #[test]
+    fn update_of_an_unknown_pet_reports_not_found() {
+        let core = core_with_empty_state();
+        let mut out = Vec::new();
+        let code = resolve_target(&core, Some("pet-nope".to_string()), "D:/proj".to_string(), &mut out)
+            .expect_err("an unknown id should fail");
+
+        assert_eq!(code, 1);
+        assert!(parse_out(&out)["error"].as_str().unwrap().contains("No pet found"));
+    }
+
+    #[test]
+    fn update_with_no_field_is_a_usage_error() {
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        // No field means clap rejects it before any state is opened.
+        let code = run_with(&args(&["update"]), REFUSED, "D:/proj", Vec::new, &mut out, &mut err);
+
+        assert_eq!(code, 2);
+        assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn scale_outside_the_desktop_range_is_rejected() {
+        assert_eq!(parse_scale("1.5"), Ok(1.5));
+        assert_eq!(parse_scale("0.5"), Ok(0.5));
+        assert_eq!(parse_scale("2"), Ok(2.0));
+        assert!(parse_scale("0.4").is_err());
+        assert!(parse_scale("2.5").is_err());
+        assert!(parse_scale("huge").is_err());
     }
 
     #[test]
