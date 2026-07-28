@@ -1,6 +1,8 @@
 import { I18nProvider } from "@pets-driven/i18n";
 import { isLocale, type Locale, locales } from "@pets-driven/i18n/config";
 import { getServerTranslation } from "@pets-driven/i18n/server";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -46,6 +48,8 @@ export default function LocaleLayout({
           <LanguageSwitcher />
           {children}
         </I18nProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

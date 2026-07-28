@@ -20,6 +20,8 @@
     "@pets-driven/design-system": "workspace:*",
     "@pets-driven/i18n": "workspace:*",
     "@pets-driven/pet-engine": "workspace:*",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "next": "^14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
