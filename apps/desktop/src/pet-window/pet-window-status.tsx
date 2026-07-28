@@ -107,8 +107,12 @@ export function PetWindowStatus({
             </span>
           ) : null}
         </div>
-        {messageLine ? <div className="pet-window-status-card__message">{messageLine}</div> : null}
+        {/* The card stacks name row → note → spoken line → folder. The note sits
+            above the dialogue whenever both are up: it is standing context the
+            user wrote, so it should not be pushed around by a line that changes
+            every few seconds. */}
         {note ? <div className="pet-window-status-card__note">{note}</div> : null}
+        {messageLine ? <div className="pet-window-status-card__message">{messageLine}</div> : null}
         {cwd ? (
           <div className="pet-window-status-card__cwd">
             <svg

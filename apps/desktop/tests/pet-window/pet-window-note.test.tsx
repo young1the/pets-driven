@@ -73,6 +73,30 @@ describe("pet window note", () => {
 
     expect(screen.getByText(NOTE_FIXTURE.note!)).toBeInTheDocument();
   });
+
+  it("stacks the note above the spoken line when both are up", () => {
+    const { container } = render(
+      <PetWindowView
+        pet={NOTE_FIXTURE.pet}
+        previewNote={NOTE_FIXTURE.note}
+        previewPresentation={{
+          ...NOTE_FIXTURE.presentation,
+          overlay: { kind: "agent-channel", status: null, label: null, message: "Guess what?" },
+        }}
+      />,
+    );
+    const surface = container.querySelector(".pet-window-surface")!;
+
+    fireEvent.pointerMove(surface, { clientX: 96, clientY: 190 });
+
+    // The note is standing context the user wrote; the spoken line turns over
+    // every few seconds, so it must never push the note down the card.
+    const stacked = Array.from(
+      container.querySelectorAll(".pet-window-status-card__note, .pet-window-status-card__message"),
+    ).map((element) => element.textContent);
+
+    expect(stacked).toEqual([NOTE_FIXTURE.note, "Guess what?"]);
+  });
 });
 
 describe("pet window note recital", () => {
