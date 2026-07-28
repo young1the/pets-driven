@@ -95,6 +95,19 @@ pdd update "<petId>" --memo "<text>" --scale <0.5-2>
 At least one field is required. The reply is the usual `{"ok":true,"pet":{…}}`
 or `{"ok":false,"error":…}`.
 
+The note on a pet's card has its own command, which reads as well as writes:
+
+```bash
+pdd memo                                      # print this folder's pet's note
+pdd memo "<text>"                             # replace it
+pdd memo -                                    # take a multi-line note from stdin
+pdd memo --clear                              # erase it
+```
+
+It answers `{"ok":true,"petId":"…","memo":"…"}`, with `memo` null when the pet
+has no note yet. Read the note before overwriting it if the user asked to add
+to what is already there — `memo` replaces, it never appends.
+
 Take `<petId>` from `pdd list`. Binding answers `{"ok":true,"pet":{…}}` with the
 pet's new state, or `{"ok":false,"error":…}` when that folder already belongs to
 another pet — release that one first, or pick a different folder.
