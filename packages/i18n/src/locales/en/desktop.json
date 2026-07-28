@@ -98,7 +98,7 @@
   "settings": {
     "title": "Settings",
     "terminal": "Terminal",
-    "terminalDesc": "The shell the in-app terminal opens, and the command it runs in a pet's working folder when you double-click the pet.",
+    "terminalDesc": "The shell the in-app terminal opens, and the one a pet's launch line runs in.",
     "command": "Command",
     "commandPlaceholder": "claude --resume",
     "commandPreview": "Command preview",
@@ -111,7 +111,6 @@
     "clearPetFolder": "Clear folder",
     "language": "Language",
     "languageDesc": "Choose the language for the Pets-Driven interface.",
-    "subtitle": "Configure how your pets run and how the app looks.",
     "appearance": "Appearance",
     "appearanceDesc": "Use a light or dark theme, or follow your system.",
     "petWindowMode": "Pet windows",
@@ -140,7 +139,19 @@
     "resetPetsConfirmTitle": "Remove every pet?",
     "resetPetsConfirmHint": "All your pets, their watch folders and their looks are deleted, and the app returns to the welcome screen. This cannot be undone.",
     "resetPetsCancel": "Keep my pets",
-    "resetPetsConfirm": "Yes, remove every pet"
+    "resetPetsConfirm": "Yes, remove every pet",
+    "commandDesc": "The line typed into the terminal when you double-click a pet, run in that pet's working folder.",
+    "sectionsLabel": "Settings categories",
+    "sectionTerminal": "Terminal",
+    "sectionTerminalDesc": "The shell your pets open and the command they run.",
+    "sectionAgent": "Agent",
+    "sectionAgentDesc": "Let your coding agents tell your pets what they are up to.",
+    "sectionPets": "Pets",
+    "sectionPetsDesc": "Where pets come from, and how they sit on your desktop.",
+    "sectionAppearance": "Appearance",
+    "sectionAppearanceDesc": "How the app looks and which language it speaks.",
+    "sectionReset": "Reset",
+    "sectionResetDesc": "Start over — settings, pets, or both."
   },
   "hook": {
     "summary": {

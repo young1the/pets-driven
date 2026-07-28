@@ -147,6 +147,40 @@ export function SparkleIcon({ size, className }: IconProps) {
   );
 }
 
+export function PawIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <ellipse cx="5.5" cy="11" rx="2.1" ry="2.6" />
+      <ellipse cx="9.8" cy="6.6" rx="2.1" ry="2.8" />
+      <ellipse cx="14.6" cy="6.6" rx="2.1" ry="2.8" />
+      <ellipse cx="18.7" cy="11" rx="2.1" ry="2.6" />
+      <path d="M12.2 12.6a4.4 4.4 0 0 1 3.7 2.2l1.2 2a2.9 2.9 0 0 1-2.7 4.2 12 12 0 0 1-4.4 0 2.9 2.9 0 0 1-2.7-4.2l1.2-2a4.4 4.4 0 0 1 3.7-2.2z" />
+    </Icon>
+  );
+}
+
+export function PlugIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <path d="M9 2v6" />
+      <path d="M15 2v6" />
+      <path d="M6 8h12v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6z" />
+      <path d="M12 17v5" />
+    </Icon>
+  );
+}
+
+export function PaletteIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <path d="M12 3a9 9 0 0 0 0 18 2 2 0 0 0 1.6-3.2 2 2 0 0 1 1.6-3.2H18a3 3 0 0 0 3-3 9 9 0 0 0-9-8.6z" />
+      <circle cx="8" cy="10" r="1" />
+      <circle cx="12" cy="7.5" r="1" />
+      <circle cx="16" cy="10" r="1" />
+    </Icon>
+  );
+}
+
 export function RefreshIcon({ size, className }: IconProps) {
   return (
     <Icon className={className} size={size} strokeWidth={2.2}>

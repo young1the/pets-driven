@@ -1,0 +1,173 @@
+/* Settings — a category rail beside one panel at a time.
+   Every setting used to sit in one column, so reaching the reset meant
+   scrolling past the agent connection and the accent swatches. Splitting the
+   screen by kind keeps each panel short enough to take in at a glance, and the
+   rail is the table of contents that says what else is there. */
+
+.pd-settings {
+  display: flex;
+  align-items: flex-start;
+  gap: 26px;
+  box-sizing: border-box;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+  min-height: 100%;
+}
+
+/* Sticky against `.pd-main__body`, the scrolling ancestor: a long panel scrolls
+   under a rail that stays where the user left it. */
+.pd-settings__rail {
+  position: sticky;
+  top: 32px;
+  flex: none;
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pd-settings__rail-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--text-strong);
+  margin: 0 0 14px 12px;
+}
+
+.pd-settings__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  /* No transition on the selected state, for the same reason `.pd-tab` has
+     none: the pill has to land on the same frame as the click it confirms. */
+}
+
+.pd-settings__nav-item:hover {
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+}
+
+.pd-settings__nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.pd-settings__nav-item--active,
+.pd-settings__nav-item--active:hover {
+  color: var(--color-primary);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+
+/* The reset rail entry keeps the destructive colour it has on the panel, so
+   the one category that deletes things reads as such before it is opened. */
+.pd-settings__nav-item--danger.pd-settings__nav-item--active,
+.pd-settings__nav-item--danger.pd-settings__nav-item--active:hover {
+  color: var(--color-danger);
+}
+
+.pd-settings__nav-icon {
+  display: flex;
+  flex: none;
+  color: currentColor;
+}
+
+.pd-settings__panel {
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-settings__panel-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--text-strong);
+  margin: 4px 0 3px;
+}
+
+.pd-settings__panel-desc {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin: 0 0 18px;
+}
+
+.pd-settings__card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: 4px 26px;
+}
+
+/* Narrow window: the rail lies down into a scrolling chip row above the panel
+   rather than eating half the width. */
+@media (max-width: 880px) {
+  .pd-settings {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .pd-settings__rail {
+    position: static;
+    flex-direction: row;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .pd-settings__rail-title {
+    display: none;
+  }
+
+  .pd-settings__nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .pd-settings__panel {
+    width: 100%;
+  }
+}
+
+/* The two-step confirm both destructive actions share. */
+.pd-settings-confirm {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface-sunken);
+  border-radius: 14px;
+}
+
+.pd-settings-confirm__copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pd-settings-confirm__title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-strong);
+}
+
+.pd-settings-confirm__hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}

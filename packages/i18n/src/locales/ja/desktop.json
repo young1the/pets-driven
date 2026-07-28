@@ -98,7 +98,7 @@
   "settings": {
     "title": "設定",
     "terminal": "ターミナル",
-    "terminalDesc": "アプリ内ターミナルが開くシェルと、ペットをダブルクリックしたときに作業フォルダで実行するコマンドです。",
+    "terminalDesc": "アプリ内ターミナルが開くシェルで、ペットの起動コマンドもこのシェルで動きます。",
     "command": "コマンド",
     "commandPlaceholder": "claude --resume",
     "commandPreview": "コマンドのプレビュー",
@@ -111,7 +111,6 @@
     "clearPetFolder": "選択を解除",
     "language": "言語",
     "languageDesc": "Pets-Drivenの表示言語を選んでください。",
-    "subtitle": "ペットの動かし方と、アプリの見た目を設定します。",
     "appearance": "外観",
     "appearanceDesc": "ライト／ダークテーマを使うか、システム設定に合わせます。",
     "petWindowMode": "ペットのウィンドウ",
@@ -140,7 +139,19 @@
     "resetPetsConfirmTitle": "すべてのペットを削除しますか？",
     "resetPetsConfirmHint": "すべてのペットと監視フォルダ、見た目が削除され、ようこそ画面に戻ります。元に戻せません。",
     "resetPetsCancel": "ペットはこのまま",
-    "resetPetsConfirm": "はい、すべて削除します"
+    "resetPetsConfirm": "はい、すべて削除します",
+    "commandDesc": "ペットをダブルクリックしたとき、そのペットの作業フォルダでターミナルに入力されるコマンド行です。",
+    "sectionsLabel": "設定のカテゴリ",
+    "sectionTerminal": "ターミナル",
+    "sectionTerminalDesc": "ペットが開くシェルと、実行するコマンドです。",
+    "sectionAgent": "エージェント",
+    "sectionAgentDesc": "コーディングエージェントの作業をペットに伝えるための接続です。",
+    "sectionPets": "ペット",
+    "sectionPetsDesc": "ペットをどこから読み込み、デスクトップにどう置くかを決めます。",
+    "sectionAppearance": "外観",
+    "sectionAppearanceDesc": "アプリの見た目と、表示する言語です。",
+    "sectionReset": "リセット",
+    "sectionResetDesc": "設定もペットも、最初からやり直せます。"
   },
   "hook": {
     "summary": {

@@ -124,34 +124,7 @@
   color: var(--text-strong);
 }
 
-.pd-settings-confirm {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--surface-sunken);
-  border-radius: 14px;
-}
-
-.pd-settings-confirm__copy {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.pd-settings-confirm__title {
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text-strong);
-}
-
-.pd-settings-confirm__hint {
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
+/* The settings screen's own styles live in settings-section.css beside it. */
 
 .pd-home__fan-card--dragging {
   transition: none;
