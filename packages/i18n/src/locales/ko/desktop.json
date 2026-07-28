@@ -465,7 +465,13 @@
     "connectPrompt": "연결할 터미널 창을 클릭하세요",
     "connectedTo": "{{title}} 창에 연결했어요",
     "connectCancelled": "연결하지 않았어요",
-    "noteBadgeAria": "노트 있음"
+    "noteBadgeAria": "노트 있음",
+    "trinket": {
+      "wings": "날개",
+      "claws": "등반 발톱"
+    },
+    "trinketAria": "{{item}}, {{seconds}}초 남음",
+    "trinketSeconds": "{{seconds}}초"
   },
   "petStatus": {
     "idle": "쉬는 중",

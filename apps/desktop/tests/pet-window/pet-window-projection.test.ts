@@ -116,6 +116,7 @@ describe("pet window projection", () => {
           activity: null,
           partnerName: null,
           working: false,
+          carrying: null,
         },
         overlay: null,
       },

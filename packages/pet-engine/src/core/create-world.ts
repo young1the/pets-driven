@@ -516,6 +516,7 @@ export function createWorld(input: WorldDefinition) {
 
       return {
         ...physicsSnapshot,
+        now: input.clock.now(),
         viewport: input.viewport,
         monitors: input.monitors,
         bodies,

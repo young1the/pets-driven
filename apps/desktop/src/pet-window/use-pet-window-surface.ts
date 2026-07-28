@@ -15,6 +15,7 @@ import {
 import {
   isFreshPetWindowMessage,
   isSamePetWindowPresentation,
+  type PetWindowCarrying,
   type PetWindowInputKind,
   type PetWindowOverlay,
 } from "@/pet-window/pet-window-messages";
@@ -30,6 +31,8 @@ export type PetWindowPresentation = {
   /** True while an agent task is running, so the capsule stays shown as "working". */
   working: boolean;
   overlay: PetWindowOverlay | null;
+  /** The collected ability counting down on this pet, or null when it has none. */
+  carrying: PetWindowCarrying | null;
 };
 
 type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
@@ -87,6 +90,7 @@ function defaultPresentation(index: number): PetWindowPresentation {
     partnerName: null,
     working: false,
     overlay: { kind: "status", label: "!" },
+    carrying: null,
   };
 }
 
@@ -265,6 +269,12 @@ export function usePetWindowSurface({
             ? (frame.sprite.partnerName ?? null)
             : presentationRef.current.partnerName;
 
+        // Both sides normalize every optional field to null/false rather than
+        // leaving it undefined: the comparison is on serialized sprites, and an
+        // absent key and an explicit null do not serialize the same — a pet
+        // would then re-render on every frame it was "different" from itself.
+        const nextCarrying = frame.sprite.carrying ?? null;
+
         if (
           !isSamePetWindowPresentation(
             {
@@ -274,6 +284,7 @@ export function usePetWindowSurface({
                 activity: presentationRef.current.activity,
                 partnerName: presentationRef.current.partnerName,
                 working: presentationRef.current.working,
+                carrying: presentationRef.current.carrying,
               },
               overlay: presentationRef.current.overlay,
             },
@@ -283,27 +294,23 @@ export function usePetWindowSurface({
                 activity: steadiedActivity,
                 partnerName: steadiedPartnerName,
                 working: frame.sprite.working ?? false,
+                carrying: nextCarrying,
               },
               overlay: frame.overlay,
             },
           )
         ) {
-          presentationRef.current = {
+          const next: PetWindowPresentation = {
             decisionEmote: frame.sprite.decisionEmote ?? null,
             animationState: frame.sprite.animationState,
             activity: steadiedActivity,
             partnerName: steadiedPartnerName,
             working: frame.sprite.working ?? false,
             overlay: frame.overlay,
+            carrying: nextCarrying,
           };
-          setPresentation({
-            decisionEmote: frame.sprite.decisionEmote ?? null,
-            animationState: frame.sprite.animationState,
-            activity: steadiedActivity,
-            partnerName: steadiedPartnerName,
-            working: frame.sprite.working ?? false,
-            overlay: frame.overlay,
-          });
+          presentationRef.current = next;
+          setPresentation(next);
         }
 
         // Position is not applied here: the host moves every pet window in one

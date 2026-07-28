@@ -1,7 +1,7 @@
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import type { PetWindowOverlay } from "@/pet-window/pet-window-messages";
+import type { PetWindowCarrying, PetWindowOverlay } from "@/pet-window/pet-window-messages";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 
 export const PET_WINDOW_FIXTURE_IDS = [
@@ -19,6 +19,8 @@ export const PET_WINDOW_FIXTURE_IDS = [
   "connect-prompt",
   "connect-connected",
   "note",
+  "trinket",
+  "trinket-expiring",
 ] as const;
 
 export type PetWindowFixtureId = (typeof PET_WINDOW_FIXTURE_IDS)[number];
@@ -32,6 +34,9 @@ export type PetWindowFixturePresentation = {
   /** Seeds the persistent "working" capsule in preview (real app derives it
    *  from the world snapshot). Defaults to false when omitted. */
   working?: boolean;
+  /** Seeds the trinket countdown badge; the real app derives it from the
+   *  pet's CarriedItem. Omitted = the pet is wearing nothing. */
+  carrying?: PetWindowCarrying | null;
 };
 
 /** Seeds the terminal-binding notice pill (host/UI feedback, outside the ECS
@@ -263,6 +268,34 @@ export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
       overlay: null,
     },
     note: "Ship the release notes before Friday.",
+  },
+  {
+    id: "trinket",
+    label: "Trinket: fresh",
+    description: "Pet wearing collected wings, countdown badge near full.",
+    pet: { petId: "fixture-bloop", assetId: "bloop", windowIndex: 1, name: "Bloop" },
+    presentation: {
+      decisionEmote: null,
+      animationState: "idle",
+      activity: null,
+      partnerName: null,
+      overlay: null,
+      carrying: { kind: "wings", remainingSeconds: 48, totalSeconds: 60 },
+    },
+  },
+  {
+    id: "trinket-expiring",
+    label: "Trinket: expiring",
+    description: "Same badge inside the last seconds, in its warning tone.",
+    pet: { petId: "fixture-fenn", assetId: "fenn", windowIndex: 2, name: "Ember" },
+    presentation: {
+      decisionEmote: null,
+      animationState: "idle",
+      activity: null,
+      partnerName: null,
+      overlay: null,
+      carrying: { kind: "claws", remainingSeconds: 4, totalSeconds: 60 },
+    },
   },
 ];
 

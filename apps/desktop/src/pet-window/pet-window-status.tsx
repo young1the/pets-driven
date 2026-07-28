@@ -1,10 +1,55 @@
 import { useTranslation } from "@pets-driven/i18n";
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import {
+  CARRIED_ITEM_WARNING_SECONDS,
+  presentWorldItem,
+} from "@pets-driven/pet-engine/features/items/item-presentation";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PET_SPEECH_KEY_PREFIX } from "@pets-driven/pet-engine/pets/personalities/voice-profiles";
 import { presentPetStatus } from "@pets-driven/pet-engine/pets/rendering/pet-status-presentation";
 import { PET_MOODS } from "@pets-driven/pet-engine/pets/status/pet-mood";
-import type { PetWindowOverlay } from "@/pet-window/pet-window-messages";
+import type { PetWindowCarrying, PetWindowOverlay } from "@/pet-window/pet-window-messages";
+
+/**
+ * The countdown on a borrowed ability: glyph, seconds left, and a bar that
+ * drains behind both.
+ *
+ * A trinket takes a pet's wings away again on a timer it never announced, so
+ * without this the pet simply drops out of the sky mid-flight. The badge sits
+ * in the always-visible status row rather than behind the hover expansion for
+ * that reason — it is a deadline, and a deadline the user has to go looking for
+ * is not one.
+ *
+ * The seconds arrive quantized (see carriedItemCountdown), so the drain is
+ * eased across each step in CSS: one transition turns a once-a-second payload
+ * into a bar that visibly moves the whole time.
+ */
+function PetWindowTrinketBadge({ carrying }: { carrying: PetWindowCarrying }) {
+  const { t } = useTranslation("desktop");
+  const item = presentWorldItem(carrying.kind);
+  const remaining = Math.max(0, Math.min(1, carrying.remainingSeconds / carrying.totalSeconds));
+  const isExpiring = carrying.remainingSeconds <= CARRIED_ITEM_WARNING_SECONDS;
+
+  return (
+    <span
+      aria-label={t("petWindow.trinketAria", {
+        item: t(`petWindow.trinket.${carrying.kind}`, item.label),
+        seconds: carrying.remainingSeconds,
+      })}
+      className={`pet-window-status-card__trinket${isExpiring ? " pet-window-status-card__trinket--expiring" : ""}`}
+      role="img"
+      style={{ "--pet-window-trinket-remaining": remaining } as React.CSSProperties}
+    >
+      <span aria-hidden="true" className="pet-window-status-card__trinket-drain" />
+      <span aria-hidden="true" className="pet-window-status-card__trinket-glyph">
+        {item.glyph}
+      </span>
+      <span aria-hidden="true" className="pet-window-status-card__trinket-time">
+        {t("petWindow.trinketSeconds", { seconds: carrying.remainingSeconds })}
+      </span>
+    </span>
+  );
+}
 
 type PetWindowStatusProps = {
   name: string;
@@ -22,6 +67,8 @@ type PetWindowStatusProps = {
   note: string | null;
   /** True when the pet has a note at all; drives the always-on badge. */
   hasNote: boolean;
+  /** The collected ability counting down, or null when the pet carries none. */
+  carrying: PetWindowCarrying | null;
   spriteHeight: number;
   /** Pet window resize scale; shrinks the card's own size at small pet sizes
    * so it doesn't loom over a tiny sprite, clamped so text stays legible. */
@@ -39,6 +86,7 @@ export function PetWindowStatus({
   cwd,
   note,
   hasNote,
+  carrying,
   spriteHeight,
   scale,
 }: PetWindowStatusProps) {
@@ -106,6 +154,7 @@ export function PetWindowStatus({
               </svg>
             </span>
           ) : null}
+          {carrying ? <PetWindowTrinketBadge carrying={carrying} /> : null}
         </div>
         {/* The card stacks name row → note → spoken line → folder. The note sits
             above the dialogue whenever both are up: it is standing context the

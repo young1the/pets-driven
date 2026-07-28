@@ -1,4 +1,6 @@
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import type { PetItemKind } from "@pets-driven/pet-engine/features/items/components";
+import type { CarriedItemCountdown } from "@pets-driven/pet-engine/features/items/item-presentation";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import type { PetSpriteOverlay } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
@@ -57,6 +59,17 @@ export type PetWindowFrameWindow = {
   height: number;
 };
 
+/**
+ * The trinket ability a pet is wearing, and how long it has left.
+ *
+ * Only the kind travels, not the glyph or a label: the window resolves those
+ * itself (presentWorldItem, i18n) so a trinket reads the same wherever it is
+ * drawn and the label is localized in the surface that shows it.
+ */
+export type PetWindowCarrying = CarriedItemCountdown & {
+  kind: PetItemKind;
+};
+
 export type PetWindowFrameSprite = {
   decisionEmote?: BehaviorTokenPresentation | null;
   /** The atlas animation row the pet is currently playing. */
@@ -74,6 +87,14 @@ export type PetWindowFrameSprite = {
    * task, not just while a transient agent-channel line is live.
    */
   working?: boolean;
+  /**
+   * The ability the pet picked up, counting down, or null when it has none.
+   *
+   * Last in this type on purpose: `isSamePetWindowPresentation` compares
+   * serialized sprites, so the surface's reconstruction of the previous sprite
+   * has to list its keys in this same order to compare equal.
+   */
+  carrying?: PetWindowCarrying | null;
 };
 
 export type PetWindowResizeEvent = {

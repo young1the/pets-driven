@@ -182,6 +182,20 @@ export type WorldViewportSnapshot = {
 export type WorldSnapshot = {
   width: number;
   height: number;
+  /**
+   * The clock reading this snapshot was taken at.
+   *
+   * Several fields here are absolute deadlines on the *simulation* clock —
+   * `WorldItemSnapshot.expiresAt`, `CarriedItemSnapshot.expiresAt`,
+   * expression and agent-channel expiry — and that clock is not wall time: a
+   * world is stepped by a fixed slice per tick, so it drifts from `Date.now()`
+   * and starts from zero. Without this reading a host holding a snapshot cannot
+   * turn any of those deadlines into a duration, which is what a countdown is.
+   *
+   * Optional for the same reason `items` is: the physics world's own bare
+   * snapshot has no clock behind it.
+   */
+  now?: number;
   viewport?: WorldViewportSnapshot;
   monitors?: MonitorWorkAreaSnapshot[];
   bodies: BodySnapshot[];

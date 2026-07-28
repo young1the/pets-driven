@@ -465,7 +465,13 @@
     "connectPrompt": "つなぎたいターミナルの窓をクリックしてください",
     "connectedTo": "{{title}}につながりました",
     "connectCancelled": "つながりませんでした",
-    "noteBadgeAria": "ノートあり"
+    "noteBadgeAria": "ノートあり",
+    "trinket": {
+      "wings": "羼",
+      "claws": "クライミングクロー"
+    },
+    "trinketAria": "{{item}}、残り{{seconds}}秒",
+    "trinketSeconds": "{{seconds}}秒"
   },
   "petStatus": {
     "idle": "ひとやすみ",

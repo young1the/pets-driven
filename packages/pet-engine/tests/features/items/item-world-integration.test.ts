@@ -5,6 +5,7 @@ import {
   createFixturePet,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
 import { createItemSpawner } from "@pets-driven/pet-engine/features/items/components";
+import { carriedItemCountdown } from "@pets-driven/pet-engine/features/items/item-presentation";
 import { DEFAULT_PET_WALK_FORCE } from "@pets-driven/pet-engine/pets/constants/pet-body";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";
@@ -177,6 +178,42 @@ describe("trinkets in a live world", () => {
     expect(world.getComponent("pet-a", "CanFly")).toBeUndefined();
     expect(world.getComponent("pet-a", "WalkingTag")).toBeDefined();
     expect(world.snapshot().pets[0].carrying).toBeNull();
+  });
+
+  /**
+   * A countdown is only honest if it is measured on the clock the revoke runs
+   * on. The world is stepped a fixed slice per tick, so it drifts from wall
+   * time — which is why the snapshot carries its own reading, and why this
+   * pins that reading to the tick the ability actually comes off.
+   */
+  it("counts the wings down to zero on the tick they are taken back", () => {
+    const { clock, world } = createWorldWithWalker();
+    const petY = world.getComponent("pet-a", "Transform")!.position.y;
+
+    world.addEntity({
+      id: "item-wings-0",
+      components: [
+        { type: "WorldItem", kind: "wings", droppedAt: 0, expiresAt: 60_000, pickupRadius: 28 },
+        { type: "Transform", position: { x: 400, y: petY } },
+      ],
+    });
+    step(world, clock, 1);
+
+    const carried = world.snapshot().pets[0].carrying!;
+    let lastReading = Number.POSITIVE_INFINITY;
+    let snapshot = world.snapshot();
+
+    while (snapshot.pets[0].carrying) {
+      const reading = carriedItemCountdown(carried, snapshot.now!).remainingSeconds;
+      expect(reading).toBeGreaterThan(0);
+      expect(reading).toBeLessThanOrEqual(lastReading);
+      lastReading = reading;
+      step(world, clock, 1);
+      snapshot = world.snapshot();
+    }
+
+    expect(lastReading).toBe(1);
+    expect(carriedItemCountdown(carried, snapshot.now!).remainingSeconds).toBe(0);
   });
 
   /**

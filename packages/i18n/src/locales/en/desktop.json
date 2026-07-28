@@ -465,7 +465,13 @@
     "connectPrompt": "Click the terminal window to connect",
     "connectedTo": "Connected to {{title}}",
     "connectCancelled": "Nothing connected",
-    "noteBadgeAria": "Has a note"
+    "noteBadgeAria": "Has a note",
+    "trinket": {
+      "wings": "Wings",
+      "claws": "Climbing claws"
+    },
+    "trinketAria": "{{item}}, {{seconds}} seconds left",
+    "trinketSeconds": "{{seconds}}s"
   },
   "petStatus": {
     "idle": "Idle",

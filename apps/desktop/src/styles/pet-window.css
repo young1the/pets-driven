@@ -263,6 +263,65 @@ html.pet-overlay-document body {
   color: var(--lavender-600);
 }
 
+/* The countdown on a borrowed ability. Louder than the note badge on purpose:
+   this one is a deadline, and it is the only warning the user gets before a
+   flying pet becomes a walking one again. */
+.pet-window-status-card__trinket {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(3px * var(--pet-window-card-scale, 1));
+  overflow: hidden;
+  padding: calc(2px * var(--pet-window-card-scale, 1)) calc(6px * var(--pet-window-card-scale, 1));
+  border-radius: 999px;
+  background: var(--sky-100);
+  color: var(--sky-700);
+  line-height: 1;
+}
+
+/* Drains right-to-left behind the glyph. A transform rather than a width so the
+   whole sweep is one composited animation, on a surface that repaints for every
+   pet on the desktop. */
+.pet-window-status-card__trinket-drain {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(var(--pet-window-trinket-remaining, 1));
+  background: var(--sky-200);
+  /* Matched to the one-second step the countdown arrives in, and linear so the
+     bar moves at the rate the ability is actually running out. */
+  transition: transform 1s linear;
+}
+
+.pet-window-status-card__trinket-glyph,
+.pet-window-status-card__trinket-time {
+  position: relative;
+  font-size: calc(10px * var(--pet-window-card-scale, 1));
+  font-weight: 800;
+}
+
+.pet-window-status-card__trinket-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The last few seconds. Colour is the whole cue — the bar is nearly empty by
+   now, which is hard to read at this size. */
+.pet-window-status-card__trinket--expiring {
+  background: var(--coral-100);
+  color: var(--coral-600);
+}
+
+.pet-window-status-card__trinket--expiring .pet-window-status-card__trinket-drain {
+  background: var(--coral-200);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-window-status-card__trinket-drain {
+    transition: none;
+  }
+}
+
 .pet-window-status-card__note {
   display: -webkit-box;
   margin-top: calc(4px * var(--pet-window-card-scale, 1));

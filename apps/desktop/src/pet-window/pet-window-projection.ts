@@ -22,11 +22,16 @@ const PET_WINDOW_BODY_ANCHOR_OFFSET =
     PET_CELL_SIZE.height / 2) *
   2;
 
+import { carriedItemCountdown } from "@pets-driven/pet-engine/features/items/item-presentation";
 import {
   presentBehaviorDecisionToken,
   presentPetExpression,
 } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import type { PetWindowFrame, PetWindowOverlay } from "@/pet-window/pet-window-messages";
+import type {
+  PetWindowCarrying,
+  PetWindowFrame,
+  PetWindowOverlay,
+} from "@/pet-window/pet-window-messages";
 
 export type PetWindowProjection = {
   petId: string;
@@ -117,6 +122,7 @@ export function projectWorldSnapshotToPetWindows(
             activity: pet.activity ?? null,
             partnerName: pet.social?.partnerName ?? null,
             working: pet.agentTask?.status === "working",
+            carrying: carryingFromPet(pet, snapshot.now),
           },
           overlay: overlayFromPet(pet),
         },
@@ -179,6 +185,24 @@ export function projectScreenPointToWorld(
     x: viewport.x + (screenPoint.x - bounds.x) / scaleX,
     y: viewport.y + (screenPoint.y - bounds.y) / scaleY,
   };
+}
+
+/**
+ * The countdown on a pet's collected ability, or null when it has none.
+ *
+ * A snapshot taken without a clock reading (`now`) leaves the ability's
+ * `expiresAt` uninterpretable, so the badge stays off rather than showing a
+ * countdown measured against nothing.
+ */
+export function carryingFromPet(
+  pet: PetSnapshot,
+  now: number | undefined,
+): PetWindowCarrying | null {
+  if (!pet.carrying || now === undefined) {
+    return null;
+  }
+
+  return { kind: pet.carrying.kind, ...carriedItemCountdown(pet.carrying, now) };
 }
 
 export function overlayFromPet(pet: PetSnapshot): PetWindowOverlay | null {

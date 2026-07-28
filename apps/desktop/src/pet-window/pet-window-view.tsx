@@ -194,6 +194,7 @@ export function PetWindowView({
             partnerName={presentation.partnerName}
             animationState={presentation.animationState}
             working={presentation.working}
+            carrying={presentation.carrying}
             cwd={isBodyHovered ? cwdRef.current : null}
             hasNote={note !== null}
             // Hovering the pet is the same "tell me more" gesture that reveals
