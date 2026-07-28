@@ -122,13 +122,15 @@ describe("PerceptionSystem", () => {
     expect(perception?.nearbyClimbables[1].id).toBe("wall-a");
   });
 
-  it("ignores pets and surfaces beyond MAX_PERCEPTION_RANGE", () => {
+  it("ignores pets and surfaces beyond their perception range", () => {
     const store = createComponentStore([
       {
         id: "wall-far",
+        // Climbables carry further than pets and are judged on x alone, so a
+        // wall has to be much further out than a pet to fall out of range.
         components: [
           { type: "ClimbableSurface" },
-          { type: "Transform", position: { x: 800, y: 200 } },
+          { type: "Transform", position: { x: 1_400, y: 200 } },
         ],
       },
       {
@@ -166,6 +168,49 @@ describe("PerceptionSystem", () => {
     const perception = store.getComponent("pet-a", "Perception");
     expect(perception?.nearbyClimbables).toHaveLength(0);
     expect(perception?.nearbyPets).toHaveLength(0);
+  });
+
+  it("notices a column towering over a pet walking along the floor", () => {
+    // The regression that made the claws trinket useless on a real desktop: a
+    // climbable's marker sits at the middle of the height it spans, so on a
+    // 1080p monitor it is ~460px above a pet on the floor. Judged in a straight
+    // line that is out of range at every x — the pet could stand against the
+    // wall and perceive nothing — so the column is judged on x alone, the same
+    // way ContactSystem judges it.
+    const store = createComponentStore([
+      {
+        id: "wall-tall",
+        components: [
+          { type: "ClimbableSurface" },
+          { type: "Transform", position: { x: 120, y: 540 } },
+        ],
+      },
+      {
+        id: "pet-a",
+        components: [
+          { type: "Transform", position: { x: 120, y: 1_002 } },
+          {
+            type: "Perception",
+            nearbyPets: [],
+            userAnchor: null,
+            nearbyClimbables: [],
+            self: { grounded: true, climbing: false, mode: "stand" as const },
+          },
+          { type: "Steering", mode: "stand" as const },
+          {
+            type: "ContactState",
+            grounded: true,
+            climbableSurfaceId: null,
+            climbableSurfacePosition: null,
+          },
+          { type: "PetIdentity", name: "A" },
+        ],
+      },
+    ]);
+
+    runPerceptionSystem(store);
+
+    expect(store.getComponent("pet-a", "Perception")?.nearbyClimbables).toHaveLength(1);
   });
 
   it("treats userAnchor as null if no UserAnchor entity exists", () => {

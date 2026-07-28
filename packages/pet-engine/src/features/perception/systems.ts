@@ -14,6 +14,17 @@ const MAX_PERCEPTION_RANGE = 400; // px
 // outside every pet's awareness and simply fade away unclaimed.
 const ITEM_PERCEPTION_RANGE = 1_000; // px
 
+/**
+ * How far along the floor a pet notices a climbable column, and note that it is
+ * measured *horizontally* — see the climbable pass below for why.
+ *
+ * Wide for the same reason the item range is: the desktop's columns sit 120px
+ * inside each monitor edge, so at the pet range a pet would have to already be
+ * in the outer fifth of the screen to see one. A borrowed climbing ability only
+ * lasts a minute, and a pet that spends it walking has not climbed.
+ */
+const CLIMBABLE_PERCEPTION_RANGE = 900; // px
+
 // Laser-pointer-chase tuning: cursor must be moving fast AND close to the pet.
 const CURSOR_PLAYFUL_SPEED_PX_S = 600;
 const CURSOR_PLAYFUL_RADIUS_PX = 300;
@@ -81,15 +92,28 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
       nearbyPets.sort((a, b) => a.distance - b.distance);
       perception.nearbyPets = nearbyPets;
 
-      const nearbyClimbables: PerceivedEntity[] = [];
+      // Horizontal distance, not straight-line: a climbable is a *column*, and
+      // its marker sits at the middle of the height it spans. Measured
+      // straight-line, the marker's height decides whether the pet notices the
+      // wall beside it — on a 1080p desktop the columns sit 462px above the
+      // floor, so a grounded pet standing directly under one was 462px away
+      // from a wall it was touching and never perceived a climbable at all.
+      // ContactSystem already judges the same entity on x alone; this is that
+      // rule, one layer up. The entry keeps its straight-line `distance` for
+      // consumers, but the ordering is horizontal too — the nearest wall is the
+      // one with the shortest walk to it.
+      const nearbyClimbables: Array<{ entry: PerceivedEntity; dx: number }> = [];
       for (const climbable of climbables) {
-        const entry = buildEntry(climbable.id, climbable.x, climbable.y, px, py);
-        if (entry.distance <= MAX_PERCEPTION_RANGE) {
-          nearbyClimbables.push(entry);
+        const dx = Math.abs(climbable.x - px);
+        if (dx <= CLIMBABLE_PERCEPTION_RANGE) {
+          nearbyClimbables.push({
+            entry: buildEntry(climbable.id, climbable.x, climbable.y, px, py),
+            dx,
+          });
         }
       }
-      nearbyClimbables.sort((a, b) => a.distance - b.distance);
-      perception.nearbyClimbables = nearbyClimbables;
+      nearbyClimbables.sort((a, b) => a.dx - b.dx);
+      perception.nearbyClimbables = nearbyClimbables.map((candidate) => candidate.entry);
 
       const nearbyItems: PerceivedEntity[] = [];
       for (const item of items) {

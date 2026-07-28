@@ -1,0 +1,92 @@
+import { createAdoptedPetsScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { DEFAULT_PET_CLIMB_VELOCITY } from "@pets-driven/pet-engine/pets/constants/pet-body";
+import { describe, expect, it } from "vitest";
+
+/**
+ * The claws trinket's whole promise, on the world it actually ships against.
+ *
+ * `createDesktopClimbableSurfaces` exists so claws have something to use, and
+ * the unit tests below it all passed — but nothing checked the one thing that
+ * matters, that a pet in the *live desktop world* ever reaches a wall. It did
+ * not: the columns sit at the middle of a monitor's height, ~460px above a pet
+ * on the floor, and perception measured them in a straight line against a 400px
+ * range. A pet standing against a column perceived no climbable at all, so the
+ * `request-climb` candidate was never even considered and claws granted an
+ * ability with nothing in reach.
+ *
+ * This runs the full chain — perceive → decide → walk over → attach → climb —
+ * on a real 1080p monitor, because every layer of it passed on its own while
+ * the feature was dead end to end.
+ */
+
+const MONITOR = { id: "monitor", x: 0, y: 0, width: 1920, height: 1080 };
+const STEP_MS = 16;
+// The desktop app's scaled body, not the engine default: body size decides how
+// far above the floor the pet's centre sits, which is the distance at issue.
+const DESKTOP_PET_BODY = { width: 156, height: 156 };
+
+function settledDesktopPet() {
+  const scenario = createAdoptedPetsScenario(
+    [{ id: "pet-a", sourceId: "agent-a", name: "Alice" }],
+    { monitors: [MONITOR], petBodySize: DESKTOP_PET_BODY },
+  );
+
+  for (let i = 0; i < 120; i += 1) {
+    scenario.clock.advanceBy(STEP_MS);
+    scenario.world.step(STEP_MS);
+  }
+
+  return scenario;
+}
+
+describe("claws on the live desktop world", () => {
+  it("puts a wall within reach of a pet standing on the floor", () => {
+    const { world } = settledDesktopPet();
+
+    expect(world.getComponent("pet-a", "Perception")?.nearbyClimbables.length).toBeGreaterThan(0);
+  });
+
+  it("carries a pet that earns claws up the side of the screen", () => {
+    const { clock, world } = settledDesktopPet();
+    const startY = world.getComponent("pet-a", "Transform")!.position.y;
+
+    world.setComponent("pet-a", {
+      type: "CanWallClimb",
+      velocity: DEFAULT_PET_CLIMB_VELOCITY,
+    });
+
+    let climbed = false;
+    let highestY = startY;
+    // One ability's worth of time: a climb the pet only manages after the
+    // trinket has worn off is not a climb the user ever sees.
+    for (let i = 0; i < 60_000 / STEP_MS; i += 1) {
+      clock.advanceBy(STEP_MS);
+      world.step(STEP_MS);
+      climbed ||= !!world.getComponent("pet-a", "ClimbingTag");
+      highestY = Math.min(highestY, world.getComponent("pet-a", "Transform")!.position.y);
+    }
+
+    expect(climbed).toBe(true);
+    // Well up the screen, not a hop: the climb has to read as one from across
+    // the room, which is the point of putting the columns at mid-height.
+    expect(highestY).toBeLessThan(MONITOR.height / 2);
+  });
+
+  it("leaves a pet without claws on the floor", () => {
+    // The columns are in every desktop world whether or not anything can use
+    // them, so they must stay inert until a pet earns the ability.
+    const { clock, world } = settledDesktopPet();
+    const startY = world.getComponent("pet-a", "Transform")!.position.y;
+
+    for (let i = 0; i < 20_000 / STEP_MS; i += 1) {
+      clock.advanceBy(STEP_MS);
+      world.step(STEP_MS);
+      expect(world.getComponent("pet-a", "ClimbingTag")).toBeUndefined();
+    }
+
+    // Jumping is allowed to lift it a little; leaving the floor behind is not.
+    expect(world.getComponent("pet-a", "Transform")!.position.y).toBeGreaterThan(
+      startY - MONITOR.height / 4,
+    );
+  });
+});
