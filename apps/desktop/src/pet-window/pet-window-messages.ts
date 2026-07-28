@@ -38,6 +38,13 @@ export type PetWindowFrame = {
    */
   assetId?: string;
   cwd?: string;
+  /**
+   * The pet's free-form note. Rides the frame stream for the same reason the
+   * name and folder do — the window cannot re-read its own URL — and because
+   * the note is edited from the context menu while the window is open, so the
+   * pet has to learn about its own note without being reopened.
+   */
+  memo?: string;
   window: PetWindowFrameWindow;
   sprite: PetWindowFrameSprite;
   overlay: PetWindowOverlay | null;

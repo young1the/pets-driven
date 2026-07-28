@@ -457,7 +457,8 @@
   "petWindow": {
     "connectPrompt": "つなぎたいターミナルの窓をクリックしてください",
     "connectedTo": "{{title}}につながりました",
-    "connectCancelled": "つながりませんでした"
+    "connectCancelled": "つながりませんでした",
+    "noteBadgeAria": "メモあり"
   },
   "petStatus": {
     "idle": "ひとやすみ",

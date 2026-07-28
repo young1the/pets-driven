@@ -14,6 +14,14 @@ type PetWindowStatusProps = {
   working: boolean;
   overlay: PetWindowOverlay | null;
   cwd: string | null;
+  /**
+   * The pet's note when it should be readable right now — the pet is saying it,
+   * or the user is hovering the pet to expand the card. Null keeps the note out
+   * of the card while `hasNote` still marks that there is one to come back to.
+   */
+  note: string | null;
+  /** True when the pet has a note at all; drives the always-on badge. */
+  hasNote: boolean;
   spriteHeight: number;
   /** Pet window resize scale; shrinks the card's own size at small pet sizes
    * so it doesn't loom over a tiny sprite, clamped so text stays legible. */
@@ -29,6 +37,8 @@ export function PetWindowStatus({
   working,
   overlay,
   cwd,
+  note,
+  hasNote,
   spriteHeight,
   scale,
 }: PetWindowStatusProps) {
@@ -68,14 +78,37 @@ export function PetWindowStatus({
       }
     >
       <div
-        className={`pet-window-status-card__inner${cwd || messageLine ? " pet-window-status-card__inner--expanded" : ""}`}
+        className={`pet-window-status-card__inner${cwd || messageLine || note ? " pet-window-status-card__inner--expanded" : ""}`}
       >
         <div className="pet-window-status-card__row">
           <span className="pet-window-status-card__dot" />
           <span className="pet-window-status-card__name">{name}</span>
           {label ? <span className="pet-window-status-card__label">{label}</span> : null}
+          {hasNote ? (
+            <span
+              aria-label={t("petWindow.noteBadgeAria")}
+              className="pet-window-status-card__note-badge"
+              role="img"
+            >
+              <svg
+                aria-hidden="true"
+                fill="none"
+                height="10"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.4"
+                viewBox="0 0 24 24"
+                width="10"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </span>
+          ) : null}
         </div>
         {messageLine ? <div className="pet-window-status-card__message">{messageLine}</div> : null}
+        {note ? <div className="pet-window-status-card__note">{note}</div> : null}
         {cwd ? (
           <div className="pet-window-status-card__cwd">
             <svg

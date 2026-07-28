@@ -155,11 +155,18 @@ function steadyActivity(
   return shown.value;
 }
 
+/** A blank note is no note: whitespace must not light up the card's badge. */
+function normalizeNote(memo: string | null): string | null {
+  const trimmed = memo?.trim();
+  return trimmed ? trimmed : null;
+}
+
 type UsePetWindowSurfaceParams = {
   pet: PetWindowRouteParams;
   isPreview: boolean;
   previewPresentation?: PetWindowFixturePresentation;
   previewScale?: number;
+  previewNote?: string;
 };
 
 /**
@@ -174,6 +181,7 @@ export function usePetWindowSurface({
   isPreview,
   previewPresentation,
   previewScale,
+  previewNote,
 }: UsePetWindowSurfaceParams) {
   const surfaceRef = useRef<HTMLElement | null>(null);
   const visualFrameRef = useRef<HTMLSpanElement | null>(null);
@@ -215,10 +223,27 @@ export function usePetWindowSurface({
   // still carries whichever asset it was opened with — so the frame stream wins
   // once it has told us otherwise.
   const [assetId, setAssetId] = useState<string>(pet.assetId);
+  // Unlike the name and folder this is React state, not a ref: the note drives
+  // when the pet speaks, so the window has to re-render on the frame that
+  // carries a new one rather than waiting for the next presentation change.
+  const [note, setNote] = useState<string | null>(
+    isPreview ? normalizeNote(previewNote ?? null) : null,
+  );
   const presentationRef = useRef<PetWindowPresentation>(presentation);
   const shownActivityRef = useRef<ShownActivity>({ value: null, at: 0 });
   const petNameRef = useRef<string | null>(null);
   const cwdRef = useRef<string | null>(null);
+
+  // Preview has no frame stream, so the seeded note is all a fixture gets —
+  // but it still has to track the prop, or switching fixtures (and the note
+  // edits the fixture switcher stands in for) would never reach the window.
+  useEffect(() => {
+    if (!isPreview) {
+      return;
+    }
+
+    setNote(normalizeNote(previewNote ?? null));
+  }, [isPreview, previewNote]);
 
   useEffect(() => {
     let unlistenFrame: (() => void) | undefined;
@@ -248,6 +273,7 @@ export function usePetWindowSurface({
           setAssetId(frame.assetId);
         }
         if (frame.cwd !== undefined) cwdRef.current = frame.cwd || null;
+        if (frame.memo !== undefined) setNote(normalizeNote(frame.memo));
 
         const steadiedActivity = steadyActivity(
           shownActivityRef.current,
@@ -641,6 +667,7 @@ export function usePetWindowSurface({
     spriteScale,
     petName,
     assetId,
+    note,
     cwdRef,
     interactionStatus,
     isBodyHovered,

@@ -9,6 +9,7 @@ import { PetWindowStatus } from "@/pet-window/pet-window-status";
 import { petWindowTransport } from "@/pet-window/pet-window-transport";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { usePetWindowConnectNotice } from "@/pet-window/use-pet-window-connect-notice";
+import { usePetWindowNote } from "@/pet-window/use-pet-window-note";
 import { usePetWindowSpritesheet } from "@/pet-window/use-pet-window-spritesheet";
 import { usePetWindowSurface } from "@/pet-window/use-pet-window-surface";
 
@@ -26,6 +27,11 @@ type PetWindowViewProps = {
    * real app is driven by Tauri PET_WINDOW_BINDING_EVENT. Ignored inside Tauri.
    */
   previewConnectNotice?: { text: string; transient: boolean };
+  /**
+   * Browser-fixture only: seeds the pet's note, which in the real app rides the
+   * Tauri frame stream. Ignored inside Tauri.
+   */
+  previewNote?: string;
 };
 
 /**
@@ -39,6 +45,7 @@ export function PetWindowView({
   previewPresentation,
   previewScale,
   previewConnectNotice,
+  previewNote,
 }: PetWindowViewProps) {
   const isPreview = !petWindowTransport.isDesktopRuntime();
   const { connectNotice, dismissConnectNotice } = usePetWindowConnectNotice({
@@ -53,6 +60,7 @@ export function PetWindowView({
     spriteScale,
     petName,
     assetId,
+    note,
     cwdRef,
     interactionStatus,
     isBodyHovered,
@@ -63,10 +71,16 @@ export function PetWindowView({
     handlePointerLeave,
     handleContextMenu,
     startResize,
-  } = usePetWindowSurface({ pet, isPreview, previewPresentation, previewScale });
+  } = usePetWindowSurface({ pet, isPreview, previewPresentation, previewScale, previewNote });
   // Not `pet.assetId`: the surface starts from it but lets the host's frames
   // re-skin the pet mid-life, which the window's fixed URL cannot express.
   const spritesheetUrl = usePetWindowSpritesheet(assetId);
+  // The engine owns the card's single message line, so a pet only recites its
+  // note while it has nothing of its own to say.
+  const { isSpeaking: isSpeakingNote } = usePetWindowNote({
+    note,
+    isQuiet: presentation.overlay === null && !presentation.working,
+  });
 
   useEffect(() => {
     document.documentElement.classList.add("pet-window-document");
@@ -119,6 +133,10 @@ export function PetWindowView({
             animationState={presentation.animationState}
             working={presentation.working}
             cwd={isBodyHovered ? cwdRef.current : null}
+            hasNote={note !== null}
+            // Hovering the pet is the same "tell me more" gesture that reveals
+            // the working folder, so it also opens the note the badge promises.
+            note={isSpeakingNote || isBodyHovered ? note : null}
             name={petName}
             overlay={presentation.overlay}
             scale={spriteScale}

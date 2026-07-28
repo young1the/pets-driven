@@ -57,6 +57,7 @@ export function PetWindowSurface({
         previewPresentation={petWindowFixture?.presentation}
         previewScale={petWindowFixture?.scale}
         previewConnectNotice={petWindowFixture?.connectNotice}
+        previewNote={petWindowFixture?.note}
       />
       {petWindowFixture ? (
         <PetWindowFixtureSwitcher

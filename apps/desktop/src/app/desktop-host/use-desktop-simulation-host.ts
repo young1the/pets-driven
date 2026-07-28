@@ -631,6 +631,9 @@ export function useDesktopSimulationHost({
               // The window cannot re-read its own URL, so its look travels here.
               assetId: petRecord.assetId,
               cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
+              // Always a string so clearing a note reaches the window as an
+              // empty value rather than an absent key the window would ignore.
+              memo: petRecord.memo ?? "",
             }
           : projection.frame;
 
