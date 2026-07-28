@@ -8,9 +8,15 @@ import type { PetItemKind } from "@pets-driven/pet-engine/features/items/compone
  */
 export type WorldItemPresentation = {
   /**
-   * The glyph hosts draw. Deliberately long-established codepoints rather than
-   * the literal 🪽 / 🪝 — those are Unicode 13/14 and still render as tofu on
-   * plenty of Windows installs, which is exactly where this ships.
+   * The glyph hosts draw.
+   *
+   * A creature whose defining trait *is* the ability, rather than the tool that
+   * grants it: the literal pieces of equipment are 🪽 and 🪝, which are Unicode
+   * 13/14 and still render as tofu on plenty of Windows installs — exactly
+   * where this ships — and their long-established stand-ins read as the wrong
+   * thing entirely. A dove is a bird, not a pair of wings you can put on; a
+   * pickaxe is for digging, not for holding onto a wall. Both of these say what
+   * the pet is about to be able to do at a glance.
    */
   glyph: string;
   /** English fallback label; hosts with a catalogue translate by kind instead. */
@@ -18,8 +24,9 @@ export type WorldItemPresentation = {
 };
 
 export const WORLD_ITEM_PRESENTATION: Record<PetItemKind, WorldItemPresentation> = {
-  wings: { glyph: "🕊️", label: "Wings" },
-  claws: { glyph: "⛏️", label: "Climbing claws" },
+  // Unicode 9.0 (2016) and 7.0 (2014) — old enough that neither can tofu.
+  wings: { glyph: "🦋", label: "Wings" },
+  claws: { glyph: "🕷️", label: "Climbing claws" },
 };
 
 export function presentWorldItem(kind: PetItemKind): WorldItemPresentation {
