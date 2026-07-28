@@ -254,6 +254,18 @@ fn pet_overlay_url() -> String {
 ///
 /// Called again on every world rebuild, which is what re-fits it when the
 /// monitor layout changes.
+///
+/// The size asked for here is deliberately *larger than the desktop* — the
+/// overlay adds a cell of slack on every side so a pet at the edge of a monitor
+/// can still draw its bubble (see `petOverlayWindowRect`) — and Windows refuses
+/// that by default: `WM_WINDOWPOSCHANGING` clamps every window to the virtual
+/// screen plus a border's worth of slack, so the overlay came out roughly a
+/// screen tall while the host still addressed it as the full rect. Everything
+/// below the clamped edge was cut off, which is exactly where pets stand: they
+/// walked off the bottom of the window and vanished. Raising the limit is what
+/// `set_max_size` does — it is what tao answers `WM_GETMINMAXINFO` with — and it
+/// only takes effect once the window's state is attached, i.e. after creation,
+/// so the size is applied again below rather than left to the builder.
 #[tauri::command]
 pub(crate) async fn open_pet_overlay_window(
     app: tauri::AppHandle,
@@ -266,6 +278,9 @@ pub(crate) async fn open_pet_overlay_window(
     let size = LogicalSize::new(width, height);
 
     if let Some(window) = app.get_webview_window(PET_OVERLAY_LABEL) {
+        window
+            .set_max_size(Some(size))
+            .map_err(|error| format!("Could not lift the pet overlay's size limit: {error}"))?;
         window
             .set_position(position)
             .map_err(|error| format!("Could not place the pet overlay: {error}"))?;
@@ -286,6 +301,7 @@ pub(crate) async fn open_pet_overlay_window(
     )
     .title("Pets")
     .inner_size(width, height)
+    .max_inner_size(width, height)
     .position(x, y)
     .decorations(false)
     .transparent(true)
@@ -297,6 +313,15 @@ pub(crate) async fn open_pet_overlay_window(
     .focused(false)
     .build()
     .map_err(|error| format!("Could not create the pet overlay: {error}"))?;
+
+    // The window was created clamped: the constraint above is only answered from
+    // the window state, which is attached after the native window exists.
+    window
+        .set_size(size)
+        .map_err(|error| format!("Could not size the pet overlay: {error}"))?;
+    window
+        .set_position(position)
+        .map_err(|error| format!("Could not place the pet overlay: {error}"))?;
 
     window
         .set_ignore_cursor_events(true)
