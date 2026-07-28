@@ -104,6 +104,19 @@ describe("claws on the live desktop world", () => {
     expect(attached).toBe(true);
   });
 
+  it("stands the climb against the edge of the screen, not out in the desktop", () => {
+    // The columns are placed one half-width in, which is as near the edge as a
+    // body can physically get: the side walls sit outside the work area, so the
+    // pet's own edge meets the screen's. A fixed inset instead put every pet —
+    // half size by default — 120px inside, climbing a strip of empty desktop.
+    const { world } = settledDesktopPet();
+    const [leftColumn] = world.snapshot().climbableSurfaces;
+    const body = world.getComponent("pet-a", "PhysicsBody");
+    const halfWidth = body?.shape === "rectangle" ? body.width / 2 : 0;
+
+    expect(leftColumn.position.x - MONITOR.x).toBeCloseTo(halfWidth, 0);
+  });
+
   it("leaves a pet without claws on the floor", () => {
     // The columns are in every desktop world whether or not anything can use
     // them, so they must stay inert until a pet earns the ability.

@@ -689,12 +689,33 @@ export function deriveAdoptedPetLocomotion(
 }
 
 /**
- * How far in from a monitor's side edge a climbable column stands. A climbing
- * pet is pinned to the surface's exact x (ClimbAttachmentSystem), so anything
- * narrower than the widest adopted body's half-width would hang half the pet
- * off the screen.
+ * The narrowest a climb column may stand from the edge, for a world built
+ * without any pet to measure — the columns still have to be somewhere.
  */
-const DESKTOP_CLIMB_SURFACE_INSET = 120;
+const DESKTOP_CLIMB_SURFACE_MIN_INSET = 32;
+
+/**
+ * How far in from a monitor's side edge a climbable column stands.
+ *
+ * A climbing pet is pinned to the surface's exact x (ClimbAttachmentSystem) and
+ * the side walls sit wholly outside the work area, so a body can travel until
+ * its edge meets the screen's. That makes one half-width the *only* right
+ * answer: further in and the pet climbs a strip of empty desktop instead of the
+ * side of the screen, nearer and the column cannot be reached at all, because
+ * the wall stops the body before its centre ever arrives.
+ *
+ * Measured from the bodies the world is actually built with, not from the
+ * largest a pet could ever be scaled to. The fixed worst case this replaced was
+ * wrong in both directions at once: pets are half size by default, so every one
+ * of them climbed 120px inside the edge, while a pet scaled to the maximum has
+ * a half-width of 156 and could not reach that column at all.
+ */
+export function desktopClimbSurfaceInset(
+  bodySizes: ReadonlyArray<{ width: number } | undefined>,
+): number {
+  const halfWidths = bodySizes.map((size) => (size?.width ?? 0) / 2);
+  return Math.max(DESKTOP_CLIMB_SURFACE_MIN_INSET, ...halfWidths);
+}
 
 /**
  * Climbable columns just inside each monitor's left and right edges.
@@ -705,7 +726,10 @@ const DESKTOP_CLIMB_SURFACE_INSET = 120;
  * are inert for a pet without claws — every climb system bails immediately on a
  * missing `CanWallClimb` — so they change nothing until a pet earns the ability.
  */
-export function createDesktopClimbableSurfaces(monitors: MonitorWorkArea[]): EntityDeclaration[] {
+export function createDesktopClimbableSurfaces(
+  monitors: MonitorWorkArea[],
+  inset: number = DESKTOP_CLIMB_SURFACE_MIN_INSET,
+): EntityDeclaration[] {
   return monitors.flatMap((monitor) => {
     // Mid-height, so the climb target derived from it (surface y − 80) lands
     // in the upper third of the screen rather than a hop above the taskbar.
@@ -717,7 +741,7 @@ export function createDesktopClimbableSurfaces(monitors: MonitorWorkArea[]): Ent
           { type: "ClimbableSurface" as const },
           {
             type: "Transform" as const,
-            position: { x: monitor.x + DESKTOP_CLIMB_SURFACE_INSET, y },
+            position: { x: monitor.x + inset, y },
           },
         ],
       },
@@ -728,7 +752,7 @@ export function createDesktopClimbableSurfaces(monitors: MonitorWorkArea[]): Ent
           {
             type: "Transform" as const,
             position: {
-              x: monitor.x + monitor.width - DESKTOP_CLIMB_SURFACE_INSET,
+              x: monitor.x + monitor.width - inset,
               y,
             },
           },
@@ -837,7 +861,13 @@ export function createAdoptedPetsScenario(
     clock,
     entities: [
       ...createMonitorBoundaryEntities(monitors, groundThickness),
-      ...createDesktopClimbableSurfaces(monitors),
+      // Sized to the roster's own bodies so a climb hugs the edge of the screen
+      // at whatever scale these pets are, rather than to the largest a pet
+      // could ever be scaled to.
+      ...createDesktopClimbableSurfaces(
+        monitors,
+        desktopClimbSurfaceInset(pets.map((pet) => bodySizeFor(pet.id) ?? DEFAULT_PET_BODY_SIZE)),
+      ),
       {
         // Holds the trinket pool and lifetime that wings and claws are dropped
         // with — the only way a pet in this world, every one built as a plain
