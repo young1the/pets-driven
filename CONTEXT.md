@@ -252,8 +252,18 @@ _Avoid_: cooldown (as a domain term), session
 A brief, one-sided social response made by a nearby idle **Pet** when it notices another **Pet** performing one of its personality-signature **Activities**. The responder may join in, cheer, watch, or keep its distance according to its own **Pet Profile**. It does not interrupt the source **Pet** or create a **Social Session**.
 _Avoid_: Social Session, relationship, copied personality
 
+**Trinket**:
+A collectible object the world scatters on the desktop floor that is not a **Pet**. A **Pet** that reaches one collects it, gains the **Borrowed Ability** it carries, and the trinket is gone. An uncollected trinket fades on its own.
+_Avoid_: item (unqualified), power-up, pickup zone
+
+**Borrowed Ability**:
+A way of moving a **Pet** holds only for a while, taken from a **Trinket** rather than from its **Pet Profile** — flight or wall-climbing. A **Pet** holds at most one; when it lapses the **Pet** goes back to walking.
+_Avoid_: skill, upgrade, permanent trait
+
 ## Relationships
 
+- A **Pet** holds at most one **Borrowed Ability**, taken from exactly one **Trinket**.
+- A **Trinket** is collected by at most one **Pet**, and stops existing when it is.
 - A **Pet** is bound to exactly one **Working Directory**.
 - A **Working Directory** has exactly one **Pet**.
 - A **Pet** represents events from the **Agent Event Feed** for its **Working Directory**.

@@ -9,6 +9,11 @@ import type { CursorPerception, PerceivedEntity } from "./components";
 
 const MAX_PERCEPTION_RANGE = 400; // px
 
+// A trinket glinting on the floor carries much further than a neighbouring pet
+// does. At the pet range a drop on a 1920-wide desktop would usually land
+// outside every pet's awareness and simply fade away unclaimed.
+const ITEM_PERCEPTION_RANGE = 1_000; // px
+
 // Laser-pointer-chase tuning: cursor must be moving fast AND close to the pet.
 const CURSOR_PLAYFUL_SPEED_PX_S = 600;
 const CURSOR_PLAYFUL_RADIUS_PX = 300;
@@ -40,6 +45,11 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
   const allPets: { id: string; x: number; y: number }[] = [];
   components.forEach(["PetIdentity", "Transform"], (id, [, transform]) => {
     allPets.push({ id, x: transform.position.x, y: transform.position.y });
+  });
+
+  const items: { id: string; x: number; y: number }[] = [];
+  components.forEach(["WorldItem", "Transform"], (id, [, transform]) => {
+    items.push({ id, x: transform.position.x, y: transform.position.y });
   });
 
   const effectiveNow = now ?? cursorEntry?.samples[cursorEntry.samples.length - 1]?.at ?? 0;
@@ -80,6 +90,16 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
       }
       nearbyClimbables.sort((a, b) => a.distance - b.distance);
       perception.nearbyClimbables = nearbyClimbables;
+
+      const nearbyItems: PerceivedEntity[] = [];
+      for (const item of items) {
+        const entry = buildEntry(item.id, item.x, item.y, px, py);
+        if (entry.distance <= ITEM_PERCEPTION_RANGE) {
+          nearbyItems.push(entry);
+        }
+      }
+      nearbyItems.sort((a, b) => a.distance - b.distance);
+      perception.nearbyItems = nearbyItems;
 
       perception.self = {
         grounded: contact.grounded,
@@ -143,6 +163,7 @@ export const PerceptionSystem: SimulationSystem<WorldStepContext> = {
     "UserAnchor",
     "Transform",
     "ClimbableSurface",
+    "WorldItem",
     "PetIdentity",
     "Perception",
     "Steering",

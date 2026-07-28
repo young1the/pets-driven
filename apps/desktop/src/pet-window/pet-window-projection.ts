@@ -125,6 +125,42 @@ export function projectWorldSnapshotToPetWindows(
   });
 }
 
+/**
+ * The trinket overlay window is created at this fixed size in Rust
+ * (sync_item_windows) and, like the pet window, never resizes — so the
+ * projection centres that fixed square on the world position.
+ */
+export const ITEM_WINDOW_SIZE = 64;
+
+export type ItemWindowPlacement = {
+  itemId: string;
+  kind: string;
+  x: number;
+  y: number;
+};
+
+/** Screen placements for every trinket currently lying on the desktop. */
+export function projectWorldItemsToWindows(
+  snapshot: WorldSnapshot,
+  bounds: PetWindowProjectionBounds,
+): ItemWindowPlacement[] {
+  const scaleX = bounds.width / snapshot.width;
+  const scaleY = bounds.height / snapshot.height;
+  const viewport = snapshot.viewport ?? {
+    x: 0,
+    y: 0,
+    width: snapshot.width,
+    height: snapshot.height,
+  };
+
+  return (snapshot.items ?? []).map((item) => ({
+    itemId: item.id,
+    kind: item.kind,
+    x: Math.round(bounds.x + (item.position.x - viewport.x) * scaleX - ITEM_WINDOW_SIZE / 2),
+    y: Math.round(bounds.y + (item.position.y - viewport.y) * scaleY - ITEM_WINDOW_SIZE / 2),
+  }));
+}
+
 export function projectScreenPointToWorld(
   snapshot: WorldSnapshot,
   bounds: PetWindowProjectionBounds,

@@ -79,6 +79,8 @@ function createGateway(
     sendTestHookEvent: vi.fn().mockResolvedValue("HTTP/1.1 200 OK"),
     closeAllPetWindows: vi.fn().mockResolvedValue(undefined),
     placePetWindows: vi.fn().mockResolvedValue([]),
+    syncItemWindows: vi.fn().mockResolvedValue(undefined),
+    closeAllItemWindows: vi.fn().mockResolvedValue(undefined),
     focusForeignWindow: vi.fn().mockResolvedValue(false),
     startSession: vi.fn().mockResolvedValue(null),
     connectForeignWindow: vi.fn().mockResolvedValue(null),

@@ -229,6 +229,117 @@ pub(crate) async fn place_pet_windows(
     Ok(unplaced)
 }
 
+// ── Trinket overlay windows ────────────────────────────────────────────────
+//
+// A trinket is a world entity that is not a pet, so it needs its own overlay
+// window: small, transparent, click-through, and owned entirely by the
+// simulation. Unlike a pet window there is no frame stream — a trinket never
+// changes appearance and never moves once it lands — so the host reconciles the
+// whole set in one call and the window itself renders straight from its URL.
+
+const ITEM_WINDOW_LABEL_PREFIX: &str = "item-window-";
+const ITEM_WINDOW_SIZE: f64 = 64.0;
+
+/// The kinds an overlay may render, mirroring `PetItemKind` in the engine. A
+/// closed list because the value goes into the window's URL.
+const ITEM_WINDOW_KINDS: [&str; 2] = ["wings", "claws"];
+
+/// One trinket's screen placement for a single simulation frame.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ItemWindowSpec {
+    item_id: String,
+    kind: String,
+    x: f64,
+    y: f64,
+}
+
+fn item_window_label(item_id: &str) -> String {
+    format!("{ITEM_WINDOW_LABEL_PREFIX}{item_id}")
+}
+
+fn item_window_url(item_id: &str, kind: &str) -> String {
+    format!("{PET_OVERLAY_ENTRY}?surface=item-window&itemId={item_id}&kind={kind}")
+}
+
+/// Reconcile the trinket overlays to exactly the set the simulation reports.
+///
+/// Windows are created for new drops, moved for ones that are still there, and
+/// destroyed for anything the world no longer has — which is how a collected or
+/// faded trinket disappears. One batched call per change, the same shape as
+/// place_pet_windows, so a drop never costs a round trip per window.
+#[tauri::command]
+pub(crate) async fn sync_item_windows(
+    app: tauri::AppHandle,
+    items: Vec<ItemWindowSpec>,
+) -> Result<(), String> {
+    let mut wanted = Vec::new();
+
+    for item in items {
+        validate_asset_id(&item.item_id).map_err(|_| "Invalid item id".to_string())?;
+        if !ITEM_WINDOW_KINDS.contains(&item.kind.as_str()) {
+            return Err(format!("Unknown item kind: {}", item.kind));
+        }
+
+        let label = item_window_label(&item.item_id);
+        wanted.push(label.clone());
+
+        let position = LogicalPosition::new(item.x, item.y);
+
+        if let Some(window) = app.get_webview_window(&label) {
+            window
+                .set_position(position)
+                .map_err(|error| format!("Could not place {label}: {error}"))?;
+            continue;
+        }
+
+        let window = WebviewWindowBuilder::new(
+            &app,
+            label.clone(),
+            WebviewUrl::App(item_window_url(&item.item_id, &item.kind).into()),
+        )
+        .title("Trinket")
+        .inner_size(ITEM_WINDOW_SIZE, ITEM_WINDOW_SIZE)
+        .position(item.x, item.y)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .focused(false)
+        .build()
+        .map_err(|error| format!("Could not create {label}: {error}"))?;
+
+        // A trinket is scenery, not a target: clicks belong to whatever is
+        // behind it on the desktop.
+        window.set_ignore_cursor_events(true).ok();
+    }
+
+    for (label, window) in app.webview_windows() {
+        if label.starts_with(ITEM_WINDOW_LABEL_PREFIX) && !wanted.contains(&label) {
+            window
+                .destroy()
+                .map_err(|error| format!("Could not close {label}: {error}"))?;
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub(crate) async fn close_all_item_windows(app: tauri::AppHandle) -> Result<(), String> {
+    for (label, window) in app.webview_windows() {
+        if label.starts_with(ITEM_WINDOW_LABEL_PREFIX) {
+            window
+                .destroy()
+                .map_err(|error| format!("Could not close {label}: {error}"))?;
+        }
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub(crate) async fn close_all_pet_windows(app: tauri::AppHandle) -> Result<(), String> {
     for (label, window) in app.webview_windows() {
@@ -364,6 +475,25 @@ mod tests {
     #[test]
     fn pet_window_playground_labels_are_stable() {
         assert_eq!(pet_window_playground_label(3), "pet-window-playground-3");
+    }
+
+    #[test]
+    fn item_window_label_and_url_are_stable() {
+        assert_eq!(
+            item_window_label("item-wings-3"),
+            "item-window-item-wings-3"
+        );
+        assert_eq!(
+            item_window_url("item-wings-3", "wings"),
+            "pet-window.html?surface=item-window&itemId=item-wings-3&kind=wings"
+        );
+    }
+
+    #[test]
+    fn item_window_kinds_match_the_engine() {
+        assert!(ITEM_WINDOW_KINDS.contains(&"wings"));
+        assert!(ITEM_WINDOW_KINDS.contains(&"claws"));
+        assert!(!ITEM_WINDOW_KINDS.contains(&"boots"));
     }
 
     #[test]

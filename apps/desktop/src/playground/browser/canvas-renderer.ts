@@ -1,5 +1,6 @@
 import { ink, paper, semantic } from "@pets-driven/design-system/tokens";
 import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
+import { presentWorldItem } from "@pets-driven/pet-engine/features/items/item-presentation";
 import {
   type AssetCatalog,
   drawPetSpriteCanvas,
@@ -34,6 +35,12 @@ export function drawWorld(
 
   for (const surface of snapshot.climbableSurfaces) {
     drawClimbableSurface(context, surface, snapshot.height);
+  }
+
+  // Below the pets, so a pet standing on a trinket hides it the moment before
+  // it collects it.
+  for (const item of snapshot.items ?? []) {
+    drawWorldItem(context, item, elapsedMs);
   }
 
   for (const body of snapshot.bodies) {
@@ -109,6 +116,38 @@ export function drawWorld(
   if (projectsVirtualDesktop) {
     context.restore?.();
   }
+}
+
+/**
+ * A trinket on the desktop floor: a soft halo so it reads against a wallpaper,
+ * the kind's glyph, and a bob so it catches the eye. `elapsedMs` is the same
+ * host animation clock the sprite frames run on, not simulation time — the bob
+ * is presentation, and the engine's item entity has no phase of its own.
+ */
+function drawWorldItem(
+  context: CanvasRenderingContext2D,
+  item: NonNullable<WorldSnapshot["items"]>[number],
+  elapsedMs: number,
+) {
+  const bob = Math.sin(elapsedMs / 320) * 3;
+  const y = item.position.y + bob;
+
+  context.save?.();
+  context.beginPath();
+  context.ellipse?.(item.position.x, item.position.y + 18, 14, 4, 0, 0, Math.PI * 2);
+  context.fillStyle = `${ink[500]}33`;
+  context.fill();
+
+  context.beginPath();
+  context.ellipse?.(item.position.x, y, 18, 18, 0, 0, Math.PI * 2);
+  context.fillStyle = `${semantic.info}2b`;
+  context.fill();
+
+  context.font = "24px Nunito, system-ui, sans-serif";
+  context.textAlign = "center";
+  context.fillStyle = ink[950];
+  context.fillText(presentWorldItem(item.kind).glyph, item.position.x, y + 8);
+  context.restore?.();
 }
 
 function drawMonitorWorkAreas(

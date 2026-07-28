@@ -30,6 +30,12 @@ export function runBehaviorDecisionSystem(
   // One pet per climbable surface at a time.  Pre-populate from entities that
   // are already approaching or actively climbing.  Updated on winner selection so
   // sequential entity passes in the same step also see fresh reservations.
+  // One pet per trinket per pass. Only within this pass: a pet that set off
+  // last tick is not tracked, so two pets can end up converging on the same
+  // drop — the first to reach it takes it, and the other's arrival simply
+  // clears an empty target. That race is cheap and reads as pets racing.
+  const claimedItems = new Set<string>();
+
   const claimedSurfaces = new Set<string>();
   components.forEach(["ClimbIntentState"], (otherId, [otherIntent]) => {
     if (otherIntent.phase === "approaching") {
@@ -98,7 +104,7 @@ export function runBehaviorDecisionSystem(
         return;
       }
 
-      decideAutonomousBehavior(context, claimedSurfaces);
+      decideAutonomousBehavior(context, claimedSurfaces, claimedItems);
     },
   );
 }

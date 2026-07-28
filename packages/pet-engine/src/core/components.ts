@@ -50,6 +50,12 @@ export type {
   ThrowImpulseComponent,
 } from "@pets-driven/pet-engine/features/interaction/components";
 export type {
+  CarriedItemComponent,
+  ItemSpawnerComponent,
+  PetItemKind,
+  WorldItemComponent,
+} from "@pets-driven/pet-engine/features/items/components";
+export type {
   MoodStateComponent,
   PetExperienceKind,
   RecentExperience,
@@ -140,6 +146,11 @@ import type {
   ThrowImpulseComponent,
 } from "@pets-driven/pet-engine/features/interaction/components";
 import type {
+  CarriedItemComponent,
+  ItemSpawnerComponent,
+  WorldItemComponent,
+} from "@pets-driven/pet-engine/features/items/components";
+import type {
   MoodStateComponent,
   RecentExperienceMemoryComponent,
 } from "@pets-driven/pet-engine/features/mood/components";
@@ -203,6 +214,9 @@ export type Component =
   | CanJumpComponent
   | CanWalkComponent
   | CanWallClimbComponent
+  | CarriedItemComponent
+  | ItemSpawnerComponent
+  | WorldItemComponent
   | ClimbDismountStateComponent
   | ClimbIntentStateComponent
   | ClimbableSurfaceComponent

@@ -45,6 +45,12 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     mood: "working",
     tone: "motion",
   },
+  "fetch-item": {
+    emote: "sparkle",
+    label: "Going for a trinket",
+    mood: "excited",
+    tone: "spark",
+  },
   "idle-stay": {
     emote: "zzz",
     label: "Staying idle",

@@ -9,6 +9,7 @@ import type {
   AgentChannelSource,
   AgentChannelStatus,
 } from "@pets-driven/pet-engine/features/agent/components";
+import type { PetItemKind } from "@pets-driven/pet-engine/features/items/components";
 import type {
   SocialSessionKind,
   SocialSessionPhase,
@@ -112,6 +113,8 @@ export type PetSnapshot = {
   interaction?: InteractionSnapshot;
   /** The live social session this pet is in, or null when it is on its own. */
   social?: SocialSnapshot | null;
+  /** The trinket ability the pet is wearing, or null when it has none. */
+  carrying?: CarriedItemSnapshot | null;
 };
 
 export type InteractionSnapshot = {
@@ -142,6 +145,25 @@ export type ClimbableSurfaceSnapshot = {
   };
 };
 
+/** A trinket lying on the desktop, for hosts to draw. */
+export type WorldItemSnapshot = {
+  id: string;
+  kind: PetItemKind;
+  position: {
+    x: number;
+    y: number;
+  };
+  /** Clock time the uncollected trinket fades at, for a fade-out cue. */
+  expiresAt: number;
+};
+
+/** The ability a pet is currently wearing from a collected trinket. */
+export type CarriedItemSnapshot = {
+  kind: PetItemKind;
+  pickedUpAt: number;
+  expiresAt: number;
+};
+
 export type MonitorWorkAreaSnapshot = {
   id: string;
   x: number;
@@ -165,4 +187,10 @@ export type WorldSnapshot = {
   bodies: BodySnapshot[];
   pets: PetSnapshot[];
   climbableSurfaces: ClimbableSurfaceSnapshot[];
+  /**
+   * Trinkets currently lying on the desktop. Optional so the physics world's
+   * own bare snapshot — and every host fixture built before trinkets existed —
+   * still satisfies this type.
+   */
+  items?: WorldItemSnapshot[];
 };

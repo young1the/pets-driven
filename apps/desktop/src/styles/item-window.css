@@ -1,0 +1,81 @@
+/* Trinket overlay window: a 64x64 transparent always-on-top square holding one
+   world item. Like the pet window it must not inherit the design-system's
+   painted body background. */
+
+html.item-window-document,
+html.item-window-document body {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.item-window {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  user-select: none;
+  /* The window is click-through natively (set_ignore_cursor_events); this keeps
+     the browser preview behaving the same way. */
+  pointer-events: none;
+}
+
+.item-window__halo,
+.item-window__glyph {
+  grid-area: 1 / 1;
+}
+
+.item-window__halo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgb(56 189 248 / 45%) 0%,
+    rgb(56 189 248 / 18%) 55%,
+    transparent 72%
+  );
+  animation: item-window-pulse 2.4s ease-in-out infinite;
+}
+
+.item-window__glyph {
+  font-size: 28px;
+  line-height: 1;
+  text-align: center;
+  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 45%));
+  animation: item-window-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes item-window-pulse {
+  0%,
+  100% {
+    transform: scale(0.88);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes item-window-bob {
+  0%,
+  100% {
+    transform: translateY(2px);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item-window__halo,
+  .item-window__glyph {
+    animation: none;
+  }
+}

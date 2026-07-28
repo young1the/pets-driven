@@ -25,6 +25,7 @@ import {
   scoreBeckon,
   scoreChaseCursor,
   scoreClimb,
+  scoreFetchItem,
   scoreFleeFromPet,
   scoreFollowRoutine,
   scoreFret,
@@ -80,12 +81,14 @@ function idleStayDurationMs(p: PersonalityComponent, random: RandomSource): numb
 
 /**
  * The ordinary autonomous pool: everything a pet may choose to do when nothing
- * else has a claim on it. `claimedSurfaces` is shared across the whole pass so
- * two pets cannot reserve the same climbable in one tick.
+ * else has a claim on it. `claimedSurfaces` and `claimedItems` are shared
+ * across the whole pass so two pets cannot reserve the same climbable — or set
+ * off after the same trinket — in one tick.
  */
 export function decideAutonomousBehavior(
   { components, id, now, random, bounds, personality, petX, petY, drives, mood }: DecisionContext,
   claimedSurfaces: Set<string>,
+  claimedItems: Set<string>,
 ): void {
   // Read world context from this pet's Perception snapshot.
   const perception = components.getComponent(id, "Perception");
@@ -184,6 +187,28 @@ export function decideAutonomousBehavior(
       build: () => ({
         activityDurationMs: Math.round(ROMP_BASE_MS + random.next() * ROMP_EXTRA_MS),
       }),
+    });
+  }
+
+  // A trinket on the floor is worth crossing the room for: collecting one is
+  // the only way an ordinary walker ever gets to fly or climb. A pet already
+  // wearing an ability leaves the next one for someone else, which is what
+  // keeps `CarriedItem` a single record the revoke path can trust.
+  const carriedItem = components.getComponent(id, "CarriedItem");
+  const nearestItem = carriedItem
+    ? undefined
+    : perception?.nearbyItems?.find((item) => !claimedItems.has(item.id));
+  if (nearestItem) {
+    pushCandidate(candidates, components, id, now, {
+      kind: "fetch-item",
+      score: scoreFetchItem(personality, drives),
+      // A position, not an entity target: trinkets never move, and an entity
+      // target would send ArrivalBehaviorSystem down its approach-pet branch,
+      // which has no idea what this is and would never clear the target.
+      build: () => {
+        claimedItems.add(nearestItem.id);
+        return { targetPosition: { ...nearestItem.position } };
+      },
     });
   }
 

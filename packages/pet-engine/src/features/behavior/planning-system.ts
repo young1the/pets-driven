@@ -35,6 +35,7 @@ const COLLISION_ENGAGE_SOCIAL_REFILL = 0.15;
 const WANDER_FAR_CURIOSITY_RELIEF = 0.35;
 const CLIMB_CURIOSITY_RELIEF = 0.3;
 const CLIMB_ENERGY_COST = 0.12;
+const FETCH_ITEM_CURIOSITY_RELIEF = 0.25;
 
 // ── BehaviorPlanningSystem ────────────────────────────────────────────────
 //
@@ -67,6 +68,19 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         adjustDrive(components, id, {
           curiosity: -WANDER_FAR_CURIOSITY_RELIEF,
         });
+        break;
+      case "fetch-item":
+        // Walk to where the trinket lies; ItemPickupSystem does the collecting
+        // once the pet is standing over it, and ArrivalBehaviorSystem clears
+        // the target either way (another pet may get there first).
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: null,
+          targetPosition: token.targetPosition ?? null,
+        });
+        setPetSteering(components, id, "pursue");
+        // Going to look at the strange new thing is itself novelty.
+        adjustDrive(components, id, { curiosity: -FETCH_ITEM_CURIOSITY_RELIEF });
         break;
       case "seek-user":
         // MotionTargetSystem (UPDATE phase) reads Perception.userAnchor and owns

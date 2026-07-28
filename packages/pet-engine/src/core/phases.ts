@@ -37,6 +37,11 @@ import {
   ThrowImpulseSystem,
   UserInteractionBehaviorSystem,
 } from "@pets-driven/pet-engine/features/interaction/systems";
+import {
+  ItemAbilityExpirySystem,
+  ItemPickupSystem,
+  ItemSpawnSystem,
+} from "@pets-driven/pet-engine/features/items/systems";
 import { MoodRecoverySystem } from "@pets-driven/pet-engine/features/mood/systems";
 import {
   ClimbApproachSystem,
@@ -70,6 +75,12 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     PhysicsTransformSyncSystemPre,
     PetCollisionSyncSystem,
     ContactSystem,
+    // Trinkets settle before Perception looks for them, and a collected one is
+    // gone from the store in the same tick it was taken — so no pet can be
+    // offered an item another pet already picked up this frame.
+    ItemSpawnSystem,
+    ItemPickupSystem,
+    ItemAbilityExpirySystem,
     CursorInputSystem, // ingest live cursor samples before Perception reads them
     PerceptionSystem,
   ],

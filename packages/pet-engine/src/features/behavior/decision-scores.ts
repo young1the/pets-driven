@@ -72,6 +72,17 @@ export function scoreJump(p: PersonalityComponent, drives?: DrivesComponent): nu
   return base - driveResponseCurve(1 - drives.energy) * driveWeight(0.5, restSensitivity(p));
 }
 
+export function scoreFetchItem(p: PersonalityComponent, drives?: DrivesComponent): number {
+  // A trinket on the floor is the most novel thing on the desktop, so it scores
+  // above the ordinary wander pool for almost every temperament — otherwise a
+  // drop that only exists for a minute or two would usually go uncollected.
+  // O (openness) → drawn to the unfamiliar; N (neuroticism) → wary of it.
+  const base = 0.8 + p.openness * 0.6 - p.neuroticism * 0.3;
+  if (!drives) return base;
+  // Boredom is exactly the itch a strange new object scratches.
+  return base + driveResponseCurve(drives.curiosity) * driveWeight(0.5, curiositySensitivity(p));
+}
+
 export function scoreClimb(p: PersonalityComponent, drives?: DrivesComponent): number {
   // O (openness) → exploration; E (extraversion) → physical energy
   const base = 0.2 + p.openness * 0.6 + p.extraversion * 0.2;
