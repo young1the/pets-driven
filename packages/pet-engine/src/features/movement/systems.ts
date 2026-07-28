@@ -75,7 +75,17 @@ export function runLocomotionModeSystem(components: ComponentStore): void {
 // contact/attachment gate never opens — would otherwise pin the pet at the
 // wall forever, visibly oscillating in the walk deadband. Cancel and let the
 // decision layer (with its request-climb repeat cooldown) try again later.
+//
+// Measured from the last time the pet got *closer*, not from the start of the
+// approach: a walk across the desktop takes longer than this budget and is not
+// stuck, and cancelling it left the pet reading "Climbing" for six seconds at a
+// time while never once reaching a wall.
 const CLIMB_APPROACH_TIMEOUT_MS = 6_000;
+
+// How much nearer the pet has to get for it to count as progress. Large enough
+// that jitter in the walk deadband — the stall this timeout exists to catch —
+// cannot keep an approach alive by twitching towards the surface.
+const CLIMB_APPROACH_PROGRESS_EPSILON = 1;
 
 export function runClimbApproachSystem(components: ComponentStore, clock?: Clock): void {
   type SurfaceEntry = { id: string; position: Vector };
@@ -94,10 +104,27 @@ export function runClimbApproachSystem(components: ComponentStore, clock?: Clock
       if (climbIntent.phase !== "approaching") return;
 
       const surface = surfaces.find((s) => s.id === climbIntent.surfaceEntityId);
+
+      if (surface && now !== undefined) {
+        const dx = Math.abs(surface.position.x - transform.position.x);
+        if (climbIntent.closestDx === undefined) {
+          // First sighting of this approach is not progress — there is nothing
+          // to have improved on yet — so the stall clock is anchored to when
+          // the approach began rather than reset to now. A state scripted with
+          // no start time stays unanchored and never times out, as before.
+          climbIntent.closestDx = dx;
+          climbIntent.progressAt = climbIntent.startedAt;
+        } else if (dx < climbIntent.closestDx - CLIMB_APPROACH_PROGRESS_EPSILON) {
+          climbIntent.closestDx = dx;
+          climbIntent.progressAt = now;
+        }
+      }
+
+      const stalledSince = climbIntent.progressAt ?? climbIntent.startedAt;
       const timedOut =
         now !== undefined &&
-        climbIntent.startedAt !== undefined &&
-        now - climbIntent.startedAt > CLIMB_APPROACH_TIMEOUT_MS;
+        stalledSince !== undefined &&
+        now - stalledSince > CLIMB_APPROACH_TIMEOUT_MS;
       if (!surface || timedOut) {
         components.removeComponent(id, "ClimbIntentState");
         motion.targetEntityId = null;

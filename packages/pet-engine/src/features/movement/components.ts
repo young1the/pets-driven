@@ -140,6 +140,19 @@ export type ClimbIntentStateComponent = {
    * the attached phase.
    */
   startedAt?: number;
+  /**
+   * When the approach last got closer to the surface, and the closest it has
+   * come. The cancel above is meant to catch an approach that is *stuck*, but
+   * measured from `startedAt` alone it cannot tell being stuck from being far
+   * away: a pet legitimately walking the width of a monitor is making progress
+   * the whole time, and would still be cancelled for taking longer than the
+   * budget. So ClimbApproachSystem pushes `progressAt` forward whenever the pet
+   * closes on the surface, and the timeout runs from that instead — it elapses
+   * only once the pet stops getting nearer. Absent until the first tick of an
+   * approach, which is why the timeout falls back to `startedAt`.
+   */
+  progressAt?: number;
+  closestDx?: number;
 };
 
 export type ClimbDismountPhase = "ready" | "airborne" | "coolingDown";

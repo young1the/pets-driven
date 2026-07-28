@@ -72,6 +72,38 @@ describe("claws on the live desktop world", () => {
     expect(highestY).toBeLessThan(MONITOR.height / 2);
   });
 
+  it("reaches a wall at the far edge of what it can perceive", () => {
+    // Perception lets a pet claim a climb from most of a screen away, and the
+    // approach has to be able to finish that walk. When the approach budget ran
+    // from the start of the walk instead of from the pet's last step nearer,
+    // anything past ~820px was claimed, walked at for six seconds, then
+    // cancelled — so the pet read "Climbing" over and over without ever
+    // touching a wall.
+    const { clock, world } = createAdoptedPetsScenario(
+      [{ id: "pet-a", sourceId: "agent-a", name: "Alice" }],
+      {
+        monitors: [MONITOR],
+        petBodySize: DESKTOP_PET_BODY,
+        // Just inside the perception range of the left column at x=120.
+        spawnPoint: { x: 1_000, y: MONITOR.height - 100 },
+      },
+    );
+
+    world.setComponent("pet-a", {
+      type: "CanWallClimb",
+      velocity: DEFAULT_PET_CLIMB_VELOCITY,
+    });
+
+    let attached = false;
+    for (let i = 0; i < 90_000 / STEP_MS && !attached; i += 1) {
+      clock.advanceBy(STEP_MS);
+      world.step(STEP_MS);
+      attached ||= world.getComponent("pet-a", "ClimbIntentState")?.phase === "attached";
+    }
+
+    expect(attached).toBe(true);
+  });
+
   it("leaves a pet without claws on the floor", () => {
     // The columns are in every desktop world whether or not anything can use
     // them, so they must stay inert until a pet earns the ability.

@@ -77,4 +77,49 @@ describe("climb approach timeout", () => {
 
     expect(store.getComponent("pet", "ClimbIntentState")).toBeDefined();
   });
+
+  /**
+   * The budget is for an approach that is *stuck*, and a walk across the
+   * desktop is not. Cancelling on elapsed time alone capped how far away a pet
+   * could start a climb from — past that it would claim the climb, read
+   * "Climbing" for the whole six seconds, cancel, and never reach a wall.
+   */
+  it("keeps a long walk alive as long as the pet is still closing on the wall", () => {
+    const store = approachingPet(0);
+    const transform = store.getComponent("pet", "Transform")!;
+    transform.position.x = 1_020; // 900px out — further than the budget covers
+
+    const clock = createManualClock(0);
+    // Twelve seconds of steady walking, twice the timeout.
+    for (let elapsed = 0; elapsed <= 12_000; elapsed += 500) {
+      clock.advanceBy(500);
+      transform.position.x = Math.max(120, transform.position.x - 40);
+      runClimbApproachSystem(store, clock);
+    }
+
+    expect(store.getComponent("pet", "ClimbIntentState")).toBeDefined();
+  });
+
+  it("still cancels once the pet stops getting any closer", () => {
+    const store = approachingPet(0);
+    const transform = store.getComponent("pet", "Transform")!;
+    transform.position.x = 1_020;
+
+    const clock = createManualClock(0);
+    // Walks for two seconds, then stalls short of the wall — the oscillation
+    // this timeout exists to catch.
+    for (let step = 0; step < 4; step += 1) {
+      clock.advanceBy(500);
+      transform.position.x -= 40;
+      runClimbApproachSystem(store, clock);
+    }
+    for (let step = 0; step < 20; step += 1) {
+      clock.advanceBy(500);
+      // Jitter towards the wall and back: never an improvement on its best.
+      transform.position.x += step % 2 === 0 ? 0.5 : -0.5;
+      runClimbApproachSystem(store, clock);
+    }
+
+    expect(store.getComponent("pet", "ClimbIntentState")).toBeUndefined();
+  });
 });
