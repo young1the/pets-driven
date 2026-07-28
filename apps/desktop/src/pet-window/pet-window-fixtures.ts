@@ -18,6 +18,7 @@ export const PET_WINDOW_FIXTURE_IDS = [
   "small-scale",
   "connect-prompt",
   "connect-connected",
+  "note",
 ] as const;
 
 export type PetWindowFixtureId = (typeof PET_WINDOW_FIXTURE_IDS)[number];
@@ -49,6 +50,8 @@ export type PetWindowFixture = {
   presentation: PetWindowFixturePresentation;
   scale?: number;
   connectNotice?: PetWindowConnectNoticeFixture;
+  /** Seeds the pet's note, which in the real app rides the frame stream. */
+  note?: string;
 };
 
 export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
@@ -246,6 +249,20 @@ export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
       overlay: null,
     },
     connectNotice: { text: "Connected to Windows Terminal", transient: true },
+  },
+  {
+    id: "note",
+    label: "Note",
+    description: "Pet carrying a note: badge in the status row, text on hover.",
+    pet: { petId: "fixture-mochi", assetId: "mochi", windowIndex: 3, name: "Nori" },
+    presentation: {
+      decisionEmote: null,
+      animationState: "idle",
+      activity: null,
+      partnerName: null,
+      overlay: null,
+    },
+    note: "Ship the release notes before Friday.",
   },
 ];
 

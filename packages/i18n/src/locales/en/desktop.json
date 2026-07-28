@@ -457,7 +457,8 @@
   "petWindow": {
     "connectPrompt": "Click the terminal window to connect",
     "connectedTo": "Connected to {{title}}",
-    "connectCancelled": "Nothing connected"
+    "connectCancelled": "Nothing connected",
+    "noteBadgeAria": "Has a note"
   },
   "petStatus": {
     "idle": "Idle",
