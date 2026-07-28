@@ -46,6 +46,56 @@ html.pet-window-fixture-preview .pet-window-surface {
   user-select: none;
 }
 
+/* Single-window overlay mode: one desktop-wide window with every pet inside it.
+   The root must not paint or take the pointer anywhere it has no pet — the OS
+   window is click-through except while the host has armed it, and inside that
+   window only a pet's own box should answer. */
+html.pet-overlay-document,
+html.pet-overlay-document body {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.pet-overlay-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* `pointer-events` is inherited, so none on the root is the default for
+   everything in the window and only the hit shims below opt back in. A pet's
+   box must NOT opt in: an element with `none` is transparent to hit-testing, so
+   the hit would simply fall through to whichever ancestor did — and the box is
+   mostly the empty margin around a sprite, which belongs to the desktop. */
+.pet-overlay-pet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Every pet is its own stacking context, so a tall speech bubble is never cut
+     off by the pet standing in front of it. */
+  isolation: isolate;
+}
+
+/* A pet inside the overlay fills the box the overlay gives it rather than the
+   window, which it shares with every other pet. Its speech and status cards are
+   drawn above that box, so nothing may clip them here — in its own window the
+   window itself was the room they had. */
+.pet-window-surface--shared {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pet-window-hit-shim {
+  position: absolute;
+  z-index: 2;
+  pointer-events: auto;
+}
+
 .pet-window-visual-frame {
   position: relative;
   display: inline-block;

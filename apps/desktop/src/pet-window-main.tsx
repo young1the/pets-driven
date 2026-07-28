@@ -13,6 +13,15 @@ const PetContextMenuView = lazy(() =>
   })),
 );
 
+// Single-window overlay mode's surface. Loaded on demand for the same reason as
+// the menu: the mode is off by default, and every pet window that is not it
+// should not carry it.
+const PetOverlaySurface = lazy(() =>
+  import("./pet-window/pet-overlay-surface").then((module) => ({
+    default: module.PetOverlaySurface,
+  })),
+);
+
 /**
  * The overlay entry: one lean bundle shared by every pet's OS window and its
  * owned context menu.
@@ -35,6 +44,14 @@ function OverlayRoot() {
           petId={petId}
           petName={decodeURIComponent(params.get("petName") ?? petId)}
         />
+      </Suspense>
+    );
+  }
+
+  if (params.get("surface") === "pet-overlay") {
+    return (
+      <Suspense fallback={null}>
+        <PetOverlaySurface />
       </Suspense>
     );
   }

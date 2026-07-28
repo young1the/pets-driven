@@ -120,8 +120,16 @@ _Avoid_: dashboard, playground page
 An individual desktop overlay window that hosts one visible **Pet**.
 _Avoid_: full-screen overlay, dashboard window
 
+**Shared Pet Window**:
+A single desktop-wide overlay window that hosts every visible **Pet** at once, in place of the individual **Pet Windows**.
+_Avoid_: fullscreen app window, dashboard window
+
+**Pet Surface Mode**:
+Whether the **Pet Surface** is one **Pet Window** per visible **Pet** or a single **Shared Pet Window** holding all of them.
+_Avoid_: theme, layout, appearance
+
 **Pet Hit Region**:
-The non-transparent pet and overlay pixels of a **Pet Window** that can receive pointer input.
+The non-transparent pet and overlay pixels of a **Pet Window** or **Shared Pet Window** that can receive pointer input.
 _Avoid_: window rectangle, transparent margin
 
 **Simulation World**:
@@ -317,6 +325,8 @@ _Avoid_: Social Session, relationship, copied personality
 - A **Pet Window** only receives pointer input through its **Pet Hit Region**.
 - A **Pet Hit Region** includes visible **Pet Overlay Action** pixels as well as the **Pet** body.
 - Transparent pixels in a **Pet Window** pass through to the desktop behind it.
+- **Pet Surface Mode** decides whether the **Pet Surface** is one **Pet Window** per visible **Pet** or one **Shared Pet Window** for all of them; nothing else about a **Pet** changes with it.
+- A **Shared Pet Window** receives pointer input only within a **Pet Hit Region** and passes every other pixel through to the desktop behind it, including the pixels between one **Pet** and the next.
 - **Direct Manipulation** starts only from the **Pet** body portion of the **Pet Hit Region**, not from **Pet Overlay Action** pixels.
 - Secondary-click on the **Pet** body opens the **Pet Context Menu**.
 - Secondary-click on a **Pet Overlay Action** opens the **Pet Overlay Menu** for presentation controls such as minimize.

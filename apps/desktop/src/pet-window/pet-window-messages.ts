@@ -82,6 +82,13 @@ export type PetWindowResizeEvent = {
 };
 
 export type PetWindowInputKind =
+  // The pointer is holding something in the surface (a drag, a resize) and the
+  // host must not hand the mouse back until it lets go. Only the single-window
+  // overlay acts on these: it is the one surface whose interactivity the host
+  // decides from where the cursor is, and a throw or a resize is exactly the
+  // gesture that carries the cursor off the pet it started on.
+  | "surface.capture.start"
+  | "surface.capture.end"
   | "body.pointer.down"
   | "body.pointer.move"
   | "body.pointer.up"

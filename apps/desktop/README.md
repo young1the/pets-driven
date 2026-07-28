@@ -44,6 +44,14 @@ The quickest way to open it: while any `?fixture=` desktop fixture is active,
 click "Open pet window ↗" in the fixture switcher — it opens the first pet
 window fixture in a new tab.
 
+Settings → Pet windows switches the app to single-window overlay mode, where
+one transparent, click-through window covers the whole desktop and every pet is
+an element inside it (`pet-window.html?surface=pet-overlay`). It is driven by a
+single `PET_OVERLAY_FRAME_EVENT` per tick carrying the whole roster, positions
+included, so nothing native moves. There is no browser fixture for it: the
+surface has no roster of its own to seed — it draws whatever the frames carry —
+and the fixtures above already cover how a single pet looks.
+
 Available fixtures (`apps/desktop/src/pet-window/pet-window-fixtures.ts`):
 
 - `idle`, `running`, `jumping`: core animation states

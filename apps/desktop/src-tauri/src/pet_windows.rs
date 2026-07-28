@@ -1,7 +1,15 @@
 use serde::Deserialize;
-use tauri::{LogicalPosition, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder};
 
 use crate::pet_assets::validate_asset_id;
+
+/// The single-window overlay's label. Deliberately not under the `pet-window-`
+/// prefix that `close_all_pet_windows` sweeps: the host calls that very command
+/// when it *switches into* this mode, to clear away the per-pet windows it is
+/// replacing, and a label in the sweep would destroy the overlay it is opening
+/// in the same breath. The overlay is closed explicitly instead — by the host
+/// that knows whether it still has pets to draw.
+pub(crate) const PET_OVERLAY_LABEL: &str = "pet-overlay";
 
 const PET_WINDOW_PLAYGROUND_MAX_WINDOWS: u8 = 7;
 const PET_WINDOW_PLAYGROUND_FIXTURES: [(&str, &str); 7] = [
@@ -229,6 +237,108 @@ pub(crate) async fn place_pet_windows(
     Ok(unplaced)
 }
 
+/// The overlay's lean entry, on the surface route the single window renders.
+fn pet_overlay_url() -> String {
+    format!("{PET_OVERLAY_ENTRY}?surface=pet-overlay")
+}
+
+/// Open (or re-fit) the single window every pet is drawn inside.
+///
+/// The counterpart to `build_adopted_pet_window`: one transparent, borderless,
+/// always-on-top window covering the whole desktop instead of one small window
+/// per pet. It is created hidden and made click-through *before* it is ever
+/// shown — a full-desktop window that takes the mouse swallows every click
+/// meant for whatever is underneath it, so it must never exist visibly in that
+/// state, not even for the frame between build and the first host command.
+/// From then on the host owns the switch; see `set_pet_overlay_interactive`.
+///
+/// Called again on every world rebuild, which is what re-fits it when the
+/// monitor layout changes.
+#[tauri::command]
+pub(crate) async fn open_pet_overlay_window(
+    app: tauri::AppHandle,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    let position = LogicalPosition::new(x, y);
+    let size = LogicalSize::new(width, height);
+
+    if let Some(window) = app.get_webview_window(PET_OVERLAY_LABEL) {
+        window
+            .set_position(position)
+            .map_err(|error| format!("Could not place the pet overlay: {error}"))?;
+        window
+            .set_size(size)
+            .map_err(|error| format!("Could not size the pet overlay: {error}"))?;
+        window
+            .show()
+            .map_err(|error| format!("Could not show the pet overlay: {error}"))?;
+
+        return Ok(());
+    }
+
+    let window = WebviewWindowBuilder::new(
+        &app,
+        PET_OVERLAY_LABEL,
+        WebviewUrl::App(pet_overlay_url().into()),
+    )
+    .title("Pets")
+    .inner_size(width, height)
+    .position(x, y)
+    .decorations(false)
+    .transparent(true)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .resizable(false)
+    .shadow(false)
+    .visible(false)
+    .focused(false)
+    .build()
+    .map_err(|error| format!("Could not create the pet overlay: {error}"))?;
+
+    window
+        .set_ignore_cursor_events(true)
+        .map_err(|error| format!("Could not make the pet overlay click-through: {error}"))?;
+    window
+        .show()
+        .map_err(|error| format!("Could not show the pet overlay: {error}"))?;
+
+    Ok(())
+}
+
+/// Hand the mouse to the overlay, or back to the desktop underneath it.
+///
+/// The host calls this from its own hit test — the overlay cannot do it itself,
+/// because a click-through window is not told where the cursor is. Missing is
+/// not an error: the host toggles this on cursor movement and the window may
+/// already be gone.
+#[tauri::command]
+pub(crate) async fn set_pet_overlay_interactive(
+    app: tauri::AppHandle,
+    interactive: bool,
+) -> Result<(), String> {
+    let Some(window) = app.get_webview_window(PET_OVERLAY_LABEL) else {
+        return Ok(());
+    };
+
+    window
+        .set_ignore_cursor_events(!interactive)
+        .map_err(|error| format!("Could not set the pet overlay's cursor mode: {error}"))
+}
+
+#[tauri::command]
+pub(crate) async fn close_pet_overlay_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window(PET_OVERLAY_LABEL) {
+        window
+            .destroy()
+            .map_err(|error| format!("Could not close the pet overlay: {error}"))?;
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub(crate) async fn close_all_pet_windows(app: tauri::AppHandle) -> Result<(), String> {
     for (label, window) in app.webview_windows() {
@@ -278,11 +388,16 @@ pub(crate) async fn open_pet_context_menu(
 
     let label = format!("pet-context-menu-{pet_id}");
 
-    // Derive physical screen position from the pet window's outer position so the
-    // context menu lands on the correct monitor in multi-monitor setups. local_x/y
-    // are CSS pixels relative to the pet window's content area (clientX/clientY).
-    let pet_label = format!("pet-window-{pet_id}");
-    let (mut phys_x, mut phys_y) = match app.get_webview_window(&pet_label) {
+    // Derive physical screen position from the source window's outer position so
+    // the context menu lands on the correct monitor in multi-monitor setups.
+    // local_x/y are CSS pixels relative to that window's content area
+    // (clientX/clientY). The source is the pet's own window, or the single-window
+    // overlay when the pet does not have one — the arithmetic is the same either
+    // way, since both report where their content area starts on screen.
+    let source_window = app
+        .get_webview_window(&format!("pet-window-{pet_id}"))
+        .or_else(|| app.get_webview_window(PET_OVERLAY_LABEL));
+    let (mut phys_x, mut phys_y) = match &source_window {
         Some(pet_win) => {
             let scale = pet_win.scale_factor().unwrap_or(1.0);
             match pet_win.outer_position() {
@@ -296,9 +411,18 @@ pub(crate) async fn open_pet_context_menu(
         None => (local_x as i32, local_y as i32),
     };
 
-    // Clamp so the menu stays within the monitor that the pet window is on.
-    if let Some(pet_win) = app.get_webview_window(&pet_label) {
-        if let Ok(Some(monitor)) = pet_win.current_monitor() {
+    // Clamp so the menu stays within the monitor the click landed on. Resolved
+    // from the point rather than from the source window, which only agree in
+    // window-per-pet mode: the single-window overlay spans every monitor, so
+    // asking *it* which monitor it is on answers for the desktop, not the pet.
+    if let Some(pet_win) = &source_window {
+        let monitor = pet_win
+            .monitor_from_point(f64::from(phys_x), f64::from(phys_y))
+            .ok()
+            .flatten()
+            .or_else(|| pet_win.current_monitor().ok().flatten());
+
+        if let Some(monitor) = monitor {
             let scale = monitor.scale_factor();
             let menu_w = (192.0 * scale) as i32;
             let menu_h = (132.0 * scale) as i32;
@@ -364,6 +488,16 @@ mod tests {
     #[test]
     fn pet_window_playground_labels_are_stable() {
         assert_eq!(pet_window_playground_label(3), "pet-window-playground-3");
+    }
+
+    #[test]
+    fn pet_overlay_url_routes_to_the_overlay_surface() {
+        assert_eq!(pet_overlay_url(), "pet-window.html?surface=pet-overlay");
+    }
+
+    #[test]
+    fn pet_overlay_label_is_outside_the_swept_pet_window_prefix() {
+        assert!(!PET_OVERLAY_LABEL.starts_with("pet-window-"));
     }
 
     #[test]

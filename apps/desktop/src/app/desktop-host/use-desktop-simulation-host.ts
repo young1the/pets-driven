@@ -21,6 +21,7 @@ import {
   projectionBoundsForMonitors,
 } from "@/app/desktop-host/monitor-geometry";
 import { shortWorkingDir } from "@/app/main-window/pet-card-view";
+import type { PetOverlayMode } from "@/app/pet-overlay-mode";
 import {
   createPetCardStatusTracker,
   type PetCardStatus,
@@ -31,6 +32,13 @@ import {
   type PetsDrivenState,
   resolveRegisteredWorkingDirectoryForCwd,
 } from "@/app-state/pets-driven-state";
+import {
+  isPetOverlayInteractive,
+  PET_OVERLAY_FRAME_EVENT,
+  PET_OVERLAY_LABEL,
+  type PetOverlayFrame,
+  petOverlayWindowRect,
+} from "@/pet-window/pet-overlay-messages";
 import { clampPetWindowScale, DEFAULT_PET_WINDOW_SCALE } from "@/pet-window/pet-window-layout";
 import {
   PET_WINDOW_FRAME_EVENT,
@@ -55,6 +63,17 @@ const PET_WINDOW_FRAME_HEARTBEAT_TICKS = Math.round(500 / DESKTOP_FIXTURE_HOST_T
 // it every tick cost one shell round trip per frame for a signal that nothing
 // reads at that resolution.
 const CURSOR_POLL_INTERVAL_MS = 100;
+// Except in single-window overlay mode, where the cursor is also the input: it
+// is the only thing that tells the host whether the overlay may take the mouse
+// at all, and at 100ms a click on a pet you just walked the pointer onto would
+// be dropped. It replaces the per-pet placement batch that mode does not send,
+// so the tick is not paying twice.
+const OVERLAY_CURSOR_POLL_INTERVAL_MS = DESKTOP_FIXTURE_HOST_TICK_MS;
+// How long the overlay keeps the mouse on a gesture's word alone. A drag or a
+// resize carries the cursor off the pet, so the surface says when it starts and
+// when it ends — but a missed release must not leave a desktop-wide window
+// swallowing clicks, so the claim expires on its own.
+const PET_OVERLAY_CAPTURE_MAX_MS = 20_000;
 
 function petWindowPlaygroundLabelForPetId(petId: string) {
   const index = PLAYGROUND_PET_ENTITY_IDS.indexOf(
@@ -108,6 +127,8 @@ type UseDesktopSimulationHostParams = {
   emitBindingState: (petId: string, isLoading?: boolean, isConnecting?: boolean) => void;
   hidePet: (petId: string) => void;
   pickFolderForPet: (petId: string) => void;
+  /** Whether the pets get one OS window each or share one desktop-wide overlay. */
+  overlayMode: PetOverlayMode;
 };
 
 /**
@@ -128,6 +149,7 @@ export function useDesktopSimulationHost({
   emitBindingState,
   hidePet,
   pickFolderForPet,
+  overlayMode,
 }: UseDesktopSimulationHostParams) {
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
@@ -169,6 +191,13 @@ export function useDesktopSimulationHost({
   // petId -> the placement last handed to the shell, so a pet standing still
   // never re-enters the batch and never moves its OS window.
   const adoptedPlacedByPetIdRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  // Single-window overlay mode. The last roster emitted, so a wholly idle tick
+  // skips the emit like the per-pet path does; whether the overlay currently
+  // has the mouse, which is hysteresis state and must survive the tick; and
+  // when a gesture's claim on it runs out.
+  const adoptedLastOverlayEmitRef = useRef<{ body: string; sequence: number } | null>(null);
+  const petOverlayInteractiveRef = useRef(false);
+  const petOverlayCaptureUntilRef = useRef(0);
 
   const [desktopFixtureWindowCount] = useState(0);
   const [adoptedSimulationResetKey] = useState(0);
@@ -228,6 +257,11 @@ export function useDesktopSimulationHost({
     const listenPromise = listen<PetWindowInputEvent>(PET_WINDOW_INPUT_EVENT, (event) => {
       const input = event.payload;
 
+      if (input.kind === "surface.capture.start" || input.kind === "surface.capture.end") {
+        petOverlayCaptureUntilRef.current =
+          input.kind === "surface.capture.start" ? Date.now() + PET_OVERLAY_CAPTURE_MAX_MS : 0;
+        return;
+      }
       if (input.kind === "body.focus") {
         void focusOrStartSessionForPet(input.petId);
         return;
@@ -449,10 +483,30 @@ export function useDesktopSimulationHost({
     };
   }, [desktopFixtureWindowCount, stateRef.current.pets.find]);
 
+  // Leaving a mode takes its windows with it. Declared ahead of the world
+  // lifecycle below so a switch closes the old surface before the new one is
+  // opened, and idempotent — on the first run the other mode has nothing open,
+  // and both commands no-op on a window that does not exist.
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    if (overlayMode === "single-window") {
+      void desktopGateway.closeAllPetWindows().catch(() => {});
+      return;
+    }
+
+    petOverlayInteractiveRef.current = false;
+    petOverlayCaptureUntilRef.current = 0;
+    adoptedLastOverlayEmitRef.current = null;
+    void desktopGateway.closePetOverlayWindow().catch(() => {});
+  }, [overlayMode]);
+
   // Drive the user's adopted pets the same way the fixture host drives the
   // playground: one shared simulation world, projected onto each pet's overlay
   // window. Rebuilds whenever the visible roster changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: adoptedHasVisiblePets and adoptedSimulationResetKey are intentional rebuild triggers; the body reads state via refs. Removing them would stop the adopted-pet sim from rebuilding when the roster changes or a reset is requested.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: adoptedHasVisiblePets, adoptedSimulationResetKey and overlayMode are intentional rebuild triggers; the body reads state via refs. Removing them would stop the adopted-pet sim from rebuilding when the roster changes, a reset is requested, or the pets move to a different kind of window.
   useEffect(() => {
     if (!isTauri()) {
       return;
@@ -466,18 +520,31 @@ export function useDesktopSimulationHost({
       adoptedPetIdsRef.current = new Set();
       adoptedLastEmitByPetIdRef.current = new Map();
       adoptedPlacedByPetIdRef.current = new Map();
+      // The overlay is drawn from the frames alone, and with no world left
+      // there is no tick to send an empty one — so the last pets home would
+      // otherwise stay painted on the desktop. A pet window closes with its
+      // pet; the shared one closes with the last of them.
+      if (overlayMode === "single-window") {
+        adoptedLastOverlayEmitRef.current = null;
+        petOverlayInteractiveRef.current = false;
+        petOverlayCaptureUntilRef.current = 0;
+        void desktopGateway.closePetOverlayWindow().catch(() => {});
+      }
       return;
     }
 
     let isActive = true;
     let isBroadcasting = false;
 
-    // Each visible pet needs its overlay window before frames can land.
-    for (const pet of simInputs) {
-      const record = stateRef.current.pets.find((candidate) => candidate.id === pet.id);
+    // Each visible pet needs its overlay window before frames can land — unless
+    // they share one, which is opened below, once the bounds it covers are known.
+    if (overlayMode === "window-per-pet") {
+      for (const pet of simInputs) {
+        const record = stateRef.current.pets.find((candidate) => candidate.id === pet.id);
 
-      if (record) {
-        void desktopGateway.openAdoptedPetWindow(record.id, record.assetId).catch(() => {});
+        if (record) {
+          void desktopGateway.openAdoptedPetWindow(record.id, record.assetId).catch(() => {});
+        }
       }
     }
 
@@ -494,6 +561,14 @@ export function useDesktopSimulationHost({
 
       const bounds = projectionBoundsForMonitors(monitors);
       adoptedHostBoundsRef.current = bounds;
+
+      if (overlayMode === "single-window") {
+        // Also the re-fit when the monitor layout changed under a running app:
+        // this runs on every world rebuild, and the command sizes an overlay
+        // that already exists rather than making a second one.
+        adoptedLastOverlayEmitRef.current = null;
+        void desktopGateway.openPetOverlayWindow(petOverlayWindowRect(bounds)).catch(() => {});
+      }
       const petRecords = stateRef.current.pets;
       const petBodySizeByPetId: Record<string, { width: number; height: number }> = {};
       const scaleByPetId: Record<string, number> = {};
@@ -537,7 +612,9 @@ export function useDesktopSimulationHost({
 
       // Cache the latest cursor position asynchronously — never block the tick.
       const tickStartedAt = Date.now();
-      if (tickStartedAt - adoptedCursorPolledAtRef.current >= CURSOR_POLL_INTERVAL_MS) {
+      const cursorPollIntervalMs =
+        overlayMode === "single-window" ? OVERLAY_CURSOR_POLL_INTERVAL_MS : CURSOR_POLL_INTERVAL_MS;
+      if (tickStartedAt - adoptedCursorPolledAtRef.current >= cursorPollIntervalMs) {
         adoptedCursorPolledAtRef.current = tickStartedAt;
         void cursorPosition()
           .then((physical) => {
@@ -603,75 +680,132 @@ export function useDesktopSimulationHost({
         swapRunningByPetId,
       );
 
-      // Where each pet stands is settled natively in one batch; what each pet
-      // looks like is a per-window event. Splitting the two is what keeps a
-      // roomful of pets cheap: walking changes position every tick but the
-      // sprite only every few hundred milliseconds, so the expensive
-      // cross-webview emit now fires on appearance changes alone.
-      const placements: { petId: string; x: number; y: number }[] = [];
+      // Everything the window has to know that the simulation does not own: the
+      // pet's name, its current look, its folder and its note. The overlay
+      // surfaces cannot re-read their own URL, so these ride the frames.
+      const frames = projections.map((projection) => {
+        const petRecord = pets.find((p) => p.id === projection.petId);
+
+        if (!petRecord) {
+          return projection.frame;
+        }
+
+        const dirPath = dirs.find((d) => d.petId === projection.petId)?.path ?? null;
+
+        return {
+          ...projection.frame,
+          name: petRecord.name,
+          assetId: petRecord.assetId,
+          cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
+          // Always a string so clearing a note reaches the window as an empty
+          // value rather than an absent key the window would ignore.
+          note: petRecord.note ?? "",
+        };
+      });
+
       const emits: Promise<unknown>[] = [];
 
-      for (const projection of projections) {
-        const nextPlacement = {
-          x: Math.round(projection.frame.window.x),
-          y: Math.round(projection.frame.window.y),
-        };
-        const placed = adoptedPlacedByPetIdRef.current.get(projection.petId);
-        if (!placed || placed.x !== nextPlacement.x || placed.y !== nextPlacement.y) {
-          adoptedPlacedByPetIdRef.current.set(projection.petId, nextPlacement);
-          placements.push({ petId: projection.petId, ...nextPlacement });
-        }
-
-        const petRecord = pets.find((p) => p.id === projection.petId);
-        const dirPath = dirs.find((d) => d.petId === projection.petId)?.path ?? null;
-        const frame = petRecord
-          ? {
-              ...projection.frame,
-              name: petRecord.name,
-              // The window cannot re-read its own URL, so its look travels here.
-              assetId: petRecord.assetId,
-              cwd: dirPath ? shortWorkingDir(dirPath) : undefined,
-              // Always a string so clearing a note reaches the window as an
-              // empty value rather than an absent key the window would ignore.
-              note: petRecord.note ?? "",
-            }
-          : projection.frame;
-
-        // Position is deliberately excluded from the comparison: the pet window
-        // no longer places itself, so a frame that only moved has nothing new
-        // to render. Heartbeat re-sends still land twice a second.
-        const body = JSON.stringify({
-          ...frame,
-          sequence: 0,
-          window: { width: frame.window.width, height: frame.window.height },
-        });
-        const lastEmit = adoptedLastEmitByPetIdRef.current.get(projection.petId);
-        if (
-          lastEmit &&
+      if (overlayMode === "single-window") {
+        // One window, so one message: position travels with appearance instead
+        // of going to the shell separately, and the tick costs the same whether
+        // one pet is out or twenty. Position is therefore *in* the comparison
+        // here — a frame that only moved is the whole point of sending it.
+        const body = JSON.stringify(frames.map((frame) => ({ ...frame, sequence: 0 })));
+        const lastEmit = adoptedLastOverlayEmitRef.current;
+        const isUnchanged =
+          lastEmit !== null &&
           lastEmit.body === body &&
-          frame.sequence - lastEmit.sequence < PET_WINDOW_FRAME_HEARTBEAT_TICKS
-        ) {
-          continue;
+          adoptedHostSequenceRef.current - lastEmit.sequence < PET_WINDOW_FRAME_HEARTBEAT_TICKS;
+
+        if (!isUnchanged) {
+          adoptedLastOverlayEmitRef.current = {
+            body,
+            sequence: adoptedHostSequenceRef.current,
+          };
+          emits.push(
+            emitTo(PET_OVERLAY_LABEL, PET_OVERLAY_FRAME_EVENT, {
+              schemaVersion: 1,
+              sequence: adoptedHostSequenceRef.current,
+              bounds: petOverlayWindowRect(bounds),
+              pets: frames,
+            } satisfies PetOverlayFrame),
+          );
         }
 
-        adoptedLastEmitByPetIdRef.current.set(projection.petId, {
-          body,
-          sequence: frame.sequence,
-        });
-        emits.push(emitTo(`pet-window-${projection.petId}`, PET_WINDOW_FRAME_EVENT, frame));
-      }
-
-      if (placements.length > 0) {
-        emits.push(
-          desktopGateway.placePetWindows(placements).then((unplaced) => {
-            // Their overlay window had not finished being created. Forget the
-            // placement so the next tick sends it again — otherwise a pet that
-            // stands still after being deployed would never be shown at all.
-            for (const petId of unplaced) {
-              adoptedPlacedByPetIdRef.current.delete(petId);
+        // The overlay covers the desktop, so it may only take the mouse while
+        // the cursor is actually on a pet — or while a gesture that started on
+        // one is still holding it. Nothing inside that window can answer this:
+        // while it is click-through it is never told the pointer moved.
+        const cursorLogical = cursorPhysical
+          ? {
+              x: cursorPhysical.x / (adoptedCursorScaleRef.current || 1),
+              y: cursorPhysical.y / (adoptedCursorScaleRef.current || 1),
             }
-          }),
-        );
+          : null;
+        const isCaptured = tickStartedAt < petOverlayCaptureUntilRef.current;
+        const nextInteractive =
+          isCaptured ||
+          isPetOverlayInteractive(frames, cursorLogical, petOverlayInteractiveRef.current);
+
+        if (nextInteractive !== petOverlayInteractiveRef.current) {
+          petOverlayInteractiveRef.current = nextInteractive;
+          emits.push(desktopGateway.setPetOverlayInteractive(nextInteractive).catch(() => {}));
+        }
+      } else {
+        // Where each pet stands is settled natively in one batch; what each pet
+        // looks like is a per-window event. Splitting the two is what keeps a
+        // roomful of pets cheap: walking changes position every tick but the
+        // sprite only every few hundred milliseconds, so the expensive
+        // cross-webview emit now fires on appearance changes alone.
+        const placements: { petId: string; x: number; y: number }[] = [];
+
+        for (const frame of frames) {
+          const nextPlacement = {
+            x: Math.round(frame.window.x),
+            y: Math.round(frame.window.y),
+          };
+          const placed = adoptedPlacedByPetIdRef.current.get(frame.petId);
+          if (!placed || placed.x !== nextPlacement.x || placed.y !== nextPlacement.y) {
+            adoptedPlacedByPetIdRef.current.set(frame.petId, nextPlacement);
+            placements.push({ petId: frame.petId, ...nextPlacement });
+          }
+
+          // Position is deliberately excluded from the comparison: the pet
+          // window no longer places itself, so a frame that only moved has
+          // nothing new to render. Heartbeat re-sends still land twice a second.
+          const body = JSON.stringify({
+            ...frame,
+            sequence: 0,
+            window: { width: frame.window.width, height: frame.window.height },
+          });
+          const lastEmit = adoptedLastEmitByPetIdRef.current.get(frame.petId);
+          if (
+            lastEmit &&
+            lastEmit.body === body &&
+            frame.sequence - lastEmit.sequence < PET_WINDOW_FRAME_HEARTBEAT_TICKS
+          ) {
+            continue;
+          }
+
+          adoptedLastEmitByPetIdRef.current.set(frame.petId, {
+            body,
+            sequence: frame.sequence,
+          });
+          emits.push(emitTo(`pet-window-${frame.petId}`, PET_WINDOW_FRAME_EVENT, frame));
+        }
+
+        if (placements.length > 0) {
+          emits.push(
+            desktopGateway.placePetWindows(placements).then((unplaced) => {
+              // Their overlay window had not finished being created. Forget the
+              // placement so the next tick sends it again — otherwise a pet that
+              // stands still after being deployed would never be shown at all.
+              for (const petId of unplaced) {
+                adoptedPlacedByPetIdRef.current.delete(petId);
+              }
+            }),
+          );
+        }
       }
 
       void Promise.all(emits).finally(() => {
@@ -684,7 +818,7 @@ export function useDesktopSimulationHost({
       window.clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adoptedHasVisiblePets, adoptedSimulationResetKey]);
+  }, [adoptedHasVisiblePets, adoptedSimulationResetKey, overlayMode]);
 
   // Reconcile the live simulation roster in place whenever pets are shown,
   // hidden or deleted. The world-lifecycle effect above only builds/tears down

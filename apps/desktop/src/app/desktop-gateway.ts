@@ -212,6 +212,24 @@ export type DesktopGateway = {
   placePetWindows(
     placements: ReadonlyArray<{ petId: string; x: number; y: number }>,
   ): Promise<string[]>;
+  /**
+   * Open — or re-fit, when the monitor layout changed — the single window that
+   * single-window overlay mode draws every pet inside. The rect is in logical
+   * pixels and covers the whole desktop; see petOverlayWindowRect.
+   */
+  openPetOverlayWindow(rect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }): Promise<void>;
+  /**
+   * Hand the mouse to the single-window overlay, or back to the desktop under
+   * it. The host decides this from its own hit test — a click-through window is
+   * never told where the cursor is, so the overlay cannot answer for itself.
+   */
+  setPetOverlayInteractive(interactive: boolean): Promise<void>;
+  closePetOverlayWindow(): Promise<void>;
 
   /** Raw spritesheet bytes for an installed pet asset (Tauri only). */
   loadPetSpritesheet(assetId: string): Promise<ArrayBuffer>;
@@ -516,6 +534,30 @@ export const desktopGateway: DesktopGateway = {
     }
 
     return (await invoke<string[] | undefined>("place_pet_windows", { placements })) ?? [];
+  },
+
+  async openPetOverlayWindow(rect) {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("open_pet_overlay_window", rect);
+  },
+
+  async setPetOverlayInteractive(interactive) {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("set_pet_overlay_interactive", { interactive });
+  },
+
+  async closePetOverlayWindow() {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("close_pet_overlay_window");
   },
 
   async loadPetSpritesheet(assetId) {

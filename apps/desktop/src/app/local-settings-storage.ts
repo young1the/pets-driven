@@ -24,11 +24,15 @@ export const THEME_ACCENT_STORAGE_KEY = "pd-theme-accent";
 export const TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY =
   "pets-driven:terminal-onboarding-dismissed";
 
+/** Whether pets get one OS window each or share one desktop-wide overlay. */
+export const PET_OVERLAY_MODE_STORAGE_KEY = "pd-overlay-mode";
+
 const SETTINGS_STORAGE_KEYS = [
   LOCALE_STORAGE_KEY,
   THEME_MODE_STORAGE_KEY,
   THEME_ACCENT_STORAGE_KEY,
   TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY,
+  PET_OVERLAY_MODE_STORAGE_KEY,
 ] as const;
 
 /**

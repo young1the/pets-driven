@@ -6,6 +6,7 @@ import { desktopGateway } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
 import { clearStoredSettings } from "@/app/local-settings-storage";
 import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
+import type { PetOverlayMode } from "@/app/pet-overlay-mode";
 import { buildLaunchLine, parseLaunchLine } from "@/app/session-launch-line";
 import {
   adoptPet,
@@ -32,6 +33,13 @@ const SEED_ASSET_IDS = ["cato", "otto", "mochi", "fenn", "bloop", "pip"];
 
 type UsePetRosterActionsParams = {
   stateRef: MutableRefObject<PetsDrivenState>;
+  /**
+   * Whether deploying a pet has a window to open. In single-window overlay mode
+   * it does not: the pets share one window the Simulation Host owns, and every
+   * pet in it is simply one the frames carry — so a deploy here is the
+   * visibility patch alone.
+   */
+  overlayMode: PetOverlayMode;
   applyState: (next: PetsDrivenState) => void;
   flashToast: (message: string) => void;
   setEditPetId: (petId: string | null) => void;
@@ -47,6 +55,7 @@ type UsePetRosterActionsParams = {
  */
 export function usePetRosterActions({
   stateRef,
+  overlayMode,
   applyState,
   flashToast,
   setEditPetId,
@@ -237,7 +246,9 @@ export function usePetRosterActions({
   function showPet(petId: string) {
     const pet = stateRef.current.pets.find((p) => p.id === petId);
     setPetVisibility(petId, true);
-    void desktopGateway.openAdoptedPetWindow(petId, pet?.assetId ?? "").catch(() => {});
+    if (overlayMode === "window-per-pet") {
+      void desktopGateway.openAdoptedPetWindow(petId, pet?.assetId ?? "").catch(() => {});
+    }
     if (pet) {
       flashToast(t("toast.onDesktop", { name: pet.name }));
     }
@@ -274,9 +285,11 @@ export function usePetRosterActions({
       ),
     });
 
-    void desktopGateway
-      .openAdoptedPetWindows(deployable.map((pet) => ({ petId: pet.id, assetId: pet.assetId })))
-      .catch(() => {});
+    if (overlayMode === "window-per-pet") {
+      void desktopGateway
+        .openAdoptedPetWindows(deployable.map((pet) => ({ petId: pet.id, assetId: pet.assetId })))
+        .catch(() => {});
+    }
   }
 
   function hideAllPets() {

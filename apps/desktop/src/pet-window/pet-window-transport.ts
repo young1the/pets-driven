@@ -1,6 +1,7 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { PET_OVERLAY_FRAME_EVENT, type PetOverlayFrame } from "@/pet-window/pet-overlay-messages";
 import {
   PET_WINDOW_BINDING_EVENT,
   PET_WINDOW_FRAME_EVENT,
@@ -33,6 +34,8 @@ export type PetWindowTransport = {
 
   // Host -> window streams. Handlers receive the domain payload directly.
   subscribeFrame(handler: (frame: PetWindowFrame) => void): Promise<Unsubscribe>;
+  /** The whole roster in one tick, for the single-window overlay. */
+  subscribeOverlayFrame(handler: (frame: PetOverlayFrame) => void): Promise<Unsubscribe>;
   subscribeBinding(handler: (binding: PetWindowBindingEvent) => void): Promise<Unsubscribe>;
   subscribeWindowFocus(handler: () => void): Promise<Unsubscribe>;
   subscribeWindowBlur(handler: () => void): Promise<Unsubscribe>;
@@ -67,6 +70,16 @@ export const petWindowTransport: PetWindowTransport = {
     }
 
     return await listen<PetWindowFrame>(PET_WINDOW_FRAME_EVENT, (event) => handler(event.payload));
+  },
+
+  async subscribeOverlayFrame(handler) {
+    if (!isTauri()) {
+      return NOOP_UNSUBSCRIBE;
+    }
+
+    return await listen<PetOverlayFrame>(PET_OVERLAY_FRAME_EVENT, (event) =>
+      handler(event.payload),
+    );
   },
 
   async subscribeBinding(handler) {

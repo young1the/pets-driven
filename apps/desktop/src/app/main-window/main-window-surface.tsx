@@ -11,6 +11,7 @@ import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
 import { cardNote, petGradient, shortWorkingDir } from "@/app/main-window/pet-card-view";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import { usePetAssetOptions } from "@/app/pet-assets/use-pet-asset-options";
+import type { PetOverlayMode } from "@/app/pet-overlay-mode";
 import { personalityRoleLabelKey } from "@/app/pet-presentation";
 import { parseLaunchLine, promptForShell } from "@/app/session-launch-line";
 import type { useAgentPlugin } from "@/app/use-agent-plugin";
@@ -54,6 +55,9 @@ export interface MainWindowSurfaceProps {
   onRevealFolder: (path: string | null) => void;
   /** Settings only — the pet roster is user data and survives it. */
   onResetAllSettings: () => void;
+  /** Whether the pets get one OS window each or share one desktop-wide overlay. */
+  overlayMode: PetOverlayMode;
+  onSetOverlayMode: (mode: PetOverlayMode) => void;
 }
 
 /**
@@ -106,6 +110,8 @@ export function MainWindowSurface({
   onResetPetFolder,
   onRevealFolder,
   onResetAllSettings,
+  overlayMode,
+  onSetOverlayMode,
 }: MainWindowSurfaceProps) {
   const { t } = useTranslation("desktop");
 
@@ -309,6 +315,8 @@ export function MainWindowSurface({
         onResetPetFolder: () => onResetPetFolder(),
         onResetAllSettings: () => onResetAllSettings(),
         onResetPets: () => onResetPets(),
+        overlayMode,
+        onSetOverlayMode,
       }}
       terminal={{
         available: isTauri(),

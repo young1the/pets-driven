@@ -18,6 +18,13 @@ describe("pet window tauri capability", () => {
     expect(capability.windows).toContain("pet-window-*");
   });
 
+  it("covers the single window every pet shares in overlay mode", () => {
+    // Its label sits outside the "pet-window-*" glob on purpose — see
+    // PET_OVERLAY_LABEL — so it has to be listed in its own right or the
+    // surface loads with no permission to listen for a frame.
+    expect(capability.windows).toContain("pet-overlay");
+  });
+
   it("allows the native window APIs used by Pet Windows", () => {
     expect(capability.permissions).toContain("core:window:allow-current-monitor");
     expect(capability.permissions).toContain("core:window:allow-outer-position");

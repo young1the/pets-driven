@@ -2,7 +2,9 @@ import { emitTo } from "@tauri-apps/api/event";
 import { type MutableRefObject, useRef } from "react";
 import { desktopGateway, type ForeignWindow } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
+import type { PetOverlayMode } from "@/app/pet-overlay-mode";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
+import { PET_OVERLAY_LABEL } from "@/pet-window/pet-overlay-messages";
 import {
   PET_WINDOW_BINDING_EVENT,
   type PetWindowBindingEvent,
@@ -12,6 +14,8 @@ import {
 type UsePetSessionBindingsParams = {
   stateRef: MutableRefObject<PetsDrivenState>;
   setPetWindowError: (message: string | null) => void;
+  /** Which window a pet's badge lives in — its own, or the one they all share. */
+  overlayMode: PetOverlayMode;
 };
 
 /**
@@ -23,6 +27,7 @@ type UsePetSessionBindingsParams = {
 export function usePetSessionBindings({
   stateRef,
   setPetWindowError,
+  overlayMode,
 }: UsePetSessionBindingsParams) {
   // petId -> the window this pet is bound to. In-memory only; HWNDs go stale
   // across restarts, so a dead focus just clears the binding.
@@ -43,7 +48,10 @@ export function usePetSessionBindings({
   // menu, and bubble stay in sync with what the host actually holds.
   function emitBindingState(petId: string, isLoading = false, isConnecting = false) {
     const binding = windowBindingsRef.current.get(petId) ?? null;
-    void emitTo(petWindowLabel(petId), PET_WINDOW_BINDING_EVENT, {
+    // Every pet in the shared window listens on the same label and drops what
+    // is not addressed to it, the way each pet window already does.
+    const label = overlayMode === "single-window" ? PET_OVERLAY_LABEL : petWindowLabel(petId);
+    void emitTo(label, PET_WINDOW_BINDING_EVENT, {
       petId,
       title: binding ? binding.title : null,
       isLoading,

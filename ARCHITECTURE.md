@@ -57,6 +57,8 @@ Anchors for each hop: `plugins/pets-driven/hooks/`, `apps/desktop/src-tauri/src/
 
 **The pet window owns no simulation state.** It is a separate always-on-top overlay driven entirely by frame events from the main window, so a bug in what a pet *shows* is a projection bug, not a simulation bug — see `apps/desktop/src/pet-window/pet-window-projection.ts` before touching engine code.
 
+**There are two ways to put that overlay on the desktop, and only the last hop differs.** By default each pet gets its own small always-on-top window, moved natively in one batch per tick (`place_pet_windows`) with a `PET_WINDOW_FRAME_EVENT` per pet for what changed about it. Single-window overlay mode instead opens one transparent, click-through window over the whole desktop and sends `PET_OVERLAY_FRAME_EVENT` once per tick with the whole roster in it, position included — one webview and one message however many pets are out. Everything upstream of that hop is shared: the same world, the same projection, the same per-pet view. The setting is frontend-owned (`apps/desktop/src/app/pet-overlay-mode.ts`) and the mode-specific pieces live in `apps/desktop/src/pet-window/pet-overlay-*.ts`.
+
 ## Where a change ripples
 
 | Change | Also touch |

@@ -47,6 +47,8 @@ function setupProps(overrides = {}) {
     onResetPetFolder: vi.fn(),
     onResetAllSettings: vi.fn(),
     onResetPets: vi.fn(),
+    overlayMode: "window-per-pet" as const,
+    onSetOverlayMode: vi.fn(),
     ...overrides,
   };
 }

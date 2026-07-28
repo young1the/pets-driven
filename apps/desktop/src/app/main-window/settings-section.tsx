@@ -28,6 +28,7 @@ import {
   swatch,
 } from "@/app/main-window/settings-section.styles";
 import { useTerminalShellOptions } from "@/app/main-window/use-terminal-shell-options";
+import type { PetOverlayMode } from "@/app/pet-overlay-mode";
 import { ACCENTS, useDesktopTheme } from "@/app/theme/desktop-theme";
 import type { AgentPluginRun } from "@/app/use-agent-plugin";
 
@@ -93,6 +94,12 @@ export interface SettingsSectionProps {
    * app/desktop-host/use-pet-roster-actions.ts.
    */
   onResetPets: () => void;
+  /**
+   * Whether each pet gets its own always-on-top window or they all share one
+   * transparent, click-through window over the whole desktop.
+   */
+  overlayMode: PetOverlayMode;
+  onSetOverlayMode: (mode: PetOverlayMode) => void;
 }
 
 function folderName(path: string): string {
@@ -116,6 +123,8 @@ export function SettingsSection({
   onResetPetFolder,
   onResetAllSettings,
   onResetPets,
+  overlayMode,
+  onSetOverlayMode,
 }: SettingsSectionProps) {
   const { t } = useTranslation("desktop");
   const { locale, setLocale, reset: resetLocale } = useDesktopLocale();
@@ -373,6 +382,34 @@ export function SettingsSection({
                 run={activeRun.run}
               />
             )}
+          </div>
+
+          {/* How the pets are put on the desktop. One window each layers them
+              individually against other apps; one shared window costs a single
+              webview however many pets are out. */}
+          <div style={rowStyle()}>
+            <span style={label}>{t("settings.petWindowMode")}</span>
+            <p style={hint}>
+              {overlayMode === "single-window"
+                ? t("settings.petWindowModeSingleDesc")
+                : t("settings.petWindowModePerPetDesc")}
+            </p>
+            <div style={segWrap}>
+              <button
+                onClick={() => onSetOverlayMode("window-per-pet")}
+                style={seg(overlayMode === "window-per-pet")}
+                type="button"
+              >
+                {t("settings.petWindowModePerPet")}
+              </button>
+              <button
+                onClick={() => onSetOverlayMode("single-window")}
+                style={seg(overlayMode === "single-window")}
+                type="button"
+              >
+                {t("settings.petWindowModeSingle")}
+              </button>
+            </div>
           </div>
 
           {/* Appearance — flips the whole-app light/dark/system theme. */}

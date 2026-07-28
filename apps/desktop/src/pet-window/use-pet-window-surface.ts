@@ -3,6 +3,7 @@ import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
 import { useEffect, useRef, useState } from "react";
+import { ownWindowPetSurfaceHost, type PetSurfaceHost } from "@/pet-window/pet-surface-host";
 import type { PetWindowFixturePresentation } from "@/pet-window/pet-window-fixtures";
 import { classifyPetWindowPoint } from "@/pet-window/pet-window-hit-region";
 import {
@@ -33,8 +34,6 @@ export type PetWindowPresentation = {
 
 type PetWindowPointerStart = "body" | "overlay" | "resize" | "transparent";
 
-let restoreCursorEventsTimer: number | null = null;
-
 function surfacePointFromEvent(element: HTMLElement, event: React.MouseEvent<HTMLElement>) {
   const rect = element.getBoundingClientRect();
   const nativeEvent = event.nativeEvent as PointerEvent & {
@@ -64,30 +63,6 @@ function surfacePointFromEvent(element: HTMLElement, event: React.MouseEvent<HTM
     x: 0,
     y: 0,
   };
-}
-
-async function setNativeCursorPassthrough(ignoreCursorEvents: boolean) {
-  if (!petWindowTransport.isDesktopRuntime()) {
-    return;
-  }
-
-  if (restoreCursorEventsTimer !== null) {
-    window.clearTimeout(restoreCursorEventsTimer);
-    restoreCursorEventsTimer = null;
-  }
-
-  if (ignoreCursorEvents) {
-    restoreCursorEventsTimer = window.setTimeout(() => {
-      restoreCursorEventsTimer = null;
-      void petWindowTransport.setIgnoreCursorEvents(false);
-    }, 180);
-  }
-
-  await petWindowTransport.setIgnoreCursorEvents(ignoreCursorEvents);
-}
-
-async function startNativeWindowDrag() {
-  await petWindowTransport.startDragging();
 }
 
 function movementDirectionForWindow(index: number) {
@@ -167,6 +142,12 @@ type UsePetWindowSurfaceParams = {
   previewPresentation?: PetWindowFixturePresentation;
   previewScale?: number;
   previewNote?: string;
+  /**
+   * Who owns the surface this pet is drawn on. Defaults to the pet's own OS
+   * window; the single-window overlay passes its own so a pet inside it never
+   * resizes, drags or hands back a window it shares.
+   */
+  host?: PetSurfaceHost;
 };
 
 /**
@@ -182,6 +163,7 @@ export function usePetWindowSurface({
   previewPresentation,
   previewScale,
   previewNote,
+  host = ownWindowPetSurfaceHost,
 }: UsePetWindowSurfaceParams) {
   const surfaceRef = useRef<HTMLElement | null>(null);
   const visualFrameRef = useRef<HTMLSpanElement | null>(null);
@@ -248,12 +230,8 @@ export function usePetWindowSurface({
   useEffect(() => {
     let unlistenFrame: (() => void) | undefined;
 
-    void petWindowTransport
-      .subscribeFrame((frame) => {
-        if (frame.petId !== pet.petId) {
-          return;
-        }
-
+    void host
+      .subscribeFrame(pet.petId, (frame) => {
         if (!isFreshPetWindowMessage(frameSequenceRef.current, frame.sequence)) {
           return;
         }
@@ -340,7 +318,7 @@ export function usePetWindowSurface({
         ) {
           appliedSizeRef.current = nextSize;
           setSpriteScale(frameScale);
-          void petWindowTransport.setWindowSize(nextSize.width, nextSize.height);
+          host.applyFrameSize(nextSize.width, nextSize.height);
         }
       })
       .then((unlisten) => {
@@ -350,7 +328,7 @@ export function usePetWindowSurface({
     return () => {
       unlistenFrame?.();
     };
-  }, [pet.petId]);
+  }, [pet.petId, host]);
 
   function emitPetWindowInput(
     kind: PetWindowInputKind,
@@ -428,7 +406,7 @@ export function usePetWindowSurface({
       appliedSizeRef.current = nextSize;
       resizeAppliedScaleRef.current = newScale;
       setSpriteScale(newScale);
-      void petWindowTransport.setWindowSize(nextSize.width, nextSize.height);
+      host.applyFrameSize(nextSize.width, nextSize.height);
       return;
     }
 
@@ -449,7 +427,7 @@ export function usePetWindowSurface({
       setIsResizeAffordanceHovered(nextResizeAffordanceHovered);
     }
 
-    void setNativeCursorPassthrough(hit.kind === "transparent");
+    host.setCursorPassthrough(hit.kind === "transparent");
   }
 
   function startResize(event: React.PointerEvent<HTMLElement>) {
@@ -460,7 +438,7 @@ export function usePetWindowSurface({
       resizeStartRef.current = null;
       resizeAppliedScaleRef.current = null;
       pointerStartRef.current = null;
-      void setNativeCursorPassthrough(false);
+      host.setCursorPassthrough(false);
       return;
     }
 
@@ -473,7 +451,7 @@ export function usePetWindowSurface({
     resizeAppliedScaleRef.current = null;
     pointerStartRef.current = "resize";
     surfaceRef.current?.setPointerCapture?.(event.pointerId);
-    void setNativeCursorPassthrough(false);
+    host.setCursorPassthrough(false);
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLElement>) {
@@ -492,17 +470,20 @@ export function usePetWindowSurface({
       surfacePointFromEvent(surface, event),
     );
     pointerStartRef.current = hit.kind;
+    // Everything but transparent space starts a gesture the surface holds
+    // until the pointer is released, wherever the pointer travels meanwhile.
+    host.notifyCapture(hit.kind !== "transparent");
 
     if (hit.kind === "body") {
       bodyDownRef.current = { screenX: event.screenX, screenY: event.screenY };
       setInteractionStatus("Direct manipulation");
       dragPauseUntilRef.current = Date.now() + 1200;
       emitPetWindowInput("body.pointer.down", event);
-      void setNativeCursorPassthrough(false);
+      host.setCursorPassthrough(false);
       if (isPositionDrivenRef.current) {
         event.currentTarget.setPointerCapture?.(event.pointerId);
       } else {
-        void startNativeWindowDrag();
+        host.startDrag();
       }
       return;
     }
@@ -514,11 +495,11 @@ export function usePetWindowSurface({
 
     if (hit.kind === "overlay") {
       setInteractionStatus("Overlay armed");
-      void setNativeCursorPassthrough(false);
+      host.setCursorPassthrough(false);
       return;
     }
 
-    void setNativeCursorPassthrough(true);
+    host.setCursorPassthrough(true);
   }
 
   function handlePointerUp(event: React.PointerEvent<HTMLElement>) {
@@ -526,6 +507,7 @@ export function usePetWindowSurface({
     const pointerStart = pointerStartRef.current;
 
     pointerStartRef.current = null;
+    host.notifyCapture(false);
 
     if (!surface) {
       return;
@@ -593,7 +575,7 @@ export function usePetWindowSurface({
       }
     }
 
-    void setNativeCursorPassthrough(hit.kind === "transparent");
+    host.setCursorPassthrough(hit.kind === "transparent");
   }
 
   function handleContextMenu(event: React.MouseEvent<HTMLElement>) {
@@ -609,13 +591,13 @@ export function usePetWindowSurface({
     );
 
     if (hit.kind === "transparent") {
-      void setNativeCursorPassthrough(true);
+      host.setCursorPassthrough(true);
       return;
     }
 
     event.preventDefault();
     pointerStartRef.current = null;
-    void setNativeCursorPassthrough(false);
+    host.setCursorPassthrough(false);
 
     if (isPreview) {
       window.open(
@@ -653,11 +635,12 @@ export function usePetWindowSurface({
     }
 
     if (pointerStartRef.current === "body" || pointerStartRef.current === "resize") {
-      void setNativeCursorPassthrough(false);
+      host.setCursorPassthrough(false);
       return;
     }
 
-    void setNativeCursorPassthrough(true);
+    host.notifyCapture(false);
+    host.setCursorPassthrough(true);
   }
 
   return {

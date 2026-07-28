@@ -12,6 +12,7 @@ import { usePetSessionBindings } from "@/app/desktop-host/use-pet-session-bindin
 import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import type { MainWindowTab } from "@/app/main-window/main-window";
 import { MainWindowSurface } from "@/app/main-window/main-window-surface";
+import { usePetOverlayMode } from "@/app/pet-overlay-mode";
 import { pushSearchParams } from "@/app/spa-navigation";
 import { useAgentPlugin } from "@/app/use-agent-plugin";
 import {
@@ -78,6 +79,11 @@ function PetsDrivenHostApp() {
   const [editPetId, setEditPetId] = useState<string | null>(devFixture?.editPetId ?? null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
+  const {
+    mode: overlayMode,
+    setMode: setOverlayMode,
+    reset: resetOverlayMode,
+  } = usePetOverlayMode();
 
   function applyPetsDrivenState(next: PetsDrivenState) {
     petsDrivenStateRef.current = next;
@@ -125,6 +131,7 @@ function PetsDrivenHostApp() {
     setEditPetId,
     setPetWindowError,
     navigate,
+    overlayMode,
   });
 
   const {
@@ -136,6 +143,7 @@ function PetsDrivenHostApp() {
   } = usePetSessionBindings({
     stateRef: petsDrivenStateRef,
     setPetWindowError,
+    overlayMode,
   });
 
   const { petStatusById, pushAgentHookEvent } = useDesktopSimulationHost({
@@ -150,6 +158,7 @@ function PetsDrivenHostApp() {
     emitBindingState,
     hidePet,
     pickFolderForPet,
+    overlayMode,
   });
 
   // The backend owns the hatch write; when it signals a state change, reload
@@ -282,7 +291,12 @@ function PetsDrivenHostApp() {
       onHidePet={hidePet}
       onPatchPet={patchPet}
       onPickFolderForPet={(petId: string) => void pickFolderForPet(petId)}
-      onResetAllSettings={() => void resetAllSettings()}
+      onResetAllSettings={() => {
+        resetOverlayMode();
+        void resetAllSettings();
+      }}
+      onSetOverlayMode={setOverlayMode}
+      overlayMode={overlayMode}
       onResetPetFolder={() => applyPetSourceFolder(null)}
       onRevealFolder={(path: string | null) => void revealFolder(path)}
       onResetPets={() => void resetPets()}
