@@ -81,6 +81,62 @@ function pickIndex(random: RandomSource, length: number): number {
 
 // ── Drop ───────────────────────────────────────────────────────────────────
 
+/** What a single drop needs to know, independent of who triggered it. */
+export type WorldItemDropParams = {
+  /** The pool the trinket's kind is chosen from. */
+  kinds: PetItemKind[];
+  /** How long the dropped trinket lies on the floor before it fades. */
+  itemLifetimeMs: number;
+  /** Half-extent of its collection box. */
+  pickupRadius: number;
+};
+
+/**
+ * Drop one random trinket onto a desktop floor at `now`, tagging its entity id
+ * with `sequence`. The one place a WorldItem is ever created, shared by the
+ * scheduled ItemSpawner and by a host-driven manual drop (the main window's
+ * mystery-box button). Returns the new entity id, or null when there was
+ * nowhere to place one — an empty kind pool or no floor in view.
+ *
+ * Capacity (maxOnScreen) is deliberately the caller's concern: the scheduled
+ * drop skips a full desktop, a manual drop does not.
+ */
+export function dropRandomWorldItem(
+  components: ComponentStore,
+  random: RandomSource,
+  bounds: { x?: number; y?: number; width: number; height: number },
+  now: number,
+  params: WorldItemDropParams,
+  sequence: number,
+): string | null {
+  if (params.kinds.length === 0) return null;
+  const spans = desktopFloorSpans(components, bounds);
+  if (spans.length === 0) return null;
+
+  const span = spans[pickIndex(random, spans.length)];
+  const kind = params.kinds[pickIndex(random, params.kinds.length)];
+  const id = `item-${kind}-${sequence}`;
+
+  components.spawn(id, [
+    {
+      type: "WorldItem",
+      kind,
+      droppedAt: now,
+      expiresAt: now + params.itemLifetimeMs,
+      pickupRadius: params.pickupRadius,
+    },
+    {
+      type: "Transform",
+      position: {
+        x: span.minX + random.next() * (span.maxX - span.minX),
+        y: span.topY - ITEM_RENDER_SIZE.height / 2,
+      },
+    },
+  ]);
+
+  return id;
+}
+
 export function runItemSpawnSystem(
   components: ComponentStore,
   clock: Clock,
@@ -103,8 +159,22 @@ export function runItemSpawnSystem(
 
     const blocked =
       spawner.kinds.length === 0 || components.components("WorldItem").size >= spawner.maxOnScreen;
-    const spans = blocked ? [] : desktopFloorSpans(components, bounds);
-    if (blocked || spans.length === 0) {
+    const dropped = blocked
+      ? null
+      : dropRandomWorldItem(
+          components,
+          random,
+          bounds,
+          now,
+          {
+            kinds: spawner.kinds,
+            itemLifetimeMs: spawner.itemLifetimeMs,
+            pickupRadius: DEFAULT_ITEM_PICKUP_RADIUS,
+          },
+          spawner.dropped,
+        );
+
+    if (!dropped) {
       // Retry on the short end of the cadence rather than burning a full
       // interval — the block (a full desktop, a world still being built) is
       // usually gone well before the next scheduled drop would come round.
@@ -112,28 +182,7 @@ export function runItemSpawnSystem(
       return;
     }
 
-    const span = spans[pickIndex(random, spans.length)];
-    const kind = spawner.kinds[pickIndex(random, spawner.kinds.length)];
-    const id = `item-${kind}-${spawner.dropped}`;
     spawner.dropped += 1;
-
-    components.spawn(id, [
-      {
-        type: "WorldItem",
-        kind,
-        droppedAt: now,
-        expiresAt: now + spawner.itemLifetimeMs,
-        pickupRadius: DEFAULT_ITEM_PICKUP_RADIUS,
-      },
-      {
-        type: "Transform",
-        position: {
-          x: span.minX + random.next() * (span.maxX - span.minX),
-          y: span.topY - ITEM_RENDER_SIZE.height / 2,
-        },
-      },
-    ]);
-
     spawner.nextDropAt =
       now +
       spawner.minIntervalMs +

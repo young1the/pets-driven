@@ -85,6 +85,18 @@ export function MainWindow({
             <Button onClick={home.onHideAll} size="sm" variant="neutral">
               {t("nav.hideAll")}
             </Button>
+            <Button
+              // A pet has to be on the desktop to walk over and collect a
+              // trinket; with none out, the drop would land on an empty floor.
+              disabled={home.inField.length === 0}
+              iconLeft={<span aria-hidden="true">🎁</span>}
+              onClick={home.onDropItem}
+              size="sm"
+              title={t("nav.mysteryBoxHint")}
+              variant="accent"
+            >
+              {t("nav.mysteryBox")}
+            </Button>
           </div>
         )}
       </header>

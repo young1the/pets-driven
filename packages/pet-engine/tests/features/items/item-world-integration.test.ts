@@ -85,6 +85,45 @@ describe("trinkets in a live world", () => {
     expect(items[0].position.y).toBeCloseTo(MONITOR.height - 16, 0);
   });
 
+  it("hand-drops a trinket onto the floor when the host asks, with no spawner cadence", () => {
+    // The spawner is present but its cadence is off, exactly as the adopted
+    // desktop scenario wires it: nothing drops on a timer.
+    const clock = createManualClock(0);
+    const world = createWorld({
+      width: MONITOR.width,
+      height: MONITOR.height,
+      viewport: MONITOR,
+      monitors: [MONITOR],
+      clock,
+      entities: [
+        ...createMonitorBoundaryEntities([MONITOR], 48),
+        {
+          id: "item-spawner",
+          components: [createItemSpawner(0, { nextDropAt: Number.POSITIVE_INFINITY })],
+        },
+      ],
+    });
+
+    step(world, clock, Math.ceil(30_000 / STEP_MS));
+    expect(world.snapshot().items).toHaveLength(0);
+
+    const id = world.dropRandomItem();
+    expect(id).not.toBeNull();
+
+    const items = world.snapshot().items ?? [];
+    expect(items).toHaveLength(1);
+    expect(items[0].position.y).toBeCloseTo(MONITOR.height - 16, 0);
+  });
+
+  it("hand-drops using the tuned defaults in a world that runs no spawner", () => {
+    const { world } = createWorldWithWalker();
+
+    const id = world.dropRandomItem();
+
+    expect(id).not.toBeNull();
+    expect(world.snapshot().items).toHaveLength(1);
+  });
+
   it("makes a walker fly once it collects a pair of wings", () => {
     const { clock, world } = createWorldWithWalker();
     const petY = world.getComponent("pet-a", "Transform")!.position.y;

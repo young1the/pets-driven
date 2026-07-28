@@ -146,7 +146,7 @@ function PetsDrivenHostApp() {
     overlayMode,
   });
 
-  const { petStatusById, pushAgentHookEvent } = useDesktopSimulationHost({
+  const { petStatusById, pushAgentHookEvent, dropMysteryItem } = useDesktopSimulationHost({
     petsDrivenState,
     stateRef: petsDrivenStateRef,
     applyState: applyPetsDrivenState,
@@ -287,6 +287,7 @@ function PetsDrivenHostApp() {
       onChangePetSourceFolder={() => void changePetSourceFolder()}
       onClearFolderForPet={clearFolderForPet}
       onDeletePet={deletePet}
+      onDropMysteryItem={dropMysteryItem}
       onHideAllPets={hideAllPets}
       onHidePet={hidePet}
       onPatchPet={patchPet}

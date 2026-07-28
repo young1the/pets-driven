@@ -223,6 +223,25 @@ export function useDesktopSimulationHost({
   // are merely added to or removed from an already-running world.
   const adoptedHasVisiblePets = adoptedSimKey.length > 0;
 
+  // Hand-drop a random trinket onto the desktop floor, in place of the
+  // automatic ItemSpawner cadence (switched off in the adopted scenario). The
+  // main window's mystery-box button calls this; the next tick's snapshot picks
+  // up the new WorldItem and syncItemWindows spawns its overlay. Returns whether
+  // a trinket actually landed — false when no world is live (no pets on the
+  // desktop yet) or there was nowhere to place one.
+  function dropMysteryItem(): boolean {
+    const scenario = adoptedScenarioRef.current;
+    if (!scenario) {
+      return false;
+    }
+    try {
+      return scenario.world.dropRandomItem() !== null;
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+      return false;
+    }
+  }
+
   // Fan a routed agent hook event into every live world. Only the pet whose
   // AgentBinding.sourceId matches reacts; the others ignore it. Each world
   // stamps the event with its own clock since they advance independently.
@@ -911,5 +930,5 @@ export function useDesktopSimulationHost({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adoptedSimKey]);
 
-  return { petStatusById, pushAgentHookEvent };
+  return { petStatusById, pushAgentHookEvent, dropMysteryItem };
 }

@@ -16,6 +16,11 @@ import { agentTaskBadgeLabel } from "@pets-driven/pet-engine/features/agent/agen
 import { getPetAnimationState } from "@pets-driven/pet-engine/features/behavior/pet-animation-state";
 import type { WorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
+import {
+  DEFAULT_ITEM_PICKUP_RADIUS,
+  DEFAULT_ITEM_SPAWNER,
+} from "@pets-driven/pet-engine/features/items/components";
+import { dropRandomWorldItem } from "@pets-driven/pet-engine/features/items/systems";
 import { createMatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import { runPhysicsTransformSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
 import {
@@ -42,6 +47,10 @@ export function createWorld(input: WorldDefinition) {
   });
   const events = createWorldEventQueue();
   const random = input.random ?? createSeededRandom(1);
+  // Ids for host-driven manual drops in a world that runs no ItemSpawner. When
+  // a spawner is present, drops share its `dropped` counter instead so the two
+  // sources never mint the same entity id.
+  let manualDropSequence = 0;
 
   registerPhysicsBodies();
 
@@ -417,6 +426,46 @@ export function createWorld(input: WorldDefinition) {
     },
     pushEvent(event: WorldEvent) {
       events.push(event);
+    },
+    /**
+     * Host-facing entry point for a manual trinket drop — the main window's
+     * mystery-box button, in place of the automatic ItemSpawner cadence. Drops
+     * one random trinket onto a desktop floor now, ignoring maxOnScreen (a
+     * button press should always land something). Uses the ItemSpawner's pool
+     * and lifetime when the scenario has one, the tuned defaults otherwise.
+     * Returns the new entity id, or null when there was nowhere to place one
+     * (no floor in view, or an empty kind pool).
+     */
+    dropRandomItem(): string | null {
+      const bounds = {
+        x: input.viewport?.x ?? 0,
+        y: input.viewport?.y ?? 0,
+        width: input.width,
+        height: input.height,
+      };
+      const spawner = components.components("ItemSpawner").values().next().value;
+      const params = {
+        kinds: spawner ? spawner.kinds : [...DEFAULT_ITEM_SPAWNER.kinds],
+        itemLifetimeMs: spawner ? spawner.itemLifetimeMs : DEFAULT_ITEM_SPAWNER.itemLifetimeMs,
+        pickupRadius: DEFAULT_ITEM_PICKUP_RADIUS,
+      };
+      const sequence = spawner ? spawner.dropped : manualDropSequence;
+      const id = dropRandomWorldItem(
+        components,
+        random,
+        bounds,
+        input.clock.now(),
+        params,
+        sequence,
+      );
+      if (id) {
+        if (spawner) {
+          spawner.dropped += 1;
+        } else {
+          manualDropSequence += 1;
+        }
+      }
+      return id;
     },
     /**
      * Host-facing entry point for live cursor tracking: writes a transient

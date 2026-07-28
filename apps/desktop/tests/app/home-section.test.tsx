@@ -24,6 +24,7 @@ describe("HomeSection", () => {
         onAddPet={vi.fn()}
         onShowAll={vi.fn()}
         onHideAll={vi.fn()}
+        onDropItem={vi.fn()}
       />,
     );
 
@@ -43,6 +44,7 @@ describe("HomeSection", () => {
         onAddPet={vi.fn()}
         onShowAll={vi.fn()}
         onHideAll={vi.fn()}
+        onDropItem={vi.fn()}
       />,
     );
 
@@ -66,6 +68,7 @@ describe("HomeSection", () => {
         onAddPet={vi.fn()}
         onShowAll={vi.fn()}
         onHideAll={vi.fn()}
+        onDropItem={vi.fn()}
       />,
     );
 
@@ -95,6 +98,7 @@ describe("HomeSection", () => {
         onAddPet={vi.fn()}
         onShowAll={vi.fn()}
         onHideAll={vi.fn()}
+        onDropItem={vi.fn()}
       />,
     );
 
@@ -125,6 +129,7 @@ describe("HomeSection", () => {
         onAddPet={vi.fn()}
         onShowAll={vi.fn()}
         onHideAll={vi.fn()}
+        onDropItem={vi.fn()}
       />,
     );
 
@@ -153,6 +158,7 @@ describe("HomeSection", () => {
         onAddPet={vi.fn()}
         onShowAll={vi.fn()}
         onHideAll={vi.fn()}
+        onDropItem={vi.fn()}
       />,
     );
 
@@ -179,6 +185,7 @@ describe("HomeSection", () => {
         onAddPet={vi.fn()}
         onShowAll={vi.fn()}
         onHideAll={vi.fn()}
+        onDropItem={vi.fn()}
       />,
     );
 
@@ -200,6 +207,7 @@ describe("HomeSection", () => {
         onAddPet={vi.fn()}
         onShowAll={vi.fn()}
         onHideAll={vi.fn()}
+        onDropItem={vi.fn()}
       />,
     );
 

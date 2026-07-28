@@ -3,11 +3,13 @@ import { createComponentStore } from "@pets-driven/pet-engine/core/component-sto
 import { createItemSpawner } from "@pets-driven/pet-engine/features/items/components";
 import {
   desktopFloorSpans,
+  dropRandomWorldItem,
   grantItemAbility,
   revokeItemAbility,
   runItemAbilityExpirySystem,
   runItemPickupSystem,
   runItemSpawnSystem,
+  type WorldItemDropParams,
 } from "@pets-driven/pet-engine/features/items/systems";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";
@@ -142,6 +144,68 @@ describe("item spawn system", () => {
 
     // The faded one is gone; whatever the spawner drops next is a fresh entity.
     expect(store.getEntity("item-wings-0") ?? store.getEntity("item-claws-0")).toBeUndefined();
+  });
+
+  it("never drops on its own once the cadence is switched off", () => {
+    const clock = createManualClock(0);
+    const store = createComponentStore([
+      floor("monitor-ground", 960, 1104, 1920),
+      {
+        id: "item-spawner",
+        components: [createItemSpawner(0, { nextDropAt: Number.POSITIVE_INFINITY })],
+      },
+    ]);
+    const random = { next: () => 0.5 };
+
+    // However far the clock runs, the scheduled drop time never arrives.
+    for (let tick = 0; tick < 10; tick += 1) {
+      clock.advanceBy(60_000);
+      runItemSpawnSystem(store, clock, random, BOUNDS);
+    }
+
+    expect(store.query("WorldItem")).toHaveLength(0);
+  });
+});
+
+describe("dropRandomWorldItem", () => {
+  const PARAMS: WorldItemDropParams = {
+    kinds: ["wings"],
+    itemLifetimeMs: 5_000,
+    pickupRadius: 28,
+  };
+
+  it("places one trinket resting on a floor and returns its id", () => {
+    const store = createComponentStore([floor("monitor-ground", 960, 1104, 1920)]);
+    const random = { next: () => 0.5 };
+
+    const id = dropRandomWorldItem(store, random, BOUNDS, 1_000, { ...PARAMS }, 7);
+
+    expect(id).toBe("item-wings-7");
+    const items = store.query("WorldItem", "Transform");
+    expect(items).toHaveLength(1);
+    expect(items[0].components[0].expiresAt).toBe(6_000);
+    expect(items[0].components[1].position.y).toBe(1080 - 16);
+    expect(items[0].components[1].position.x).toBe(960);
+  });
+
+  it("returns null when there is no floor to drop onto", () => {
+    const store = createComponentStore([]);
+    const random = { next: () => 0.5 };
+
+    const id = dropRandomWorldItem(store, random, BOUNDS, 0, { ...PARAMS }, 0);
+
+    expect(id).toBeNull();
+    expect(store.query("WorldItem")).toHaveLength(0);
+  });
+
+  it("returns null when the kind pool is empty", () => {
+    const store = createComponentStore([floor("monitor-ground", 960, 1104, 1920)]);
+    const random = { next: () => 0.5 };
+
+    const id = dropRandomWorldItem(store, random, BOUNDS, 0, { ...PARAMS, kinds: [] }, 0);
+
+    expect(id).toBeNull();
+    expect(store.query("WorldItem")).toHaveLength(0);
   });
 });
 

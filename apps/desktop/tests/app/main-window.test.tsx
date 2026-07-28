@@ -11,6 +11,7 @@ const home = {
   onAddPet: vi.fn(),
   onShowAll: vi.fn(),
   onHideAll: vi.fn(),
+  onDropItem: vi.fn(),
 };
 const edit = {
   onName: vi.fn(),
