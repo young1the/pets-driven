@@ -2,6 +2,19 @@
    IMPORTANT: the design-system base paints body with --surface-app;
    the pet window must stay fully transparent, so re-assert it here. */
 
+/* Every surface this entry serves is a transparent overlay window, and each one
+   asks for that with a class its React effect adds on mount. That is too late
+   to be the only defense: the shell shows the window as soon as the simulation
+   places it, which can be a few frames before the lazy surface chunk has even
+   mounted, and until then the design-system base paints the body opaque — a
+   white square flashing where the pet is about to stand. Claim transparency
+   unclassed here, before any surface has decided which one it is; the classes
+   below still carry the per-surface sizing and the fixture backdrops. */
+html,
+body {
+  background: transparent;
+}
+
 html.pet-window-document,
 html.pet-window-document body {
   min-width: 0;

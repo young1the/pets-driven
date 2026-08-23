@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>pets-driven pet</title>
+    <!-- The window is transparent from its very first paint, before the entry
+         stylesheet exists. In a dev build that sheet arrives with the module
+         script, so without this the shell can show the window while the body is
+         still the browser's opaque default and a white square flashes where the
+         pet is about to stand. The same declarations are re-asserted, unclassed,
+         at the top of styles/pet-window.css for the loaded page. -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
