@@ -13,6 +13,7 @@ import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import { usePetAssetOptions } from "@/app/pet-assets/use-pet-asset-options";
 import type { PetOverlayMode } from "@/app/pet-overlay-mode";
 import { personalityRoleLabelKey } from "@/app/pet-presentation";
+import type { QuietMode } from "@/app/quiet-mode";
 import { parseLaunchLine, promptForShell } from "@/app/session-launch-line";
 import type { useAgentPlugin } from "@/app/use-agent-plugin";
 import { getWorkingDirectoryForPet } from "@/app-state/pet-adoption";
@@ -60,6 +61,9 @@ export interface MainWindowSurfaceProps {
   /** Whether the pets get one OS window each or share one desktop-wide overlay. */
   overlayMode: PetOverlayMode;
   onSetOverlayMode: (mode: PetOverlayMode) => void;
+  /** How much the pets may intrude: off, quiet (no chatter), still (no moving). */
+  quietMode: QuietMode;
+  onSetQuietMode: (mode: QuietMode) => void;
 }
 
 /**
@@ -115,6 +119,8 @@ export function MainWindowSurface({
   onResetAllSettings,
   overlayMode,
   onSetOverlayMode,
+  quietMode,
+  onSetQuietMode,
 }: MainWindowSurfaceProps) {
   const { t } = useTranslation("desktop");
 
@@ -322,6 +328,8 @@ export function MainWindowSurface({
         onResetPets: () => onResetPets(),
         overlayMode,
         onSetOverlayMode,
+        quietMode,
+        onSetQuietMode,
       }}
       terminal={{
         available: isTauri(),

@@ -1,4 +1,6 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import type { QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
+import { isMovementStilled } from "@pets-driven/pet-engine/core/quiet-mode";
 import { decideAutonomousBehavior } from "@pets-driven/pet-engine/features/behavior/autonomous-decision";
 import type { DecisionContext } from "@pets-driven/pet-engine/features/behavior/decision-candidates";
 import { decidePendingReaction } from "@pets-driven/pet-engine/features/behavior/reaction-decision";
@@ -24,7 +26,15 @@ export function runBehaviorDecisionSystem(
   clock: Clock,
   random: RandomSource,
   bounds: { x?: number; y?: number; width: number; height: number },
+  quietMode: QuietMode = "off",
 ): void {
+  // A stilled pet picks nothing new. Stopping here rather than in the planning
+  // layer is what keeps the pet from *deciding* to go somewhere: every pool
+  // below sets a motion target, and QuietStillnessSystem would then be clearing
+  // a fresh errand every tick while the pet's activity label narrated a walk it
+  // never took.
+  if (isMovementStilled(quietMode)) return;
+
   const now = clock.now();
 
   // One pet per climbable surface at a time.  Pre-populate from entities that

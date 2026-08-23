@@ -22,6 +22,7 @@ import {
 } from "@/app/desktop-host/monitor-geometry";
 import { shortWorkingDir } from "@/app/main-window/pet-card-view";
 import type { PetOverlayMode } from "@/app/pet-overlay-mode";
+import type { QuietMode } from "@/app/quiet-mode";
 import {
   createPetCardStatusTracker,
   type PetCardStatus,
@@ -130,6 +131,8 @@ type UseDesktopSimulationHostParams = {
   pickFolderForPet: (petId: string) => void;
   /** Whether the pets get one OS window each or share one desktop-wide overlay. */
   overlayMode: PetOverlayMode;
+  /** How much the pets may intrude: off, quiet (no chatter), still (no moving). */
+  quietMode: QuietMode;
 };
 
 /**
@@ -151,6 +154,7 @@ export function useDesktopSimulationHost({
   hidePet,
   pickFolderForPet,
   overlayMode,
+  quietMode,
 }: UseDesktopSimulationHostParams) {
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
@@ -203,6 +207,12 @@ export function useDesktopSimulationHost({
   const adoptedLastOverlayEmitRef = useRef<{ body: string; sequence: number } | null>(null);
   const petOverlayInteractiveRef = useRef(false);
   const petOverlayCaptureUntilRef = useRef(0);
+  // Quiet Mode, as a ref: the tick loop is mounted once and would otherwise
+  // close over the level the user had when their pets were deployed. Kept out
+  // of the rebuild triggers on purpose — the world is handed the live value
+  // each tick instead, so quieting the pets never moves them.
+  const quietModeRef = useRef(quietMode);
+  quietModeRef.current = quietMode;
 
   const [desktopFixtureWindowCount] = useState(0);
   const [adoptedSimulationResetKey] = useState(0);
@@ -663,6 +673,12 @@ export function useDesktopSimulationHost({
         );
       }
 
+      // Handed over per tick rather than watched by an effect: the tick already
+      // reads this ref, the world may have been rebuilt since the setting last
+      // changed, and a level the user picked must not wait on a rebuild — or
+      // cause one, which would send every pet back to its spawn point.
+      scenario.world.setQuietMode(quietModeRef.current);
+
       scenario.clock.advanceBy(DESKTOP_FIXTURE_STEP_MS);
       scenario.world.step(DESKTOP_FIXTURE_STEP_MS);
       adoptedHostSequenceRef.current += 1;
@@ -729,6 +745,10 @@ export function useDesktopSimulationHost({
           // Always a string so clearing a note reaches the window as an empty
           // value rather than an absent key the window would ignore.
           note: petRecord.note ?? "",
+          // The one line the window says on its own, so the engine's silence
+          // cannot cover it: while the pets are quiet, a note only speaks when
+          // the user has just saved one.
+          quiet: quietModeRef.current !== "off",
         };
       });
 

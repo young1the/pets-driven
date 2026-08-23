@@ -13,6 +13,7 @@ import { resolveDesktopFixture } from "@/app/dev-fixtures";
 import type { MainWindowTab } from "@/app/main-window/main-window";
 import { MainWindowSurface } from "@/app/main-window/main-window-surface";
 import { usePetOverlayMode } from "@/app/pet-overlay-mode";
+import { useQuietMode } from "@/app/quiet-mode";
 import { pushSearchParams } from "@/app/spa-navigation";
 import { useAgentPlugin } from "@/app/use-agent-plugin";
 import {
@@ -84,6 +85,7 @@ function PetsDrivenHostApp() {
     setMode: setOverlayMode,
     reset: resetOverlayMode,
   } = usePetOverlayMode();
+  const { mode: quietMode, setMode: setQuietMode, reset: resetQuietMode } = useQuietMode();
 
   function applyPetsDrivenState(next: PetsDrivenState) {
     petsDrivenStateRef.current = next;
@@ -159,6 +161,7 @@ function PetsDrivenHostApp() {
     hidePet,
     pickFolderForPet,
     overlayMode,
+    quietMode,
   });
 
   // The backend owns the hatch write; when it signals a state change, reload
@@ -294,10 +297,13 @@ function PetsDrivenHostApp() {
       onPickFolderForPet={(petId: string) => void pickFolderForPet(petId)}
       onResetAllSettings={() => {
         resetOverlayMode();
+        resetQuietMode();
         void resetAllSettings();
       }}
       onSetOverlayMode={setOverlayMode}
       overlayMode={overlayMode}
+      onSetQuietMode={setQuietMode}
+      quietMode={quietMode}
       onResetPetFolder={() => applyPetSourceFolder(null)}
       onRevealFolder={(path: string | null) => void revealFolder(path)}
       onResetPets={() => void resetPets()}

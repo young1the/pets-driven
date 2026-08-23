@@ -14,7 +14,8 @@ export type SystemResource =
   | "PhysicsPosition"
   | "PhysicsVelocity"
   | "PhysicsGravityScale"
-  | "WorldEventQueue";
+  | "WorldEventQueue"
+  | "QuietMode";
 
 /** What a system declares it touches: a component type or a context resource. */
 export type SystemAccess = ComponentType | SystemResource;

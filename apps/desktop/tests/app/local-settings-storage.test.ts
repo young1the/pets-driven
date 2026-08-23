@@ -3,6 +3,7 @@ import {
   clearStoredSettings,
   LOCALE_STORAGE_KEY,
   PET_OVERLAY_MODE_STORAGE_KEY,
+  QUIET_MODE_STORAGE_KEY,
   SETTINGS_STORAGE_KEYS,
   TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY,
   THEME_ACCENT_STORAGE_KEY,
@@ -29,7 +30,7 @@ describe("clearStoredSettings", () => {
   it("registers every setting the app persists on the frontend", () => {
     // The registry is the whole point of the module: a key that lives outside
     // it is invisible to the reset, which is how a "reset all settings" quietly
-    // leaves a setting behind. Pin the five so a sixth cannot be added without
+    // leaves a setting behind. Pin the six so a seventh cannot be added without
     // this list — and therefore the reset — seeing it.
     expect([...SETTINGS_STORAGE_KEYS]).toEqual([
       LOCALE_STORAGE_KEY,
@@ -37,6 +38,7 @@ describe("clearStoredSettings", () => {
       THEME_ACCENT_STORAGE_KEY,
       TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY,
       PET_OVERLAY_MODE_STORAGE_KEY,
+      QUIET_MODE_STORAGE_KEY,
     ]);
     expect(TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY).toBe(
       "pets-driven:terminal-onboarding-dismissed",

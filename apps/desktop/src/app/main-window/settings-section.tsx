@@ -120,8 +120,10 @@ export function SettingsSection(props: SettingsSectionProps) {
               onOpenPetFolder={props.onOpenPetFolder}
               onResetPetFolder={props.onResetPetFolder}
               onSetOverlayMode={props.onSetOverlayMode}
+              onSetQuietMode={props.onSetQuietMode}
               overlayMode={props.overlayMode}
               petSourceDirectory={props.petSourceDirectory}
+              quietMode={props.quietMode}
             />
           ) : category === "appearance" ? (
             <SettingsAppearancePanel />

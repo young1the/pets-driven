@@ -24,6 +24,8 @@ import {
   PersonalSpaceSystem,
   PetExpressionExpirationSystem,
   PettingDetectionSystem,
+  QuietChatterSystem,
+  QuietStillnessSystem,
   RompProgressSystem,
   SpeechExpirationSystem,
   TaskMovementHoldSystem,
@@ -101,6 +103,9 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     FeintProgressSystem, // mischievous approach-then-retreat signature activity
     RompProgressSystem, // advances live play-romp activities (hop/dash choreography)
     PersonalSpaceSystem, // idle stacked pets take a cosmetic step aside
+    // Last, so it sweeps every line this phase could have produced before the
+    // host ever sees one (Quiet Mode; agent status is never swept).
+    QuietChatterSystem,
   ],
 
   UPDATE: [
@@ -119,6 +124,9 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     // Runs before the force systems so a held pet's motion target is cleared
     // before WalkSystem/SteeringForceSystem can turn it into movement.
     TaskMovementHoldSystem,
+    // Same slot, same reason: park the pets Quiet Mode is holding still before
+    // the force systems can act on the errand they were already on.
+    QuietStillnessSystem,
     WalkSystem,
     JumpSystem,
     WallClimbSystem,

@@ -119,6 +119,7 @@ export function PetWindowView({
     petName,
     assetId,
     note,
+    isQuietModeOn,
     cwdRef,
     interactionStatus,
     isBodyHovered,
@@ -138,6 +139,7 @@ export function PetWindowView({
   const { isSpeaking: isSpeakingNote } = usePetWindowNote({
     note,
     isQuiet: presentation.overlay === null && !presentation.working,
+    isQuietModeOn,
   });
 
   useEffect(() => {

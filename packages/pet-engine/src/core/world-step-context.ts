@@ -1,4 +1,5 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import type { QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
 import type { WorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
@@ -19,4 +20,9 @@ export type WorldStepContext = {
   random: RandomSource;
   bounds: { x?: number; y?: number; width: number; height: number };
   forceGroups: Force[][];
+  /**
+   * How much the pets may intrude this tick. One answer for the whole world,
+   * set by the host between steps — see `core/quiet-mode.ts`.
+   */
+  quietMode: QuietMode;
 };

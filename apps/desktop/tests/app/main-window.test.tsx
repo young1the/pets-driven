@@ -71,6 +71,8 @@ const settings = {
   onResetPets: vi.fn(),
   overlayMode: "window-per-pet" as const,
   onSetOverlayMode: vi.fn(),
+  quietMode: "off" as const,
+  onSetQuietMode: vi.fn(),
 };
 const debug = { groups: [], error: null };
 const terminal = {

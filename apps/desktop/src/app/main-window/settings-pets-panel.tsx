@@ -11,6 +11,7 @@ import {
   smallAction,
 } from "@/app/main-window/settings-section.styles";
 import type { PetOverlayMode } from "@/app/pet-overlay-mode";
+import type { QuietMode } from "@/app/quiet-mode";
 
 export interface SettingsPetsPanelProps {
   /** The single folder scanned for pet packs; null = no folder designated. */
@@ -26,7 +27,17 @@ export interface SettingsPetsPanelProps {
    */
   overlayMode: PetOverlayMode;
   onSetOverlayMode: (mode: PetOverlayMode) => void;
+  /** How much the pets may intrude: off, quiet (no chatter), still (no moving). */
+  quietMode: QuietMode;
+  onSetQuietMode: (mode: QuietMode) => void;
 }
+
+/** The level's own explanation, in the same shape the window-mode rows use. */
+const QUIET_MODE_DESC_KEY: Record<QuietMode, string> = {
+  off: "Off",
+  quiet: "Quiet",
+  still: "Still",
+};
 
 function folderName(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean);
@@ -42,6 +53,8 @@ export function SettingsPetsPanel({
   onResetPetFolder,
   overlayMode,
   onSetOverlayMode,
+  quietMode,
+  onSetQuietMode,
 }: SettingsPetsPanelProps) {
   const { t } = useTranslation("desktop");
 
@@ -102,7 +115,7 @@ export function SettingsPetsPanel({
       {/* How the pets are put on the desktop. One window each layers them
           individually against other apps; one shared window costs a single
           webview however many pets are out. */}
-      <div style={rowStyle(true)}>
+      <div style={rowStyle()}>
         <span style={label}>{t("settings.petWindowMode")}</span>
         <p style={hint}>
           {overlayMode === "single-window"
@@ -123,6 +136,38 @@ export function SettingsPetsPanel({
             type="button"
           >
             {t("settings.petWindowModeSingle")}
+          </button>
+        </div>
+      </div>
+
+      {/* How much the pets may intrude. Two things get taken away in turn —
+          first what they say, then where they go — so the user can settle a
+          busy desktop without hiding the pets and losing the work they
+          report. */}
+      <div style={rowStyle(true)}>
+        <span style={label}>{t("settings.quietMode")}</span>
+        <p style={hint}>{t(`settings.quietMode${QUIET_MODE_DESC_KEY[quietMode]}Desc`)}</p>
+        <div style={segWrap}>
+          <button
+            onClick={() => onSetQuietMode("off")}
+            style={seg(quietMode === "off")}
+            type="button"
+          >
+            {t("settings.quietModeOff")}
+          </button>
+          <button
+            onClick={() => onSetQuietMode("quiet")}
+            style={seg(quietMode === "quiet")}
+            type="button"
+          >
+            {t("settings.quietModeQuiet")}
+          </button>
+          <button
+            onClick={() => onSetQuietMode("still")}
+            style={seg(quietMode === "still")}
+            type="button"
+          >
+            {t("settings.quietModeStill")}
           </button>
         </div>
       </div>

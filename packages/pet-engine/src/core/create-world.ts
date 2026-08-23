@@ -7,6 +7,7 @@ import type { Component, ComponentType } from "@pets-driven/pet-engine/core/comp
 import type { MonitorWorkArea, WorldViewport } from "@pets-driven/pet-engine/core/monitor-geometry";
 import { derivePetActivity } from "@pets-driven/pet-engine/core/pet-activity";
 import { STEP_SYSTEMS } from "@pets-driven/pet-engine/core/phases";
+import { DEFAULT_QUIET_MODE, type QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
 import {
   describeSimulationSystems,
   runSimulationSystems,
@@ -37,6 +38,8 @@ export type WorldDefinition = {
   clock: ManualClock;
   entities: EntityDeclaration[];
   random?: RandomSource;
+  /** Starting Quiet Mode level; the host may change it on the live world. */
+  quietMode?: QuietMode;
 };
 
 export function createWorld(input: WorldDefinition) {
@@ -51,6 +54,7 @@ export function createWorld(input: WorldDefinition) {
   // a spawner is present, drops share its `dropped` counter instead so the two
   // sources never mint the same entity id.
   let manualDropSequence = 0;
+  let quietMode: QuietMode = input.quietMode ?? DEFAULT_QUIET_MODE;
 
   registerPhysicsBodies();
 
@@ -489,6 +493,18 @@ export function createWorld(input: WorldDefinition) {
         at,
       });
     },
+    /**
+     * Host-facing entry point for Quiet Mode: how much the pets may intrude.
+     * Deliberately a setter on the live world rather than a world definition —
+     * a rebuild would send every pet back to its spawn point, which is a high
+     * price for a setting the user flips to be left alone for a minute.
+     */
+    setQuietMode(next: QuietMode) {
+      quietMode = next;
+    },
+    quietMode() {
+      return quietMode;
+    },
     step(deltaMs: number) {
       runSimulationSystems(STEP_SYSTEMS, {
         deltaMs,
@@ -504,6 +520,7 @@ export function createWorld(input: WorldDefinition) {
           height: input.height,
         },
         forceGroups: [],
+        quietMode,
       });
     },
     snapshot() {

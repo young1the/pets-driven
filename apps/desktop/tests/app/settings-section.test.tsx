@@ -49,6 +49,8 @@ function setupProps(overrides = {}) {
     onResetPets: vi.fn(),
     overlayMode: "window-per-pet" as const,
     onSetOverlayMode: vi.fn(),
+    quietMode: "off" as const,
+    onSetQuietMode: vi.fn(),
     ...overrides,
   };
 }
@@ -260,6 +262,23 @@ describe("SettingsSection pets", () => {
 
     fireEvent.click(screen.getByText("One shared window"));
     expect(onSetOverlayMode).toHaveBeenCalledWith("single-window");
+  });
+
+  it("settles the pets down a level at a time", () => {
+    const onSetQuietMode = vi.fn();
+    setup("pets", { onSetQuietMode });
+
+    fireEvent.click(screen.getByText("Quiet"));
+    expect(onSetQuietMode).toHaveBeenCalledWith("quiet");
+
+    fireEvent.click(screen.getByText("Still"));
+    expect(onSetQuietMode).toHaveBeenCalledWith("still");
+  });
+
+  it("explains the level the pets are actually on", () => {
+    setup("pets", { quietMode: "still" });
+
+    expect(screen.getByText(/stay exactly where they are/)).toBeInTheDocument();
   });
 });
 

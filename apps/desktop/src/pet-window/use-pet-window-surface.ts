@@ -215,6 +215,10 @@ export function usePetWindowSurface({
   const [note, setNote] = useState<string | null>(
     isPreview ? normalizeNote(previewNote ?? null) : null,
   );
+  // State for the same reason the note is: it decides whether the pet speaks
+  // its note on the idle cadence, so the window has to re-render on the frame
+  // that turns Quiet Mode on rather than on the next presentation change.
+  const [isQuietModeOn, setIsQuietModeOn] = useState(false);
   const presentationRef = useRef<PetWindowPresentation>(presentation);
   const shownActivityRef = useRef<ShownActivity>({ value: null, at: 0 });
   const petNameRef = useRef<string | null>(null);
@@ -256,6 +260,7 @@ export function usePetWindowSurface({
         }
         if (frame.cwd !== undefined) cwdRef.current = frame.cwd || null;
         if (frame.note !== undefined) setNote(normalizeNote(frame.note));
+        if (frame.quiet !== undefined) setIsQuietModeOn(frame.quiet);
 
         const steadiedActivity = steadyActivity(
           shownActivityRef.current,
@@ -658,6 +663,7 @@ export function usePetWindowSurface({
     petName,
     assetId,
     note,
+    isQuietModeOn,
     cwdRef,
     interactionStatus,
     isBodyHovered,

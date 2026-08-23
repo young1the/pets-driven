@@ -1,4 +1,6 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import type { QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
+import { isChatterSilenced } from "@pets-driven/pet-engine/core/quiet-mode";
 import {
   claim,
   isClaimed,
@@ -26,7 +28,15 @@ export function runAutonomousBehaviorSystem(
   components: ComponentStore,
   clock: Clock,
   random: RandomSource = createSeededRandom(1),
+  quietMode: QuietMode = "off",
 ): void {
+  // This system exists only to speak, so Quiet Mode stops it at the door rather
+  // than letting QuietChatterSystem sweep the line afterwards: the utterance
+  // comes with a claim that labels the pet "chatting" for the bubble's whole
+  // life, and a pet captioned as chatting with nothing to say is worse than
+  // either state on its own.
+  if (isChatterSilenced(quietMode)) return;
+
   const now = clock.now();
 
   // Idle conversation — only when no higher-priority claim holds

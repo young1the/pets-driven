@@ -58,6 +58,16 @@ export type AgentChannelSource =
 export type AgentChannelStatus = "working" | "waiting" | "completed" | "failed";
 
 /**
+ * Whether a channel carries companion chatter rather than a report on the
+ * agent's work. Quiet Mode silences the first kind and never the second, and
+ * this is the one place that decides which is which — a new source is chatter
+ * or it is not, and saying so here is what keeps the two apart everywhere else.
+ */
+export function isChatterChannelSource(source: AgentChannelSource): boolean {
+  return source === "social" || source === "idle" || source === "interaction";
+}
+
+/**
  * The pet's single spoken-line channel. `message` is the one line shown in the
  * status card; `status`/`label` drive the agent capsule when present, or are
  * null for plain utterances (social/idle/acknowledge). `expiresAt` is the

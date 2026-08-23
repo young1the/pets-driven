@@ -18,6 +18,13 @@ type UsePetWindowNoteParams = {
    * recites itself into a silence it is not competing for.
    */
   isQuiet: boolean;
+  /**
+   * Quiet Mode is on for the desktop. The idle recital stops — an unprompted
+   * bubble every few minutes is exactly what the user turned off — but a note
+   * they have just saved still speaks, because that is the save's only
+   * feedback and they asked for it a second ago.
+   */
+  isQuietModeOn: boolean;
 };
 
 /**
@@ -29,7 +36,7 @@ type UsePetWindowNoteParams = {
  * watches, and makes a save visible the moment it happens instead of closing
  * the popup onto an unchanged screen.
  */
-export function usePetWindowNote({ note, isQuiet }: UsePetWindowNoteParams) {
+export function usePetWindowNote({ note, isQuiet, isQuietModeOn }: UsePetWindowNoteParams) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   // `undefined` means "no note observed yet". A window that opens on a pet
   // which already has a note must not greet the user by reciting it, so the
@@ -79,14 +86,14 @@ export function usePetWindowNote({ note, isQuiet }: UsePetWindowNoteParams) {
   // whenever the pet falls silent again, so a note never lands on the tail of
   // an agent line that just cleared.
   useEffect(() => {
-    if (!note || !isQuiet) {
+    if (!note || !isQuiet || isQuietModeOn) {
       return;
     }
 
     const timer = window.setInterval(speak, NOTE_IDLE_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
-  }, [note, isQuiet, speak]);
+  }, [note, isQuiet, isQuietModeOn, speak]);
 
   return { isSpeaking: isSpeaking && note !== null };
 }

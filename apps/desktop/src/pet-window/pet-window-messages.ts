@@ -47,6 +47,13 @@ export type PetWindowFrame = {
    * pet has to learn about its own note without being reopened.
    */
   note?: string;
+  /**
+   * Quiet Mode is on for the desktop. Rides the frame for the one thing the
+   * window says without being told to — its note's idle recital. Everything
+   * else it speaks is the engine's line, and the engine has already fallen
+   * silent by the time the frame is built.
+   */
+  quiet?: boolean;
   window: PetWindowFrameWindow;
   sprite: PetWindowFrameSprite;
   overlay: PetWindowOverlay | null;

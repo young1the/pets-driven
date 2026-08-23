@@ -22,6 +22,10 @@ import {
   runPetExpressionExpirationSystem,
 } from "@pets-driven/pet-engine/features/behavior/expiration-systems";
 import { runBehaviorPlanningSystem } from "@pets-driven/pet-engine/features/behavior/planning-system";
+import {
+  runQuietChatterSystem,
+  runQuietStillnessSystem,
+} from "@pets-driven/pet-engine/features/behavior/quiet-mode-systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────
 // Thin SimulationSystem wrappers over the run* behavior functions in
@@ -209,10 +213,11 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
     // B4: bump-to-greet eligibility (drops collision-engage for social pairs).
     "CanSocialize",
     "SocialSessionMember",
+    "QuietMode",
   ],
   writes: ["BehaviorDecisionToken", "BehaviorDecisionState", "PendingReaction"],
   update(ctx) {
-    runBehaviorDecisionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+    runBehaviorDecisionSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds, ctx.quietMode);
   },
 };
 
@@ -240,10 +245,10 @@ export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
 export const AutonomousBehaviorSystem: SimulationSystem<WorldStepContext> = {
   name: "AutonomousBehaviorSystem",
   dependsOn: ["BehaviorDecisionSystem"],
-  reads: ["IdleConversation", "SpeechProfile", "AgentChannelState", "ActivityState"],
+  reads: ["IdleConversation", "SpeechProfile", "AgentChannelState", "ActivityState", "QuietMode"],
   writes: ["AgentChannelState", "BehaviorDecisionState"],
   update(ctx) {
-    runAutonomousBehaviorSystem(ctx.components, ctx.clock, ctx.random);
+    runAutonomousBehaviorSystem(ctx.components, ctx.clock, ctx.random, ctx.quietMode);
   },
 };
 
@@ -338,5 +343,29 @@ export const FeintProgressSystem: SimulationSystem<WorldStepContext> = {
   ],
   update(ctx) {
     runFeintProgressSystem(ctx.components, ctx.clock, ctx.bounds);
+  },
+};
+
+export const QuietChatterSystem: SimulationSystem<WorldStepContext> = {
+  name: "QuietChatterSystem",
+  // Last in BEHAVIOR: every system that can put chatter on a pet has had its
+  // turn by now, so what this drops was never seen.
+  dependsOn: ["BehaviorPlanningSystem"],
+  reads: ["QuietMode", "AgentChannelState"],
+  writes: ["AgentChannelState"],
+  update(ctx) {
+    runQuietChatterSystem(ctx.components, ctx.quietMode);
+  },
+};
+
+export const QuietStillnessSystem: SimulationSystem<WorldStepContext> = {
+  name: "QuietStillnessSystem",
+  // Beside TaskMovementHoldSystem and for the same reason: a held pet's motion
+  // target has to be gone before WalkSystem reads it.
+  dependsOn: ["TaskMovementHoldSystem"],
+  reads: ["QuietMode", "Personality", "MotionTarget", "AirborneTag", "DragInteraction"],
+  writes: ["MotionTarget", "PhysicsVelocity"],
+  update(ctx) {
+    runQuietStillnessSystem(ctx.components, ctx.physics, ctx.quietMode);
   },
 };

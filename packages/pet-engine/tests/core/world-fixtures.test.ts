@@ -226,6 +226,7 @@ describe("demo scenario", () => {
       "FeintProgressSystem",
       "RompProgressSystem",
       "PersonalSpaceSystem",
+      "QuietChatterSystem",
       // UPDATE
       "LocomotionModeSystem",
       "ClimbApproachSystem",
@@ -238,6 +239,7 @@ describe("demo scenario", () => {
       "MoodRecoverySystem",
       // POST_UPDATE
       "TaskMovementHoldSystem",
+      "QuietStillnessSystem",
       "WalkSystem",
       "JumpSystem",
       "WallClimbSystem",
@@ -447,6 +449,7 @@ describe("demo scenario", () => {
         "AgentActivitySignal",
         "CanSocialize",
         "SocialSessionMember",
+        "QuietMode",
       ],
       writes: ["BehaviorDecisionToken", "BehaviorDecisionState", "PendingReaction"],
     });

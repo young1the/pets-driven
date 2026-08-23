@@ -27,12 +27,16 @@ export const TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY =
 /** Whether pets get one OS window each or share one desktop-wide overlay. */
 export const PET_OVERLAY_MODE_STORAGE_KEY = "pd-overlay-mode";
 
+/** How much the pets may intrude: off, quiet, or still. */
+export const QUIET_MODE_STORAGE_KEY = "pd-quiet-mode";
+
 const SETTINGS_STORAGE_KEYS = [
   LOCALE_STORAGE_KEY,
   THEME_MODE_STORAGE_KEY,
   THEME_ACCENT_STORAGE_KEY,
   TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY,
   PET_OVERLAY_MODE_STORAGE_KEY,
+  QUIET_MODE_STORAGE_KEY,
 ] as const;
 
 /**

@@ -268,8 +268,15 @@ _Avoid_: item (unqualified), power-up, pickup zone
 A way of moving a **Pet** holds only for a while, taken from a **Trinket** rather than from its **Pet Profile** — flight or wall-climbing. A **Pet** holds at most one; when it lapses the **Pet** goes back to walking.
 _Avoid_: skill, upgrade, permanent trait
 
+**Quiet Mode**:
+A user setting for how much the **Pets** may intrude, in levels that each take one thing away: `quiet` silences companion talk, and `still` also holds every **Pet** where it stands. It never touches **Agent Work State** — a **Pet** that stops reporting its task is not quiet, it is broken.
+_Avoid_: mute, do not disturb, pause, hide
+
 ## Relationships
 
+- **Quiet Mode** is one answer for every **Pet** at once, not a per-**Pet** setting.
+- At the `quiet` level a **Pet** speaks no idle line, no **Social Session** line, and no answer to **Petting**; it still moves, and still shows its **Agent Work State**.
+- At the `still` level a **Pet** also starts no **Decision** and holds no motion target, so it stays where it is. **Direct Manipulation** still moves it, and it still falls.
 - A **Pet** holds at most one **Borrowed Ability**, taken from exactly one **Trinket**.
 - A **Trinket** is collected by at most one **Pet**, and stops existing when it is.
 - A **Pet** is bound to exactly one **Working Directory**.
