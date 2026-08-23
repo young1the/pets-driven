@@ -23,7 +23,8 @@
     "tauri": "pnpm --filter pets-driven tauri",
     "sync-pets": "node scripts/sync-pet-assets.mjs",
     "release:bump": "node scripts/bump-version.mjs",
-    "test:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-install-test.ps1"
+    "test:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-install-test.ps1",
+    "test:path-hook": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/path-hook-test.ps1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.3",
