@@ -23,7 +23,7 @@ test("waiting events update visible pet status", async ({ page }) => {
   await playground.goto();
   await playground.expectReady();
   await playground.sendWaitingEvent();
-  await playground.expectPetStatus("Alice", "seek", "Needs approval");
+  await playground.expectPetAgentStatus("Alice", "WAIT", "Permission required");
 });
 
 test("walk demo exposes locomotion state in the playground", async ({ page }) => {
@@ -33,7 +33,7 @@ test("walk demo exposes locomotion state in the playground", async ({ page }) =>
   await playground.expectReady();
 
   await playground.expectPetLocomotion("Alice", "walk");
-  await playground.expectPetStatus("Alice", "idle", "Walking to the right");
+  await playground.expectPetSteering("Alice");
 });
 
 test("behavior lab inspects pet movement components", async ({ page }) => {
@@ -43,12 +43,14 @@ test("behavior lab inspects pet movement components", async ({ page }) => {
   await playground.expectReady();
 
   await playground.expectSelectedBehaviorPet("Alice");
-  await playground.expectBehaviorComponent("WalkingState");
+  await playground.expectBehaviorComponent("WalkingTag");
   await playground.expectBehaviorComponent("CanWalk");
   await playground.expectBehaviorComponent("CanWallClimb");
 
+  // Dana is the pet in this scenario that cannot climb, so switching pets has
+  // to change the list rather than redraw Alice's.
   await playground.selectBehaviorPet("Dana");
   await playground.expectSelectedBehaviorPet("Dana");
-  await playground.expectBehaviorComponent("FlyingState");
-  await playground.expectBehaviorComponent("CanFly");
+  await playground.expectBehaviorComponent("CanWalk");
+  await playground.expectNoBehaviorComponent("CanWallClimb");
 });

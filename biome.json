@@ -33,7 +33,9 @@
       "!**/.next",
       "!**/coverage",
       "!**/src-tauri/target",
-      "!**/src-tauri/gen/schemas"
+      "!**/src-tauri/gen/schemas",
+      "!**/test-results",
+      "!**/playwright-report"
     ]
   },
 
