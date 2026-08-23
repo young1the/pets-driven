@@ -168,6 +168,12 @@ export type DesktopGateway = {
    */
   revealPath(path: string): Promise<void>;
   /**
+   * Put the tray menu in the user's language. The shell builds that menu before
+   * any webview exists, so it starts in the default locale and this is how it
+   * learns better; a no-op outside Tauri.
+   */
+  setTrayLabels(open: string, quit: string): Promise<void>;
+  /**
    * The well-known pet folders the onboarding dropdown offers (Petdex and Codex),
    * with their resolved absolute paths. Empty outside Tauri.
    */
@@ -416,6 +422,14 @@ export const desktopGateway: DesktopGateway = {
     }
 
     await invoke("reveal_path", { path });
+  },
+
+  async setTrayLabels(open, quit) {
+    if (!isTauri()) {
+      return;
+    }
+
+    await invoke("set_tray_labels", { open, quit });
   },
 
   async listPetSourceDirectoryOptions() {

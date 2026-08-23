@@ -95,6 +95,10 @@
     "inField": "フィールドに出動中",
     "openDetails": "{{name}}の詳細を開く"
   },
+  "tray": {
+    "open": "開く",
+    "quit": "終了"
+  },
   "settings": {
     "title": "設定",
     "terminal": "ターミナル",

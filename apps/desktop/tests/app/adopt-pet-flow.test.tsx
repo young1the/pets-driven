@@ -26,6 +26,7 @@ function createGateway(
     openPetContextMenu: vi.fn(),
     pickDirectory: vi.fn(),
     revealPath: vi.fn(),
+    setTrayLabels: vi.fn(),
     listPetSourceDirectoryOptions: vi.fn().mockResolvedValue([]),
     copyBundledPetsToSourceDirectory: vi.fn().mockResolvedValue(0),
     getClaudePluginStatus: vi.fn().mockResolvedValue({

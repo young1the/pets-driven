@@ -95,6 +95,10 @@
     "inField": "In the field",
     "openDetails": "Open {{name}}'s details"
   },
+  "tray": {
+    "open": "Open",
+    "quit": "Quit"
+  },
   "settings": {
     "title": "Settings",
     "terminal": "Terminal",

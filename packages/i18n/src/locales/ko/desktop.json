@@ -95,6 +95,10 @@
     "inField": "필드에 나가 있음",
     "openDetails": "{{name}} 상세 정보 열기"
   },
+  "tray": {
+    "open": "열기",
+    "quit": "종료"
+  },
   "settings": {
     "title": "설정",
     "terminal": "터미널",

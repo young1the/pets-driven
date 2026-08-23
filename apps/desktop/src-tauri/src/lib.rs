@@ -8,12 +8,9 @@ mod reveal;
 mod state_commands;
 mod state_watch;
 mod terminal_channel;
+mod tray;
 
-use tauri::{
-    menu::{Menu, MenuItem},
-    tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
-    Manager,
-};
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -42,32 +39,7 @@ pub fn run() {
                 claude_hook_ingress_status,
             );
 
-            let show = MenuItem::with_id(app, "show", "열기", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show, &quit])?;
-
-            TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
-                .menu(&menu)
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "show" => {
-                        if let Some(w) = app.get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                        }
-                    }
-                    "quit" => app.exit(0),
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::DoubleClick { button: MouseButton::Left, .. } = event {
-                        if let Some(w) = tray.app_handle().get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                        }
-                    }
-                })
-                .build(app)?;
+            tray::build(app.handle())?;
 
             Ok(())
         })
@@ -103,6 +75,7 @@ pub fn run() {
             pet_assets::list_pet_source_directory_options,
             pet_assets::copy_bundled_pets_to_source_directory,
             reveal::reveal_path,
+            tray::set_tray_labels,
             pet_windows::open_adopted_pet_window,
             pet_windows::open_adopted_pet_windows,
             pet_windows::open_pet_window_playground,

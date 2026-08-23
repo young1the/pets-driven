@@ -16,6 +16,7 @@ import { usePetOverlayMode } from "@/app/pet-overlay-mode";
 import { useQuietMode } from "@/app/quiet-mode";
 import { pushSearchParams } from "@/app/spa-navigation";
 import { useAgentPlugin } from "@/app/use-agent-plugin";
+import { useTrayLabels } from "@/app/use-tray-labels";
 import {
   carryOverPetVisibility,
   createEmptyPetsDrivenState,
@@ -86,6 +87,9 @@ function PetsDrivenHostApp() {
     reset: resetOverlayMode,
   } = usePetOverlayMode();
   const { mode: quietMode, setMode: setQuietMode, reset: resetQuietMode } = useQuietMode();
+  // The tray outlives this window being visible, so it is labelled from the one
+  // window that always exists rather than from a surface that can be closed.
+  useTrayLabels();
 
   function applyPetsDrivenState(next: PetsDrivenState) {
     petsDrivenStateRef.current = next;
