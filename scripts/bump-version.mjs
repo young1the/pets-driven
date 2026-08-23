@@ -1,21 +1,65 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SRC_TAURI = resolve(ROOT, "apps/desktop/src-tauri");
 
-// The files a bump touches. git() runs with cwd: ROOT and git pathspecs use
-// forward slashes on every platform, so these stay repo-relative and literal.
-// Cargo.lock is rewritten by `cargo update`, not by us, but it is committed.
-const BUMPED_FILES_REL = [
-  "apps/desktop/src-tauri/Cargo.toml",
-  "apps/desktop/src-tauri/Cargo.lock",
-  "apps/desktop/package.json",
+/**
+ * Every manifest that carries this product's version, and how each one spells
+ * it. One release, one number: the desktop app, the Rust crates behind it (the
+ * `pdd` binary answers `--version` from its own crate, so a crate left behind
+ * tells the user they are running last release), the workspace packages, and
+ * the plugin manifests users install by.
+ *
+ * Missing files are an error rather than a skip. The list drifting away from
+ * the repository is the failure this exists to prevent, and a bump that quietly
+ * covers four of five manifests looks exactly like one that covered all five.
+ */
+export const BUMPED_MANIFESTS = [
+  // The desktop app. `.github/workflows/release.yml` checks the tag against
+  // this file, so it is also where the current version is read from.
+  { file: "apps/desktop/src-tauri/Cargo.toml", kind: "cargo" },
+  { file: "apps/desktop/package.json", kind: "json" },
+
+  // The Rust workspace behind it.
+  { file: "crates/pets-driven-core/Cargo.toml", kind: "cargo" },
+  { file: "crates/pets-driven-fs/Cargo.toml", kind: "cargo" },
+  { file: "crates/pets-driven-protocol/Cargo.toml", kind: "cargo" },
+  { file: "crates/pets-driven-cli/Cargo.toml", kind: "cargo" },
+
+  // The workspace packages. Private, but they are what the app is assembled
+  // from, and a version that never moves is worse than no version at all.
+  { file: "packages/design-system/package.json", kind: "json" },
+  { file: "packages/i18n/package.json", kind: "json" },
+  { file: "packages/pet-engine/package.json", kind: "json" },
+  { file: "apps/web/package.json", kind: "json" },
+
+  // The plugin, and the marketplace entry that offers it. These are the
+  // versions a user sees when they install or update the agent bridge.
+  { file: "plugins/pets-driven/.claude-plugin/plugin.json", kind: "json" },
+  { file: "plugins/pets-driven/.codex-plugin/plugin.json", kind: "json" },
+  { file: "plugins/.claude-plugin/marketplace.json", kind: "json" },
 ];
 
-const [CARGO_TOML, , PACKAGE_JSON] = BUMPED_FILES_REL.map((file) => resolve(ROOT, file));
+/**
+ * The version the release is cut from and the tag is checked against.
+ * `.github/workflows/release.yml` reads this same file.
+ */
+const VERSION_SOURCE_REL = "apps/desktop/src-tauri/Cargo.toml";
+
+/**
+ * Rewritten by `cargo update`, not by us, but it is committed and it moves with
+ * every crate version. One lockfile for the whole Cargo workspace — it lives at
+ * the repository root, not under the desktop crate.
+ */
+const CARGO_LOCK_REL = "Cargo.lock";
+
+/** The files a bump touches, as repo-relative pathspecs for git. */
+export const BUMPED_FILES_REL = [
+  ...BUMPED_MANIFESTS.map((manifest) => manifest.file),
+  CARGO_LOCK_REL,
+];
 
 const GITBUTLER_WORKSPACE_BRANCH = "gitbutler/workspace";
 
@@ -25,6 +69,11 @@ const SEMVER = /^(\d+)\.(\d+)\.(\d+)$/;
 // scope up to the next section header, so it doesn't match a dependency's
 // version = "2" or similar.
 const PACKAGE_VERSION = /(\[package\][^[]*?\nversion\s*=\s*")([^"]+)(")/;
+
+// The one `"version": "…"` a manifest is allowed to carry. Matching the text
+// rather than parsing and re-serializing keeps these files byte-identical apart
+// from the number — a release commit should not also reformat a manifest.
+const JSON_VERSION = /("version"\s*:\s*")([^"]+)(")/g;
 
 export function nextVersion(current, arg) {
   const parsed = SEMVER.exec(current);
@@ -64,6 +113,38 @@ export function replaceCargoVersion(toml, version) {
   return toml.replace(PACKAGE_VERSION, `$1${version}$3`);
 }
 
+function jsonVersionMatches(json) {
+  return [...json.matchAll(JSON_VERSION)];
+}
+
+export function readJsonVersion(json) {
+  const matches = jsonVersionMatches(json);
+  if (matches.length === 0) {
+    throw new Error('no "version" field found');
+  }
+  if (matches.length > 1) {
+    throw new Error(`expected one "version" field, found ${matches.length}`);
+  }
+  return matches[0][2];
+}
+
+/**
+ * Set the single `"version"` field, keeping any semver build metadata that was
+ * already on it: the Codex plugin manifest carries a `+codex.<stamp>` suffix
+ * that says which packaging run produced it, and that is not ours to drop.
+ */
+export function replaceJsonVersion(json, version) {
+  const current = readJsonVersion(json);
+  const buildMetadata = current.includes("+") ? current.slice(current.indexOf("+")) : "";
+
+  return json.replace(JSON_VERSION, `$1${version}${buildMetadata}$3`);
+}
+
+const EDITORS = {
+  cargo: { read: readCargoVersion, replace: replaceCargoVersion },
+  json: { read: readJsonVersion, replace: replaceJsonVersion },
+};
+
 function git(...args) {
   return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" }).trim();
 }
@@ -102,8 +183,16 @@ function main() {
     fail("Working tree is not clean. Commit or stash your changes first.");
   }
 
-  const toml = readFileSync(CARGO_TOML, "utf8");
-  const current = readCargoVersion(toml);
+  const missing = BUMPED_FILES_REL.filter((file) => !existsSync(resolve(ROOT, file)));
+  if (missing.length > 0) {
+    fail(
+      `These files are on the bump list but not in the repository:\n  ${missing.join("\n  ")}\n` +
+        "Either they moved, or a manifest was deleted. Fix the list in scripts/bump-version.mjs\n" +
+        "rather than letting a release go out with some versions left behind.",
+    );
+  }
+
+  const current = readCargoVersion(readFileSync(resolve(ROOT, VERSION_SOURCE_REL), "utf8"));
 
   let next;
   try {
@@ -120,16 +209,27 @@ function main() {
   // Everything from the first write until the commit lands is one unit: if any
   // of it fails, the tree goes back to where it started.
   try {
-    writeFileSync(CARGO_TOML, replaceCargoVersion(toml, next));
+    for (const { file, kind } of BUMPED_MANIFESTS) {
+      const path = resolve(ROOT, file);
+      const editor = EDITORS[kind];
+      const source = readFileSync(path, "utf8");
+      const was = editor.read(source);
+      const updated = editor.replace(source, next);
+      // Read the result back rather than printing `next`: a manifest may keep
+      // build metadata, and the log should say what the file now holds.
+      const now = editor.read(updated);
 
-    const pkg = JSON.parse(readFileSync(PACKAGE_JSON, "utf8"));
-    pkg.version = next;
-    writeFileSync(PACKAGE_JSON, `${JSON.stringify(pkg, null, 2)}\n`);
+      writeFileSync(path, updated);
+
+      if (was !== now) {
+        console.log(`  ${file}: ${was} -> ${now}`);
+      }
+    }
 
     // --workspace only re-resolves workspace members. It doesn't touch external
-    // dependencies, so only pets-driven's version baked into Cargo.lock gets updated.
+    // dependencies, so only this product's versions in Cargo.lock get updated.
     execFileSync("cargo", ["update", "--workspace"], {
-      cwd: SRC_TAURI,
+      cwd: ROOT,
       stdio: "inherit",
     });
 
@@ -151,10 +251,12 @@ function main() {
     // workflow would never see the tag and no release would ever be built.
     git("tag", "-a", tag, "-m", tag);
   } catch (error) {
-    fail(`The ${tag} release commit was created, but tagging failed. Tag it yourself:\n\n  git tag -a ${tag} -m ${tag}\n\n${error.message}`);
+    fail(
+      `The ${tag} release commit was created, but tagging failed. Tag it yourself:\n\n  git tag -a ${tag} -m ${tag}\n\n${error.message}`,
+    );
   }
 
-  console.log(`${current} -> ${next}`);
+  console.log(`\n${current} -> ${next} across ${BUMPED_MANIFESTS.length} manifests`);
   console.log(`\nCommitted and tagged ${tag}. To release, run:\n\n  git push --follow-tags\n`);
 }
 

@@ -18,24 +18,52 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
+import { BUMPED_MANIFESTS, readCargoVersion, readJsonVersion } from "./bump-version.mjs";
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REAL_SCRIPT = resolve(ROOT, "scripts/bump-version.mjs");
 
-const CARGO_TOML_TEMPLATE = `[package]
-name = "fixture-app"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-`;
-
 const LIB_RS = `pub fn placeholder() {}\n`;
 
-const PACKAGE_JSON_TEMPLATE = {
-  name: "fixture-app",
-  version: "0.1.0",
-  private: true,
-};
+// One manifest carries semver build metadata (the Codex plugin manifest says
+// which packaging run produced it); the fixture carries it too, so the happy
+// path proves a bump keeps it.
+const BUILD_METADATA_FILE = "plugins/pets-driven/.codex-plugin/plugin.json";
+const BUILD_METADATA = "+codex.20260726135510";
+
+const cargoManifests = BUMPED_MANIFESTS.filter((manifest) => manifest.kind === "cargo");
+
+/** `crates/pets-driven-fs/Cargo.toml` -> `pets-driven-fs`. */
+function crateName(file) {
+  const parts = dirname(file).split("/");
+  const own = parts[parts.length - 1];
+  return own === "src-tauri" ? "pets-driven" : own;
+}
+
+function cargoToml(file) {
+  return [
+    "[package]",
+    `name = "${crateName(file)}"`,
+    'version = "0.1.0"',
+    'edition = "2021"',
+    "",
+    "[dependencies]",
+    "",
+  ].join("\n");
+}
+
+function jsonManifest(file) {
+  const metadata = file === BUILD_METADATA_FILE ? BUILD_METADATA : "";
+  const manifest = { name: "fixture", version: `0.1.0${metadata}`, private: true };
+  return `${JSON.stringify(manifest, null, 2)}\n`;
+}
+
+// The crates are one Cargo workspace, so the lockfile the script commits is
+// the one at the root -- the same shape as the real repository.
+function workspaceToml() {
+  const members = cargoManifests.map((manifest) => `    "${dirname(manifest.file)}",`);
+  return ["[workspace]", 'resolver = "2"', "members = [", ...members, "]", ""].join("\n");
+}
 
 function gitEnv(cwd, ...args) {
   return execFileSync(
@@ -52,24 +80,27 @@ function createFixture() {
   const dir = mkdtempSync(join(tmpdir(), "bump-version-it-"));
 
   mkdirSync(join(dir, "scripts"), { recursive: true });
-  mkdirSync(join(dir, "apps/desktop/src-tauri/src"), { recursive: true });
-
   writeFileSync(join(dir, "scripts/bump-version.mjs"), readFileSync(REAL_SCRIPT));
-  writeFileSync(join(dir, "apps/desktop/src-tauri/Cargo.toml"), CARGO_TOML_TEMPLATE);
-  writeFileSync(join(dir, "apps/desktop/src-tauri/src/lib.rs"), LIB_RS);
-  writeFileSync(
-    join(dir, "apps/desktop/package.json"),
-    `${JSON.stringify(PACKAGE_JSON_TEMPLATE, null, 2)}\n`,
-  );
+
+  // Built from the script's own list rather than a hand-written set: a
+  // manifest added there has to appear here too, or the fixture stops standing
+  // in for the repository the script actually runs against.
+  for (const { file, kind } of BUMPED_MANIFESTS) {
+    mkdirSync(join(dir, dirname(file)), { recursive: true });
+    writeFileSync(join(dir, file), kind === "cargo" ? cargoToml(file) : jsonManifest(file));
+    if (kind === "cargo") {
+      mkdirSync(join(dir, dirname(file), "src"), { recursive: true });
+      writeFileSync(join(dir, dirname(file), "src/lib.rs"), LIB_RS);
+    }
+  }
+
+  writeFileSync(join(dir, "Cargo.toml"), workspaceToml());
 
   // cargo update needs a Cargo.lock to update; generate it before the base
   // commit so the fixture's single base commit already has it checked in,
   // matching what a real project would have.
   if (cargoAvailable) {
-    execFileSync("cargo", ["generate-lockfile"], {
-      cwd: join(dir, "apps/desktop/src-tauri"),
-      stdio: "ignore",
-    });
+    execFileSync("cargo", ["generate-lockfile"], { cwd: dir, stdio: "ignore" });
   }
 
   gitEnv(dir, "init", "--quiet");
@@ -227,6 +258,16 @@ test("happy path: bump, commit, and tag succeed with no push attempted", (t) => 
     assert.equal(readCargoTomlVersionOnDisk(dir), "0.1.1");
     assert.equal(readPackageJsonVersionOnDisk(dir), "0.1.1");
 
+    // Every manifest, not just the desktop pair: one release is one number, and
+    // a crate left behind is what makes `pdd --version` answer last release.
+    for (const { file, kind } of BUMPED_MANIFESTS) {
+      const text = readFileSync(join(dir, file), "utf8");
+      const found = kind === "cargo" ? readCargoVersion(text) : readJsonVersion(text);
+      const expected = file === BUILD_METADATA_FILE ? `0.1.1${BUILD_METADATA}` : "0.1.1";
+
+      assert.equal(found, expected, `${file} was left at ${found}`);
+    }
+
     assert.equal(gitEnv(dir, "status", "--porcelain"), "");
 
     const lastCommitSubject = gitEnv(dir, "log", "-1", "--format=%s");
@@ -264,6 +305,29 @@ test("refuses to cut a release from GitButler's workspace branch", () => {
     // The guard must fire before anything is written.
     assert.equal(readCargoTomlVersionOnDisk(dir), "0.1.0");
     assert.equal(readPackageJsonVersionOnDisk(dir), "0.1.0");
+    assert.equal(gitEnv(dir, "status", "--porcelain"), "");
+    assert.equal(gitEnv(dir, "tag", "--list"), "");
+  } finally {
+    removeFixture(dir);
+  }
+});
+
+test("refuses to bump when a manifest on the list is not in the repository", () => {
+  const dir = createFixture();
+  try {
+    // The list going stale is the failure this guards: it named a lockfile at a
+    // path that had moved, so a release bump died at `git add` -- and a list
+    // that skipped missing files instead would have shipped a release with that
+    // manifest silently left behind.
+    rmSync(join(dir, BUMPED_MANIFESTS[BUMPED_MANIFESTS.length - 1].file));
+    gitEnv(dir, "add", "-A");
+    gitEnv(dir, "commit", "--quiet", "-m", "chore: drop a manifest");
+
+    const result = runScriptAllowFailure(dir, "patch");
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /on the bump list but not in the repository/);
+    assert.equal(readCargoTomlVersionOnDisk(dir), "0.1.0");
     assert.equal(gitEnv(dir, "status", "--porcelain"), "");
     assert.equal(gitEnv(dir, "tag", "--list"), "");
   } finally {
