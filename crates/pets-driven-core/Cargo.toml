@@ -1,6 +1,6 @@
 [package]
 name = "pets-driven-core"
-version = "0.2.0"
+version = "1.0.0"
 description = "Authoritative Pet and Registered Working Directory behavior for pets-driven"
 authors = ["pets-driven"]
 license = "MIT"

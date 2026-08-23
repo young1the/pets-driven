@@ -1,7 +1,7 @@
 {
   "name": "pets-driven",
   "description": "Forward Claude Code lifecycle events to the pets-driven desktop companion so the bound pet expresses agent work state.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": {
     "name": "pets-driven"
   },
