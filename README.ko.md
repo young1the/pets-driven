@@ -5,9 +5,7 @@
 
 <h1>Pets Driven</h1>
 
-<p><strong>코딩 에이전트를 데스크톱 펫으로.</strong><br/>
-프로젝트마다 작은 컴패니언 하나가 데스크톱에 삽니다. 스스로 걷고, 졸고, 놀다가 —
-자신의 에이전트가 당신을 필요로 하는 순간 번쩍 주의를 요청합니다.</p>
+멀티 에이전트를 위한 데스크톱 앱
 
 [![Latest release](https://img.shields.io/github/v/release/young1the/pets-driven?sort=semver&color=F95E9E&label=release)](https://github.com/young1the/pets-driven/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/young1the/pets-driven/total?color=16B8A6)](https://github.com/young1the/pets-driven/releases)
@@ -17,112 +15,63 @@
 
 [English](./README.md) · **한국어**
 
-[다운로드](#-다운로드) · [기능](#-기능) · [시작하기](#-시작하기) · [에이전트 연동](#-에이전트-연동)
+[이렇게 써요](#-이렇게-써요) · [기능](#-기능) · [다운로드](#-다운로드)
 
 </div>
 
-<!-- TODO(maintainer): 데모 GIF 삽입 — 펫이 돌아다니다가 에이전트 작업 완료에 반응하는 장면.
-     데스크톱 펫 README에서 가장 중요한 자산입니다. -->
-<div align="center">
-  <img src="docs/assets/demo.gif" alt="에이전트 작업 완료에 반응하는 펫" width="640" />
-</div>
+## 🎬 이렇게 써요
+
+### 1. 펫을 뽑아 프로젝트에 붙여요
+
+<img src="docs/assets/part1.gif" alt="펫을 골라 데스크톱으로 내보내는 화면" width="720" />
+
+디렉터리 하나에 펫 하나예요. 카드에서 고르면 데스크톱으로 나와요.
+
+### 2. 터미널은 평소대로 써요
+
+<img src="docs/assets/part2.gif" alt="터미널에서 에이전트를 실행하자 펫이 반응하는 화면" width="720" />
+
+에이전트를 평소처럼 돌리면 펫이 그 작업 상태를 대신 보여줘요.
+
+### 3. 일 안 시켜도 꺼내서 놀아요
+
+<img src="docs/assets/part3.gif" alt="작업과 무관하게 펫을 꺼내 데스크톱에서 노는 화면" width="720" />
+
+작업 중이 아니어도 펫은 데스크톱에 있어요. 꺼내고, 던지고, 간식도 줘요.
+
+### 4. 끝나면 펫이 불러요
+
+<img src="docs/assets/part4.gif" alt="작업 완료에 반응하는 펫" width="720" />
+
+완료·실패·대기는 펫이 멈춰 서서 알려요. 쓰다듬거나 클릭해주세요.
+
+## 🧩 이것도 돼요
+
+|  |  |
+| :-- | :-- |
+| <img src="docs/assets/codex.gif" alt="Codex CLI와 함께 동작하는 펫" width="380" /> | **Codex도 지원해요**<br/>Claude Code 전용이 아니에요. OpenAI Codex CLI에서도 같은 훅으로 펫이 반응해요. |
+| <img src="docs/assets/play.gif" alt="자기들끼리 어울려 노는 펫들" width="380" /> | **놔두면 자기들끼리 놀아요**<br/>시킬 일이 없으면 펫끼리 인사하고, 수다 떨고, 쫓아다녀요. 볼 때만 사는 게 아니에요. |
+| <img src="docs/assets/orca.gif" alt="Orca worktree마다 펫이 하나씩 생기는 화면" width="380" /> | **Orca와 연동돼요**<br/>worktree 훅에 `pdd hatch`와 `pdd delete` 두 줄만 넣으면 돼요. worktree마다 펫이 하나씩 생기고, 정리하면 같이 사라져요.<br/>→ [설정 방법](./crates/pets-driven-cli/README.md#orca-worktree-hooks) |
 
 ---
 
-## Pets Driven이란?
-
-코딩 에이전트를 실행하면 실제 작업은 터미널 속에 파묻힙니다. **Pets Driven**은 그 작업에
-얼굴을 부여합니다. 등록한 프로젝트 폴더마다 **펫 하나**가 생기고 — 데스크톱에 살면서 정확히
-하나의 에이전트 실행을 대변하는 작은 캐릭터입니다.
-
-펫은 서로 독립적인 두 축 위에서 두 가지를 동시에 보여줍니다:
-
-- **에이전트가 무엇을 하고 있는지** — `working`(작업 중), `waiting`(대기), `completed`(완료),
-  `failed`(실패), `idle`(유휴). hook 기반 이벤트 피드를 통해 에이전트가 직접 보고합니다.
-- **펫이 무엇을 하고 있는지** — 돌아다니기, 폴짝 뛰기, 이웃과 수다 떨기. 시뮬레이션이 스스로
-  계산하는 자율적인 삶입니다.
-
-그래서 한 번 흘긋 보는 것만으로 방 전체의 분위기와 내 작업 상태를 함께 파악할 수 있습니다.
-에이전트가 작업을 끝내거나, 멈추거나, 결정을 기다릴 때 해당 펫은 동작을 멈추고 **주의 배지**를
-띄운 채 기다립니다. 당신은 펫을 **쓰다듬어서**(작은 스트로크 제스처) 이를 확인하고, 펫은 다시
-자기 일상으로 돌아갑니다.
-
-> 펫 하나 ⇄ 작업 디렉터리 하나 ⇄ 에이전트 하나. 공용 수신함도, 모호한 알림도 없습니다 —
-> 폴더가 곧 정체성입니다.
-
 ## ✨ 기능
 
-- 🐾 **프로젝트당 펫 하나** — 등록된 작업 디렉터리마다 에이전트에 묶인 펫이 하나씩 생겨, 병렬로 도는 에이전트들이 뒤섞이지 않습니다.
-- 🖥️ **데스크톱 위에 삽니다** — 펫은 투명 오버레이 창으로, 작업표시줄 위 화면 바닥을 따라 걸어 다니며, 펫 본체를 제외한 모든 영역은 클릭이 통과합니다.
-- 🔔 **직접 확인해야 사라지는 주의 요청** — `waiting`, `failed`, `completed` 이벤트는 주의 상태(attention hold)를 만들고, 당신이 *쓰다듬을* 때까지 유지됩니다. 알림이 슬그머니 사라지지 않습니다.
-- 🧠 **진짜 작은 마음** — Drives → Decision → Locomotion → Steering 파이프라인(물리 엔진은 Matter.js)이 자율 행동을 이끌며, 쓰다듬김·놀람·작업 완료에 반응하는 짧은 **무드(mood)**가 색을 입힙니다.
-- 👥 **펫끼리 어울립니다** — 가까운 펫들이 인사하고, 수다 떨고, 서로 쫓는 짧은 그룹 세션을 갖다가 흡족한 여운(afterglow)과 함께 마무리합니다.
-- 🖥️🖥️ **멀티 모니터 인식** — 하나의 공유 시뮬레이션 월드가 가상 데스크톱 전체에 걸쳐 있어, 펫들이 여러 모니터를 하나의 연속된 공간처럼 돌아다닙니다.
-- 🎭 **성격과 에셋** — "탄생" 시 외형과 기질을 고르고, 나중에 조정하거나, 에이전트 스킬의 도움을 받아 에셋을 성격 프리셋에 매핑할 수 있습니다.
-- 🔌 **에이전트 비종속 브리지** — 가벼운 hook 브리지가 작업 디렉터리를 기준으로 에이전트 이벤트를 전달하므로, 터미널이 앱 안에 있든 밖에서 붙였든 펫이 반응합니다.
-- 🌏 **다국어 지원** — 영어와 한국어를 기본 제공합니다.
+- 🔔 **작업이 끝나면 알려줘요**
+- 🧠 **진짜 작은 마음**, 👥 **펫끼리 어울려요**, 🎭 **성격과 에셋**
+- ⌨️ **CLI로도 다 돼요** — `pdd` 하나로 펫을 만들고, 이름·외형·성격을 바꾸고, 지워요. 앱이 꺼져 있어도 동작하고 결과가 JSON이라 스크립트에 그대로 물려요. 설치 파일에 함께 들어가고 PATH에도 자동으로 등록돼요. → [명령어 전체 보기](./crates/pets-driven-cli/README.md)
+- 🤖 **에이전트가 직접 다뤄요** — Claude Code와 Codex용 플러그인을 함께 제공해요. `hatch`로 펫을 만들고, `bring`으로 레포를 worktree에 가져오고, `carry`로 하던 일을 다음 에이전트에게 넘겨요. 훅이 에이전트 이벤트를 앱으로 흘려보내서 펫이 반응하고요. → [플러그인 보기](./plugins/pets-driven)
 
 ## ⬇️ 다운로드
 
 [![Download for Windows](https://img.shields.io/badge/Download-Windows%20Installer-F95E9E?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/young1the/pets-driven/releases/latest/download/PetsDriven-windows-x64-setup.exe)
 
-위 배지를 누르면 가장 최근에 공개된 버전의 설치 파일이 바로 내려받아집니다 — `.exe`를 실행하면 끝입니다.
-변경 내역을 먼저 보고 싶다면 **[최신 릴리스](https://github.com/young1the/pets-driven/releases/latest)**를 확인하세요.
+위 배지를 누르면 최신 버전 설치 파일을 바로 받아요. `.exe`를 실행하면 끝이에요.
+변경 내역을 먼저 보고 싶다면 **[최신 릴리스](https://github.com/young1the/pets-driven/releases/latest)**를 확인해요.
 
-> macOS·Linux 빌드는 아직 배포 전입니다. [Tauri](https://tauri.app)로 만들어졌기에 로드맵에
-> 있으며, 그전까지는 [소스에서 빌드](#-시작하기)하세요.
-
-## 🚀 시작하기
-
-> **상태:** 초기 개발 단계. 미리 빌드된 **Windows** 설치 파일은
-> [릴리스 페이지](https://github.com/young1the/pets-driven/releases/latest)에 있고, macOS와 Linux는
-> 로드맵에 있습니다. 직접 손대며 개발하고 싶다면 아래에서 소스로 빌드하세요.
-
-### 사전 준비
-
-- [Node.js](https://nodejs.org)와 [pnpm](https://pnpm.io) `10.x`
-- [Rust 툴체인](https://www.rust-lang.org/tools/install) (Tauri 데스크톱 셸용)
-- Tauri 플랫폼 사전 준비 — [Tauri 설정 가이드](https://tauri.app/start/prerequisites/) 참고
-
-### 데스크톱 앱 실행
-
-```bash
-# 1. 의존성 설치
-pnpm install
-
-# 2. Tauri 데스크톱 앱 실행 (데스크톱 위의 펫)
-pnpm dev
-
-# 또는 브라우저 플레이그라운드로 시뮬레이션 미리보기 (네이티브 셸 없이)
-pnpm dev:playground
-```
-
-### 빌드
-
-```bash
-pnpm build            # 데스크톱 앱 번들
-pnpm test             # 테스트 스위트 실행
-pnpm check            # 린트 + 포맷 검사 (Biome)
-```
-
-## 🤖 에이전트 연동
-
-Pets Driven은 플러그인([`plugins/pets-driven`](./plugins/pets-driven))을 제공하여, 에이전트가
-펫을 부화시키고 진행 상황을 보고할 수 있도록 슬래시 명령과 hook 브리지를 추가합니다:
-
-| 명령 | 하는 일 |
-|------|---------|
-| **`hatch`** | 현재 폴더에 펫 생성 — 에셋과 성격을 선택합니다. |
-| **`bring`** | 에이전트 폴더로 프로젝트를 가져오고(`git clone` 또는 `git worktree`) 펫에 넘깁니다. |
-| **`carry`** | 에이전트가 한 일과 그 작업의 위치를 다음 에이전트를 위한 간결한 인계문으로 요약합니다. |
-
-이벤트는 프로바이더의 세션 id를 신뢰하는 대신 **작업 디렉터리**로 펫에 매칭됩니다 — 그래서
-터미널을 앱 밖에서 붙였더라도 펫이 반응합니다.
+> macOS·Linux 빌드는 아직 배포 전이에요. [Tauri](https://tauri.app)로 만들어서 로드맵에는 있어요.
+> 그전까지는 소스에서 빌드해 주세요.
 
 ## 📄 라이선스
 
 [MIT](./LICENSE) © 2026 pets-driven contributors.
-
-<div align="center">
-<sub>로그 벽을 훑기보다 행복한 펫을 흘긋 보고 싶은 개발자를 위해 만들었습니다.</sub>
-</div>
