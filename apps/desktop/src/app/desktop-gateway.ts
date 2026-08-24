@@ -1,5 +1,5 @@
 import { CODEX_PET_ASSETS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
@@ -82,12 +82,36 @@ export type AgentPluginPlan = {
 
 export type AgentPluginAction = "install" | "uninstall";
 
+/** Release metadata returned by the native updater after signature-aware checking. */
+export type AppUpdateInfo = {
+  currentVersion: string;
+  version: string;
+  notes: string | null;
+  date: string | null;
+};
+
+/** Download lifecycle events emitted by the native updater command. */
+export type AppUpdateEvent = {
+  event: "started" | "progress" | "finished";
+  contentLength?: number | null;
+  chunkLength?: number | null;
+};
+
 /**
  * Thin gateway over the Tauri commands the app shell and onboarding need.
  * Components receive this via props so tests can inject fakes without
  * mocking @tauri-apps/api.
  */
 export type DesktopGateway = {
+  /** The packaged application version; null in the browser playground. */
+  getAppVersion(): Promise<string | null>;
+  /** Check the signed release feed, returning null when this build is current. */
+  checkAppUpdate(): Promise<AppUpdateInfo | null>;
+  /** Download, verify, and install the version that the user just approved. */
+  installAppUpdate(
+    expectedVersion: string,
+    onEvent: (event: AppUpdateEvent) => void,
+  ): Promise<void>;
   readPetsDrivenState(): Promise<PetsDrivenState>;
   /**
    * Replace the persisted state with this whole document. Last-writer-wins, so
@@ -300,6 +324,32 @@ async function sendStateMutation(
 }
 
 export const desktopGateway: DesktopGateway = {
+  async getAppVersion() {
+    if (!isTauri()) {
+      return null;
+    }
+
+    return await invoke<string>("get_app_version");
+  },
+
+  async checkAppUpdate() {
+    if (!isTauri()) {
+      return null;
+    }
+
+    return await invoke<AppUpdateInfo | null>("check_app_update");
+  },
+
+  async installAppUpdate(expectedVersion, onEvent) {
+    if (!isTauri()) {
+      return;
+    }
+
+    const eventChannel = new Channel<AppUpdateEvent>();
+    eventChannel.onmessage = onEvent;
+    await invoke("install_app_update", { expectedVersion, onEvent: eventChannel });
+  },
+
   async readPetsDrivenState() {
     if (!isTauri()) {
       return createEmptyPetsDrivenState();

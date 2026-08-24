@@ -25,6 +25,16 @@ const edit = {
   onDone: vi.fn(),
 };
 const settings = {
+  appUpdate: {
+    currentVersion: "1.0.0",
+    status: "idle" as const,
+    availableUpdate: null,
+    downloadedBytes: 0,
+    totalBytes: null,
+    error: null,
+    check: vi.fn().mockResolvedValue(undefined),
+    install: vi.fn().mockResolvedValue(undefined),
+  },
   command: "claude",
   onCommand: vi.fn(),
   terminalShell: "",

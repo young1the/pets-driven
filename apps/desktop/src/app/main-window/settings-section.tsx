@@ -3,6 +3,7 @@ import {
   PaletteIcon,
   PawIcon,
   PlugIcon,
+  RefreshIcon,
   TerminalIcon,
   TrashIcon,
 } from "@pets-driven/design-system";
@@ -26,6 +27,10 @@ import {
   SettingsTerminalPanel,
   type SettingsTerminalPanelProps,
 } from "@/app/main-window/settings-terminal-panel";
+import {
+  SettingsUpdatesPanel,
+  type SettingsUpdatesPanelProps,
+} from "@/app/main-window/settings-updates-panel";
 import "@/app/main-window/settings-section.css";
 
 export type { AgentPluginConnection } from "@/app/main-window/settings-agent-panel";
@@ -37,10 +42,11 @@ export type { AgentPluginConnection } from "@/app/main-window/settings-agent-pan
 export type SettingsSectionProps = SettingsTerminalPanelProps &
   SettingsAgentPanelProps &
   SettingsPetsPanelProps &
+  SettingsUpdatesPanelProps &
   SettingsResetPanelProps;
 
 /** The categories the rail offers, in the order they appear. */
-export type SettingsCategory = "terminal" | "agent" | "pets" | "appearance" | "reset";
+export type SettingsCategory = "terminal" | "agent" | "pets" | "appearance" | "updates" | "reset";
 
 const CATEGORIES: {
   id: SettingsCategory;
@@ -52,6 +58,7 @@ const CATEGORIES: {
   { id: "agent", icon: PlugIcon },
   { id: "pets", icon: PawIcon },
   { id: "appearance", icon: PaletteIcon },
+  { id: "updates", icon: RefreshIcon },
   { id: "reset", icon: TrashIcon, danger: true },
 ];
 
@@ -127,6 +134,8 @@ export function SettingsSection(props: SettingsSectionProps) {
             />
           ) : category === "appearance" ? (
             <SettingsAppearancePanel />
+          ) : category === "updates" ? (
+            <SettingsUpdatesPanel appUpdate={props.appUpdate} />
           ) : (
             <SettingsResetPanel
               onResetAllSettings={props.onResetAllSettings}

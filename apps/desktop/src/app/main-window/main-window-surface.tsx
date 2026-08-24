@@ -4,6 +4,7 @@ import { isTauri } from "@tauri-apps/api/core";
 import { useCallback, useMemo, useRef } from "react";
 import type { AgentHookIngressStatus } from "@/adapters/agent-events/agent-hook-ingress";
 import type { AppView } from "@/app/app-navigation";
+import { useAppUpdate } from "@/app/app-updates/use-app-update";
 import { desktopGateway } from "@/app/desktop-gateway";
 import type { HomePetView } from "@/app/main-window/home-section";
 import { describeHookLastSignal } from "@/app/main-window/hook-last-signal";
@@ -123,6 +124,7 @@ export function MainWindowSurface({
   onSetQuietMode,
 }: MainWindowSurfaceProps) {
   const { t } = useTranslation("desktop");
+  const appUpdate = useAppUpdate();
 
   // Stable identities for the handlers that feed the memoized HomeSection.
   const showPet = useStableCallback(onShowPet);
@@ -273,6 +275,7 @@ export function MainWindowSurface({
         setMainTab(next);
       }}
       settings={{
+        appUpdate,
         command: launchSettings.command,
         onCommand: onSetLaunchCommand,
         terminalShell: state.terminalShell ?? "",

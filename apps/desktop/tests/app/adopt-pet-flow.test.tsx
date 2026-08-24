@@ -8,6 +8,9 @@ function createGateway(
   packages: Awaited<ReturnType<DesktopGateway["listPetPackages"]>>,
 ): DesktopGateway {
   return {
+    getAppVersion: vi.fn().mockResolvedValue("1.0.0"),
+    checkAppUpdate: vi.fn().mockResolvedValue(null),
+    installAppUpdate: vi.fn().mockResolvedValue(undefined),
     readPetsDrivenState: vi.fn(),
     writePetsDrivenState: vi.fn(),
     // The command surface answers with the state the backend persisted; null is

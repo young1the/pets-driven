@@ -1,3 +1,4 @@
+mod app_updates;
 mod claude_hook_ingress;
 mod claude_plugin;
 mod codex_plugin;
@@ -17,6 +18,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(embedded_terminal::EmbeddedTerminalSessions::default())
         .setup(|app| {
             // Build the one core over the shared on-disk state repository and
@@ -52,6 +54,9 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            app_updates::get_app_version,
+            app_updates::check_app_update,
+            app_updates::install_app_update,
             claude_hook_ingress::get_claude_hook_ingress_status,
             claude_hook_ingress::send_test_claude_hook_ingress_event,
             claude_plugin::get_claude_plugin_status,

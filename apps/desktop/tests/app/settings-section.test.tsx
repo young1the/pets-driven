@@ -20,6 +20,16 @@ function plugin(
 
 function setupProps(overrides = {}) {
   return {
+    appUpdate: {
+      currentVersion: "1.0.0",
+      status: "idle" as const,
+      availableUpdate: null,
+      downloadedBytes: 0,
+      totalBytes: null,
+      error: null,
+      check: vi.fn().mockResolvedValue(undefined),
+      install: vi.fn().mockResolvedValue(undefined),
+    },
     command: "claude --resume",
     onCommand: vi.fn(),
     terminalShell: "",
@@ -61,6 +71,7 @@ const RAIL_LABEL: Record<SettingsCategory, string> = {
   agent: "Agent",
   pets: "Pets",
   appearance: "Appearance",
+  updates: "Updates",
   reset: "Reset",
 };
 
@@ -279,6 +290,38 @@ describe("SettingsSection pets", () => {
     setup("pets", { quietMode: "still" });
 
     expect(screen.getByText(/stay exactly where they are/)).toBeInTheDocument();
+  });
+});
+
+describe("SettingsSection updates", () => {
+  it("shows the installed application version and checks only when asked", () => {
+    const check = vi.fn().mockResolvedValue(undefined);
+    setup("updates", { appUpdate: { ...setupProps().appUpdate, check } });
+
+    expect(screen.getByText("Version 1.0.0")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Check for updates"));
+    expect(check).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers the version that was found and installs it when approved", () => {
+    const install = vi.fn().mockResolvedValue(undefined);
+    setup("updates", {
+      appUpdate: {
+        ...setupProps().appUpdate,
+        status: "available" as const,
+        availableUpdate: {
+          currentVersion: "1.0.0",
+          version: "1.1.0",
+          notes: "A calmer settings screen.",
+          date: null,
+        },
+        install,
+      },
+    });
+
+    expect(screen.getByText("Version 1.1.0 is available.")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Download and install"));
+    expect(install).toHaveBeenCalledTimes(1);
   });
 });
 
