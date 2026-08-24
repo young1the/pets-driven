@@ -1,6 +1,6 @@
 [package]
 name = "pets-driven-cli"
-version = "1.0.0"
+version = "1.0.1"
 description = "Command-line client for the running pets-driven desktop app"
 authors = ["pets-driven"]
 license = "MIT"

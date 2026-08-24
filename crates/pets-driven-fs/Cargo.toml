@@ -1,6 +1,6 @@
 [package]
 name = "pets-driven-fs"
-version = "1.0.0"
+version = "1.0.1"
 description = "The shared on-disk state repository for pets-driven (file + cross-process lock)"
 authors = ["pets-driven"]
 license = "MIT"
