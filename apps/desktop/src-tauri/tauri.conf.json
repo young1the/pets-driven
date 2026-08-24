@@ -27,6 +27,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": ["nsis"],
     "resources": {
       "../../../plugins": "plugins",
@@ -46,5 +47,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwNjc2RkFFMEI1NzM3QjkKUldTNU4xY0xybTluc0x4Y1Y1R0Y3R2U3WCtRSzdyRmFrVGdpNm5FN25iSjh6TVJ5aU1xQUhUSzcK",
+      "endpoints": [
+        "https://github.com/young1the/pets-driven/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }
