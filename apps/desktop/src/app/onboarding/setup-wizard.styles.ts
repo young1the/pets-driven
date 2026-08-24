@@ -195,73 +195,54 @@ export const textLink: CSSProperties = {
   textDecoration: "underline",
   textUnderlineOffset: "3px",
 };
-export const folderIcon: CSSProperties = {
-  fontSize: "16px",
-  flex: "none",
-  color: "var(--text-strong)",
-};
-// Stacked action+label buttons ("browse Petdex" / "add via terminal").
-export const petGetActions: CSSProperties = {
+export const folderCard: CSSProperties = {
   display: "flex",
-  flexDirection: "row",
-  flexWrap: "wrap",
-  gap: "10px",
-  marginTop: "18px",
-};
-export const petGetButton: CSSProperties = {
-  width: "100%",
-  minWidth: 0,
-  boxSizing: "border-box",
-  display: "inline-flex",
   alignItems: "center",
-  justifyContent: "center",
-  gap: "9px",
-  padding: "14px 16px",
+  gap: "14px",
+  minWidth: 0,
+  margin: "18px 0 0",
+  padding: "15px 16px",
   borderRadius: "14px",
   border: "1px solid var(--border-soft)",
   background: "var(--surface-card)",
-  cursor: "pointer",
-  fontFamily: "var(--font-body)",
-  fontWeight: 700,
-  fontSize: "13.5px",
+  boxShadow: "var(--shadow-sm)",
+};
+export const folderCardIdentity: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+};
+export const folderCardName: CSSProperties = {
+  display: "block",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  fontFamily: "var(--font-display)",
+  fontWeight: 600,
+  fontSize: "14.5px",
   color: "var(--text-strong)",
-  textDecoration: "none",
 };
-// Accent-filled variant for the primary "browse Petdex" action.
-export const petGetButtonPrimary: CSSProperties = {
-  ...petGetButton,
-  border: "1px solid var(--color-primary)",
-  background: "var(--color-primary)",
-  color: "var(--color-on-primary)",
-  boxShadow: "0 0 0 4px var(--blossom-100)",
+export const folderCardPath: CSSProperties = {
+  display: "block",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  marginTop: "4px",
+  fontFamily: "var(--font-body)",
+  fontSize: "12px",
+  color: "var(--text-muted)",
 };
-// "N found ................ [ Choose folder ]" on one row.
-export const folderCountRow: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-  marginTop: "6px",
-};
-export const folderSelectButton: CSSProperties = {
-  marginLeft: "auto",
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "8px",
-  maxWidth: "60%",
-  padding: "9px 14px",
-  borderRadius: "12px",
-  border: "1px solid var(--border-soft)",
+export const folderActionSelect: CSSProperties = {
+  flex: "none",
+  maxWidth: "132px",
+  padding: "8px 28px 8px 10px",
+  borderRadius: "10px",
+  border: "1px solid var(--border-default)",
   background: "var(--surface-card)",
   cursor: "pointer",
   fontFamily: "var(--font-body)",
   fontWeight: 700,
-  fontSize: "13px",
-  color: "var(--text-strong)",
-};
-export const folderSelectName: CSSProperties = {
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
+  fontSize: "12.5px",
+  color: "var(--text-link)",
 };
 export const emptyStrip: CSSProperties = {
   marginTop: "6px",
@@ -273,6 +254,47 @@ export const emptyStrip: CSSProperties = {
   fontFamily: "var(--font-body)",
   fontSize: "13px",
   color: "var(--text-muted)",
+};
+export const emptyStripActions: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexWrap: "wrap",
+  gap: "14px",
+  marginTop: "14px",
+};
+export const petStripCaption: CSSProperties = {
+  margin: "8px 0 0",
+  textAlign: "center",
+  fontFamily: "var(--font-body)",
+  fontSize: "12.5px",
+  fontWeight: 700,
+  color: "var(--text-muted)",
+};
+export const petResourceLinks: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexWrap: "wrap",
+  gap: "8px",
+  marginTop: "12px",
+  fontFamily: "var(--font-body)",
+  fontSize: "12.5px",
+  color: "var(--text-muted)",
+};
+export const petResourceLink: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "5px",
+  padding: 0,
+  border: 0,
+  background: "none",
+  cursor: "pointer",
+  fontFamily: "var(--font-body)",
+  fontWeight: 700,
+  fontSize: "12.5px",
+  color: "var(--text-link)",
+  textDecoration: "none",
 };
 export const pluginGrid: CSSProperties = {
   display: "flex",

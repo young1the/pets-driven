@@ -1,5 +1,11 @@
 import type { PetName } from "@pets-driven/design-system";
-import { Button, ExternalLinkIcon, PetAvatar, TerminalIcon } from "@pets-driven/design-system";
+import {
+  Button,
+  ExternalLinkIcon,
+  FolderIcon,
+  PetAvatar,
+  TerminalIcon,
+} from "@pets-driven/design-system";
 import { localeLabels, locales, useTranslation } from "@pets-driven/i18n";
 import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { PetSprite } from "@pets-driven/pet-engine/pets/rendering/pet-sprite";
@@ -25,12 +31,14 @@ import {
   doneChips,
   doneWrap,
   emptyStrip,
+  emptyStripActions,
   eyebrow,
   fieldHint,
-  folderCountRow,
-  folderIcon,
-  folderSelectButton,
-  folderSelectName,
+  folderActionSelect,
+  folderCard,
+  folderCardIdentity,
+  folderCardName,
+  folderCardPath,
   footer,
   footerActions,
   guideCard,
@@ -39,9 +47,9 @@ import {
   heroWrap,
   inlineTermShell,
   lede,
-  petGetActions,
-  petGetButton,
-  petGetButtonPrimary,
+  petResourceLink,
+  petResourceLinks,
+  petStripCaption,
   pluginBadge,
   pluginCard,
   pluginGrid,
@@ -72,9 +80,11 @@ import { type PetsDrivenState, setPetSourceDirectory } from "@/app-state/pets-dr
 
 const PETDEX_URL = "https://petdex.dev";
 
-/** Sentinel value for the pet-folder dropdown's "browse for a folder" entry. No
- * real path equals it, so it never collides with a designated folder. */
+/** Action values for the compact pet-folder menu. No real path equals these. */
+const FOLDER_MENU_VALUE = "__folder_menu__";
 const BROWSE_FOLDER_VALUE = "__browse__";
+const OPEN_FOLDER_VALUE = "__open__";
+const CLEAR_FOLDER_VALUE = "__clear__";
 
 type WizardStep = "welcome" | "appearance" | "petsFolder" | "plugin" | "done";
 
@@ -228,6 +238,10 @@ export function SetupWizard({
       return;
     }
 
+    // A folder change invalidates the previous folder's preview immediately;
+    // the effect below fills in the new result after persistence completes.
+    setLooksFound(null);
+    setPetPackages([]);
     await gateway.updateSettings({ petSourceDirectory: nextState.petSourceDirectory });
     onStateChange(nextState);
   }
@@ -249,17 +263,24 @@ export function SetupWizard({
   // The folder shown as selected in the dropdown. There is no implicit default,
   // so an unset petSourceDirectory means "no folder chosen yet".
   const selectedPetFolder = state.petSourceDirectory ?? "";
-  // A custom folder (picked via the OS browser) is not one of the well-known
-  // options, so surface it as its own entry — mirrors the shell picker.
-  const hasCustomPetFolder =
-    selectedPetFolder.trim() !== "" &&
-    !folderOptions.some((option) => option.path === selectedPetFolder);
+  const selectedPetFolderOption = folderOptions.find((option) => option.path === selectedPetFolder);
+  const selectedPetFolderName = selectedPetFolderOption
+    ? t(`setupWizard.petFolderOption.${selectedPetFolderOption.kind}`)
+    : selectedPetFolder
+      ? t("setupWizard.petFolderOption.custom")
+      : t("setupWizard.petFolderNoSelection");
 
   function selectPetFolderOption(value: string) {
-    // The last entry opens the OS folder picker instead of designating a known
-    // path; picking a folder there flows back through changePetFolder.
     if (value === BROWSE_FOLDER_VALUE) {
       void changePetFolder();
+      return;
+    }
+    if (value === OPEN_FOLDER_VALUE) {
+      void revealPetFolder();
+      return;
+    }
+    if (value === CLEAR_FOLDER_VALUE) {
+      void applyPetSourceDirectory(null);
       return;
     }
 
@@ -516,128 +537,96 @@ export function SetupWizard({
                 gap: "12px",
               }}
             >
-              {folderOptions.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "12px",
-                    }}
-                  >
-                    <div style={sectionLabel}>{t("setupWizard.petFolderSelectLabel")}</div>
-                    <span
-                      className={`pd-onb__listen${
-                        looksFound === null ? "" : " pd-onb__listen--ok"
-                      }`}
-                    >
-                      <span
-                        className={`pd-onb__listen-dot${
-                          looksFound === null ? " pd-onb__listen-dot--pulse" : ""
-                        }`}
-                      />
-                      {looksFound === null
-                        ? t("setupWizard.petsFolderScanning")
-                        : t("setupWizard.petsFolderCount", { count: looksFound })}
-                    </span>
-                  </div>
-                  <select
-                    aria-label={t("setupWizard.petFolderSelectLabel")}
-                    onChange={(event) => selectPetFolderOption(event.target.value)}
-                    style={wizardSelect}
-                    value={selectedPetFolder}
-                  >
-                    <option disabled value="">
-                      {t("setupWizard.petFolderSelectPlaceholder")}
-                    </option>
-                    {folderOptions.map((option) => (
-                      <option key={option.kind} value={option.path}>
-                        {t(`setupWizard.petFolderOption.${option.kind}`)} ({option.path})
-                      </option>
-                    ))}
-                    {hasCustomPetFolder && (
-                      <option value={selectedPetFolder}>
-                        {t("setupWizard.petFolderOption.custom")} ({selectedPetFolder})
-                      </option>
-                    )}
-                    <option value={BROWSE_FOLDER_VALUE}>{t("setupWizard.petFolderBrowse")}</option>
-                  </select>
-                  <p style={fieldHint}>{t("setupWizard.petFolderSelectHint")}</p>
+              <fieldset aria-label={t("setupWizard.petFolderSelectLabel")} style={folderCard}>
+                <FolderIcon size={20} />
+                <div style={folderCardIdentity}>
+                  <strong style={folderCardName}>{selectedPetFolderName}</strong>
+                  <span style={folderCardPath} title={selectedPetFolder || undefined}>
+                    {selectedPetFolder || t("setupWizard.petFolderNoSelectionHint")}
+                  </span>
                 </div>
-              )}
-
-              {state.petSourceDirectory && (
-                <div style={folderCountRow}>
-                  <button
-                    disabled={copyingPets}
-                    onClick={() => void copyDefaultPetsIntoFolder()}
-                    style={folderSelectButton}
-                    title={t("setupWizard.copyDefaultPets")}
-                    type="button"
+                {selectedPetFolder && (
+                  <span
+                    className={`pd-onb__listen${looksFound === null ? "" : " pd-onb__listen--ok"}`}
                   >
-                    <span aria-hidden style={folderIcon}>
-                      🐾
-                    </span>
-                    <span style={folderSelectName}>
+                    <span
+                      className={`pd-onb__listen-dot${
+                        looksFound === null ? " pd-onb__listen-dot--pulse" : ""
+                      }`}
+                    />
+                    {looksFound === null
+                      ? t("setupWizard.petsFolderScanning")
+                      : t("setupWizard.petsFolderCount", { count: looksFound })}
+                  </span>
+                )}
+                <select
+                  aria-label={
+                    selectedPetFolder
+                      ? t("setupWizard.petFolderChange")
+                      : t("setupWizard.selectPetFolder")
+                  }
+                  onChange={(event) => selectPetFolderOption(event.target.value)}
+                  style={folderActionSelect}
+                  value={FOLDER_MENU_VALUE}
+                >
+                  <option disabled value={FOLDER_MENU_VALUE}>
+                    {selectedPetFolder
+                      ? t("setupWizard.petFolderChange")
+                      : t("setupWizard.selectPetFolder")}
+                  </option>
+                  {folderOptions.map((option) => (
+                    <option key={option.kind} value={option.path}>
+                      {t(`setupWizard.petFolderOption.${option.kind}`)}
+                    </option>
+                  ))}
+                  <option value={BROWSE_FOLDER_VALUE}>{t("setupWizard.petFolderBrowse")}</option>
+                  {selectedPetFolder && (
+                    <option value={OPEN_FOLDER_VALUE}>{t("setupWizard.openPetFolder")}</option>
+                  )}
+                  {selectedPetFolder && (
+                    <option value={CLEAR_FOLDER_VALUE}>{t("setupWizard.clearPetFolder")}</option>
+                  )}
+                </select>
+              </fieldset>
+
+              {selectedPetFolder && petPackages.length > 0 ? (
+                <div style={{ marginTop: "8px" }}>
+                  <PetLookStrip packages={petPackages} />
+                  <p style={petStripCaption}>
+                    {t("setupWizard.petsFolderReady", { count: petPackages.length })}
+                  </p>
+                  <div style={petResourceLinks}>
+                    <span>{t("setupWizard.petsFolderMore")}</span>
+                    <span aria-hidden>·</span>
+                    <a href={PETDEX_URL} rel="noreferrer" style={petResourceLink} target="_blank">
+                      {t("setupWizard.petdexBrowse")} <ExternalLinkIcon size={13} />
+                    </a>
+                    <span aria-hidden>·</span>
+                    <button
+                      onClick={() => setTerminalOpen(true)}
+                      style={petResourceLink}
+                      type="button"
+                    >
+                      <TerminalIcon size={13} />
+                      {t("setupWizard.petdexAddViaTerminal")}
+                    </button>
+                  </div>
+                </div>
+              ) : selectedPetFolder && looksFound === 0 ? (
+                <div style={emptyStrip}>
+                  <div>{t("setupWizard.petsFolderEmpty")}</div>
+                  <div style={emptyStripActions}>
+                    <Button disabled={copyingPets} onClick={() => void copyDefaultPetsIntoFolder()}>
                       {copyingPets
                         ? t("setupWizard.copyingDefaultPets")
                         : t("setupWizard.copyDefaultPets")}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => void revealPetFolder()}
-                    style={{
-                      ...textLink,
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                    }}
-                    title={t("setupWizard.openPetFolder")}
-                    type="button"
-                  >
-                    <ExternalLinkIcon size={15} />
-                    {t("setupWizard.openPetFolder")}
-                  </button>
-                  <button
-                    onClick={() => void applyPetSourceDirectory(null)}
-                    style={{ ...textLink, textDecoration: "none" }}
-                    type="button"
-                  >
-                    {t("setupWizard.clearPetFolder")}
-                  </button>
+                    </Button>
+                    <a href={PETDEX_URL} rel="noreferrer" style={petResourceLink} target="_blank">
+                      {t("setupWizard.petdexBrowse")} <ExternalLinkIcon size={13} />
+                    </a>
+                  </div>
                 </div>
-              )}
-
-              {petPackages.length > 0 ? (
-                <div style={{ marginTop: "12px" }}>
-                  <PetLookStrip packages={petPackages} />
-                </div>
-              ) : looksFound !== null ? (
-                <div style={emptyStrip}>{t("setupWizard.petsFolderEmpty")}</div>
               ) : null}
-
-              {/* Ways to bring in more pets — below the folder, since they feed
-                  into whichever folder is selected above. */}
-              <div style={petGetActions}>
-                <a
-                  href={PETDEX_URL}
-                  rel="noreferrer"
-                  style={{ ...petGetButtonPrimary, flex: "1 1 0" }}
-                  target="_blank"
-                >
-                  🐾 {t("setupWizard.petdexTitle")}
-                </a>
-                <button
-                  onClick={() => setTerminalOpen(true)}
-                  style={{ ...petGetButton, flex: "1 1 0" }}
-                  type="button"
-                >
-                  <TerminalIcon size={16} />
-                  {t("setupWizard.petdexAddViaTerminal")}
-                </button>
-              </div>
             </div>
 
             <div style={footer}>
