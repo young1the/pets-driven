@@ -15,7 +15,7 @@ A desktop app for multi-agent work
 
 **English** · [한국어](./README.ko.md)
 
-[How you use it](#-how-you-use-it) · [Features](#-features) · [Download](#-download)
+[How you use it](#-how-you-use-it) · [Petdex integration](#-petdex-integration) · [Features](#-features) · [Download](#-download)
 
 </div>
 
@@ -44,6 +44,16 @@ Your pets are on the desktop whether or not work is running. Take them out, toss
 <img src="docs/assets/part4.gif" alt="A pet reacting to a finished task" width="720" />
 
 Completed, failed, and waiting all make the pet stop and flag you. Pet it or click it.
+
+## 🐾 Petdex integration
+
+Pets Driven integrates with [Petdex](https://petdex.dev). As of August 24, 2026, Petdex offers more than 4,579 open-source pet assets.
+
+```bash
+npx petdex install <slug>
+```
+
+Pets installed with this command are stored in `~/.petdex/pets`. Pets Driven automatically discovers this directory and lists its pets during onboarding and pet selection, ready to bind to a working directory.
 
 ## 🧩 It does this too
 
