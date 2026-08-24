@@ -15,6 +15,7 @@ const MARKETPLACE_NAME: &str = "pets-driven";
 const PLUGIN_ID: &str = "pets-driven@pets-driven";
 #[cfg(target_os = "windows")]
 const CMD_COMMAND_NOT_FOUND: i32 = 9009;
+const BROKEN_CLI_HINT: &str = "the codex CLI is installed but cannot run; reinstall it with `npm install -g @openai/codex@latest`";
 
 #[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -75,6 +76,15 @@ struct CliOutput {
     stderr: String,
 }
 
+/// npm ships the codex binary as a platform-specific optional dependency. When
+/// that dependency is missing the JS shim throws a node stack trace instead of
+/// running, so every codex call fails with the same trace no matter what we
+/// asked for.
+fn is_broken_cli_install(detail: &str) -> bool {
+    detail.contains("Missing optional dependency")
+        || detail.contains("Cannot find module '@openai/codex")
+}
+
 impl CliOutput {
     fn error_text(&self, context: &str) -> String {
         let detail = if self.stderr.trim().is_empty() {
@@ -82,6 +92,9 @@ impl CliOutput {
         } else {
             self.stderr.trim()
         };
+        if is_broken_cli_install(detail) {
+            return BROKEN_CLI_HINT.to_string();
+        }
         format!("{context}: {detail}")
     }
 }
@@ -501,7 +514,10 @@ mod tests {
     use std::ffi::OsStr;
     use std::path::PathBuf;
 
-    use super::{base_codex_command, installed_from_output, terminal_command_line, CodexHome};
+    use super::{
+        base_codex_command, installed_from_output, terminal_command_line, CliOutput, CodexHome,
+        BROKEN_CLI_HINT,
+    };
 
     #[test]
     fn finds_installed_plugin_in_json_output() {
@@ -523,6 +539,39 @@ mod tests {
         assert_eq!(
             installed_from_output("pets-driven@pets-driven enabled"),
             Some(None)
+        );
+    }
+
+    #[test]
+    fn a_broken_codex_install_reports_the_reinstall_command() {
+        let output = CliOutput {
+            success: false,
+            stdout: String::new(),
+            stderr: concat!(
+                "Error: Missing optional dependency @openai/codex-win32-x64. ",
+                "Reinstall Codex: npm install -g @openai/codex@latest\n",
+                "    at findCodexExecutable (file:///C:/codex/bin/codex.js:105:9)"
+            )
+            .to_string(),
+        };
+
+        assert_eq!(
+            output.error_text("could not register the pets-driven Codex marketplace"),
+            BROKEN_CLI_HINT
+        );
+    }
+
+    #[test]
+    fn an_ordinary_failure_keeps_its_context() {
+        let output = CliOutput {
+            success: false,
+            stdout: String::new(),
+            stderr: "marketplace already exists".to_string(),
+        };
+
+        assert_eq!(
+            output.error_text("could not register the pets-driven Codex marketplace"),
+            "could not register the pets-driven Codex marketplace: marketplace already exists"
         );
     }
 
