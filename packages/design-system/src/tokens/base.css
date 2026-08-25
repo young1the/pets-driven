@@ -41,6 +41,18 @@ p {
   text-wrap: pretty;
 }
 
+/* Korean's default line-breaking splits an 어절 anywhere it likes, mid-word
+   ("Claude Code와" wraps as "Claude Code" / "와"), which is why a Korean
+   paragraph reads worse than the same column in English. Break at spaces
+   instead. `word-break` inherits, so one rule on the language root covers the
+   whole page, and `keep-all` is a no-op for the Latin text mixed into it.
+   Scoped to :lang(ko) on purpose: Japanese has no spaces to break at, so the
+   same rule there would leave a paragraph unbreakable and overflow its
+   column. */
+:lang(ko) {
+  word-break: keep-all;
+}
+
 a {
   color: var(--text-link);
   text-decoration: none;
