@@ -19,14 +19,15 @@ import {
 } from "@/lib/site";
 import "../globals.css";
 
-type LocaleParams = { params: { locale: string } };
+type LocaleParams = { params: Promise<{ locale: string }> };
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-export function generateMetadata({ params }: LocaleParams): Metadata {
-  const locale: Locale = isLocale(params.locale) ? params.locale : defaultLocale;
+export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
+  const { locale: requested } = await params;
+  const locale: Locale = isLocale(requested) ? requested : defaultLocale;
   const { t } = getServerTranslation(locale, "landing");
   const title = t("metadata.title");
   const description = t("metadata.description");
@@ -92,24 +93,25 @@ function softwareApplicationJsonLd(locale: Locale, description: string) {
   };
 }
 
-export default function LocaleLayout({
+export default async function LocaleLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  if (!isLocale(params.locale)) {
+  const { locale } = await params;
+  if (!isLocale(locale)) {
     notFound();
   }
 
-  const { t } = getServerTranslation(params.locale, "landing");
-  const jsonLd = softwareApplicationJsonLd(params.locale, t("metadata.description"));
+  const { t } = getServerTranslation(locale, "landing");
+  const jsonLd = softwareApplicationJsonLd(locale, t("metadata.description"));
 
   return (
-    <html lang={params.locale}>
+    <html lang={locale}>
       <body>
-        <I18nProvider locale={params.locale}>
+        <I18nProvider locale={locale}>
           {/* Fixed site nav: owns the corner placement so each pill inside it
               stays a plain, independently reusable component. */}
           <div

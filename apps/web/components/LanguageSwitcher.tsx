@@ -15,7 +15,7 @@ const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 /**
  * Pill that swaps the locale segment of the current URL. The choice is
- * persisted in a cookie so the middleware honors it on later bare-path visits.
+ * persisted in a cookie so the proxy honors it on later bare-path visits.
  * Positioning belongs to the site nav cluster in the layout, not here.
  */
 export function LanguageSwitcher() {

@@ -72,7 +72,7 @@ function fanOrder<T>(pets: T[]): { pet: T; index: number }[] {
  * reads as "spread freely".
  */
 function useFanMetrics(
-  ref: React.RefObject<HTMLElement>,
+  ref: React.RefObject<HTMLElement | null>,
   cardCount: number,
 ): { width: number; cardHeight: number } {
   const [metrics, setMetrics] = useState({ width: 0, cardHeight: 0 });
