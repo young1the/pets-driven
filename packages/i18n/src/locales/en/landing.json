@@ -1,13 +1,45 @@
 {
   "metadata": {
-    "title": "Pets-Driven — a cute way to develop with AI agents",
-    "description": "Give your pets a task and watch them take it from here — a cute way to develop with AI agents."
+    "title": "Pets-Driven — desktop pets for Claude Code and Codex CLI",
+    "description": "A free Windows desktop pet for developers who run AI coding agents. Claude Code and Codex CLI hooks show whether a run is working, waiting on you, done, or failed.",
+    "ogImageAlt": "A Pets-Driven pet on a Windows desktop, showing the status of a running Claude Code agent."
+  },
+  "nav": {
+    "github": "View the source on GitHub"
   },
   "hero": {
     "headline": "You don't code anymore.",
     "watching": "a new era is coming",
-    "tagline": "a cute way to develop with AI agents",
+    "tagline": "desktop pets for Claude Code & Codex CLI",
     "scroll": "scroll"
+  },
+  "about": {
+    "eyebrow": "What it is",
+    "title": "Desktop pets that show what your agents are doing",
+    "body": "Pets-Driven is a Windows desktop pet app for people who run AI coding agents. Hooks from Claude Code and the OpenAI Codex CLI hand the pet whatever the agent is doing, so one look at your desktop tells you whether the run is working, waiting on you, finished, or failed — no terminal to sit and watch for a task that ends whenever it ends.",
+    "body2": "One pet per project directory, so several agents running at once stay readable at a glance. It's built with Tauri and React, it's MIT licensed, and it ships a pdd CLI that does everything the app does. The bundled Claude Code and Codex plugins go one step further: ask the agent to hatch a pet and it does, so you never open the app to start one.",
+    "points": {
+      "agents": {
+        "title": "Claude Code and Codex CLI",
+        "body": "Install the plugin once. Every agent event is forwarded to the pet bound to that project directory.",
+        "alt": "A pet running alongside the Codex CLI"
+      },
+      "status": {
+        "title": "Status you can read across the room",
+        "body": "Working, waiting on your input, finished, failed — each state is its own pose and color.",
+        "alt": "A pet reacting to a finished task"
+      },
+      "skills": {
+        "title": "Agents hatch their own pets",
+        "body": "The bundled hatch, bring, and carry skills let Claude Code and Codex do it themselves — a new project gets a pet without a single click.",
+        "alt": "A pet hatching for each Orca worktree, with nothing clicked"
+      },
+      "cli": {
+        "title": "A pdd CLI in the box",
+        "body": "Hatch, bind, rename, and inspect pets from the terminal. Anything the app can do, pdd can do.",
+        "alt": "A pet reacting to an agent running in the terminal"
+      }
+    }
   },
   "demo": {
     "eyebrow": "Demo",

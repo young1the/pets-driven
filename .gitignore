@@ -19,6 +19,7 @@ workspaces/
 # Built-in pet sprites copied from the repo-root `pets/` source of truth by
 # scripts/sync-pet-assets.mjs. Generated build artifacts — edit pets/ instead.
 apps/web/public/codex-pets/
+apps/web/public/demo/
 apps/desktop/public/codex-pets/
 apps/desktop/public/fallback-pets/
 

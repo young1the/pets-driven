@@ -14,9 +14,11 @@ pnpm video:render                           # render service-demo.mp4
 
 ## Layout
 
-- `app/[locale]/` — the only route segment; `layout.tsx` wires `I18nProvider` + metadata, `page.tsx` is the landing page
+- `app/[locale]/` — the only route segment; `layout.tsx` wires `I18nProvider`, metadata, the fixed site nav, and the `SoftwareApplication` JSON-LD, `page.tsx` is the landing page
 - `app/globals.css` — imports the design-system `styles.css` entry, then adds only scene animations
-- `components/` — `Intro.tsx` (largest file, ~871 lines), `IntroScenes.tsx`, `LanguageSwitcher.tsx`
+- `app/robots.ts`, `app/sitemap.ts` — `/robots.txt` and `/sitemap.xml`
+- `lib/site.ts` — the canonical origin plus every URL and hreflang set derived from it; shared by the metadata, the sitemap, and the CTA links
+- `components/` — `Intro.tsx` (largest file), `IntroScenes.tsx`, `LanguageSwitcher.tsx`, `GithubLink.tsx`
 - `middleware.ts` — locale redirect for bare paths
 - `remotion/` — the `index.tsx` entry plus `service-demo/` (`ServiceDemoVideo.tsx`, `components.tsx`, `timeline.ts`, `fixtures.ts`)
 - `public/` — static assets; `public/codex-pets/` is generated and git-ignored
@@ -29,6 +31,9 @@ pnpm video:render                           # render service-demo.mp4
 
 ## Non-obvious rules
 
+- **Every absolute URL comes from `SITE_URL` in `lib/site.ts`.** Canonical links, hreflang, Open Graph, the sitemap, and robots.txt all derive from that one value (`NEXT_PUBLIC_SITE_URL`, defaulting to the production domain), so a domain move is a single env change instead of a hunt for hardcoded hosts.
+- **Gotcha: the sitemap needs *absolute* hreflang hrefs, unlike page metadata.** `Metadata.alternates` is resolved against `metadataBase`, but the sitemap serializer is not — relative hrefs there emit as-is and Google ignores them. Hence the two exports, `hreflangAlternates` (relative, for metadata) and `absoluteHreflangAlternates` (for `sitemap.ts`).
+- **The about section deliberately skips `data-reveal`.** Every other section starts at `opacity: 0` until an `IntersectionObserver` fires; that section is the page's only sustained prose and has to be visible in the HTML as served.
 - **There is no non-localized route.** Every page lives under `app/[locale]/`, and `middleware.ts` redirects bare paths to a locale resolved from the `pd-locale` cookie, then `Accept-Language`, then `defaultLocale`. Its matcher deliberately skips `_next` and anything with a file extension.
 - **Pet assets are synced, not committed.** `predev` and `prebuild` run `node ../../scripts/sync-pet-assets.mjs web`, which copies from the repo-root `pets/` directory into `public/codex-pets/`. Edit the canonical files under `pets/`; never hand-edit the generated output.
 - **Do not add styling that duplicates the design system.** `globals.css` imports the shared stylesheet and should only gain page-specific scene animation; component styling belongs in `packages/design-system`.

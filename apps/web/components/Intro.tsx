@@ -1,18 +1,28 @@
-import { Button, PetAvatar, type PetAvatarStatus, type PetName } from "@pets-driven/design-system";
+import {
+  Button,
+  Card,
+  PetAvatar,
+  type PetAvatarStatus,
+  type PetName,
+} from "@pets-driven/design-system";
 import type { Locale } from "@pets-driven/i18n/config";
 import { getServerTranslation } from "@pets-driven/i18n/server";
 import { IntroScenes } from "@/components/IntroScenes";
+import { DOWNLOAD_URL, GITHUB_URL } from "@/lib/site";
 
 const CTA_PETS: PetName[] = ["cato", "otto", "mochi", "fenn", "bloop", "pip"];
 
 /**
- * GitHub redirects this to the newest release's asset of that exact name, so the
- * CTA hands over the installer itself instead of dropping visitors on a release
- * page to hunt for it. The release workflow attaches the version-less copy.
+ * The explainer cards under the about section, in render order, each paired
+ * with the demo GIF the READMEs already use for that behaviour. The files are
+ * synced into `public/demo/` by scripts/sync-demo-assets.mjs.
  */
-const DOWNLOAD_URL =
-  process.env.NEXT_PUBLIC_DOWNLOAD_URL ??
-  "https://github.com/young1the/pets-driven/releases/latest/download/PetsDriven-windows-x64-setup.exe";
+const ABOUT_POINTS = [
+  { key: "agents", gif: "codex" },
+  { key: "status", gif: "part4" },
+  { key: "skills", gif: "orca" },
+  { key: "cli", gif: "part2" },
+] as const;
 
 /**
  * Pets-Driven Intro — the official homepage.
@@ -286,7 +296,7 @@ export default function Intro({ locale }: { locale: Locale }) {
               transform: "translateY(calc((1 - var(--pText,1)) * -46px))",
             }}
           >
-            <h1
+            <p
               style={{
                 fontFamily: "var(--font-display)",
                 fontWeight: 600,
@@ -299,7 +309,7 @@ export default function Intro({ locale }: { locale: Locale }) {
               }}
             >
               {t("hero.headline")}
-            </h1>
+            </p>
             <p
               style={{
                 fontFamily: "var(--font-body)",
@@ -341,7 +351,7 @@ export default function Intro({ locale }: { locale: Locale }) {
                 transform: "scale(calc(0.82 + var(--pName,0) * 0.18))",
               }}
             />
-            <h2
+            <h1
               style={{
                 fontFamily: "var(--font-display)",
                 fontWeight: 600,
@@ -353,7 +363,7 @@ export default function Intro({ locale }: { locale: Locale }) {
               }}
             >
               Pets<span style={{ color: "var(--lavender-500)" }}>-</span>Driven
-            </h2>
+            </h1>
             <p className="pd-eyebrow" style={{ marginTop: 16, color: "var(--ink-500)" }}>
               {t("hero.tagline")}
             </p>
@@ -392,9 +402,129 @@ export default function Intro({ locale }: { locale: Locale }) {
         </div>
       </section>
 
+      {/* ===================== ABOUT — WHAT IT IS ===================== */}
+      {/* The symmetric padding is not decorative: the card row's shadow spills
+          past its box, and with no room here the next section's background
+          paints straight over it and the cards read as clipped. */}
+      <section
+        style={{
+          position: "relative",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          padding: "96px 6vw",
+          background: "#FFFCFD",
+        }}
+      >
+        <div style={{ maxWidth: 1080, margin: "0 auto", width: "100%" }}>
+          <div style={{ textAlign: "center" }}>
+            <span className="pd-eyebrow" style={{ color: "var(--lavender-600)" }}>
+              {t("about.eyebrow")}
+            </span>
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 600,
+                fontSize: "clamp(28px,3.6vw,48px)",
+                lineHeight: 1.08,
+                letterSpacing: "-0.02em",
+                color: "var(--ink-950)",
+                margin: "12px 0 0",
+              }}
+            >
+              {t("about.title")}
+            </h2>
+          </div>
+
+          {/* Deliberately not `data-reveal`, unlike the sections below it: this
+              is the page's only sustained prose, and a reveal would serve it as
+              opacity:0 until an IntersectionObserver fires. It stays visible in
+              the HTML as served. */}
+          <div
+            style={{
+              maxWidth: "68ch",
+              margin: "28px auto 0",
+              fontFamily: "var(--font-body)",
+              fontSize: "clamp(16px,1.3vw,18px)",
+              lineHeight: 1.7,
+              color: "var(--ink-700)",
+            }}
+          >
+            <p style={{ margin: 0 }}>{t("about.body")}</p>
+            <p style={{ margin: "18px 0 0" }}>{t("about.body2")}</p>
+          </div>
+
+          {/* `min(100%, 420px)` pins this to two columns at the container's
+              1080px and collapses it to one on a narrow screen, without a
+              media query — plain minmax(240px) would fit four across. */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
+              gap: 20,
+              marginTop: 48,
+            }}
+          >
+            {ABOUT_POINTS.map(({ key, gif }) => (
+              <Card key={key} padding="none">
+                {/* biome-ignore lint/performance/noImgElement: an animated GIF is served as-is; next/image cannot optimize one and would only add a proxy hop. */}
+                <img
+                  alt={t(`about.points.${key}.alt`)}
+                  decoding="async"
+                  height={360}
+                  loading="lazy"
+                  src={`/demo/${gif}.gif`}
+                  width={640}
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    aspectRatio: "16 / 9",
+                    borderBottom: "1px solid var(--border-soft)",
+                  }}
+                />
+                <div style={{ padding: "20px 22px 22px" }}>
+                  <h3
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontWeight: 600,
+                      fontSize: 18,
+                      lineHeight: 1.3,
+                      color: "var(--ink-950)",
+                      margin: 0,
+                    }}
+                  >
+                    {t(`about.points.${key}.title`)}
+                  </h3>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: 15,
+                      lineHeight: 1.6,
+                      color: "var(--ink-700)",
+                      margin: "10px 0 0",
+                    }}
+                  >
+                    {t(`about.points.${key}.body`)}
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===================== DEMO — SEE IT IN ACTION ===================== */}
-      <section style={{ position: "relative", padding: "120px 6vw 130px", background: "#FFFCFD" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
+      <section
+        style={{
+          position: "relative",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          padding: "96px 6vw",
+          background: "#FFFCFD",
+        }}
+      >
+        <div style={{ maxWidth: 1080, margin: "0 auto", width: "100%", textAlign: "center" }}>
           <div
             data-reveal
             style={{
@@ -465,11 +595,21 @@ export default function Intro({ locale }: { locale: Locale }) {
       </section>
 
       {/* ===================== CTA — ADOPT YOUR PACK ===================== */}
-      <section style={{ padding: "24px 6vw 100px", background: "#FFFCFD" }}>
+      <section
+        style={{
+          position: "relative",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          padding: "96px 6vw",
+          background: "#FFFCFD",
+        }}
+      >
         <div
           data-reveal
           className="pd-dots"
           style={{
+            width: "100%",
             opacity: 0,
             transform: "translateY(26px)",
             transition:
@@ -524,7 +664,7 @@ export default function Intro({ locale }: { locale: Locale }) {
           >
             {t("cta.note")}{" "}
             <a
-              href={process.env.NEXT_PUBLIC_GITHUB_URL}
+              href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "var(--blossom-600)" }}

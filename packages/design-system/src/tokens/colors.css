@@ -133,6 +133,7 @@
   --surface-raised: #ffffff;
   --surface-inverse: var(--ink-900);
   --surface-overlay: rgba(44, 40, 64, 0.42);
+  --surface-glass: rgba(255, 255, 255, 0.72); /* frosted chrome over any scene */
 
   /* Borders & lines */
   --border-soft: var(--ink-150);

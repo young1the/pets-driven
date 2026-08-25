@@ -93,3 +93,16 @@ button {
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-soft);
 }
+
+/* ---- Frosted pill for floating chrome ----
+   Translucent so it stays legible over a dark scene and a light one alike,
+   which is what fixed overlay controls (site nav, language switcher) sit on. */
+.pd-pill {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-md);
+}

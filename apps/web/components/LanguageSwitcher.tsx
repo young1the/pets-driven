@@ -14,8 +14,9 @@ const LOCALE_COOKIE = "pd-locale";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 /**
- * Fixed pill that swaps the locale segment of the current URL. The choice is
+ * Pill that swaps the locale segment of the current URL. The choice is
  * persisted in a cookie so the middleware honors it on later bare-path visits.
+ * Positioning belongs to the site nav cluster in the layout, not here.
  */
 export function LanguageSwitcher() {
   const pathname = usePathname();
@@ -38,21 +39,9 @@ export function LanguageSwitcher() {
     // biome-ignore lint/a11y/useSemanticElements: role="group" labels a cluster of switch buttons; there is no fitting native grouping element (<fieldset> is for form controls).
     <div
       aria-label={t("language.switchLabel")}
+      className="pd-pill"
       role="group"
-      style={{
-        position: "fixed",
-        top: 16,
-        right: 16,
-        zIndex: 1000,
-        display: "flex",
-        gap: 2,
-        padding: 3,
-        borderRadius: 999,
-        background: "rgba(255,255,255,.72)",
-        backdropFilter: "blur(10px)",
-        border: "1px solid var(--border-soft)",
-        boxShadow: "0 6px 18px rgba(34,31,46,.12)",
-      }}
+      style={{ gap: 2, padding: 3 }}
     >
       {locales.map((locale) => {
         const active = locale === current;
