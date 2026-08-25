@@ -1,8 +1,13 @@
-// Copies the demo GIFs from the repo-root `docs/assets/` source of truth into
+// Copies the demo clips from the repo-root `docs/assets/` source of truth into
 // the landing site's `public/demo/` so the browser can serve them by URL. The
 // public copies are git-ignored build artifacts — this script is the only thing
 // that should write them — so the same bytes are not committed twice and the
-// site cannot drift from the GIFs the READMEs show.
+// site cannot drift from the clips the READMEs show.
+//
+// All three formats travel: the READMEs embed the GIFs (GitHub animates nothing
+// else) while the site plays the MP4s that scripts/encode-demo-videos.mjs
+// derives from them, at roughly a sixth of the bytes, behind the first-frame
+// WebP posters it derives alongside.
 //
 // It runs automatically from the web app's dev/build (see the pre-hooks in
 // apps/web/package.json).
@@ -27,9 +32,10 @@ if (!existsSync(SRC)) {
 mkdirSync(DEST, { recursive: true });
 
 let written = 0;
-const gifs = readdirSync(SRC).filter((name) => name.endsWith(".gif"));
+const CLIP_EXTENSIONS = [".gif", ".mp4", ".webp"];
+const clips = readdirSync(SRC).filter((name) => CLIP_EXTENSIONS.some((ext) => name.endsWith(ext)));
 
-for (const name of gifs) {
+for (const name of clips) {
   const from = readFileSync(join(SRC, name));
   const to = join(DEST, name);
   if (existsSync(to) && readFileSync(to).equals(from)) continue;
@@ -37,4 +43,4 @@ for (const name of gifs) {
   written += 1;
 }
 
-console.log(`[sync-demo-assets] ${gifs.length} gif(s) checked, ${written} written -> ${DEST}`);
+console.log(`[sync-demo-assets] ${clips.length} clip(s) checked, ${written} written -> ${DEST}`);

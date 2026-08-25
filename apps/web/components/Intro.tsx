@@ -1,6 +1,7 @@
 import { Card, PetAvatar, type PetAvatarStatus, type PetName } from "@pets-driven/design-system";
 import type { Locale } from "@pets-driven/i18n/config";
 import { getServerTranslation } from "@pets-driven/i18n/server";
+import { DemoVideo } from "@/components/DemoVideo";
 import { DownloadButton } from "@/components/DownloadButton";
 import { IntroScenes } from "@/components/IntroScenes";
 import { GITHUB_URL } from "@/lib/site";
@@ -9,14 +10,16 @@ const CTA_PETS: PetName[] = ["cato", "otto", "mochi", "fenn", "bloop", "pip"];
 
 /**
  * The explainer cards under the about section, in render order, each paired
- * with the demo GIF the READMEs already use for that behaviour. The files are
- * synced into `public/demo/` by scripts/sync-demo-assets.mjs.
+ * with the demo clip the READMEs already use for that behaviour. The READMEs
+ * embed the GIF; the site plays the MP4 that scripts/encode-demo-videos.mjs
+ * derives from it. Both are synced into `public/demo/` by
+ * scripts/sync-demo-assets.mjs.
  */
 const ABOUT_POINTS = [
-  { key: "agents", gif: "codex" },
-  { key: "status", gif: "part4" },
-  { key: "skills", gif: "orca" },
-  { key: "cli", gif: "part2" },
+  { key: "agents", clip: "codex" },
+  { key: "status", clip: "part4" },
+  { key: "skills", clip: "orca" },
+  { key: "cli", clip: "part2" },
 ] as const;
 
 /**
@@ -264,7 +267,12 @@ export default function Intro({ locale }: { locale: Locale }) {
                     opacity: "var(--pPet,0)",
                   }}
                 >
+                  {/* Invisible until --pPet lifts, roughly 1.6 screens into
+                      this 460vh scene, so the portrait must not be preloaded
+                      ahead of the headline that is the LCP element. */}
                   <PetAvatar
+                    fetchPriority="low"
+                    loading="lazy"
                     pet={c.pet}
                     size="xl"
                     status={c.status}
@@ -462,18 +470,16 @@ export default function Intro({ locale }: { locale: Locale }) {
               background: "#FFFCFD",
             }}
           >
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
+            {/* The WebP poster, not the PNG: the PNG is 1920x1080 and lives on
+                as the Open Graph image, where a crawler-friendly format matters
+                more than its 620 KB. Here the same frame is 16 KB. */}
+            <DemoVideo
               controls
-              preload="metadata"
-              poster="/service-demo-poster.png"
+              label={t("demo.title")}
+              poster="/service-demo-poster.webp"
+              src="/service-demo.mp4"
               style={{ display: "block", width: "100%", height: "auto", aspectRatio: "16 / 9" }}
-            >
-              <source src="/service-demo.mp4" type="video/mp4" />
-            </video>
+            />
           </div>
         </div>
       </section>
@@ -542,17 +548,16 @@ export default function Intro({ locale }: { locale: Locale }) {
               marginTop: 48,
             }}
           >
-            {ABOUT_POINTS.map(({ key, gif }) => (
+            {ABOUT_POINTS.map(({ key, clip }) => (
               <Card key={key} padding="none">
-                {/* biome-ignore lint/performance/noImgElement: an animated GIF is served as-is; next/image cannot optimize one and would only add a proxy hop. */}
-                <img
-                  alt={t(`about.points.${key}.alt`)}
-                  decoding="async"
+                <DemoVideo
                   height={360}
-                  loading="lazy"
-                  src={`/demo/${gif}.gif`}
+                  label={t(`about.points.${key}.alt`)}
+                  poster={`/demo/${clip}.webp`}
+                  src={`/demo/${clip}.mp4`}
                   width={640}
                   style={{
+                    display: "block",
                     width: "100%",
                     height: "auto",
                     aspectRatio: "16 / 9",
@@ -629,7 +634,7 @@ export default function Intro({ locale }: { locale: Locale }) {
             }}
           >
             {CTA_PETS.map((pet) => (
-              <PetAvatar key={pet} pet={pet} size="lg" status="happy" />
+              <PetAvatar key={pet} loading="lazy" pet={pet} size="lg" status="happy" />
             ))}
           </div>
           <h2

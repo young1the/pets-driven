@@ -22,6 +22,7 @@
     "test:e2e": "pnpm --filter pets-driven test:e2e",
     "tauri": "pnpm --filter pets-driven tauri",
     "sync-pets": "node scripts/sync-pet-assets.mjs",
+    "encode-demos": "node scripts/encode-demo-videos.mjs",
     "release:bump": "node scripts/bump-version.mjs",
     "test:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-install-test.ps1",
     "test:path-hook": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/path-hook-test.ps1"

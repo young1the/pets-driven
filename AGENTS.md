@@ -19,6 +19,7 @@ pnpm test             # every package's suite + scripts/*.test.mjs
 pnpm typecheck        # tsc across the workspace
 pnpm check            # biome lint + format check
 pnpm sync-pets        # copy repo-root pets/ into each app's public assets
+pnpm encode-demos     # re-derive docs/assets/*.mp4 + poster from the GIFs (needs ffmpeg)
 pnpm test:e2e         # Playwright, desktop only
 pnpm test:path-hook    # the installer's PATH edit, against a scratch registry key
 pnpm release:bump <major|minor|patch|X.Y.Z>  # one version across every manifest, committed and tagged

@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "video:studio": "remotion studio remotion/index.tsx",
     "video:compositions": "remotion compositions remotion/index.tsx",
-    "video:still": "remotion still remotion/index.tsx ServiceDemo public/service-demo-poster.png --frame=336 --overwrite",
+    "video:still": "remotion still remotion/index.tsx ServiceDemo public/service-demo-poster.png --frame=336 --overwrite && remotion still remotion/index.tsx ServiceDemo public/service-demo-poster.webp --frame=336 --overwrite --scale=0.667",
     "video:render": "remotion render remotion/index.tsx ServiceDemo public/service-demo.mp4"
   },
   "dependencies": {

@@ -32,6 +32,15 @@ export interface PetAvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, "s
   showStatus?: boolean;
   /** Accessible label. Defaults to "<pet> (<status>)". */
   label?: string;
+  /**
+   * Forwarded to the portrait `<img>`. Left unset the browser loads it with the
+   * rest of the document; `"lazy"` both defers an offscreen avatar and opts it
+   * out of React's SSR image preloading, which is what a page wants when the
+   * avatar is on screen but not yet painted (faded in behind a scroll).
+   */
+  loading?: "eager" | "lazy";
+  /** Forwarded to the portrait `<img>`. Pair `"low"` with `loading="lazy"`. */
+  fetchPriority?: "high" | "low" | "auto";
   style?: CSSProperties;
 }
 
@@ -42,6 +51,8 @@ export function PetAvatar({
   ring = false,
   showStatus = false,
   label,
+  loading,
+  fetchPriority,
   className = "",
   style,
   ...rest
@@ -65,7 +76,14 @@ export function PetAvatar({
       aria-label={label ?? `${pet} (${status})`}
       {...rest}
     >
-      <img className="pd-pet__art" src={petImageSrc} alt="" aria-hidden="true" />
+      <img
+        className="pd-pet__art"
+        src={petImageSrc}
+        alt=""
+        aria-hidden="true"
+        loading={loading}
+        fetchPriority={fetchPriority}
+      />
       {showStatus ? <span className="pd-pet__status" /> : null}
     </span>
   );
