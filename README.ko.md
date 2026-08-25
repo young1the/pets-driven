@@ -5,7 +5,7 @@
 
 <h1>Pets Driven</h1>
 
-멀티 에이전트를 위한 데스크톱 앱
+Claude Code · Codex CLI 에이전트의 상태를 보여주는 데스크톱 펫
 
 [![Latest release](https://img.shields.io/github/v/release/young1the/pets-driven?sort=semver&color=F95E9E&label=release)](https://github.com/young1the/pets-driven/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/young1the/pets-driven/total?color=16B8A6)](https://github.com/young1the/pets-driven/releases)
@@ -18,6 +18,8 @@
 [이렇게 써요](#-이렇게-써요) · [Petdex 연동](#-petdex-연동) · [기능](#-기능) · [다운로드](#-다운로드)
 
 </div>
+
+**Pets Driven**은 AI 코딩 에이전트를 쓰는 사람을 위한 윈도우 데스크톱 펫 앱이에요. **Claude Code**와 **OpenAI Codex CLI**의 훅이 에이전트가 하는 일을 펫에게 그대로 넘겨줘서, 데스크톱을 한 번만 봐도 작업이 도는 중인지, 나를 기다리는지, 끝났는지, 실패했는지 알 수 있어요. 언제 끝날지 모르는 작업 때문에 터미널을 계속 쳐다보지 않아도 돼요. 디렉터리 하나에 펫 하나라, 에이전트를 여러 개 동시에 돌려도 한눈에 구분돼요. Tauri와 React로 만들었고, MIT 라이선스이고, 앱이 하는 일을 전부 할 수 있는 `pdd` CLI가 함께 들어 있어요.
 
 ## 🎬 이렇게 써요
 

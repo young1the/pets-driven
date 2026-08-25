@@ -5,7 +5,7 @@
 
 <h1>Pets Driven</h1>
 
-A desktop app for multi-agent work
+Desktop pets that show what your Claude Code and Codex CLI agents are doing
 
 [![Latest release](https://img.shields.io/github/v/release/young1the/pets-driven?sort=semver&color=F95E9E&label=release)](https://github.com/young1the/pets-driven/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/young1the/pets-driven/total?color=16B8A6)](https://github.com/young1the/pets-driven/releases)
@@ -18,6 +18,8 @@ A desktop app for multi-agent work
 [How you use it](#-how-you-use-it) · [Petdex integration](#-petdex-integration) · [Features](#-features) · [Download](#-download)
 
 </div>
+
+**Pets Driven** is a Windows desktop pet app for people who run AI coding agents. Hooks from **Claude Code** and the **OpenAI Codex CLI** hand the pet whatever the agent is doing, so one look at your desktop tells you whether the run is working, waiting on you, finished, or failed — no terminal to sit and watch for a task that ends whenever it ends. One pet per project directory, so several agents running at once stay readable at a glance. It's built with Tauri and React, MIT licensed, and ships a `pdd` CLI that does everything the app does.
 
 ## 🎬 How you use it
 
