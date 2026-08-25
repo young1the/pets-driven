@@ -522,6 +522,7 @@ export default function Intro({ locale }: { locale: Locale }) {
               opacity:0 until an IntersectionObserver fires. It stays visible in
               the HTML as served. */}
           <div
+            className="about-prose"
             style={{
               maxWidth: "68ch",
               margin: "28px auto 0",

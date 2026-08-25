@@ -19,6 +19,19 @@ svg {
   display: block;
 }
 
+/* ---- About prose ----
+   The section's eyebrow and heading are centered, and on a phone this column
+   is the full content width, so its ragged right edge sits under a centered
+   header and reads as leaning left. Center the prose too at phone widths; from
+   640px (--container-sm) up it goes back to left-aligned, which is easier to
+   read once the measure is long. It lives here rather than inline because the
+   section is built from inline styles, which cannot carry a media query. */
+@media (max-width: 639px) {
+  .about-prose {
+    text-align: center;
+  }
+}
+
 /* ---- Homepage scene animations (from the Pets-Driven Intro design) ---- */
 @keyframes pdBlink {
   0%,
