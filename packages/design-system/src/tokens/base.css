@@ -100,6 +100,13 @@ button {
 .pd-pill {
   display: flex;
   align-items: center;
+  /* Pills sit side by side in the fixed nav cluster, so their heights have to
+     agree exactly — and left to their contents they don't: a pill holding text
+     is sized by the inherited `line-height: 1.5`, while one holding <button>s
+     is sized by the UA's `line-height: normal`, which buttons don't inherit.
+     That is a few pixels apart and reads as a crooked row. Pin the height here
+     and let each pill place its contents inside it. */
+  height: var(--pill-height);
   border-radius: var(--radius-pill);
   background: var(--surface-glass);
   backdrop-filter: blur(10px);

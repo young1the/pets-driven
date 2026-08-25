@@ -55,7 +55,11 @@ export function LanguageSwitcher() {
               border: "none",
               cursor: active ? "default" : "pointer",
               borderRadius: 999,
-              padding: "6px 13px",
+              // Stretch to the pill's fixed inner height instead of being
+              // sized by the button's own line box, which the UA leaves at
+              // `line-height: normal` and would make this pill the taller one.
+              alignSelf: "stretch",
+              padding: "0 13px",
               fontFamily: "var(--font-body)",
               fontWeight: 700,
               fontSize: 13,

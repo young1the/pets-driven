@@ -14,7 +14,9 @@ export function GithubLink({ label }: { label: string }) {
       rel="noopener noreferrer"
       style={{
         gap: 7,
-        padding: "7px 14px 7px 12px",
+        // Horizontal only: `.pd-pill` owns the height so this lines up with
+        // the language switcher beside it.
+        padding: "0 14px 0 12px",
         color: "var(--ink-800)",
         fontFamily: "var(--font-body)",
         fontWeight: 700,

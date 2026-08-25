@@ -25,6 +25,7 @@
   --gutter: var(--space-6);
 
   /* Control heights */
+  --pill-height: 36px; /* .pd-pill — floating nav chrome */
   --control-sm: 32px;
   --control-md: 40px;
   --control-lg: 48px;
