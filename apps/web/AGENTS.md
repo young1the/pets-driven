@@ -39,3 +39,13 @@ pnpm video:render                           # render service-demo.mp4
 - **Do not add styling that duplicates the design system.** `globals.css` imports the shared stylesheet and should only gain page-specific scene animation; component styling belongs in `packages/design-system`.
 - **Remotion is a separate entry from Next.** The video compositions are registered in the `remotion/` entry file and are not part of `next build`; timing changes go in `remotion/service-demo/timeline.ts`, and `video:still` pins `--frame=336` for the poster.
 - **This package has no test script.** Verification is `typecheck` plus a visual check via `dev` or `video:studio` — do not assume `pnpm --filter @pets-driven/web test` exists.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
