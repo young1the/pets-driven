@@ -7,6 +7,11 @@ body {
   margin: 0;
   padding: 0;
   background: #fffcfd;
+  /* Clip any horizontal overflow so a touch-scroll on mobile can't pan the
+     page sideways (the "shake left-right while scrolling" bug). `clip` — not
+     `hidden` — because ACT I pins its stage with `position: sticky`, which an
+     `overflow: hidden` ancestor would turn into a scroll container and break. */
+  overflow-x: clip;
 }
 
 img,

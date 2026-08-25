@@ -623,7 +623,15 @@ export default function Intro({ locale }: { locale: Locale }) {
             background: "linear-gradient(160deg, var(--teal-50), var(--blossom-50))",
           }}
         >
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 22 }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              justifyContent: "center",
+              marginBottom: 22,
+            }}
+          >
             {CTA_PETS.map((pet) => (
               <PetAvatar key={pet} pet={pet} size="lg" status="happy" />
             ))}
