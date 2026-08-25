@@ -3,18 +3,38 @@
    Fredoka (display) / Nunito (body) / JetBrains Mono (code).
    No CDN — fonts ship with the bundle so the desktop app
    works fully offline.
+
+   Only the `latin` and `latin-ext` subsets are imported. The
+   full `<weight>.css` entries also pull cyrillic, greek,
+   vietnamese, and hebrew @font-face blocks — 28 of the 50 the
+   bundle would otherwise carry — and none of the shipped
+   locales (en/ko/ja) reach for those glyphs. The CJK ranges
+   these fonts never covered still fall back to the system UI
+   font either way. Import a subset file explicitly if a locale
+   that needs one is ever added.
    ============================================================ */
 
-@import "@fontsource/fredoka/400.css";
-@import "@fontsource/fredoka/500.css";
-@import "@fontsource/fredoka/600.css";
-@import "@fontsource/fredoka/700.css";
+@import "@fontsource/fredoka/latin-400.css";
+@import "@fontsource/fredoka/latin-ext-400.css";
+@import "@fontsource/fredoka/latin-500.css";
+@import "@fontsource/fredoka/latin-ext-500.css";
+@import "@fontsource/fredoka/latin-600.css";
+@import "@fontsource/fredoka/latin-ext-600.css";
+@import "@fontsource/fredoka/latin-700.css";
+@import "@fontsource/fredoka/latin-ext-700.css";
 
-@import "@fontsource/nunito/400.css";
-@import "@fontsource/nunito/600.css";
-@import "@fontsource/nunito/700.css";
-@import "@fontsource/nunito/800.css";
+@import "@fontsource/nunito/latin-400.css";
+@import "@fontsource/nunito/latin-ext-400.css";
+@import "@fontsource/nunito/latin-600.css";
+@import "@fontsource/nunito/latin-ext-600.css";
+@import "@fontsource/nunito/latin-700.css";
+@import "@fontsource/nunito/latin-ext-700.css";
+@import "@fontsource/nunito/latin-800.css";
+@import "@fontsource/nunito/latin-ext-800.css";
 
-@import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
-@import "@fontsource/jetbrains-mono/700.css";
+@import "@fontsource/jetbrains-mono/latin-400.css";
+@import "@fontsource/jetbrains-mono/latin-ext-400.css";
+@import "@fontsource/jetbrains-mono/latin-500.css";
+@import "@fontsource/jetbrains-mono/latin-ext-500.css";
+@import "@fontsource/jetbrains-mono/latin-700.css";
+@import "@fontsource/jetbrains-mono/latin-ext-700.css";
