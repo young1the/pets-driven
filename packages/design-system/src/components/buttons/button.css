@@ -27,6 +27,10 @@
 .pd-btn:hover {
   filter: brightness(1.05);
   transform: translateY(-1px);
+  /* `as="a"` renders a real anchor, and the base `a:hover` underline rule
+     outranks the `text-decoration: none` above it. Repeat it here so a link
+     button does not sprout an underline. */
+  text-decoration: none;
 }
 .pd-btn:active {
   transform: translateY(4px);
@@ -117,6 +121,14 @@
 }
 .pd-btn--block {
   width: 100%;
+}
+/* Loading is inert like disabled, but it is not unavailable — it is working.
+   Keep the colour and the lip so a primary action does not read as greyed out
+   for the moment it spins. Must follow the [disabled] rule above: the two
+   selectors have equal specificity, so order decides. */
+.pd-btn--loading[disabled] {
+  opacity: 1;
+  box-shadow: var(--lip);
 }
 .pd-btn__spin {
   width: 1em;

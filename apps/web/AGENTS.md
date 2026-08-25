@@ -15,10 +15,10 @@ pnpm video:render                           # render service-demo.mp4
 ## Layout
 
 - `app/[locale]/` — the only route segment; `layout.tsx` wires `I18nProvider`, metadata, the fixed site nav, and the `SoftwareApplication` JSON-LD, `page.tsx` is the landing page
-- `app/globals.css` — imports the design-system `styles.css` entry, then adds only scene animations
+- `app/globals.css` — imports the design-system `styles.css` entry, then adds the landing page's own scene animations and the handful of rules its inline styles cannot express (media queries)
 - `app/robots.ts`, `app/sitemap.ts` — `/robots.txt` and `/sitemap.xml`
 - `lib/site.ts` — the canonical origin plus every URL and hreflang set derived from it; shared by the metadata, the sitemap, and the CTA links
-- `components/` — `Intro.tsx` (largest file), `IntroScenes.tsx`, `LanguageSwitcher.tsx`, `GithubLink.tsx`
+- `components/` — `Intro.tsx` (largest file), `IntroScenes.tsx`, `DownloadButton.tsx`, `LanguageSwitcher.tsx`, `GithubLink.tsx`
 - `proxy.ts` — locale redirect for bare paths (the Next 16 name for what was `middleware.ts`)
 - `remotion/` — the `index.tsx` entry plus `service-demo/` (`ServiceDemoVideo.tsx`, `components.tsx`, `timeline.ts`, `fixtures.ts`)
 - `public/` — static assets; `public/codex-pets/` is generated and git-ignored

@@ -42,6 +42,7 @@ export function Button({
     "pd-btn",
     `pd-btn--${variant}`,
     `pd-btn--${size}`,
+    loading ? "pd-btn--loading" : "",
     fullWidth ? "pd-btn--block" : "",
     className,
   ]
@@ -49,7 +50,7 @@ export function Button({
     .join(" ");
 
   return (
-    <Tag className={cls} disabled={disabled || loading} {...rest}>
+    <Tag aria-busy={loading || undefined} className={cls} disabled={disabled || loading} {...rest}>
       {loading && <span aria-hidden="true" className="pd-btn__spin" />}
       {!loading && iconLeft}
       {children && <span>{children}</span>}

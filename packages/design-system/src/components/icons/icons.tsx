@@ -48,6 +48,14 @@ export function HomeIcon({ size, className }: IconProps) {
   );
 }
 
+export function CheckIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <path d="m20 6-11 11-5-5" />
+    </Icon>
+  );
+}
+
 export function GearIcon({ size, className }: IconProps) {
   return (
     <Icon className={className} size={size}>

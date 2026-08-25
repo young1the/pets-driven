@@ -50,6 +50,8 @@
     "title": "첫 파트너를 고르세요.",
     "body": "폴더 하나만 고르면 첫 펫이 태어납니다.",
     "button": "첫 펫 부화시키기",
+    "buttonStarting": "다운로드 준비 중…",
+    "buttonStarted": "다운로드가 시작됐어요",
     "note": "Windows 설치 파일을 내려받습니다.",
     "sourceLink": "GitHub에서 소스 보기"
   }

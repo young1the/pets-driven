@@ -1,14 +1,9 @@
-import {
-  Button,
-  Card,
-  PetAvatar,
-  type PetAvatarStatus,
-  type PetName,
-} from "@pets-driven/design-system";
+import { Card, PetAvatar, type PetAvatarStatus, type PetName } from "@pets-driven/design-system";
 import type { Locale } from "@pets-driven/i18n/config";
 import { getServerTranslation } from "@pets-driven/i18n/server";
+import { DownloadButton } from "@/components/DownloadButton";
 import { IntroScenes } from "@/components/IntroScenes";
-import { DOWNLOAD_URL, GITHUB_URL } from "@/lib/site";
+import { GITHUB_URL } from "@/lib/site";
 
 const CTA_PETS: PetName[] = ["cato", "otto", "mochi", "fenn", "bloop", "pip"];
 
@@ -660,9 +655,13 @@ export default function Intro({ locale }: { locale: Locale }) {
           >
             {t("cta.body")}
           </p>
-          <Button variant="accent" size="lg" as="a" href={DOWNLOAD_URL}>
-            {t("cta.button")}
-          </Button>
+          {/* Labels are resolved here, on the server, so the CTA text is in the
+              HTML as served; the client component only swaps between them. */}
+          <DownloadButton
+            label={t("cta.button")}
+            startedLabel={t("cta.buttonStarted")}
+            startingLabel={t("cta.buttonStarting")}
+          />
           <p
             style={{
               fontFamily: "var(--font-body)",

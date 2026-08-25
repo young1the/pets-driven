@@ -30,6 +30,7 @@ export {
 export { Switch, type SwitchProps } from "./components/forms/switch";
 export {
   BackIcon,
+  CheckIcon,
   CloseIcon,
   ExternalLinkIcon,
   FolderIcon,

@@ -84,6 +84,22 @@ button {
   border-radius: var(--radius-sm);
 }
 
+/* ---- Screen-reader-only text ----
+   For live regions and labels that must be announced but not seen. Clipped
+   rather than `display: none` or `visibility: hidden`, both of which take the
+   element out of the accessibility tree and silence it. */
+.pd-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ---- Eyebrow / overline ---- */
 .pd-eyebrow {
   font: var(--type-caption);

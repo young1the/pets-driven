@@ -50,6 +50,8 @@
     "title": "Choose your starter.",
     "body": "Pick one folder. That's your first pet.",
     "button": "Hatch your first",
+    "buttonStarting": "Starting the download…",
+    "buttonStarted": "Download started",
     "note": "Downloads the Windows installer.",
     "sourceLink": "View the source on GitHub"
   }
