@@ -6,6 +6,7 @@
 
 use serde_json::Value;
 
+use crate::agents::is_valid_agent_provider;
 use crate::error::{CoreError, ValidationError};
 use crate::model::{HatchPet, Patch, PetId, PetPatch, SettingsPatch};
 use crate::personalities::personality_preset;
@@ -42,6 +43,12 @@ pub(crate) fn apply_hatch(
     let personality = personality_preset(&input.personality_id)
         .ok_or(ValidationError::UnknownPersonality)?;
 
+    if let Some(provider) = &input.agent_provider {
+        if !is_valid_agent_provider(provider) {
+            return Err(ValidationError::UnknownAgentProvider.into());
+        }
+    }
+
     if let Some(cwd) = &input.working_directory {
         if !is_valid_working_directory(cwd.as_str()) {
             return Err(ValidationError::InvalidWorkingDirectory.into());
@@ -54,20 +61,23 @@ pub(crate) fn apply_hatch(
 
     let mut next = state.clone();
 
-    push_array(
-        &mut next,
-        "pets",
-        serde_json::json!({
-            "id": ids.pet_id,
-            "workingDirectoryId": input.working_directory.as_ref().map(|_| ids.working_directory_id.clone()),
-            "assetId": input.asset_id,
-            "profileId": ids.profile_id,
-            "name": input.name,
-            "adoptedAt": now,
-            "archived": false,
-            "visible": true
-        }),
-    );
+    let mut pet = serde_json::json!({
+        "id": ids.pet_id,
+        "workingDirectoryId": input.working_directory.as_ref().map(|_| ids.working_directory_id.clone()),
+        "assetId": input.asset_id,
+        "profileId": ids.profile_id,
+        "name": input.name,
+        "adoptedAt": now,
+        "archived": false,
+        "visible": true
+    });
+    // Absent means "no Agent Source picked", the same way `note` and `scale`
+    // are absent until set, so an unnamed provider writes no key at all.
+    if let (Some(provider), Some(object)) = (&input.agent_provider, pet.as_object_mut()) {
+        object.insert("agentProvider".to_string(), serde_json::json!(provider));
+    }
+
+    push_array(&mut next, "pets", pet);
     push_array(
         &mut next,
         "petProfiles",
@@ -163,6 +173,12 @@ pub(crate) fn apply_pet_update(
         }
     }
 
+    if let Patch::Set(provider) = &patch.agent_provider {
+        if !is_valid_agent_provider(provider) {
+            return Err(ValidationError::UnknownAgentProvider.into());
+        }
+    }
+
     // Validate the requested folder before touching state, so a rejected
     // re-bind leaves the other patched fields unwritten too.
     if let Patch::Set(cwd) = &patch.working_directory {
@@ -219,6 +235,17 @@ pub(crate) fn apply_pet_update(
                     "swapRunningDirections".to_string(),
                     serde_json::json!(swap_running_directions),
                 );
+            }
+            // Unsetting the provider drops the key rather than writing a null,
+            // so an unset pet reads the same as one that never had one.
+            match &patch.agent_provider {
+                Patch::Keep => {}
+                Patch::Clear => {
+                    object.remove("agentProvider");
+                }
+                Patch::Set(provider) => {
+                    object.insert("agentProvider".to_string(), serde_json::json!(provider));
+                }
             }
         }
     }
@@ -429,6 +456,7 @@ mod tests {
             asset_id: "cato".to_string(),
             name: "Rex".to_string(),
             personality_id: "playful".to_string(),
+            agent_provider: None,
         }
     }
 
@@ -454,6 +482,7 @@ mod tests {
             note: None,
             scale: None,
             swap_running_directions: None,
+            agent_provider: Patch::Keep,
             working_directory: Patch::Keep,
         }
     }
@@ -501,6 +530,7 @@ mod tests {
                 asset_id: "otto".to_string(),
                 name: "Blue".to_string(),
                 personality_id: "reserved".to_string(),
+                agent_provider: None,
             },
             &HatchIds {
                 pet_id: "pet-2".to_string(),
@@ -542,6 +572,7 @@ mod tests {
             &empty_state(),
             &HatchPet {
                 personality_id: "chaotic".to_string(),
+                agent_provider: None,
                 ..hatch_input(Some("D:/proj"))
             },
             &sample_ids(),
@@ -710,6 +741,158 @@ mod tests {
             .expect("an omitted swap should parse");
 
         assert_eq!(untouched.swap_running_directions, None);
+    }
+
+    #[test]
+    fn apply_hatch_stores_a_named_agent_provider_and_omits_an_unnamed_one() {
+        let with_provider = apply_hatch(
+            &empty_state(),
+            &HatchPet {
+                agent_provider: Some("codex".to_string()),
+                ..hatch_input(Some("D:/proj"))
+            },
+            &sample_ids(),
+            1000,
+        )
+        .expect("hatch with a known provider should succeed");
+
+        assert_eq!(with_provider["pets"][0]["agentProvider"], "codex");
+        // Unnamed writes no key at all, so an unset pet is absent rather than null.
+        assert!(!hatched_state()["pets"][0]
+            .as_object()
+            .unwrap()
+            .contains_key("agentProvider"));
+    }
+
+    #[test]
+    fn apply_hatch_rejects_an_unknown_agent_provider() {
+        let error = apply_hatch(
+            &empty_state(),
+            &HatchPet {
+                agent_provider: Some("cursor".to_string()),
+                ..hatch_input(Some("D:/proj"))
+            },
+            &sample_ids(),
+            1000,
+        )
+        .expect_err("an unknown provider should be rejected");
+
+        assert_eq!(error, ValidationError::UnknownAgentProvider.into());
+    }
+
+    /// The provider decides which agent a pet's session opens, so it has to
+    /// survive on disk — and unsetting it has to read back as "never had one",
+    /// since that is what falls back to the app-wide launch command.
+    #[test]
+    fn apply_pet_update_sets_clears_and_keeps_the_agent_provider() {
+        let set = apply_pet_update(
+            &hatched_state(),
+            &PetId::new("pet-1"),
+            &PetPatch {
+                agent_provider: Patch::Set("codex".to_string()),
+                ..blank_patch()
+            },
+            &sample_working_directory_ids(),
+            2000,
+        )
+        .expect("setting a known provider should succeed");
+
+        assert_eq!(set["pets"][0]["agentProvider"], "codex");
+
+        let kept = apply_pet_update(
+            &set,
+            &PetId::new("pet-1"),
+            &PetPatch {
+                name: Some("Rexy".to_string()),
+                ..blank_patch()
+            },
+            &sample_working_directory_ids(),
+            3000,
+        )
+        .expect("an unrelated patch should succeed");
+
+        assert_eq!(kept["pets"][0]["agentProvider"], "codex");
+
+        let cleared = apply_pet_update(
+            &kept,
+            &PetId::new("pet-1"),
+            &PetPatch {
+                agent_provider: Patch::Clear,
+                ..blank_patch()
+            },
+            &sample_working_directory_ids(),
+            4000,
+        )
+        .expect("clearing the provider should succeed");
+
+        assert!(!cleared["pets"][0]
+            .as_object()
+            .unwrap()
+            .contains_key("agentProvider"));
+    }
+
+    #[test]
+    fn apply_pet_update_rejects_an_unknown_agent_provider_and_writes_nothing() {
+        let state = hatched_state();
+        let error = apply_pet_update(
+            &state,
+            &PetId::new("pet-1"),
+            &PetPatch {
+                name: Some("Rexy".to_string()),
+                agent_provider: Patch::Set("cursor".to_string()),
+                ..blank_patch()
+            },
+            &sample_working_directory_ids(),
+            2000,
+        )
+        .expect_err("an unknown provider should be rejected");
+
+        assert_eq!(error, ValidationError::UnknownAgentProvider.into());
+        // The name the same patch carried must not have landed either.
+        assert_eq!(state["pets"][0]["name"], "Rex");
+    }
+
+    #[test]
+    fn pet_patch_reads_the_agent_provider_off_the_wire() {
+        let (_, set) = PetPatch::from_json(&serde_json::json!({
+            "petId": "pet-1",
+            "agentProvider": "codex",
+        }))
+        .expect("a string provider should parse");
+        assert_eq!(set.agent_provider, Patch::Set("codex".to_string()));
+
+        let (_, cleared) = PetPatch::from_json(&serde_json::json!({
+            "petId": "pet-1",
+            "agentProvider": Value::Null,
+        }))
+        .expect("an explicit null should parse");
+        assert_eq!(cleared.agent_provider, Patch::Clear);
+
+        let (_, untouched) = PetPatch::from_json(&serde_json::json!({ "petId": "pet-1" }))
+            .expect("an omitted provider should parse");
+        assert_eq!(untouched.agent_provider, Patch::Keep);
+    }
+
+    #[test]
+    fn hatch_pet_reads_the_agent_provider_off_the_wire() {
+        let named = HatchPet::from_json(&serde_json::json!({
+            "cwd": "D:/proj",
+            "assetId": "cato",
+            "name": "Rex",
+            "personalityId": "playful",
+            "agentProvider": "claude",
+        }))
+        .expect("a named provider should parse");
+        assert_eq!(named.agent_provider, Some("claude".to_string()));
+
+        let unnamed = HatchPet::from_json(&serde_json::json!({
+            "cwd": "D:/proj",
+            "assetId": "cato",
+            "name": "Rex",
+            "personalityId": "playful",
+        }))
+        .expect("an omitted provider should parse");
+        assert_eq!(unnamed.agent_provider, None);
     }
 
     #[test]
@@ -923,6 +1106,7 @@ pub(crate) mod tests_support {
                 asset_id: "cato".to_string(),
                 name: "Rex".to_string(),
                 personality_id: "playful".to_string(),
+                agent_provider: None,
             },
             &ids,
             1000,

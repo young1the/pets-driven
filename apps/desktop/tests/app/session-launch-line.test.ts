@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { buildLaunchLine, parseLaunchLine, promptForShell } from "@/app/session-launch-line";
+import {
+  buildLaunchLine,
+  parseLaunchLine,
+  promptForShell,
+  sessionCommandForPet,
+} from "@/app/session-launch-line";
+import {
+  createEmptyPetsDrivenState,
+  type PetAgentProvider,
+  type PetsDrivenState,
+} from "@/app-state/pets-driven-state";
 
 describe("session launch lines", () => {
   it("parses a command prompt launch line into its shell and inner command", () => {
@@ -55,5 +65,61 @@ describe("session launch lines", () => {
     expect(promptForShell("C:\\Program Files\\PowerShell\\7\\pwsh.exe")).toBe("PS>");
     expect(promptForShell("/bin/zsh")).toBe("$");
     expect(promptForShell("wt")).toBe(">");
+  });
+});
+
+describe("the launch line one pet runs", () => {
+  function stateWith(
+    agentProvider: PetAgentProvider | undefined,
+    overrides: Partial<PetsDrivenState> = {},
+  ): PetsDrivenState {
+    return {
+      ...createEmptyPetsDrivenState(),
+      pets: [
+        {
+          id: "pet-1",
+          workingDirectoryId: null,
+          assetId: "cato",
+          profileId: "profile-1",
+          name: "Rex",
+          adoptedAt: 0,
+          archived: false,
+          visible: true,
+          agentProvider,
+        },
+      ],
+      ...overrides,
+    };
+  }
+
+  it("hands a pet with no agent of its own the app-wide line verbatim", () => {
+    const state = stateWith(undefined, { sessionCommand: "cmd /k claude --resume" });
+
+    // Verbatim, flags and all — re-deriving it would drop what the user typed.
+    expect(sessionCommandForPet(state, "pet-1")).toBe("cmd /k claude --resume");
+  });
+
+  it("wraps a pet's own agent for the shell picked in settings", () => {
+    const state = stateWith("codex", {
+      sessionCommand: "cmd /k claude",
+      terminalShell: "pwsh",
+    });
+
+    expect(sessionCommandForPet(state, "pet-1")).toBe("pwsh -NoExit -Command codex");
+  });
+
+  it("reads the shell back out of the app-wide line when none is configured", () => {
+    const state = stateWith("codex", {
+      sessionCommand: '/bin/bash -lc "claude; exec bash"',
+      terminalShell: null,
+    });
+
+    expect(sessionCommandForPet(state, "pet-1")).toBe('/bin/bash -lc "codex; exec bash"');
+  });
+
+  it("falls back to the app-wide line for a pet that is not in state", () => {
+    const state = stateWith("codex", { sessionCommand: "cmd /k claude" });
+
+    expect(sessionCommandForPet(state, "pet-missing")).toBe("cmd /k claude");
   });
 });

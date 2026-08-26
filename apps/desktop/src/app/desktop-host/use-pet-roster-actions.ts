@@ -19,6 +19,7 @@ import {
   carryOverPetVisibility,
   createEmptyPetsDrivenState,
   type PetPatch,
+  type PetRecord,
   type PetsDrivenState,
   resetSettings,
   setPetSourceDirectory,
@@ -186,9 +187,16 @@ export function usePetRosterActions({
   // on disk. Nothing here persists the whole state document.
   function patchPet(petId: string, patch: PetPatch) {
     const current = stateRef.current;
+    // `agentProvider: null` is the wire spelling of "unset it"; the record
+    // itself only ever holds a provider or nothing at all.
+    const { agentProvider, ...rest } = patch;
+    const local: Partial<PetRecord> = {
+      ...rest,
+      ...("agentProvider" in patch ? { agentProvider: agentProvider ?? undefined } : {}),
+    };
     applyState({
       ...current,
-      pets: current.pets.map((pet) => (pet.id === petId ? { ...pet, ...patch } : pet)),
+      pets: current.pets.map((pet) => (pet.id === petId ? { ...pet, ...local } : pet)),
     });
     void desktopGateway.updatePet({ petId, ...patch });
   }

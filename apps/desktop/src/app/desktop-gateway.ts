@@ -15,6 +15,7 @@ import {
 } from "@/adapters/agent-events/hatch-ingress";
 import {
   createEmptyPetsDrivenState,
+  type PetAgentProvider,
   type PetsDrivenState,
   parsePetsDrivenState,
 } from "@/app-state/pets-driven-state";
@@ -142,6 +143,8 @@ export type DesktopGateway = {
     scale?: number;
     /** Trade the pet's two directional running rows for one another. */
     swapRunningDirections?: boolean;
+    /** The agent this pet's session opens; null unsets it. */
+    agentProvider?: PetAgentProvider | null;
     /** A path re-binds the pet to that folder, null detaches it. */
     cwd?: string | null;
   }): Promise<PetsDrivenState | null>;

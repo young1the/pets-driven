@@ -280,6 +280,13 @@
     "chooseFolder": "フォルダを選ぶ…",
     "clearFolder": "フォルダを外す",
     "openFolder": "エクスプローラーで開く",
+    "agent": "エージェント",
+    "agentDefault": "デフォルト",
+    "agents": {
+      "claude": "Claude Code",
+      "codex": "Codex"
+    },
+    "agentHint": "セッションを開始したときにこのペットが開くエージェントです。デフォルトは設定の起動コマンドに従います。",
     "note": "ノート",
     "notePlaceholder": "このペットについてのノートを書いてみましょう…",
     "deletePet": "ペットを削除",

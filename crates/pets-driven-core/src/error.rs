@@ -31,6 +31,9 @@ pub enum ValidationError {
     /// The personality id is not one of the known presets.
     #[error("Unknown personality preset")]
     UnknownPersonality,
+    /// The agent provider id is not one of the Agent Sources this build knows.
+    #[error("Unknown agent provider")]
+    UnknownAgentProvider,
     /// A working directory path was empty or held a control character, so it
     /// could never be opened or matched again.
     #[error("Working directory path is empty or contains control characters")]

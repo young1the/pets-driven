@@ -17,6 +17,7 @@ const edit = {
   onName: vi.fn(),
   onNote: vi.fn(),
   onPersonalityId: vi.fn(),
+  onAgentProvider: vi.fn(),
   onSwapRunningDirections: vi.fn(),
   onPickFolder: vi.fn(),
   onOpenFolder: vi.fn(),

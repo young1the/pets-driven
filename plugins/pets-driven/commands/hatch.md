@@ -58,6 +58,7 @@ not installed, say so and stop.)
    pdd hatch                                             # name from the folder, random asset + personality
    pdd hatch "<name>"                                    # random asset + personality, current folder
    pdd hatch "<name>" --personality <id>                 # choose the personality
+   pdd hatch "<name>" --agent codex                      # pin which agent its session opens
    pdd hatch "<name>" --asset <id> --personality <id> --cwd "<folder>"
    ```
 
@@ -89,6 +90,7 @@ passed:
 pdd update --name "<name>"                    # rename this folder's pet
 pdd update --asset <id>                       # re-skin it, keeping its id and folder
 pdd update --personality <id>                 # re-temper it (`pdd presets` lists ids)
+pdd update --agent <claude|codex|none>        # which agent its session opens; none = app default
 pdd update "<petId>" --note "<text>" --scale <0.5-2>
 ```
 

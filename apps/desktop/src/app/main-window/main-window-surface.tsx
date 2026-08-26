@@ -214,6 +214,7 @@ export function MainWindowSurface({
         note: editingPet.note ?? "",
         personalityId: profileFor(editingPet)?.personalityId,
         swapRunningDirections: editingPet.swapRunningDirections ?? false,
+        agentProvider: editingPet.agentProvider ?? null,
       }
     : null;
 
@@ -260,6 +261,7 @@ export function MainWindowSurface({
         onName: (value) => editPetId && onPatchPet(editPetId, { name: value }),
         onNote: (value) => editPetId && onPatchPet(editPetId, { note: value }),
         onPersonalityId: (value) => editPetId && onSetPetPersonality(editPetId, value),
+        onAgentProvider: (value) => editPetId && onPatchPet(editPetId, { agentProvider: value }),
         onSwapRunningDirections: (value) =>
           editPetId && onPatchPet(editPetId, { swapRunningDirections: value }),
         onPickFolder: () => editPetId && onPickFolderForPet(editPetId),

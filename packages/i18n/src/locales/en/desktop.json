@@ -280,6 +280,13 @@
     "chooseFolder": "Choose a folder…",
     "clearFolder": "Clear folder",
     "openFolder": "Open in Explorer",
+    "agent": "Agent",
+    "agentDefault": "Default",
+    "agents": {
+      "claude": "Claude Code",
+      "codex": "Codex"
+    },
+    "agentHint": "Which agent this pet opens when you start a session. Default follows the launch command in Settings.",
     "note": "Note",
     "notePlaceholder": "Add a note about this pet…",
     "deletePet": "Delete pet",

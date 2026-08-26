@@ -21,6 +21,7 @@ import type { CodexPetPackage } from "@/app/desktop-gateway";
 import { AnimatedPetPortrait } from "@/app/main-window/pet-portrait";
 import { PERSONALITY_OPTIONS, personalityTitleKey } from "@/app/onboarding/personality-options";
 import { PetLookStrip } from "@/app/pet-assets/pet-look-strip";
+import { PET_AGENT_PROVIDERS, type PetAgentProvider } from "@/app-state/pets-driven-state";
 
 export interface PetEditView {
   id: string;
@@ -34,7 +35,18 @@ export interface PetEditView {
   personalityId: PetPersonalityId | undefined;
   /** Whether this pet's two directional running rows are traded for one another. */
   swapRunningDirections: boolean;
+  /** The agent this pet's session opens; null follows the app-wide setting. */
+  agentProvider: PetAgentProvider | null;
 }
+
+/** "Follow the app-wide launch command" first, then one pill per agent. */
+const AGENT_OPTIONS: { value: PetAgentProvider | null; labelKey: string }[] = [
+  { value: null, labelKey: "edit.agentDefault" },
+  ...PET_AGENT_PROVIDERS.map((provider) => ({
+    value: provider,
+    labelKey: `edit.agents.${provider}`,
+  })),
+];
 
 export interface PetEditSectionProps {
   pet: PetEditView;
@@ -48,6 +60,8 @@ export interface PetEditSectionProps {
   onName: (value: string) => void;
   onNote: (value: string) => void;
   onPersonalityId: (value: PetPersonalityId) => void;
+  /** Pin this pet to an agent, or null to follow the app-wide launch command. */
+  onAgentProvider: (value: PetAgentProvider | null) => void;
   /**
    * Trade the pet's two directional running rows for one another, for a
    * spritesheet that draws left/right the opposite way round from the atlas.
@@ -90,6 +104,7 @@ export function PetEditSection({
   onName,
   onNote,
   onPersonalityId,
+  onAgentProvider,
   onSwapRunningDirections,
   onPickFolder,
   onOpenFolder,
@@ -306,6 +321,48 @@ export function PetEditSection({
                   </>
                 )}
               </div>
+            </div>
+
+            <div style={{ marginTop: "18px" }}>
+              <span style={fieldLabelStyle}>{t("edit.agent")}</span>
+              <div role="radiogroup" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {AGENT_OPTIONS.map((option) => {
+                  const active = (pet.agentProvider ?? null) === option.value;
+                  return (
+                    // biome-ignore lint/a11y/useSemanticElements: styled segmented control using the ARIA radiogroup pattern, matching the personality picker below.
+                    <button
+                      aria-checked={active}
+                      key={option.value ?? "default"}
+                      onClick={() => onAgentProvider(option.value)}
+                      role="radio"
+                      type="button"
+                      style={{
+                        border: active
+                          ? "1.5px solid var(--color-primary)"
+                          : "1.5px solid var(--border-default)",
+                        background: active ? "var(--color-primary)" : "var(--surface-card)",
+                        color: active ? "#fff" : "var(--text-strong)",
+                        fontWeight: 700,
+                        fontSize: "13px",
+                        padding: "8px 14px",
+                        borderRadius: "999px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {t(option.labelKey)}
+                    </button>
+                  );
+                })}
+              </div>
+              <p
+                style={{
+                  margin: "6px 0 0",
+                  fontSize: "12.5px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                {t("edit.agentHint")}
+              </p>
             </div>
 
             <label style={{ display: "block", marginTop: "18px" }}>

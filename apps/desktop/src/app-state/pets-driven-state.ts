@@ -7,6 +7,14 @@ import type { PetProfile } from "@pets-driven/pet-engine/pets/profiles/pet-profi
  */
 export const DEFAULT_SESSION_COMMAND = "cmd /k claude";
 
+/**
+ * The Agent Source a pet's session opens. Mirrors `AGENT_PROVIDER_IDS` in
+ * `crates/pets-driven-core/src/agents.rs`, which validates every write.
+ */
+export type PetAgentProvider = "claude" | "codex";
+
+export const PET_AGENT_PROVIDERS: PetAgentProvider[] = ["claude", "codex"];
+
 export type RegisteredWorkingDirectory = {
   id: string;
   path: string;
@@ -37,15 +45,22 @@ export type PetRecord = {
   swapRunningDirections?: boolean;
   /** Free-form user note shown in the pet-edit screen. */
   note?: string;
+  /**
+   * The agent this pet's session opens. Absent means the pet has none of its
+   * own and follows the app-wide `sessionCommand`; see `sessionCommandForPet`.
+   */
+  agentProvider?: PetAgentProvider;
 };
 
 /**
  * The pet fields the app can patch and persist. `visible` is deliberately out:
- * it is runtime-only, so a toggle has nothing to save.
+ * it is runtime-only, so a toggle has nothing to save. `agentProvider` takes
+ * null as "unset it", the way the core's three-state patch reads an explicit
+ * JSON null.
  */
 export type PetPatch = Partial<
   Pick<PetRecord, "name" | "note" | "archived" | "scale" | "swapRunningDirections">
->;
+> & { agentProvider?: PetAgentProvider | null };
 
 export type PetsDrivenState = {
   schemaVersion: 1;
@@ -99,6 +114,15 @@ export function resetSettings(state: PetsDrivenState): PetsDrivenState {
     pets,
     petProfiles,
   };
+}
+
+/**
+ * Normalizes a persisted `agentProvider`. A value this build does not know
+ * would name an agent it cannot launch, so it reads back as unset rather than
+ * being carried into a launch line.
+ */
+function sanitizeAgentProvider(value: unknown): PetAgentProvider | undefined {
+  return PET_AGENT_PROVIDERS.find((provider) => provider === value);
 }
 
 /** Normalizes a persisted `terminalShell`, treating blank strings as "unset". */
@@ -162,7 +186,11 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
       ? candidate.registeredWorkingDirectories
       : [],
     pets: Array.isArray(candidate.pets)
-      ? candidate.pets.map((pet) => ({ ...pet, visible: false }))
+      ? candidate.pets.map((pet) => ({
+          ...pet,
+          visible: false,
+          agentProvider: sanitizeAgentProvider(pet.agentProvider),
+        }))
       : [],
     petProfiles: Array.isArray(candidate.petProfiles) ? candidate.petProfiles : [],
     sessionCommand:

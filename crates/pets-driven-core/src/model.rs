@@ -90,6 +90,9 @@ pub struct HatchPet {
     pub asset_id: String,
     pub name: String,
     pub personality_id: String,
+    /// The Agent Source the pet's session opens, or `None` to leave it unset —
+    /// such a pet falls back to the app-wide launch command.
+    pub agent_provider: Option<String>,
 }
 
 impl HatchPet {
@@ -106,6 +109,12 @@ impl HatchPet {
             asset_id: required_string_field(payload, "assetId")?,
             name: required_string_field(payload, "name")?,
             personality_id: required_string_field(payload, "personalityId")?,
+            agent_provider: match parse_string_patch(payload, "agentProvider")? {
+                Patch::Set(provider) => Some(provider),
+                // A pet is born with no Agent Source unless one is named, so
+                // "absent" and "explicitly null" mean the same thing here.
+                Patch::Keep | Patch::Clear => None,
+            },
         })
     }
 }
@@ -128,6 +137,10 @@ pub struct PetPatch {
     /// Pet Asset whose spritesheet draws left/right the opposite way round from
     /// the atlas, which would otherwise run backwards on this pet.
     pub swap_running_directions: Option<bool>,
+    /// The Agent Source the pet's session opens: [`Patch::Keep`] leaves the
+    /// current choice, [`Patch::Clear`] unsets it (the pet falls back to the
+    /// app-wide launch command), and [`Patch::Set`] pins it to that provider.
+    pub agent_provider: Patch<String>,
     /// The pet's registered working directory: [`Patch::Keep`] leaves the
     /// current binding, [`Patch::Clear`] detaches it (the pet keeps living with
     /// no folder), and [`Patch::Set`] re-binds the pet to that folder.
@@ -167,6 +180,7 @@ impl PetPatch {
             swap_running_directions: payload
                 .get("swapRunningDirections")
                 .and_then(|value| value.as_bool()),
+            agent_provider: parse_string_patch(payload, "agentProvider")?,
             working_directory,
         };
 

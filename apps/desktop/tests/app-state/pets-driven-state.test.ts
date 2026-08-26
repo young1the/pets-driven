@@ -50,6 +50,35 @@ describe("parsePetsDrivenState", () => {
     expect(parsePetsDrivenState(state)).toEqual(state);
   });
 
+  it("keeps a known agent provider and drops one this build cannot launch", () => {
+    function petWith(agentProvider: unknown) {
+      return {
+        schemaVersion: 1,
+        registeredWorkingDirectories: [],
+        petProfiles: [],
+        pets: [
+          {
+            id: "pet-1",
+            workingDirectoryId: null,
+            assetId: "bloop",
+            profileId: "profile-1",
+            name: "Bloop",
+            adoptedAt: 100,
+            archived: false,
+            visible: true,
+            agentProvider,
+          },
+        ],
+      };
+    }
+
+    expect(parsePetsDrivenState(petWith("codex")).pets[0].agentProvider).toBe("codex");
+    // An agent this build has no plugin for would name a command it cannot
+    // start, so it reads back as unset rather than reaching a launch line.
+    expect(parsePetsDrivenState(petWith("cursor")).pets[0].agentProvider).toBeUndefined();
+    expect(parsePetsDrivenState(petWith(42)).pets[0].agentProvider).toBeUndefined();
+  });
+
   it("returns an empty state for unknown or unversioned payloads", () => {
     expect(parsePetsDrivenState(null)).toEqual(createEmptyPetsDrivenState());
     expect(parsePetsDrivenState("junk")).toEqual(createEmptyPetsDrivenState());

@@ -14,6 +14,7 @@ const pet = {
   note: "Watch the auth queue",
   personalityId: "steady" as PetPersonalityId,
   swapRunningDirections: false,
+  agentProvider: null,
 };
 
 function setup(overrides = {}) {
@@ -22,6 +23,7 @@ function setup(overrides = {}) {
     onName: vi.fn(),
     onNote: vi.fn(),
     onPersonalityId: vi.fn(),
+    onAgentProvider: vi.fn(),
     onSwapRunningDirections: vi.fn(),
     onPickFolder: vi.fn(),
     onOpenFolder: vi.fn(),
@@ -99,6 +101,27 @@ describe("PetEditSection", () => {
     // The atlas draws "jumping" from row 4, whatever frame the clock is on.
     const portrait = await screen.findByRole("img", { name: "Otto portrait" });
     expect(portrait.style.backgroundPosition.split(" ")[1]).toBe("-832px");
+  });
+
+  it("marks a pet with no agent of its own as following the default", () => {
+    const onAgentProvider = vi.fn();
+    setup({ onAgentProvider });
+
+    expect(screen.getByRole("radio", { name: "Default" })).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.click(screen.getByRole("radio", { name: "Codex" }));
+    expect(onAgentProvider).toHaveBeenCalledWith("codex");
+  });
+
+  it("hands a pinned pet back to the default when Default is picked again", () => {
+    const onAgentProvider = vi.fn();
+    setup({ pet: { ...pet, agentProvider: "codex" }, onAgentProvider });
+
+    expect(screen.getByRole("radio", { name: "Codex" })).toHaveAttribute("aria-checked", "true");
+
+    // Null is the wire spelling of "unset it", not a third agent.
+    fireEvent.click(screen.getByRole("radio", { name: "Default" }));
+    expect(onAgentProvider).toHaveBeenCalledWith(null);
   });
 
   it("offers the running-direction swap unchecked by default", () => {

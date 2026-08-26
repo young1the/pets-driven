@@ -15,6 +15,7 @@
 //! mutations preserve unknown schema-v1 fields untouched; only the fields a
 //! command means to change are rewritten.
 
+mod agents;
 mod asset_id;
 mod clock;
 mod commands;
@@ -32,6 +33,7 @@ use serde_json::Value;
 
 use commands::{HatchIds, WorkingDirectoryIds};
 
+pub use agents::{is_valid_agent_provider, AGENT_PROVIDER_IDS};
 pub use asset_id::is_valid_asset_id;
 pub use clock::{Clock, IdSource, SystemClock, SystemIdSource};
 pub use error::{CoreError, RepositoryError, ValidationError};

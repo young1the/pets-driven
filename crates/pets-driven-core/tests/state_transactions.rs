@@ -59,6 +59,7 @@ fn hatch_input(cwd: Option<&str>) -> HatchPet {
         asset_id: "cato".to_string(),
         name: "Rex".to_string(),
         personality_id: "playful".to_string(),
+        agent_provider: None,
     }
 }
 
@@ -72,6 +73,7 @@ fn blank_patch() -> PetPatch {
         note: None,
         scale: None,
         swap_running_directions: None,
+        agent_provider: Patch::Keep,
         working_directory: Patch::Keep,
     }
 }
@@ -162,6 +164,7 @@ fn hatch_rejects_an_unknown_personality_as_validation() {
     let error = core
         .hatch(HatchPet {
             personality_id: "chaotic".to_string(),
+            agent_provider: None,
             ..hatch_input(Some("D:/proj"))
         })
         .expect_err("an unknown personality is rejected");

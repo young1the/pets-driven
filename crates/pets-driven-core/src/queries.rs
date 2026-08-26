@@ -46,6 +46,7 @@ pub(crate) fn pet_view(state: &Value, pet: &Value) -> Value {
         "name": pet.get("name").cloned().unwrap_or(Value::Null),
         "assetId": pet.get("assetId").cloned().unwrap_or(Value::Null),
         "personalityId": personality_id,
+        "agentProvider": pet.get("agentProvider").cloned().unwrap_or(Value::Null),
         "cwd": cwd,
         "visible": pet.get("visible").cloned().unwrap_or(Value::Null),
         "archived": pet.get("archived").cloned().unwrap_or(Value::Null),
@@ -109,6 +110,17 @@ mod tests {
         assert_eq!(pets[0]["personalityId"], "playful");
         assert_eq!(pets[0]["cwd"], "D:/proj");
         assert_eq!(pets[0]["visible"], true);
+    }
+
+    /// The provider rides the pet view so `pdd list`, the Tauri read commands,
+    /// and the ingress all see it without each joining it themselves.
+    #[test]
+    fn pet_view_carries_the_agent_provider_and_nulls_an_unset_one() {
+        let mut state = hatched_state();
+        assert_eq!(list_pets_view(&state)[0]["agentProvider"], Value::Null);
+
+        state["pets"][0]["agentProvider"] = Value::String("codex".to_string());
+        assert_eq!(list_pets_view(&state)[0]["agentProvider"], "codex");
     }
 
     #[test]

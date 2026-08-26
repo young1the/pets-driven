@@ -5,8 +5,11 @@
  * The shell is not a separate choice here — it is the shell picked in settings
  * (`terminalShell`), so the in-app terminal and the external session always open
  * the same program. This module only knows how to wrap a command for a given
- * shell, and how to read the command back out of a stored line.
+ * shell, how to read the command back out of a stored line, and which of the
+ * two lines a given pet should run.
  */
+
+import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 
 export type SessionLaunchSettings = {
   /** Shell executable the line runs. Empty only for a blank/unparseable line. */
@@ -125,6 +128,29 @@ export function parseLaunchLine(line: string): SessionLaunchSettings {
   const shell = match[1] ?? match[2] ?? "";
 
   return { shell, command: commandFor(shell, match[3] ?? ""), launchLine };
+}
+
+/**
+ * The launch line one pet's session runs.
+ *
+ * A pet that named an agent of its own gets that agent wrapped for the shell
+ * the user picked; every other pet gets the app-wide line back *verbatim*, so
+ * flags someone hand-typed into it (`claude --resume`, a full bash invocation)
+ * survive untouched. With no shell configured, the shell is read back out of
+ * that same line rather than defaulting — the two settings are meant to stay in
+ * step, and `updateTerminalShell` keeps them there.
+ */
+export function sessionCommandForPet(state: PetsDrivenState, petId: string): string {
+  const provider = state.pets.find((pet) => pet.id === petId)?.agentProvider;
+
+  if (!provider) {
+    return state.sessionCommand;
+  }
+
+  return buildLaunchLine(
+    state.terminalShell ?? parseLaunchLine(state.sessionCommand).shell,
+    provider,
+  );
 }
 
 /** The prompt drawn in the settings preview for a shell. */

@@ -19,8 +19,8 @@ use std::time::Duration;
 
 use clap::{ArgGroup, Parser, Subcommand};
 use pets_driven_core::{
-    CoreError, HatchPet, Patch, PetId, PetPatch, PetsDrivenCore, WorkingDirectoryPath,
-    PERSONALITY_IDS,
+    is_valid_agent_provider, CoreError, HatchPet, Patch, PetId, PetPatch, PetsDrivenCore,
+    WorkingDirectoryPath, AGENT_PROVIDER_IDS, PERSONALITY_IDS,
 };
 use pets_driven_fs::FileStateRepository;
 use pets_driven_protocol as protocol;
@@ -79,6 +79,10 @@ enum Command {
         /// Personality id (default: a random personality)
         #[arg(short, long)]
         personality: Option<String>,
+        /// Agent this pet's session opens: claude, codex, or none (default:
+        /// none — the pet uses the app-wide launch command)
+        #[arg(long, value_parser = parse_agent_provider)]
+        agent: Option<Patch<String>>,
         /// Folder to bind (default: the current directory)
         #[arg(short, long)]
         cwd: Option<String>,
@@ -103,7 +107,15 @@ enum Command {
         ArgGroup::new("fields")
             .required(true)
             .multiple(true)
-            .args(["name", "asset", "personality", "note", "scale", "swap_running_directions"])
+            .args([
+                "name",
+                "asset",
+                "personality",
+                "agent",
+                "note",
+                "scale",
+                "swap_running_directions",
+            ])
     ))]
     Update {
         /// Pet id to update (from `pdd list`). Omit to update the pet bound to
@@ -121,6 +133,10 @@ enum Command {
         /// New personality id (`pdd presets` lists them)
         #[arg(short, long)]
         personality: Option<String>,
+        /// Agent this pet's session opens: claude, codex, or none — `none`
+        /// hands the pet back to the app-wide launch command.
+        #[arg(long, value_parser = parse_agent_provider)]
+        agent: Option<Patch<String>>,
         /// New note on the pet's card. Pass an empty string to clear it.
         // Long-only on purpose: `-n` is `--name` on this same command.
         #[arg(long)]
@@ -212,6 +228,7 @@ fn empty_pet_patch() -> PetPatch {
         note: None,
         scale: None,
         swap_running_directions: None,
+        agent_provider: Patch::Keep,
         working_directory: Patch::Keep,
     }
 }
@@ -513,6 +530,28 @@ fn parse_scale(raw: &str) -> Result<f64, String> {
     Ok(scale)
 }
 
+/// The word `--agent` takes to mean "no Agent Source of its own", so a pet can
+/// be handed back to the app-wide launch command from the command line.
+const AGENT_PROVIDER_NONE: &str = "none";
+
+/// Parse `--agent` into the patch it stands for: a known provider sets it,
+/// `none` clears it. Rejecting an unknown name here (rather than in the core)
+/// is what makes it a clap usage error listing the accepted words.
+fn parse_agent_provider(raw: &str) -> Result<Patch<String>, String> {
+    if raw == AGENT_PROVIDER_NONE {
+        return Ok(Patch::Clear);
+    }
+
+    if is_valid_agent_provider(raw) {
+        return Ok(Patch::Set(raw.to_string()));
+    }
+
+    Err(format!(
+        "`{raw}` is not an agent (expected one of: {}, {AGENT_PROVIDER_NONE})",
+        AGENT_PROVIDER_IDS.join(", ")
+    ))
+}
+
 // ---- Dispatch --------------------------------------------------------------
 
 /// Run the CLI with every input injected, for testing. Returns the process exit
@@ -571,7 +610,7 @@ pub fn run_with<O: Write, E: Write>(
             match cli.command {
                 Command::Status => run_status(&core, out),
                 Command::List => run_list(&core, out),
-                Command::Hatch { name, asset, personality, cwd: folder } => {
+                Command::Hatch { name, asset, personality, agent, cwd: folder } => {
                     let asset_id = asset.unwrap_or_else(|| choose_random_asset(&core));
                     let personality_id =
                         personality.unwrap_or_else(|| random_personality().to_string());
@@ -584,6 +623,12 @@ pub fn run_with<O: Write, E: Write>(
                             asset_id,
                             name,
                             personality_id,
+                            // A pet is born with no agent unless one is named;
+                            // `--agent none` says the same thing explicitly.
+                            agent_provider: match agent {
+                                Some(Patch::Set(provider)) => Some(provider),
+                                _ => None,
+                            },
                         },
                         origin,
                         out,
@@ -616,6 +661,7 @@ pub fn run_with<O: Write, E: Write>(
                     name,
                     asset,
                     personality,
+                    agent,
                     note,
                     scale,
                     swap_running_directions,
@@ -631,6 +677,7 @@ pub fn run_with<O: Write, E: Write>(
                                 name,
                                 asset_id: asset,
                                 personality_id: personality,
+                                agent_provider: agent.unwrap_or(Patch::Keep),
                                 note,
                                 scale,
                                 swap_running_directions,
@@ -798,6 +845,7 @@ mod tests {
             asset_id: asset.to_string(),
             name: name.to_string(),
             personality_id: personality.to_string(),
+            agent_provider: None,
         }
     }
 
@@ -912,6 +960,78 @@ mod tests {
 
         assert_eq!(code, 2);
         assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn hatch_stores_the_agent_the_pet_was_born_with() {
+        let core = core_with_empty_state();
+        let mut out = Vec::new();
+        run_hatch(
+            &core,
+            HatchPet {
+                agent_provider: Some("codex".to_string()),
+                ..hatch_input("cato", "Rex", "playful", "D:/proj")
+            },
+            REFUSED,
+            &mut out,
+        );
+
+        assert_eq!(parse_out(&out)["pet"]["agentProvider"], "codex");
+    }
+
+    #[test]
+    fn update_sets_then_clears_the_agent_provider() {
+        let core = core_with_empty_state();
+        run_hatch(&core, hatch_input("cato", "Rex", "playful", "D:/proj"), REFUSED, &mut Vec::new());
+        let (pet_id, _) = resolve_target(&core, None, "D:/proj".to_string(), &mut Vec::new())
+            .expect("the folder's pet resolves");
+
+        let mut set_out = Vec::new();
+        let code = run_update(
+            &core,
+            &pet_id,
+            PetPatch {
+                agent_provider: Patch::Set("codex".to_string()),
+                ..empty_pet_patch()
+            },
+            &mut set_out,
+        );
+        assert_eq!(code, 0);
+        assert_eq!(parse_out(&set_out)["pet"]["agentProvider"], "codex");
+
+        // `--agent none` hands the pet back to the app-wide launch command.
+        let mut clear_out = Vec::new();
+        run_update(
+            &core,
+            &pet_id,
+            PetPatch {
+                agent_provider: Patch::Clear,
+                ..empty_pet_patch()
+            },
+            &mut clear_out,
+        );
+        assert_eq!(parse_out(&clear_out)["pet"]["agentProvider"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn agent_flag_accepts_the_known_providers_and_none() {
+        assert_eq!(parse_agent_provider("codex"), Ok(Patch::Set("codex".to_string())));
+        assert_eq!(parse_agent_provider("claude"), Ok(Patch::Set("claude".to_string())));
+        assert_eq!(parse_agent_provider("none"), Ok(Patch::Clear));
+
+        let error = parse_agent_provider("cursor").expect_err("an unknown agent should be rejected");
+        assert!(error.contains("claude"));
+        assert!(error.contains("codex"));
+    }
+
+    /// `--agent` on its own has to count as a change, or an update that only
+    /// switches the agent would trip the "changes nothing" usage error.
+    #[test]
+    fn update_with_only_the_agent_flag_parses() {
+        Cli::try_parse_from(args(&["pdd", "update", "--agent", "codex"]))
+            .expect("--agent alone should satisfy the required-field group");
+
+        assert!(Cli::try_parse_from(args(&["pdd", "update", "--agent", "cursor"])).is_err());
     }
 
     #[test]

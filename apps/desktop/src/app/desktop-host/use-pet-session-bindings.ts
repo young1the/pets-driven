@@ -3,6 +3,7 @@ import { type MutableRefObject, useRef } from "react";
 import { desktopGateway, type ForeignWindow } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
 import type { PetOverlayMode } from "@/app/pet-overlay-mode";
+import { sessionCommandForPet } from "@/app/session-launch-line";
 import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 import { PET_OVERLAY_LABEL } from "@/pet-window/pet-overlay-messages";
 import {
@@ -100,7 +101,10 @@ export function usePetSessionBindings({
     launchingPetIdsRef.current.add(petId);
     emitBindingState(petId, true);
     try {
-      const launched = await desktopGateway.startSession(cwd, stateRef.current.sessionCommand);
+      const launched = await desktopGateway.startSession(
+        cwd,
+        sessionCommandForPet(stateRef.current, petId),
+      );
       if (launched) {
         setBinding(petId, launched);
       } else {

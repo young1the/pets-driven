@@ -15,7 +15,7 @@ The desktop installer ships `pdd` and adds it to your PATH.
 | `pdd status` | State file path and pet count | no |
 | `pdd list` | Every pet in state | no |
 | `pdd presets` | Personality ids `hatch` accepts | no |
-| `pdd hatch [NAME] [--asset <ID>] [--personality <ID>] [--cwd <DIR>]` | Adopt a pet bound to a folder (name defaults to the bound folder's own name; asset, personality, and folder default to a random asset, a random personality, and the cwd) | no (also pings the app to show it) |
+| `pdd hatch [NAME] [--asset <ID>] [--personality <ID>] [--agent <AGENT>] [--cwd <DIR>]` | Adopt a pet bound to a folder (name defaults to the bound folder's own name; asset, personality, and folder default to a random asset, a random personality, and the cwd) | no (also pings the app to show it) |
 | `pdd bind <PET_ID> [--cwd <DIR>]` | Bind a pet to a folder | no |
 | `pdd unbind <PET_ID>` | Detach a pet from its folder | no |
 | `pdd update [PET_ID] [--cwd <DIR>] <FIELD…>` | Edit a living pet in place: rename, re-skin, change personality, note, or size | no |
@@ -41,6 +41,7 @@ the fields you pass and leaves the rest, including the folder binding, alone:
 | `-n, --name <NAME>` | Display name |
 | `-a, --asset <ID>` | Pet asset — re-skins the pet, keeping its id, folder, and history |
 | `-p, --personality <ID>` | Personality preset (`pdd presets` lists the ids) |
+| `--agent <claude\|codex\|none>` | The agent this pet's session opens; `none` hands it back to the app-wide launch command |
 | `--note <TEXT>` | The note on the pet's card; pass `""` to clear it (long-only: `-n` is `--name`) |
 | `-s, --scale <FACTOR>` | Window scale, between 0.5 and 2 |
 | `--swap-running-directions [BOOL]` | Trade the two running directions, for an asset whose spritesheet draws left/right the opposite way round. Bare means `true` |
@@ -48,8 +49,15 @@ the fields you pass and leaves the rest, including the folder binding, alone:
 ```bash
 pdd update --name "Atlas"                 # rename this folder's pet
 pdd update --asset otto --personality zen # re-skin and re-temper it
+pdd update --agent codex                  # this folder's pet opens Codex
+pdd update --agent none                   # back to the app-wide launch command
 pdd update "<petId>" --scale 1.5          # target a pet by id instead
 ```
+
+A pet with no agent of its own opens whatever the app's launch command says
+(Claude Code out of the box), so `--agent` is only needed for the folders that
+differ. `pdd hatch --agent codex` sets it at Pet Birth, which is the shape a
+worktree setup script wants.
 
 At least one field is required — an `update` that would change nothing is a
 usage error, not a silent no-op. The answer is the same `{"ok":true,"pet":{…}}`
