@@ -159,6 +159,24 @@ export function Gallery() {
             ]}
           />
         </Cell>
+        {/* More tabs than the cell is wide: the strip has to scroll inside its
+            own pill rather than push past the container. Narrow the window to
+            check it — a page that clips horizontal overflow would otherwise eat
+            the tabs at both ends with no way to reach them. */}
+        <Cell label="Tabs — overflowing">
+          <Tabs
+            defaultValue="agents"
+            items={[
+              { value: "agents", label: "Agent hooks" },
+              { value: "status", label: "Status at a glance" },
+              { value: "skills", label: "Auto-hatching" },
+              { value: "cli", label: "pdd CLI" },
+              { value: "windows", label: "Windows tray" },
+              { value: "plugins", label: "Bundled plugins" },
+              { value: "themes", label: "Themes" },
+            ]}
+          />
+        </Cell>
         <Cell label="Card tones">
           <Card title="Lavender" subtitle="rounded + puffy shadow" tone="lavender">
             A gently tinted container.

@@ -7,13 +7,29 @@
   background: var(--surface-sunken);
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-soft);
+  /* The strip has to stay inside its container. A tab is `white-space: nowrap`
+     and, like every flex item, has `min-width: auto`, so it never shrinks below
+     its own label — without a cap here, enough tabs push the strip straight
+     past the viewport. On a page that clips horizontal overflow (the landing
+     site sets `overflow-x: clip` on <body> to stop mobile side-panning) the
+     strip is centered, so it loses the first *and* last tab with no way to
+     reach either. Scrolling inside the pill keeps every tab reachable and
+     leaves a partly-visible one at the edge as the affordance. The focus ring
+     is a 4px spread against 5px of padding, so it still clears the clip. */
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.pd-tabs::-webkit-scrollbar {
+  display: none;
 }
 .pd-tabs--block {
   display: flex;
   width: 100%;
 }
 .pd-tab {
-  flex: 1;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -34,6 +50,11 @@
      was still mid-fade a full frame after the new panel had rendered, and even
      --dur-instant (80ms) left a perceptible lag. There is no transition here on
      purpose: the pill must land on the same frame as the click. */
+}
+/* Only the full-width variant stretches its tabs; in the default pill they are
+   sized by their labels so the strip can scroll. */
+.pd-tabs--block .pd-tab {
+  flex: 1;
 }
 .pd-tab:hover {
   color: var(--text-strong);
