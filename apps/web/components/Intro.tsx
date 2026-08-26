@@ -1,26 +1,14 @@
-import { Card, PetAvatar, type PetAvatarStatus, type PetName } from "@pets-driven/design-system";
+import { PetAvatar, type PetAvatarStatus, type PetName } from "@pets-driven/design-system";
 import type { Locale } from "@pets-driven/i18n/config";
 import { getServerTranslation } from "@pets-driven/i18n/server";
 import { DemoVideo } from "@/components/DemoVideo";
 import { DownloadButton } from "@/components/DownloadButton";
+import { FeatureTabs } from "@/components/FeatureTabs";
 import { IntroScenes } from "@/components/IntroScenes";
+import { FEATURE_POINTS } from "@/lib/feature-points";
 import { GITHUB_URL } from "@/lib/site";
 
 const CTA_PETS: PetName[] = ["cato", "otto", "mochi", "fenn", "bloop", "pip"];
-
-/**
- * The explainer cards under the about section, in render order, each paired
- * with the demo clip the READMEs already use for that behaviour. The READMEs
- * embed the GIF; the site plays the MP4 that scripts/encode-demo-videos.mjs
- * derives from it. Both are synced into `public/demo/` by
- * scripts/sync-demo-assets.mjs.
- */
-const ABOUT_POINTS = [
-  { key: "agents", clip: "codex" },
-  { key: "status", clip: "part4" },
-  { key: "skills", clip: "orca" },
-  { key: "cli", clip: "part2" },
-] as const;
 
 /**
  * Pets-Driven Intro — the official homepage.
@@ -484,10 +472,10 @@ export default function Intro({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* ===================== ABOUT — WHAT IT IS ===================== */}
-      {/* The symmetric padding is not decorative: the card row's shadow spills
-          past its box, and with no room here the next section's background
-          paints straight over it and the cards read as clipped. */}
+      {/* ===================== FEATURES — WHAT IT DOES ===================== */}
+      {/* The symmetric padding is not decorative: the panel's shadow spills past
+          its box, and with no room here the next section's background paints
+          straight over it and the card reads as clipped. */}
       <section
         style={{
           position: "relative",
@@ -499,9 +487,13 @@ export default function Intro({ locale }: { locale: Locale }) {
         }}
       >
         <div style={{ maxWidth: 1080, margin: "0 auto", width: "100%" }}>
+          {/* Deliberately not `data-reveal`, unlike the sections around it:
+              the three inactive panels are rendered so their prose ships in the
+              HTML, and a reveal would hand all of it to a crawler at opacity:0
+              until an IntersectionObserver fires. */}
           <div style={{ textAlign: "center" }}>
             <span className="pd-eyebrow" style={{ color: "var(--lavender-600)" }}>
-              {t("about.eyebrow")}
+              {t("features.eyebrow")}
             </span>
             <h2
               style={{
@@ -514,84 +506,32 @@ export default function Intro({ locale }: { locale: Locale }) {
                 margin: "12px 0 0",
               }}
             >
-              {t("about.title")}
+              {t("features.title")}
             </h2>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "clamp(16px,1.4vw,19px)",
+                lineHeight: 1.6,
+                color: "var(--ink-700)",
+                maxWidth: "52ch",
+                margin: "18px auto 0",
+              }}
+            >
+              {t("features.lede")}
+            </p>
           </div>
 
-          {/* Deliberately not `data-reveal`, unlike the sections below it: this
-              is the page's only sustained prose, and a reveal would serve it as
-              opacity:0 until an IntersectionObserver fires. It stays visible in
-              the HTML as served. */}
-          <div
-            className="about-prose"
-            style={{
-              maxWidth: "68ch",
-              margin: "28px auto 0",
-              fontFamily: "var(--font-body)",
-              fontSize: "clamp(16px,1.3vw,18px)",
-              lineHeight: 1.7,
-              color: "var(--ink-700)",
-            }}
-          >
-            <p style={{ margin: 0 }}>{t("about.body")}</p>
-            <p style={{ margin: "18px 0 0" }}>{t("about.body2")}</p>
-          </div>
-
-          {/* `min(100%, 420px)` pins this to two columns at the container's
-              1080px and collapses it to one on a narrow screen, without a
-              media query — plain minmax(240px) would fit four across. */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
-              gap: 20,
-              marginTop: 48,
-            }}
-          >
-            {ABOUT_POINTS.map(({ key, clip }) => (
-              <Card key={key} padding="none">
-                <DemoVideo
-                  height={360}
-                  label={t(`about.points.${key}.alt`)}
-                  poster={`/demo/${clip}.webp`}
-                  src={`/demo/${clip}.mp4`}
-                  width={640}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    height: "auto",
-                    aspectRatio: "16 / 9",
-                    borderBottom: "1px solid var(--border-soft)",
-                  }}
-                />
-                <div style={{ padding: "20px 22px 22px" }}>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontWeight: 600,
-                      fontSize: 18,
-                      lineHeight: 1.3,
-                      color: "var(--ink-950)",
-                      margin: 0,
-                    }}
-                  >
-                    {t(`about.points.${key}.title`)}
-                  </h3>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: 15,
-                      lineHeight: 1.6,
-                      color: "var(--ink-700)",
-                      margin: "10px 0 0",
-                    }}
-                  >
-                    {t(`about.points.${key}.body`)}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <FeatureTabs
+            points={FEATURE_POINTS.map(({ key, clip }) => ({
+              key,
+              clip,
+              tab: t(`features.points.${key}.tab`),
+              title: t(`features.points.${key}.title`),
+              body: t(`features.points.${key}.body`),
+              alt: t(`features.points.${key}.alt`),
+            }))}
+          />
         </div>
       </section>
 
