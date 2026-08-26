@@ -2,9 +2,9 @@
  * Locale configuration shared across every surface (web + desktop).
  *
  * The source locale is English to match the repo's English-only code/docs
- * convention; Korean and Japanese are target translations.
+ * convention; Korean, Japanese and Simplified Chinese are target translations.
  */
-export const locales = ["en", "ko", "ja"] as const;
+export const locales = ["en", "ko", "ja", "zh"] as const;
 
 export type Locale = (typeof locales)[number];
 
@@ -20,6 +20,7 @@ export const localeLabels: Record<Locale, string> = {
   en: "English",
   ko: "한국어",
   ja: "日本語",
+  zh: "简体中文",
 };
 
 /** Narrowing guard for untrusted route params. */

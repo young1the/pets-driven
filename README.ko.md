@@ -13,7 +13,7 @@ Claude Code · Codex CLI 에이전트의 상태를 보여주는 데스크톱 펫
 ![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)
 ![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20%2B%20React-24C8DB.svg)
 
-[English](./README.md) · **한국어**
+[English](./README.md) · **한국어** · [日本語](./README.ja.md) · [简体中文](./README.zh.md)
 
 [이렇게 써요](#-이렇게-써요) · [Petdex 연동](#-petdex-연동) · [기능](#-기능) · [다운로드](#-다운로드)
 

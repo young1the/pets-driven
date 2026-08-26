@@ -10,7 +10,7 @@ pnpm --filter @pets-driven/i18n typecheck   # tsc -p tsconfig.json
 
 ## Layout
 
-- `src/config.ts` — `locales` (`en`, `ko`), `defaultLocale`, `namespaces` (`common`, `landing`, `desktop`), `localeLabels`, `isLocale`
+- `src/config.ts` — `locales` (`en`, `ko`, `ja`, `zh`), `defaultLocale`, `namespaces` (`common`, `landing`, `desktop`), `localeLabels`, `isLocale`
 - `src/locales/<locale>/<namespace>.json` — the catalog itself
 - `src/resources.ts` — full catalog (all three namespaces)
 - `src/resources.landing.ts` — `common` + `landing` only

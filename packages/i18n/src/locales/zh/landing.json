@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "title": "Pets-Driven — 为 Claude Code 和 Codex CLI 打造的桌面宠物",
+    "description": "一款面向 AI 编程助手用户的免费 Windows 桌面宠物。Claude Code 和 Codex CLI 的钩子会告诉你：任务是在跑、在等你、已完成，还是失败了。",
+    "ogImageAlt": "Windows 桌面上的一只 Pets-Driven 宠物，正显示 Claude Code 任务的运行状态。"
+  },
+  "nav": {
+    "github": "在 GitHub 上查看源码"
+  },
+  "hero": {
+    "headline": "你已经不用亲自写代码了。",
+    "watching": "新的时代正在到来",
+    "tagline": "为 Claude Code 和 Codex CLI 打造的桌面宠物",
+    "scroll": "向下滚动"
+  },
+  "features": {
+    "eyebrow": "功能",
+    "title": "宠物能为你做什么。",
+    "lede": "一款为使用 AI 编程助手的人做的 Windows 桌面宠物。一个项目目录配一只宠物，即使同时跑好几个助手，也能一眼看清。",
+    "points": {
+      "agents": {
+        "tab": "助手钩子",
+        "title": "Claude Code 与 Codex CLI",
+        "body": "插件装一次就够。所有助手事件都会转发给绑定该项目目录的宠物。",
+        "alt": "一只宠物陪着 Codex CLI 一起运行"
+      },
+      "status": {
+        "tab": "实时状态",
+        "title": "隔着半个房间也看得懂的状态",
+        "body": "工作中、等你输入、已完成、失败——每种状态都有各自的姿势和颜色。任务结束或卡住时，宠物会停下来提醒你。",
+        "alt": "一只宠物对完成的任务做出反应"
+      },
+      "cli": {
+        "tab": "pdd 命令行",
+        "title": "内置 pdd 命令行工具",
+        "body": "在终端里孵化、绑定、改名、换皮肤、删除宠物——不开应用也能用，JSON 输出可以直接接进脚本。",
+        "alt": "一只宠物对终端里运行的助手做出反应"
+      },
+      "petdex": {
+        "tab": "Petdex",
+        "title": "上千只宠物任你挑",
+        "body": "运行 npx petdex install，应用会自动发现。宠物文件夹里的任何一只都会出现在引导流程和宠物选择里，随时可以绑定。",
+        "alt": "挑选一只宠物并把它送上桌面"
+      },
+      "skills": {
+        "tab": "自动孵化",
+        "title": "助手自己孵宠物",
+        "body": "内置的 hatch、bring、carry 技能让 Claude Code 和 Codex 自己动手——每个 Orca 工作树都能拥有一只宠物，一次点击都不用。",
+        "alt": "每个 Orca 工作树都自动孵出一只宠物，无需任何点击"
+      },
+      "alive": {
+        "tab": "它们是活的",
+        "title": "你看不看着，它们都活着",
+        "body": "闲下来的时候，宠物们会互相打招呼、聊天、追逐、跳舞。把它拎出来抛着玩，喂它零食，摸摸它还会回应你。",
+        "alt": "宠物们自己凑在一起玩耍"
+      }
+    }
+  },
+  "demo": {
+    "eyebrow": "演示",
+    "title": "看看实际效果。",
+    "body": "一个项目一只宠物。用不了多久，你的桌面就会热闹起来。"
+  },
+  "cta": {
+    "title": "挑一只初始伙伴。",
+    "body": "选一个文件夹，那就是你的第一只宠物。",
+    "button": "孵化第一只",
+    "buttonStarting": "正在开始下载…",
+    "buttonStarted": "下载已开始",
+    "note": "下载 Windows 安装程序。",
+    "sourceLink": "在 GitHub 上查看源码"
+  }
+}

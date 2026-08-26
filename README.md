@@ -13,7 +13,7 @@ Desktop pets that show what your Claude Code and Codex CLI agents are doing
 ![Platform](https://img.shields.io/badge/platform-Windows-blue.svg)
 ![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20%2B%20React-24C8DB.svg)
 
-**English** · [한국어](./README.ko.md)
+**English** · [한국어](./README.ko.md) · [日本語](./README.ja.md) · [简体中文](./README.zh.md)
 
 [How you use it](#-how-you-use-it) · [Petdex integration](#-petdex-integration) · [Features](#-features) · [Download](#-download)
 

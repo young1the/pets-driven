@@ -55,6 +55,7 @@ export const OG_LOCALES: Record<Locale, string> = {
   en: "en_US",
   ko: "ko_KR",
   ja: "ja_JP",
+  zh: "zh_CN",
 };
 
 /** The demo video's poster doubles as the share card; dimensions must match. */

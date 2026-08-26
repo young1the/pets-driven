@@ -4,6 +4,8 @@ import jaCommon from "./locales/ja/common.json";
 import jaLanding from "./locales/ja/landing.json";
 import koCommon from "./locales/ko/common.json";
 import koLanding from "./locales/ko/landing.json";
+import zhCommon from "./locales/zh/common.json";
+import zhLanding from "./locales/zh/landing.json";
 
 /**
  * The web/landing catalog — `common` + `landing` only, in its own module that
@@ -15,6 +17,7 @@ export const landingResources = {
   en: { common: enCommon, landing: enLanding },
   ko: { common: koCommon, landing: koLanding },
   ja: { common: jaCommon, landing: jaLanding },
+  zh: { common: zhCommon, landing: zhLanding },
 } as const;
 
 /** Namespaces present in {@link landingResources}. */
