@@ -7,6 +7,7 @@ import {
   WrenchIcon,
 } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
+import { useEffect, useState } from "react";
 import { DebugSection, type DebugSectionProps } from "@/app/main-window/debug-section";
 import { HomeSection, type HomeSectionProps } from "@/app/main-window/home-section";
 import {
@@ -45,6 +46,19 @@ export function MainWindow({
   toast,
 }: MainWindowProps) {
   const { t } = useTranslation("desktop");
+  const terminalVisible = !editPet && tab === "terminal";
+  // The terminal tab owns a live PTY, so unmounting it on a tab switch would
+  // kill the session and hand the user a fresh shell — losing their scrollback
+  // and their working folder — every time they came back. Mount it on the first
+  // visit (xterm is lazy, so an untouched tab still costs nothing) and from then
+  // on only hide it.
+  const [terminalMounted, setTerminalMounted] = useState(terminalVisible);
+  useEffect(() => {
+    if (terminalVisible) {
+      setTerminalMounted(true);
+    }
+  }, [terminalVisible]);
+
   return (
     <div className="pd-main pd-main__dots">
       <header className="pd-main__header">
@@ -107,17 +121,24 @@ export function MainWindow({
         </div>
       ) : tab === "home" ? (
         <HomeSection {...home} />
-      ) : tab === "terminal" ? (
-        // The terminal tab is the one surface that greets a new user with the
-        // Cato coach; every other reuse of TerminalSection leaves it off.
-        <TerminalSection {...terminal} showOnboarding />
       ) : tab === "settings" ? (
         <div className="pd-main__body">
           <SettingsSection {...settings} />
         </div>
-      ) : (
+      ) : tab === "debug" ? (
         <div className="pd-main__body">
           <DebugSection {...debug} />
+        </div>
+      ) : null}
+
+      {/* The terminal tab is the one surface that greets a new user with the
+          Cato coach; every other reuse of TerminalSection leaves it off. */}
+      {terminalMounted && (
+        // `display: contents` keeps .pd-eterm a direct flex child of .pd-main,
+        // so the shown terminal lays out exactly as it did when it was rendered
+        // inline; `none` takes it out of layout without unmounting it.
+        <div style={{ display: terminalVisible ? "contents" : "none" }}>
+          <TerminalSection {...terminal} showOnboarding visible={terminalVisible} />
         </div>
       )}
 

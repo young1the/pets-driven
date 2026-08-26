@@ -105,8 +105,12 @@ function setup(overrides = {}) {
     toast: null,
     ...overrides,
   };
-  render(<MainWindow {...props} />);
-  return props;
+  const { rerender } = render(<MainWindow {...props} />);
+  return {
+    props,
+    /** Re-render the same window on another tab, the way the host would. */
+    goToTab: (tab: string) => rerender(<MainWindow {...props} tab={tab as typeof props.tab} />),
+  };
 }
 
 describe("MainWindow", () => {
@@ -150,6 +154,30 @@ describe("MainWindow", () => {
     // reuse of TerminalSection leaves it off.
     setup({ tab: "terminal" as const });
     expect(screen.getByText("Hatch a pet")).toBeInTheDocument();
+  });
+
+  it("leaves the terminal unmounted until the tab is first opened", () => {
+    setup();
+
+    expect(document.querySelector(".pd-eterm")).toBeNull();
+  });
+
+  it("keeps the terminal mounted across a tab switch, so the PTY survives", () => {
+    const { goToTab } = setup({ tab: "terminal" as const });
+    const section = document.querySelector(".pd-eterm");
+    expect(section).not.toBeNull();
+
+    goToTab("home");
+
+    // The very same element, not a fresh one: remounting it would tear down the
+    // session and hand the user a new shell every time they came back.
+    expect(document.querySelector(".pd-eterm")).toBe(section);
+    expect(section?.parentElement?.style.display).toBe("none");
+
+    goToTab("terminal");
+
+    expect(document.querySelector(".pd-eterm")).toBe(section);
+    expect(section?.parentElement?.style.display).toBe("contents");
   });
 
   it("renders a toast when present", () => {

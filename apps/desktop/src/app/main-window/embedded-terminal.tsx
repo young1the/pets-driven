@@ -86,6 +86,14 @@ export interface EmbeddedTerminalProps {
    * interrupts the command.
    */
   onRunningChange?: (running: boolean) => void;
+  /**
+   * Whether the terminal is on screen. A parent that keeps the PTY alive across
+   * tab switches hides it rather than unmounting it, and xterm cannot measure
+   * itself while it has no box — so it refits and takes the caret back when it
+   * returns, and never steals focus from another tab if a restart (a changed
+   * `shell`) remounts it while it is away. Defaults to true.
+   */
+  visible?: boolean;
   exitedLabel: string;
   className?: string;
 }
@@ -106,6 +114,7 @@ export function EmbeddedTerminal({
   shell,
   prefill,
   onRunningChange,
+  visible = true,
   exitedLabel,
   className,
 }: EmbeddedTerminalProps) {
@@ -114,6 +123,13 @@ export function EmbeddedTerminal({
   // effect's deps would restart the PTY on every render of the parent.
   const onRunningChangeRef = useRef(onRunningChange);
   onRunningChangeRef.current = onRunningChange;
+  // Same reason: `visible` only decides whether the fresh terminal grabs focus,
+  // and putting it in the deps would restart the PTY every time it changed.
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+  // Reached by the re-show effect below, which must not own the terminal.
+  const termRef = useRef<Terminal | null>(null);
+  const fitRef = useRef<FitAddon | null>(null);
 
   useEffect(() => {
     if (!desktopGateway.isDesktopRuntime()) {
@@ -181,6 +197,8 @@ export function EmbeddedTerminal({
     term.loadAddon(fitAddon);
     term.open(container);
     fitAddon.fit();
+    termRef.current = term;
+    fitRef.current = fitAddon;
 
     // xterm has no built-in paste binding: left to itself, Ctrl/Cmd+V sends
     // the literal SYN control byte to the shell, which readline echoes back
@@ -284,10 +302,16 @@ export function EmbeddedTerminal({
     });
     resizeObserver.observe(container);
 
-    term.focus();
+    // A restart while the terminal is off screen (a changed shell, say) must
+    // not pull the caret out of whatever the user is actually typing in.
+    if (visibleRef.current) {
+      term.focus();
+    }
 
     return () => {
       disposed = true;
+      termRef.current = null;
+      fitRef.current = null;
       // A restart is a deliberate clean slate; text queued for the session
       // being torn down must not land in the one that replaces it.
       pendingPrefill = "";
@@ -303,6 +327,22 @@ export function EmbeddedTerminal({
       term.dispose();
     };
   }, [cwd, shell, prefill, exitedLabel]);
+
+  // Coming back on screen. The ResizeObserver above refits and tells the PTY on
+  // its own once the box is back, so all this owes the user is the caret —
+  // re-fitting here just saves the frame the observer would take to catch up.
+  useEffect(() => {
+    const term = termRef.current;
+    if (!visible || !term) {
+      return;
+    }
+    try {
+      fitRef.current?.fit();
+    } catch {
+      // Still without a box; the ResizeObserver refits when it gets one.
+    }
+    term.focus();
+  }, [visible]);
 
   return <div className={className} ref={containerRef} />;
 }

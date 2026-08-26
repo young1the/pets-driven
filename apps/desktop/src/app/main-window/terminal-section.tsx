@@ -25,6 +25,13 @@ export interface TerminalSectionProps {
    * only the main window's terminal tab owns the coach.
    */
   showOnboarding?: boolean;
+  /**
+   * Whether the section is on screen. A surface that keeps the session alive
+   * across tab switches hides this one instead of unmounting it, and the
+   * terminal cannot measure itself or hold the caret while it has no box.
+   * Defaults to true for the surfaces that only ever render it visible.
+   */
+  visible?: boolean;
 }
 
 function folderName(path: string): string {
@@ -38,6 +45,7 @@ export function TerminalSection({
   initialCwd = null,
   shell = null,
   showOnboarding = false,
+  visible = true,
 }: TerminalSectionProps) {
   const { t } = useTranslation("desktop");
   const [cwd, setCwd] = useState<string | null>(initialCwd);
@@ -98,6 +106,7 @@ export function TerminalSection({
               exitedLabel={t("terminal.exited")}
               key={`${cwd ?? ""}:${shell ?? ""}:${restartNonce}`}
               shell={shell}
+              visible={visible}
             />
           </Suspense>
         ) : (
