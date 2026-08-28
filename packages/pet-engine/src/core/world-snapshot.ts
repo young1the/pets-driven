@@ -10,6 +10,7 @@ import type {
   AgentChannelStatus,
 } from "@pets-driven/pet-engine/features/agent/components";
 import type { PetItemKind } from "@pets-driven/pet-engine/features/items/components";
+import type { WorldPropKind } from "@pets-driven/pet-engine/features/props/components";
 import type {
   SocialSessionKind,
   SocialSessionPhase,
@@ -55,6 +56,8 @@ export type BodySnapshot = {
   width: number;
   height: number;
   radius?: number;
+  /** Body rotation in radians. Only circles ever spin; rectangles stay at 0. */
+  angle?: number;
   isStatic?: boolean;
   animationState?: import("@pets-driven/pet-engine/pets/assets/pet-atlas").PetAnimationState;
   interaction?: InteractionSnapshot;
@@ -157,6 +160,24 @@ export type WorldItemSnapshot = {
   expiresAt: number;
 };
 
+/**
+ * A prop lying on the desktop.
+ *
+ * It carries an `angle` where a trinket does not, because a prop is a body and
+ * a rolling ball drawn without its rotation reads as a ball being dragged.
+ */
+export type WorldPropSnapshot = {
+  id: string;
+  kind: WorldPropKind;
+  position: {
+    x: number;
+    y: number;
+  };
+  radius: number;
+  /** Body rotation in radians, so a host can spin the glyph as it rolls. */
+  angle: number;
+};
+
 /** The ability a pet is currently wearing from a collected trinket. */
 export type CarriedItemSnapshot = {
   kind: PetItemKind;
@@ -207,4 +228,9 @@ export type WorldSnapshot = {
    * still satisfies this type.
    */
   items?: WorldItemSnapshot[];
+  /**
+   * Props currently on the desktop. Optional for the same reason `items` is —
+   * the physics world's own bare snapshot has no component store behind it.
+   */
+  props?: WorldPropSnapshot[];
 };

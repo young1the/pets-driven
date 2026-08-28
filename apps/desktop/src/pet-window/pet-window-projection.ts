@@ -135,6 +135,11 @@ export function projectWorldSnapshotToPetWindows(
  * The trinket overlay window is created at this fixed size in Rust
  * (sync_item_windows) and, like the pet window, never resizes — so the
  * projection centres that fixed square on the world position.
+ *
+ * Props share the window and the size. What the overlay actually is, is "a tiny
+ * always-on-top square holding one glyph for one non-pet entity", and a trinket
+ * and a ball are both exactly that — giving the ball its own command would have
+ * duplicated the whole reconcile for a difference of one string.
  */
 export const ITEM_WINDOW_SIZE = 64;
 
@@ -164,6 +169,36 @@ export function projectWorldItemsToWindows(
     kind: item.kind,
     x: Math.round(bounds.x + (item.position.x - viewport.x) * scaleX - ITEM_WINDOW_SIZE / 2),
     y: Math.round(bounds.y + (item.position.y - viewport.y) * scaleY - ITEM_WINDOW_SIZE / 2),
+  }));
+}
+
+/**
+ * Screen placements for every prop on the desktop, in the same shape trinkets
+ * use so the host reconciles one combined set.
+ *
+ * A prop moves, which a trinket never does, so these placements change every
+ * tick the ball is rolling — that is what the native reconcile is for: it moves
+ * the existing window rather than rebuilding it, and once the ball settles the
+ * placement stops changing and the host stops calling at all.
+ */
+export function projectWorldPropsToWindows(
+  snapshot: WorldSnapshot,
+  bounds: PetWindowProjectionBounds,
+): ItemWindowPlacement[] {
+  const scaleX = bounds.width / snapshot.width;
+  const scaleY = bounds.height / snapshot.height;
+  const viewport = snapshot.viewport ?? {
+    x: 0,
+    y: 0,
+    width: snapshot.width,
+    height: snapshot.height,
+  };
+
+  return (snapshot.props ?? []).map((prop) => ({
+    itemId: prop.id,
+    kind: prop.kind,
+    x: Math.round(bounds.x + (prop.position.x - viewport.x) * scaleX - ITEM_WINDOW_SIZE / 2),
+    y: Math.round(bounds.y + (prop.position.y - viewport.y) * scaleY - ITEM_WINDOW_SIZE / 2),
   }));
 }
 

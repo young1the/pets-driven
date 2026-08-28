@@ -6,6 +6,7 @@ import type { AgentHookIngressStatus } from "@/adapters/agent-events/agent-hook-
 import type { AppView } from "@/app/app-navigation";
 import { useAppUpdate } from "@/app/app-updates/use-app-update";
 import { desktopGateway } from "@/app/desktop-gateway";
+import type { DesktopObjectCounts } from "@/app/desktop-host/use-desktop-simulation-host";
 import type { HomePetView } from "@/app/main-window/home-section";
 import { describeHookLastSignal } from "@/app/main-window/hook-last-signal";
 import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
@@ -43,6 +44,10 @@ export interface MainWindowSurfaceProps {
   onHideAllPets: () => void;
   /** Hand-drop a random trinket onto the desktop; returns whether one landed. */
   onDropTreat: () => boolean;
+  /** Place dialog: put a prop on the desktop, and take every prop back off. */
+  onPlaceBall: () => boolean;
+  onClearProps: () => void;
+  desktopObjectCounts: DesktopObjectCounts;
   onPatchPet: (petId: string, patch: PetPatch) => void;
   onSetPetPersonality: (petId: string, personalityId: PetPersonalityId) => void;
   onSetPetAsset: (petId: string, assetId: string) => void;
@@ -104,6 +109,9 @@ export function MainWindowSurface({
   onShowAllPets,
   onHideAllPets,
   onDropTreat,
+  onPlaceBall,
+  onClearProps,
+  desktopObjectCounts,
   onPatchPet,
   onSetPetPersonality,
   onSetPetAsset,
@@ -132,6 +140,8 @@ export function MainWindowSurface({
   const showAllPets = useStableCallback(onShowAllPets);
   const hideAllPets = useStableCallback(onHideAllPets);
   const dropTreat = useStableCallback(onDropTreat);
+  const placeBall = useStableCallback(onPlaceBall);
+  const clearProps = useStableCallback(onClearProps);
   const editPet = useStableCallback(setEditPetId);
   const addPet = useStableCallback(() => navigate("adopt"));
 
@@ -192,6 +202,11 @@ export function MainWindowSurface({
       onDropItem: dropTreat,
     }),
     [atHome, inField, showPet, hidePet, editPet, addPet, showAllPets, hideAllPets, dropTreat],
+  );
+
+  const place = useMemo(
+    () => ({ counts: desktopObjectCounts, onPlaceBall: placeBall, onClearProps: clearProps }),
+    [desktopObjectCounts, placeBall, clearProps],
   );
 
   // Unmemoized derivations for the edit/settings sections (only rendered on
@@ -272,6 +287,7 @@ export function MainWindowSurface({
       }}
       editPet={editPetView}
       home={home}
+      place={place}
       onTab={(next) => {
         setEditPetId(null);
         setMainTab(next);

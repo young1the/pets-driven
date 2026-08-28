@@ -9,6 +9,7 @@ import type { ComponentStore } from "@pets-driven/pet-engine/core/component-stor
 export type PetActivityKind =
   | "exploring"
   | "fetchingItem"
+  | "chasingBall"
   | "climbing"
   | "hopping"
   | "midAir"
@@ -88,6 +89,7 @@ const DECISION_ACTIVITY: Record<string, PetActivityKind> = {
   "wander-near": "exploring",
   "wander-far": "exploring",
   "fetch-item": "fetchingItem",
+  "chase-prop": "chasingBall",
   // Working beats. The pacing one is a movement reason (the walk outlives its
   // claim); the focus poses hold a stationary claim and read from it directly.
   "work-pace": "pacing",

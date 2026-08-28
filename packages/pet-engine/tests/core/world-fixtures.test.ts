@@ -218,6 +218,7 @@ describe("demo scenario", () => {
       "PetExpressionExpirationSystem",
       "AgentTaskEventSystem",
       "CollisionBehaviorSystem",
+      "PropKickSystem",
       "SocialInteractionSystem",
       "BehaviorDecisionSystem",
       "SignatureReactionSystem",

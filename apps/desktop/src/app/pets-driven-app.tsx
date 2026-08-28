@@ -152,7 +152,14 @@ function PetsDrivenHostApp() {
     overlayMode,
   });
 
-  const { petStatusById, pushAgentHookEvent, dropTreat } = useDesktopSimulationHost({
+  const {
+    petStatusById,
+    pushAgentHookEvent,
+    dropTreat,
+    placeProp,
+    clearProps,
+    desktopObjectCounts,
+  } = useDesktopSimulationHost({
     petsDrivenState,
     stateRef: petsDrivenStateRef,
     applyState: applyPetsDrivenState,
@@ -294,7 +301,10 @@ function PetsDrivenHostApp() {
       onChangePetSourceFolder={() => void changePetSourceFolder()}
       onClearFolderForPet={clearFolderForPet}
       onDeletePet={deletePet}
+      desktopObjectCounts={desktopObjectCounts}
+      onClearProps={clearProps}
       onDropTreat={dropTreat}
+      onPlaceBall={() => placeProp("ball")}
       onHideAllPets={hideAllPets}
       onHidePet={hidePet}
       onPatchPet={patchPet}

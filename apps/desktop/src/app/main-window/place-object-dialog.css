@@ -1,0 +1,79 @@
+.pd-place__lead {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-subtle);
+}
+
+.pd-place__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pd-place__row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.pd-place__glyph {
+  flex: none;
+  width: 34px;
+  font-size: 26px;
+  line-height: 1;
+  text-align: center;
+}
+
+.pd-place__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pd-place__name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.pd-place__note {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-subtle);
+}
+
+.pd-place__count {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+/* Column, not a row: the ball's second action sits under its first so both
+   rows keep the same button width however many actions a kind has. */
+.pd-place__actions {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The prop row shows its real artwork rather than an emoji, so the cell holds
+   an image instead of a glyph and has to size it. */
+.pd-place__glyph--art {
+  width: 34px;
+  height: 34px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}

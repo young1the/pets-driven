@@ -100,6 +100,10 @@ export function moodAdjustedDecisionScore(
     case "play-feint":
     case "strut":
     case "chase-cursor":
+    // Knocking the ball about is play in the same register as chasing the
+    // cursor: a good mood and a lively one both push a pet toward it, a bad one
+    // away.
+    case "chase-prop":
     case "greet":
       return baseScore + positive * 0.3 + mood.arousal * 0.12 - negative * 0.2;
     case "seek-user":

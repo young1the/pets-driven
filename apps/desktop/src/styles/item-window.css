@@ -79,3 +79,36 @@ html.item-window-document body {
     animation: none;
   }
 }
+
+/* A prop is a body, not a collectible. Its window is already being moved by the
+   simulation every tick it rolls, so the trinket's bob would be a second,
+   contradictory motion on top of that — and it needs no halo inviting a pick-up
+   that is not on offer. Slightly larger to fill the space the halo left. */
+/* The prop's drawing. Sized under the 64px window so a rolling ball never
+   touches its own window edge — the overlay is placed by rounding the body's
+   projected centre, so it can sit a pixel off, and a clipped rim reads as a
+   glitch far more than a pixel of drift does. */
+.item-window__art {
+  grid-area: 1 / 1;
+  display: block;
+  width: 52px;
+  height: 52px;
+  /* Belt and braces with the element's draggable={false}: an image a user can
+     peel off the desktop and drop into a download is not what grabbing the
+     ball is meant to do. */
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* A prop is the one overlay of this kind the user can grab, so unlike a trinket
+   its window is not click-through (see sync_item_windows) and the surface has
+   to take the pointer rather than let it fall past. `grab` is the affordance:
+   nothing else on the desktop says the ball can be picked up. */
+.item-window--prop {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.item-window--prop:active {
+  cursor: grabbing;
+}

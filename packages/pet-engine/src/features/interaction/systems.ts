@@ -59,11 +59,11 @@ function handlePointerEvent(
   random: RandomSource,
 ): void {
   if (event.type === "pointer.down") {
-    const controlHit = hitTest(components, event.position, "CanControl");
+    const controlHit = resolveTarget(components, event, "CanControl");
     const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
     if (target) target.entityId = controlHit?.id ?? null;
 
-    const dragHit = hitTest(components, event.position, "CanDrag");
+    const dragHit = resolveTarget(components, event, "CanDrag");
     if (!dragHit) return;
 
     components.setComponent(INTERACTION_ENTITY_ID, {
@@ -225,6 +225,36 @@ function handleKeyboardEvent(components: ComponentStore, event: KeyboardWorldEve
 
   input.pressedCodes = [...pressed];
   input.vector = keyboardVector(pressed);
+}
+
+/**
+ * What this press is on: the entity the sender named, or — failing that — the
+ * one under the point.
+ *
+ * Naming is preferred wherever it is available, and not as an optimisation. A
+ * surface that stands for one entity knows which one exactly; `position` is the
+ * same fact after a round trip through the host's projection and the window
+ * system, and is only as good as that round trip. Where the two disagree the
+ * name is right, so a grab stays true however far the projection has drifted —
+ * and `grabOffset` is measured from the same `position`, so a drift cancels
+ * itself out for the rest of the drag as well.
+ *
+ * A named entity still has to *have* the capability. Naming says which entity
+ * the press was on, never that it may be dragged.
+ */
+function resolveTarget(
+  components: ComponentStore,
+  event: PointerWorldEvent,
+  capability: "CanDrag" | "CanControl",
+): { id: string; position: Vector } | null {
+  if (event.entityId) {
+    const transform = components.getComponent(event.entityId, "Transform");
+    if (!transform) return null;
+    if (!components.getComponent(event.entityId, capability)) return null;
+    return { id: event.entityId, position: transform.position };
+  }
+
+  return hitTest(components, event.position, capability);
 }
 
 function hitTest(

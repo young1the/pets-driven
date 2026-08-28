@@ -63,6 +63,10 @@ export type BehaviorDecisionKind =
   // Goes and collects a trinket lying on the desktop, which grants the pet a
   // locomotion capability it was not built with (see features/items).
   | "fetch-item"
+  // Goes after a desktop prop (the ball) to knock it about. Unlike fetch-item
+  // this never ends: the prop survives being reached, so the pet re-decides and
+  // chases the new resting place, and a second pet may take it off the first.
+  | "chase-prop"
   | "idle-stay"
   // Work-context behaviors use the ordinary decision/token/planning pipeline.
   | "work-focus"
@@ -298,6 +302,8 @@ export type PetExpressionSource =
   | "signature"
   // The moment a pet collects a desktop trinket.
   | "item"
+  // The moment a pet connects with a desktop prop (the ball).
+  | "prop"
   // Expressive idle poses and catalog-exclusive signature activities.
   | "expressive";
 

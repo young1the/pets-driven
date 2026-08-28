@@ -67,6 +67,7 @@ import {
   PhysicsTransformSyncSystemPost,
   PhysicsTransformSyncSystemPre,
 } from "@pets-driven/pet-engine/features/physics/systems";
+import { PropKickSystem } from "@pets-driven/pet-engine/features/props/systems";
 import { SignatureReactionSystem } from "@pets-driven/pet-engine/features/social/signature-reactions";
 import { SocialInteractionSystem } from "@pets-driven/pet-engine/features/social/social-systems";
 
@@ -95,6 +96,11 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     PetExpressionExpirationSystem,
     AgentTaskEventSystem, // priority 2: external agent events → task state
     CollisionBehaviorSystem, // priority 3: overlap startle → reaction/bump-to-greet
+    // Same tier and the same idea: a physical overlap the pet did not deliberate
+    // over. Sits after the pet-to-pet reaction so a startle still wins the claim,
+    // and before the decision systems so the drive and mood a kick just changed
+    // are the ones this tick's decision is made on.
+    PropKickSystem, // priority 3: pet walks into a prop → kick
     SocialInteractionSystem, // priority 4 (social): pet-to-pet greet/chat/chase sessions
     BehaviorDecisionSystem, // priority 5 (autonomous): personality-weighted next behavior (emits token)
     SignatureReactionSystem, // social echo: nearby pets answer fresh personality signatures

@@ -6,6 +6,7 @@ import {
   drawPetSpriteCanvas,
 } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-canvas";
 import { resolvePetSpriteFrame } from "@pets-driven/pet-engine/pets/rendering/pet-sprite-frame";
+import { drawBallArt } from "@/artwork/prop-artwork";
 import {
   drawClimbableSurface,
   drawDebugBody,
@@ -38,12 +39,27 @@ export function drawWorld(
   }
 
   // Below the pets, so a pet standing on a trinket hides it the moment before
-  // it collects it.
+  // it collects it. The ball goes under them for the same reason: a pet that
+  // has just walked into it should read as being in front of it.
   for (const item of snapshot.items ?? []) {
     drawWorldItem(context, item, elapsedMs);
   }
 
+  for (const prop of snapshot.props ?? []) {
+    drawWorldProp(context, prop);
+  }
+
+  // A prop has a physics body, so it turns up here too — and with no sprite
+  // against its id it fell through to drawDebugBody, which painted a green box
+  // squarely over the artwork drawn just above. Props own their drawing; this
+  // loop is for pets and for whatever else has no drawing of its own.
+  const propIds = new Set((snapshot.props ?? []).map((prop) => prop.id));
+
   for (const body of snapshot.bodies) {
+    if (propIds.has(body.id)) {
+      drawInteractionOutline(context, body.x, body.y, body.width, body.height, body.interaction);
+      continue;
+    }
     const sprite = assets[body.id];
     if (sprite) {
       const frame = resolvePetSpriteFrame({
@@ -148,6 +164,39 @@ function drawWorldItem(
   context.fillStyle = ink[950];
   context.fillText(presentWorldItem(item.kind).glyph, item.position.x, y + 8);
   context.restore?.();
+}
+
+/**
+ * A prop on the desktop. No bob and no halo, unlike a trinket: the ball is a
+ * body, so it already moves on its own and drawing it as though it floated
+ * would fight the physics the user can see. What it gets instead is its
+ * rotation — the snapshot's `angle`, straight off the Matter body — which is
+ * the only thing that makes a roll read as a roll rather than a slide.
+ *
+ * The drawing itself comes from `artwork/prop-artwork`, the same source the
+ * desktop overlay window renders, so the two surfaces cannot show two different
+ * balls.
+ */
+function drawWorldProp(
+  context: CanvasRenderingContext2D,
+  prop: NonNullable<WorldSnapshot["props"]>[number],
+) {
+  context.save?.();
+  context.beginPath();
+  context.ellipse?.(
+    prop.position.x,
+    prop.position.y + prop.radius,
+    prop.radius,
+    4,
+    0,
+    0,
+    Math.PI * 2,
+  );
+  context.fillStyle = `${ink[500]}33`;
+  context.fill();
+  context.restore?.();
+
+  drawBallArt(context, prop.position.x, prop.position.y, prop.radius, prop.angle);
 }
 
 function drawMonitorWorkAreas(

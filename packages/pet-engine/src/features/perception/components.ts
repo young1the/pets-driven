@@ -32,6 +32,13 @@ export type PerceptionComponent = {
    * it, and PerceptionSystem always assigns it once it runs.
    */
   nearbyItems?: PerceivedEntity[];
+  /**
+   * Props lying on the desktop, nearest first. Optional for the same reason
+   * `nearbyItems` is, and separate from it on purpose: a trinket is something a
+   * pet goes and *takes*, a prop is something it goes and *plays with*, and the
+   * decision layer scores those two wants against different drives.
+   */
+  nearbyProps?: PerceivedEntity[];
   cursor?: CursorPerception | null;
   self: {
     grounded: boolean;

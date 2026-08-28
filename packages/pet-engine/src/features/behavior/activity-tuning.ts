@@ -44,6 +44,11 @@ export const STRUT_BODY_WIDTHS = 6;
 export const STRUT_DURATION_MS = 4_500;
 export const STRUT_SPEED_FACTOR = 0.75;
 
+// Chasing the ball is the one errand a pet hurries on. Above 1 so a chase reads
+// as urgency next to an ordinary wander, but modestly — a pet that outruns its
+// own walk animation reads as sliding rather than running.
+export const CHASE_PROP_SPEED_FACTOR = 1.3;
+
 // ── Expressive idle poses ──────────────────────────────────────────────────
 // Sustained, stationary gestures that exercise the otherwise agent-only sprite
 // rows during ordinary autonomous life (see BehaviorDecisionKind). Like

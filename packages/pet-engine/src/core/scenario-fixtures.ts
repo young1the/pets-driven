@@ -18,6 +18,8 @@ import {
   ITEM_SPAWNER_ENTITY_ID,
 } from "@pets-driven/pet-engine/features/items/components";
 import { initialMoodState } from "@pets-driven/pet-engine/features/mood/systems";
+import { BALL_RADIUS } from "@pets-driven/pet-engine/features/props/components";
+import { createBallProp } from "@pets-driven/pet-engine/features/props/entities";
 import {
   DEFAULT_PET_BODY_SIZE,
   DEFAULT_PET_CLIMB_VELOCITY,
@@ -208,6 +210,15 @@ export function createDemoScenario(options?: {
   userAnchor?: { x: number; y: number } | null;
   petBodySize?: { width: number; height: number };
   monitorLayout?: "single" | "dual-horizontal";
+  /**
+   * Scatter the ball. Off by default, unlike the adopted desktop world where it
+   * is permanent furniture — this fixture is what most of the behavior suite
+   * runs against, and a standing invitation to play football is not a neutral
+   * addition to a world whose tests assert what a pet chooses to do. The
+   * playground turns it on, because the playground is where a person can pick
+   * the ball up and throw it.
+   */
+  ball?: boolean;
 }) {
   const monitorLayout = options?.monitorLayout ?? "single";
   const isDualMonitor = monitorLayout === "dual-horizontal";
@@ -240,6 +251,7 @@ export function createDemoScenario(options?: {
     clock,
     entities: [
       ...createMonitorBoundaryEntities(monitors, groundThickness),
+      ...(options?.ball ? [createBallProp(ballRestingPlace(monitors[0]), clock.now())] : []),
       ...(userAnchor
         ? [
             {
@@ -822,6 +834,22 @@ export function buildAdoptedPetEntity(
  * or sending home one pet never disturbs the others: rebuilding the world would
  * reset every pet's position and animation, which the host must avoid.
  */
+/**
+ * Where the ball starts: resting on a monitor's floor, a third of the way in.
+ *
+ * A monitor's ground slab is centred below its bottom edge, so the walkable
+ * surface is `monitor.y + monitor.height` — the same y the pets stand on. Off
+ * centre on purpose: a ball parked exactly in the middle of the screen is the
+ * one place a wandering pet is most likely to end up standing on anyway, and
+ * the first kick should come from a pet that chose to go over.
+ */
+export function ballRestingPlace(monitor: MonitorWorkArea): { x: number; y: number } {
+  return {
+    x: monitor.x + monitor.width * 0.35,
+    y: monitor.y + monitor.height - BALL_RADIUS,
+  };
+}
+
 export function createAdoptedPetsScenario(
   pets: ReadonlyArray<AdoptedPetScenarioInput>,
   options?: {
@@ -878,6 +906,11 @@ export function createAdoptedPetsScenario(
         id: ITEM_SPAWNER_ENTITY_ID,
         components: [createItemSpawner(clock.now(), { nextDropAt: Number.POSITIVE_INFINITY })],
       },
+      // No props. A prop has no spawner and no expiry — nothing would ever take
+      // one away again — so a ball declared here would be a permanent object
+      // the user never asked for and, until they found the place dialog, could
+      // not get rid of. The desktop starts bare and `world.spawnProp` is the
+      // only way anything lands on it.
       {
         id: "user-anchor",
         components: [

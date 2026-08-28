@@ -3,10 +3,11 @@ import {
   createDemoScenario,
   deriveAdoptedPetLocomotion,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import type { WorldPropKind } from "@pets-driven/pet-engine/features/props/components";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
-import { currentMonitor, cursorPosition } from "@tauri-apps/api/window";
+import { availableMonitors, currentMonitor, cursorPosition } from "@tauri-apps/api/window";
 import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { toWorldEvent } from "@/adapters/agent-events/agent-event-adapter";
 import { createAgentEventFromHook } from "@/adapters/agent-events/agent-hook-adapter";
@@ -51,6 +52,7 @@ import {
 import {
   projectScreenPointToWorld,
   projectWorldItemsToWindows,
+  projectWorldPropsToWindows,
   projectWorldSnapshotToPetWindows,
 } from "@/pet-window/pet-window-projection";
 
@@ -115,6 +117,14 @@ function routeAgentHookToRegisteredWorkingDirectory(
   };
 }
 
+/** How many of each non-pet entity the desktop is currently holding. */
+export type DesktopObjectCounts = {
+  /** Uncollected trinkets. They fade on their own, so this falls back to zero. */
+  treats: number;
+  /** Props. Nothing sweeps these away — they stay until the user clears them. */
+  props: number;
+};
+
 type UseDesktopSimulationHostParams = {
   /** Live roster state, used to derive the sim rebuild/reconcile triggers. */
   petsDrivenState: PetsDrivenState;
@@ -176,9 +186,12 @@ export function useDesktopSimulationHost({
     new Map(),
   );
   const adoptedScaleByPetIdRef = useRef<Record<string, number>>({});
-  // The trinket overlays the shell is currently showing, as one comparable key.
-  // Trinkets never move once they land, so this only changes on a drop, a
-  // pickup or a fade — a handful of shell calls a minute, not one per tick.
+  // The trinket and prop overlays the shell is currently showing, as one
+  // comparable key. A trinket never moves once it lands, so it contributes a
+  // change only on a drop, a pickup or a fade. The ball does move, but only
+  // while it is actually rolling — a kick costs a second or two of per-tick
+  // reconciles (each one a native set_position on an existing window, not a
+  // rebuild) and then the key goes quiet again until something touches it.
   const adoptedItemWindowKeyRef = useRef<string>("");
   const adoptedHostBoundsRef = useRef<{
     x: number;
@@ -217,6 +230,15 @@ export function useDesktopSimulationHost({
   const [desktopFixtureWindowCount] = useState(0);
   const [adoptedSimulationResetKey] = useState(0);
   const [petStatusById, setPetStatusById] = useState<Record<string, PetCardStatus>>({});
+  // How many non-pet entities are on the desktop, for the place dialog's "N on
+  // the desktop" lines. Set from the tick loop but only when a count actually
+  // changes, so an idle desktop re-renders the main window no more than a still
+  // pet does — the numbers move on a drop, a pickup, a fade or a placement, not
+  // sixty times a second.
+  const [desktopObjectCounts, setDesktopObjectCounts] = useState<DesktopObjectCounts>({
+    treats: 0,
+    props: 0,
+  });
 
   // Stable signature of the visible pet roster. Roster *membership* changes
   // (a pet shown, hidden or deleted) are reconciled into the live world in
@@ -249,6 +271,39 @@ export function useDesktopSimulationHost({
     } catch (error) {
       setPetWindowError(formatCommandError(error));
       return false;
+    }
+  }
+
+  // Put one prop on the desktop floor. Unlike a trinket it has no lifetime, so
+  // nothing takes it away again — clearProps is the only way out, which is why
+  // the two are offered side by side in the place dialog.
+  function placeProp(kind: WorldPropKind): boolean {
+    const scenario = adoptedScenarioRef.current;
+    if (!scenario) {
+      return false;
+    }
+    try {
+      return scenario.world.spawnProp(kind) !== null;
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
+      return false;
+    }
+  }
+
+  // Take every prop off the desktop. Their overlay windows go on the next
+  // tick's reconcile, the same way a collected trinket's does — no separate
+  // teardown, because the window set is derived from the world, not tracked.
+  function clearProps(): void {
+    const scenario = adoptedScenarioRef.current;
+    if (!scenario) {
+      return;
+    }
+    try {
+      for (const id of scenario.world.propIds()) {
+        scenario.world.removeEntity(id);
+      }
+    } catch (error) {
+      setPetWindowError(formatCommandError(error));
     }
   }
 
@@ -348,7 +403,10 @@ export function useDesktopSimulationHost({
         return;
       }
 
-      const isAdopted = adoptedPetIdsRef.current.has(input.petId);
+      // A prop only ever exists in the adopted world, and is never in the pet
+      // roster the lookup below asks — so it says which world it is in rather
+      // than being mistaken for a fixture pet.
+      const isAdopted = input.entity === "prop" || adoptedPetIdsRef.current.has(input.petId);
       const scenario = isAdopted ? adoptedScenarioRef.current : fixtureScenarioRef.current;
       const bounds = isAdopted ? adoptedHostBoundsRef.current : fixtureHostBoundsRef.current;
 
@@ -364,7 +422,53 @@ export function useDesktopSimulationHost({
         at: scenario.clock.now(),
         position: projectScreenPointToWorld(snapshot, bounds, input.screenPoint),
         button: input.button ?? 0,
+        // Which entity was pressed is not something this host should be working
+        // out. Every surface that sends `body.pointer.*` stands for exactly one
+        // entity and has already decided the press was on it, in its own
+        // coordinate space where the answer is exact — a pet surface classifies
+        // the point against its own body rect, a prop window against its own
+        // ball. Passing that through means the engine never has to rediscover
+        // it from a projected coordinate, which is the one part of this path
+        // that can drift.
+        entityId: input.petId || undefined,
       });
+
+      // Diagnostic for the open placement drift (see apps/desktop/AGENTS.md).
+      // Dragging no longer depends on the world→screen round trip being an
+      // identity, but it still is not one, and nothing else can see across this
+      // boundary: the host knows where it *asked* for a window to go, only the
+      // window knows where it *is*, and the monitors' scale factors say whether
+      // the two spaces can agree at all. The Debug tab is the one roomy surface
+      // to write that on. Delete this once the drift is explained.
+      if (input.entity === "prop" && input.kind === "body.pointer.down") {
+        const prop = snapshot.props?.find((entry) => entry.id === input.petId);
+        const placed = projectWorldPropsToWindows(snapshot, bounds).find(
+          (entry) => entry.itemId === input.petId,
+        );
+        const at = (p: { x: number; y: number }) => `${Math.round(p.x)},${Math.round(p.y)}`;
+        void availableMonitors()
+          .then((monitors) =>
+            monitors
+              .map(
+                (m) =>
+                  `${m.name ?? "?"} s=${m.scaleFactor} pos=${m.position.x},${m.position.y} work=${m.workArea.position.x},${m.workArea.position.y} ${m.workArea.size.width}x${m.workArea.size.height}`,
+              )
+              .join(" ;; "),
+          )
+          .catch(() => "monitors unavailable")
+          .then((monitorLine) => {
+            setPetWindowError(
+              [
+                `press screen=${at(input.screenPoint)} local=${at(input.localPoint)}`,
+                `ball=${prop ? at(prop.position) : "?"}`,
+                `askedFor=${placed ? at(placed) : "?"}`,
+                input.note ?? "no window note",
+                `bounds=${at(bounds)} ${Math.round(bounds.width)}x${Math.round(bounds.height)}`,
+                `monitors: ${monitorLine}`,
+              ].join(" | "),
+            );
+          });
+      }
     });
 
     return () => {
@@ -858,8 +962,19 @@ export function useDesktopSimulationHost({
       }
 
       // A trinket keeps its own tiny window in either mode — it is not drawn
-      // into the shared overlay — so this reconcile sits outside the split.
-      const itemPlacements = projectWorldItemsToWindows(snapshot, bounds);
+      // into the shared overlay — so this reconcile sits outside the split. The
+      // ball rides the same set: it is the same kind of thing on screen, one
+      // glyph in one tiny always-on-top square.
+      const itemPlacements = [
+        ...projectWorldItemsToWindows(snapshot, bounds),
+        ...projectWorldPropsToWindows(snapshot, bounds),
+      ];
+
+      const treats = snapshot.items?.length ?? 0;
+      const props = snapshot.props?.length ?? 0;
+      setDesktopObjectCounts((current) =>
+        current.treats === treats && current.props === props ? current : { treats, props },
+      );
       const itemWindowKey = itemPlacements
         .map((item) => `${item.itemId}:${item.kind}:${item.x}:${item.y}`)
         .join("|");
@@ -950,5 +1065,12 @@ export function useDesktopSimulationHost({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adoptedSimKey]);
 
-  return { petStatusById, pushAgentHookEvent, dropTreat };
+  return {
+    petStatusById,
+    pushAgentHookEvent,
+    dropTreat,
+    placeProp,
+    clearProps,
+    desktopObjectCounts,
+  };
 }

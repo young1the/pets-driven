@@ -85,6 +85,11 @@ const settings = {
   quietMode: "off" as const,
   onSetQuietMode: vi.fn(),
 };
+const place = {
+  counts: { treats: 0, props: 0 },
+  onPlaceBall: vi.fn(),
+  onClearProps: vi.fn(),
+};
 const debug = { groups: [], error: null };
 const terminal = {
   available: false,
@@ -98,6 +103,7 @@ function setup(overrides = {}) {
     onTab: vi.fn(),
     editPet: null,
     home,
+    place,
     edit,
     settings,
     terminal,

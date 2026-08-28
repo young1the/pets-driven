@@ -134,7 +134,22 @@ export type PetWindowInputKind =
 
 export type PetWindowInputEvent = {
   sequence: number;
+  /**
+   * The world entity this input is about. Named for the only sender there used
+   * to be; a prop window puts its own entity id here and says so via `entity`.
+   */
   petId: string;
+  /**
+   * Which kind of entity `petId` names. Absent means a pet, so every existing
+   * sender keeps working untouched.
+   *
+   * The host needs this and cannot infer it: it decides which world an input
+   * belongs to by looking the id up in the adopted pet roster, and a prop is in
+   * that world without ever being in that roster. Nothing past that lookup
+   * cares — a drag is hit-tested by world position against `CanDrag`, so the
+   * engine never learns which window the pointer came from.
+   */
+  entity?: "pet" | "prop";
   petName?: string;
   windowLabel: string;
   pointerId: number;

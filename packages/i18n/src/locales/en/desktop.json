@@ -15,8 +15,24 @@
     "onDesktop": "{{n}} on the desktop",
     "showAll": "Show all",
     "hideAll": "Hide all",
-    "treat": "Pet treat",
-    "treatHint": "Drop a treat on the desktop for a pet to find and collect"
+    "place": "Place",
+    "placeHint": "Put something on the desktop for the pets"
+  },
+  "place": {
+    "title": "Place on the desktop",
+    "lead": "Things that are not pets. The pets notice them, walk over, and decide what to do about them.",
+    "noPets": "Send a pet to the desktop first — there is no floor to put anything on until one is out.",
+    "place": "Place",
+    "clear": "Clear",
+    "onDesktop": "{{n}} on the desktop",
+    "treat": {
+      "name": "Treat",
+      "note": "Wings or claws, picked at random. A pet walks over to collect it and borrows the ability for a minute, then it wears off."
+    },
+    "ball": {
+      "name": "Ball",
+      "note": "Stays until you clear it. Pets kick it and chase it, and you can throw it around yourself."
+    }
   },
   "terminal": {
     "defaultFolder": "Default folder",
@@ -535,6 +551,7 @@
     "needsYou": "Needs you",
     "exploring": "Exploring",
     "fetchingItem": "Going for it!",
+    "chasingBall": "After the ball!",
     "climbing": "Climbing",
     "hopping": "Hopping",
     "midAir": "Mid-air",

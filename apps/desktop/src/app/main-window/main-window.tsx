@@ -15,17 +15,31 @@ import {
   type PetEditSectionProps,
   type PetEditView,
 } from "@/app/main-window/pet-edit-section";
+import {
+  PlaceObjectDialog,
+  type PlaceObjectDialogProps,
+} from "@/app/main-window/place-object-dialog";
 import { SettingsSection, type SettingsSectionProps } from "@/app/main-window/settings-section";
 import { TerminalSection, type TerminalSectionProps } from "@/app/main-window/terminal-section";
 import "@/app/main-window/main-window.css";
 
 export type MainWindowTab = "home" | "terminal" | "settings" | "debug";
 
+/**
+ * What the place dialog needs beyond the treat drop, which the home section has
+ * owned since before there was anything else to place.
+ */
+export type MainWindowPlaceProps = Pick<
+  PlaceObjectDialogProps,
+  "counts" | "onPlaceBall" | "onClearProps"
+>;
+
 export interface MainWindowProps {
   tab: MainWindowTab;
   onTab: (tab: MainWindowTab) => void;
   editPet: PetEditView | null;
   home: HomeSectionProps;
+  place: MainWindowPlaceProps;
   edit: Omit<PetEditSectionProps, "pet">;
   settings: SettingsSectionProps;
   /** The coach is the terminal tab's own affair, so it is not wired from here. */
@@ -39,6 +53,7 @@ export function MainWindow({
   onTab,
   editPet,
   home,
+  place,
   edit,
   settings,
   terminal,
@@ -53,6 +68,7 @@ export function MainWindow({
   // visit (xterm is lazy, so an untouched tab still costs nothing) and from then
   // on only hide it.
   const [terminalMounted, setTerminalMounted] = useState(terminalVisible);
+  const [placeOpen, setPlaceOpen] = useState(false);
   useEffect(() => {
     if (terminalVisible) {
       setTerminalMounted(true);
@@ -100,16 +116,13 @@ export function MainWindow({
               {t("nav.hideAll")}
             </Button>
             <Button
-              // A pet has to be on the desktop to walk over and collect a
-              // trinket; with none out, the drop would land on an empty floor.
-              disabled={home.inField.length === 0}
-              iconLeft={<span aria-hidden="true">🍪</span>}
-              onClick={home.onDropItem}
+              iconLeft={<span aria-hidden="true">📦</span>}
+              onClick={() => setPlaceOpen(true)}
               size="sm"
-              title={t("nav.treatHint")}
+              title={t("nav.placeHint")}
               variant="accent"
             >
-              {t("nav.treat")}
+              {t("nav.place")}
             </Button>
           </div>
         )}
@@ -141,6 +154,20 @@ export function MainWindow({
           <TerminalSection {...terminal} showOnboarding visible={terminalVisible} />
         </div>
       )}
+
+      <PlaceObjectDialog
+        // A drop needs a floor, and the desktop world only exists while at
+        // least one pet is out — so with none deployed the rows stay disabled
+        // and the dialog says why, rather than accepting a click that goes
+        // nowhere.
+        canPlace={home.inField.length > 0}
+        counts={place.counts}
+        onClearProps={place.onClearProps}
+        onClose={() => setPlaceOpen(false)}
+        onPlaceBall={place.onPlaceBall}
+        onPlaceTreat={home.onDropItem}
+        open={placeOpen}
+      />
 
       {toast ? (
         <div className="pd-app-toast">

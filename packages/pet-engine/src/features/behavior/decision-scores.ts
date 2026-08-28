@@ -43,6 +43,13 @@ function restSensitivity(p: PersonalityComponent): number {
   return (1 - p.conscientiousness) * 0.6 + (1 - p.extraversion) * 0.4;
 }
 
+/**
+ * What a prop gains from being in motion. Large enough to clear the top of the
+ * ordinary idle pool on its own, so a pet that sees the ball rolling goes after
+ * it rather than deliberating over it.
+ */
+export const ROLLING_PROP_BONUS = 0.7;
+
 export function scoreWanderNear(p: PersonalityComponent): number {
   // N (neuroticism) → wary, prefers short local moves; O (openness) → slight boost
   return 0.3 + p.openness * 0.1 + p.neuroticism * 0.4;
@@ -81,6 +88,40 @@ export function scoreFetchItem(p: PersonalityComponent, drives?: DrivesComponent
   if (!drives) return base;
   // Boredom is exactly the itch a strange new object scratches.
   return base + driveResponseCurve(drives.curiosity) * driveWeight(0.5, curiositySensitivity(p));
+}
+
+export function scoreChaseProp(
+  p: PersonalityComponent,
+  drives?: DrivesComponent,
+  isRolling = false,
+): number {
+  // The ball is play, not novelty: unlike a trinket it is always there, so it
+  // must not win on strangeness. Scored in the play-romp tier on purpose —
+  // a permanent object priced like a two-minute trinket drop crowded every
+  // expressive pose, jump and wander out of the pool, and the pets did nothing
+  // but play football.
+  //
+  // A ball *in motion* is the exception, and it is what makes a knockabout
+  // read as one: the pull of a ball someone just kicked (or threw) is worth
+  // more than anything else in the idle pool, so the second pet piles in while
+  // it is still rolling. It falls back to furniture as soon as it settles.
+  // E (extraversion) → appetite for a knockabout; O (openness) → helps;
+  // N (neuroticism) → hangs back from a thing that moves when touched.
+  const base =
+    0.1 +
+    p.extraversion * 0.5 +
+    p.openness * 0.3 -
+    p.neuroticism * 0.35 +
+    (isRolling ? ROLLING_PROP_BONUS : 0);
+  if (!drives) return base;
+  // Boredom sends a pet to the ball, and a tired one leaves it alone — the same
+  // pair of pressures that shape play-romp, which is the behavior it competes
+  // with most directly.
+  return (
+    base +
+    driveResponseCurve(drives.curiosity) * driveWeight(0.45, curiositySensitivity(p)) -
+    driveResponseCurve(1 - drives.energy) * driveWeight(0.6, restSensitivity(p))
+  );
 }
 
 export function scoreClimb(p: PersonalityComponent, drives?: DrivesComponent): number {

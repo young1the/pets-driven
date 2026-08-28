@@ -28,7 +28,7 @@ export function DemoPlaygroundView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // The demo always runs the dual-monitor world so pet projection is exercised
   // across a monitor seam; there is no single-monitor variant to toggle to.
-  const scenarioRef = useRef(createDemoScenario({ monitorLayout: "dual-horizontal" }));
+  const scenarioRef = useRef(createDemoScenario({ monitorLayout: "dual-horizontal", ball: true }));
   const [selectedPetId, setSelectedPetId] = useState("pet-a");
   const [snapshot, setSnapshot] = useState(() => scenarioRef.current.world.snapshot());
   const [isAnimationPlaying, setIsAnimationPlaying] = useState(true);

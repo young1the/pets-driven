@@ -12,7 +12,7 @@ const COLLISION_CATEGORY_SURFACE = 0x0001;
 const COLLISION_CATEGORY_DYNAMIC_BODY = 0x0002;
 
 export type MatterPhysicsWorld = {
-  addCircle(id: string, position: Vector, radius: number): void;
+  addCircle(id: string, position: Vector, radius: number, material?: PhysicsMaterial): void;
   addRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
   addStaticRectangle(id: string, position: Vector, size: Size, material?: PhysicsMaterial): void;
   removeBody(id: string): void;
@@ -86,7 +86,7 @@ export function createMatterPhysicsWorld(bounds: {
   }
 
   return {
-    addCircle(id, position, radius) {
+    addCircle(id, position, radius, material) {
       const body = Bodies.circle(position.x, position.y, radius, {
         collisionFilter: {
           category: COLLISION_CATEGORY_DYNAMIC_BODY,
@@ -94,11 +94,21 @@ export function createMatterPhysicsWorld(bounds: {
           // Pet-to-pet solidity produced nothing but pathologies (grinding,
           // convoy bounces, bulldozing); "touching" is now a geometric signal
           // computed by PetCollisionSyncSystem, not a physical constraint.
+          //
+          // A prop (the ball) sits in the same category on purpose, so a pet
+          // never physically shoves it either: a kick is a deliberate impulse
+          // PropKickSystem decides on, not a body pushing a body. That is what
+          // keeps a pet standing on the ball from grinding it across the floor.
           mask: COLLISION_CATEGORY_SURFACE,
         },
-        frictionAir: 0.08,
-        restitution: 0.2,
+        friction: material?.friction,
+        frictionAir: material?.frictionAir ?? 0.08,
+        restitution: material?.restitution ?? 0.2,
       });
+      // No setInertia(Infinity) here, unlike the rectangles: a circle is the one
+      // body in this world that is *meant* to spin, and its angle is what makes
+      // a roll read as a roll rather than a slide.
+      baseFrictions.set(id, material?.friction);
       addBody(id, body, { shape: "circle", radius, width: radius * 2, height: radius * 2 });
     },
     addRectangle(id, position, size, material) {
@@ -244,6 +254,9 @@ export function createMatterPhysicsWorld(bounds: {
             y: body.position.y,
             vx: body.velocity.x,
             vy: body.velocity.y,
+            // Only a circle ever accumulates one — every rectangle is pinned by
+            // setInertia(Infinity) — but it is cheap and uniform to always read.
+            angle: body.angle,
             ...shape,
             isStatic: body.isStatic || shape.isStatic,
           };

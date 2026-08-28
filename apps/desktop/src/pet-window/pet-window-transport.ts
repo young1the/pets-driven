@@ -41,7 +41,12 @@ export type PetWindowTransport = {
   subscribeWindowBlur(handler: () => void): Promise<Unsubscribe>;
 
   // Window -> host signals.
-  sendInput(payload: PetWindowInputEvent): void;
+  /**
+   * Hand one input event to the host window. Resolves when the emit lands and
+   * rejects when it does not — a caller that wants to know whether its input
+   * reached anything has no other way to find out.
+   */
+  sendInput(payload: PetWindowInputEvent): Promise<void>;
   sendResize(payload: PetWindowResizeEvent): void;
 
   // Control of this webview's own OS window. Position is absent on purpose: the
@@ -108,12 +113,16 @@ export const petWindowTransport: PetWindowTransport = {
     return await listen("tauri://blur", () => handler());
   },
 
-  sendInput(payload) {
+  async sendInput(payload) {
     if (!isTauri()) {
       return;
     }
 
-    void emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, payload);
+    // Awaited rather than dropped on the floor. A rejected emit is how a window
+    // whose capability does not permit it fails, and a bare `void` turns that
+    // into an input path that is silently dead — a long way to debug from
+    // "clicking does nothing".
+    await emitTo(PET_WINDOW_HOST_LABEL, PET_WINDOW_INPUT_EVENT, payload);
   },
 
   sendResize(payload) {

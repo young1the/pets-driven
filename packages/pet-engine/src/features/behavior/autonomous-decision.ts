@@ -24,6 +24,7 @@ import {
   scoreApproachPet,
   scoreBeckon,
   scoreChaseCursor,
+  scoreChaseProp,
   scoreClimb,
   scoreFetchItem,
   scoreFleeFromPet,
@@ -56,6 +57,7 @@ import {
   petWidth,
 } from "@pets-driven/pet-engine/features/behavior/geometry";
 import { moodAdjustedDecisionScore } from "@pets-driven/pet-engine/features/mood/systems";
+import { PROP_ROLLING_SPEED } from "@pets-driven/pet-engine/features/props/components";
 import {
   personalityIdleDurationScale,
   signedDecisionScore,
@@ -210,6 +212,46 @@ export function decideAutonomousBehavior(
         return { targetPosition: { ...nearestItem.position } };
       },
     });
+  }
+
+  // The ball. Deliberately not claim-guarded the way trinkets and climbables
+  // are: two pets converging on the same ball is the good outcome, not the
+  // collision those claims exist to prevent — there is nothing to run out of,
+  // and whoever gets there first simply kicks it out from under the other.
+  // A pet wearing a borrowed ability leaves the ball alone. The same instinct
+  // that makes it skip a second trinket, and for a sharper reason: wings and
+  // claws last a minute, that minute is the only one in which an ordinary
+  // walker ever gets to fly or climb, and the ball is always going to be there
+  // afterwards. Without this the ball simply ate the ability — a pet handed
+  // claws spent the whole sixty seconds playing football and never once claimed
+  // a climb, which is the exact failure mode `claws-climb-the-desktop.test.ts`
+  // exists to catch.
+  const nearestProp = carriedItem ? undefined : perception?.nearbyProps?.[0];
+  if (nearestProp) {
+    // A ball someone just kicked or threw is a different proposition from one
+    // lying on the floor — and TravelState, which the movement slice now keeps
+    // for props as well as pets, is where that shows. It is also the one case
+    // allowed past the repeat cooldown: without that exemption the pet that
+    // kicked the ball would have to stand and watch it roll away for the whole
+    // cooldown, which is the opposite of a chase.
+    const travel = components.getComponent(nearestProp.id, "TravelState");
+    const isRolling = !!travel && Math.hypot(travel.dx, travel.dy) >= PROP_ROLLING_SPEED;
+    const candidate: Candidate = {
+      kind: "chase-prop",
+      score: scoreChaseProp(personality, drives, isRolling),
+      // A position rather than an entity target, like fetch-item: an entity
+      // target would send ArrivalBehaviorSystem down its approach-pet branch,
+      // which knows nothing about props. That the position goes stale the
+      // moment the ball is kicked is the feature — the pet arrives where the
+      // ball *was*, re-decides off a fresh Perception, and sets off again,
+      // which is what a chase looks like.
+      build: () => ({ targetPosition: { ...nearestProp.position } }),
+    };
+    if (isRolling) {
+      candidates.push(candidate);
+    } else {
+      pushCandidate(candidates, components, id, now, candidate);
+    }
   }
 
   const canClimb = components.getComponent(id, "CanWallClimb");

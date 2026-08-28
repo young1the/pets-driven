@@ -14,6 +14,12 @@ const MAX_PERCEPTION_RANGE = 400; // px
 // outside every pet's awareness and simply fade away unclaimed.
 const ITEM_PERCEPTION_RANGE = 1_000; // px
 
+// A prop carries as far as a trinket does, and for a sharper reason: the ball
+// moves. A kick sends it most of a screen away, so a range that only covered
+// the pet's own neighbourhood would mean every pet lost the ball the instant
+// one of them connected with it, and the game would end after a single kick.
+const PROP_PERCEPTION_RANGE = 1_000; // px
+
 /**
  * How far along the floor a pet notices a climbable column, and note that it is
  * measured *horizontally* — see the climbable pass below for why.
@@ -61,6 +67,11 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
   const items: { id: string; x: number; y: number }[] = [];
   components.forEach(["WorldItem", "Transform"], (id, [, transform]) => {
     items.push({ id, x: transform.position.x, y: transform.position.y });
+  });
+
+  const props: { id: string; x: number; y: number }[] = [];
+  components.forEach(["WorldProp", "Transform"], (id, [, transform]) => {
+    props.push({ id, x: transform.position.x, y: transform.position.y });
   });
 
   const effectiveNow = now ?? cursorEntry?.samples[cursorEntry.samples.length - 1]?.at ?? 0;
@@ -125,6 +136,16 @@ export function runPerceptionSystem(components: ComponentStore, now?: number): v
       nearbyItems.sort((a, b) => a.distance - b.distance);
       perception.nearbyItems = nearbyItems;
 
+      const nearbyProps: PerceivedEntity[] = [];
+      for (const prop of props) {
+        const entry = buildEntry(prop.id, prop.x, prop.y, px, py);
+        if (entry.distance <= PROP_PERCEPTION_RANGE) {
+          nearbyProps.push(entry);
+        }
+      }
+      nearbyProps.sort((a, b) => a.distance - b.distance);
+      perception.nearbyProps = nearbyProps;
+
       perception.self = {
         grounded: contact.grounded,
         climbing: !!components.getComponent(id, "ClimbingTag"),
@@ -188,6 +209,7 @@ export const PerceptionSystem: SimulationSystem<WorldStepContext> = {
     "Transform",
     "ClimbableSurface",
     "WorldItem",
+    "WorldProp",
     "PetIdentity",
     "Perception",
     "Steering",

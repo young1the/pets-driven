@@ -80,6 +80,7 @@ function behaviorLabel(snapshot: PetSnapshot): {
 const BEHAVIOR_LABEL: Record<PetBehaviorLabelKey, string> = {
   exploring: "Exploring",
   fetchingItem: "Going for it!",
+  chasingBall: "After the ball!",
   climbing: "Climbing",
   hopping: "Hopping",
   midAir: "Mid-air",

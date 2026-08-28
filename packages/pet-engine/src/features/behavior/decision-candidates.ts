@@ -33,6 +33,12 @@ const AUTONOMOUS_REPEAT_COOLDOWN_MS: Record<string, number> = {
   // Short: a trinket only exists for a while, and a pet that gave up on one
   // (another pet got there first) should be free to try the next drop.
   "fetch-item": 2_000,
+  // The play-romp tier, not the trinket tier: the ball is permanent scenery, so
+  // a short cooldown on it crowded every pose, jump and wander out of the pool.
+  // A *rolling* ball is exempt from this entirely — decideAutonomousBehavior
+  // pushes that candidate past the cooldown, which is what keeps the pet that
+  // just kicked it from having to stand and watch it roll away.
+  "chase-prop": 7_000,
   "idle-stay": 1_500,
   // Phase 3
   "approach-pet": 1_500,

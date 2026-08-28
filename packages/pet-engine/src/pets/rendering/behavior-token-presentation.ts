@@ -51,6 +51,12 @@ const BEHAVIOR_TOKEN_PRESENTATION: Record<BehaviorDecisionKind, BehaviorTokenPre
     mood: "excited",
     tone: "spark",
   },
+  "chase-prop": {
+    emote: "sparkle",
+    label: "After the ball",
+    mood: "excited",
+    tone: "motion",
+  },
   "idle-stay": {
     emote: "zzz",
     label: "Staying idle",

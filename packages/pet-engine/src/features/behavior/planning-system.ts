@@ -1,5 +1,6 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import {
+  CHASE_PROP_SPEED_FACTOR,
   EXPRESSIVE_POSE_CUES,
   EXPRESSIVE_POSE_DURATIONS,
   FEINT_APPROACH_MS,
@@ -36,6 +37,9 @@ const WANDER_FAR_CURIOSITY_RELIEF = 0.35;
 const CLIMB_CURIOSITY_RELIEF = 0.3;
 const CLIMB_ENERGY_COST = 0.12;
 const FETCH_ITEM_CURIOSITY_RELIEF = 0.25;
+// Smaller than fetch-item's: setting off after the ball is only half the
+// business, and PropKickSystem pays the rest out on contact.
+const CHASE_PROP_CURIOSITY_RELIEF = 0.12;
 
 // ── BehaviorPlanningSystem ────────────────────────────────────────────────
 //
@@ -81,6 +85,23 @@ export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Cl
         setPetSteering(components, id, "pursue");
         // Going to look at the strange new thing is itself novelty.
         adjustDrive(components, id, { curiosity: -FETCH_ITEM_CURIOSITY_RELIEF });
+        break;
+      case "chase-prop":
+        // Run at where the ball is now. PropKickSystem does the connecting once
+        // the pet gets there, and ArrivalBehaviorSystem clears the target
+        // whether or not the ball is still lying there when it arrives.
+        components.setComponent(id, {
+          type: "MotionTarget",
+          targetEntityId: null,
+          targetPosition: token.targetPosition ?? null,
+          // Nobody saunters after a ball.
+          speedFactor: CHASE_PROP_SPEED_FACTOR,
+        });
+        setPetSteering(components, id, "pursue");
+        // The relief for the chase itself is deliberately small — the kick at
+        // the end of it is where PropKickSystem pays out the rest, so a pet that
+        // sets off and never arrives does not get the full satisfaction.
+        adjustDrive(components, id, { curiosity: -CHASE_PROP_CURIOSITY_RELIEF });
         break;
       case "seek-user":
         // MotionTargetSystem (UPDATE phase) reads Perception.userAnchor and owns

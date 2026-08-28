@@ -21,9 +21,14 @@ import {
   DEFAULT_ITEM_PICKUP_RADIUS,
   DEFAULT_ITEM_SPAWNER,
 } from "@pets-driven/pet-engine/features/items/components";
-import { dropRandomWorldItem } from "@pets-driven/pet-engine/features/items/systems";
+import {
+  desktopFloorSpans,
+  dropRandomWorldItem,
+} from "@pets-driven/pet-engine/features/items/systems";
 import { createMatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import { runPhysicsTransformSyncSystem } from "@pets-driven/pet-engine/features/physics/systems";
+import { BALL_RADIUS, type WorldPropKind } from "@pets-driven/pet-engine/features/props/components";
+import { createProp } from "@pets-driven/pet-engine/features/props/entities";
 import {
   createSeededRandom,
   type RandomSource,
@@ -54,6 +59,10 @@ export function createWorld(input: WorldDefinition) {
   // a spawner is present, drops share its `dropped` counter instead so the two
   // sources never mint the same entity id.
   let manualDropSequence = 0;
+  // Behind each hand-placed prop's entity id. Props have no spawner to carry a
+  // counter, and never reuse an id even after one is cleared — a recycled id
+  // would land on an overlay window the shell has not finished tearing down.
+  let propSequence = 0;
   let quietMode: QuietMode = input.quietMode ?? DEFAULT_QUIET_MODE;
 
   registerPhysicsBodies();
@@ -70,14 +79,27 @@ export function createWorld(input: WorldDefinition) {
   function registerPhysicsBody(id: string) {
     const transform = components.getComponent(id, "Transform");
     const body = components.getComponent(id, "PhysicsBody");
-    if (!transform || !body || body.shape !== "rectangle") {
+    if (!transform || !body) {
       return;
     }
     const material = components.getComponent(id, "PhysicsMaterial");
     const size = { width: body.width, height: body.height };
+    // Deliberately not `frictionAir`: the rectangle path has never forwarded it
+    // (two playground fixtures set it and have always run without it), and
+    // starting now would quietly retune every jump arc in this world. A circle
+    // is new, so it gets the whole material.
     const materialOptions = material
       ? { friction: material.friction, restitution: material.restitution }
       : undefined;
+
+    if (body.shape === "circle") {
+      // A circle is never ground — the static surfaces of this world are all
+      // slabs — so it always joins as a dynamic body. Air drag matters to a
+      // rolling ball in a way it does not to a walker, so this path passes the
+      // material through whole.
+      physics.addCircle(id, transform.position, body.width / 2, material ?? undefined);
+      return;
+    }
 
     if (components.getComponent(id, "Ground")) {
       physics.addStaticRectangle(id, transform.position, size, materialOptions);
@@ -357,6 +379,24 @@ export function createWorld(input: WorldDefinition) {
     });
   }
 
+  // Position comes from Transform (kept in step with the body by the pre/post
+  // sync systems) but the angle can only come from the physics snapshot — the
+  // engine has no rotation component, and nothing in the simulation reasons
+  // about a body's spin. It is presentation, so it is read here and nowhere
+  // else.
+  function getWorldPropSnapshots(componentStore: ComponentStore, bodyAngles: Map<string, number>) {
+    return componentStore.query("WorldProp", "Transform", "PhysicsBody").map((entity) => {
+      const [prop, transform, body] = entity.components;
+      return {
+        id: entity.id,
+        kind: prop.kind,
+        position: { ...transform.position },
+        radius: body.width / 2,
+        angle: bodyAngles.get(entity.id) ?? 0,
+      };
+    });
+  }
+
   function getClimbableSurfaceSnapshots(componentStore: ComponentStore) {
     return componentStore.query("Transform", "ClimbableSurface").map((entity) => {
       const [transform] = entity.components;
@@ -472,6 +512,47 @@ export function createWorld(input: WorldDefinition) {
       return id;
     },
     /**
+     * Host-facing entry point for placing a prop — the main window's place
+     * dialog. Puts one on a desktop floor now and registers its physics body,
+     * so it drops into a live world the same way a pet deployed mid-session
+     * does. Returns the new entity id, or null when there was no floor in view.
+     *
+     * Unlike a trinket a prop has no lifetime and no spawner: nothing sweeps it
+     * away, which is what makes it furniture. `removeEntity` is how it leaves.
+     */
+    spawnProp(kind: WorldPropKind): string | null {
+      const bounds = {
+        x: input.viewport?.x ?? 0,
+        y: input.viewport?.y ?? 0,
+        width: input.width,
+        height: input.height,
+      };
+      const spans = desktopFloorSpans(components, bounds);
+      if (spans.length === 0) return null;
+
+      const span = spans[Math.min(spans.length - 1, Math.floor(random.next() * spans.length))];
+      const id = `prop-${kind}-${propSequence}`;
+      propSequence += 1;
+      components.spawn(
+        id,
+        createProp(
+          kind,
+          {
+            x: span.minX + random.next() * (span.maxX - span.minX),
+            y: span.topY - BALL_RADIUS,
+          },
+          input.clock.now(),
+          id,
+        ).components,
+      );
+      registerPhysicsBody(id);
+      return id;
+    },
+    /** Every prop currently in the world, so a host can offer to clear them. */
+    propIds(): string[] {
+      return components.query("WorldProp").map((entity) => entity.id);
+    },
+    /**
      * Host-facing entry point for live cursor tracking: writes a transient
      * CursorInput onto the "user-anchor" entity, which CursorInputSystem
      * consumes on the next PRE_UPDATE pass (sample append + Transform sync).
@@ -540,6 +621,10 @@ export function createWorld(input: WorldDefinition) {
         pets: getPetSnapshots(components),
         climbableSurfaces: getClimbableSurfaceSnapshots(components),
         items: getWorldItemSnapshots(components),
+        props: getWorldPropSnapshots(
+          components,
+          new Map(physicsSnapshot.bodies.map((body) => [body.id, body.angle ?? 0])),
+        ),
       };
     },
   };

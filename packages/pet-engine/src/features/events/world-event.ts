@@ -23,6 +23,19 @@ export type PointerWorldEvent = {
   at: number;
   position: { x: number; y: number };
   button?: number;
+  /**
+   * The entity this press is *known* to be on, when the surface that sent it
+   * knows. A host whose window stands for exactly one entity has already
+   * answered "which one" — exactly, in its own coordinate space — and passing
+   * that answer through is strictly better than throwing it away and
+   * rediscovering it from `position`, which can only ever be as accurate as the
+   * projection that produced it.
+   *
+   * Absent means nobody knew, and the interaction system falls back to hit
+   * testing `position` — which is right for a surface that holds many entities
+   * at once and has no better answer to give.
+   */
+  entityId?: string;
 };
 
 export type KeyboardWorldEvent = {

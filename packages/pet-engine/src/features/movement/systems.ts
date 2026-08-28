@@ -505,7 +505,17 @@ export function runFlightSystem(components: ComponentStore, physics: MatterPhysi
 // sync of the tick; the first tick seeds the previous position and reports a
 // zero delta.
 export function runTravelTrackingSystem(components: ComponentStore): void {
-  components.forEach(["PetIdentity", "Transform"], (id, [, transform]) => {
+  // Pets, so the animation layer can read movement from engine state rather
+  // than from the physics body — and props, so the decision layer can tell a
+  // ball that is rolling from one that is lying there. Listed rather than
+  // derived from "everything with a body": the static boundary slabs would
+  // otherwise each carry a TravelState that is zero forever.
+  trackTravel(components, "PetIdentity");
+  trackTravel(components, "WorldProp");
+}
+
+function trackTravel(components: ComponentStore, marker: "PetIdentity" | "WorldProp"): void {
+  components.forEach([marker, "Transform"], (id, [, transform]) => {
     const { x, y } = transform.position;
     const previous = components.getComponent(id, "TravelState");
     components.setComponent(id, {
@@ -755,7 +765,7 @@ export const FlightSystem: SimulationSystem<WorldStepContext> = {
 export const TravelTrackingSystem: SimulationSystem<WorldStepContext> = {
   name: "TravelTrackingSystem",
   dependsOn: ["PhysicsTransformSyncSystemPost"],
-  reads: ["PetIdentity", "Transform", "TravelState"],
+  reads: ["PetIdentity", "WorldProp", "Transform", "TravelState"],
   writes: ["TravelState"],
   update(ctx) {
     runTravelTrackingSystem(ctx.components);

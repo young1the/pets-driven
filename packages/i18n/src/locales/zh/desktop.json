@@ -15,8 +15,24 @@
     "onDesktop": "{{n}} 只在桌面上",
     "showAll": "全部显示",
     "hideAll": "全部隐藏",
-    "treat": "宠物零食",
-    "treatHint": "往桌面上丢一份零食，宠物会自己找过去捡走"
+    "place": "放置",
+    "placeHint": "在桌面上放点东西给宠物玩"
+  },
+  "place": {
+    "title": "放到桌面上",
+    "lead": "不是宠物的东西。宠物会注意到它们，走过去，然后自己决定怎么办。",
+    "noPets": "请先把宠物放到桌面上 —— 没有宠物在外面就没有可以放东西的地面。",
+    "place": "放置",
+    "clear": "收起",
+    "onDesktop": "桌面上有 {{n}} 个",
+    "treat": {
+      "name": "零食",
+      "note": "随机出现翅膀或利爪。宠物会过去捡起，借用一分钟能力，然后失效。"
+    },
+    "ball": {
+      "name": "球",
+      "note": "在你收起前一直留着。宠物会踢它、追它，你也可以自己扔着玩。"
+    }
   },
   "terminal": {
     "defaultFolder": "默认文件夹",
@@ -511,6 +527,7 @@
     "needsYou": "需要你",
     "exploring": "探索中",
     "fetchingItem": "冲过去啦！",
+    "chasingBall": "追球中！",
     "climbing": "攀爬中",
     "hopping": "蹦蹦跳跳",
     "midAir": "腾空中",

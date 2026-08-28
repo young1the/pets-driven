@@ -1,4 +1,5 @@
 import { createAdoptedPetsScenario } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import { DEFAULT_ITEM_SPAWNER } from "@pets-driven/pet-engine/features/items/components";
 import { DEFAULT_PET_CLIMB_VELOCITY } from "@pets-driven/pet-engine/pets/constants/pet-body";
 import { describe, expect, it } from "vitest";
 
@@ -25,6 +26,30 @@ const STEP_MS = 16;
 // far above the floor the pet's centre sits, which is the distance at issue.
 const DESKTOP_PET_BODY = { width: 156, height: 156 };
 
+/**
+ * Put claws on the pet the way the world does.
+ *
+ * `CarriedItem` is not decoration here. In the live desktop world a capability
+ * only ever arrives through `grantItemAbility`, which always writes the record
+ * alongside it — and the decision layer reads that record to know the pet is
+ * spending a borrowed minute, so it stops offering it the ball. Granting the
+ * bare capability the way this file used to describes a pet that cannot exist
+ * on the desktop, and the difference is not cosmetic: without the record the
+ * pet treats its one minute of climbing as ordinary idle time.
+ */
+function wearClaws(world: ReturnType<typeof settledDesktopPet>["world"], now: number) {
+  world.setComponent("pet-a", {
+    type: "CanWallClimb",
+    velocity: DEFAULT_PET_CLIMB_VELOCITY,
+  });
+  world.setComponent("pet-a", {
+    type: "CarriedItem",
+    kind: "claws",
+    pickedUpAt: now,
+    expiresAt: now + DEFAULT_ITEM_SPAWNER.abilityDurationMs,
+  });
+}
+
 function settledDesktopPet() {
   const scenario = createAdoptedPetsScenario(
     [{ id: "pet-a", sourceId: "agent-a", name: "Alice" }],
@@ -50,10 +75,7 @@ describe("claws on the live desktop world", () => {
     const { clock, world } = settledDesktopPet();
     const startY = world.getComponent("pet-a", "Transform")!.position.y;
 
-    world.setComponent("pet-a", {
-      type: "CanWallClimb",
-      velocity: DEFAULT_PET_CLIMB_VELOCITY,
-    });
+    wearClaws(world, clock.now());
 
     let climbed = false;
     let highestY = startY;
@@ -89,10 +111,7 @@ describe("claws on the live desktop world", () => {
       },
     );
 
-    world.setComponent("pet-a", {
-      type: "CanWallClimb",
-      velocity: DEFAULT_PET_CLIMB_VELOCITY,
-    });
+    wearClaws(world, clock.now());
 
     let attached = false;
     for (let i = 0; i < 90_000 / STEP_MS && !attached; i += 1) {

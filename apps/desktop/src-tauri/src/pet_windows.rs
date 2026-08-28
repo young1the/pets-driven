@@ -375,9 +375,23 @@ pub(crate) async fn close_pet_overlay_window(app: tauri::AppHandle) -> Result<()
 const ITEM_WINDOW_LABEL_PREFIX: &str = "item-window-";
 const ITEM_WINDOW_SIZE: f64 = 64.0;
 
-/// The kinds an overlay may render, mirroring `PetItemKind` in the engine. A
-/// closed list because the value goes into the window's URL.
-const ITEM_WINDOW_KINDS: [&str; 2] = ["wings", "claws"];
+/// The kinds an overlay may render, mirroring `PetItemKind` and `WorldPropKind`
+/// in the engine. A closed list because the value goes into the window's URL.
+///
+/// Trinkets and props share this overlay because on screen they are the same
+/// thing: one glyph in one tiny always-on-top square for one non-pet entity.
+/// The difference is that a prop moves, which costs nothing extra here — the
+/// reconcile below already repositions a window it has rather than rebuilding
+/// it.
+const ITEM_WINDOW_KINDS: [&str; 3] = ["wings", "claws", "ball"];
+
+/// The subset of the above the user can grab, mirroring `WorldPropKind`.
+///
+/// It decides one thing: whether the window is click-through. A trinket is
+/// scenery a pet fetches, so its clicks belong to whatever is behind it on the
+/// desktop; a prop is a thing the user picks up and throws, so its window takes
+/// the mouse — the same trade a pet window makes, at a fraction of the size.
+const PROP_WINDOW_KINDS: [&str; 1] = ["ball"];
 
 /// One trinket's screen placement for a single simulation frame.
 #[derive(Debug, Deserialize)]
@@ -420,11 +434,22 @@ pub(crate) async fn sync_item_windows(
         wanted.push(label.clone());
 
         let position = LogicalPosition::new(item.x, item.y);
+        // A trinket is scenery, not a target: its clicks belong to whatever is
+        // behind it on the desktop. A prop is a target — the engine gives it
+        // `CanDrag`, and this window is how a pointer ever reaches it.
+        let click_through = !PROP_WINDOW_KINDS.contains(&item.kind.as_str());
 
         if let Some(window) = app.get_webview_window(&label) {
             window
                 .set_position(position)
                 .map_err(|error| format!("Could not place {label}: {error}"))?;
+            // Re-asserted on every reconcile rather than only at creation. A
+            // window that outlives a change to this rule would otherwise keep
+            // whatever it was born with — which is precisely what happened
+            // while a dev session hot-reloaded the frontend under a ball whose
+            // window had been created click-through, leaving a surface that
+            // rendered the grab cursor and never received a pointer.
+            window.set_ignore_cursor_events(click_through).ok();
             continue;
         }
 
@@ -435,7 +460,6 @@ pub(crate) async fn sync_item_windows(
         )
         .title("Trinket")
         .inner_size(ITEM_WINDOW_SIZE, ITEM_WINDOW_SIZE)
-        .position(item.x, item.y)
         .decorations(false)
         .transparent(true)
         .always_on_top(true)
@@ -446,9 +470,21 @@ pub(crate) async fn sync_item_windows(
         .build()
         .map_err(|error| format!("Could not create {label}: {error}"))?;
 
-        // A trinket is scenery, not a target: clicks belong to whatever is
-        // behind it on the desktop.
-        window.set_ignore_cursor_events(true).ok();
+        // Placed through the same `set_position` the reconcile above uses, and
+        // deliberately not through the builder's `.position()`. The two do not
+        // agree on units, so a window took one place when it was created and a
+        // different one the first time it moved. Nobody could see that on a
+        // trinket, which never moves — but the ball is a *target*: the host
+        // hit-tests a click by turning the pointer's screen position into a
+        // world position, so a window sitting where the world does not think it
+        // is means clicking the ball you can see misses the ball that exists.
+        // It fixed itself the moment a pet kicked it, which is exactly the
+        // clue that found this.
+        window
+            .set_position(position)
+            .map_err(|error| format!("Could not place {label}: {error}"))?;
+
+        window.set_ignore_cursor_events(click_through).ok();
     }
 
     for (label, window) in app.webview_windows() {

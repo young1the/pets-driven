@@ -94,6 +94,10 @@ export type {
   Vector,
 } from "@pets-driven/pet-engine/features/physics/components";
 export type {
+  WorldPropComponent,
+  WorldPropKind,
+} from "@pets-driven/pet-engine/features/props/components";
+export type {
   CanSocializeComponent,
   SeenSignatureReaction,
   SignatureReactionKind,
@@ -180,6 +184,7 @@ import type {
   PhysicsMaterialComponent,
   TransformComponent,
 } from "@pets-driven/pet-engine/features/physics/components";
+import type { WorldPropComponent } from "@pets-driven/pet-engine/features/props/components";
 import type {
   CanSocializeComponent,
   SignatureReactionMemoryComponent,
@@ -217,6 +222,7 @@ export type Component =
   | CarriedItemComponent
   | ItemSpawnerComponent
   | WorldItemComponent
+  | WorldPropComponent
   | ClimbDismountStateComponent
   | ClimbIntentStateComponent
   | ClimbableSurfaceComponent

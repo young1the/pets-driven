@@ -20,7 +20,10 @@ vi.mock("@/pet-window/pet-window-transport", () => ({
     subscribeBinding: () => Promise.resolve(() => {}),
     subscribeWindowFocus: () => Promise.resolve(() => {}),
     subscribeWindowBlur: () => Promise.resolve(() => {}),
-    sendInput: (payload: unknown) => sendInput(payload),
+    sendInput: (payload: unknown) => {
+      sendInput(payload);
+      return Promise.resolve();
+    },
     sendResize: vi.fn(),
     setWindowSize: () => Promise.resolve(),
     showWindow: () => Promise.resolve(),
