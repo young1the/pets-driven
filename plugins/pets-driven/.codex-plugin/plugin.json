@@ -12,7 +12,7 @@
     "companion",
     "agent-events"
   ],
-  "skills": "./skills/",
+  "skills": "./codex-skills/",
   "hooks": "./hooks/codex-hooks.json",
   "interface": {
     "displayName": "pets-driven",

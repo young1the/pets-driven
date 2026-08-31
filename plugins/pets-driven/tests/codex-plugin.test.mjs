@@ -17,7 +17,7 @@ assert.equal(existsSync(manifestPath), true, "Codex manifest should live in the 
 
 const manifest = readJson(manifestPath);
 assert.equal(manifest.name, "pets-driven");
-assert.equal(manifest.skills, "./skills/");
+assert.equal(manifest.skills, "./codex-skills/");
 assert.equal(manifest.hooks, "./hooks/codex-hooks.json");
 assert.equal(existsSync(join(pluginRoot, manifest.skills)), true, "Codex skills folder should exist");
 assert.equal(existsSync(join(pluginRoot, manifest.hooks)), true, "Codex hooks file should exist");
@@ -67,7 +67,7 @@ for (const eventName of [
   );
 }
 
-const hatchSkill = readFileSync(join(pluginRoot, "skills", "hatch", "SKILL.md"), "utf8");
+const hatchSkill = readFileSync(join(pluginRoot, "codex-skills", "hatch", "SKILL.md"), "utf8");
 assert.match(hatchSkill, /\.\.\/\.\.\/commands\/hatch\.md/);
 
 const marketplace = readJson(marketplacePath);

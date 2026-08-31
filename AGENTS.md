@@ -38,7 +38,7 @@ pnpm release:bump <major|minor|patch|X.Y.Z>  # one version across every manifest
 | `packages/pet-engine` | ECS simulation, personalities, sprite state | `packages/pet-engine/AGENTS.md` |
 | `packages/design-system` | Tokens and shared React components | `packages/design-system/AGENTS.md` |
 | `packages/i18n` | Locales, i18next setup, translation catalog | `packages/i18n/AGENTS.md` |
-| `plugins/pets-driven` | Shared Claude Code + Codex plugin: hooks, commands, skills | — |
+| `plugins/pets-driven` | Shared Claude Code + Codex plugin: hooks, Claude commands, Codex skills | — |
 | `pets/` | Canonical built-in pet definitions and spritesheets | `pets/README.md` |
 | `scripts/` | Asset sync, version bump, install test | — |
 
