@@ -498,6 +498,13 @@ export function usePetWindowSurface({
       setInteractionStatus("Direct manipulation");
       dragPauseUntilRef.current = Date.now() + 1200;
       emitPetWindowInput("body.pointer.down", event);
+      // The same press that makes this pet the engine's keyboard control target
+      // has to make its window the one the keyboard talks to — a pet overlay is
+      // created unfocused and never takes focus on its own, so without this the
+      // key events would go on landing in whatever the user was typing in.
+      // Not a host concern: both hosts are one OS window, and it is that window
+      // either way. See usePetWindowKeyboardControl.
+      void petWindowTransport.focusWindow();
       host.setCursorPassthrough(false);
       if (isPositionDrivenRef.current) {
         event.currentTarget.setPointerCapture?.(event.pointerId);

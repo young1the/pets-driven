@@ -18,6 +18,8 @@ function createStore() {
       components: [
         { type: "CanDrag" },
         { type: "CanControl", speed: 1.4 },
+        // A walker, so the jump key has something to ask JumpSystem for.
+        { type: "WalkingTag" },
         { type: "Transform", position: { x: 100, y: 100 } },
         { type: "PhysicsBody", shape: "rectangle", width: 40, height: 40 },
       ],
@@ -210,22 +212,188 @@ describe("UserInteractionBehaviorSystem", () => {
       code: "ArrowRight",
       at: 0,
     });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector).toEqual({
+      x: 1,
+      y: 0,
+    });
+  });
+
+  it("steers along the floor only, so a vertical key is not a direction", () => {
+    const components = createStore();
+    const events = createWorldEventQueue();
+    const clock = createManualClock(0);
+
     events.push({
       kind: "keyboard",
       type: "keyboard.down",
       key: "ArrowUp",
       code: "ArrowUp",
-      at: 1,
+      at: 0,
+    });
+    events.push({ kind: "keyboard", type: "keyboard.down", key: "w", code: "KeyW", at: 1 });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    // They still land in pressedCodes — the set is every key the surface
+    // relayed — but neither of them steers anything.
+    expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector).toEqual({
+      x: 0,
+      y: 0,
+    });
+  });
+});
+
+describe("releasing a steered pet", () => {
+  function selectPetA() {
+    const components = createStore();
+    const events = createWorldEventQueue();
+    const clock = createManualClock(0);
+
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 1,
+      at: 0,
+      position: { x: 100, y: 100 },
+    });
+    events.push({ kind: "keyboard", type: "keyboard.down", key: "d", code: "KeyD", at: 0 });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    return { components, events, clock };
+  }
+
+  it("hands the pet back when the user presses escape", () => {
+    const { components, events, clock } = selectPetA();
+
+    events.push({ kind: "keyboard", type: "keyboard.down", key: "Escape", code: "Escape", at: 1 });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    expect(
+      components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId,
+    ).toBeNull();
+  });
+
+  it("never steers with the release key", () => {
+    const { components, events, clock } = selectPetA();
+
+    events.push({ kind: "keyboard", type: "keyboard.down", key: "Escape", code: "Escape", at: 1 });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    const input = components.getComponent("user-interaction", "KeyboardInputState");
+    expect(input?.pressedCodes).not.toContain("Escape");
+    // The direction that was held is still held — releasing the pet is the
+    // point, not forgetting which way the user was pushing it.
+    expect(input?.pressedCodes).toContain("KeyD");
+  });
+
+  it("hands the pet back, holding nothing, when focus leaves the surface", () => {
+    const { components, events, clock } = selectPetA();
+
+    events.push({ kind: "keyboard", type: "keyboard.blur", at: 1 });
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    expect(
+      components.getComponent("user-interaction", "KeyboardControlTarget")?.entityId,
+    ).toBeNull();
+    // Whatever was held can never be released by a surface that stopped
+    // hearing keys, so a blur stands for every key-up it will not deliver.
+    expect(components.getComponent("user-interaction", "KeyboardInputState")).toMatchObject({
+      pressedCodes: [],
+      vector: { x: 0, y: 0 },
+    });
+  });
+});
+
+describe("jumping a steered pet", () => {
+  function selectPetA() {
+    const components = createStore();
+    const events = createWorldEventQueue();
+    const clock = createManualClock(0);
+
+    events.push({
+      kind: "pointer",
+      type: "pointer.down",
+      pointerId: 1,
+      at: 0,
+      position: { x: 100, y: 100 },
     });
     runUserInteractionBehaviorSystem(components, events, clock);
 
-    expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector.x).toBeCloseTo(
-      Math.SQRT1_2,
-      2,
-    );
-    expect(components.getComponent("user-interaction", "KeyboardInputState")?.vector.y).toBeCloseTo(
-      -Math.SQRT1_2,
-      2,
-    );
+    return { components, events, clock };
+  }
+
+  function pressJump(
+    events: ReturnType<typeof createWorldEventQueue>,
+    at: number,
+    type: "keyboard.down" | "keyboard.up" = "keyboard.down",
+  ) {
+    events.push({ kind: "keyboard", type, key: " ", code: "Space", at });
+  }
+
+  it("asks JumpSystem for a jump when the user presses space", () => {
+    const { components, events, clock } = selectPetA();
+
+    pressJump(events, 1);
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    // Only ever a request: grounded-ness, the impulse and the landing cooldown
+    // are JumpSystem's, exactly as they are for an autonomous request-jump.
+    expect(components.getComponent("pet-a", "JumpActionState")).toEqual({
+      type: "JumpActionState",
+      phase: "requested",
+      cooldownMs: 0,
+    });
+  });
+
+  it("never steers with the jump key", () => {
+    const { components, events, clock } = selectPetA();
+
+    pressJump(events, 1);
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    const input = components.getComponent("user-interaction", "KeyboardInputState");
+    expect(input?.pressedCodes).not.toContain("Space");
+    expect(input?.vector).toEqual({ x: 0, y: 0 });
+  });
+
+  it("leaves a jump already in flight alone, so leaning on space is one jump", () => {
+    const { components, events, clock } = selectPetA();
+
+    pressJump(events, 1);
+    runUserInteractionBehaviorSystem(components, events, clock);
+    const inFlight = components.getComponent("pet-a", "JumpActionState");
+    if (inFlight) inFlight.phase = "rising";
+
+    pressJump(events, 2, "keyboard.up");
+    pressJump(events, 3);
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    // JumpSystem keeps the component until the landing cooldown lapses, so its
+    // presence is what says "not ready" — a second press mid-air is not a
+    // second jump, and re-requesting would drop the pet out of its rise.
+    expect(components.getComponent("pet-a", "JumpActionState")?.phase).toBe("rising");
+  });
+
+  it("does nothing when no pet is held", () => {
+    const components = createStore();
+    const events = createWorldEventQueue();
+    const clock = createManualClock(0);
+
+    pressJump(events, 0);
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    expect(components.getComponent("pet-a", "JumpActionState")).toBeUndefined();
+  });
+
+  it("does nothing for a pet that is not walking", () => {
+    const { components, events, clock } = selectPetA();
+    components.removeComponent("pet-a", "WalkingTag");
+
+    pressJump(events, 1);
+    runUserInteractionBehaviorSystem(components, events, clock);
+
+    // A flier or a pet on a wall is not standing on anything to push off.
+    expect(components.getComponent("pet-a", "JumpActionState")).toBeUndefined();
   });
 });

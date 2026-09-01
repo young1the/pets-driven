@@ -90,6 +90,25 @@ export function isClaimed(
   return BEHAVIOR_PRIORITY[existing.source] < BEHAVIOR_PRIORITY[source];
 }
 
+/**
+ * User claims that stand rather than happen.
+ *
+ * Keyboard control holds a pet from the press that picked it up until it is
+ * let go, which can be minutes — unlike petting, a drag or an acknowledge beat,
+ * which are gestures with their own short lifetime. A standing claim has to
+ * outrank everything the pet and its agent want (that is the whole point of
+ * holding it), but it must not lock the user out of their own pet: petting a
+ * pet you are steering has to still pet it.
+ */
+const STANDING_USER_CLAIM_REASONS = new Set(["keyboard-control"]);
+
+export function isStandingUserClaim(decision: {
+  source: BehaviorDecisionSource;
+  reason: string;
+}): boolean {
+  return decision.source === "user-interaction" && STANDING_USER_CLAIM_REASONS.has(decision.reason);
+}
+
 export function isClaimedBySameOrHigherPriority(
   components: ComponentStore,
   id: string,
@@ -99,6 +118,8 @@ export function isClaimedBySameOrHigherPriority(
   const existing = components.getComponent(id, "BehaviorDecisionState");
   if (!existing) return false;
   if (existing.expiresAt <= now) return false;
+  // The user's own hands are never "someone else is busy with this pet".
+  if (source === "user-interaction" && isStandingUserClaim(existing)) return false;
   return BEHAVIOR_PRIORITY[existing.source] <= BEHAVIOR_PRIORITY[source];
 }
 

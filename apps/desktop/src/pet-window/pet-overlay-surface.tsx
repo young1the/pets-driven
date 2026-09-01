@@ -5,6 +5,7 @@ import { isFreshPetWindowMessage, type PetWindowFrame } from "@/pet-window/pet-w
 import { petWindowTransport, type Unsubscribe } from "@/pet-window/pet-window-transport";
 import type { PetWindowRect, PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PetWindowView } from "@/pet-window/pet-window-view";
+import { usePetWindowKeyboardControl } from "@/pet-window/use-pet-window-keyboard-control";
 
 const EMPTY_BOUNDS: PetWindowRect = { x: 0, y: 0, width: 0, height: 0 };
 
@@ -83,6 +84,11 @@ export function PetOverlaySurface() {
   const placementsRef = useRef(new Map<string, PetWindowFrame>());
   const boundsRef = useRef<PetWindowRect>(EMPTY_BOUNDS);
   const sequenceRef = useRef(0);
+
+  // No pet id: this window is shared, and the pet the keys steer is the one the
+  // engine already selected. Only adopted pets are ever drawn here, so the host
+  // reads an empty id as "the adopted world" and needs nothing else.
+  usePetWindowKeyboardControl("");
 
   useEffect(() => {
     document.documentElement.classList.add("pet-overlay-document");

@@ -80,6 +80,7 @@ const tauriWindowMocks = vi.hoisted(() => ({
   setPosition: vi.fn(),
   setSize: vi.fn(),
   show: vi.fn(),
+  setFocus: vi.fn(),
   startDragging: vi.fn(),
   setIgnoreCursorEvents: vi.fn(),
 }));
@@ -117,6 +118,7 @@ vi.mock("@tauri-apps/api/window", () => ({
     setPosition: tauriWindowMocks.setPosition,
     setSize: tauriWindowMocks.setSize,
     show: tauriWindowMocks.show,
+    setFocus: tauriWindowMocks.setFocus,
     startDragging: tauriWindowMocks.startDragging,
     setIgnoreCursorEvents: tauriWindowMocks.setIgnoreCursorEvents,
   })),
@@ -1152,6 +1154,45 @@ describe("pet window product route", () => {
           localPoint: { x: 96, y: 112 },
           screenPoint: { x: 196, y: 212 },
         }),
+      );
+    });
+  });
+
+  it("takes keyboard focus on a body press, so the pet it selects can be steered", () => {
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
+
+    render(<PetsDrivenApp />);
+    const canvas = screen.getByLabelText("Pet Window pet-a");
+
+    expect(tauriWindowMocks.setFocus).not.toHaveBeenCalled();
+
+    fireEvent(
+      canvas,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 96,
+        clientY: 112,
+        screenX: 196,
+        screenY: 212,
+      }),
+    );
+
+    expect(tauriWindowMocks.setFocus).toHaveBeenCalled();
+  });
+
+  it("forwards control keys to the host once its window has focus", async () => {
+    window.history.replaceState({}, "", "/?surface=pet-window&petId=pet-a&assetId=bloop");
+
+    render(<PetsDrivenApp />);
+
+    fireEvent.keyDown(window, { code: "KeyD", key: "d" });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        PET_WINDOW_HOST_LABEL,
+        PET_WINDOW_INPUT_EVENT,
+        expect.objectContaining({ kind: "body.key.down", code: "KeyD", petId: "pet-a" }),
       );
     });
   });

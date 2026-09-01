@@ -3,6 +3,7 @@ import { PetWindowFixtureSwitcher } from "@/pet-window/pet-window-fixture-switch
 import { PET_WINDOW_FIXTURES, resolvePetWindowFixture } from "@/pet-window/pet-window-fixtures";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 import { PetWindowView } from "@/pet-window/pet-window-view";
+import { usePetWindowKeyboardControl } from "@/pet-window/use-pet-window-keyboard-control";
 
 /**
  * Resolve the pet a URL asks for, or null when it addresses another surface.
@@ -65,6 +66,11 @@ export function PetWindowSurface({
     hostname: window.location.hostname,
     isDev: import.meta.env.DEV,
   });
+
+  // Here rather than in the surface: one relay per OS window, and this window
+  // holds exactly one pet — so its id is also the answer to which world the
+  // keys belong to (a playground fixture pet's world, or the adopted one).
+  usePetWindowKeyboardControl(pet.petId);
 
   return (
     <>

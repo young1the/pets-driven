@@ -38,7 +38,7 @@ export type PointerWorldEvent = {
   entityId?: string;
 };
 
-export type KeyboardWorldEvent = {
+export type KeyboardKeyWorldEvent = {
   kind: "keyboard";
   type: "keyboard.down" | "keyboard.up";
   key: string;
@@ -46,5 +46,31 @@ export type KeyboardWorldEvent = {
   at: number;
   repeat?: boolean;
 };
+
+/**
+ * Focus left the surface the keys were arriving from.
+ *
+ * It names no key because none is left: a surface that has lost focus will
+ * never see the key-ups for whatever was held, so this stands for all of them
+ * at once. It also ends the keyboard's hold on a pet — a pet is steered by
+ * whoever the keys are reaching, and they have stopped reaching anyone.
+ */
+export type KeyboardFocusLostWorldEvent = {
+  kind: "keyboard";
+  type: "keyboard.blur";
+  /**
+   * Release only if this is the entity currently being steered.
+   *
+   * A surface that stands for one entity says which, because focus arrives
+   * somewhere before it leaves anywhere: clicking pet B takes B first and only
+   * then blurs A's surface, and an unscoped release would undo the selection
+   * the click had just made. Absent from a surface that holds many entities —
+   * it lost focus for all of them at once, so there is nothing to scope to.
+   */
+  entityId?: string;
+  at: number;
+};
+
+export type KeyboardWorldEvent = KeyboardKeyWorldEvent | KeyboardFocusLostWorldEvent;
 
 export type WorldEvent = AgentWorldEvent | PointerWorldEvent | KeyboardWorldEvent;

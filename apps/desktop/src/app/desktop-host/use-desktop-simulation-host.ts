@@ -335,6 +335,45 @@ export function useDesktopSimulationHost({
     }
   }
 
+  // Steer the pet the world already has selected. A key names no entity — the
+  // engine's KeyboardControlTarget, set by the last press on a controllable
+  // pet, decides which one moves — so all this has to resolve is *which world*
+  // the sending window draws: the pet id it names when it holds one pet, and
+  // the adopted world when it holds many (only adopted pets share a window).
+  function pushPetWindowKeyEvent(input: PetWindowInputEvent) {
+    const isAdopted = !input.petId || adoptedPetIdsRef.current.has(input.petId);
+    const scenario = isAdopted ? adoptedScenarioRef.current : fixtureScenarioRef.current;
+
+    if (!scenario) {
+      return;
+    }
+
+    if (input.kind === "body.key.blur") {
+      scenario.world.pushEvent({
+        kind: "keyboard",
+        type: "keyboard.blur",
+        // Scoped to the pet this window stands for, so a window losing focus to
+        // *another pet's* window cannot undo the selection that click just made.
+        // The shared overlay names none: it lost focus for every pet at once.
+        entityId: input.petId || undefined,
+        at: scenario.clock.now(),
+      });
+      return;
+    }
+
+    if (!input.code) {
+      return;
+    }
+
+    scenario.world.pushEvent({
+      kind: "keyboard",
+      type: input.kind === "body.key.down" ? "keyboard.down" : "keyboard.up",
+      key: input.key ?? input.code,
+      code: input.code,
+      at: scenario.clock.now(),
+    });
+  }
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-once input listener (StrictMode-safe). The handlers it invokes read live state via refs and stable setters, so listing them would only re-register the listener every render and reintroduce duplicate-listener firing.
   useEffect(() => {
     if (!isTauri()) {
@@ -349,6 +388,14 @@ export function useDesktopSimulationHost({
       if (input.kind === "surface.capture.start" || input.kind === "surface.capture.end") {
         petOverlayCaptureUntilRef.current =
           input.kind === "surface.capture.start" ? Date.now() + PET_OVERLAY_CAPTURE_MAX_MS : 0;
+        return;
+      }
+      if (
+        input.kind === "body.key.down" ||
+        input.kind === "body.key.up" ||
+        input.kind === "body.key.blur"
+      ) {
+        pushPetWindowKeyEvent(input);
         return;
       }
       if (input.kind === "body.focus") {

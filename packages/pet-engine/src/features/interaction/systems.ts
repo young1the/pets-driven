@@ -2,6 +2,11 @@ import type { ComponentStore } from "@pets-driven/pet-engine/core/component-stor
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
 import { utteranceChannel } from "@pets-driven/pet-engine/features/agent/components";
+import {
+  clearMotionTarget,
+  isStandingUserClaim,
+  setPetSteering,
+} from "@pets-driven/pet-engine/features/behavior/claim";
 import type {
   KeyboardWorldEvent,
   PointerWorldEvent,
@@ -39,6 +44,20 @@ const ACKNOWLEDGE_FEEDBACK_MS = 3000;
 // per-tick throw speed comfortably below that so even a hard flick stays a
 // strong-but-contained throw that hits the wall instead of clearing it.
 const MAX_THROW_SPEED = 40;
+// The key that hands a steered pet back to itself, alongside the focus loss
+// that means the same thing without being typed.
+const RELEASE_CODE = "Escape";
+// The one vertical the user gets. Steering only moves a pet along the floor;
+// leaving the ground is a jump the pet performs, not a direction it is pushed
+// in, so this reaches JumpSystem as a request and inherits everything that
+// system already decides — grounded-only, landing cooldown, an impulse scaled
+// to this body and personality. It is never a direction, so it never enters
+// pressedCodes.
+const JUMP_CODE = "Space";
+// How long the keyboard's hold on a pet outlives the tick that renewed it.
+// Renewed every tick the pet is held, so this is only the slack that keeps the
+// pet from being re-planned in the gap between two ticks.
+const CONTROL_CLAIM_MS = 500;
 
 export function runUserInteractionBehaviorSystem(
   components: ComponentStore,
@@ -224,12 +243,72 @@ function handleKeyboardEvent(components: ComponentStore, event: KeyboardWorldEve
   const input = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardInputState");
   if (!input) return;
 
+  // Focus left: nothing can still be held, and nobody is steering any more.
+  if (event.type === "keyboard.blur") {
+    input.pressedCodes = [];
+    input.vector = { x: 0, y: 0 };
+    releaseKeyboardControl(components, event.entityId);
+    return;
+  }
+
+  // The way to hand a pet back to itself. A pet stays the user's from the press
+  // that picked it up until it is let go — see runKeyboardControlMovementSystem
+  // — so there has to be a key that means "let go", and it never counts as a
+  // direction.
+  if (event.code === RELEASE_CODE) {
+    if (event.type === "keyboard.down") releaseKeyboardControl(components);
+    return;
+  }
+
+  // Not a direction, so it neither joins pressedCodes nor survives the key-up:
+  // one press is one jump, and JumpSystem owns everything after that.
+  if (event.code === JUMP_CODE) {
+    if (event.type === "keyboard.down") requestKeyboardJump(components);
+    return;
+  }
+
   const pressed = new Set(input.pressedCodes);
   if (event.type === "keyboard.down") pressed.add(event.code);
   if (event.type === "keyboard.up") pressed.delete(event.code);
 
   input.pressedCodes = [...pressed];
   input.vector = keyboardVector(pressed);
+}
+
+/**
+ * Hand the steered pet back to its own plans. No-op when none is held, or when
+ * `onlyEntityId` names a pet that is no longer the one held — see the note on
+ * KeyboardFocusLostWorldEvent for why a release can arrive too late to be true.
+ */
+function releaseKeyboardControl(components: ComponentStore, onlyEntityId?: string): void {
+  const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
+  if (!target) return;
+  if (onlyEntityId && target.entityId !== onlyEntityId) return;
+  target.entityId = null;
+}
+
+/**
+ * Ask JumpSystem to launch the steered pet. Only ever a request: whether it
+ * leaves the ground, how hard, and what it costs are that system's to decide,
+ * the same way an autonomous request-jump behavior asks (see planning-system).
+ *
+ * Guarded like the approach jump in movement/systems.ts — a live JumpActionState
+ * means one is already in flight or cooling down, so a held Space is one jump
+ * and not a hover, and a pet that is flying or on a wall is not walking and has
+ * no jump to give.
+ */
+function requestKeyboardJump(components: ComponentStore): void {
+  const target = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
+  if (!target?.entityId) return;
+
+  const id = target.entityId;
+  if (!components.getComponent(id, "WalkingTag")) return;
+  if (components.getComponent(id, "FlyingTag") || components.getComponent(id, "ClimbingTag")) {
+    return;
+  }
+  if (components.getComponent(id, "JumpActionState")) return;
+
+  components.setComponent(id, { type: "JumpActionState", phase: "requested", cooldownMs: 0 });
 }
 
 /**
@@ -284,15 +363,16 @@ function hitTest(
   return hits[0] ?? null;
 }
 
+// Steering is horizontal only: the floor is where a steered pet lives, and the
+// one way off it is JUMP_CODE. A vertical axis here was an anti-gravity lift
+// no other part of the engine models — it pinned the pet mid-air at a constant
+// climb, read as permanently airborne to the animation layer, and came out
+// asymmetric because gravity is subtracted going up and added coming down.
 function keyboardVector(pressed: Set<string>): Vector {
   const x =
     Number(pressed.has("ArrowRight") || pressed.has("KeyD")) -
     Number(pressed.has("ArrowLeft") || pressed.has("KeyA"));
-  const y =
-    Number(pressed.has("ArrowDown") || pressed.has("KeyS")) -
-    Number(pressed.has("ArrowUp") || pressed.has("KeyW"));
-  const length = Math.hypot(x, y);
-  return length === 0 ? { x: 0, y: 0 } : { x: x / length, y: y / length };
+  return { x, y: 0 };
 }
 
 function claimUserInteraction(
@@ -408,20 +488,45 @@ export function runKeyboardControlMovementSystem(
   const canControl = components.getComponent(target.entityId, "CanControl");
   if (!canControl) return;
 
-  if (input.vector.x === 0 && input.vector.y === 0) {
+  const now = clock.now();
+  // Whatever else the user is doing with this pet right now wins: petting it,
+  // dragging it, acknowledging its report. Those are gestures with their own
+  // claim and their own beat, and the hold is not in a hurry — it takes the
+  // claim back on the tick after they lapse. Nothing the *pet* wants gets in
+  // here: only a live user-interaction claim that is not the hold itself.
+  const gesture = components.getComponent(target.entityId, "BehaviorDecisionState");
+  const heldByAnotherUserGesture =
+    gesture?.source === "user-interaction" &&
+    !isStandingUserClaim(gesture) &&
+    gesture.expiresAt > now;
+
+  // Held for as long as the pet is the user's, not only while a key is down.
+  // Between two presses the pet is still theirs, and the claim ladder is the
+  // only thing that stops its own planner — or its agent, or another pet
+  // wanting to socialize — from taking the body back in that gap and fighting
+  // the next press for it. The user lets go with Escape or by clicking away
+  // (see handleKeyboardEvent); until then nothing else decides for this pet.
+  if (!heldByAnotherUserGesture) {
+    claimUserInteraction(components, target.entityId, now, "keyboard-control", CONTROL_CLAIM_MS);
+  }
+
+  if (input.vector.x === 0) {
+    // Standing where it was put, rather than drifting on. Whatever it was
+    // walking toward when it was picked up is dropped here and not once at
+    // selection time: it is the last press that decides where the pet waits,
+    // and SteeringForceSystem has to be left with nothing to pull it with.
+    clearMotionTarget(components, target.entityId);
+    setPetSteering(components, target.entityId, "stand");
     physics.setVelocity(target.entityId, { x: 0 });
     return;
   }
 
-  const velocity: Partial<Vector> = {
-    x: input.vector.x * canControl.speed,
-  };
-  if (input.vector.y !== 0) {
-    velocity.y = input.vector.y * canControl.speed;
-  }
-
-  physics.setVelocity(target.entityId, velocity);
-  claimUserInteraction(components, target.entityId, clock.now(), "keyboard-control", 250);
+  // Horizontal only, and deliberately partial: leaving `y` unset keeps the
+  // body on whatever vertical it already had, so gravity, a jump in flight and
+  // a fall all carry on underneath the steering instead of being overwritten by
+  // it. Steering a pet through the air is the same press as steering it along
+  // the floor.
+  physics.setVelocity(target.entityId, { x: input.vector.x * canControl.speed });
 }
 
 export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> = {
@@ -440,6 +545,9 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "AgentTaskState",
     "AgentChannelState",
     "Personality",
+    "WalkingTag",
+    "FlyingTag",
+    "ClimbingTag",
   ],
   writes: [
     "KeyboardControlTarget",
@@ -451,6 +559,7 @@ export const UserInteractionBehaviorSystem: SimulationSystem<WorldStepContext> =
     "AgentChannelState",
     "TaskMovementHold",
     "PetExpressionState",
+    "JumpActionState",
   ],
   update(ctx) {
     runUserInteractionBehaviorSystem(ctx.components, ctx.events, ctx.clock, ctx.random);
@@ -481,7 +590,7 @@ export const KeyboardControlMovementSystem: SimulationSystem<WorldStepContext> =
   name: "KeyboardControlMovementSystem",
   dependsOn: ["SteeringForceSystem"],
   reads: ["KeyboardControlTarget", "KeyboardInputState", "CanControl"],
-  writes: ["PhysicsVelocity", "BehaviorDecisionState"],
+  writes: ["PhysicsVelocity", "BehaviorDecisionState", "MotionTarget", "Steering"],
   update(ctx) {
     runKeyboardControlMovementSystem(ctx.components, ctx.physics, ctx.clock);
   },

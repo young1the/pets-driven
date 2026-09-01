@@ -165,6 +165,14 @@ export type PetWindowInputKind =
   | "body.pointer.down"
   | "body.pointer.move"
   | "body.pointer.up"
+  // A control key pressed while this window holds focus. It names no point and
+  // no pet: the world it reaches decides which pet it steers, from the press
+  // that selected one. See usePetWindowKeyboardControl.
+  | "body.key.down"
+  | "body.key.up"
+  // This surface stopped hearing keys: it stands for every key-up that will
+  // now never arrive, and hands back the pet it was holding.
+  | "body.key.blur"
   | "body.focus"
   | "menu.close"
   | "menu.pick-folder"
@@ -214,6 +222,13 @@ export type PetWindowInputEvent = {
   localPoint: { x: number; y: number };
   screenPoint: { x: number; y: number };
   button?: number;
+  /**
+   * The key of a `body.key.*` input: `code` is the physical key the engine
+   * steers by (layout-independent, so WASD stays WASD on any keyboard), `key`
+   * the character it produced. Absent on every other kind.
+   */
+  key?: string;
+  code?: string;
   note?: string;
   at: number;
 };

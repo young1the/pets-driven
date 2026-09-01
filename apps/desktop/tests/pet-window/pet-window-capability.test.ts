@@ -30,6 +30,9 @@ describe("pet window tauri capability", () => {
     expect(capability.permissions).toContain("core:window:allow-outer-position");
     expect(capability.permissions).toContain("core:window:allow-set-position");
     expect(capability.permissions).toContain("core:window:allow-set-ignore-cursor-events");
+    // A pet overlay is created unfocused and has to take focus on a press
+    // before the keyboard can steer the pet it selected.
+    expect(capability.permissions).toContain("core:window:allow-set-focus");
     expect(capability.permissions).toContain("core:window:allow-start-dragging");
   });
 });

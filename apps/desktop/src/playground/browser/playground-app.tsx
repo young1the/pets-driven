@@ -96,12 +96,23 @@ export function DemoPlaygroundView() {
 
     const down = (event: KeyboardEvent) => pushKeyboardEvent(event, "keyboard.down");
     const up = (event: KeyboardEvent) => pushKeyboardEvent(event, "keyboard.up");
+    // Leaving the page is the same "let go" the desktop overlay sends: the key
+    // that was held will never be seen coming back up, and the pet stops being
+    // the user's the moment the keys stop reaching it.
+    const blur = () =>
+      scenarioRef.current.world.pushEvent({
+        kind: "keyboard",
+        type: "keyboard.blur",
+        at: scenarioRef.current.clock.now(),
+      });
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
 
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
     };
   }, []);
 
