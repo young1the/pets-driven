@@ -67,6 +67,12 @@ export function ItemWindowSurface({ item }: { item: ItemWindowRouteParams }) {
   // would have the artwork drifting up and down inside a window whose position
   // is already being driven by the physics body underneath it.
   const isProp = isPropKind(item.kind);
+  // Scenery is drawn and nothing else. The ball is the one prop the user
+  // handles — it rolls under its own window and can be grabbed and thrown —
+  // and it is the one with artwork; a prop that ships a glyph (a course hurdle)
+  // gets none of that behaviour.
+  const propGlyph = isPropKind(item.kind) ? presentWorldProp(item.kind).glyph : undefined;
+  const isHandledProp = isProp && !propGlyph;
   const sequenceRef = useRef(0);
   const artRef = useRef<HTMLImageElement>(null);
 
@@ -101,7 +107,7 @@ export function ItemWindowSurface({ item }: { item: ItemWindowRouteParams }) {
    * before this existed. There is no worse failure mode to guard against.
    */
   useEffect(() => {
-    if (!isProp) return;
+    if (!isHandledProp) return;
 
     let frame = 0;
     let lastScreenX: number | null = null;
@@ -121,7 +127,7 @@ export function ItemWindowSurface({ item }: { item: ItemWindowRouteParams }) {
 
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [isProp]);
+  }, [isHandledProp]);
 
   /**
    * Hand a pointer event to the host, which projects it into the world.
@@ -180,7 +186,7 @@ export function ItemWindowSurface({ item }: { item: ItemWindowRouteParams }) {
     return Math.hypot(dx, dy) <= BALL_ART_RENDERED_RADIUS_PX;
   }
 
-  const propHandlers = isProp
+  const propHandlers = isHandledProp
     ? {
         onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
           if (!isOnTheBall(event)) return;
@@ -204,7 +210,7 @@ export function ItemWindowSurface({ item }: { item: ItemWindowRouteParams }) {
       aria-label={label}
       {...propHandlers}
     >
-      {isProp ? (
+      {isHandledProp ? (
         // `draggable={false}` is load-bearing, not tidiness: an image element
         // is natively draggable, so grabbing the ball started an image
         // drag-out and the shell offered to download the artwork instead of
@@ -226,9 +232,11 @@ export function ItemWindowSurface({ item }: { item: ItemWindowRouteParams }) {
         />
       ) : (
         <>
-          <span className="item-window__halo" />
+          {/* The halo says "come and collect me", which is true of a trinket
+              and false of course scenery nobody is meant to walk over to. */}
+          {isProp ? null : <span className="item-window__halo" />}
           <span className="item-window__glyph">
-            {presentWorldItem(item.kind as PetItemKind).glyph}
+            {propGlyph ?? presentWorldItem(item.kind as PetItemKind).glyph}
           </span>
         </>
       )}

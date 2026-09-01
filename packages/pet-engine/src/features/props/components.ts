@@ -17,8 +17,15 @@
  * on a pet — so PropKickSystem never touches the physics engine at all.
  */
 
-/** What kind of prop this is. One today; the shape is here for the next one. */
-export type WorldPropKind = "ball";
+/**
+ * What kind of prop this is.
+ *
+ * `ball` is furniture the pets play with. `hurdle` is course scenery: it shares
+ * the prop machinery — a body that falls and stands on the floor, and the
+ * window the host already draws props in — but it is not a toy, and
+ * PropKickSystem skips it (see the GameObstacle guard there).
+ */
+export type WorldPropKind = "ball" | "hurdle";
 
 /**
  * A prop lying on the desktop.

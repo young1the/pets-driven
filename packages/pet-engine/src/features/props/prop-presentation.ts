@@ -1,27 +1,33 @@
 import type { WorldPropKind } from "@pets-driven/pet-engine/features/props/components";
 
 /**
- * What a prop is called. Deliberately *only* a name — unlike
- * WORLD_ITEM_PRESENTATION, there is no glyph here.
+ * What a prop is called, and — for the ones a glyph can honestly stand for —
+ * what to draw.
  *
- * A trinket is a marker, and a text character is an honest picture of one: it
- * lies still, it is the same at every size, and one emoji says the whole thing.
- * A prop is a body. It has volume, it is lit, and it rotates with the physics
- * angle as it rolls — none of which a glyph can carry, and the attempt looked
- * it: the ball shipped as ⚽ and read as a flat sticker from the system emoji
- * font sitting beside soft shaded sprites.
+ * The ball has no glyph on purpose. A trinket is a marker, and a text character
+ * is an honest picture of one: it lies still, it is the same at every size, and
+ * one emoji says the whole thing. The ball is a body that has volume, is lit,
+ * and rotates with the physics angle as it rolls — none of which a glyph can
+ * carry, and the attempt looked it: it shipped as ⚽ and read as a flat sticker
+ * from the system emoji font sitting beside soft shaded sprites. Its drawing
+ * lives with the host that owns the palette
+ * (`apps/desktop/src/artwork/prop-artwork.ts`).
  *
- * So the drawing lives with the host that owns the palette
- * (`apps/desktop/src/artwork/prop-artwork.ts`), and this catalogue keeps the
- * one thing every host needs and none should invent: the accessible name.
+ * A hurdle is the other case. It is course scenery that slides past at a
+ * constant speed and never turns, so a glyph is the whole of it — and the
+ * course vocabulary this becomes (a stack of books for reading, a wrench for
+ * editing) is read as symbols rather than objects anyway.
  */
 export type WorldPropPresentation = {
+  /** Drawn as a glyph when the prop has no bespoke artwork. The ball has art. */
+  glyph?: string;
   /** English fallback label; hosts with a catalogue translate by kind instead. */
   label: string;
 };
 
 export const WORLD_PROP_PRESENTATION: Record<WorldPropKind, WorldPropPresentation> = {
   ball: { label: "Ball" },
+  hurdle: { label: "Hurdle", glyph: "🚧" },
 };
 
 export function presentWorldProp(kind: WorldPropKind): WorldPropPresentation {

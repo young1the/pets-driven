@@ -72,3 +72,50 @@ export function gameCountdownGlyph(countdownMs: number): string | null {
   if (second === 2) return "2️⃣";
   return "1️⃣";
 }
+
+/**
+ * A piece of scenery on the course.
+ *
+ * Rides on a prop rather than being its own kind of thing: an obstacle needs a
+ * body that stands on the floor and a window the host already knows how to
+ * draw, and `WorldProp` is exactly that. What it must *not* inherit is being a
+ * toy, so PropKickSystem skips anything wearing this — a pet does not dribble
+ * a hurdle.
+ */
+export type GameObstacleComponent = {
+  type: "GameObstacle";
+  spawnedAt: number;
+  /** True once the pet has passed it, so one obstacle scores once. */
+  cleared: boolean;
+};
+
+/** The hurdle's body, in engine pixels. Small enough that the default jump clears it. */
+export const HURDLE_SIZE = { width: 26, height: 30 } as const;
+
+/**
+ * How fast the course comes at the pet, in engine pixels per 16ms tick.
+ *
+ * Matches DEFAULT_PET_CONTROL_SPEED on purpose. The pet runs in place and the
+ * scenery moves, so this number *is* the pet's running speed — and a round the
+ * user has taken the controls of has to feel like the pace they already know
+ * from steering a pet by hand.
+ */
+export const COURSE_SCROLL_SPEED = 3.2;
+
+/** Where an obstacle enters, measured from the pet. Just off the far edge of a look. */
+export const COURSE_SPAWN_AHEAD = 460;
+
+/** How far past the pet an obstacle travels before it is taken away. */
+export const COURSE_REAP_BEHIND = 140;
+
+/**
+ * Obstacles alive at once.
+ *
+ * A cap rather than a rhythm alone, because in window-per-pet mode every one of
+ * these is a real always-on-top window. Four is what the spacing below produces
+ * anyway; the cap is what stops a burst of tool calls from opening twenty.
+ */
+export const MAX_LIVE_OBSTACLES = 4;
+
+/** Gap between obstacles on the `auto` rhythm. Comfortably more than one jump. */
+export const COURSE_SPAWN_INTERVAL_MS = 1_400;

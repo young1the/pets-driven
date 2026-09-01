@@ -33,7 +33,11 @@ import {
 import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
 import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
 import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
-import { GameSessionSystem } from "@pets-driven/pet-engine/features/game/systems";
+import {
+  GameCourseSystem,
+  GameSessionSystem,
+  GameSpawnSystem,
+} from "@pets-driven/pet-engine/features/game/systems";
 import {
   DraggedEntityKinematicSystem,
   KeyboardControlMovementSystem,
@@ -99,6 +103,9 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     // Reads this tick's task state, never a claim: a pet on a course is still
     // its agent's pet, and a game must never be the reason a report is missed.
     GameSessionSystem,
+    // Right after the session, so a round that started this tick lays its first
+    // obstacle now rather than a tick late.
+    GameSpawnSystem,
     CollisionBehaviorSystem, // priority 3: overlap startle → reaction/bump-to-greet
     // Same tier and the same idea: a physical overlap the pet did not deliberate
     // over. Sits after the pet-to-pet reaction so a startle still wins the claim,
@@ -142,6 +149,9 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     WallClimbSystem,
     SteeringForceSystem,
     KeyboardControlMovementSystem,
+    // After JumpSystem so a jump requested this tick is already in the air, and
+    // beside KeyboardControlMovementSystem because it pins speeds the same way.
+    GameCourseSystem,
     FlightSystem,
     DraggedEntityKinematicSystem,
     ThrowImpulseSystem,

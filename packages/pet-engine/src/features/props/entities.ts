@@ -1,4 +1,5 @@
 import type { EntityDeclaration } from "@pets-driven/pet-engine/core/component-store";
+import { HURDLE_SIZE } from "@pets-driven/pet-engine/features/game/components";
 import {
   BALL_ENTITY_ID,
   BALL_MATERIAL,
@@ -43,6 +44,33 @@ export function createBallProp(
 }
 
 /**
+ * A course hurdle, as the game slice spawns it.
+ *
+ * A prop and not a toy: it has the body and the window a prop gets, and
+ * `GameObstacle` is what tells PropKickSystem to leave it alone. No CanDrag
+ * either — a hurdle the user can pick up and throw is a hurdle that stops being
+ * where the course put it.
+ *
+ * `position` is its centre, so a caller resting one on a floor passes the
+ * floor line minus half its height.
+ */
+export function createHurdleProp(
+  position: { x: number; y: number },
+  now = 0,
+  id = "prop-hurdle",
+): EntityDeclaration {
+  return {
+    id,
+    components: [
+      { type: "WorldProp", kind: "hurdle", spawnedAt: now, lastKickBy: null, lastKickAt: 0 },
+      { type: "GameObstacle", spawnedAt: now, cleared: false },
+      { type: "Transform", position: { ...position } },
+      { type: "PhysicsBody", shape: "rectangle", ...HURDLE_SIZE },
+    ],
+  };
+}
+
+/**
  * Build a prop of any kind. A record rather than a switch so adding a kind to
  * `WorldPropKind` fails to type-check until there is something to build for it
  * — the same reason the presentation catalogue is a record.
@@ -52,6 +80,7 @@ const PROP_BUILDERS: Record<
   (position: { x: number; y: number }, now: number, id: string) => EntityDeclaration
 > = {
   ball: createBallProp,
+  hurdle: createHurdleProp,
 };
 
 export function createProp(

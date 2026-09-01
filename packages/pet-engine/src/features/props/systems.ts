@@ -57,6 +57,10 @@ export function runPropKickSystem(
 
     for (const entry of props) {
       const [prop, propTransform] = entry.components;
+      // Course scenery, not a toy. A hurdle shares everything else a prop has
+      // — a body, a floor to stand on, a window to be drawn in — but a pet
+      // dribbling the obstacle it is supposed to jump is not a game.
+      if (components.getComponent(entry.id, "GameObstacle")) continue;
       if (prop.lastKickBy === petId && now - prop.lastKickAt < PROP_KICK_COOLDOWN_MS) {
         continue;
       }
