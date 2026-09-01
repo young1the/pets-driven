@@ -5,16 +5,20 @@ import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-c
 import {
   COURSE_LANE_BACK,
   COURSE_LANE_FORWARD,
+  COURSE_MARKER_AHEAD,
+  COURSE_OBSTACLE_FOR_ACTIVITY,
+  COURSE_OBSTACLE_SIZE,
   COURSE_REAP_BEHIND,
   COURSE_SCROLL_SPEED,
   COURSE_SPAWN_AHEAD,
   COURSE_SPAWN_INTERVAL_MS,
+  type CourseObstacleKind,
+  GAME_OVER_LINGER_MS,
   GAME_SESSION_ENTITY_ID,
   GAME_STUMBLE_MS,
   type GameControlSource,
   type GamePhase,
   type GameSpawnSource,
-  HURDLE_SIZE,
   MAX_LIVE_OBSTACLES,
   OBSTACLE_HIT_INSET,
   PILOT_IGNORE_BEHIND,
@@ -22,7 +26,7 @@ import {
 } from "@pets-driven/pet-engine/features/game/components";
 import { INTERACTION_ENTITY_ID } from "@pets-driven/pet-engine/features/interaction/systems";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
-import { createHurdleProp } from "@pets-driven/pet-engine/features/props/entities";
+import { createObstacleProp } from "@pets-driven/pet-engine/features/props/entities";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
 /** The slice of the physics world a course needs: it pins speeds, nothing more. */
@@ -138,24 +142,27 @@ export function spawnObstacle(
   physics: Pick<MatterPhysicsWorld, "addRectangle">,
   petId: string,
   now: number,
+  kind: CourseObstacleKind = "hurdle",
+  ahead: number = COURSE_SPAWN_AHEAD,
 ): string | null {
   const petTransform = components.getComponent(petId, "Transform");
   const petBody = components.getComponent(petId, "PhysicsBody");
   if (!petTransform || !petBody) return null;
 
-  const id = `game-obstacle-${now}`;
+  const id = `game-obstacle-${kind}-${now}`;
   if (components.getEntity(id)) return null;
 
+  const size = COURSE_OBSTACLE_SIZE[kind];
   // Feet on the same line as the pet's: the pet's centre is half its body above
-  // the floor, so the hurdle's centre is half of *its* body above that floor.
+  // the floor, so the obstacle's centre is half of *its* body above that floor.
   const floorY = petTransform.position.y + petBody.height / 2;
   const position = {
-    x: petTransform.position.x + COURSE_SPAWN_AHEAD,
-    y: floorY - HURDLE_SIZE.height / 2,
+    x: petTransform.position.x + ahead,
+    y: floorY - size.height / 2,
   };
 
-  components.spawn(id, createHurdleProp(position, now, id).components);
-  physics.addRectangle(id, position, { ...HURDLE_SIZE });
+  components.spawn(id, createObstacleProp(kind, position, now, id).components);
+  physics.addRectangle(id, position, { ...size });
 
   return id;
 }
@@ -180,8 +187,20 @@ export function runGameCourseSystem(
   const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
   if (!session?.petId) return;
 
-  const petTransform = components.getComponent(session.petId, "Transform");
+  const petId = session.petId;
+  const petTransform = components.getComponent(petId, "Transform");
   if (!petTransform) return;
+
+  // A finished round keeps its last obstacle for a beat — the flag or the wall
+  // *is* the report — then takes every window away. Nothing else sweeps a prop.
+  if (session.phase === "over") {
+    if (session.endedAt > 0 && now - session.endedAt >= GAME_OVER_LINGER_MS) {
+      sweepCourse(components);
+      session.petId = null;
+    } else if (session.endedAt === 0) {
+      session.endedAt = now;
+    }
+  }
 
   const running = session.phase === "running" && !stilled;
 
@@ -197,7 +216,7 @@ export function runGameCourseSystem(
 
     physics.setVelocity(entry.id, { x: -COURSE_SCROLL_SPEED });
 
-    if (!obstacle.cleared && clipsPet(components, session.petId, entry.id)) {
+    if (!obstacle.cleared && clipsPet(components, petId, entry.id)) {
       // Cleared on contact as well as on passing, so one obstacle can only ever
       // cost the pet once however long the two stay overlapped.
       obstacle.cleared = true;
@@ -437,5 +456,128 @@ export const GamePilotSystem: SimulationSystem<WorldStepContext> = {
   writes: ["JumpActionState"],
   update(ctx) {
     runGamePilotSystem(ctx.components, isMovementStilled(ctx.quietMode));
+  },
+};
+
+/**
+ * The course an agent lays for its own pet.
+ *
+ * This is the mode the whole feature exists for. A practice round is a game; a
+ * tool-use round is a *reading* — obstacle density is how busy the agent is,
+ * and the shapes say what it is busy with. The user is not expected to play it.
+ *
+ * Pulses, not events. A tool call reaches the world as an event the agent
+ * systems drain before this ever runs, but it leaves `AgentActivitySignal`
+ * behind with the time it landed — so the course watches that timestamp move
+ * instead of racing the queue for the event. It also means a burst of calls
+ * that share a tick produces one obstacle rather than a wall of them.
+ *
+ * The three states that are not obstacles at all:
+ *
+ * - `waiting` stops the course dead at a gate. This is the one that makes the
+ *   feature honest — the game halting *is* the report, so what is on screen and
+ *   what the user has to do are the same thing rather than competing for
+ *   attention. It resumes, gate swept, the moment the agent moves on.
+ * - `completed` plants a finish line, `failed` a wall. Both end the round; only
+ *   the agent ever ends a tool-use round.
+ */
+export function runGameToolUseSpawnSystem(ctx: {
+  components: ComponentStore;
+  physics: Pick<MatterPhysicsWorld, "addRectangle">;
+  clock: Clock;
+  stilled: boolean;
+}): void {
+  const { components, physics, clock, stilled } = ctx;
+  const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
+  if (!session?.petId || session.spawn !== "tool-use" || stilled) return;
+  if (session.phase === "over" || session.phase === "countdown") return;
+
+  const now = clock.now();
+  const status = components.getComponent(session.petId, "AgentTaskState")?.status;
+
+  if (status === "completed" || status === "failed") {
+    endRoundAt(components, physics, session, status === "failed" ? "wall" : "finish", now);
+    return;
+  }
+
+  if (status === "waiting") {
+    if (session.phase !== "blocked") {
+      session.phase = "blocked";
+      placeMarker(components, physics, session.petId, "gate", now);
+    }
+    return;
+  }
+
+  if (session.phase === "blocked") {
+    // The agent moved on, so the gate did its job and the course starts again.
+    sweepObstaclesOfKind(components, "gate");
+    session.phase = "running";
+  }
+
+  if (session.phase !== "running") return;
+
+  const pulse = components.getComponent(session.petId, "AgentActivitySignal");
+  if (!pulse || pulse.at <= session.lastPulseAt) return;
+  session.lastPulseAt = pulse.at;
+
+  if (components.query("GameObstacle").length >= MAX_LIVE_OBSTACLES) return;
+
+  // An adapter that reported no activity still moved the heartbeat, so the pet
+  // still has something to jump — it is a tool call either way, just an
+  // unlabelled one.
+  const kind = pulse.activity ? COURSE_OBSTACLE_FOR_ACTIVITY[pulse.activity] : "hurdle";
+  spawnObstacle(components, physics, session.petId, now, kind);
+}
+
+/** Put a gate, a flag or a wall right where the pet can see it. */
+function placeMarker(
+  components: ComponentStore,
+  physics: Pick<MatterPhysicsWorld, "addRectangle">,
+  petId: string,
+  kind: CourseObstacleKind,
+  now: number,
+): void {
+  spawnObstacle(components, physics, petId, now, kind, COURSE_MARKER_AHEAD);
+}
+
+function endRoundAt(
+  components: ComponentStore,
+  physics: Pick<MatterPhysicsWorld, "addRectangle">,
+  session: { petId: string | null; phase: GamePhase; endedAt: number },
+  kind: CourseObstacleKind,
+  now: number,
+): void {
+  if (!session.petId) return;
+  sweepObstaclesOfKind(components, "gate");
+  placeMarker(components, physics, session.petId, kind, now);
+  session.phase = "over";
+  session.endedAt = now;
+}
+
+function sweepObstaclesOfKind(components: ComponentStore, kind: CourseObstacleKind): void {
+  for (const entry of components.query("GameObstacle", "WorldProp")) {
+    if (entry.components[1].kind === kind) components.destroy(entry.id);
+  }
+}
+
+/** Take every obstacle off the desktop. Nothing else ever sweeps a prop. */
+export function sweepCourse(components: ComponentStore): void {
+  for (const entry of components.query("GameObstacle")) {
+    components.destroy(entry.id);
+  }
+}
+
+export const GameToolUseSpawnSystem: SimulationSystem<WorldStepContext> = {
+  name: "GameToolUseSpawnSystem",
+  dependsOn: ["GameSessionSystem"],
+  reads: ["GameSession", "GameObstacle", "AgentTaskState", "AgentActivitySignal", "Transform"],
+  writes: ["GameSession", "GameObstacle", "WorldProp", "Transform", "PhysicsBody"],
+  update(ctx) {
+    runGameToolUseSpawnSystem({
+      components: ctx.components,
+      physics: ctx.physics,
+      clock: ctx.clock,
+      stilled: isMovementStilled(ctx.quietMode),
+    });
   },
 };

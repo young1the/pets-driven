@@ -38,6 +38,7 @@ import {
   GamePilotSystem,
   GameSessionSystem,
   GameSpawnSystem,
+  GameToolUseSpawnSystem,
 } from "@pets-driven/pet-engine/features/game/systems";
 import {
   DraggedEntityKinematicSystem,
@@ -107,6 +108,9 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     // Right after the session, so a round that started this tick lays its first
     // obstacle now rather than a tick late.
     GameSpawnSystem,
+    // The agent's own course. Reads the task state AgentTaskEventSystem just
+    // settled, so a round ends on this tick's result and not the last one's.
+    GameToolUseSpawnSystem,
     // Reads the course the spawner just laid, and only ever asks JumpSystem for
     // a jump — it takes no claim, so an agent event still wins the body.
     GamePilotSystem,

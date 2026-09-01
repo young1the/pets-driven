@@ -25,7 +25,19 @@
  * window the host already draws props in — but it is not a toy, and
  * PropKickSystem skips it (see the GameObstacle guard there).
  */
-export type WorldPropKind = "ball" | "hurdle";
+export type WorldPropKind =
+  | "ball"
+  // Course scenery. The plain hurdle is what a practice round is made of; the
+  // rest are the vocabulary a tool-use round draws from, one shape per thing an
+  // agent can be doing. They are told apart by kind and not by a field on
+  // GameObstacle because the kind is what reaches the window that draws them.
+  | "hurdle"
+  | "book-stack"
+  | "toolbox"
+  | "flame"
+  | "gate"
+  | "finish"
+  | "wall";
 
 /**
  * A prop lying on the desktop.

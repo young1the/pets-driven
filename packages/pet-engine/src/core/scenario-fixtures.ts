@@ -815,6 +815,8 @@ function idleGameSession(): GameSessionComponent {
     score: 0,
     startedAt: 0,
     anchorX: 0,
+    lastPulseAt: 0,
+    endedAt: 0,
   };
 }
 

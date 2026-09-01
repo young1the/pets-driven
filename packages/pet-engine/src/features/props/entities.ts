@@ -1,5 +1,8 @@
 import type { EntityDeclaration } from "@pets-driven/pet-engine/core/component-store";
-import { HURDLE_SIZE } from "@pets-driven/pet-engine/features/game/components";
+import {
+  COURSE_OBSTACLE_SIZE,
+  type CourseObstacleKind,
+} from "@pets-driven/pet-engine/features/game/components";
 import {
   BALL_ENTITY_ID,
   BALL_MATERIAL,
@@ -54,20 +57,30 @@ export function createBallProp(
  * `position` is its centre, so a caller resting one on a floor passes the
  * floor line minus half its height.
  */
+export function createObstacleProp(
+  kind: CourseObstacleKind,
+  position: { x: number; y: number },
+  now = 0,
+  id = `prop-${kind}`,
+): EntityDeclaration {
+  return {
+    id,
+    components: [
+      { type: "WorldProp", kind, spawnedAt: now, lastKickBy: null, lastKickAt: 0 },
+      { type: "GameObstacle", spawnedAt: now, cleared: false },
+      { type: "Transform", position: { ...position } },
+      { type: "PhysicsBody", shape: "rectangle", ...COURSE_OBSTACLE_SIZE[kind] },
+    ],
+  };
+}
+
+/** The plain hurdle a practice round is made of. */
 export function createHurdleProp(
   position: { x: number; y: number },
   now = 0,
   id = "prop-hurdle",
 ): EntityDeclaration {
-  return {
-    id,
-    components: [
-      { type: "WorldProp", kind: "hurdle", spawnedAt: now, lastKickBy: null, lastKickAt: 0 },
-      { type: "GameObstacle", spawnedAt: now, cleared: false },
-      { type: "Transform", position: { ...position } },
-      { type: "PhysicsBody", shape: "rectangle", ...HURDLE_SIZE },
-    ],
-  };
+  return createObstacleProp("hurdle", position, now, id);
 }
 
 /**
@@ -81,6 +94,12 @@ const PROP_BUILDERS: Record<
 > = {
   ball: createBallProp,
   hurdle: createHurdleProp,
+  "book-stack": (position, now, id) => createObstacleProp("book-stack", position, now, id),
+  toolbox: (position, now, id) => createObstacleProp("toolbox", position, now, id),
+  flame: (position, now, id) => createObstacleProp("flame", position, now, id),
+  gate: (position, now, id) => createObstacleProp("gate", position, now, id),
+  finish: (position, now, id) => createObstacleProp("finish", position, now, id),
+  wall: (position, now, id) => createObstacleProp("wall", position, now, id),
 };
 
 export function createProp(

@@ -1,3 +1,5 @@
+import type { WorldPropKind } from "@pets-driven/pet-engine/features/props/components";
+
 /**
  * Game mode: the one pet the user has put on a course, and how it is being run.
  *
@@ -60,6 +62,15 @@ export type GameSessionComponent = {
    * last.
    */
   anchorX: number;
+  /**
+   * The agent pulse this round has already turned into scenery. A tool call is
+   * a heartbeat that lands on AgentActivitySignal, not an event the course can
+   * drain — the agent systems consume the queue first — so the course watches
+   * the timestamp move instead.
+   */
+  lastPulseAt: number;
+  /** When the round ended, so its last obstacle can be read before it is swept. */
+  endedAt: number;
 };
 
 /** How long the opening countdown runs, and therefore how many glyphs it shows. */
@@ -184,3 +195,56 @@ export const PILOT_JUMP_DISTANCE = 70;
  * obstacle being passed cannot trigger a second, pointless jump on its way out.
  */
 export const PILOT_IGNORE_BEHIND = 8;
+
+/**
+ * The obstacle kinds a course is made of — every prop kind except the ball.
+ *
+ * A course reads as a sentence about what the agent is doing, so the shapes are
+ * chosen to be told apart at a glance rather than to be varied: reading is
+ * frequent and low, editing is occasional and solid, running something flickers
+ * and has timing. The last three are not obstacles to clear at all — they are
+ * how a round ends, or stops.
+ */
+export type CourseObstacleKind = Exclude<WorldPropKind, "ball">;
+
+/**
+ * Each obstacle's body.
+ *
+ * Height carries the meaning: a hurdle is jumpable, and a gate or a wall is
+ * deliberately not — those are the ones the agent has to clear, not the pet.
+ * The finish flag is tall too, but nothing ever clips it: the round is already
+ * over by the time it arrives.
+ */
+export const COURSE_OBSTACLE_SIZE: Record<CourseObstacleKind, { width: number; height: number }> = {
+  hurdle: { width: 26, height: 30 },
+  "book-stack": { width: 30, height: 24 },
+  toolbox: { width: 26, height: 32 },
+  flame: { width: 24, height: 34 },
+  gate: { width: 30, height: 52 },
+  finish: { width: 28, height: 52 },
+  wall: { width: 30, height: 56 },
+};
+
+/** The obstacle a tool call becomes, by the activity the agent reported. */
+export const COURSE_OBSTACLE_FOR_ACTIVITY: Record<"study" | "edit" | "run", CourseObstacleKind> = {
+  study: "book-stack",
+  edit: "toolbox",
+  run: "flame",
+};
+
+/**
+ * Where a gate, a finish or a wall appears — close enough that the pet is
+ * plainly standing at it rather than watching it approach from off screen.
+ * These are not obstacles to time; they are the round changing state.
+ */
+export const COURSE_MARKER_AHEAD = 120;
+
+/**
+ * How long a finished round stays on screen before it is swept.
+ *
+ * A round that vanished the instant it ended would leave nothing to read — the
+ * flag or the wall *is* the report, and it has to be there long enough to be
+ * seen. It is also the only thing that takes the obstacle windows away, so this
+ * is not merely a flourish.
+ */
+export const GAME_OVER_LINGER_MS = 2_600;

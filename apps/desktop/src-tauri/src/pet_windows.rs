@@ -389,7 +389,18 @@ const ITEM_WINDOW_SIZE: f64 = 64.0;
 /// The difference is that a prop moves, which costs nothing extra here — the
 /// reconcile below already repositions a window it has rather than rebuilding
 /// it.
-const ITEM_WINDOW_KINDS: [&str; 4] = ["wings", "claws", "ball", "hurdle"];
+const ITEM_WINDOW_KINDS: [&str; 10] = [
+    "wings",
+    "claws",
+    "ball",
+    "hurdle",
+    "book-stack",
+    "toolbox",
+    "flame",
+    "gate",
+    "finish",
+    "wall",
+];
 
 /// The subset of the above the user can grab. A narrower set than
 /// `WorldPropKind`: a course hurdle is a prop, and is not one of these.
@@ -712,6 +723,12 @@ mod tests {
         // with it.
         assert!(ITEM_WINDOW_KINDS.contains(&"ball"));
         assert!(ITEM_WINDOW_KINDS.contains(&"hurdle"));
+        assert!(ITEM_WINDOW_KINDS.contains(&"book-stack"));
+        assert!(ITEM_WINDOW_KINDS.contains(&"toolbox"));
+        assert!(ITEM_WINDOW_KINDS.contains(&"flame"));
+        assert!(ITEM_WINDOW_KINDS.contains(&"gate"));
+        assert!(ITEM_WINDOW_KINDS.contains(&"finish"));
+        assert!(ITEM_WINDOW_KINDS.contains(&"wall"));
         assert!(!ITEM_WINDOW_KINDS.contains(&"boots"));
     }
 

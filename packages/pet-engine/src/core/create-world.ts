@@ -635,6 +635,10 @@ export function createWorld(input: WorldDefinition) {
       // The middle of the pet's lane for this round. Taken once, here, so the
       // boundary stays put instead of drifting along with the pet.
       session.anchorX = components.getComponent(petId, "Transform")?.position.x ?? 0;
+      // A round only reacts to pulses that land after it starts; whatever the
+      // agent did before is not this course.
+      session.lastPulseAt = components.getComponent(petId, "AgentActivitySignal")?.at ?? 0;
+      session.endedAt = 0;
       return true;
     },
     /** End the running session, whichever pet it was on. */

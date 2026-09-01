@@ -27,7 +27,13 @@ export type WorldPropPresentation = {
 
 export const WORLD_PROP_PRESENTATION: Record<WorldPropKind, WorldPropPresentation> = {
   ball: { label: "Ball" },
-  hurdle: { label: "Hurdle", glyph: "🚧" },
+  hurdle: { label: "Hurdle", glyph: "🌵" },
+  "book-stack": { label: "Reading", glyph: "📚" },
+  toolbox: { label: "Editing", glyph: "🔧" },
+  flame: { label: "Running something", glyph: "🔥" },
+  gate: { label: "Waiting for you", glyph: "🚧" },
+  finish: { label: "Finish", glyph: "🏁" },
+  wall: { label: "Failed", glyph: "🧱" },
 };
 
 export function presentWorldProp(kind: WorldPropKind): WorldPropPresentation {

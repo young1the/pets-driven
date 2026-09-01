@@ -219,6 +219,7 @@ describe("demo scenario", () => {
       "AgentTaskEventSystem",
       "GameSessionSystem",
       "GameSpawnSystem",
+      "GameToolUseSpawnSystem",
       "GamePilotSystem",
       "CollisionBehaviorSystem",
       "PropKickSystem",

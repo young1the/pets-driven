@@ -32,6 +32,8 @@ function createStore(options?: {
           score: 0,
           startedAt: 0,
           anchorX: PET_X,
+          lastPulseAt: 0,
+          endedAt: 0,
           ...options?.session,
         },
       ],
