@@ -147,3 +147,66 @@ describe("the world's game API", () => {
     expect(world.snapshot().pets.find((pet) => pet.id === "pet-a")?.game).toBeUndefined();
   });
 });
+
+describe("who is driving", () => {
+  function createStoreWithSteering(steeredId: string | null) {
+    return createComponentStore([
+      {
+        id: GAME_SESSION_ENTITY_ID,
+        components: [
+          {
+            type: "GameSession",
+            petId: "pet-a",
+            control: "pet",
+            spawn: "auto",
+            phase: "running",
+            countdownMs: 0,
+            score: 0,
+            startedAt: 0,
+          },
+        ],
+      },
+      {
+        id: "user-interaction",
+        components: [{ type: "KeyboardControlTarget", entityId: steeredId }],
+      },
+      { id: "pet-a", components: [{ type: "PetIdentity", name: "Scout" }] },
+    ]);
+  }
+
+  function control(components: ReturnType<typeof createStoreWithSteering>) {
+    return components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession")?.control;
+  }
+
+  it("follows the keyboard rather than keeping its own answer", () => {
+    const components = createStoreWithSteering("pet-a");
+
+    runGameSessionSystem(components, 16, false);
+
+    // Taking the controls mid-round is just pressing on the pet — there is no
+    // second control to set, so the two can never disagree.
+    expect(control(components)).toBe("user");
+  });
+
+  it("hands the round back to the pet when the user lets go", () => {
+    const components = createStoreWithSteering("pet-a");
+    runGameSessionSystem(components, 16, false);
+
+    const steering = components.getComponent("user-interaction", "KeyboardControlTarget");
+    if (steering) steering.entityId = null;
+    runGameSessionSystem(components, 16, false);
+
+    // Escape ends the hold, not the round: the course carries on with the pet
+    // driving itself.
+    expect(control(components)).toBe("pet");
+    expect(components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession")?.phase).toBe("running");
+  });
+
+  it("does not count the user steering some other pet", () => {
+    const components = createStoreWithSteering("pet-b");
+
+    runGameSessionSystem(components, 16, false);
+
+    expect(control(components)).toBe("pet");
+  });
+});

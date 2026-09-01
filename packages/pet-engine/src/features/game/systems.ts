@@ -11,6 +11,7 @@ import {
   HURDLE_SIZE,
   MAX_LIVE_OBSTACLES,
 } from "@pets-driven/pet-engine/features/game/components";
+import { INTERACTION_ENTITY_ID } from "@pets-driven/pet-engine/features/interaction/systems";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import { createHurdleProp } from "@pets-driven/pet-engine/features/props/entities";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
@@ -21,12 +22,20 @@ type CourseVelocityWriter = {
 };
 
 /**
- * Runs the opening countdown, and ends a session whose pet has left.
+ * Runs the opening countdown, follows who is driving, and ends a session whose
+ * pet has left.
  *
  * The countdown is the only thing this step of the feature does with time, and
  * it is deliberately not a flourish: a course that simply starts moving gives
  * the user no moment to take the controls, and gives the pet no moment to be
  * seen being handed a course rather than wandering into one.
+ *
+ * `control` is *derived* from the keyboard, never stored against it. The user
+ * takes a pet by pressing on it and hands it back with Escape, and that is
+ * already the whole gesture — a round that kept its own answer would need a
+ * second control to set, and would be wrong every time the two disagreed. So
+ * taking the controls mid-round is just clicking the pet, and giving them back
+ * is Escape, which ends nothing: the round carries on with the pet driving.
  *
  * A stilled world (Quiet Mode `still`) freezes the countdown where it is rather
  * than cancelling the session. The user asked the pets to hold still, not to
@@ -48,6 +57,9 @@ export function runGameSessionSystem(
     return;
   }
 
+  const steering = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
+  session.control = steering?.entityId === session.petId ? "user" : "pet";
+
   if (stilled) return;
 
   if (session.phase === "countdown") {
@@ -63,7 +75,7 @@ export const GameSessionSystem: SimulationSystem<WorldStepContext> = {
   // After the agent's own events have landed, so a round that a later step ends
   // on a task result is reading this tick's task state and not the last one's.
   dependsOn: ["AgentTaskEventSystem"],
-  reads: ["GameSession", "PetIdentity"],
+  reads: ["GameSession", "PetIdentity", "KeyboardControlTarget"],
   writes: ["GameSession"],
   update(ctx) {
     runGameSessionSystem(ctx.components, ctx.deltaMs, isMovementStilled(ctx.quietMode));
@@ -184,6 +196,14 @@ export function runGameCourseSystem(
   }
 
   if (running) {
+    // The pet holds its ground; the course is what moves. Pinned here rather
+    // than asked of the interaction slice because it is the *course* that makes
+    // this true, and it has to hold however the pet is being driven: a user
+    // leaning on a direction key would otherwise walk the pet off its own
+    // course, and the pilot that lands next would have the same power. What is
+    // left is the vertical, which is the whole game — jump or do not.
+    physics.setVelocity(session.petId, { x: 0 });
+
     // Distance covered, which in a tool-use round is how long the agent's task
     // has been going. Kept as a float and floored only when it is read.
     session.score += (COURSE_SCROLL_SPEED * deltaMs) / 16;
@@ -207,7 +227,10 @@ export const GameSpawnSystem: SimulationSystem<WorldStepContext> = {
 
 export const GameCourseSystem: SimulationSystem<WorldStepContext> = {
   name: "GameCourseSystem",
-  dependsOn: ["JumpSystem"],
+  // After KeyboardControlMovementSystem so the pin below is the last word on
+  // the pet's horizontal: a user leaning on a direction key must not be able to
+  // walk the pet off its own course.
+  dependsOn: ["KeyboardControlMovementSystem"],
   reads: ["GameSession", "GameObstacle", "Transform"],
   writes: ["GameSession", "GameObstacle", "PhysicsVelocity"],
   update(ctx) {

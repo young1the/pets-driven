@@ -16,7 +16,12 @@ import {
 } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
-const INTERACTION_ENTITY_ID = "user-interaction";
+/**
+ * The world-level entity user input lives on. Exported because the game slice
+ * has to ask who the keyboard is steering — a round follows the user's hands
+ * rather than storing a separate answer that could disagree with them.
+ */
+export const INTERACTION_ENTITY_ID = "user-interaction";
 const DRAG_START_DISTANCE = 4;
 const HIT_TARGET_PADDING = 12;
 const MAX_DRAG_SAMPLES = 6;

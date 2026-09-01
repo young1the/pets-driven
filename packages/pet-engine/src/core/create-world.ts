@@ -24,6 +24,7 @@ import {
   type GameSpawnSource,
   gameCountdownGlyph,
 } from "@pets-driven/pet-engine/features/game/components";
+import { INTERACTION_ENTITY_ID } from "@pets-driven/pet-engine/features/interaction/systems";
 import {
   DEFAULT_ITEM_PICKUP_RADIUS,
   DEFAULT_ITEM_SPAWNER,
@@ -617,7 +618,14 @@ export function createWorld(input: WorldDefinition) {
       if (!components.getComponent(petId, "PetIdentity")) return false;
 
       session.petId = petId;
+      // `control` is derived from the keyboard every tick (GameSessionSystem),
+      // so asking for a user-driven round means handing the keyboard this pet
+      // — the same state a press on it would have produced.
       session.control = options?.control ?? "pet";
+      if (options?.control === "user") {
+        const steering = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
+        if (steering) steering.entityId = petId;
+      }
       session.spawn = options?.spawn ?? "tool-use";
       session.phase = "countdown";
       session.countdownMs = GAME_COUNTDOWN_MS;

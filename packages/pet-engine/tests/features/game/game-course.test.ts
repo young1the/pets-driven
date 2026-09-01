@@ -225,3 +225,39 @@ describe("the course coming at the pet", () => {
     expect(components.getEntity(id)).toBeUndefined();
   });
 });
+
+describe("the pet holding its ground", () => {
+  it("pins the pet's horizontal while the round runs", () => {
+    const components = createStore();
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    // The pet runs in place and the course moves. This is the last word on its
+    // horizontal — a user leaning on a direction key would otherwise walk the
+    // pet off its own course, and the pilot would have the same power.
+    expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 0 });
+  });
+
+  it("leaves the vertical alone, which is the whole game", () => {
+    const components = createStore();
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    const petCalls = physics.setVelocity.mock.calls.filter(([id]) => id === "pet-a");
+    for (const [, velocity] of petCalls) {
+      expect(velocity).not.toHaveProperty("y");
+    }
+  });
+
+  it("lets the pet go once the round is over", () => {
+    const components = createStore({ phase: "over" });
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    const petCalls = physics.setVelocity.mock.calls.filter(([id]) => id === "pet-a");
+    expect(petCalls).toHaveLength(0);
+  });
+});
