@@ -527,7 +527,8 @@
     "cancel": "キャンセル",
     "save": "保存",
     "findTerminal": "ターミナルを探す",
-    "gameMode": "ゲームモード"
+    "gameMode": "ゲームモード",
+    "gamePractice": "練習ラン"
   },
   "petWindow": {
     "connectPrompt": "つなぎたいターミナルの窓をクリックしてください",

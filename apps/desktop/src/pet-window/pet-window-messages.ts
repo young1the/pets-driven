@@ -140,6 +140,10 @@ export type PetWindowInputKind =
   // Put this pet on a course, or take the running one off it. One session for
   // the whole desktop, so the host reads it as a toggle.
   | "menu.game-toggle"
+  // The same toggle for a plain round on a rhythm, with no agent involved.
+  // Two kinds rather than one carrying a payload, so a menu row and the thing
+  // it does stay one to one — the way every other menu signal here reads.
+  | "menu.game-practice"
   | "overlay.click"
   | "body.contextmenu"
   | "overlay.contextmenu";

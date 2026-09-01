@@ -402,16 +402,21 @@ export function useDesktopSimulationHost({
         emitBindingState(input.petId);
         return;
       }
-      if (input.kind === "menu.game-toggle") {
+      if (input.kind === "menu.game-toggle" || input.kind === "menu.game-practice") {
         // One session for the whole desktop, so this is a toggle and not an
         // "add": picking a second pet means that one instead, and picking the
-        // pet already running means stop.
+        // same row on the pet already running means stop. Picking the *other*
+        // row switches what the course is made of without restarting anything
+        // the user would notice.
         const scenario = adoptedScenarioRef.current;
         if (!scenario) return;
-        if (scenario.world.gamePetId() === input.petId) {
+
+        const spawn = input.kind === "menu.game-practice" ? "auto" : "tool-use";
+        const session = scenario.world.gameSession();
+        if (session?.petId === input.petId && session.spawn === spawn) {
           scenario.world.endGame();
         } else {
-          scenario.world.startGame(input.petId);
+          scenario.world.startGame(input.petId, { spawn });
         }
         return;
       }

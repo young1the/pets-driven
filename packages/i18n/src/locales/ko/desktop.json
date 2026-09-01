@@ -527,7 +527,8 @@
     "cancel": "취소",
     "save": "저장",
     "findTerminal": "터미널 찾기",
-    "gameMode": "게임 모드"
+    "gameMode": "게임 모드",
+    "gamePractice": "연습 달리기"
   },
   "petWindow": {
     "connectPrompt": "연결할 터미널 창을 클릭하세요",

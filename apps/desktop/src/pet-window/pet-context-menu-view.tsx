@@ -17,7 +17,7 @@ type MenuView = "menu" | "note";
  * the content stopped fitting — a fifth item simply went missing off the
  * bottom. Bump this with the list of buttons below.
  */
-const MENU_ITEM_COUNT = 5;
+const MENU_ITEM_COUNT = 6;
 /** One row: 8px padding, a 15px line box, 8px padding. */
 const MENU_ITEM_HEIGHT = 31;
 /** Margin, border, padding, the name header and its divider. */
@@ -262,6 +262,30 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
             <rect height="12" rx="2" width="20" x="2" y="6" />
           </svg>
           {t("contextMenu.gameMode")}
+        </button>
+        <button
+          className="pet-context-menu-card__item pet-context-menu-card__item--game"
+          role="menuitem"
+          type="button"
+          onClick={() => {
+            emitSignal("menu.game-practice");
+            closeWindow();
+          }}
+        >
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="15"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="15"
+          >
+            <path d="M4 19h4l2-5 3 8 2-6h5" />
+          </svg>
+          {t("contextMenu.gamePractice")}
         </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--close"

@@ -527,7 +527,8 @@
     "cancel": "Cancel",
     "save": "Save",
     "findTerminal": "Find terminal",
-    "gameMode": "Game mode"
+    "gameMode": "Game mode",
+    "gamePractice": "Practice run"
   },
   "petWindow": {
     "connectPrompt": "Click the terminal window to connect",

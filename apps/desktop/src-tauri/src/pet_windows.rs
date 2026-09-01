@@ -378,7 +378,7 @@ const ITEM_WINDOW_LABEL_PREFIX: &str = "item-window-";
 /// are what the window is born at, and what the edge-clamp below measures with,
 /// so a menu opened near the bottom of a screen flips by its real height.
 const MENU_WINDOW_WIDTH: f64 = 192.0;
-const MENU_WINDOW_HEIGHT: f64 = 237.0;
+const MENU_WINDOW_HEIGHT: f64 = 268.0;
 const ITEM_WINDOW_SIZE: f64 = 64.0;
 
 /// The kinds an overlay may render, mirroring `PetItemKind` and `WorldPropKind`
@@ -389,14 +389,17 @@ const ITEM_WINDOW_SIZE: f64 = 64.0;
 /// The difference is that a prop moves, which costs nothing extra here — the
 /// reconcile below already repositions a window it has rather than rebuilding
 /// it.
-const ITEM_WINDOW_KINDS: [&str; 3] = ["wings", "claws", "ball"];
+const ITEM_WINDOW_KINDS: [&str; 4] = ["wings", "claws", "ball", "hurdle"];
 
-/// The subset of the above the user can grab, mirroring `WorldPropKind`.
+/// The subset of the above the user can grab. A narrower set than
+/// `WorldPropKind`: a course hurdle is a prop, and is not one of these.
 ///
 /// It decides one thing: whether the window is click-through. A trinket is
 /// scenery a pet fetches, so its clicks belong to whatever is behind it on the
-/// desktop; a prop is a thing the user picks up and throws, so its window takes
-/// the mouse — the same trade a pet window makes, at a fraction of the size.
+/// desktop; a prop the user picks up and throws takes the mouse instead — the
+/// same trade a pet window makes, at a fraction of the size. A hurdle is
+/// neither: it is scenery on a course, so it stays out of the way of the
+/// desktop underneath it.
 const PROP_WINDOW_KINDS: [&str; 1] = ["ball"];
 
 /// One trinket's screen placement for a single simulation frame.
@@ -694,7 +697,20 @@ mod tests {
     fn item_window_kinds_match_the_engine() {
         assert!(ITEM_WINDOW_KINDS.contains(&"wings"));
         assert!(ITEM_WINDOW_KINDS.contains(&"claws"));
+        // Every WorldPropKind needs a window, or the sync rejects the whole
+        // batch on the first one it does not know and every other overlay goes
+        // with it.
+        assert!(ITEM_WINDOW_KINDS.contains(&"ball"));
+        assert!(ITEM_WINDOW_KINDS.contains(&"hurdle"));
         assert!(!ITEM_WINDOW_KINDS.contains(&"boots"));
+    }
+
+    #[test]
+    fn only_the_ball_takes_the_mouse() {
+        // Course scenery is not something to grab: its clicks belong to the
+        // desktop behind it, the same as a trinket's.
+        assert!(PROP_WINDOW_KINDS.contains(&"ball"));
+        assert!(!PROP_WINDOW_KINDS.contains(&"hurdle"));
     }
 
     #[test]

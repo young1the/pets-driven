@@ -503,7 +503,8 @@
     "cancel": "取消",
     "save": "保存",
     "findTerminal": "查找终端",
-    "gameMode": "游戏模式"
+    "gameMode": "游戏模式",
+    "gamePractice": "练习跑"
   },
   "petWindow": {
     "connectPrompt": "点击终端窗口来连接",

@@ -21,6 +21,7 @@ import {
   GAME_COUNTDOWN_MS,
   GAME_SESSION_ENTITY_ID,
   type GameControlSource,
+  type GamePhase,
   type GameSpawnSource,
   gameCountdownGlyph,
 } from "@pets-driven/pet-engine/features/game/components";
@@ -643,6 +644,15 @@ export function createWorld(input: WorldDefinition) {
     /** The pet currently on a course, or null when no game is running. */
     gamePetId(): string | null {
       return components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession")?.petId ?? null;
+    },
+    /**
+     * The running session, for a host deciding what its own controls should do
+     * next — which pet, and what the course is being made of.
+     */
+    gameSession(): { petId: string | null; spawn: GameSpawnSource; phase: GamePhase } | null {
+      const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
+      if (!session) return null;
+      return { petId: session.petId, spawn: session.spawn, phase: session.phase };
     },
     /**
      * Host-facing entry point for Quiet Mode: how much the pets may intrude.
