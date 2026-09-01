@@ -46,6 +46,7 @@ export type {
   GamePhase,
   GameSessionComponent,
   GameSpawnSource,
+  GameStumbleComponent,
 } from "@pets-driven/pet-engine/features/game/components";
 export type {
   CanControlComponent,
@@ -150,6 +151,7 @@ import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/co
 import type {
   GameObstacleComponent,
   GameSessionComponent,
+  GameStumbleComponent,
 } from "@pets-driven/pet-engine/features/game/components";
 import type {
   CanControlComponent,
@@ -236,6 +238,7 @@ export type Component =
   | WorldPropComponent
   | GameSessionComponent
   | GameObstacleComponent
+  | GameStumbleComponent
   | ClimbDismountStateComponent
   | ClimbIntentStateComponent
   | ClimbableSurfaceComponent

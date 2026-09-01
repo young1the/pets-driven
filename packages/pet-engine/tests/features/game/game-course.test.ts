@@ -7,6 +7,7 @@ import {
   COURSE_SPAWN_AHEAD,
   COURSE_SPAWN_INTERVAL_MS,
   GAME_SESSION_ENTITY_ID,
+  GAME_STUMBLE_MS,
   HURDLE_SIZE,
   MAX_LIVE_OBSTACLES,
 } from "@pets-driven/pet-engine/features/game/components";
@@ -327,5 +328,74 @@ describe("the pet's lane", () => {
     runGameCourseSystem(components, physics, 16, false);
 
     expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 0 });
+  });
+});
+
+describe("clipping an obstacle", () => {
+  function courseWithObstacleOnThePet(sessionOverrides?: Record<string, unknown>) {
+    const components = createStore(sessionOverrides);
+    const id = spawnObstacle(components, createPhysics(), "pet-a", 0) as string;
+    const transform = components.getComponent(id, "Transform");
+    // Right on top of the pet: the two never collide in physics, so an overlap
+    // is the only thing that says the pet failed to clear it.
+    if (transform) transform.position = { x: PET_X, y: PET_Y };
+    return { components, id };
+  }
+
+  it("puts the pet on the floor", () => {
+    const { components } = courseWithObstacleOnThePet();
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    expect(components.getComponent("pet-a", "GameStumble")?.until).toBe(1_000 + GAME_STUMBLE_MS);
+  });
+
+  it("costs the pet once, however long the two stay overlapped", () => {
+    const { components, id } = courseWithObstacleOnThePet();
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+    const first = components.getComponent("pet-a", "GameStumble")?.until;
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_200);
+
+    expect(components.getComponent("pet-a", "GameStumble")?.until).toBe(first);
+    expect(components.getComponent(id, "GameObstacle")?.cleared).toBe(true);
+  });
+
+  it("ends a practice round, because a score nothing can take away is not one", () => {
+    const { components } = courseWithObstacleOnThePet({ spawn: "auto" });
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    expect(session(components)?.phase).toBe("over");
+  });
+
+  it("never ends a tool-use round, which is not a game to lose", () => {
+    const { components } = courseWithObstacleOnThePet({ spawn: "tool-use" });
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    // Its length belongs to somebody else's agent. Knocking the user out of a
+    // run because a tool call landed awkwardly punishes them for their build.
+    expect(session(components)?.phase).toBe("running");
+    expect(components.getComponent("pet-a", "GameStumble")).toBeTruthy();
+  });
+
+  it("lets the pet up when the stumble runs out", () => {
+    const { components } = courseWithObstacleOnThePet({ spawn: "tool-use" });
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000 + GAME_STUMBLE_MS);
+
+    expect(components.getComponent("pet-a", "GameStumble")).toBeUndefined();
+  });
+
+  it("leaves a pet that cleared the obstacle alone", () => {
+    const components = createStore();
+    spawnObstacle(components, createPhysics(), "pet-a", 0);
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    // Spawned a course ahead of the pet, so nothing is touching anything.
+    expect(components.getComponent("pet-a", "GameStumble")).toBeUndefined();
   });
 });

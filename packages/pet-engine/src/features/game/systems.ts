@@ -10,9 +10,13 @@ import {
   COURSE_SPAWN_AHEAD,
   COURSE_SPAWN_INTERVAL_MS,
   GAME_SESSION_ENTITY_ID,
+  GAME_STUMBLE_MS,
   type GameControlSource,
+  type GamePhase,
+  type GameSpawnSource,
   HURDLE_SIZE,
   MAX_LIVE_OBSTACLES,
+  OBSTACLE_HIT_INSET,
 } from "@pets-driven/pet-engine/features/game/components";
 import { INTERACTION_ENTITY_ID } from "@pets-driven/pet-engine/features/interaction/systems";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
@@ -167,7 +171,10 @@ export function runGameCourseSystem(
   physics: CourseVelocityWriter,
   deltaMs: number,
   stilled: boolean,
+  now = 0,
 ): void {
+  clearLapsedStumbles(components, now);
+
   const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
   if (!session?.petId) return;
 
@@ -187,6 +194,13 @@ export function runGameCourseSystem(
     }
 
     physics.setVelocity(entry.id, { x: -COURSE_SCROLL_SPEED });
+
+    if (!obstacle.cleared && clipsPet(components, session.petId, entry.id)) {
+      // Cleared on contact as well as on passing, so one obstacle can only ever
+      // cost the pet once however long the two stay overlapped.
+      obstacle.cleared = true;
+      stumble(components, session, now);
+    }
 
     const behindPet = transform.position.x < petTransform.position.x;
     if (behindPet && !obstacle.cleared) {
@@ -228,10 +242,16 @@ export const GameCourseSystem: SimulationSystem<WorldStepContext> = {
   // the pet's horizontal: a user leaning on a direction key must not be able to
   // walk the pet off its own course.
   dependsOn: ["KeyboardControlMovementSystem"],
-  reads: ["GameSession", "GameObstacle", "Transform"],
-  writes: ["GameSession", "GameObstacle", "PhysicsVelocity"],
+  reads: ["GameSession", "GameObstacle", "Transform", "PhysicsBody"],
+  writes: ["GameSession", "GameObstacle", "GameStumble", "PhysicsVelocity"],
   update(ctx) {
-    runGameCourseSystem(ctx.components, ctx.physics, ctx.deltaMs, isMovementStilled(ctx.quietMode));
+    runGameCourseSystem(
+      ctx.components,
+      ctx.physics,
+      ctx.deltaMs,
+      isMovementStilled(ctx.quietMode),
+      ctx.clock.now(),
+    );
   },
 };
 
@@ -280,5 +300,69 @@ function holdPetInLane(
   }
   if (offset <= -COURSE_LANE_BACK && pressing < 0) {
     physics.setVelocity(session.petId, { x: 0 });
+  }
+}
+
+/**
+ * Whether the pet and an obstacle are actually touching.
+ *
+ * A box overlap and not a physics collision, deliberately. The two bodies never
+ * collide in Matter — a pet and a prop share a category that only ever meets
+ * the floor — and that is what lets a hurdle slide *through* a pet that failed
+ * to jump rather than shoving it off its own course. The clip is a fact the
+ * course reads, not a force either body feels, which is the same trade
+ * PropKickSystem makes for the ball.
+ */
+function clipsPet(components: ComponentStore, petId: string, obstacleId: string): boolean {
+  const petTransform = components.getComponent(petId, "Transform");
+  const petBody = components.getComponent(petId, "PhysicsBody");
+  const transform = components.getComponent(obstacleId, "Transform");
+  const body = components.getComponent(obstacleId, "PhysicsBody");
+  if (!petTransform || !petBody || !transform || !body) return false;
+
+  const overlapX = petBody.width / 2 + body.width / 2 - OBSTACLE_HIT_INSET;
+  const overlapY = petBody.height / 2 + body.height / 2 - OBSTACLE_HIT_INSET;
+
+  return (
+    Math.abs(transform.position.x - petTransform.position.x) < overlapX &&
+    Math.abs(transform.position.y - petTransform.position.y) < overlapY
+  );
+}
+
+/**
+ * What a clip costs, which is not the same thing in the two kinds of round.
+ *
+ * A practice round is a game, so a hit ends it — a score means nothing if
+ * nothing can take it away.
+ *
+ * A tool-use round is not a game and must never be lost. Its length is decided
+ * by somebody else's agent, and a pet knocked out of a run because a tool call
+ * arrived at an awkward moment would be punishing the user for their own
+ * build. So the pet trips, gets up, and carries on; only the agent ends that
+ * round.
+ */
+function stumble(
+  components: ComponentStore,
+  session: { petId: string | null; spawn: GameSpawnSource; phase: GamePhase },
+  now: number,
+): void {
+  if (!session.petId) return;
+
+  components.setComponent(session.petId, {
+    type: "GameStumble",
+    until: now + GAME_STUMBLE_MS,
+  });
+
+  if (session.spawn === "auto") {
+    session.phase = "over";
+  }
+}
+
+/** Let a pet back up once its stumble has run out. */
+export function clearLapsedStumbles(components: ComponentStore, now: number): void {
+  for (const entry of components.query("GameStumble")) {
+    if (entry.components[0].until <= now) {
+      components.removeComponent(entry.id, "GameStumble");
+    }
   }
 }

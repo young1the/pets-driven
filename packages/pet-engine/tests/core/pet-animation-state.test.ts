@@ -387,3 +387,22 @@ describe("pet animation state", () => {
     expect(travel.dx).toBeGreaterThan(50);
   });
 });
+
+describe("a pet down on the course", () => {
+  it("plays the failed row while it picks itself up", () => {
+    const components = createComponentStore([
+      {
+        id: "pet-a",
+        components: [
+          { type: "PetIdentity", name: "Scout" },
+          { type: "TravelState", previousPosition: { x: 0, y: 0 }, dx: 2, dy: 0 },
+          { type: "GameStumble", until: 1_000 },
+        ],
+      },
+    ]);
+
+    // Ahead of the locomotion rows: a pet on the floor is not travelling,
+    // whatever the course was doing to it a tick ago.
+    expect(getPetAnimationState(components, "pet-a", 0)).toBe("failed");
+  });
+});

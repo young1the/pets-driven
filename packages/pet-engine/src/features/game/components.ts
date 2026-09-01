@@ -143,3 +143,28 @@ export const COURSE_SPAWN_INTERVAL_MS = 1_400;
  */
 export const COURSE_LANE_FORWARD = 150;
 export const COURSE_LANE_BACK = 90;
+
+/**
+ * The pet is picking itself up after clipping an obstacle.
+ *
+ * A component with a deadline rather than a phase on the session, because it is
+ * about the *pet* — the animation layer reads it directly, and a round that
+ * ends while a pet is still on the floor should still let it finish standing up.
+ */
+export type GameStumbleComponent = {
+  type: "GameStumble";
+  until: number;
+};
+
+/** How long the pet spends down after a hit. Long enough to read, short enough to forgive. */
+export const GAME_STUMBLE_MS = 700;
+
+/**
+ * Slack around the two bodies before a clip counts.
+ *
+ * Negative on purpose: the drawn hurdle is smaller than the box around it, and
+ * a hit registered on the box alone lands while there is still visible daylight
+ * between them, which reads as cheating. The same forgiveness every runner
+ * game's hitbox has.
+ */
+export const OBSTACLE_HIT_INSET = 6;

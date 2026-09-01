@@ -91,6 +91,12 @@ export function getPetAnimationState(
     }
   }
 
+  // Down after clipping a course obstacle. Ahead of the locomotion rows below
+  // because a pet on the floor is not travelling, whatever the course was doing
+  // to it a tick ago — and this is the one row a round ever asks for. Everything
+  // else it plays, it plays for its own reasons.
+  if (componentStore.getComponent(id, "GameStumble")) return "failed";
+
   const jumpAction = componentStore.getComponent(id, "JumpActionState");
   if (
     jumpAction ||
