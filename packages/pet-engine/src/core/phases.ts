@@ -35,6 +35,7 @@ import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/syste
 import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
 import {
   GameCourseSystem,
+  GamePilotSystem,
   GameSessionSystem,
   GameSpawnSystem,
 } from "@pets-driven/pet-engine/features/game/systems";
@@ -106,6 +107,9 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     // Right after the session, so a round that started this tick lays its first
     // obstacle now rather than a tick late.
     GameSpawnSystem,
+    // Reads the course the spawner just laid, and only ever asks JumpSystem for
+    // a jump — it takes no claim, so an agent event still wins the body.
+    GamePilotSystem,
     CollisionBehaviorSystem, // priority 3: overlap startle → reaction/bump-to-greet
     // Same tier and the same idea: a physical overlap the pet did not deliberate
     // over. Sits after the pet-to-pet reaction so a startle still wins the claim,

@@ -168,3 +168,19 @@ export const GAME_STUMBLE_MS = 700;
  * game's hitbox has.
  */
 export const OBSTACLE_HIT_INSET = 6;
+
+/**
+ * How far ahead the pet's own pilot starts a jump, in engine pixels.
+ *
+ * Derived from the arc rather than guessed: at COURSE_SCROLL_SPEED an obstacle
+ * covers this in about a third of a second, which is roughly how long a default
+ * jump spends off the floor. Too early and the pet lands on the hurdle it was
+ * clearing; too late and it walks into it.
+ */
+export const PILOT_JUMP_DISTANCE = 70;
+
+/**
+ * The pilot ignores anything already behind the pet by this much, so an
+ * obstacle being passed cannot trigger a second, pointless jump on its way out.
+ */
+export const PILOT_IGNORE_BEHIND = 8;

@@ -17,6 +17,8 @@ import {
   HURDLE_SIZE,
   MAX_LIVE_OBSTACLES,
   OBSTACLE_HIT_INSET,
+  PILOT_IGNORE_BEHIND,
+  PILOT_JUMP_DISTANCE,
 } from "@pets-driven/pet-engine/features/game/components";
 import { INTERACTION_ENTITY_ID } from "@pets-driven/pet-engine/features/interaction/systems";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
@@ -366,3 +368,74 @@ export function clearLapsedStumbles(components: ComponentStore, now: number): vo
     }
   }
 }
+
+/**
+ * The pet playing its own round.
+ *
+ * Deliberately the smallest thing that can be called a player: find the nearest
+ * obstacle still ahead, and ask to jump when it is close enough. Everything
+ * that makes a jump a jump — being on the ground, the landing cooldown, an
+ * impulse scaled to this body and this personality — already belongs to
+ * JumpSystem, so the pilot only decides *when*.
+ *
+ * It takes no claim and writes no decision. A pet on a course is still its
+ * agent's pet: `agent-event` must be able to interrupt at any moment, and a
+ * pilot that grabbed the body to play would be the reason a report was missed.
+ *
+ * Silent while the user is driving. Two of them steering at once would fight
+ * over the same jump, and the point of taking the controls is that they are
+ * yours.
+ */
+export function runGamePilotSystem(components: ComponentStore, stilled: boolean): void {
+  const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
+  if (!session?.petId || session.phase !== "running" || stilled) return;
+  if (session.control !== "pet") return;
+  // Down after a clip: it cannot jump, and asking would queue a jump for the
+  // moment it stands up, which is not where the obstacle will be.
+  if (components.getComponent(session.petId, "GameStumble")) return;
+  if (components.getComponent(session.petId, "JumpActionState")) return;
+
+  const petTransform = components.getComponent(session.petId, "Transform");
+  if (!petTransform) return;
+
+  let nearest = Number.POSITIVE_INFINITY;
+  for (const entry of components.query("GameObstacle", "Transform")) {
+    const gap = entry.components[1].position.x - petTransform.position.x;
+    if (gap < -PILOT_IGNORE_BEHIND) continue;
+    if (gap < nearest) nearest = gap;
+  }
+
+  if (nearest > PILOT_JUMP_DISTANCE) return;
+
+  requestPetJump(components, session.petId);
+}
+
+/**
+ * Ask JumpSystem for a jump, on the same terms every other caller asks.
+ *
+ * Shared with the interaction slice's Space key by intent rather than by import:
+ * the guard set is the one in movement/systems.ts — a live JumpActionState
+ * means one is already in flight or cooling down, and a pet that is flying or
+ * on a wall is not walking and has no jump to give.
+ */
+function requestPetJump(components: ComponentStore, id: string): void {
+  if (!components.getComponent(id, "WalkingTag")) return;
+  if (components.getComponent(id, "FlyingTag") || components.getComponent(id, "ClimbingTag")) {
+    return;
+  }
+  if (components.getComponent(id, "JumpActionState")) return;
+
+  components.setComponent(id, { type: "JumpActionState", phase: "requested", cooldownMs: 0 });
+}
+
+export const GamePilotSystem: SimulationSystem<WorldStepContext> = {
+  name: "GamePilotSystem",
+  // After the spawner, so an obstacle laid this tick is already a thing the
+  // pilot can see rather than something it learns about a tick late.
+  dependsOn: ["GameSpawnSystem"],
+  reads: ["GameSession", "GameObstacle", "Transform", "GameStumble", "WalkingTag"],
+  writes: ["JumpActionState"],
+  update(ctx) {
+    runGamePilotSystem(ctx.components, isMovementStilled(ctx.quietMode));
+  },
+};
