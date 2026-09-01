@@ -814,6 +814,7 @@ function idleGameSession(): GameSessionComponent {
     countdownMs: GAME_COUNTDOWN_MS,
     score: 0,
     startedAt: 0,
+    anchorX: 0,
   };
 }
 

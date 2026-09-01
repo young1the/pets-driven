@@ -7,6 +7,13 @@ type PetContextMenuViewProps = {
   petId: string;
   petName: string;
   note: string;
+  /**
+   * The round this pet is already on, or null. The menu is the only place a
+   * round can be stopped, so it has to be able to say that one is running —
+   * two rows that read the same whether they start or stop leave the user with
+   * no way to find the off switch.
+   */
+  gameSpawn?: "auto" | "tool-use" | null;
 };
 
 type MenuView = "menu" | "note";
@@ -29,7 +36,12 @@ const MENU_WINDOW_SIZE = {
 };
 const NOTE_WINDOW_SIZE = { width: 228, height: 192 };
 
-export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewProps) {
+export function PetContextMenuView({
+  petId,
+  petName,
+  note,
+  gameSpawn = null,
+}: PetContextMenuViewProps) {
   const { t } = useTranslation("desktop");
   const [view, setView] = useState<MenuView>("menu");
   const [noteText, setNoteText] = useState(note);
@@ -261,7 +273,7 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
             <line x1="18" x2="18.01" y1="11" y2="11" />
             <rect height="12" rx="2" width="20" x="2" y="6" />
           </svg>
-          {t("contextMenu.gameMode")}
+          {gameSpawn === "tool-use" ? t("contextMenu.gameStop") : t("contextMenu.gameMode")}
         </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--game"
@@ -285,7 +297,7 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
           >
             <path d="M4 19h4l2-5 3 8 2-6h5" />
           </svg>
-          {t("contextMenu.gamePractice")}
+          {gameSpawn === "auto" ? t("contextMenu.gameStop") : t("contextMenu.gamePractice")}
         </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--close"

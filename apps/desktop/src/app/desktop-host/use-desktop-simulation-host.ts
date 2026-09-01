@@ -375,6 +375,7 @@ export function useDesktopSimulationHost({
       }
       if (input.kind === "body.contextmenu" || input.kind === "overlay.contextmenu") {
         const pet = stateRef.current.pets.find((p) => p.id === input.petId);
+        const running = adoptedScenarioRef.current?.world.gameSession();
         void desktopGateway
           .openPetContextMenu(
             input.petId,
@@ -382,6 +383,7 @@ export function useDesktopSimulationHost({
             pet?.note ?? "",
             input.screenPoint.x,
             input.screenPoint.y,
+            running?.petId === input.petId ? running.spawn : undefined,
           )
           .catch(() => {});
         return;

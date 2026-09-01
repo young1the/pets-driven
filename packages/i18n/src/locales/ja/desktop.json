@@ -528,7 +528,8 @@
     "save": "保存",
     "findTerminal": "ターミナルを探す",
     "gameMode": "ゲームモード",
-    "gamePractice": "練習ラン"
+    "gamePractice": "練習ラン",
+    "gameStop": "ラウンドを終える"
   },
   "petWindow": {
     "connectPrompt": "つなぎたいターミナルの窓をクリックしてください",

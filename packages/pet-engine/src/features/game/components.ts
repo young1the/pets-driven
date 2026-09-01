@@ -53,6 +53,13 @@ export type GameSessionComponent = {
    */
   score: number;
   startedAt: number;
+  /**
+   * Where the pet stood when the round began — the middle of its lane, and the
+   * line the course is measured from. Held on the session rather than read from
+   * the pet each tick, or the lane would drift along with whatever the pet did
+   * last.
+   */
+  anchorX: number;
 };
 
 /** How long the opening countdown runs, and therefore how many glyphs it shows. */
@@ -119,3 +126,20 @@ export const MAX_LIVE_OBSTACLES = 4;
 
 /** Gap between obstacles on the `auto` rhythm. Comfortably more than one jump. */
 export const COURSE_SPAWN_INTERVAL_MS = 1_400;
+
+/**
+ * How far the pet may range from where its round started, in engine pixels.
+ *
+ * Pinning the pet outright made the round a one-button toy: the only thing a
+ * player could do was time a jump, and standing perfectly still while scenery
+ * slid past read as a screensaver rather than a game. A lane gives the round
+ * its second verb — close on a hurdle to jump it late, or back off and take it
+ * early — without letting a held direction key walk the pet clean off the
+ * course the way an unbounded run did.
+ *
+ * Asymmetric on purpose: forward is toward the oncoming course, which is the
+ * interesting direction and also the risky one, so there is more of it than
+ * there is retreat.
+ */
+export const COURSE_LANE_FORWARD = 150;
+export const COURSE_LANE_BACK = 90;

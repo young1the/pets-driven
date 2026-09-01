@@ -632,6 +632,9 @@ export function createWorld(input: WorldDefinition) {
       session.countdownMs = GAME_COUNTDOWN_MS;
       session.score = 0;
       session.startedAt = input.clock.now();
+      // The middle of the pet's lane for this round. Taken once, here, so the
+      // boundary stays put instead of drifting along with the pet.
+      session.anchorX = components.getComponent(petId, "Transform")?.position.x ?? 0;
       return true;
     },
     /** End the running session, whichever pet it was on. */

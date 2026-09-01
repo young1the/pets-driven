@@ -3,11 +3,14 @@ import { isMovementStilled } from "@pets-driven/pet-engine/core/quiet-mode";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
 import {
+  COURSE_LANE_BACK,
+  COURSE_LANE_FORWARD,
   COURSE_REAP_BEHIND,
   COURSE_SCROLL_SPEED,
   COURSE_SPAWN_AHEAD,
   COURSE_SPAWN_INTERVAL_MS,
   GAME_SESSION_ENTITY_ID,
+  type GameControlSource,
   HURDLE_SIZE,
   MAX_LIVE_OBSTACLES,
 } from "@pets-driven/pet-engine/features/game/components";
@@ -196,13 +199,7 @@ export function runGameCourseSystem(
   }
 
   if (running) {
-    // The pet holds its ground; the course is what moves. Pinned here rather
-    // than asked of the interaction slice because it is the *course* that makes
-    // this true, and it has to hold however the pet is being driven: a user
-    // leaning on a direction key would otherwise walk the pet off its own
-    // course, and the pilot that lands next would have the same power. What is
-    // left is the vertical, which is the whole game — jump or do not.
-    physics.setVelocity(session.petId, { x: 0 });
+    holdPetInLane(components, physics, session);
 
     // Distance covered, which in a tool-use round is how long the agent's task
     // has been going. Kept as a float and floored only when it is read.
@@ -237,3 +234,51 @@ export const GameCourseSystem: SimulationSystem<WorldStepContext> = {
     runGameCourseSystem(ctx.components, ctx.physics, ctx.deltaMs, isMovementStilled(ctx.quietMode));
   },
 };
+
+/**
+ * Keeps the pet on its course without nailing it to one spot.
+ *
+ * Two different jobs, which is why this is not one rule:
+ *
+ * A pet nobody is driving holds its ground, because the course is what moves
+ * and a pet left to its own planner would simply wander off mid-round. A pet
+ * the user has taken is free inside a lane — that freedom *is* the game's
+ * second verb, closing on a hurdle to jump it late or backing off to take it
+ * early — and is stopped only at the edges, where the alternative is walking
+ * off the course entirely.
+ *
+ * The stop is a velocity of zero rather than a position snap: a pet shoved back
+ * to the boundary every tick judders, while one that simply stops pressing
+ * forward looks like it is leaning on a wall, which is what it is doing.
+ */
+function holdPetInLane(
+  components: ComponentStore,
+  physics: CourseVelocityWriter,
+  session: { petId: string | null; control: GameControlSource; anchorX: number },
+): void {
+  if (!session.petId) return;
+
+  if (session.control !== "user") {
+    physics.setVelocity(session.petId, { x: 0 });
+    return;
+  }
+
+  const transform = components.getComponent(session.petId, "Transform");
+  if (!transform) return;
+
+  // Which way the user is leaning, not which way the body happens to be going:
+  // the stop has to be one-directional or the pet sticks to the edge it
+  // reached. Zeroing outright would cancel the very press trying to bring it
+  // back, and the lane would be a trap rather than a boundary.
+  const pressing =
+    components.getComponent(INTERACTION_ENTITY_ID, "KeyboardInputState")?.vector.x ?? 0;
+  const offset = transform.position.x - session.anchorX;
+
+  if (offset >= COURSE_LANE_FORWARD && pressing > 0) {
+    physics.setVelocity(session.petId, { x: 0 });
+    return;
+  }
+  if (offset <= -COURSE_LANE_BACK && pressing < 0) {
+    physics.setVelocity(session.petId, { x: 0 });
+  }
+}

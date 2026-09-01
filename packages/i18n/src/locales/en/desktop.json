@@ -528,7 +528,8 @@
     "save": "Save",
     "findTerminal": "Find terminal",
     "gameMode": "Game mode",
-    "gamePractice": "Practice run"
+    "gamePractice": "Practice run",
+    "gameStop": "Stop the round"
   },
   "petWindow": {
     "connectPrompt": "Click the terminal window to connect",

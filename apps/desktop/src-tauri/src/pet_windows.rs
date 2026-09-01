@@ -435,8 +435,18 @@ pub(crate) async fn sync_item_windows(
 
     for item in items {
         validate_asset_id(&item.item_id).map_err(|_| "Invalid item id".to_string())?;
+        // `kind` is interpolated into the window URL below without escaping, so
+        // it is checked against a known set rather than trusted — the same
+        // reason the id above is validated.
+        //
+        // Skipped and not fatal, though. This list is a hand-kept copy of
+        // `WorldPropKind` + `PetItemKind` with nothing linking the two, so it
+        // *will* fall behind again; when it does, the cost should be the one
+        // overlay nobody taught this about, not every overlay on the desktop.
+        // Returning Err here meant a single unknown kind took the ball and both
+        // trinkets off the screen with it.
         if !ITEM_WINDOW_KINDS.contains(&item.kind.as_str()) {
-            return Err(format!("Unknown item kind: {}", item.kind));
+            continue;
         }
 
         let label = item_window_label(&item.item_id);

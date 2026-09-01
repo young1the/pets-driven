@@ -1,5 +1,7 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import {
+  COURSE_LANE_BACK,
+  COURSE_LANE_FORWARD,
   COURSE_REAP_BEHIND,
   COURSE_SCROLL_SPEED,
   COURSE_SPAWN_AHEAD,
@@ -34,6 +36,7 @@ function createStore(sessionOverrides?: Record<string, unknown>) {
           countdownMs: 0,
           score: 0,
           startedAt: 0,
+          anchorX: PET_X,
           ...sessionOverrides,
         },
       ],
@@ -259,5 +262,70 @@ describe("the pet holding its ground", () => {
 
     const petCalls = physics.setVelocity.mock.calls.filter(([id]) => id === "pet-a");
     expect(petCalls).toHaveLength(0);
+  });
+});
+
+describe("the pet's lane", () => {
+  function steeredStore(petX: number, pressing: number) {
+    const components = createStore({ control: "user" });
+    const transform = components.getComponent("pet-a", "Transform");
+    if (transform) transform.position.x = petX;
+    components.spawn("user-interaction", [
+      { type: "KeyboardInputState", pressedCodes: [], vector: { x: pressing, y: 0 } },
+    ]);
+    return components;
+  }
+
+  function petVelocityCalls(physics: ReturnType<typeof createPhysics>) {
+    return physics.setVelocity.mock.calls.filter(([id]) => id === "pet-a");
+  }
+
+  it("leaves a steered pet alone inside the lane", () => {
+    const components = steeredStore(PET_X + 40, 1);
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    // Moving is the round's second verb — close on a hurdle to jump it late,
+    // back off to take it early. The course only minds the edges.
+    expect(petVelocityCalls(physics)).toHaveLength(0);
+  });
+
+  it("stops a steered pet pressing past the front of its lane", () => {
+    const components = steeredStore(PET_X + COURSE_LANE_FORWARD + 5, 1);
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 0 });
+  });
+
+  it("still lets it come back from that edge", () => {
+    const components = steeredStore(PET_X + COURSE_LANE_FORWARD + 5, -1);
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    // One-directional, or the pet sticks to the boundary it reached: zeroing
+    // outright would cancel the very press trying to bring it back.
+    expect(petVelocityCalls(physics)).toHaveLength(0);
+  });
+
+  it("stops a steered pet backing out of its lane", () => {
+    const components = steeredStore(PET_X - COURSE_LANE_BACK - 5, -1);
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 0 });
+  });
+
+  it("holds a pet nobody is driving, which would otherwise wander off", () => {
+    const components = createStore({ control: "pet" });
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    expect(physics.setVelocity).toHaveBeenCalledWith("pet-a", { x: 0 });
   });
 });

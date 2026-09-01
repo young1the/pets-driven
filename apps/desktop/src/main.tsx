@@ -18,8 +18,16 @@ function RootSurface({ navigateSearchParams }: { navigateSearchParams: NavigateS
     const petId = params.get("petId") ?? "pet-a";
     const petName = decodeURIComponent(params.get("petName") ?? petId);
     const note = decodeURIComponent(params.get("note") ?? "");
+    const game = params.get("game");
 
-    return <PetContextMenuView note={note} petId={petId} petName={petName} />;
+    return (
+      <PetContextMenuView
+        gameSpawn={game === "auto" || game === "tool-use" ? game : null}
+        note={note}
+        petId={petId}
+        petName={petName}
+      />
+    );
   }
 
   return <PetsDrivenApp navigateSearchParams={navigateSearchParams} />;

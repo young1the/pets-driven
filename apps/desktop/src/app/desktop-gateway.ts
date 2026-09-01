@@ -186,6 +186,8 @@ export type DesktopGateway = {
     note: string,
     x: number,
     y: number,
+    /** The round this pet is on, so the menu offers to stop it. Absent = none. */
+    gameSpawn?: "auto" | "tool-use",
   ): Promise<void>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
@@ -449,13 +451,17 @@ export const desktopGateway: DesktopGateway = {
     await invoke("close_adopted_pet_window", { petId });
   },
 
-  async openPetContextMenu(petId, petName, note, x, y) {
+  async openPetContextMenu(petId, petName, note, x, y, gameSpawn) {
     if (!isTauri()) {
       return;
     }
 
     // Shares the pet windows' lean overlay entry — see pet-window-main.tsx.
-    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}`;
+    // `game` names the round this pet is already on, so the menu can offer to
+    // stop it rather than showing the same two rows that started it. Without
+    // it there is no way to tell from the menu that anything is running.
+    const game = gameSpawn ? `&game=${gameSpawn}` : "";
+    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}${game}`;
     await invoke("open_pet_context_menu", { petId, url, localX: x, localY: y });
   },
 
