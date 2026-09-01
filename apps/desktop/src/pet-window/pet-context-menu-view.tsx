@@ -11,7 +11,22 @@ type PetContextMenuViewProps = {
 
 type MenuView = "menu" | "note";
 
-const MENU_WINDOW_SIZE = { width: 192, height: 206 };
+/**
+ * The menu window is sized from its own row count rather than a measured
+ * number, because the window is not resizable and nothing on screen says when
+ * the content stopped fitting — a fifth item simply went missing off the
+ * bottom. Bump this with the list of buttons below.
+ */
+const MENU_ITEM_COUNT = 5;
+/** One row: 8px padding, a 15px line box, 8px padding. */
+const MENU_ITEM_HEIGHT = 31;
+/** Margin, border, padding, the name header and its divider. */
+const MENU_CHROME_HEIGHT = 82;
+
+const MENU_WINDOW_SIZE = {
+  width: 192,
+  height: MENU_CHROME_HEIGHT + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT,
+};
 const NOTE_WINDOW_SIZE = { width: 228, height: 192 };
 
 export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewProps) {
@@ -219,6 +234,34 @@ export function PetContextMenuView({ petId, petName, note }: PetContextMenuViewP
             <line x1="12" x2="20" y1="19" y2="19" />
           </svg>
           {t("contextMenu.findTerminal")}
+        </button>
+        <button
+          className="pet-context-menu-card__item pet-context-menu-card__item--game"
+          role="menuitem"
+          type="button"
+          onClick={() => {
+            emitSignal("menu.game-toggle");
+            closeWindow();
+          }}
+        >
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="15"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="15"
+          >
+            <line x1="6" x2="10" y1="12" y2="12" />
+            <line x1="8" x2="8" y1="10" y2="14" />
+            <line x1="15" x2="15.01" y1="13" y2="13" />
+            <line x1="18" x2="18.01" y1="11" y2="11" />
+            <rect height="12" rx="2" width="20" x="2" y="6" />
+          </svg>
+          {t("contextMenu.gameMode")}
         </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--close"

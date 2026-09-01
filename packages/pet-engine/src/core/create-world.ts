@@ -18,6 +18,13 @@ import { getPetAnimationState } from "@pets-driven/pet-engine/features/behavior/
 import type { WorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import {
+  GAME_COUNTDOWN_MS,
+  GAME_SESSION_ENTITY_ID,
+  type GameControlSource,
+  type GameSpawnSource,
+  gameCountdownGlyph,
+} from "@pets-driven/pet-engine/features/game/components";
+import {
   DEFAULT_ITEM_PICKUP_RADIUS,
   DEFAULT_ITEM_SPAWNER,
 } from "@pets-driven/pet-engine/features/items/components";
@@ -195,6 +202,7 @@ export function createWorld(input: WorldDefinition) {
               }
             : null,
           interaction: getInteractionSnapshot(componentStore, entity.id),
+          game: getPetGameSnapshot(componentStore, entity.id),
           social: getSocialSnapshot(componentStore, entity.id),
           carrying: (() => {
             const carried = componentStore.getComponent(entity.id, "CarriedItem");
@@ -221,6 +229,25 @@ export function createWorld(input: WorldDefinition) {
       role: member.role,
       partnerId: member.partnerId,
       partnerName: componentStore.getComponent(member.partnerId, "PetIdentity")?.name ?? null,
+    };
+  }
+
+  /**
+   * The game a pet is in, or nothing. Read per pet rather than handed to the
+   * host as one world-level object because that is how the window that draws
+   * this pet asks the question — it has an id and wants to know what to put
+   * over that head.
+   */
+  function getPetGameSnapshot(componentStore: ComponentStore, id: string) {
+    const session = componentStore.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
+    if (!session?.petId || session.petId !== id) return undefined;
+
+    return {
+      phase: session.phase,
+      control: session.control,
+      spawn: session.spawn,
+      countdown: gameCountdownGlyph(session.countdownMs),
+      score: Math.floor(session.score),
     };
   }
 
@@ -573,6 +600,41 @@ export function createWorld(input: WorldDefinition) {
         position: { ...position },
         at,
       });
+    },
+    /**
+     * Host-facing entry point for game mode: put one pet on a course.
+     *
+     * Replaces whatever session was running rather than refusing — starting a
+     * game on a second pet plainly means "that one instead", and the singleton
+     * is what makes that the only thing it can mean.
+     */
+    startGame(
+      petId: string,
+      options?: { control?: GameControlSource; spawn?: GameSpawnSource },
+    ): boolean {
+      const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
+      if (!session) return false;
+      if (!components.getComponent(petId, "PetIdentity")) return false;
+
+      session.petId = petId;
+      session.control = options?.control ?? "pet";
+      session.spawn = options?.spawn ?? "tool-use";
+      session.phase = "countdown";
+      session.countdownMs = GAME_COUNTDOWN_MS;
+      session.score = 0;
+      session.startedAt = input.clock.now();
+      return true;
+    },
+    /** End the running session, whichever pet it was on. */
+    endGame(): void {
+      const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
+      if (!session) return;
+      session.petId = null;
+      session.phase = "over";
+    },
+    /** The pet currently on a course, or null when no game is running. */
+    gamePetId(): string | null {
+      return components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession")?.petId ?? null;
     },
     /**
      * Host-facing entry point for Quiet Mode: how much the pets may intrude.

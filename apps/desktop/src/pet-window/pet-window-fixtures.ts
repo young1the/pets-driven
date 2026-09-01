@@ -7,6 +7,7 @@ import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 export const PET_WINDOW_FIXTURE_IDS = [
   "idle",
   "running",
+  "countdown",
   "jumping",
   "speech",
   "attention",
@@ -37,6 +38,9 @@ export type PetWindowFixturePresentation = {
   /** Seeds the trinket countdown badge; the real app derives it from the
    *  pet's CarriedItem. Omitted = the pet is wearing nothing. */
   carrying?: PetWindowCarrying | null;
+  /** Seeds the round-opening countdown glyph; the real app derives it from the
+   *  world's game session. Omitted = no round starting. */
+  countdown?: string | null;
 };
 
 /** Seeds the terminal-binding notice pill (host/UI feedback, outside the ECS
@@ -84,6 +88,20 @@ export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
       activity: "onTheMove",
       partnerName: null,
       overlay: null,
+    },
+  },
+  {
+    id: "countdown",
+    label: "Round countdown",
+    description: "A game round about to start: the 3-2-1 rides in the connect notice's slot.",
+    pet: { petId: "fixture-otto", assetId: "otto", windowIndex: 2, name: "Scout" },
+    presentation: {
+      decisionEmote: null,
+      animationState: "idle",
+      activity: null,
+      partnerName: null,
+      overlay: null,
+      countdown: "3️⃣",
     },
   },
   {

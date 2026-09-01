@@ -122,6 +122,7 @@ export function projectWorldSnapshotToPetWindows(
             activity: pet.activity ?? null,
             partnerName: pet.social?.partnerName ?? null,
             working: pet.agentTask?.status === "working",
+            countdown: pet.game?.countdown ?? null,
             carrying: carryingFromPet(pet, snapshot.now),
           },
           overlay: overlayFromPet(pet),

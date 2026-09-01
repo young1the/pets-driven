@@ -373,6 +373,12 @@ pub(crate) async fn close_pet_overlay_window(app: tauri::AppHandle) -> Result<()
 // whole set in one call and the window itself renders straight from its URL.
 
 const ITEM_WINDOW_LABEL_PREFIX: &str = "item-window-";
+/// The pet context menu's size, kept in step with MENU_WINDOW_SIZE in
+/// pet-context-menu-view.tsx. The view sets its own size once it mounts; these
+/// are what the window is born at, and what the edge-clamp below measures with,
+/// so a menu opened near the bottom of a screen flips by its real height.
+const MENU_WINDOW_WIDTH: f64 = 192.0;
+const MENU_WINDOW_HEIGHT: f64 = 237.0;
 const ITEM_WINDOW_SIZE: f64 = 64.0;
 
 /// The kinds an overlay may render, mirroring `PetItemKind` and `WorldPropKind`
@@ -596,8 +602,8 @@ pub(crate) async fn open_pet_context_menu(
 
         if let Some(monitor) = monitor {
             let scale = monitor.scale_factor();
-            let menu_w = (192.0 * scale) as i32;
-            let menu_h = (132.0 * scale) as i32;
+            let menu_w = (MENU_WINDOW_WIDTH * scale) as i32;
+            let menu_h = (MENU_WINDOW_HEIGHT * scale) as i32;
             let pos = monitor.position();
             let size = monitor.size();
             let right = pos.x + size.width as i32;
@@ -627,7 +633,7 @@ pub(crate) async fn open_pet_context_menu(
 
     let win = WebviewWindowBuilder::new(&app, label.clone(), WebviewUrl::App(url.into()))
         .title("Pet Menu")
-        .inner_size(192.0, 132.0)
+        .inner_size(MENU_WINDOW_WIDTH, MENU_WINDOW_HEIGHT)
         .decorations(false)
         .transparent(true)
         .always_on_top(true)

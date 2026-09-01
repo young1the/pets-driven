@@ -41,6 +41,12 @@ export type {
 } from "@pets-driven/pet-engine/features/cursor/components";
 export type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
 export type {
+  GameControlSource,
+  GamePhase,
+  GameSessionComponent,
+  GameSpawnSource,
+} from "@pets-driven/pet-engine/features/game/components";
+export type {
   CanControlComponent,
   CanDragComponent,
   DragInteractionComponent,
@@ -140,6 +146,7 @@ import type {
   CursorStateComponent,
 } from "@pets-driven/pet-engine/features/cursor/components";
 import type { DrivesComponent } from "@pets-driven/pet-engine/features/drives/components";
+import type { GameSessionComponent } from "@pets-driven/pet-engine/features/game/components";
 import type {
   CanControlComponent,
   CanDragComponent,
@@ -223,6 +230,7 @@ export type Component =
   | ItemSpawnerComponent
   | WorldItemComponent
   | WorldPropComponent
+  | GameSessionComponent
   | ClimbDismountStateComponent
   | ClimbIntentStateComponent
   | ClimbableSurfaceComponent

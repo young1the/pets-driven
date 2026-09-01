@@ -14,6 +14,11 @@ import {
   type MonitorWorkArea,
 } from "@pets-driven/pet-engine/core/monitor-geometry";
 import {
+  GAME_COUNTDOWN_MS,
+  GAME_SESSION_ENTITY_ID,
+  type GameSessionComponent,
+} from "@pets-driven/pet-engine/features/game/components";
+import {
   createItemSpawner,
   ITEM_SPAWNER_ENTITY_ID,
 } from "@pets-driven/pet-engine/features/items/components";
@@ -276,6 +281,11 @@ export function createDemoScenario(options?: {
             vector: { x: 0, y: 0 },
           },
         ],
+      },
+      {
+        // One session for the whole world, idle until a pet is put on a course.
+        id: GAME_SESSION_ENTITY_ID,
+        components: [idleGameSession()],
       },
       {
         // The playground is where trinkets are meant to be watched, so it runs
@@ -787,6 +797,26 @@ export type AdoptedPetScenarioInput = {
  * Shared by the initial scenario build and by the live addPet path so a pet
  * added mid-simulation is identical to one present from the start.
  */
+/**
+ * The world's idle game session: present in every scenario, pointing at nobody.
+ *
+ * Declared rather than spawned on demand so the singleton is always there to be
+ * read — a host asking "is a game running" gets `petId: null` instead of having
+ * to tell a missing component apart from an idle one.
+ */
+function idleGameSession(): GameSessionComponent {
+  return {
+    type: "GameSession",
+    petId: null,
+    control: "pet",
+    spawn: "tool-use",
+    phase: "over",
+    countdownMs: GAME_COUNTDOWN_MS,
+    score: 0,
+    startedAt: 0,
+  };
+}
+
 export function buildAdoptedPetEntity(
   pet: AdoptedPetScenarioInput,
   options: {
@@ -937,6 +967,11 @@ export function createAdoptedPetsScenario(
             vector: { x: 0, y: 0 },
           },
         ],
+      },
+      {
+        // One session for the whole world, idle until a pet is put on a course.
+        id: GAME_SESSION_ENTITY_ID,
+        components: [idleGameSession()],
       },
       ...pets.map((pet, index) => {
         const bodySize = bodySizeFor(pet.id);
@@ -1132,6 +1167,11 @@ export function createJumpPlaygroundScenario(options?: { startJumping?: boolean 
           },
         ],
       },
+      {
+        // One session for the whole world, idle until a pet is put on a course.
+        id: GAME_SESSION_ENTITY_ID,
+        components: [idleGameSession()],
+      },
       ...JUMP_PLAYGROUND_PETS.filter((pet) => "wallId" in pet).map((pet) => ({
         id: pet.wallId,
         components: [
@@ -1296,6 +1336,11 @@ export function createClimbPlaygroundScenario() {
             vector: { x: 0, y: 0 },
           },
         ],
+      },
+      {
+        // One session for the whole world, idle until a pet is put on a course.
+        id: GAME_SESSION_ENTITY_ID,
+        components: [idleGameSession()],
       },
       ...CLIMB_PLAYGROUND_PETS.map((pet) => ({
         id: pet.wallId,

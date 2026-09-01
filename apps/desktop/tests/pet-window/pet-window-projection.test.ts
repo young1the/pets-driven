@@ -116,6 +116,7 @@ describe("pet window projection", () => {
           activity: null,
           partnerName: null,
           working: false,
+          countdown: null,
           carrying: null,
         },
         overlay: null,
@@ -163,6 +164,44 @@ describe("pet window projection", () => {
     );
 
     expect(projection.frame.sprite.working).toBe(false);
+  });
+
+  it("carries the round's opening glyph on the frame sprite", () => {
+    const snapshot = snapshotFixture();
+    snapshot.pets[0] = {
+      ...snapshot.pets[0],
+      game: { phase: "countdown", control: "pet", spawn: "tool-use", countdown: "3️⃣", score: 0 },
+    };
+
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshot,
+      { x: 0, y: 0, width: 1000, height: 800 },
+      7,
+    );
+
+    expect(projection.frame.sprite.countdown).toBe("3️⃣");
+  });
+
+  it("leaves the agent line alone while a round counts down", () => {
+    const pet = snapshotFixture().pets[0];
+
+    // The countdown rides in the notice slot, not the status card. A pet whose
+    // agent is working keeps saying so — this app exists to make that legible,
+    // and a round starting is not a reason to cover it.
+    expect(
+      overlayFromPet({
+        ...pet,
+        agentChannel: {
+          source: "agent-task",
+          status: "working",
+          label: "Working",
+          message: null,
+          updatedAt: 100,
+          expiresAt: null,
+        },
+        game: { phase: "countdown", control: "pet", spawn: "tool-use", countdown: "3️⃣", score: 0 },
+      }),
+    ).toMatchObject({ kind: "agent-channel", status: "working" });
   });
 
   it("passes the session partner name through to the frame sprite", () => {

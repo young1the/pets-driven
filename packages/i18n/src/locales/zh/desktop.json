@@ -502,13 +502,15 @@
     "notePlaceholder": "写点什么…",
     "cancel": "取消",
     "save": "保存",
-    "findTerminal": "查找终端"
+    "findTerminal": "查找终端",
+    "gameMode": "游戏模式"
   },
   "petWindow": {
     "connectPrompt": "点击终端窗口来连接",
     "connectedTo": "已连接到 {{title}}",
     "connectCancelled": "未连接任何窗口",
     "noteBadgeAria": "有便条",
+    "countdownAria": "回合即将开始",
     "trinket": {
       "wings": "翅膀",
       "claws": "攀爬爪"

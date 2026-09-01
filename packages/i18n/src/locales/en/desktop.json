@@ -526,13 +526,15 @@
     "notePlaceholder": "Type a note…",
     "cancel": "Cancel",
     "save": "Save",
-    "findTerminal": "Find terminal"
+    "findTerminal": "Find terminal",
+    "gameMode": "Game mode"
   },
   "petWindow": {
     "connectPrompt": "Click the terminal window to connect",
     "connectedTo": "Connected to {{title}}",
     "connectCancelled": "Nothing connected",
     "noteBadgeAria": "Has a note",
+    "countdownAria": "Round starting",
     "trinket": {
       "wings": "Wings",
       "claws": "Climbing claws"

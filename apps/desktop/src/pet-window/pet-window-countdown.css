@@ -1,0 +1,54 @@
+/* The opening 3-2-1 of a game round.
+
+   Shares the connect notice's slot above the pet (see pet-connect-notice.css)
+   rather than the ECS status card's: the card is where a pet says what its
+   agent is doing, and a round starting must never be the reason that line goes
+   missing. The two never draw at once — the surface hides this while a notice
+   is up, since a notice is asking for something and this is not. */
+
+@keyframes pet-window-countdown-beat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.6);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1.14);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
+.pet-window-countdown {
+  position: absolute;
+  /* The same anchor the connect notice uses, so the two read as one slot. */
+  bottom: calc(100% - 6px);
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+  font-size: calc(20px * var(--pet-window-countdown-scale, 1));
+  /* The desktop behind a pet is whatever the user left there, so the glyph
+     carries its own separation rather than trusting the contrast. */
+  filter: drop-shadow(0 1px 3px rgb(15 23 42 / 45%));
+}
+
+/* Re-keyed on each glyph by the component, so every number lands with its own
+   beat instead of the first one animating and the rest appearing. */
+.pet-window-countdown {
+  animation: pet-window-countdown-beat 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-window-countdown {
+    animation: none;
+    opacity: 1;
+  }
+}

@@ -526,13 +526,15 @@
     "notePlaceholder": "노트를 입력하세요",
     "cancel": "취소",
     "save": "저장",
-    "findTerminal": "터미널 찾기"
+    "findTerminal": "터미널 찾기",
+    "gameMode": "게임 모드"
   },
   "petWindow": {
     "connectPrompt": "연결할 터미널 창을 클릭하세요",
     "connectedTo": "{{title}} 창에 연결했어요",
     "connectCancelled": "연결하지 않았어요",
     "noteBadgeAria": "노트 있음",
+    "countdownAria": "라운드 시작",
     "trinket": {
       "wings": "날개",
       "claws": "등반 발톱"

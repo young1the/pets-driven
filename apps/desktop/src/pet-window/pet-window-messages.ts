@@ -95,6 +95,15 @@ export type PetWindowFrameSprite = {
    */
   working?: boolean;
   /**
+   * The opening 3-2-1 of a game round as the pet should wear it right now, or
+   * absent once the round is under way.
+   *
+   * Rides beside the agent line rather than replacing it: the countdown shows
+   * in the notice pill above the pet, the slot the terminal-binding prompt
+   * uses, so a working pet keeps its own status capsule while it counts down.
+   */
+  countdown?: string | null;
+  /**
    * The ability the pet picked up, counting down, or null when it has none.
    *
    * Last in this type on purpose: `isSamePetWindowPresentation` compares
@@ -128,6 +137,9 @@ export type PetWindowInputKind =
   | "menu.find-terminal"
   | "menu.unbind"
   | "menu.request-binding"
+  // Put this pet on a course, or take the running one off it. One session for
+  // the whole desktop, so the host reads it as a toggle.
+  | "menu.game-toggle"
   | "overlay.click"
   | "body.contextmenu"
   | "overlay.contextmenu";

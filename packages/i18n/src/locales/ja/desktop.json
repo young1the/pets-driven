@@ -526,13 +526,15 @@
     "notePlaceholder": "ノートを入力…",
     "cancel": "キャンセル",
     "save": "保存",
-    "findTerminal": "ターミナルを探す"
+    "findTerminal": "ターミナルを探す",
+    "gameMode": "ゲームモード"
   },
   "petWindow": {
     "connectPrompt": "つなぎたいターミナルの窓をクリックしてください",
     "connectedTo": "{{title}}につながりました",
     "connectCancelled": "つながりませんでした",
     "noteBadgeAria": "ノートあり",
+    "countdownAria": "ラウンド開始",
     "trinket": {
       "wings": "羼",
       "claws": "クライミングクロー"

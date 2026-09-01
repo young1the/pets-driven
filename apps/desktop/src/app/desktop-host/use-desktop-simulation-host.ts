@@ -402,6 +402,19 @@ export function useDesktopSimulationHost({
         emitBindingState(input.petId);
         return;
       }
+      if (input.kind === "menu.game-toggle") {
+        // One session for the whole desktop, so this is a toggle and not an
+        // "add": picking a second pet means that one instead, and picking the
+        // pet already running means stop.
+        const scenario = adoptedScenarioRef.current;
+        if (!scenario) return;
+        if (scenario.world.gamePetId() === input.petId) {
+          scenario.world.endGame();
+        } else {
+          scenario.world.startGame(input.petId);
+        }
+        return;
+      }
 
       // A prop only ever exists in the adopted world, and is never in the pet
       // roster the lookup below asks — so it says which world it is in rather

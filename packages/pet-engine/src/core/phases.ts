@@ -33,6 +33,7 @@ import {
 import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
 import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
 import { DriveDecaySystem } from "@pets-driven/pet-engine/features/drives/systems";
+import { GameSessionSystem } from "@pets-driven/pet-engine/features/game/systems";
 import {
   DraggedEntityKinematicSystem,
   KeyboardControlMovementSystem,
@@ -95,6 +96,9 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
     SpeechExpirationSystem, // clear expired speech before new decisions
     PetExpressionExpirationSystem,
     AgentTaskEventSystem, // priority 2: external agent events → task state
+    // Reads this tick's task state, never a claim: a pet on a course is still
+    // its agent's pet, and a game must never be the reason a report is missed.
+    GameSessionSystem,
     CollisionBehaviorSystem, // priority 3: overlap startle → reaction/bump-to-greet
     // Same tier and the same idea: a physical overlap the pet did not deliberate
     // over. Sits after the pet-to-pet reaction so a startle still wins the claim,

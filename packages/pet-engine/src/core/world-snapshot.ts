@@ -114,10 +114,30 @@ export type PetSnapshot = {
   expression?: PetExpressionSnapshot | null;
   /** Presentation state derived from current user interaction, if any. */
   interaction?: InteractionSnapshot;
+  /**
+   * The game this pet is on, or absent when it is living its ordinary life.
+   * Only ever set for the one pet the world's single session names.
+   */
+  game?: PetGameSnapshot;
   /** The live social session this pet is in, or null when it is on its own. */
   social?: SocialSnapshot | null;
   /** The trinket ability the pet is wearing, or null when it has none. */
   carrying?: CarriedItemSnapshot | null;
+};
+
+/**
+ * A pet's side of the world's single game session.
+ *
+ * `countdown` is the glyph to wear right now (null once the round is under
+ * way), resolved in the engine rather than in each host so every surface counts
+ * the same three seconds down.
+ */
+export type PetGameSnapshot = {
+  phase: import("@pets-driven/pet-engine/features/game/components").GamePhase;
+  control: import("@pets-driven/pet-engine/features/game/components").GameControlSource;
+  spawn: import("@pets-driven/pet-engine/features/game/components").GameSpawnSource;
+  countdown: string | null;
+  score: number;
 };
 
 export type InteractionSnapshot = {

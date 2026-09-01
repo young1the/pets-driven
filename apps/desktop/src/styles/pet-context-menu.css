@@ -108,6 +108,16 @@ html.pet-context-menu-fixture-preview body {
   background: var(--sky-50, #f0f8ff);
 }
 
+.pet-context-menu-card__item--game {
+  color: var(--teal-700, #0b6e63);
+}
+
+.pet-context-menu-card__item--game:hover,
+.pet-context-menu-card__item--game:focus-visible {
+  outline: none;
+  background: var(--teal-50, #e7faf7);
+}
+
 .pet-context-menu-card__item--close {
   color: var(--coral-600, #dc3f3f);
 }
