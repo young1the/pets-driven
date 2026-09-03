@@ -1,6 +1,7 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { Component } from "@pets-driven/pet-engine/core/components";
 import {
+  COURSE_MIN_OBSTACLE_GAP,
   GAME_OVER_LINGER_MS,
   GAME_SESSION_ENTITY_ID,
 } from "@pets-driven/pet-engine/features/game/components";
@@ -27,6 +28,7 @@ function createStore(options?: { session?: Record<string, unknown>; pet?: Compon
           phase: "running",
           countdownMs: 0,
           score: 0,
+          cleared: 0,
           startedAt: 0,
           anchorX: PET_X,
           lastPulseAt: 0,
@@ -48,7 +50,12 @@ function createStore(options?: { session?: Record<string, unknown>; pet?: Compon
 }
 
 function createPhysics() {
-  return { addRectangle: vi.fn(), setVelocity: vi.fn() };
+  return {
+    addRectangle: vi.fn(),
+    setVelocity: vi.fn(),
+    setGravityScale: vi.fn(),
+    removeBody: vi.fn(),
+  };
 }
 
 function session(components: ReturnType<typeof createStore>) {
@@ -123,6 +130,28 @@ describe("a course an agent lays", () => {
     spawn(components, 900);
 
     expect(kinds(components)).toHaveLength(2);
+  });
+
+  it("keeps a clearable gap between two calls that landed together", () => {
+    const components = createStore({
+      pet: [{ type: "AgentActivitySignal", activity: "run", at: 10 }],
+    });
+    spawn(components, 10);
+    const pulse = components.getComponent("pet-a", "AgentActivitySignal");
+    if (pulse) pulse.at = 26;
+    spawn(components, 26);
+
+    // Both calls are on the course — a tool-use round that swallowed one would
+    // stop being a reading of what the agent is doing — but the second entered
+    // far enough behind the first that one jump per obstacle still clears both.
+    // Two flames a few hundred milliseconds apart is the round even the pilot
+    // used to lose.
+    const positions = components
+      .query("GameObstacle", "Transform")
+      .map((entry) => entry.components[1].position.x)
+      .sort((a, b) => a - b);
+    expect(positions).toHaveLength(2);
+    expect(positions[1] - positions[0]).toBeGreaterThanOrEqual(COURSE_MIN_OBSTACLE_GAP);
   });
 
   it("ignores whatever the agent did before the round started", () => {

@@ -813,6 +813,7 @@ function idleGameSession(): GameSessionComponent {
     phase: "over",
     countdownMs: GAME_COUNTDOWN_MS,
     score: 0,
+    cleared: 0,
     startedAt: 0,
     anchorX: 0,
     lastPulseAt: 0,

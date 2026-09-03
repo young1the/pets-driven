@@ -27,11 +27,19 @@
  */
 export type WorldPropKind =
   | "ball"
-  // Course scenery. The plain hurdle is what a practice round is made of; the
-  // rest are the vocabulary a tool-use round draws from, one shape per thing an
+  // Course scenery. The hurdles are what a practice round is made of; the rest
+  // are the vocabulary a tool-use round draws from, one shape per thing an
   // agent can be doing. They are told apart by kind and not by a field on
   // GameObstacle because the kind is what reaches the window that draws them.
+  //
+  // Three hurdles rather than one because a course of identical obstacles is a
+  // course with one question in it, asked over and over. The two big ones are
+  // the same cactus doubled — twice as tall, or twice as wide — which is a size
+  // the drawing can state exactly (see `span` in prop-presentation.ts) rather
+  // than a vaguer "big one".
   | "hurdle"
+  | "hurdle-tall"
+  | "hurdle-wide"
   | "book-stack"
   | "toolbox"
   | "flame"

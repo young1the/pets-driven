@@ -6,6 +6,7 @@ import {
   COURSE_LANE_BACK,
   COURSE_LANE_FORWARD,
   COURSE_MARKER_AHEAD,
+  COURSE_MIN_OBSTACLE_GAP,
   COURSE_OBSTACLE_FOR_ACTIVITY,
   COURSE_OBSTACLE_SIZE,
   COURSE_REAP_BEHIND,
@@ -13,25 +14,40 @@ import {
   COURSE_SPAWN_AHEAD,
   COURSE_SPAWN_INTERVAL_MS,
   type CourseObstacleKind,
+  GAME_HANG_GRAVITY_SCALE,
   GAME_OVER_LINGER_MS,
   GAME_SESSION_ENTITY_ID,
   GAME_STUMBLE_MS,
+  GAME_STUMBLE_UNTIL_SWEPT,
   type GameControlSource,
   type GamePhase,
   type GameSpawnSource,
   MAX_LIVE_OBSTACLES,
-  OBSTACLE_HIT_INSET,
-  PILOT_IGNORE_BEHIND,
-  PILOT_JUMP_DISTANCE,
+  OBSTACLE_CLIP_RATIO,
+  PET_CLIP_HEIGHT_RATIO,
+  PET_CLIP_WIDTH_RATIO,
+  PILOT_JUMP_LEAD,
+  PRACTICE_OBSTACLE_KINDS,
 } from "@pets-driven/pet-engine/features/game/components";
 import { INTERACTION_ENTITY_ID } from "@pets-driven/pet-engine/features/interaction/systems";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import { createObstacleProp } from "@pets-driven/pet-engine/features/props/entities";
+import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
-/** The slice of the physics world a course needs: it pins speeds, nothing more. */
+/**
+ * The slice of the physics world a course needs: it pins speeds, and it makes a
+ * jump hang (see GAME_HANG_GRAVITY_SCALE). Nothing more.
+ */
 type CourseVelocityWriter = {
   setVelocity(id: string, velocity: { x?: number; y?: number }): void;
+  setGravityScale(id: string, scale: number): void;
+  /**
+   * Taking an obstacle away is two things, not one. Destroying the entity is
+   * what closes its window; dropping the body is what stops Matter simulating a
+   * rectangle nothing can see for the rest of the session.
+   */
+  removeBody(id: string): void;
 };
 
 /**
@@ -112,8 +128,11 @@ export function runGameSpawnSystem(ctx: {
   physics: Pick<MatterPhysicsWorld, "addRectangle">;
   clock: Clock;
   stilled: boolean;
+  /** Which of the practice course's hurdles comes next. The world's, not the
+   * platform's: the simulation stays deterministic and headless. */
+  random: RandomSource;
 }): void {
-  const { components, physics, clock, stilled } = ctx;
+  const { components, physics, clock, stilled, random } = ctx;
   const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
   if (!session?.petId || session.phase !== "running" || stilled) return;
   if (session.spawn !== "auto") return;
@@ -128,7 +147,11 @@ export function runGameSpawnSystem(ctx: {
   }, 0);
   if (live.length > 0 && now - newest < COURSE_SPAWN_INTERVAL_MS) return;
 
-  spawnObstacle(components, physics, session.petId, now);
+  const index = Math.min(
+    PRACTICE_OBSTACLE_KINDS.length - 1,
+    Math.floor(random.next() * PRACTICE_OBSTACLE_KINDS.length),
+  );
+  spawnObstacle(components, physics, session.petId, now, PRACTICE_OBSTACLE_KINDS[index]);
 }
 
 /**
@@ -185,7 +208,22 @@ export function runGameCourseSystem(
   clearLapsedStumbles(components, now);
 
   const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
-  if (!session?.petId) return;
+  if (!session) return;
+
+  // A session with no pet cannot have a course, and whatever is still standing
+  // on the desktop is nobody's. Two ways to get here and neither is the round
+  // simply finishing: the user stopped it outright (world.endGame), or the pet
+  // was sent home mid-round and GameSessionSystem let the session go.
+  //
+  // The guard used to be `!session.petId` and an early return, which meant both
+  // of those left every obstacle where it stood — real always-on-top windows,
+  // frozen, with nothing left running that would ever take them away. This is
+  // still the only thing that sweeps a prop; it just no longer needs a pet to
+  // do it.
+  if (!session.petId) {
+    sweepCourse(components, physics);
+    return;
+  }
 
   const petId = session.petId;
   const petTransform = components.getComponent(petId, "Transform");
@@ -195,7 +233,7 @@ export function runGameCourseSystem(
   // *is* the report — then takes every window away. Nothing else sweeps a prop.
   if (session.phase === "over") {
     if (session.endedAt > 0 && now - session.endedAt >= GAME_OVER_LINGER_MS) {
-      sweepCourse(components);
+      sweepCourse(components, physics);
       session.petId = null;
     } else if (session.endedAt === 0) {
       session.endedAt = now;
@@ -226,12 +264,19 @@ export function runGameCourseSystem(
     const behindPet = transform.position.x < petTransform.position.x;
     if (behindPet && !obstacle.cleared) {
       obstacle.cleared = true;
+      // Reached here, the obstacle went past untouched — a clip would have
+      // claimed `cleared` on contact — so this is the one place a dodge can be
+      // counted, and it is counted once.
+      if (isDodgeable(components, entry.id)) session.cleared += 1;
     }
 
     if (transform.position.x < petTransform.position.x - COURSE_REAP_BEHIND) {
+      physics.removeBody(entry.id);
       components.destroy(entry.id);
     }
   }
+
+  holdPetAloft(components, physics, petId, running);
 
   if (running) {
     holdPetInLane(components, physics, session);
@@ -240,6 +285,50 @@ export function runGameCourseSystem(
     // has been going. Kept as a float and floored only when it is read.
     session.score += (COURSE_SCROLL_SPEED * deltaMs) / 16;
   }
+}
+
+/**
+ * The kinds that count towards the tally, which is every kind but the three
+ * that are the round changing state rather than something to get over.
+ *
+ * None of the three is ever actually passed — the course stops dead the moment
+ * one is laid — so this filter guards a case that cannot happen today. It is
+ * here because the tally has to mean "obstacles you got over" whatever a later
+ * marker does, and a number that quietly counts a finish line is worse than no
+ * number at all.
+ */
+const MARKER_KINDS: ReadonlySet<string> = new Set(["gate", "finish", "wall"]);
+
+function isDodgeable(components: ComponentStore, obstacleId: string): boolean {
+  const kind = components.getComponent(obstacleId, "WorldProp")?.kind;
+  return kind !== undefined && !MARKER_KINDS.has(kind);
+}
+
+/**
+ * Lighter gravity while a pet on a course is off the floor, and the world's own
+ * the rest of the time.
+ *
+ * Written every tick rather than latched on take-off and released on landing:
+ * a round can end, a pet can be swapped, and Quiet Mode can freeze the world
+ * mid-arc, and every one of those is a way for a latch to be left holding a pet
+ * at two thirds gravity for the rest of its life. Re-deciding from the jump's
+ * own phase costs one map write and cannot get stuck.
+ *
+ * Skipped outright for a pet wearing wings: FlightSystem writes the same number
+ * from `CanFly`, and the two would take turns overwriting each other.
+ */
+function holdPetAloft(
+  components: ComponentStore,
+  physics: CourseVelocityWriter,
+  petId: string,
+  running: boolean,
+): void {
+  if (components.getComponent(petId, "CanFly")) return;
+
+  const phase = components.getComponent(petId, "JumpActionState")?.phase;
+  const aloft = running && (phase === "rising" || phase === "falling");
+
+  physics.setGravityScale(petId, aloft ? GAME_HANG_GRAVITY_SCALE : 1);
 }
 
 export const GameSpawnSystem: SimulationSystem<WorldStepContext> = {
@@ -253,6 +342,7 @@ export const GameSpawnSystem: SimulationSystem<WorldStepContext> = {
       physics: ctx.physics,
       clock: ctx.clock,
       stilled: isMovementStilled(ctx.quietMode),
+      random: ctx.random,
     });
   },
 };
@@ -263,7 +353,15 @@ export const GameCourseSystem: SimulationSystem<WorldStepContext> = {
   // the pet's horizontal: a user leaning on a direction key must not be able to
   // walk the pet off its own course.
   dependsOn: ["KeyboardControlMovementSystem"],
-  reads: ["GameSession", "GameObstacle", "Transform", "PhysicsBody"],
+  reads: [
+    "GameSession",
+    "GameObstacle",
+    "WorldProp",
+    "Transform",
+    "PhysicsBody",
+    "JumpActionState",
+    "CanFly",
+  ],
   writes: ["GameSession", "GameObstacle", "GameStumble", "PhysicsVelocity"],
   update(ctx) {
     runGameCourseSystem(
@@ -341,12 +439,23 @@ function clipsPet(components: ComponentStore, petId: string, obstacleId: string)
   const body = components.getComponent(obstacleId, "PhysicsBody");
   if (!petTransform || !petBody || !transform || !body) return false;
 
-  const overlapX = petBody.width / 2 + body.width / 2 - OBSTACLE_HIT_INSET;
-  const overlapY = petBody.height / 2 + body.height / 2 - OBSTACLE_HIT_INSET;
+  // Both boxes are shrunk from the top and never from the bottom, because both
+  // things stand on the same floor. The pet keeps its feet and loses the air
+  // over its head; the obstacle keeps its base and loses the margin around its
+  // glyph. Shrinking about the centres instead would float the obstacle off the
+  // ground and lower the bar a jump has to clear, turning a fairness fix into a
+  // difficulty change.
+  const petHalfWidth = (petBody.width * PET_CLIP_WIDTH_RATIO) / 2;
+  const petHeight = petBody.height * PET_CLIP_HEIGHT_RATIO;
+  const obstacleHalfWidth = (body.width * OBSTACLE_CLIP_RATIO) / 2;
+  const obstacleHeight = body.height * OBSTACLE_CLIP_RATIO;
+
+  const petCentreY = petTransform.position.y + petBody.height / 2 - petHeight / 2;
+  const obstacleCentreY = transform.position.y + body.height / 2 - obstacleHeight / 2;
 
   return (
-    Math.abs(transform.position.x - petTransform.position.x) < overlapX &&
-    Math.abs(transform.position.y - petTransform.position.y) < overlapY
+    Math.abs(transform.position.x - petTransform.position.x) < petHalfWidth + obstacleHalfWidth &&
+    Math.abs(obstacleCentreY - petCentreY) < (petHeight + obstacleHeight) / 2
   );
 }
 
@@ -369,12 +478,18 @@ function stumble(
 ): void {
   if (!session.petId) return;
 
+  // A practice round ends here, and the pet stays down for as long as the
+  // course it lost to is still standing — see GAME_STUMBLE_UNTIL_SWEPT. A
+  // tool-use round carries on, so this one is a trip: down long enough to read,
+  // then up and running again.
+  const endsTheRound = session.spawn === "auto";
+
   components.setComponent(session.petId, {
     type: "GameStumble",
-    until: now + GAME_STUMBLE_MS,
+    until: endsTheRound ? GAME_STUMBLE_UNTIL_SWEPT : now + GAME_STUMBLE_MS,
   });
 
-  if (session.spawn === "auto") {
+  if (endsTheRound) {
     session.phase = "over";
   }
 }
@@ -415,18 +530,26 @@ export function runGamePilotSystem(components: ComponentStore, stilled: boolean)
   if (components.getComponent(session.petId, "JumpActionState")) return;
 
   const petTransform = components.getComponent(session.petId, "Transform");
-  if (!petTransform) return;
+  const petBody = components.getComponent(session.petId, "PhysicsBody");
+  if (!petTransform || !petBody) return;
 
-  let nearest = Number.POSITIVE_INFINITY;
+  // The pet's own leading edge, which is where a clip is decided from and
+  // therefore where the pilot has to measure from too.
+  const petReach = (petBody.width * PET_CLIP_WIDTH_RATIO) / 2;
+
   for (const entry of components.query("GameObstacle", "Transform")) {
     const gap = entry.components[1].position.x - petTransform.position.x;
-    if (gap < -PILOT_IGNORE_BEHIND) continue;
-    if (gap < nearest) nearest = gap;
+    // Already alongside or past: it is either being cleared or leaving, and a
+    // jump now would only land on the next one.
+    if (gap < petReach) continue;
+
+    const width = components.getComponent(entry.id, "PhysicsBody")?.width ?? 0;
+    const contact = petReach + (width * OBSTACLE_CLIP_RATIO) / 2;
+    if (gap - contact <= PILOT_JUMP_LEAD) {
+      requestPetJump(components, session.petId);
+      return;
+    }
   }
-
-  if (nearest > PILOT_JUMP_DISTANCE) return;
-
-  requestPetJump(components, session.petId);
 }
 
 /**
@@ -452,7 +575,7 @@ export const GamePilotSystem: SimulationSystem<WorldStepContext> = {
   // After the spawner, so an obstacle laid this tick is already a thing the
   // pilot can see rather than something it learns about a tick late.
   dependsOn: ["GameSpawnSystem"],
-  reads: ["GameSession", "GameObstacle", "Transform", "GameStumble", "WalkingTag"],
+  reads: ["GameSession", "GameObstacle", "Transform", "PhysicsBody", "GameStumble", "WalkingTag"],
   writes: ["JumpActionState"],
   update(ctx) {
     runGamePilotSystem(ctx.components, isMovementStilled(ctx.quietMode));
@@ -483,7 +606,9 @@ export const GamePilotSystem: SimulationSystem<WorldStepContext> = {
  */
 export function runGameToolUseSpawnSystem(ctx: {
   components: ComponentStore;
-  physics: Pick<MatterPhysicsWorld, "addRectangle">;
+  // Lays scenery and takes it away again: a gate is swept the moment the agent
+  // moves on, and the body has to go with the window.
+  physics: Pick<MatterPhysicsWorld, "addRectangle" | "removeBody">;
   clock: Clock;
   stilled: boolean;
 }): void {
@@ -510,7 +635,7 @@ export function runGameToolUseSpawnSystem(ctx: {
 
   if (session.phase === "blocked") {
     // The agent moved on, so the gate did its job and the course starts again.
-    sweepObstaclesOfKind(components, "gate");
+    sweepObstaclesOfKind(components, physics, "gate");
     session.phase = "running";
   }
 
@@ -520,13 +645,46 @@ export function runGameToolUseSpawnSystem(ctx: {
   if (!pulse || pulse.at <= session.lastPulseAt) return;
   session.lastPulseAt = pulse.at;
 
-  if (components.query("GameObstacle").length >= MAX_LIVE_OBSTACLES) return;
+  const live = components.query("GameObstacle", "Transform");
+  if (live.length >= MAX_LIVE_OBSTACLES) return;
 
   // An adapter that reported no activity still moved the heartbeat, so the pet
   // still has something to jump — it is a tool call either way, just an
   // unlabelled one.
   const kind = pulse.activity ? COURSE_OBSTACLE_FOR_ACTIVITY[pulse.activity] : "hurdle";
-  spawnObstacle(components, physics, session.petId, now, kind);
+  spawnObstacle(
+    components,
+    physics,
+    session.petId,
+    now,
+    kind,
+    entryPointBehindTheCourse(components, session.petId, live),
+  );
+}
+
+/**
+ * Where the next tool-use obstacle enters: the usual distance, or a clearable
+ * gap behind whatever is already furthest out — whichever is further.
+ *
+ * See COURSE_MIN_OBSTACLE_GAP. Two tool calls a few hundred milliseconds apart
+ * used to land two obstacles close enough that no jump cleared both, and this
+ * is the alternative to dropping one of them.
+ */
+function entryPointBehindTheCourse(
+  components: ComponentStore,
+  petId: string,
+  live: ReadonlyArray<{ id: string }>,
+): number {
+  const petX = components.getComponent(petId, "Transform")?.position.x;
+  if (petX === undefined) return COURSE_SPAWN_AHEAD;
+
+  let furthest = 0;
+  for (const entry of live) {
+    const x = components.getComponent(entry.id, "Transform")?.position.x;
+    if (x !== undefined) furthest = Math.max(furthest, x - petX);
+  }
+
+  return Math.max(COURSE_SPAWN_AHEAD, furthest + COURSE_MIN_OBSTACLE_GAP);
 }
 
 /** Put a gate, a flag or a wall right where the pet can see it. */
@@ -542,28 +700,49 @@ function placeMarker(
 
 function endRoundAt(
   components: ComponentStore,
-  physics: Pick<MatterPhysicsWorld, "addRectangle">,
+  physics: Pick<MatterPhysicsWorld, "addRectangle" | "removeBody">,
   session: { petId: string | null; phase: GamePhase; endedAt: number },
   kind: CourseObstacleKind,
   now: number,
 ): void {
   if (!session.petId) return;
-  sweepObstaclesOfKind(components, "gate");
+  sweepObstaclesOfKind(components, physics, "gate");
   placeMarker(components, physics, session.petId, kind, now);
   session.phase = "over";
   session.endedAt = now;
 }
 
-function sweepObstaclesOfKind(components: ComponentStore, kind: CourseObstacleKind): void {
+function sweepObstaclesOfKind(
+  components: ComponentStore,
+  physics: Pick<MatterPhysicsWorld, "removeBody">,
+  kind: CourseObstacleKind,
+): void {
   for (const entry of components.query("GameObstacle", "WorldProp")) {
-    if (entry.components[1].kind === kind) components.destroy(entry.id);
+    if (entry.components[1].kind !== kind) continue;
+    physics.removeBody(entry.id);
+    components.destroy(entry.id);
   }
 }
 
-/** Take every obstacle off the desktop. Nothing else ever sweeps a prop. */
-export function sweepCourse(components: ComponentStore): void {
+/**
+ * Take every obstacle off the desktop, and let anyone it knocked down up.
+ *
+ * Nothing else ever sweeps a prop, which is why this is also where a held
+ * stumble ends: the pet stays on the floor for exactly as long as the course
+ * that put it there is still standing, so the two leave together rather than
+ * the pet getting up first and idling beside the wreck.
+ */
+export function sweepCourse(
+  components: ComponentStore,
+  physics: Pick<CourseVelocityWriter, "removeBody">,
+): void {
   for (const entry of components.query("GameObstacle")) {
+    physics.removeBody(entry.id);
     components.destroy(entry.id);
+  }
+
+  for (const entry of components.query("GameStumble")) {
+    components.removeComponent(entry.id, "GameStumble");
   }
 }
 

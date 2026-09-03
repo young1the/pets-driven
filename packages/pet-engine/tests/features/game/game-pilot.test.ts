@@ -2,21 +2,32 @@ import { createComponentStore } from "@pets-driven/pet-engine/core/component-sto
 import type { Component } from "@pets-driven/pet-engine/core/components";
 import {
   GAME_SESSION_ENTITY_ID,
-  PILOT_IGNORE_BEHIND,
-  PILOT_JUMP_DISTANCE,
+  HURDLE_SIZE,
+  OBSTACLE_CLIP_RATIO,
+  PET_CLIP_WIDTH_RATIO,
+  PILOT_JUMP_LEAD,
 } from "@pets-driven/pet-engine/features/game/components";
 import { runGamePilotSystem } from "@pets-driven/pet-engine/features/game/systems";
 import { describe, expect, it } from "vitest";
 
 const PET_X = 500;
 const PET_Y = 400;
+// A full-size desktop pet, which is the case a centre-measured jump distance
+// got wrong: its own leading edge is further out than the whole lead used to be.
+const PET_BODY = { width: 156, height: 156 };
+// Where the two clip boxes would meet — the point the pilot leads from.
+const CONTACT_X =
+  PET_X +
+  (PET_BODY.width * PET_CLIP_WIDTH_RATIO) / 2 +
+  (HURDLE_SIZE.width * OBSTACLE_CLIP_RATIO) / 2;
 
 function createStore(options?: {
   session?: Record<string, unknown>;
   obstacleAt?: number | null;
   pet?: Component[];
 }) {
-  const obstacleAt = options?.obstacleAt === undefined ? PET_X + 40 : options.obstacleAt;
+  const obstacleAt =
+    options?.obstacleAt === undefined ? CONTACT_X + PILOT_JUMP_LEAD - 5 : options.obstacleAt;
 
   return createComponentStore([
     {
@@ -30,6 +41,7 @@ function createStore(options?: {
           phase: "running",
           countdownMs: 0,
           score: 0,
+          cleared: 0,
           startedAt: 0,
           anchorX: PET_X,
           lastPulseAt: 0,
@@ -44,6 +56,7 @@ function createStore(options?: {
         { type: "PetIdentity", name: "Scout" },
         { type: "WalkingTag" },
         { type: "Transform", position: { x: PET_X, y: PET_Y } },
+        { type: "PhysicsBody", shape: "rectangle", ...PET_BODY },
         ...(options?.pet ?? []),
       ],
     },
@@ -55,6 +68,7 @@ function createStore(options?: {
             components: [
               { type: "GameObstacle" as const, spawnedAt: 0, cleared: false },
               { type: "Transform" as const, position: { x: obstacleAt, y: PET_Y } },
+              { type: "PhysicsBody" as const, shape: "rectangle" as const, ...HURDLE_SIZE },
             ],
           },
         ]),
@@ -67,7 +81,7 @@ function jumpPhase(components: ReturnType<typeof createStore>) {
 
 describe("the pet flying its own round", () => {
   it("asks for a jump once an obstacle is close enough", () => {
-    const components = createStore({ obstacleAt: PET_X + PILOT_JUMP_DISTANCE - 5 });
+    const components = createStore({ obstacleAt: CONTACT_X + PILOT_JUMP_LEAD - 5 });
 
     runGamePilotSystem(components, false);
 
@@ -77,7 +91,7 @@ describe("the pet flying its own round", () => {
   });
 
   it("waits while the obstacle is still far off", () => {
-    const components = createStore({ obstacleAt: PET_X + PILOT_JUMP_DISTANCE + 40 });
+    const components = createStore({ obstacleAt: CONTACT_X + PILOT_JUMP_LEAD + 40 });
 
     runGamePilotSystem(components, false);
 
@@ -85,16 +99,20 @@ describe("the pet flying its own round", () => {
   });
 
   it("ignores an obstacle it has already passed", () => {
-    const components = createStore({ obstacleAt: PET_X - PILOT_IGNORE_BEHIND - 5 });
+    const components = createStore({ obstacleAt: PET_X - 5 });
 
     runGamePilotSystem(components, false);
 
-    // Otherwise a hurdle on its way out triggers a second, pointless jump.
+    // Anything already alongside or behind is being cleared or leaving, and a
+    // jump now would only land on the next one.
     expect(components.getComponent("pet-a", "JumpActionState")).toBeUndefined();
   });
 
   it("stays out of the way while the user is driving", () => {
-    const components = createStore({ session: { control: "user" }, obstacleAt: PET_X + 10 });
+    const components = createStore({
+      session: { control: "user" },
+      obstacleAt: CONTACT_X + PILOT_JUMP_LEAD - 5,
+    });
 
     runGamePilotSystem(components, false);
 
@@ -105,7 +123,7 @@ describe("the pet flying its own round", () => {
 
   it("does not jump while it is picking itself up", () => {
     const components = createStore({
-      obstacleAt: PET_X + 10,
+      obstacleAt: CONTACT_X + PILOT_JUMP_LEAD - 5,
       pet: [{ type: "GameStumble", until: 9_999 }],
     });
 
@@ -118,7 +136,7 @@ describe("the pet flying its own round", () => {
 
   it("leaves a jump already in flight alone", () => {
     const components = createStore({
-      obstacleAt: PET_X + 10,
+      obstacleAt: CONTACT_X + PILOT_JUMP_LEAD - 5,
       pet: [{ type: "JumpActionState", phase: "rising", cooldownMs: 0 }],
     });
 
@@ -130,7 +148,7 @@ describe("the pet flying its own round", () => {
   it("does nothing before the round starts", () => {
     const components = createStore({
       session: { phase: "countdown" },
-      obstacleAt: PET_X + 10,
+      obstacleAt: CONTACT_X + PILOT_JUMP_LEAD - 5,
     });
 
     runGamePilotSystem(components, false);
@@ -139,7 +157,7 @@ describe("the pet flying its own round", () => {
   });
 
   it("does nothing while the world is stilled", () => {
-    const components = createStore({ obstacleAt: PET_X + 10 });
+    const components = createStore({ obstacleAt: CONTACT_X + PILOT_JUMP_LEAD - 5 });
 
     runGamePilotSystem(components, true);
 

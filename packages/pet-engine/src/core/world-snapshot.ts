@@ -138,6 +138,17 @@ export type PetGameSnapshot = {
   spawn: import("@pets-driven/pet-engine/features/game/components").GameSpawnSource;
   countdown: string | null;
   score: number;
+  /** Obstacles put behind the pet untouched — the round's only quality score. */
+  cleared: number;
+  /**
+   * Where the pet stands in its lane and how far the lane runs either way, in
+   * engine pixels, or null before it has a position to measure.
+   *
+   * `offset` is signed from the line the round started on: positive is toward
+   * the oncoming course. The two bounds are positive distances, and they differ
+   * — there is more lane forward than back (see COURSE_LANE_FORWARD).
+   */
+  lane: { offset: number; forward: number; back: number } | null;
 };
 
 export type InteractionSnapshot = {
@@ -196,6 +207,16 @@ export type WorldPropSnapshot = {
   radius: number;
   /** Body rotation in radians, so a host can spin the glyph as it rolls. */
   angle: number;
+  /**
+   * Whether the user can pick this one up, straight off its `CanDrag`.
+   *
+   * On the snapshot because it is the *engine* that decides it, and a host has
+   * to know: a prop the user can grab needs a surface that takes the mouse,
+   * while scenery must let clicks fall through to the desktop behind it. The
+   * desktop shell used to answer this from a hand-kept list of kinds, which is
+   * the kind of copy that falls behind the moment a kind is added.
+   */
+  grabbable: boolean;
 };
 
 /** The ability a pet is currently wearing from a collected trinket. */

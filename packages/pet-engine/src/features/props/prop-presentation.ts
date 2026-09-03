@@ -21,6 +21,17 @@ import type { WorldPropKind } from "@pets-driven/pet-engine/features/props/compo
 export type WorldPropPresentation = {
   /** Drawn as a glyph when the prop has no bespoke artwork. The ball has art. */
   glyph?: string;
+  /**
+   * How many of that glyph to draw, across and down. Absent is one.
+   *
+   * The big hurdles are the same cactus doubled, and this is the honest way to
+   * say so: the drawing is literally two of the unit, in the direction the body
+   * is twice as large, so a host cannot draw a "big cactus" that disagrees with
+   * the box the course hit-tests. A scaled-up emoji could not — stretching one
+   * glyph to twice the height distorts it, and scaling it evenly makes it twice
+   * as wide as well, which is the *other* obstacle.
+   */
+  span?: { across: number; down: number };
   /** English fallback label; hosts with a catalogue translate by kind instead. */
   label: string;
 };
@@ -28,6 +39,8 @@ export type WorldPropPresentation = {
 export const WORLD_PROP_PRESENTATION: Record<WorldPropKind, WorldPropPresentation> = {
   ball: { label: "Ball" },
   hurdle: { label: "Hurdle", glyph: "🌵" },
+  "hurdle-tall": { label: "Tall hurdle", glyph: "🌵", span: { across: 1, down: 2 } },
+  "hurdle-wide": { label: "Wide hurdle", glyph: "🌵", span: { across: 2, down: 1 } },
   "book-stack": { label: "Reading", glyph: "📚" },
   toolbox: { label: "Editing", glyph: "🔧" },
   flame: { label: "Running something", glyph: "🔥" },

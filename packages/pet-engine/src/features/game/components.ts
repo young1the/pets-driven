@@ -54,6 +54,15 @@ export type GameSessionComponent = {
    * somebody else's agent is not a thing anyone can be good at.
    */
   score: number;
+  /**
+   * Obstacles this round has put behind the pet without touching one.
+   *
+   * Distance says how long a round lasted; this is the only number that says
+   * how well it went, and it is what the pet wears over its head while it runs.
+   * A round with no visible tally reads as scenery sliding past rather than as
+   * something being played — which is exactly how it read.
+   */
+  cleared: number;
   startedAt: number;
   /**
    * Where the pet stood when the round began — the middle of its lane, and the
@@ -135,8 +144,40 @@ export const COURSE_REAP_BEHIND = 140;
  */
 export const MAX_LIVE_OBSTACLES = 4;
 
-/** Gap between obstacles on the `auto` rhythm. Comfortably more than one jump. */
-export const COURSE_SPAWN_INTERVAL_MS = 1_400;
+/**
+ * Gap between obstacles on the `auto` rhythm.
+ *
+ * Measured against the jump, not guessed. A pet is off the floor for about 63
+ * ticks under GAME_HANG_GRAVITY_SCALE and JumpSystem then holds it in a 250ms
+ * landing cooldown, so from the moment it commits to a jump it cannot make
+ * another for roughly 1260ms — 252px of course — and it commits PILOT_JUMP_LEAD
+ * early on top of that. At 1400ms the next obstacle arrived while the pet was
+ * still in that cooldown, so every round died on its second hurdle no matter
+ * how well it was played.
+ *
+ * This is the floor of what is survivable plus a margin. Anything tighter is
+ * not difficulty, it is an unwinnable round.
+ */
+export const COURSE_SPAWN_INTERVAL_MS = 2_200;
+
+/**
+ * The same gap as a distance, and the floor a *tool-use* course honours too.
+ *
+ * Derived from the rhythm rather than restated, so the two can never drift.
+ *
+ * The auto course paces itself and so was always survivable; a tool-use course
+ * is paced by somebody else's agent, and two tool calls landing a few hundred
+ * milliseconds apart put two obstacles close enough together that no jump
+ * clears both — the pet is still in its landing cooldown when the second one
+ * arrives. That is the "two flames" round, and even the pilot lost it.
+ *
+ * The answer is not to drop the second call. Every obstacle in a tool-use round
+ * *is* a tool call, and a course that silently swallows some of them stops
+ * being a reading of what the agent is doing. So the obstacle is laid further
+ * out instead: it enters behind the one already furthest away, keeps its place
+ * in the order, and simply takes longer to arrive.
+ */
+export const COURSE_MIN_OBSTACLE_GAP = (COURSE_SPAWN_INTERVAL_MS / 16) * COURSE_SCROLL_SPEED;
 
 /**
  * How far the pet may range from where its round started, in engine pixels.
@@ -164,6 +205,10 @@ export const COURSE_LANE_BACK = 90;
  */
 export type GameStumbleComponent = {
   type: "GameStumble";
+  /**
+   * When the pet may pick itself up, or GAME_STUMBLE_UNTIL_SWEPT while it is
+   * down for good.
+   */
   until: number;
 };
 
@@ -171,30 +216,102 @@ export type GameStumbleComponent = {
 export const GAME_STUMBLE_MS = 700;
 
 /**
- * Slack around the two bodies before a clip counts.
+ * A stumble with no deadline: the pet stays down until the course is taken away.
  *
- * Negative on purpose: the drawn hurdle is smaller than the box around it, and
- * a hit registered on the box alone lands while there is still visible daylight
- * between them, which reads as cheating. The same forgiveness every runner
- * game's hitbox has.
+ * For the clip that *ends* a round, which the 700ms above reads wrong. A
+ * finished round keeps its last obstacle on screen for GAME_OVER_LINGER_MS,
+ * because the wreck is the report — so a pet that dusted itself off after two
+ * fifths of a second stood there idling, cheerfully, beside the cactus that had
+ * just ended its round. Whatever the two of them were saying, it was not the
+ * same thing.
+ *
+ * Infinity rather than `endedAt + GAME_OVER_LINGER_MS` so the two cannot drift:
+ * the sweep is what clears this, so the pet is up at the moment the course goes
+ * and not a tick either side of it, however the linger is later tuned — or
+ * however the round ended, since stopping one by hand sweeps it too.
  */
-export const OBSTACLE_HIT_INSET = 6;
+export const GAME_STUMBLE_UNTIL_SWEPT = Number.POSITIVE_INFINITY;
 
 /**
- * How far ahead the pet's own pilot starts a jump, in engine pixels.
+ * The pet's body as the *course* measures it: a fraction of its physics box,
+ * anchored at its feet.
  *
- * Derived from the arc rather than guessed: at COURSE_SCROLL_SPEED an obstacle
- * covers this in about a third of a second, which is roughly how long a default
- * jump spends off the floor. Too early and the pet lands on the hurdle it was
- * clearing; too late and it walks into it.
+ * A fraction and not a fixed inset, because the physics box is not the animal.
+ * An adopted pet's body is the sprite cell's body rect (156x156 at scale 1, and
+ * twice that at the largest size the resize handle allows) — a square drawn
+ * around the whole cell so a pointer can grab it, several times the 32x38 the
+ * engine's default constants were tuned against. A flat 6px of slack off a box
+ * that size is nothing: the hit fired on the tail, on the ear, on the empty
+ * corner beside the head, which is exactly the "it never touched it" this is
+ * here to answer.
+ *
+ * Width is where nearly all the slack goes. Measured off the spritesheets, the
+ * drawn pet fills about 0.88 of the body rect's width — but most of that is
+ * tail, ears and whiskers, and a runner game hits on the trunk and the legs.
+ * The height keeps almost all of the box: it is anchored at the feet, so what
+ * it decides is how high a jump has to be, and that is difficulty rather than
+ * unfairness.
+ *
+ * Narrowing the pet also shortens the *crossing*, which is what made the round
+ * unplayable rather than merely unfair — see GAME_HANG_GRAVITY_SCALE.
  */
-export const PILOT_JUMP_DISTANCE = 70;
+export const PET_CLIP_WIDTH_RATIO = 0.45;
+export const PET_CLIP_HEIGHT_RATIO = 0.86;
 
 /**
- * The pilot ignores anything already behind the pet by this much, so an
- * obstacle being passed cannot trigger a second, pointless jump on its way out.
+ * The same, for an obstacle: an emoji does not fill the box drawn around it.
+ * Applied to both axes, so the height a jump must clear comes down with it.
  */
-export const PILOT_IGNORE_BEHIND = 8;
+export const OBSTACLE_CLIP_RATIO = 0.72;
+
+/**
+ * Gravity on a pet that is off the floor mid-round, as a multiple of the
+ * world's.
+ *
+ * The round was not hard, it was arithmetically impossible, and this is half of
+ * why. A jump is mass-compensated (deriveAdoptedPetLocomotion), so every pet
+ * rises the same ~48px and is off the floor for the same ~38 ticks whatever
+ * size it is drawn at — but the obstacle has to cross the pet's *width*, which
+ * is not compensated at all. Measured: a default-scale desktop pet needs 29
+ * ticks of clearance and a full-size one 53, against 27 ticks actually spent
+ * high enough to be clear. Every round ended on a hurdle the pet had jumped.
+ *
+ * Lighter gravity while airborne is the floaty-jump trick every platformer
+ * uses, and it is the right knob here because it buys hang time without
+ * touching the impulse — the take-off still looks like the pet's own jump, it
+ * just stays up long enough for the course to pass underneath. Measured, 0.55
+ * gives an arc of 63 ticks peaking at 68px, against 38 ticks and 48px at the
+ * world's own gravity.
+ *
+ * It is this low rather than merely lower because of the tall cactus. A pet at
+ * the largest size the resize handle allows spends about 50 ticks crossing one,
+ * and has to be above its 42px for all of them: at 0.60 the round still died on
+ * the first one it met, and 0.58 was where it started surviving. This is that
+ * boundary with room to spare, since the pilot plays it better than a hand on
+ * the keys does.
+ *
+ * Only ever applied to a pet with no wings: a flying pet's gravity belongs to
+ * the trinket that gave it (see ItemAbilitySystem), and two writers on one
+ * number is a fight neither wins.
+ */
+export const GAME_HANG_GRAVITY_SCALE = 0.55;
+
+/**
+ * How much clear air the pet's own pilot wants before it commits, in engine
+ * pixels — measured from the point the two clip boxes would touch, not from
+ * the pet's centre.
+ *
+ * From the centre is what it used to be, and it is wrong for the same reason a
+ * flat hit inset was: the distance from a pet's centre to its own leading edge
+ * is a property of how big the pet is drawn, and it ranges over an order of
+ * magnitude. A pet scaled up past about 1.5 was asked to jump when the hurdle
+ * was already inside it.
+ *
+ * ~50px is a third of a second at COURSE_SCROLL_SPEED, comfortably more than
+ * the few ticks a jump needs to clear an obstacle's height. Too early and the
+ * pet lands on the hurdle it was clearing; too late and it walks into it.
+ */
+export const PILOT_JUMP_LEAD = 50;
 
 /**
  * The obstacle kinds a course is made of — every prop kind except the ball.
@@ -217,6 +334,15 @@ export type CourseObstacleKind = Exclude<WorldPropKind, "ball">;
  */
 export const COURSE_OBSTACLE_SIZE: Record<CourseObstacleKind, { width: number; height: number }> = {
   hurdle: { width: 26, height: 30 },
+  // The same cactus doubled, and the numbers say exactly that: the drawing is
+  // two of the unit glyph in the same direction (see `span` in
+  // prop-presentation.ts), so the box and the picture cannot disagree.
+  //
+  // Tall is the one that costs a higher jump; wide is the one that costs a
+  // longer one. Both are clearable at every size the resize handle allows —
+  // that is asserted, not assumed, because it stopped being true once before.
+  "hurdle-tall": { width: 26, height: 58 },
+  "hurdle-wide": { width: 52, height: 30 },
   "book-stack": { width: 30, height: 24 },
   toolbox: { width: 26, height: 32 },
   flame: { width: 24, height: 34 },
@@ -224,6 +350,25 @@ export const COURSE_OBSTACLE_SIZE: Record<CourseObstacleKind, { width: number; h
   finish: { width: 28, height: 52 },
   wall: { width: 30, height: 56 },
 };
+
+/**
+ * What a practice course is made of, as a bag drawn from at random.
+ *
+ * A bag rather than weights, because the weighting *is* the list: the plain
+ * cactus twice, each big one once, so half the course is the obstacle the
+ * player already knows how to read and the other half is the two that ask a
+ * different question. A course of identical hurdles is one question asked over
+ * and over, which is what a practice round was.
+ *
+ * Only the practice course. A tool-use course's shapes are decided by what the
+ * agent is doing and picking one at random there would be a lie.
+ */
+export const PRACTICE_OBSTACLE_KINDS: readonly CourseObstacleKind[] = [
+  "hurdle",
+  "hurdle",
+  "hurdle-tall",
+  "hurdle-wide",
+];
 
 /** The obstacle a tool call becomes, by the activity the agent reported. */
 export const COURSE_OBSTACLE_FOR_ACTIVITY: Record<"study" | "edit" | "run", CourseObstacleKind> = {

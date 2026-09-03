@@ -18,6 +18,8 @@ import { getPetAnimationState } from "@pets-driven/pet-engine/features/behavior/
 import type { WorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import {
+  COURSE_LANE_BACK,
+  COURSE_LANE_FORWARD,
   GAME_COUNTDOWN_MS,
   GAME_SESSION_ENTITY_ID,
   type GameControlSource,
@@ -25,6 +27,7 @@ import {
   type GameSpawnSource,
   gameCountdownGlyph,
 } from "@pets-driven/pet-engine/features/game/components";
+import { sweepCourse } from "@pets-driven/pet-engine/features/game/systems";
 import { INTERACTION_ENTITY_ID } from "@pets-driven/pet-engine/features/interaction/systems";
 import {
   DEFAULT_ITEM_PICKUP_RADIUS,
@@ -250,6 +253,31 @@ export function createWorld(input: WorldDefinition) {
       spawn: session.spawn,
       countdown: gameCountdownGlyph(session.countdownMs),
       score: Math.floor(session.score),
+      cleared: session.cleared,
+      lane: getGameLaneSnapshot(componentStore, session.petId, session.anchorX),
+    };
+  }
+
+  /**
+   * Where the pet is standing inside its lane, and how much lane there is.
+   *
+   * Resolved here rather than left to each host to work out from the anchor and
+   * two constants, because the lane is invisible: the pet simply stops, and the
+   * only way to know why — or that there was ever anywhere else to go — is for
+   * something to draw it. A host cannot draw what it has to reconstruct.
+   */
+  function getGameLaneSnapshot(
+    componentStore: ComponentStore,
+    petId: string,
+    anchorX: number,
+  ): { offset: number; forward: number; back: number } | null {
+    const position = componentStore.getComponent(petId, "Transform")?.position;
+    if (!position) return null;
+
+    return {
+      offset: position.x - anchorX,
+      forward: COURSE_LANE_FORWARD,
+      back: COURSE_LANE_BACK,
     };
   }
 
@@ -422,6 +450,7 @@ export function createWorld(input: WorldDefinition) {
         position: { ...transform.position },
         radius: body.width / 2,
         angle: bodyAngles.get(entity.id) ?? 0,
+        grabbable: !!componentStore.getComponent(entity.id, "CanDrag"),
       };
     });
   }
@@ -618,6 +647,12 @@ export function createWorld(input: WorldDefinition) {
       if (!session) return false;
       if (!components.getComponent(petId, "PetIdentity")) return false;
 
+      // Whatever the last round left standing goes first. Its obstacles would
+      // otherwise slide on into this one as scenery nobody laid, and a pet it
+      // knocked down is held there until a sweep — which, without this, would
+      // be a sweep that never came.
+      sweepCourse(components, physics);
+
       session.petId = petId;
       // `control` is derived from the keyboard every tick (GameSessionSystem),
       // so asking for a user-driven round means handing the keyboard this pet
@@ -631,6 +666,7 @@ export function createWorld(input: WorldDefinition) {
       session.phase = "countdown";
       session.countdownMs = GAME_COUNTDOWN_MS;
       session.score = 0;
+      session.cleared = 0;
       session.startedAt = input.clock.now();
       // The middle of the pet's lane for this round. Taken once, here, so the
       // boundary stays put instead of drifting along with the pet.
@@ -645,6 +681,11 @@ export function createWorld(input: WorldDefinition) {
     endGame(): void {
       const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
       if (!session) return;
+      // The course hands the pet's gravity back itself when a round *finishes*
+      // (see holdPetAloft), but this ends one outright: after the next line
+      // nothing knows which pet was running, so a pet stopped mid-jump would
+      // keep the round's lighter gravity for the rest of its life.
+      if (session.petId) physics.setGravityScale(session.petId, 1);
       session.petId = null;
       session.phase = "over";
     },

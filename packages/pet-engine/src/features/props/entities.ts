@@ -94,6 +94,8 @@ const PROP_BUILDERS: Record<
 > = {
   ball: createBallProp,
   hurdle: createHurdleProp,
+  "hurdle-tall": (position, now, id) => createObstacleProp("hurdle-tall", position, now, id),
+  "hurdle-wide": (position, now, id) => createObstacleProp("hurdle-wide", position, now, id),
   "book-stack": (position, now, id) => createObstacleProp("book-stack", position, now, id),
   toolbox: (position, now, id) => createObstacleProp("toolbox", position, now, id),
   flame: (position, now, id) => createObstacleProp("flame", position, now, id),

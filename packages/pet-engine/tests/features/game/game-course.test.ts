@@ -6,22 +6,30 @@ import {
   COURSE_SCROLL_SPEED,
   COURSE_SPAWN_AHEAD,
   COURSE_SPAWN_INTERVAL_MS,
+  GAME_HANG_GRAVITY_SCALE,
   GAME_SESSION_ENTITY_ID,
   GAME_STUMBLE_MS,
+  GAME_STUMBLE_UNTIL_SWEPT,
   HURDLE_SIZE,
   MAX_LIVE_OBSTACLES,
+  OBSTACLE_CLIP_RATIO,
+  PET_CLIP_WIDTH_RATIO,
+  PRACTICE_OBSTACLE_KINDS,
 } from "@pets-driven/pet-engine/features/game/components";
 import {
   runGameCourseSystem,
   runGameSpawnSystem,
   spawnObstacle,
+  sweepCourse,
 } from "@pets-driven/pet-engine/features/game/systems";
+import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it, vi } from "vitest";
 
 const PET_X = 500;
 const PET_Y = 400;
-const PET_HEIGHT = 38;
+const PET_BODY = { width: 32, height: 38 };
+const PET_HEIGHT = PET_BODY.height;
 
 function createStore(sessionOverrides?: Record<string, unknown>) {
   return createComponentStore([
@@ -36,6 +44,7 @@ function createStore(sessionOverrides?: Record<string, unknown>) {
           phase: "running",
           countdownMs: 0,
           score: 0,
+          cleared: 0,
           startedAt: 0,
           anchorX: PET_X,
           lastPulseAt: 0,
@@ -49,14 +58,28 @@ function createStore(sessionOverrides?: Record<string, unknown>) {
       components: [
         { type: "PetIdentity", name: "Scout" },
         { type: "Transform", position: { x: PET_X, y: PET_Y } },
-        { type: "PhysicsBody", shape: "rectangle", width: 32, height: PET_HEIGHT },
+        { type: "PhysicsBody", shape: "rectangle", ...PET_BODY },
       ],
     },
   ]);
 }
 
+/**
+ * A course draws its next hurdle from the practice bag, so the spawner needs a
+ * random source. Seeded, like everything else in this engine: the simulation is
+ * headless and has to run the same way twice.
+ */
+function createRandom() {
+  return createSeededRandom(7);
+}
+
 function createPhysics() {
-  return { addRectangle: vi.fn(), setVelocity: vi.fn() };
+  return {
+    addRectangle: vi.fn(),
+    setVelocity: vi.fn(),
+    setGravityScale: vi.fn(),
+    removeBody: vi.fn(),
+  };
 }
 
 function session(components: ReturnType<typeof createStore>) {
@@ -100,16 +123,37 @@ describe("laying out the course", () => {
     const physics = createPhysics();
     const clock = createManualClock(0);
 
-    runGameSpawnSystem({ components, physics, clock, stilled: false });
+    runGameSpawnSystem({ components, physics, clock, stilled: false, random: createRandom() });
     expect(obstacles(components)).toHaveLength(1);
 
     clock.advanceBy(COURSE_SPAWN_INTERVAL_MS - 100);
-    runGameSpawnSystem({ components, physics, clock, stilled: false });
+    runGameSpawnSystem({ components, physics, clock, stilled: false, random: createRandom() });
     expect(obstacles(components)).toHaveLength(1);
 
     clock.advanceBy(200);
-    runGameSpawnSystem({ components, physics, clock, stilled: false });
+    runGameSpawnSystem({ components, physics, clock, stilled: false, random: createRandom() });
     expect(obstacles(components)).toHaveLength(2);
+  });
+
+  it("draws each hurdle from the practice bag", () => {
+    const components = createStore();
+    const physics = createPhysics();
+    const clock = createManualClock(0);
+    const random = createRandom();
+    const laid = new Set<string>();
+
+    // Sweeps between spawns so the cap never gets in the way — this is about
+    // what the bag deals, not about how many are alive.
+    for (let i = 0; i < 40; i += 1) {
+      runGameSpawnSystem({ components, physics, clock, stilled: false, random });
+      for (const entry of components.query("GameObstacle", "WorldProp")) {
+        laid.add(entry.components[1].kind);
+        components.destroy(entry.id);
+      }
+      clock.advanceBy(COURSE_SPAWN_INTERVAL_MS);
+    }
+
+    expect(laid).toEqual(new Set(PRACTICE_OBSTACLE_KINDS));
   });
 
   it("stops at the cap, however long the round runs", () => {
@@ -118,7 +162,7 @@ describe("laying out the course", () => {
     const clock = createManualClock(0);
 
     for (let i = 0; i < MAX_LIVE_OBSTACLES + 4; i += 1) {
-      runGameSpawnSystem({ components, physics, clock, stilled: false });
+      runGameSpawnSystem({ components, physics, clock, stilled: false, random: createRandom() });
       clock.advanceBy(COURSE_SPAWN_INTERVAL_MS);
     }
 
@@ -134,6 +178,7 @@ describe("laying out the course", () => {
       physics: createPhysics(),
       clock: createManualClock(0),
       stilled: false,
+      random: createRandom(),
     });
 
     expect(obstacles(components)).toHaveLength(0);
@@ -147,6 +192,7 @@ describe("laying out the course", () => {
       physics: createPhysics(),
       clock: createManualClock(0),
       stilled: false,
+      random: createRandom(),
     });
 
     expect(obstacles(components)).toHaveLength(0);
@@ -160,6 +206,7 @@ describe("laying out the course", () => {
       physics: createPhysics(),
       clock: createManualClock(0),
       stilled: true,
+      random: createRandom(),
     });
 
     expect(obstacles(components)).toHaveLength(0);
@@ -224,11 +271,33 @@ describe("the course coming at the pet", () => {
     const id = spawnObstacle(components, createPhysics(), "pet-a", 0) as string;
     const transform = components.getComponent(id, "Transform");
     if (transform) transform.position.x = PET_X - COURSE_REAP_BEHIND - 1;
+    const physics = createPhysics();
 
-    runGameCourseSystem(components, createPhysics(), 16, false);
+    runGameCourseSystem(components, physics, 16, false);
 
-    // Nothing sweeps a prop, so the course has to take its own scenery back.
+    // Nothing sweeps a prop, so the course has to take its own scenery back —
+    // and the body with the window, or Matter goes on simulating a rectangle
+    // nobody can see.
     expect(components.getEntity(id)).toBeUndefined();
+    expect(physics.removeBody).toHaveBeenCalledWith(id);
+  });
+
+  it("sweeps a course whose round was stopped outright", () => {
+    const components = createStore();
+    const id = spawnObstacle(components, createPhysics(), "pet-a", 0) as string;
+    // What world.endGame() leaves behind: a session naming nobody, and scenery
+    // standing on the desktop with nothing running that would take it away.
+    const stopped = session(components);
+    if (stopped) {
+      stopped.petId = null;
+      stopped.phase = "over";
+    }
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    expect(components.getEntity(id)).toBeUndefined();
+    expect(physics.removeBody).toHaveBeenCalledWith(id);
   });
 });
 
@@ -347,8 +416,40 @@ describe("clipping an obstacle", () => {
   it("puts the pet on the floor", () => {
     const { components } = courseWithObstacleOnThePet();
 
+    expect(components.getComponent("pet-a", "GameStumble")).toBeUndefined();
     runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
 
+    expect(components.getComponent("pet-a", "GameStumble")).toBeTruthy();
+  });
+
+  it("keeps the pet down for as long as the course that beat it is standing", () => {
+    const { components } = courseWithObstacleOnThePet({ spawn: "auto" });
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    // No deadline: a finished round keeps its last obstacle on screen because
+    // the wreck is the report, and a pet that dusted itself off after 700ms
+    // stood idling beside the cactus that had just ended its round.
+    expect(components.getComponent("pet-a", "GameStumble")?.until).toBe(GAME_STUMBLE_UNTIL_SWEPT);
+  });
+
+  it("lets a pet up when the course is swept", () => {
+    const { components } = courseWithObstacleOnThePet({ spawn: "auto" });
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    sweepCourse(components, createPhysics());
+
+    // The two leave together, which is the whole reason the deadline is the
+    // sweep and not a copy of GAME_OVER_LINGER_MS.
+    expect(components.getComponent("pet-a", "GameStumble")).toBeUndefined();
+  });
+
+  it("only trips a pet whose round carries on", () => {
+    const { components } = courseWithObstacleOnThePet({ spawn: "tool-use" });
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    // A tool-use round is not a game to lose, so this one gets up by itself.
     expect(components.getComponent("pet-a", "GameStumble")?.until).toBe(1_000 + GAME_STUMBLE_MS);
   });
 
@@ -399,5 +500,151 @@ describe("clipping an obstacle", () => {
 
     // Spawned a course ahead of the pet, so nothing is touching anything.
     expect(components.getComponent("pet-a", "GameStumble")).toBeUndefined();
+  });
+
+  it("leaves daylight between the two rather than hitting on the boxes", () => {
+    const { components, id } = courseWithObstacleOnThePet();
+    const transform = components.getComponent(id, "Transform");
+    // Inside the two physics boxes, outside both clip boxes: the gap a user
+    // watches the hurdle pass through and is told they hit it.
+    const daylight = PET_X + PET_BODY.width / 2 + HURDLE_SIZE.width / 2 - 6;
+    if (transform) transform.position.x = daylight - 1;
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    expect(components.getComponent("pet-a", "GameStumble")).toBeUndefined();
+  });
+
+  it("still hits when the two are actually on top of each other", () => {
+    const { components, id } = courseWithObstacleOnThePet();
+    const transform = components.getComponent(id, "Transform");
+    const contact =
+      (PET_BODY.width * PET_CLIP_WIDTH_RATIO) / 2 + (HURDLE_SIZE.width * OBSTACLE_CLIP_RATIO) / 2;
+    if (transform) transform.position.x = PET_X + contact - 1;
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    expect(components.getComponent("pet-a", "GameStumble")).toBeTruthy();
+  });
+
+  it("lets a pet that jumped high enough over", () => {
+    const components = createStore();
+    // Spawned rather than placed by hand, so its feet are on the pet's floor
+    // line — which is the whole of what makes the height below the right one.
+    const id = spawnObstacle(components, createPhysics(), "pet-a", 0) as string;
+    const transform = components.getComponent(id, "Transform");
+    if (transform) transform.position.x = PET_X;
+    const petTransform = components.getComponent("pet-a", "Transform");
+    // Both clip boxes stand on the floor, so what a jump has to beat is the
+    // obstacle's clipped height and nothing else.
+    if (petTransform)
+      petTransform.position.y = PET_Y - HURDLE_SIZE.height * OBSTACLE_CLIP_RATIO - 1;
+
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+
+    expect(components.getComponent("pet-a", "GameStumble")).toBeUndefined();
+  });
+});
+
+describe("the tally the pet wears", () => {
+  it("counts an obstacle it put behind itself untouched", () => {
+    const components = createStore();
+    const id = spawnObstacle(components, createPhysics(), "pet-a", 0) as string;
+    const transform = components.getComponent(id, "Transform");
+    if (transform) transform.position.x = PET_X - 30;
+
+    runGameCourseSystem(components, createPhysics(), 16, false);
+
+    expect(session(components)?.cleared).toBe(1);
+  });
+
+  it("counts it once, however long it takes to be swept", () => {
+    const components = createStore();
+    const id = spawnObstacle(components, createPhysics(), "pet-a", 0) as string;
+    const transform = components.getComponent(id, "Transform");
+    if (transform) transform.position.x = PET_X - 30;
+
+    runGameCourseSystem(components, createPhysics(), 16, false);
+    runGameCourseSystem(components, createPhysics(), 16, false);
+
+    expect(session(components)?.cleared).toBe(1);
+  });
+
+  it("does not count one the pet walked into", () => {
+    const components = createStore({ spawn: "tool-use" });
+    const id = spawnObstacle(components, createPhysics(), "pet-a", 0) as string;
+    const transform = components.getComponent(id, "Transform");
+    if (transform) transform.position = { x: PET_X, y: PET_Y };
+
+    // The clip claims `cleared` on contact, then the wreck slides on past.
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_000);
+    if (transform) transform.position.x = PET_X - 30;
+    runGameCourseSystem(components, createPhysics(), 16, false, 1_100);
+
+    expect(session(components)?.cleared).toBe(0);
+  });
+
+  it("leaves a marker out of the tally", () => {
+    const components = createStore({ spawn: "tool-use" });
+    const id = spawnObstacle(components, createPhysics(), "pet-a", 0, "finish") as string;
+    const transform = components.getComponent(id, "Transform");
+    if (transform) transform.position.x = PET_X - 30;
+
+    runGameCourseSystem(components, createPhysics(), 16, false);
+
+    // A finish line is the round changing state, not something the pet got over.
+    expect(session(components)?.cleared).toBe(0);
+  });
+});
+
+describe("hanging in the air", () => {
+  function jumpingStore(phase: "rising" | "falling" | "landingCooldown") {
+    const components = createStore();
+    components.setComponent("pet-a", { type: "JumpActionState", phase, cooldownMs: 0 });
+    return components;
+  }
+
+  it("lightens gravity while the pet is off the floor mid-round", () => {
+    const components = jumpingStore("rising");
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    // A jump is mass-compensated and so rises the same height whatever size the
+    // pet is drawn at; the obstacle has to cross the pet's width, which is not.
+    // This is what buys the crossing enough time to happen.
+    expect(physics.setGravityScale).toHaveBeenCalledWith("pet-a", GAME_HANG_GRAVITY_SCALE);
+  });
+
+  it("hands gravity back the moment the jump is done", () => {
+    const components = jumpingStore("landingCooldown");
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    expect(physics.setGravityScale).toHaveBeenCalledWith("pet-a", 1);
+  });
+
+  it("hands gravity back when the round stops", () => {
+    const components = jumpingStore("rising");
+    const overSession = session(components);
+    if (overSession) overSession.phase = "countdown";
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    // Re-decided every tick rather than latched, so a round that ends mid-arc
+    // cannot leave a pet at two thirds gravity for the rest of its life.
+    expect(physics.setGravityScale).toHaveBeenCalledWith("pet-a", 1);
+  });
+
+  it("leaves a flying pet's gravity to the wings that gave it", () => {
+    const components = jumpingStore("rising");
+    components.setComponent("pet-a", { type: "CanFly", gravityScale: 0, hoverStrength: 1 });
+    const physics = createPhysics();
+
+    runGameCourseSystem(components, physics, 16, false);
+
+    expect(physics.setGravityScale).not.toHaveBeenCalled();
   });
 });
