@@ -1,6 +1,6 @@
 {
   "name": "pets-driven",
-  "version": "1.1.0+codex.20260726135510",
+  "version": "1.2.0+codex.20260726135510",
   "description": "Forward agent lifecycle events to the pets-driven desktop companion so the bound pet expresses agent work state.",
   "author": {
     "name": "pets-driven"
