@@ -393,3 +393,14 @@ export const COURSE_MARKER_AHEAD = 120;
  * is not merely a flourish.
  */
 export const GAME_OVER_LINGER_MS = 2_600;
+
+/**
+ * Claim reason for the pet on a course, and how long past the tick it lasts.
+ *
+ * A standing claim like keyboard control's, and for the same reason: a round
+ * runs for minutes, and between two obstacles the pet is still on a course. It
+ * is renewed every tick, so this is only the slack that stops the planner
+ * grabbing the body in the gap between two of them.
+ */
+export const GAME_ROUND_REASON = "game-round";
+export const GAME_ROUND_CLAIM_MS = 500;

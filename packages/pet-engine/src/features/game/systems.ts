@@ -3,6 +3,11 @@ import { isMovementStilled } from "@pets-driven/pet-engine/core/quiet-mode";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
 import {
+  claim,
+  clearMotionTarget,
+  setPetSteering,
+} from "@pets-driven/pet-engine/features/behavior/claim";
+import {
   COURSE_LANE_BACK,
   COURSE_LANE_FORWARD,
   COURSE_MARKER_AHEAD,
@@ -16,6 +21,8 @@ import {
   type CourseObstacleKind,
   GAME_HANG_GRAVITY_SCALE,
   GAME_OVER_LINGER_MS,
+  GAME_ROUND_CLAIM_MS,
+  GAME_ROUND_REASON,
   GAME_SESSION_ENTITY_ID,
   GAME_STUMBLE_MS,
   GAME_STUMBLE_UNTIL_SWEPT,
@@ -74,6 +81,7 @@ export function runGameSessionSystem(
   components: ComponentStore,
   deltaMs: number,
   stilled: boolean,
+  now = 0,
 ): void {
   const session = components.getComponent(GAME_SESSION_ENTITY_ID, "GameSession");
   if (!session?.petId) return;
@@ -88,6 +96,10 @@ export function runGameSessionSystem(
 
   const steering = components.getComponent(INTERACTION_ENTITY_ID, "KeyboardControlTarget");
   session.control = steering?.entityId === session.petId ? "user" : "pet";
+
+  if (session.phase !== "over") {
+    holdRunner(components, session.petId, now);
+  }
 
   if (stilled) return;
 
@@ -105,9 +117,14 @@ export const GameSessionSystem: SimulationSystem<WorldStepContext> = {
   // on a task result is reading this tick's task state and not the last one's.
   dependsOn: ["AgentTaskEventSystem"],
   reads: ["GameSession", "PetIdentity", "KeyboardControlTarget"],
-  writes: ["GameSession"],
+  writes: ["GameSession", "BehaviorDecisionState", "MotionTarget", "Steering"],
   update(ctx) {
-    runGameSessionSystem(ctx.components, ctx.deltaMs, isMovementStilled(ctx.quietMode));
+    runGameSessionSystem(
+      ctx.components,
+      ctx.deltaMs,
+      isMovementStilled(ctx.quietMode),
+      ctx.clock.now(),
+    );
   },
 };
 
@@ -760,3 +777,28 @@ export const GameToolUseSpawnSystem: SimulationSystem<WorldStepContext> = {
     });
   },
 };
+
+/**
+ * Keep the runner on its course, and out of its own planner's hands.
+ *
+ * Pinning the velocity is not enough on its own, and finding that out cost a
+ * round: a velocity written in POST_UPDATE is overwritten during SIMULATE by
+ * the steering *force* the pet's own wander target queued earlier in the same
+ * tick. The pet drifted hundreds of pixels off its course while every velocity
+ * pin appeared to be working, which also made obstacles close on it faster than
+ * the pilot's jump distance was measured for.
+ *
+ * So the round takes the body the way keyboard control takes it — a standing
+ * user-interaction claim — and clears the motion target that produced the
+ * force. Claimed here, in BEHAVIOR ahead of BehaviorDecisionSystem, so the
+ * planner never hands out a target in the first place rather than having one
+ * taken back after the fact.
+ *
+ * The claim is the same standing kind the keyboard uses, so petting a pet
+ * mid-round still pets it.
+ */
+function holdRunner(components: ComponentStore, petId: string, now: number): void {
+  claim(components, petId, "user-interaction", now, GAME_ROUND_REASON, now + GAME_ROUND_CLAIM_MS);
+  clearMotionTarget(components, petId);
+  setPetSteering(components, petId, "stand");
+}
