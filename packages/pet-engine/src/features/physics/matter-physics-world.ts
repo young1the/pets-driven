@@ -21,6 +21,16 @@ export type MatterPhysicsWorld = {
   setGravityScale(id: string, scale: number): void;
   setPosition(id: string, position: Partial<Vector>): void;
   setVelocity(id: string, velocity: Partial<Vector>): void;
+  /**
+   * The body's current velocity, or null when it has none registered.
+   *
+   * Exists for ThrowImpulseSystem's additive mode: an impulse that *adds* to
+   * what a body is already doing has to know what that is, and the body is the
+   * only authority on it — TravelState is a tick-lagged position difference,
+   * close enough to reason about movement with but not to overwrite matter's
+   * own integration from.
+   */
+  velocity(id: string): Vector | null;
   setAirborneSlip(id: string, airborne: boolean): void;
   activeCollisions(): Array<{ bodyAId: string; bodyBId: string }>;
   step(deltaMs: number): void;
@@ -208,6 +218,10 @@ export function createMatterPhysicsWorld(bounds: {
           y: velocity.y ?? body.velocity.y,
         });
       }
+    },
+    velocity(id) {
+      const body = bodies.get(id);
+      return body ? { x: body.velocity.x, y: body.velocity.y } : null;
     },
     setAirborneSlip(id, airborne) {
       const body = bodies.get(id);

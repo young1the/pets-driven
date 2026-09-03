@@ -320,11 +320,12 @@ function distance(a: Vector, b: Vector): number {
 type KinematicPhysics = {
   setPosition(id: string, position: Partial<Vector>): void;
   setVelocity(id: string, velocity: Partial<Vector>): void;
+  velocity(id: string): Vector | null;
 };
 
 export function runDraggedEntityKinematicSystem(
   components: ComponentStore,
-  physics: KinematicPhysics,
+  physics: Pick<KinematicPhysics, "setPosition" | "setVelocity">,
 ): void {
   const drag = components.getComponent(INTERACTION_ENTITY_ID, "DragInteraction");
   if (drag?.phase !== "dragging") return;
@@ -363,13 +364,35 @@ export function clampThrowSpeed(velocity: Vector): Vector {
   return { x: velocity.x * scale, y: velocity.y * scale };
 }
 
+/**
+ * Drain this tick's ThrowImpulses into the physics bodies.
+ *
+ * A `"set"` impulse — a throw — replaces the velocity. An `"add"` impulse is a
+ * real one: it is summed onto whatever the body is already doing, so the body
+ * keeps the momentum it arrived with. The additive result is clamped the same
+ * way a throw is, because that ceiling is a tunnelling guard (the boundary
+ * walls are 48px thick and nothing behind them does continuous collision), and
+ * a sum has no other bound.
+ */
 export function runThrowImpulseSystem(
   components: ComponentStore,
-  physics: Pick<KinematicPhysics, "setVelocity">,
+  physics: Pick<KinematicPhysics, "setVelocity" | "velocity">,
 ): void {
   components.forEach(["ThrowImpulse"], (id, [throwImpulse]) => {
-    physics.setVelocity(id, throwImpulse.velocity);
     components.removeComponent(id, "ThrowImpulse");
+    if (throwImpulse.mode !== "add") {
+      physics.setVelocity(id, throwImpulse.velocity);
+      return;
+    }
+    const current = physics.velocity(id);
+    if (!current) return;
+    physics.setVelocity(
+      id,
+      clampThrowSpeed({
+        x: current.x + throwImpulse.velocity.x,
+        y: current.y + throwImpulse.velocity.y,
+      }),
+    );
   });
 }
 
@@ -447,7 +470,7 @@ export const DraggedEntityKinematicSystem: SimulationSystem<WorldStepContext> = 
 export const ThrowImpulseSystem: SimulationSystem<WorldStepContext> = {
   name: "ThrowImpulseSystem",
   dependsOn: ["DraggedEntityKinematicSystem"],
-  reads: ["ThrowImpulse"],
+  reads: ["ThrowImpulse", "PhysicsVelocity"],
   writes: ["PhysicsVelocity", "ThrowImpulse"],
   update(ctx) {
     runThrowImpulseSystem(ctx.components, ctx.physics);

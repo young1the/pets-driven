@@ -38,9 +38,27 @@ export type DragInteractionComponent = {
   samples: DragSample[];
 };
 
+/**
+ * A one-shot velocity change ThrowImpulseSystem hands to the physics body.
+ *
+ * `mode` decides what "impulse" means here, and the default is the older of the
+ * two meanings so every existing writer keeps its behavior:
+ *
+ * - `"set"` replaces the body's velocity outright. This is what a *throw* is:
+ *   the user's flick is a statement about where the pet goes next, and whatever
+ *   it was doing beforehand is beside the point.
+ * - `"add"` adds to what the body is already doing, which is what an impulse
+ *   between two bodies actually is. A kick uses this: replacing the ball's
+ *   velocity threw away its momentum, so a ball booted from behind while it was
+ *   already rolling fast came out *slower* than it went in.
+ *
+ * Additive impulses are clamped to the same speed ceiling a throw is, so the
+ * sum can never clear a boundary wall in one tick.
+ */
 export type ThrowImpulseComponent = {
   type: "ThrowImpulse";
   velocity: Vector;
+  mode?: "set" | "add";
 };
 
 /**
