@@ -1,3 +1,4 @@
+import { COURSE_OBSTACLE_SIZE } from "@pets-driven/pet-engine/features/game/components";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ItemWindowSurface, itemWindowRouteParams } from "@/pet-window/item-window-route";
@@ -119,5 +120,51 @@ describe("ItemWindowSurface", () => {
     fireEvent.pointerDown(screen.getByRole("img"), { pointerId: 1, screenX: 10, screenY: 10 });
 
     expect(sendInput).not.toHaveBeenCalled();
+  });
+});
+
+describe("a hurdle bigger than one cactus", () => {
+  function glyphCell(kind: "hurdle" | "hurdle-tall" | "hurdle-wide") {
+    const { container } = render(<ItemWindowSurface item={{ itemId: `prop-${kind}-0`, kind }} />);
+    return container.querySelector(".item-window__glyph") as HTMLElement;
+  }
+
+  it("draws the plain one as a single glyph", () => {
+    const glyph = glyphCell("hurdle");
+
+    expect(glyph.textContent).toBe("🌵");
+    // No grid variables: nothing to lay out, and the rule that turns this into
+    // a grid keys off the child spans this one does not have.
+    expect(glyph.querySelectorAll("span")).toHaveLength(0);
+  });
+
+  it("draws the tall one as two cacti stacked", () => {
+    const glyph = glyphCell("hurdle-tall");
+
+    expect(glyph.querySelectorAll("span")).toHaveLength(2);
+    expect(glyph.style.getPropertyValue("--item-window-glyph-across")).toBe("1");
+    expect(glyph.style.getPropertyValue("--item-window-glyph-down")).toBe("2");
+  });
+
+  it("draws the wide one as two cacti side by side", () => {
+    const glyph = glyphCell("hurdle-wide");
+
+    // Two across and one down, not two of each: the two big hurdles are the
+    // unit doubled in *one* direction, which is what makes one a higher jump
+    // and the other a longer one.
+    expect(glyph.querySelectorAll("span")).toHaveLength(2);
+    expect(glyph.style.getPropertyValue("--item-window-glyph-across")).toBe("2");
+    expect(glyph.style.getPropertyValue("--item-window-glyph-down")).toBe("1");
+  });
+
+  it("draws each one the shape of the body the course hit-tests", () => {
+    // The picture and the box must not disagree — that is the whole reason the
+    // drawing is a count of the unit glyph rather than a scaled-up one.
+    expect(COURSE_OBSTACLE_SIZE["hurdle-wide"].width).toBe(COURSE_OBSTACLE_SIZE.hurdle.width * 2);
+    expect(COURSE_OBSTACLE_SIZE["hurdle-tall"].height).toBeGreaterThan(
+      COURSE_OBSTACLE_SIZE.hurdle.height * 1.8,
+    );
+    expect(COURSE_OBSTACLE_SIZE["hurdle-wide"].height).toBe(COURSE_OBSTACLE_SIZE.hurdle.height);
+    expect(COURSE_OBSTACLE_SIZE["hurdle-tall"].width).toBe(COURSE_OBSTACLE_SIZE.hurdle.width);
   });
 });

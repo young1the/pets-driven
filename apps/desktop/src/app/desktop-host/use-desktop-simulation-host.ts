@@ -404,6 +404,10 @@ export function useDesktopSimulationHost({
         emitBindingState(input.petId);
         return;
       }
+      if (input.kind === "menu.game-stop") {
+        adoptedScenarioRef.current?.world.endGame();
+        return;
+      }
       if (input.kind === "menu.game-toggle" || input.kind === "menu.game-practice") {
         // One session for the whole desktop, so this is a toggle and not an
         // "add": picking a second pet means that one instead, and picking the

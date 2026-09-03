@@ -1,0 +1,140 @@
+/* The round a pet is on, above its head.
+
+   Shares the connect notice's slot (see pet-connect-notice.css) rather than the
+   ECS status card's: the card is where a pet says what its agent is doing, and
+   a round must never be the reason that line goes missing. The two never draw
+   at once — the surface hides this while a notice is up, since a notice is
+   asking for something and this is not. */
+
+.pet-window-game {
+  position: absolute;
+  /* The same anchor the connect notice uses, so the two read as one slot. */
+  bottom: calc(100% - 6px);
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(3px * var(--pet-window-game-scale, 1));
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+
+/* The opening 3-2-1: one bare glyph, no pill. It is big on purpose — it is the
+   only moment in a round where there is nothing else to read. */
+.pet-window-game--countdown {
+  font-size: calc(20px * var(--pet-window-game-scale, 1));
+  /* The desktop behind a pet is whatever the user left there, so the glyph
+     carries its own separation rather than trusting the contrast. */
+  filter: drop-shadow(0 1px 3px rgb(15 23 42 / 45%));
+  animation: pet-window-game-beat 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Once the round is under way it is a pill, not a bare glyph: a number floating
+   on the desktop reads as debug output, and the desktop behind it is whatever
+   the user left there. */
+.pet-window-game__tally {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(4px * var(--pet-window-game-scale, 1));
+  padding: calc(3px * var(--pet-window-game-scale, 1)) calc(7px * var(--pet-window-game-scale, 1));
+  border-radius: 999px;
+  background: rgb(15 23 42 / 78%);
+  box-shadow: 0 1px 4px rgb(15 23 42 / 35%);
+  color: rgb(248 250 252);
+  font-size: calc(11px * var(--pet-window-game-scale, 1));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pet-window-game__mark {
+  font-size: calc(12px * var(--pet-window-game-scale, 1));
+}
+
+/* Re-keyed on the number by the component, so every clear lands with its own
+   pop instead of the tally silently ticking up. */
+.pet-window-game__count {
+  animation: pet-window-game-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.pet-window-game__lane {
+  display: block;
+  width: calc(52px * var(--pet-window-game-scale, 1));
+}
+
+.pet-window-game__lane-track {
+  position: relative;
+  display: block;
+  height: calc(4px * var(--pet-window-game-scale, 1));
+  border-radius: 999px;
+  background: rgb(15 23 42 / 55%);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 30%);
+}
+
+/* Where the round started, which is also where a pet that is not being steered
+   stands. The lane is not symmetric about it — there is more room forward. */
+.pet-window-game__lane-anchor {
+  position: absolute;
+  top: 50%;
+  width: calc(1px * var(--pet-window-game-scale, 1));
+  height: calc(8px * var(--pet-window-game-scale, 1));
+  transform: translate(-50%, -50%);
+  background: rgb(248 250 252 / 45%);
+}
+
+.pet-window-game__lane-pip {
+  position: absolute;
+  top: 50%;
+  width: calc(6px * var(--pet-window-game-scale, 1));
+  height: calc(6px * var(--pet-window-game-scale, 1));
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: rgb(56 189 248);
+  box-shadow: 0 0 0 calc(1px * var(--pet-window-game-scale, 1)) rgb(15 23 42 / 60%);
+  /* Follows the body rather than jumping between frames: the pet's position
+     arrives at frame rate, and an un-eased pip reads as jitter at this size. */
+  transition: left 90ms linear;
+}
+
+@keyframes pet-window-game-beat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.6);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1.14);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
+@keyframes pet-window-game-pop {
+  0% {
+    transform: scale(1.5);
+    color: rgb(56 189 248);
+  }
+
+  100% {
+    transform: scale(1);
+    color: rgb(248 250 252);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-window-game--countdown,
+  .pet-window-game__count {
+    animation: none;
+    opacity: 1;
+  }
+
+  .pet-window-game__lane-pip {
+    transition: none;
+  }
+}

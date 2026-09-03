@@ -122,7 +122,15 @@ export function projectWorldSnapshotToPetWindows(
             activity: pet.activity ?? null,
             partnerName: pet.social?.partnerName ?? null,
             working: pet.agentTask?.status === "working",
-            countdown: pet.game?.countdown ?? null,
+            game: pet.game
+              ? {
+                  phase: pet.game.phase,
+                  control: pet.game.control,
+                  countdown: pet.game.countdown,
+                  cleared: pet.game.cleared,
+                  lane: pet.game.lane,
+                }
+              : null,
             carrying: carryingFromPet(pet, snapshot.now),
           },
           overlay: overlayFromPet(pet),
@@ -147,6 +155,13 @@ export const ITEM_WINDOW_SIZE = 64;
 export type ItemWindowPlacement = {
   itemId: string;
   kind: string;
+  /**
+   * Whether this overlay takes the mouse or lets it fall through to the
+   * desktop. Carried per window rather than decided from the kind, so the shell
+   * never has to keep its own list of which kinds are grabbable — the engine
+   * already knows, from `CanDrag`.
+   */
+  grabbable: boolean;
   x: number;
   y: number;
 };
@@ -168,6 +183,9 @@ export function projectWorldItemsToWindows(
   return (snapshot.items ?? []).map((item) => ({
     itemId: item.id,
     kind: item.kind,
+    // A trinket is scenery a pet fetches, never something the user handles, so
+    // its clicks belong to whatever is behind it on the desktop.
+    grabbable: false,
     x: Math.round(bounds.x + (item.position.x - viewport.x) * scaleX - ITEM_WINDOW_SIZE / 2),
     y: Math.round(bounds.y + (item.position.y - viewport.y) * scaleY - ITEM_WINDOW_SIZE / 2),
   }));
@@ -198,6 +216,7 @@ export function projectWorldPropsToWindows(
   return (snapshot.props ?? []).map((prop) => ({
     itemId: prop.id,
     kind: prop.kind,
+    grabbable: prop.grabbable,
     x: Math.round(bounds.x + (prop.position.x - viewport.x) * scaleX - ITEM_WINDOW_SIZE / 2),
     y: Math.round(bounds.y + (prop.position.y - viewport.y) * scaleY - ITEM_WINDOW_SIZE / 2),
   }));

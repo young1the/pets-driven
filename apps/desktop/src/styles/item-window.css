@@ -49,6 +49,22 @@ html.item-window-document body {
   animation: item-window-bob 2.4s ease-in-out infinite;
 }
 
+/* A prop drawn as several of its glyph — the big hurdles, which are one cactus
+   doubled across or down. The grid is what makes the drawing the same shape as
+   the body the course hit-tests: two 28px cells are the 52-56px the doubled
+   body is, and they still sit inside the fixed 64px window. The variables are
+   set inline from the prop's own `span`; a prop without one keeps the single
+   glyph and never enters this rule. */
+.item-window__glyph:has(> span) {
+  display: grid;
+  grid-template-columns: repeat(var(--item-window-glyph-across, 1), 1fr);
+  grid-template-rows: repeat(var(--item-window-glyph-down, 1), 1fr);
+  /* Tighter than the glyphs' own line boxes, which carry more air than the
+     drawings do: at 1 the two cacti of a tall hurdle read as two cacti with a
+     gap between them rather than as one tall one. */
+  line-height: 0.86;
+}
+
 @keyframes item-window-pulse {
   0%,
   100% {

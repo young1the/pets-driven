@@ -504,7 +504,10 @@
     "save": "保存",
     "findTerminal": "查找终端",
     "gameMode": "游戏模式",
+    "gameWatch": "观察智能体",
+    "gameWatchNote": "每次工具调用变成一个障碍",
     "gamePractice": "练习跑",
+    "gamePracticeNote": "节奏固定，自己上手玩",
     "gameStop": "结束回合"
   },
   "petWindow": {
@@ -513,6 +516,13 @@
     "connectCancelled": "未连接任何窗口",
     "noteBadgeAria": "有便条",
     "countdownAria": "回合即将开始",
+    "game": {
+      "countdown": "回合即将开始",
+      "running": "奔跑中，已跨过 {{cleared}} 个",
+      "blocked": "回合暂停，等待你的操作",
+      "over": "回合结束，已跨过 {{cleared}} 个",
+      "lane": "可移动范围"
+    },
     "trinket": {
       "wings": "翅膀",
       "claws": "攀爬爪"

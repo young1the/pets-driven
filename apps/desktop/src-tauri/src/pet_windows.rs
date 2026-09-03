@@ -378,47 +378,27 @@ const ITEM_WINDOW_LABEL_PREFIX: &str = "item-window-";
 /// are what the window is born at, and what the edge-clamp below measures with,
 /// so a menu opened near the bottom of a screen flips by its real height.
 const MENU_WINDOW_WIDTH: f64 = 192.0;
-const MENU_WINDOW_HEIGHT: f64 = 268.0;
+const MENU_WINDOW_HEIGHT: f64 = 237.0;
 const ITEM_WINDOW_SIZE: f64 = 64.0;
 
-/// The kinds an overlay may render, mirroring `PetItemKind` and `WorldPropKind`
-/// in the engine. A closed list because the value goes into the window's URL.
+
+/// One trinket's screen placement for a single simulation frame.
 ///
 /// Trinkets and props share this overlay because on screen they are the same
 /// thing: one glyph in one tiny always-on-top square for one non-pet entity.
 /// The difference is that a prop moves, which costs nothing extra here — the
 /// reconcile below already repositions a window it has rather than rebuilding
 /// it.
-const ITEM_WINDOW_KINDS: [&str; 10] = [
-    "wings",
-    "claws",
-    "ball",
-    "hurdle",
-    "book-stack",
-    "toolbox",
-    "flame",
-    "gate",
-    "finish",
-    "wall",
-];
-
-/// The subset of the above the user can grab. A narrower set than
-/// `WorldPropKind`: a course hurdle is a prop, and is not one of these.
-///
-/// It decides one thing: whether the window is click-through. A trinket is
-/// scenery a pet fetches, so its clicks belong to whatever is behind it on the
-/// desktop; a prop the user picks up and throws takes the mouse instead — the
-/// same trade a pet window makes, at a fraction of the size. A hurdle is
-/// neither: it is scenery on a course, so it stays out of the way of the
-/// desktop underneath it.
-const PROP_WINDOW_KINDS: [&str; 1] = ["ball"];
-
-/// One trinket's screen placement for a single simulation frame.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ItemWindowSpec {
     item_id: String,
     kind: String,
+    /// Whether this overlay takes the mouse or lets it fall through to the
+    /// desktop. Sent per window rather than derived from `kind`, because it is
+    /// the engine that knows — it is a `CanDrag` on the entity — and a copy of
+    /// "which kinds are grabbable" kept over here is a copy that falls behind.
+    grabbable: bool,
     x: f64,
     y: f64,
 }
@@ -447,27 +427,35 @@ pub(crate) async fn sync_item_windows(
     for item in items {
         validate_asset_id(&item.item_id).map_err(|_| "Invalid item id".to_string())?;
         // `kind` is interpolated into the window URL below without escaping, so
-        // it is checked against a known set rather than trusted — the same
-        // reason the id above is validated.
+        // it is checked before it goes in — but checked for *shape*, not for
+        // membership of a list.
         //
-        // Skipped and not fatal, though. This list is a hand-kept copy of
-        // `WorldPropKind` + `PetItemKind` with nothing linking the two, so it
-        // *will* fall behind again; when it does, the cost should be the one
-        // overlay nobody taught this about, not every overlay on the desktop.
-        // Returning Err here meant a single unknown kind took the ball and both
-        // trinkets off the screen with it.
-        if !ITEM_WINDOW_KINDS.contains(&item.kind.as_str()) {
-            continue;
-        }
+        // A list is what this used to be: a hand-kept copy of `WorldPropKind` +
+        // `PetItemKind`, with an unknown kind skipped rather than fatal so that
+        // one unrecognised overlay could not take the rest of the desktop with
+        // it. That is a sound failure mode for the wrong check. Nothing linked
+        // the two lists, this one fell behind the moment a prop kind was added,
+        // and the result was an obstacle that kept its body and its collision
+        // and simply never got a window — an invisible hurdle the pet tripped
+        // over. The shell does not draw these and has no business knowing what
+        // they are; the engine's own types are what close the set, and the
+        // overlay's route is what turns a kind into a picture.
+        //
+        // What the shell is entitled to check is that the string cannot break
+        // out of the URL, and the id rule already says exactly that: ASCII
+        // alphanumerics, hyphen and underscore, so no `&`, `#`, `/` or `?`.
+        validate_asset_id(&item.kind).map_err(|_| "Invalid item kind".to_string())?;
 
         let label = item_window_label(&item.item_id);
         wanted.push(label.clone());
 
         let position = LogicalPosition::new(item.x, item.y);
         // A trinket is scenery, not a target: its clicks belong to whatever is
-        // behind it on the desktop. A prop is a target — the engine gives it
-        // `CanDrag`, and this window is how a pointer ever reaches it.
-        let click_through = !PROP_WINDOW_KINDS.contains(&item.kind.as_str());
+        // behind it on the desktop. A prop the user can pick up is a target —
+        // the engine gives it `CanDrag`, and this window is how a pointer ever
+        // reaches it. Which is which comes over on the spec, from that very
+        // component, rather than from a second list kept here.
+        let click_through = !item.grabbable;
 
         if let Some(window) = app.get_webview_window(&label) {
             window
@@ -715,29 +703,33 @@ mod tests {
     }
 
     #[test]
-    fn item_window_kinds_match_the_engine() {
-        assert!(ITEM_WINDOW_KINDS.contains(&"wings"));
-        assert!(ITEM_WINDOW_KINDS.contains(&"claws"));
-        // Every WorldPropKind needs a window, or the sync rejects the whole
-        // batch on the first one it does not know and every other overlay goes
-        // with it.
-        assert!(ITEM_WINDOW_KINDS.contains(&"ball"));
-        assert!(ITEM_WINDOW_KINDS.contains(&"hurdle"));
-        assert!(ITEM_WINDOW_KINDS.contains(&"book-stack"));
-        assert!(ITEM_WINDOW_KINDS.contains(&"toolbox"));
-        assert!(ITEM_WINDOW_KINDS.contains(&"flame"));
-        assert!(ITEM_WINDOW_KINDS.contains(&"gate"));
-        assert!(ITEM_WINDOW_KINDS.contains(&"finish"));
-        assert!(ITEM_WINDOW_KINDS.contains(&"wall"));
-        assert!(!ITEM_WINDOW_KINDS.contains(&"boots"));
-    }
+    fn a_kind_is_checked_for_shape_and_not_for_membership() {
+        // The shell keeps no list of kinds. It draws none of them — the overlay
+        // route does, from the engine's own catalogue — so the only thing it is
+        // entitled to check is that the string cannot break out of the query it
+        // gets interpolated into.
+        for kind in ["wings", "claws", "ball", "hurdle", "hurdle-tall", "book-stack"] {
+            assert!(validate_asset_id(kind).is_ok(), "{kind} should be usable");
+        }
 
-    #[test]
-    fn only_the_ball_takes_the_mouse() {
-        // Course scenery is not something to grab: its clicks belong to the
-        // desktop behind it, the same as a trinket's.
-        assert!(PROP_WINDOW_KINDS.contains(&"ball"));
-        assert!(!PROP_WINDOW_KINDS.contains(&"hurdle"));
+        // The point of the rule: a kind added to the engine tomorrow works here
+        // today. A list meant the opposite — an obstacle whose kind had not
+        // been copied over kept its body and its collision and never got a
+        // window, which on screen is an invisible hurdle the pet trips over.
+        assert!(validate_asset_id("a-kind-added-later").is_ok());
+
+        for injected in [
+            "hurdle&surface=pet-window",
+            "hurdle#x",
+            "../index.html",
+            "hurdle?a=b",
+            "",
+        ] {
+            assert!(
+                validate_asset_id(injected).is_err(),
+                "{injected:?} must not reach the URL"
+            );
+        }
     }
 
     #[test]

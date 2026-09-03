@@ -528,7 +528,10 @@
     "save": "保存",
     "findTerminal": "ターミナルを探す",
     "gameMode": "ゲームモード",
+    "gameWatch": "エージェントを見る",
+    "gameWatchNote": "ツール呼び出しが障害物になります",
     "gamePractice": "練習ラン",
+    "gamePracticeNote": "一定のリズムを自分で走ります",
     "gameStop": "ラウンドを終える"
   },
   "petWindow": {
@@ -537,6 +540,13 @@
     "connectCancelled": "つながりませんでした",
     "noteBadgeAria": "ノートあり",
     "countdownAria": "ラウンド開始",
+    "game": {
+      "countdown": "ラウンド開始",
+      "running": "走行中、{{cleared}}個クリア",
+      "blocked": "ラウンド停止中、あなたを待っています",
+      "over": "ラウンド終了、{{cleared}}個クリア",
+      "lane": "動ける範囲"
+    },
     "trinket": {
       "wings": "羼",
       "claws": "クライミングクロー"

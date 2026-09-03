@@ -3,8 +3,8 @@ import { PET_CELL_SIZE } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import { useEffect } from "react";
 import { PetConnectNoticeView } from "@/pet-window/pet-connect-notice";
 import type { PetSurfaceHost } from "@/pet-window/pet-surface-host";
-import { PetWindowCountdown } from "@/pet-window/pet-window-countdown";
 import type { PetWindowFixturePresentation } from "@/pet-window/pet-window-fixtures";
+import { PetWindowGameHud } from "@/pet-window/pet-window-game-hud";
 import { PET_WINDOW_BUBBLE_OVERHEAD, PET_WINDOW_LAYOUT } from "@/pet-window/pet-window-layout";
 import { PetWindowSprite } from "@/pet-window/pet-window-sprite";
 import { PetWindowStatus } from "@/pet-window/pet-window-status";
@@ -209,8 +209,8 @@ export function PetWindowView({
             spriteHeight={PET_CELL_SIZE.height * spriteScale}
           />
         ) : null}
-        {presentation.countdown && !connectNotice ? (
-          <PetWindowCountdown glyph={presentation.countdown} scale={spriteScale} />
+        {presentation.game && !connectNotice ? (
+          <PetWindowGameHud game={presentation.game} scale={spriteScale} />
         ) : null}
         <PetConnectNoticeView
           notice={connectNotice}

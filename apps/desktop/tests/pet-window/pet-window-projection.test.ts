@@ -116,7 +116,7 @@ describe("pet window projection", () => {
           activity: null,
           partnerName: null,
           working: false,
-          countdown: null,
+          game: null,
           carrying: null,
         },
         overlay: null,
@@ -166,11 +166,19 @@ describe("pet window projection", () => {
     expect(projection.frame.sprite.working).toBe(false);
   });
 
-  it("carries the round's opening glyph on the frame sprite", () => {
+  it("carries the whole round on the frame sprite", () => {
     const snapshot = snapshotFixture();
     snapshot.pets[0] = {
       ...snapshot.pets[0],
-      game: { phase: "countdown", control: "pet", spawn: "tool-use", countdown: "3️⃣", score: 0 },
+      game: {
+        phase: "countdown",
+        control: "pet",
+        spawn: "tool-use",
+        countdown: "3️⃣",
+        score: 0,
+        cleared: 0,
+        lane: null,
+      },
     };
 
     const [projection] = projectWorldSnapshotToPetWindows(
@@ -179,7 +187,25 @@ describe("pet window projection", () => {
       7,
     );
 
-    expect(projection.frame.sprite.countdown).toBe("3️⃣");
+    // Not just the countdown: the tally and the lane are the only things that
+    // say a round is still on once the 3-2-1 has run out.
+    expect(projection.frame.sprite.game).toEqual({
+      phase: "countdown",
+      control: "pet",
+      countdown: "3️⃣",
+      cleared: 0,
+      lane: null,
+    });
+  });
+
+  it("leaves the round off a pet that is not on one", () => {
+    const [projection] = projectWorldSnapshotToPetWindows(
+      snapshotFixture(),
+      { x: 0, y: 0, width: 1000, height: 800 },
+      7,
+    );
+
+    expect(projection.frame.sprite.game).toBeNull();
   });
 
   it("leaves the agent line alone while a round counts down", () => {
@@ -199,7 +225,15 @@ describe("pet window projection", () => {
           updatedAt: 100,
           expiresAt: null,
         },
-        game: { phase: "countdown", control: "pet", spawn: "tool-use", countdown: "3️⃣", score: 0 },
+        game: {
+          phase: "countdown",
+          control: "pet",
+          spawn: "tool-use",
+          countdown: "3️⃣",
+          score: 0,
+          cleared: 0,
+          lane: null,
+        },
       }),
     ).toMatchObject({ kind: "agent-channel", status: "working" });
   });

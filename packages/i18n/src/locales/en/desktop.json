@@ -528,7 +528,10 @@
     "save": "Save",
     "findTerminal": "Find terminal",
     "gameMode": "Game mode",
+    "gameWatch": "Watch the agent",
+    "gameWatchNote": "Its tool calls are the obstacles",
     "gamePractice": "Practice run",
+    "gamePracticeNote": "A steady course you play yourself",
     "gameStop": "Stop the round"
   },
   "petWindow": {
@@ -537,6 +540,13 @@
     "connectCancelled": "Nothing connected",
     "noteBadgeAria": "Has a note",
     "countdownAria": "Round starting",
+    "game": {
+      "countdown": "Round starting",
+      "running": "Running, {{cleared}} cleared",
+      "blocked": "Round halted, waiting on you",
+      "over": "Round over, {{cleared}} cleared",
+      "lane": "Room to run"
+    },
     "trinket": {
       "wings": "Wings",
       "claws": "Climbing claws"

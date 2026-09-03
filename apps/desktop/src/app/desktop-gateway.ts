@@ -272,7 +272,13 @@ export type DesktopGateway = {
    * the whole contract.
    */
   syncItemWindows(
-    items: ReadonlyArray<{ itemId: string; kind: string; x: number; y: number }>,
+    items: ReadonlyArray<{
+      itemId: string;
+      kind: string;
+      grabbable: boolean;
+      x: number;
+      y: number;
+    }>,
   ): Promise<void>;
   /** Close every open trinket overlay window. */
   closeAllItemWindows(): Promise<void>;

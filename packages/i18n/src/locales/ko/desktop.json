@@ -528,7 +528,10 @@
     "save": "저장",
     "findTerminal": "터미널 찾기",
     "gameMode": "게임 모드",
+    "gameWatch": "에이전트 지켜보기",
+    "gameWatchNote": "툴 호출 하나가 장애물 하나",
     "gamePractice": "연습 달리기",
+    "gamePracticeNote": "일정한 리듬으로 직접 하는 판",
     "gameStop": "라운드 끝내기"
   },
   "petWindow": {
@@ -537,6 +540,13 @@
     "connectCancelled": "연결하지 않았어요",
     "noteBadgeAria": "노트 있음",
     "countdownAria": "라운드 시작",
+    "game": {
+      "countdown": "라운드 시작",
+      "running": "달리는 중, {{cleared}}개 넘음",
+      "blocked": "라운드 멈춤, 당신을 기다리는 중",
+      "over": "라운드 종료, {{cleared}}개 넘음",
+      "lane": "움직일 수 있는 범위"
+    },
     "trinket": {
       "wings": "날개",
       "claws": "등반 발톱"

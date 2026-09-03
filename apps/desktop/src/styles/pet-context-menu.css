@@ -51,6 +51,39 @@ html.pet-context-menu-fixture-preview body {
   color: var(--text-strong);
 }
 
+/* The way back out of a sub-view, wearing the header's slot so a step down
+   costs a row rather than adding one. Same padding as the name header, or the
+   window's row-count arithmetic (see MENU_CHROME_HEIGHT) stops holding. */
+.pet-context-menu-card__back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px 7px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.pet-context-menu-card__back:hover,
+.pet-context-menu-card__back:focus-visible {
+  outline: none;
+  background: var(--surface-subtle, #f1f5f9);
+}
+
+/* Says the row opens something rather than doing something. Pushed to the far
+   edge so it reads as an affordance and not as part of the label. */
+.pet-context-menu-card__chevron {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
 .pet-context-menu-card__divider {
   height: 1px;
   background: var(--border-soft);
@@ -76,6 +109,43 @@ html.pet-context-menu-fixture-preview body {
   transition:
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
+}
+
+/* The sub-view holding the two kinds of round. Its height comes from the top
+   menu (an inline min-height set from MENU_WINDOW_SIZE), so a step in never
+   resizes the window; this is what hands the leftover room to the choices
+   rather than leaving it blank under them. */
+.pet-context-menu-card--game {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* A choice, not a command: two lines, and it shares what is left of the card
+   equally with its sibling. */
+.pet-context-menu-card__item--choice {
+  flex: 1;
+  align-items: flex-start;
+  padding: 10px 8px;
+  white-space: normal;
+}
+
+.pet-context-menu-card__choice {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pet-context-menu-card__choice-title {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.pet-context-menu-card__choice-note {
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
 .pet-context-menu-card__item--note {

@@ -1,13 +1,18 @@
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { BehaviorTokenPresentation } from "@pets-driven/pet-engine/pets/rendering/behavior-token-presentation";
-import type { PetWindowCarrying, PetWindowOverlay } from "@/pet-window/pet-window-messages";
+import type {
+  PetWindowCarrying,
+  PetWindowGame,
+  PetWindowOverlay,
+} from "@/pet-window/pet-window-messages";
 import type { PetWindowRouteParams } from "@/pet-window/pet-window-types";
 
 export const PET_WINDOW_FIXTURE_IDS = [
   "idle",
   "running",
   "countdown",
+  "game-round",
   "jumping",
   "speech",
   "attention",
@@ -38,9 +43,9 @@ export type PetWindowFixturePresentation = {
   /** Seeds the trinket countdown badge; the real app derives it from the
    *  pet's CarriedItem. Omitted = the pet is wearing nothing. */
   carrying?: PetWindowCarrying | null;
-  /** Seeds the round-opening countdown glyph; the real app derives it from the
-   *  world's game session. Omitted = no round starting. */
-  countdown?: string | null;
+  /** Seeds the round pill above the pet; the real app derives it from the
+   *  world's game session. Omitted = the pet is not on a course. */
+  game?: PetWindowGame | null;
 };
 
 /** Seeds the terminal-binding notice pill (host/UI feedback, outside the ECS
@@ -101,7 +106,36 @@ export const PET_WINDOW_FIXTURES: readonly PetWindowFixture[] = [
       activity: null,
       partnerName: null,
       overlay: null,
-      countdown: "3️⃣",
+      game: {
+        phase: "countdown",
+        control: "user",
+        countdown: "3️⃣",
+        cleared: 0,
+        lane: { offset: 0, forward: 150, back: 90 },
+      },
+    },
+  },
+  {
+    id: "game-round",
+    label: "Round running",
+    description:
+      "A round under way: the tally of what the pet has cleared, and where it stands in its lane.",
+    pet: { petId: "fixture-otto", assetId: "otto", windowIndex: 2, name: "Scout" },
+    presentation: {
+      decisionEmote: null,
+      animationState: "running-right",
+      activity: "onTheMove",
+      partnerName: null,
+      overlay: null,
+      game: {
+        phase: "running",
+        control: "user",
+        countdown: null,
+        cleared: 7,
+        // Leaning forward into the oncoming course, which is where the lane's
+        // extra room is and the reason it is drawn off centre.
+        lane: { offset: 62, forward: 150, back: 90 },
+      },
     },
   },
   {

@@ -1,4 +1,8 @@
 import type { PetActivityKind } from "@pets-driven/pet-engine/core/pet-activity";
+import type {
+  GameControlSource,
+  GamePhase,
+} from "@pets-driven/pet-engine/features/game/components";
 import type { PetItemKind } from "@pets-driven/pet-engine/features/items/components";
 import type { CarriedItemCountdown } from "@pets-driven/pet-engine/features/items/item-presentation";
 import type { PetAnimationState } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
@@ -77,6 +81,33 @@ export type PetWindowCarrying = CarriedItemCountdown & {
   kind: PetItemKind;
 };
 
+/**
+ * A round as the pet wears it.
+ *
+ * The engine's own snapshot of the session, trimmed to what draws: the host
+ * decides where the pill goes, not what a round *is*, so every number here is
+ * resolved in the engine and copied across (see PetGameSnapshot).
+ */
+export type PetWindowGame = {
+  phase: GamePhase;
+  /**
+   * Who is driving. The lane only means anything to the hand on the keys — a
+   * pet flying its own round is pinned to the anchor — so this is what decides
+   * whether the lane is worth drawing at all.
+   */
+  control: GameControlSource;
+  /** The opening 3-2-1 glyph, or null once the round is under way. */
+  countdown: string | null;
+  /** Obstacles put behind the pet untouched. */
+  cleared: number;
+  /**
+   * Where the pet stands in its lane and how far the lane runs either way, in
+   * engine pixels, or null when there is nothing to measure. `offset` is signed
+   * from the line the round started on; forward is toward the oncoming course.
+   */
+  lane: { offset: number; forward: number; back: number } | null;
+};
+
 export type PetWindowFrameSprite = {
   decisionEmote?: BehaviorTokenPresentation | null;
   /** The atlas animation row the pet is currently playing. */
@@ -95,14 +126,19 @@ export type PetWindowFrameSprite = {
    */
   working?: boolean;
   /**
-   * The opening 3-2-1 of a game round as the pet should wear it right now, or
-   * absent once the round is under way.
+   * The round this pet is on, or absent when it is living its ordinary life.
    *
-   * Rides beside the agent line rather than replacing it: the countdown shows
+   * Rides beside the agent line rather than replacing it: the whole of it draws
    * in the notice pill above the pet, the slot the terminal-binding prompt
-   * uses, so a working pet keeps its own status capsule while it counts down.
+   * uses, so a working pet keeps its own status capsule while it plays.
+   *
+   * It carries more than the countdown because everything else about a round
+   * was invisible. Nothing said a round was under way once the 3-2-1 ended,
+   * nothing said an obstacle had been cleared, and nothing said the pet had
+   * anywhere to go — so a round read as scenery sliding past a pet that had
+   * stopped for no reason.
    */
-  countdown?: string | null;
+  game?: PetWindowGame | null;
   /**
    * The ability the pet picked up, counting down, or null when it has none.
    *
@@ -144,6 +180,11 @@ export type PetWindowInputKind =
   // Two kinds rather than one carrying a payload, so a menu row and the thing
   // it does stay one to one — the way every other menu signal here reads.
   | "menu.game-practice"
+  // Stop whatever kind of round this pet is on. Distinct from the two above,
+  // which each toggle *their* kind: a "stop" that had to name the kind it was
+  // stopping would switch the course instead of ending it whenever the two
+  // disagreed.
+  | "menu.game-stop"
   | "overlay.click"
   | "body.contextmenu"
   | "overlay.contextmenu";

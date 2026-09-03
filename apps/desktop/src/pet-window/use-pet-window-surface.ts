@@ -16,6 +16,7 @@ import {
   isFreshPetWindowMessage,
   isSamePetWindowPresentation,
   type PetWindowCarrying,
+  type PetWindowGame,
   type PetWindowInputKind,
   type PetWindowOverlay,
 } from "@/pet-window/pet-window-messages";
@@ -30,8 +31,8 @@ export type PetWindowPresentation = {
   partnerName: string | null;
   /** True while an agent task is running, so the capsule stays shown as "working". */
   working: boolean;
-  /** The game round's opening glyph, or null when none is counting down. */
-  countdown: string | null;
+  /** The round this pet is on, or null when it is living its ordinary life. */
+  game: PetWindowGame | null;
   overlay: PetWindowOverlay | null;
   /** The collected ability counting down on this pet, or null when it has none. */
   carrying: PetWindowCarrying | null;
@@ -91,7 +92,7 @@ function defaultPresentation(index: number): PetWindowPresentation {
     activity: null,
     partnerName: null,
     working: false,
-    countdown: null,
+    game: null,
     overlay: { kind: "status", label: "!" },
     carrying: null,
   };
@@ -292,7 +293,7 @@ export function usePetWindowSurface({
                 activity: presentationRef.current.activity,
                 partnerName: presentationRef.current.partnerName,
                 working: presentationRef.current.working,
-                countdown: presentationRef.current.countdown,
+                game: presentationRef.current.game,
                 carrying: presentationRef.current.carrying,
               },
               overlay: presentationRef.current.overlay,
@@ -303,7 +304,7 @@ export function usePetWindowSurface({
                 activity: steadiedActivity,
                 partnerName: steadiedPartnerName,
                 working: frame.sprite.working ?? false,
-                countdown: frame.sprite.countdown ?? null,
+                game: frame.sprite.game ?? null,
                 carrying: nextCarrying,
               },
               overlay: frame.overlay,
@@ -316,7 +317,7 @@ export function usePetWindowSurface({
             activity: steadiedActivity,
             partnerName: steadiedPartnerName,
             working: frame.sprite.working ?? false,
-            countdown: frame.sprite.countdown ?? null,
+            game: frame.sprite.game ?? null,
             overlay: frame.overlay,
             carrying: nextCarrying,
           };

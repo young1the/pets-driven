@@ -72,6 +72,10 @@ export function ItemWindowSurface({ item }: { item: ItemWindowRouteParams }) {
   // and it is the one with artwork; a prop that ships a glyph (a course hurdle)
   // gets none of that behaviour.
   const propGlyph = isPropKind(item.kind) ? presentWorldProp(item.kind).glyph : undefined;
+  // How many of that glyph, across and down. The big hurdles are the same
+  // cactus doubled in one direction, and drawing them as literally two of it is
+  // what keeps the picture and the box the course hit-tests in agreement.
+  const propSpan = isPropKind(item.kind) ? presentWorldProp(item.kind).span : undefined;
   const isHandledProp = isProp && !propGlyph;
   const sequenceRef = useRef(0);
   const artRef = useRef<HTMLImageElement>(null);
@@ -235,8 +239,25 @@ export function ItemWindowSurface({ item }: { item: ItemWindowRouteParams }) {
           {/* The halo says "come and collect me", which is true of a trinket
               and false of course scenery nobody is meant to walk over to. */}
           {isProp ? null : <span className="item-window__halo" />}
-          <span className="item-window__glyph">
-            {propGlyph ?? presentWorldItem(item.kind as PetItemKind).glyph}
+          <span
+            className="item-window__glyph"
+            style={
+              propSpan
+                ? ({
+                    "--item-window-glyph-across": propSpan.across,
+                    "--item-window-glyph-down": propSpan.down,
+                  } as React.CSSProperties)
+                : undefined
+            }
+          >
+            {propSpan
+              ? Array.from({ length: propSpan.across * propSpan.down }, (_, index) => (
+                  // Static list of at most a few identical glyphs, so the index
+                  // is the only key there is and nothing ever reorders.
+                  // biome-ignore lint/suspicious/noArrayIndexKey: see above
+                  <span key={index}>{propGlyph}</span>
+                ))
+              : (propGlyph ?? presentWorldItem(item.kind as PetItemKind).glyph)}
           </span>
         </>
       )}
