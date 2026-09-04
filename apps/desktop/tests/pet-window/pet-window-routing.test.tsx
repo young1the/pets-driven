@@ -568,6 +568,73 @@ describe("pet window product route", () => {
     });
   });
 
+  it("acknowledges a settled Attention Hold when the pet context menu opens", async () => {
+    render(<PetsDrivenApp />);
+
+    await screen.findByRole("button", { name: "Open Otto's details" });
+    showAllAdoptedPets();
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(AGENT_HOOK_INGRESS_EVENT)).toBe(true);
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(AGENT_HOOK_INGRESS_EVENT)?.({
+        payload: {
+          provider: "claude",
+          payload: {
+            hook_event_name: "PermissionRequest",
+            session_id: "session-a",
+            cwd: "D:\\cms",
+            message: "Allow Edit?",
+          },
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          overlay: expect.objectContaining({ kind: "agent-channel", status: "waiting" }),
+        }),
+      );
+    });
+    tauriEventMocks.emitTo.mockClear();
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "body.contextmenu",
+          localPoint: { x: 96, y: 112 },
+          screenPoint: { x: 400, y: 300 },
+          button: 2,
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(tauriEventMocks.emitTo).toHaveBeenCalledWith(
+        "pet-window-pet-a",
+        PET_WINDOW_FRAME_EVENT,
+        expect.objectContaining({
+          overlay: expect.objectContaining({ kind: "agent-channel", status: null }),
+        }),
+      );
+      expect(invokeMock).toHaveBeenCalledWith(
+        "open_pet_context_menu",
+        expect.objectContaining({ petId: "pet-a" }),
+      );
+    });
+  });
+
   it("saves the pet note when menu.note-save arrives from the context menu popup", async () => {
     render(<PetsDrivenApp />);
 
@@ -601,6 +668,64 @@ describe("pet window product route", () => {
       expect(
         invokeMock.mock.calls.filter(([command]) => command === "write_pets_driven_state"),
       ).toHaveLength(0);
+    });
+  });
+
+  it("saves the pet name and agent when menu.settings-save arrives", async () => {
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-context-menu-pet-a",
+          pointerId: 0,
+          kind: "menu.settings-save",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          name: "Nova",
+          agentProvider: "codex",
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("update_pet_record", {
+        input: { petId: "pet-a", name: "Nova", agentProvider: "codex" },
+      });
+      expect(screen.getByRole("button", { name: "Open Nova's details" })).toBeInTheDocument();
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 2,
+          petId: "pet-a",
+          petName: "Otto",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "body.contextmenu",
+          localPoint: { x: 96, y: 112 },
+          screenPoint: { x: 400, y: 300 },
+          button: 2,
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
+        petId: "pet-a",
+        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Nova&note=&agent=codex",
+        localX: 400,
+        localY: 300,
+      });
     });
   });
 

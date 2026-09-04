@@ -31,6 +31,8 @@ import {
 } from "@/app-state/pet-card-status";
 import { selectAdoptedPetSimInputs } from "@/app-state/pet-surface";
 import {
+  PET_AGENT_PROVIDERS,
+  type PetAgentProvider,
   type PetsDrivenState,
   resolveRegisteredWorkingDirectoryForCwd,
 } from "@/app-state/pets-driven-state";
@@ -416,21 +418,49 @@ export function useDesktopSimulationHost({
         void desktopGateway.updatePet({ petId: input.petId, note });
         return;
       }
+      if (input.kind === "menu.settings-save") {
+        const name = input.name?.trim();
+        const agentProvider = input.agentProvider;
+        const hasValidAgentProvider =
+          agentProvider === null || PET_AGENT_PROVIDERS.includes(agentProvider as PetAgentProvider);
+
+        if (!name || !hasValidAgentProvider) {
+          return;
+        }
+
+        const current = stateRef.current;
+        applyState({
+          ...current,
+          pets: current.pets.map((pet) =>
+            pet.id === input.petId
+              ? { ...pet, name, agentProvider: agentProvider ?? undefined }
+              : pet,
+          ),
+        });
+        void desktopGateway.updatePet({ petId: input.petId, name, agentProvider });
+        return;
+      }
       if (input.kind === "menu.pick-folder") {
         void pickFolderForPet(input.petId);
         return;
       }
       if (input.kind === "body.contextmenu" || input.kind === "overlay.contextmenu") {
         const pet = stateRef.current.pets.find((p) => p.id === input.petId);
-        const running = adoptedScenarioRef.current?.world.gameSession();
+        const world = adoptedScenarioRef.current?.world;
+        // Opening the pet's own menu demonstrates that the user noticed any
+        // settled report. Release that Attention Hold before the menu appears;
+        // the engine deliberately leaves a live working report untouched.
+        world?.acknowledgeAttentionHold(input.petId);
+        const running = world?.gameSession();
         void desktopGateway
           .openPetContextMenu(
             input.petId,
-            input.petName ?? pet?.name ?? input.petId,
+            pet?.name ?? input.petName ?? input.petId,
             pet?.note ?? "",
             input.screenPoint.x,
             input.screenPoint.y,
             running?.petId === input.petId ? running.spawn : undefined,
+            pet?.agentProvider,
           )
           .catch(() => {});
         return;

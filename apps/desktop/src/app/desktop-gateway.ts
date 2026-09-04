@@ -188,6 +188,8 @@ export type DesktopGateway = {
     y: number,
     /** The round this pet is on, so the menu offers to stop it. Absent = none. */
     gameSpawn?: "auto" | "tool-use",
+    /** The agent currently pinned to this pet. Absent means the app default. */
+    agentProvider?: PetAgentProvider,
   ): Promise<void>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
@@ -457,7 +459,7 @@ export const desktopGateway: DesktopGateway = {
     await invoke("close_adopted_pet_window", { petId });
   },
 
-  async openPetContextMenu(petId, petName, note, x, y, gameSpawn) {
+  async openPetContextMenu(petId, petName, note, x, y, gameSpawn, agentProvider) {
     if (!isTauri()) {
       return;
     }
@@ -467,7 +469,8 @@ export const desktopGateway: DesktopGateway = {
     // stop it rather than showing the same two rows that started it. Without
     // it there is no way to tell from the menu that anything is running.
     const game = gameSpawn ? `&game=${gameSpawn}` : "";
-    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}${game}`;
+    const agent = agentProvider ? `&agent=${agentProvider}` : "";
+    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}${game}${agent}`;
     await invoke("open_pet_context_menu", { petId, url, localX: x, localY: y });
   },
 

@@ -177,6 +177,7 @@ export type PetWindowInputKind =
   | "menu.close"
   | "menu.pick-folder"
   | "menu.note-save"
+  | "menu.settings-save"
   | "menu.start-session"
   | "menu.find-terminal"
   | "menu.unbind"
@@ -230,6 +231,10 @@ export type PetWindowInputEvent = {
   key?: string;
   code?: string;
   note?: string;
+  /** Updated pet name, carried only by menu.settings-save. */
+  name?: string;
+  /** Updated per-pet agent choice; null means follow the app default. */
+  agentProvider?: "claude" | "codex" | null;
   at: number;
 };
 

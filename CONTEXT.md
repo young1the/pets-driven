@@ -165,7 +165,7 @@ Primary pointer interaction with a **Pet** body, used for drag-and-drop play.
 _Avoid_: open terminal, open context
 
 **Petting**:
-A stroking gesture — the cursor oscillating horizontally over a **Pet** body — that comforts the **Pet** and is the only interaction that acknowledges an agent task report.
+A stroking gesture — the cursor oscillating horizontally over a **Pet** body — that comforts the **Pet** and can acknowledge any agent task report, including a live working report.
 _Avoid_: hover, click, press
 
 **Pet Context Menu**:
@@ -297,14 +297,15 @@ _Avoid_: mute, do not disturb, pause, hide
 - Replaced **Attention-Producing Events** remain available through **Attention History**.
 - **Attention History** is accessed through the **Pet Context Menu** or **Management Surface**, not stacked on the **Pet Surface**.
 - Acknowledging **Attention Hold** does not remove events from **Attention History**.
-- **Attention Hold** remains until the user acknowledges it by **Petting** the **Pet**.
-- **Direct Manipulation** (press, drag, throw) does not acknowledge **Attention Hold**; only **Petting** releases it.
+- **Attention Hold** remains until the user acknowledges it by **Petting** the **Pet**, double-clicking it, or opening its **Pet Context Menu**.
+- **Direct Manipulation** (press, drag, throw) does not acknowledge **Attention Hold**; a double-click or opening the **Pet Context Menu** is an explicit dismissal rather than **Direct Manipulation**.
 - **Petting** also clears a live working report, returning the **Pet** to idle.
+- Opening a **Pet Context Menu** acknowledges a waiting, failed, or completed **Attention Hold** before the menu appears, but does not clear a live working report.
 - Clicking an **Attention Overlay** does not acknowledge its **Attention Hold**.
 - Clicking non-attention overlays changes presentation only and does not acknowledge **Attention Hold**.
 - Acknowledging **Attention Hold** releases the hold and may start **Acknowledge Feedback**.
 - **Acknowledge Feedback** may vary by event kind, **Pet Profile**, and current presentation state.
-- **Acknowledge Feedback** also varies by the gesture that acknowledged the hold: **Petting** is the affectionate one and answers with a heart, while a double-click is a dismissal and answers with its own beat, so the two never read as the same reaction.
+- **Acknowledge Feedback** also varies by the gesture that acknowledged the hold: **Petting** is the affectionate one and answers with a heart, while a double-click or opening the **Pet Context Menu** is a dismissal and answers with its own beat, so the two never read as the same reaction.
 - **Acknowledge Feedback** is owned by the **Simulation World**, not by the **Pet Window** presentation layer alone.
 - **Acknowledge Feedback** is caused by `user-interaction` behavior priority.
 - A new **Attention-Producing Event** interrupts **Acknowledge Feedback** and creates a new **Attention Hold**.

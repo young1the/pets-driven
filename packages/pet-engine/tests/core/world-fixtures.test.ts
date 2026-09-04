@@ -1202,8 +1202,8 @@ describe("demo scenario", () => {
       status: "waiting",
     });
 
-    // Stroking the cursor back and forth over the pet's body (petting) is the
-    // only interaction that lifts the hold and clears the agent's report.
+    // Unlike the direct manipulation above, stroking the cursor back and forth
+    // over the pet's body explicitly acknowledges and clears the report.
     const position = scenario.world.getComponent("pet-a", "Transform")?.position ?? {
       x: 600,
       y: 1040,

@@ -1,7 +1,11 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import { runPettingDetectionSystem } from "@pets-driven/pet-engine/features/behavior/cursor-reaction-systems";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
-import { runUserInteractionBehaviorSystem } from "@pets-driven/pet-engine/features/interaction/systems";
+import {
+  acknowledgeAttentionHold,
+  runUserInteractionBehaviorSystem,
+} from "@pets-driven/pet-engine/features/interaction/systems";
+import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 import { describe, expect, it } from "vitest";
 
@@ -233,6 +237,7 @@ describe("petting releases the agent task state", () => {
 describe("double-clicking releases a settled agent task", () => {
   it.each([
     "waiting",
+    "failed",
     "completed",
   ] as const)("clears a %s task, its hold and channel badge on the second quick tap", (status) => {
     const components = storeWithTappablePet(status);
@@ -343,5 +348,33 @@ describe("double-clicking releases a settled agent task", () => {
     runUserInteractionBehaviorSystem(components, tapAt(0, 0), createManualClock(500));
 
     expect(components.getComponent("pet", "AgentTaskState")?.status).toBe("waiting");
+  });
+});
+
+describe("acknowledging an Attention Hold directly", () => {
+  it.each([
+    "waiting",
+    "failed",
+    "completed",
+  ] as const)("clears a %s task for a deliberate host dismissal", (status) => {
+    const components = storeWithTappablePet(status);
+
+    const acknowledged = acknowledgeAttentionHold(components, "pet", 100, createSeededRandom(1));
+
+    expect(acknowledged).toBe(true);
+    expect(components.getComponent("pet", "AgentTaskState")).toBeUndefined();
+    expect(components.getComponent("pet", "TaskMovementHold")).toBeUndefined();
+    expect(components.getComponent("pet", "AgentChannelState")).toBeUndefined();
+  });
+
+  it("leaves a live working report untouched", () => {
+    const components = storeWithTappablePet("working");
+
+    const acknowledged = acknowledgeAttentionHold(components, "pet", 100, createSeededRandom(1));
+
+    expect(acknowledged).toBe(false);
+    expect(components.getComponent("pet", "AgentTaskState")?.status).toBe("working");
+    expect(components.getComponent("pet", "TaskMovementHold")).toBeDefined();
+    expect(components.getComponent("pet", "AgentChannelState")?.status).toBe("working");
   });
 });

@@ -518,6 +518,8 @@
   },
   "contextMenu": {
     "cardAria": "Pet Context Menu",
+    "petSettings": "Pet settings",
+    "settingsAria": "Settings for {{name}}",
     "writeNote": "Write a note",
     "chooseFolder": "Choose folder",
     "close": "Close",

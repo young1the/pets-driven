@@ -494,6 +494,8 @@
   },
   "contextMenu": {
     "cardAria": "宠物右键菜单",
+    "petSettings": "宠物设置",
+    "settingsAria": "{{name}}的设置",
     "writeNote": "写便条",
     "chooseFolder": "选择文件夹",
     "close": "关闭",

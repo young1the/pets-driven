@@ -121,6 +121,100 @@ html.pet-context-menu-fixture-preview body {
   box-sizing: border-box;
 }
 
+.pet-context-menu-card--settings {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.pet-context-menu-settings__body {
+  flex: 1;
+  padding: 7px 8px 4px;
+}
+
+.pet-context-menu-settings__field {
+  display: block;
+}
+
+.pet-context-menu-settings__label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-subtle);
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pet-context-menu-settings__name {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border: 1.5px solid var(--border-default);
+  border-radius: 9px;
+  outline: none;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-inset);
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pet-context-menu-settings__name:focus {
+  border-color: var(--color-primary);
+}
+
+.pet-context-menu-settings__agents {
+  padding: 0;
+  margin: 11px 0 0;
+  border: 0;
+}
+
+.pet-context-menu-settings__agent-options {
+  display: grid;
+  gap: 4px;
+}
+
+.pet-context-menu-settings__agent {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-strong);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.pet-context-menu-settings__agent:hover,
+.pet-context-menu-settings__agent:focus-visible {
+  outline: none;
+  background: var(--surface-subtle, #f1f5f9);
+}
+
+.pet-context-menu-settings__agent--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.pet-context-menu-settings__agent--active:hover,
+.pet-context-menu-settings__agent--active:focus-visible {
+  background: var(--color-primary);
+}
+
+.pet-context-menu-settings__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 3px 7px 7px;
+}
+
 /* A choice, not a command: two lines, and it shares what is left of the card
    equally with its sibling. */
 .pet-context-menu-card__item--choice {
@@ -150,6 +244,16 @@ html.pet-context-menu-fixture-preview body {
 
 .pet-context-menu-card__item--note {
   color: var(--lavender-700, #5b4ecb);
+}
+
+.pet-context-menu-card__item--settings {
+  color: var(--blossom-700, #9d2f7e);
+}
+
+.pet-context-menu-card__item--settings:hover,
+.pet-context-menu-card__item--settings:focus-visible {
+  outline: none;
+  background: var(--blossom-50, #fff1fb);
 }
 
 .pet-context-menu-card__item--note:hover,
@@ -267,4 +371,9 @@ html.pet-context-menu-fixture-preview body {
   font-weight: 700;
   color: #fff;
   cursor: pointer;
+}
+
+.pet-context-menu-note__save:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

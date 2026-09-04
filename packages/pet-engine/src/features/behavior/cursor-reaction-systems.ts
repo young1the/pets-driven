@@ -43,11 +43,11 @@ const HOVER_REACTION_DURATION_MS = 1_200;
 // claims user-interaction with reason "petting" and shows a love reaction.
 // Skips any pet currently being dragged by the same pointer.
 //
-// Petting is also the only interaction that releases an agent task: any
-// AgentTaskState (working/waiting/failed/completed) clears along with the
-// movement hold and the agent-task channel badge. Pressing or dragging a pet
-// deliberately does NOT release it, so a hold survives casual clicks until
-// the user strokes the pet.
+// Petting is the only interaction that releases every agent task, including a
+// live working report. Any AgentTaskState (working/waiting/failed/completed)
+// clears along with the movement hold and the agent-task channel badge.
+// Pressing or dragging a pet deliberately does NOT release it, so a hold
+// survives casual clicks until the user explicitly acknowledges it.
 
 function findCursorState(components: ComponentStore): {
   position: { x: number; y: number } | null;

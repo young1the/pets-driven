@@ -21,8 +21,19 @@ vi.mock("@tauri-apps/api/window", () => ({
   LogicalPosition: class {},
 }));
 
-function renderMenu(gameSpawn: "auto" | "tool-use" | null = null) {
-  return render(<PetContextMenuView petId="pet-a" petName="Scout" note="" gameSpawn={gameSpawn} />);
+function renderMenu(
+  gameSpawn: "auto" | "tool-use" | null = null,
+  agentProvider: "claude" | "codex" | null = null,
+) {
+  return render(
+    <PetContextMenuView
+      agentProvider={agentProvider}
+      gameSpawn={gameSpawn}
+      note=""
+      petId="pet-a"
+      petName="Scout"
+    />,
+  );
 }
 
 type SendInputSpy = MockInstance<typeof petWindowTransport.sendInput>;
@@ -36,6 +47,65 @@ describe("the pet context menu", () => {
 
   beforeEach(() => {
     sendInput = vi.spyOn(petWindowTransport, "sendInput").mockResolvedValue(undefined);
+  });
+
+  it("opens the pet-only settings behind one top-level row", () => {
+    renderMenu();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Scout");
+    expect(screen.getByRole("radio", { name: "Default" })).toHaveAttribute("aria-checked", "true");
+    expect(sendInput).not.toHaveBeenCalled();
+  });
+
+  it("saves a changed name and agent together", () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Name" }), {
+      target: { value: "  Nova  " },
+    });
+    fireEvent.click(screen.getByRole("radio", { name: "Codex" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(sendInput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "menu.settings-save",
+        name: "Nova",
+        agentProvider: "codex",
+      }),
+    );
+  });
+
+  it("can return a pinned agent to the app default", () => {
+    renderMenu(null, "claude");
+    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+
+    expect(screen.getByRole("radio", { name: "Claude Code" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Default" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(sendInput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "menu.settings-save",
+        agentProvider: null,
+      }),
+    );
+  });
+
+  it("does not save a blank pet name", () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Name" }), {
+      target: { value: "   " },
+    });
+
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
   it("spends one row on the whole game feature, not two", () => {
@@ -82,6 +152,16 @@ describe("the pet context menu", () => {
     // The popup is placed once, in Rust, and the edge clamp there measures
     // against one size — nothing re-clamps a window the view grew afterwards.
     // So a size per view is a menu that jumps when you step into it.
+    expect(setWindowSize.mock.calls.at(-1)).toEqual(onOpen);
+  });
+
+  it("keeps the settings submenu in the top menu's footprint", () => {
+    const setWindowSize = vi.spyOn(petWindowTransport, "setWindowSize").mockResolvedValue();
+    renderMenu();
+    const onOpen = setWindowSize.mock.calls.at(-1);
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+
     expect(setWindowSize.mock.calls.at(-1)).toEqual(onOpen);
   });
 

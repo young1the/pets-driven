@@ -46,10 +46,14 @@ function OverlayRoot() {
 
   if (params.get("surface") === "pet-context-menu") {
     const petId = params.get("petId") ?? "pet-a";
+    const agent = params.get("agent");
+    const game = params.get("game");
 
     return (
       <Suspense fallback={null}>
         <PetContextMenuView
+          agentProvider={agent === "claude" || agent === "codex" ? agent : null}
+          gameSpawn={game === "auto" || game === "tool-use" ? game : null}
           note={decodeURIComponent(params.get("note") ?? "")}
           petId={petId}
           petName={decodeURIComponent(params.get("petName") ?? petId)}

@@ -19,9 +19,11 @@ function RootSurface({ navigateSearchParams }: { navigateSearchParams: NavigateS
     const petName = decodeURIComponent(params.get("petName") ?? petId);
     const note = decodeURIComponent(params.get("note") ?? "");
     const game = params.get("game");
+    const agent = params.get("agent");
 
     return (
       <PetContextMenuView
+        agentProvider={agent === "claude" || agent === "codex" ? agent : null}
         gameSpawn={game === "auto" || game === "tool-use" ? game : null}
         note={note}
         petId={petId}

@@ -32,7 +32,7 @@ const HIT_TARGET_PADDING = 12;
 const MAX_DRAG_SAMPLES = 6;
 const THROW_VELOCITY_THRESHOLD = 8;
 // Two taps on the same pet within this window count as a double-click, which
-// dismisses a settled agent task (waiting/completed) — the same 400ms the pet
+// dismisses a settled agent task (waiting/failed/completed) — the same 400ms the pet
 // window surface uses for its own double-tap gesture, so the two agree.
 const DOUBLE_CLICK_WINDOW_MS = 400;
 // Lifetime of the dismissal cue + acknowledge line shown when a double-click
@@ -169,7 +169,7 @@ function registerTapAndMaybeRelease(
       entityId: null,
       lastTapAt: 0,
     });
-    releaseSettledTaskOnDoubleClick(components, entityId, now, random);
+    acknowledgeAttentionHold(components, entityId, now, random);
     return;
   }
 
@@ -180,12 +180,12 @@ function registerTapAndMaybeRelease(
   });
 }
 
-// Double-click dismisses only *settled* work: a waiting or completed task
-// clears along with its movement hold and channel badge, confirmed with a
-// dismissal beat and the personality acknowledge line. A live "working" task is
-// deliberately left alone — per PET-5 it can only be released by stroking the
-// pet, so a stray double-click never dismisses a report that is still in
-// progress.
+// A deliberate dismissal (double-click or opening the context menu) releases
+// only an Attention Hold: waiting, failed, or completed. The task clears along
+// with its movement hold and channel badge, confirmed with a dismissal beat and
+// the personality acknowledge line. A live "working" task is deliberately left
+// alone — per PET-5 it can only be released by stroking the pet, so opening a
+// menu never dismisses a report that is still in progress.
 //
 // The cue deliberately diverges from petting's (PET-23). Petting is the
 // affectionate gesture — it comforts the pet — so it keeps the love/heart beat.
@@ -194,15 +194,17 @@ function registerTapAndMaybeRelease(
 // both gestures on the heart made the two indistinguishable on screen, which is
 // exactly what PET-23 reported; if you are tempted to unify them again, that is
 // the regression the acknowledge-cue tests guard against.
-function releaseSettledTaskOnDoubleClick(
+export function acknowledgeAttentionHold(
   components: ComponentStore,
   id: string,
   now: number,
   random: RandomSource,
-): void {
+): boolean {
   const task = components.getComponent(id, "AgentTaskState");
-  if (!task) return;
-  if (task.status !== "waiting" && task.status !== "completed") return;
+  if (!task) return false;
+  if (task.status !== "waiting" && task.status !== "failed" && task.status !== "completed") {
+    return false;
+  }
 
   components.removeComponent(id, "TaskMovementHold");
 
@@ -237,6 +239,7 @@ function releaseSettledTaskOnDoubleClick(
   }
   claimUserInteraction(components, id, now, `acknowledge-${task.status}`, ACKNOWLEDGE_FEEDBACK_MS);
   recordPetExperience(components, id, "acknowledged", now);
+  return true;
 }
 
 function handleKeyboardEvent(components: ComponentStore, event: KeyboardWorldEvent): void {

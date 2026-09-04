@@ -518,6 +518,8 @@
   },
   "contextMenu": {
     "cardAria": "ペットのコンテキストメニュー",
+    "petSettings": "ペット設定",
+    "settingsAria": "{{name}}の設定",
     "writeNote": "ノートを書く",
     "chooseFolder": "フォルダを選ぶ",
     "close": "閉じる",

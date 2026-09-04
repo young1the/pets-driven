@@ -378,7 +378,7 @@ const ITEM_WINDOW_LABEL_PREFIX: &str = "item-window-";
 /// are what the window is born at, and what the edge-clamp below measures with,
 /// so a menu opened near the bottom of a screen flips by its real height.
 const MENU_WINDOW_WIDTH: f64 = 192.0;
-const MENU_WINDOW_HEIGHT: f64 = 237.0;
+const MENU_WINDOW_HEIGHT: f64 = 268.0;
 const ITEM_WINDOW_SIZE: f64 = 64.0;
 
 

@@ -518,6 +518,8 @@
   },
   "contextMenu": {
     "cardAria": "펫 컨텍스트 메뉴",
+    "petSettings": "펫 설정",
+    "settingsAria": "{{name}} 설정",
     "writeNote": "노트 작성하기",
     "chooseFolder": "폴더 지정하기",
     "close": "닫기",

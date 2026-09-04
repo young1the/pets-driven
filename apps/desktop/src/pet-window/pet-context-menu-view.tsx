@@ -1,5 +1,6 @@
 import { useTranslation } from "@pets-driven/i18n";
 import { useEffect, useRef, useState } from "react";
+import { PET_AGENT_PROVIDERS, type PetAgentProvider } from "@/app-state/pets-driven-state";
 import type { PetWindowInputKind } from "@/pet-window/pet-window-messages";
 import { petWindowTransport } from "@/pet-window/pet-window-transport";
 
@@ -7,6 +8,8 @@ type PetContextMenuViewProps = {
   petId: string;
   petName: string;
   note: string;
+  /** The agent this pet is pinned to, or null when it follows the app default. */
+  agentProvider?: PetAgentProvider | null;
   /**
    * The round this pet is already on, or null.
    *
@@ -18,7 +21,7 @@ type PetContextMenuViewProps = {
   gameSpawn?: "auto" | "tool-use" | null;
 };
 
-type MenuView = "menu" | "note" | "game";
+type MenuView = "menu" | "note" | "settings" | "game";
 
 /**
  * The menu window is sized from its own row count rather than a measured
@@ -26,7 +29,7 @@ type MenuView = "menu" | "note" | "game";
  * the content stopped fitting — a fifth item simply went missing off the
  * bottom. Bump these with the lists of buttons below.
  */
-const MENU_ITEM_COUNT = 5;
+const MENU_ITEM_COUNT = 6;
 /** One row: 8px padding, a 15px line box, 8px padding. */
 const MENU_ITEM_HEIGHT = 31;
 /** Margin, border, padding, the header (name, or the way back) and its divider. */
@@ -60,11 +63,16 @@ export function PetContextMenuView({
   petId,
   petName,
   note,
+  agentProvider = null,
   gameSpawn = null,
 }: PetContextMenuViewProps) {
   const { t } = useTranslation("desktop");
   const [view, setView] = useState<MenuView>("menu");
   const [noteText, setNoteText] = useState(note);
+  const [nameText, setNameText] = useState(petName);
+  const [selectedAgentProvider, setSelectedAgentProvider] = useState<PetAgentProvider | null>(
+    agentProvider,
+  );
   const sequenceRef = useRef(0);
 
   useEffect(() => {
@@ -129,7 +137,14 @@ export function PetContextMenuView({
     void petWindowTransport.setWindowSize(width, height);
   }, [view]);
 
-  function emitSignal(kind: PetWindowInputKind, note?: string) {
+  function emitSignal(
+    kind: PetWindowInputKind,
+    fields: {
+      note?: string;
+      name?: string;
+      agentProvider?: PetAgentProvider | null;
+    } = {},
+  ) {
     sequenceRef.current += 1;
 
     petWindowTransport.sendInput({
@@ -140,7 +155,7 @@ export function PetContextMenuView({
       kind,
       localPoint: { x: 0, y: 0 },
       screenPoint: { x: 0, y: 0 },
-      note,
+      ...fields,
       at: Date.now(),
     });
   }
@@ -174,7 +189,88 @@ export function PetContextMenuView({
               className="pet-context-menu-note__save"
               type="button"
               onClick={() => {
-                emitSignal("menu.note-save", noteText);
+                emitSignal("menu.note-save", { note: noteText });
+                closeWindow();
+              }}
+            >
+              {t("contextMenu.save")}
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (view === "settings") {
+    const trimmedName = nameText.trim();
+
+    return (
+      <main className="pet-context-menu-surface">
+        <section
+          aria-label={t("contextMenu.settingsAria", { name: petName })}
+          className="pet-context-menu-card pet-context-menu-card--settings"
+          data-testid="pet-context-menu-settings"
+          style={{ minHeight: MENU_WINDOW_SIZE.height - MENU_CARD_OUTSET }}
+        >
+          <button
+            className="pet-context-menu-card__back"
+            type="button"
+            onClick={() => setView("menu")}
+          >
+            <BackIcon />
+            <span className="pet-context-menu-card__name">{t("contextMenu.petSettings")}</span>
+          </button>
+          <div className="pet-context-menu-card__divider" />
+          <div className="pet-context-menu-settings__body">
+            <label className="pet-context-menu-settings__field">
+              <span className="pet-context-menu-settings__label">{t("edit.name")}</span>
+              <input
+                className="pet-context-menu-settings__name"
+                onChange={(event) => setNameText(event.target.value)}
+                value={nameText}
+              />
+            </label>
+            <fieldset className="pet-context-menu-settings__agents">
+              <legend className="pet-context-menu-settings__label">{t("edit.agent")}</legend>
+              <div className="pet-context-menu-settings__agent-options" role="radiogroup">
+                {[null, ...PET_AGENT_PROVIDERS].map((provider) => {
+                  const active = selectedAgentProvider === provider;
+                  const label = provider ? t(`edit.agents.${provider}`) : t("edit.agentDefault");
+
+                  return (
+                    // biome-ignore lint/a11y/useSemanticElements: compact radio rows use the same ARIA segmented-control pattern as the main pet editor.
+                    <button
+                      aria-checked={active}
+                      className={`pet-context-menu-settings__agent${active ? " pet-context-menu-settings__agent--active" : ""}`}
+                      key={provider ?? "default"}
+                      onClick={() => setSelectedAgentProvider(provider)}
+                      role="radio"
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          </div>
+          <div className="pet-context-menu-settings__actions">
+            <button
+              className="pet-context-menu-note__cancel"
+              type="button"
+              onClick={() => setView("menu")}
+            >
+              {t("contextMenu.cancel")}
+            </button>
+            <button
+              className="pet-context-menu-note__save"
+              disabled={!trimmedName}
+              type="button"
+              onClick={() => {
+                emitSignal("menu.settings-save", {
+                  name: trimmedName,
+                  agentProvider: selectedAgentProvider,
+                });
                 closeWindow();
               }}
             >
@@ -208,19 +304,7 @@ export function PetContextMenuView({
             type="button"
             onClick={() => setView("menu")}
           >
-            <svg
-              aria-hidden="true"
-              fill="none"
-              height="14"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              width="14"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
+            <BackIcon />
             <span className="pet-context-menu-card__name">{t("contextMenu.gameMode")}</span>
           </button>
           <div className="pet-context-menu-card__divider" />
@@ -294,6 +378,32 @@ export function PetContextMenuView({
           <span className="pet-context-menu-card__name">{petName}</span>
         </div>
         <div className="pet-context-menu-card__divider" />
+        <button
+          aria-haspopup="dialog"
+          className="pet-context-menu-card__item pet-context-menu-card__item--settings"
+          role="menuitem"
+          type="button"
+          onClick={() => setView("settings")}
+        >
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="15"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="15"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21a8 8 0 0 1 16 0" />
+          </svg>
+          {t("contextMenu.petSettings")}
+          <span aria-hidden="true" className="pet-context-menu-card__chevron">
+            ›
+          </span>
+        </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--note"
           role="menuitem"
@@ -418,6 +528,24 @@ export function PetContextMenuView({
         </button>
       </div>
     </main>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="14"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="14"
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
   );
 }
 

@@ -28,7 +28,10 @@ import {
   gameCountdownGlyph,
 } from "@pets-driven/pet-engine/features/game/components";
 import { sweepCourse } from "@pets-driven/pet-engine/features/game/systems";
-import { INTERACTION_ENTITY_ID } from "@pets-driven/pet-engine/features/interaction/systems";
+import {
+  acknowledgeAttentionHold as acknowledgePetAttentionHold,
+  INTERACTION_ENTITY_ID,
+} from "@pets-driven/pet-engine/features/interaction/systems";
 import {
   DEFAULT_ITEM_PICKUP_RADIUS,
   DEFAULT_ITEM_SPAWNER,
@@ -528,6 +531,14 @@ export function createWorld(input: WorldDefinition) {
     },
     pushEvent(event: WorldEvent) {
       events.push(event);
+    },
+    /**
+     * Acknowledge the settled report for one pet as an intentional dismissal.
+     * Hosts call this before opening a Pet Context Menu, which is itself enough
+     * evidence that the user has noticed the Attention Hold. Live work stays.
+     */
+    acknowledgeAttentionHold(petId: string): boolean {
+      return acknowledgePetAttentionHold(components, petId, input.clock.now(), random);
     },
     /**
      * Host-facing entry point for a manual trinket drop — the main window's
