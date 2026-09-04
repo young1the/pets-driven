@@ -57,6 +57,7 @@ function OverlayRoot() {
           note={decodeURIComponent(params.get("note") ?? "")}
           petId={petId}
           petName={decodeURIComponent(params.get("petName") ?? petId)}
+          voiceMuted={params.get("voiceMuted") === "1"}
         />
       </Suspense>
     );

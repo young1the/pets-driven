@@ -3,8 +3,10 @@ import {
   createDemoScenario,
   deriveAdoptedPetLocomotion,
 } from "@pets-driven/pet-engine/core/scenario-fixtures";
+import type { WorldSnapshot } from "@pets-driven/pet-engine/core/world-snapshot";
 import type { WorldPropKind } from "@pets-driven/pet-engine/features/props/components";
 import { PLAYGROUND_PET_ENTITY_IDS } from "@pets-driven/pet-engine/pets/assets/codex-pet-fixtures";
+import { sanitizePetVoiceSettings } from "@pets-driven/pet-engine/pets/profiles/pet-voice";
 import { isTauri } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { availableMonitors, currentMonitor, cursorPosition } from "@tauri-apps/api/window";
@@ -145,6 +147,10 @@ type UseDesktopSimulationHostParams = {
   overlayMode: PetOverlayMode;
   /** How much the pets may intrude: off, quiet (no chatter), still (no moving). */
   quietMode: QuietMode;
+  /** Main-window-only observer for side effects such as centralized voice playback. */
+  onWorldSnapshot?: (snapshot: WorldSnapshot) => void;
+  /** Stop active and queued audio when one pet is muted or acknowledged. */
+  onStopPetVoice?: (petId: string) => void;
 };
 
 /**
@@ -167,6 +173,8 @@ export function useDesktopSimulationHost({
   pickFolderForPet,
   overlayMode,
   quietMode,
+  onWorldSnapshot,
+  onStopPetVoice,
 }: UseDesktopSimulationHostParams) {
   const fixtureScenarioRef = useRef(createDemoScenario());
   const fixtureHostSequenceRef = useRef(0);
@@ -228,6 +236,10 @@ export function useDesktopSimulationHost({
   // each tick instead, so quieting the pets never moves them.
   const quietModeRef = useRef(quietMode);
   quietModeRef.current = quietMode;
+  const onWorldSnapshotRef = useRef(onWorldSnapshot);
+  onWorldSnapshotRef.current = onWorldSnapshot;
+  const onStopPetVoiceRef = useRef(onStopPetVoice);
+  onStopPetVoiceRef.current = onStopPetVoice;
 
   const [desktopFixtureWindowCount] = useState(0);
   const [adoptedSimulationResetKey] = useState(0);
@@ -440,6 +452,27 @@ export function useDesktopSimulationHost({
         void desktopGateway.updatePet({ petId: input.petId, name, agentProvider });
         return;
       }
+      if (input.kind === "menu.voice-toggle") {
+        const current = stateRef.current;
+        const pet = current.pets.find((candidate) => candidate.id === input.petId);
+        const profile = pet
+          ? current.petProfiles.find((candidate) => candidate.id === pet.profileId)
+          : undefined;
+        if (!pet || !profile) return;
+        const voice = sanitizePetVoiceSettings(pet.id, profile.voice);
+        const voiceMuted = !voice.muted;
+        if (voiceMuted) onStopPetVoiceRef.current?.(pet.id);
+        applyState({
+          ...current,
+          petProfiles: current.petProfiles.map((candidate) =>
+            candidate.id === profile.id
+              ? { ...candidate, voice: { ...voice, muted: voiceMuted } }
+              : candidate,
+          ),
+        });
+        void desktopGateway.updatePet({ petId: pet.id, voiceMuted });
+        return;
+      }
       if (input.kind === "menu.pick-folder") {
         void pickFolderForPet(input.petId);
         return;
@@ -447,9 +480,13 @@ export function useDesktopSimulationHost({
       if (input.kind === "body.contextmenu" || input.kind === "overlay.contextmenu") {
         const pet = stateRef.current.pets.find((p) => p.id === input.petId);
         const world = adoptedScenarioRef.current?.world;
+        const profile = pet
+          ? stateRef.current.petProfiles.find((candidate) => candidate.id === pet.profileId)
+          : undefined;
         // Opening the pet's own menu demonstrates that the user noticed any
         // settled report. Release that Attention Hold before the menu appears;
         // the engine deliberately leaves a live working report untouched.
+        onStopPetVoiceRef.current?.(input.petId);
         world?.acknowledgeAttentionHold(input.petId);
         const running = world?.gameSession();
         void desktopGateway
@@ -461,6 +498,7 @@ export function useDesktopSimulationHost({
             input.screenPoint.y,
             running?.petId === input.petId ? running.spawn : undefined,
             pet?.agentProvider,
+            pet ? sanitizePetVoiceSettings(pet.id, profile?.voice).muted : false,
           )
           .catch(() => {});
         return;
@@ -889,6 +927,7 @@ export function useDesktopSimulationHost({
       adoptedHostSequenceRef.current += 1;
 
       const snapshot = scenario.world.snapshot();
+      onWorldSnapshotRef.current?.(snapshot);
 
       const nextStatuses: Record<string, PetCardStatus> = {};
       for (const petSnapshot of snapshot.pets) {

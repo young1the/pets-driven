@@ -18,15 +18,16 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@pets-driven/design-system": "workspace:*",
+    "@pets-driven/i18n": "workspace:*",
+    "@pets-driven/pet-engine": "workspace:*",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.4.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
+    "animalese-tts": "1.1.3",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "@pets-driven/design-system": "workspace:*",
-    "@pets-driven/i18n": "workspace:*",
-    "@pets-driven/pet-engine": "workspace:*"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",

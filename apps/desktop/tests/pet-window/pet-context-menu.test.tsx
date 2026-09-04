@@ -108,6 +108,18 @@ describe("the pet context menu", () => {
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
+  it("mutes and unmutes this pet without opening a submenu", () => {
+    const { unmount } = renderMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mute voice" }));
+    expect(emittedKinds(sendInput)).toEqual(["menu.voice-toggle"]);
+
+    unmount();
+    render(
+      <PetContextMenuView gameSpawn={null} note="" petId="pet-a" petName="Scout" voiceMuted />,
+    );
+    expect(screen.getByRole("menuitem", { name: "Unmute voice" })).toBeInTheDocument();
+  });
+
   it("spends one row on the whole game feature, not two", () => {
     renderMenu();
 

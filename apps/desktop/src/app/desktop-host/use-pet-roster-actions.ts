@@ -1,5 +1,6 @@
 import { useTranslation } from "@pets-driven/i18n";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { sanitizePetVoiceSettings } from "@pets-driven/pet-engine/pets/profiles/pet-voice";
 import type { MutableRefObject } from "react";
 import type { AppView } from "@/app/app-navigation";
 import { desktopGateway } from "@/app/desktop-gateway";
@@ -187,9 +188,10 @@ export function usePetRosterActions({
   // on disk. Nothing here persists the whole state document.
   function patchPet(petId: string, patch: PetPatch) {
     const current = stateRef.current;
+    const targetPet = current.pets.find((pet) => pet.id === petId);
     // `agentProvider: null` is the wire spelling of "unset it"; the record
     // itself only ever holds a provider or nothing at all.
-    const { agentProvider, ...rest } = patch;
+    const { agentProvider, voicePitch, voiceMuted, ...rest } = patch;
     const local: Partial<PetRecord> = {
       ...rest,
       ...("agentProvider" in patch ? { agentProvider: agentProvider ?? undefined } : {}),
@@ -197,6 +199,22 @@ export function usePetRosterActions({
     applyState({
       ...current,
       pets: current.pets.map((pet) => (pet.id === petId ? { ...pet, ...local } : pet)),
+      petProfiles: current.petProfiles.map((profile) => {
+        if (profile.id !== targetPet?.profileId) {
+          return profile;
+        }
+        if (voicePitch === undefined && voiceMuted === undefined) {
+          return profile;
+        }
+        const currentVoice = sanitizePetVoiceSettings(petId, profile.voice);
+        return {
+          ...profile,
+          voice: {
+            pitch: voicePitch ?? currentVoice.pitch,
+            muted: voiceMuted ?? currentVoice.muted,
+          },
+        };
+      }),
     });
     void desktopGateway.updatePet({ petId, ...patch });
   }

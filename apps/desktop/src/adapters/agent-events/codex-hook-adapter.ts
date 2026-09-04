@@ -85,19 +85,9 @@ function toAgentEventType(hookEventName: CodexHookEventName): AgentEvent["type"]
   return "task.started";
 }
 
-function summaryForHook(hook: CodexHookPayload): string {
+function summaryForHook(hook: CodexHookPayload): string | undefined {
   const explicit = firstNonEmpty(hook.summary, hook.message, hook.prompt);
-  if (explicit) return explicit;
-  switch (hook.hook_event_name) {
-    case "UserPromptSubmit":
-      return "New prompt received";
-    case "PermissionRequest":
-      return "Permission required";
-    case "Stop":
-      return "Task completed";
-    default:
-      return "Working";
-  }
+  return explicit || undefined;
 }
 
 function firstNonEmpty(...values: Array<string | undefined>): string {

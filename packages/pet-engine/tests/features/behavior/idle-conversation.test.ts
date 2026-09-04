@@ -16,6 +16,7 @@ function makeChattyStore(agentTask?: { status: AgentTaskStatus; workingPose?: bo
       attentionNeeded: "attention",
       taskStarted: "started",
       taskCompleted: "completed",
+      taskFailed: "failed",
     },
     { type: "ActivityState", lastActiveAt: 0 },
   ];

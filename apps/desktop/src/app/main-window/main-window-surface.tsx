@@ -1,5 +1,6 @@
 import { useTranslation } from "@pets-driven/i18n";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { sanitizePetVoiceSettings } from "@pets-driven/pet-engine/pets/profiles/pet-voice";
 import { isTauri } from "@tauri-apps/api/core";
 import { useCallback, useMemo, useRef } from "react";
 import type { AgentHookIngressStatus } from "@/adapters/agent-events/agent-hook-ingress";
@@ -18,6 +19,7 @@ import { personalityRoleLabelKey } from "@/app/pet-presentation";
 import type { QuietMode } from "@/app/quiet-mode";
 import { parseLaunchLine, promptForShell } from "@/app/session-launch-line";
 import type { useAgentPlugin } from "@/app/use-agent-plugin";
+import type { PetVoicePreferences } from "@/app/voice/pet-voice-preferences";
 import { getWorkingDirectoryForPet } from "@/app-state/pet-adoption";
 import type { PetCardStatus } from "@/app-state/pet-card-status";
 import type { PetPatch, PetRecord, PetsDrivenState } from "@/app-state/pets-driven-state";
@@ -70,6 +72,10 @@ export interface MainWindowSurfaceProps {
   /** How much the pets may intrude: off, quiet (no chatter), still (no moving). */
   quietMode: QuietMode;
   onSetQuietMode: (mode: QuietMode) => void;
+  voicePreferences: PetVoicePreferences;
+  onSetVoicePreferences: (patch: Partial<PetVoicePreferences>) => void;
+  onPreviewPetVoice: (petId: string) => void;
+  onStopPetVoice: (petId: string) => void;
 }
 
 /**
@@ -130,6 +136,10 @@ export function MainWindowSurface({
   onSetOverlayMode,
   quietMode,
   onSetQuietMode,
+  voicePreferences,
+  onSetVoicePreferences,
+  onPreviewPetVoice,
+  onStopPetVoice,
 }: MainWindowSurfaceProps) {
   const { t } = useTranslation("desktop");
   const appUpdate = useAppUpdate();
@@ -218,19 +228,25 @@ export function MainWindowSurface({
     ? (getWorkingDirectoryForPet(state, editingPet.id)?.path ?? null)
     : null;
   const editPetView: PetEditView | null = editingPet
-    ? {
-        id: editingPet.id,
-        name: editingPet.name,
-        assetId: editingPet.assetId,
-        role: t(personalityRoleLabelKey(profileFor(editingPet)?.personalityId)),
-        gradient: petGradient(editingPet.id),
-        folder: editDirPath ?? "",
-        cwd: editDirPath ? shortWorkingDir(editDirPath) : null,
-        note: editingPet.note ?? "",
-        personalityId: profileFor(editingPet)?.personalityId,
-        swapRunningDirections: editingPet.swapRunningDirections ?? false,
-        agentProvider: editingPet.agentProvider ?? null,
-      }
+    ? (() => {
+        const profile = profileFor(editingPet);
+        const voice = sanitizePetVoiceSettings(editingPet.id, profile?.voice);
+        return {
+          id: editingPet.id,
+          name: editingPet.name,
+          assetId: editingPet.assetId,
+          role: t(personalityRoleLabelKey(profile?.personalityId)),
+          gradient: petGradient(editingPet.id),
+          folder: editDirPath ?? "",
+          cwd: editDirPath ? shortWorkingDir(editDirPath) : null,
+          note: editingPet.note ?? "",
+          personalityId: profile?.personalityId,
+          swapRunningDirections: editingPet.swapRunningDirections ?? false,
+          agentProvider: editingPet.agentProvider ?? null,
+          voicePitch: voice.pitch,
+          voiceMuted: voice.muted,
+        };
+      })()
     : null;
 
   const previewPet = managedPets[0];
@@ -279,6 +295,13 @@ export function MainWindowSurface({
         onAgentProvider: (value) => editPetId && onPatchPet(editPetId, { agentProvider: value }),
         onSwapRunningDirections: (value) =>
           editPetId && onPatchPet(editPetId, { swapRunningDirections: value }),
+        onVoicePitch: (value) => editPetId && onPatchPet(editPetId, { voicePitch: value }),
+        onVoiceMuted: (value) => {
+          if (!editPetId) return;
+          if (value) onStopPetVoice(editPetId);
+          onPatchPet(editPetId, { voiceMuted: value });
+        },
+        onPreviewVoice: () => editPetId && onPreviewPetVoice(editPetId),
         onPickFolder: () => editPetId && onPickFolderForPet(editPetId),
         onOpenFolder: () => onRevealFolder(editDirPath),
         onClearFolder: () => editPetId && onClearFolderForPet(editPetId),
@@ -351,6 +374,8 @@ export function MainWindowSurface({
         onSetOverlayMode,
         quietMode,
         onSetQuietMode,
+        voicePreferences,
+        onSetVoicePreferences,
       }}
       terminal={{
         available: isTauri(),

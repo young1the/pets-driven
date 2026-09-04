@@ -3,4 +3,5 @@ export const DEFAULT_PET_SPEECH = {
   attentionNeeded: "I need you.",
   taskStarted: "Working on it.",
   taskCompleted: "Done.",
+  taskFailed: "That did not work.",
 } as const;

@@ -131,6 +131,8 @@ export function SettingsSection(props: SettingsSectionProps) {
               overlayMode={props.overlayMode}
               petSourceDirectory={props.petSourceDirectory}
               quietMode={props.quietMode}
+              voicePreferences={props.voicePreferences}
+              onSetVoicePreferences={props.onSetVoicePreferences}
             />
           ) : category === "appearance" ? (
             <SettingsAppearancePanel />

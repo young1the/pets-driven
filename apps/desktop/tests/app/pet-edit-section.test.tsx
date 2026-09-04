@@ -15,6 +15,8 @@ const pet = {
   personalityId: "steady" as PetPersonalityId,
   swapRunningDirections: false,
   agentProvider: null,
+  voicePitch: 1.4,
+  voiceMuted: false,
 };
 
 function setup(overrides = {}) {
@@ -25,6 +27,9 @@ function setup(overrides = {}) {
     onPersonalityId: vi.fn(),
     onAgentProvider: vi.fn(),
     onSwapRunningDirections: vi.fn(),
+    onVoicePitch: vi.fn(),
+    onVoiceMuted: vi.fn(),
+    onPreviewVoice: vi.fn(),
     onPickFolder: vi.fn(),
     onOpenFolder: vi.fn(),
     onClearFolder: vi.fn(),
@@ -59,6 +64,21 @@ describe("PetEditSection", () => {
       target: { value: "watch auth" },
     });
     expect(onNote).toHaveBeenCalledWith("watch auth");
+  });
+
+  it("previews and updates this pet's voice", () => {
+    const onVoicePitch = vi.fn();
+    const onVoiceMuted = vi.fn();
+    const onPreviewVoice = vi.fn();
+    setup({ onVoicePitch, onVoiceMuted, onPreviewVoice });
+
+    fireEvent.change(screen.getByLabelText("Pitch"), { target: { value: "1.6" } });
+    fireEvent.click(screen.getByLabelText("Mute this pet"));
+    fireEvent.click(screen.getByRole("button", { name: "Preview voice" }));
+
+    expect(onVoicePitch).toHaveBeenCalledWith(1.6);
+    expect(onVoiceMuted).toHaveBeenCalledWith(true);
+    expect(onPreviewVoice).toHaveBeenCalled();
   });
 
   it("changes the personality", () => {

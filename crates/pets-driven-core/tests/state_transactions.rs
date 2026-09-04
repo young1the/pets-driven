@@ -73,6 +73,8 @@ fn blank_patch() -> PetPatch {
         note: None,
         scale: None,
         swap_running_directions: None,
+        voice_pitch: None,
+        voice_muted: None,
         agent_provider: Patch::Keep,
         working_directory: Patch::Keep,
     }

@@ -137,6 +137,10 @@ pub struct PetPatch {
     /// Pet Asset whose spritesheet draws left/right the opposite way round from
     /// the atlas, which would otherwise run backwards on this pet.
     pub swap_running_directions: Option<bool>,
+    /// Stable base pitch for audible Animalese voice playback.
+    pub voice_pitch: Option<f64>,
+    /// Whether this pet alone is excluded from audible voice playback.
+    pub voice_muted: Option<bool>,
     /// The Agent Source the pet's session opens: [`Patch::Keep`] leaves the
     /// current choice, [`Patch::Clear`] unsets it (the pet falls back to the
     /// app-wide launch command), and [`Patch::Set`] pins it to that provider.
@@ -180,6 +184,8 @@ impl PetPatch {
             swap_running_directions: payload
                 .get("swapRunningDirections")
                 .and_then(|value| value.as_bool()),
+            voice_pitch: payload.get("voicePitch").and_then(|value| value.as_f64()),
+            voice_muted: payload.get("voiceMuted").and_then(|value| value.as_bool()),
             agent_provider: parse_string_patch(payload, "agentProvider")?,
             working_directory,
         };

@@ -33,6 +33,7 @@ function makeStore(status?: "working" | "waiting" | "completed" | "failed") {
           attentionNeeded: "look",
           taskStarted: "working",
           taskCompleted: "done",
+          taskFailed: "failed",
         },
         { type: "ActivityState", lastActiveAt: 0 },
         ...(status ? [{ type: "AgentTaskState" as const, status, since: 0 }] : []),

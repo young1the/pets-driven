@@ -20,6 +20,8 @@ const pet = {
   personalityId: "steady" as PetPersonalityId,
   swapRunningDirections: false,
   agentProvider: null,
+  voicePitch: 1.4,
+  voiceMuted: false,
 };
 
 const assetOptions: CodexPetPackage[] = [
@@ -37,6 +39,9 @@ function setup(overrides: Record<string, unknown> = {}) {
     onPersonalityId: vi.fn(),
     onAgentProvider: vi.fn(),
     onSwapRunningDirections: vi.fn(),
+    onVoicePitch: vi.fn(),
+    onVoiceMuted: vi.fn(),
+    onPreviewVoice: vi.fn(),
     onPickFolder: vi.fn(),
     onOpenFolder: vi.fn(),
     onClearFolder: vi.fn(),

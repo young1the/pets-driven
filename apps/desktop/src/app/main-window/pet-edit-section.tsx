@@ -16,6 +16,10 @@ import {
   resolveRunningDirection,
 } from "@pets-driven/pet-engine/pets/assets/pet-atlas";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import {
+  PET_VOICE_PITCH_MAX,
+  PET_VOICE_PITCH_MIN,
+} from "@pets-driven/pet-engine/pets/profiles/pet-voice";
 import { useState } from "react";
 import type { CodexPetPackage } from "@/app/desktop-gateway";
 import { AnimatedPetPortrait } from "@/app/main-window/pet-portrait";
@@ -37,6 +41,8 @@ export interface PetEditView {
   swapRunningDirections: boolean;
   /** The agent this pet's session opens; null follows the app-wide setting. */
   agentProvider: PetAgentProvider | null;
+  voicePitch: number;
+  voiceMuted: boolean;
 }
 
 /** "Follow the app-wide launch command" first, then one pill per agent. */
@@ -67,6 +73,9 @@ export interface PetEditSectionProps {
    * spritesheet that draws left/right the opposite way round from the atlas.
    */
   onSwapRunningDirections: (value: boolean) => void;
+  onVoicePitch: (value: number) => void;
+  onVoiceMuted: (value: boolean) => void;
+  onPreviewVoice: () => void;
   onPickFolder: () => void;
   /** Reveal the pet's bound working folder in the OS file manager. */
   onOpenFolder: () => void;
@@ -106,6 +115,9 @@ export function PetEditSection({
   onPersonalityId,
   onAgentProvider,
   onSwapRunningDirections,
+  onVoicePitch,
+  onVoiceMuted,
+  onPreviewVoice,
   onPickFolder,
   onOpenFolder,
   onClearFolder,
@@ -439,6 +451,63 @@ export function PetEditSection({
                   );
                 })}
               </div>
+            </div>
+
+            <div style={{ marginTop: "18px" }}>
+              <span style={fieldLabelStyle}>{t("edit.voice")}</span>
+              <Checkbox
+                checked={pet.voiceMuted}
+                label={t("edit.voiceMuted")}
+                onChange={(event) => onVoiceMuted(event.target.checked)}
+              />
+              <label style={{ display: "block", marginTop: "12px" }}>
+                <span
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    color: "var(--text-muted)",
+                    fontSize: "12.5px",
+                    marginBottom: "6px",
+                  }}
+                >
+                  <span>{t("edit.voicePitch")}</span>
+                  <span>{pet.voicePitch.toFixed(2)}×</span>
+                </span>
+                <input
+                  aria-label={t("edit.voicePitch")}
+                  max={PET_VOICE_PITCH_MAX}
+                  min={PET_VOICE_PITCH_MIN}
+                  onChange={(event) => onVoicePitch(Number(event.target.value))}
+                  step="0.01"
+                  style={{ width: "100%" }}
+                  type="range"
+                  value={pet.voicePitch}
+                />
+              </label>
+              <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                <Button onClick={onPreviewVoice} size="sm" variant="neutral">
+                  {t("edit.voicePreview")}
+                </Button>
+                <Button
+                  onClick={() =>
+                    onVoicePitch(
+                      Number(
+                        (
+                          PET_VOICE_PITCH_MIN +
+                          Math.random() * (PET_VOICE_PITCH_MAX - PET_VOICE_PITCH_MIN)
+                        ).toFixed(2),
+                      ),
+                    )
+                  }
+                  size="sm"
+                  variant="neutral"
+                >
+                  {t("edit.voiceRandomize")}
+                </Button>
+              </div>
+              <p style={{ margin: "7px 0 0", fontSize: "12.5px", color: "var(--text-muted)" }}>
+                {t("edit.voiceHint")}
+              </p>
             </div>
 
             <div

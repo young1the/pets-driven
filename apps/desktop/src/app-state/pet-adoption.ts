@@ -1,5 +1,6 @@
 import type { PetPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet-profile";
+import { defaultPitchForPet } from "@pets-driven/pet-engine/pets/profiles/pet-voice";
 import {
   normalizeWorkingDirectoryPath,
   type PetRecord,
@@ -41,6 +42,7 @@ export function adoptPet(state: PetsDrivenState, input: AdoptPetInput): PetsDriv
         petAssetId: input.assetId,
         personalityId: input.personalityId,
         personality: input.personality,
+        voice: { pitch: defaultPitchForPet(input.id), muted: false },
       },
     ],
   };

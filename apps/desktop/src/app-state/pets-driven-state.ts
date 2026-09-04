@@ -60,7 +60,11 @@ export type PetRecord = {
  */
 export type PetPatch = Partial<
   Pick<PetRecord, "name" | "note" | "archived" | "scale" | "swapRunningDirections">
-> & { agentProvider?: PetAgentProvider | null };
+> & {
+  agentProvider?: PetAgentProvider | null;
+  voicePitch?: number;
+  voiceMuted?: boolean;
+};
 
 export type PetsDrivenState = {
   schemaVersion: 1;

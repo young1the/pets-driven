@@ -115,26 +115,10 @@ function toAgentEventType(hookEventName: ClaudeHookEventName): AgentEvent["type"
   return "task.started";
 }
 
-function summaryForHook(hook: ClaudeHookPayload): string {
-  const explicitSummary = firstNonEmpty(hook.summary, hook.message, hook.prompt);
-  if (explicitSummary) return explicitSummary;
-
-  switch (hook.hook_event_name) {
-    case "UserPromptSubmit":
-      return "New prompt received";
-    case "PermissionRequest":
-      return "Permission required";
-    case "Notification":
-      return "Needs attention";
-    case "PostToolUseFailure":
-    case "StopFailure":
-      return "Task failed";
-    case "Stop":
-    case "TaskCompleted":
-      return "Task completed";
-    default:
-      return "Working";
-  }
+function summaryForHook(hook: ClaudeHookPayload): string | undefined {
+  // Only provider-owned detail belongs in summary. Lifecycle fallback copy is
+  // selected from the pet's personality by the engine instead.
+  return firstNonEmpty(hook.summary, hook.message, hook.prompt) || undefined;
 }
 
 function firstNonEmpty(...values: Array<string | undefined>): string {

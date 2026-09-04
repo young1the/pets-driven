@@ -729,6 +729,60 @@ describe("pet window product route", () => {
     });
   });
 
+  it("persists a per-pet voice toggle from the context menu", async () => {
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-context-menu-pet-a",
+          pointerId: 0,
+          kind: "menu.voice-toggle",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("update_pet_record", {
+        input: { petId: "pet-a", voiceMuted: true },
+      });
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 2,
+          petId: "pet-a",
+          windowLabel: "pet-window-pet-a",
+          pointerId: 0,
+          kind: "body.contextmenu",
+          localPoint: { x: 96, y: 112 },
+          screenPoint: { x: 400, y: 300 },
+          button: 2,
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
+        petId: "pet-a",
+        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=&voiceMuted=1",
+        localX: 400,
+        localY: 300,
+      });
+    });
+  });
+
   it("does not persist the state blob when pets are shown", async () => {
     render(<PetsDrivenApp />);
 

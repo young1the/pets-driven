@@ -19,6 +19,9 @@ const edit = {
   onPersonalityId: vi.fn(),
   onAgentProvider: vi.fn(),
   onSwapRunningDirections: vi.fn(),
+  onVoicePitch: vi.fn(),
+  onVoiceMuted: vi.fn(),
+  onPreviewVoice: vi.fn(),
   onPickFolder: vi.fn(),
   onOpenFolder: vi.fn(),
   onClearFolder: vi.fn(),
@@ -84,6 +87,8 @@ const settings = {
   onSetOverlayMode: vi.fn(),
   quietMode: "off" as const,
   onSetQuietMode: vi.fn(),
+  voicePreferences: { muted: false, volume: 0.7 },
+  onSetVoicePreferences: vi.fn(),
 };
 const place = {
   counts: { treats: 0, props: 0 },
@@ -150,6 +155,8 @@ describe("MainWindow", () => {
         gradient: { from: "#8B7FE8", to: "#6F5FD6" },
         folder: "core",
         note: "",
+        voicePitch: 1.4,
+        voiceMuted: false,
       },
     });
     expect(screen.getByDisplayValue("Otto")).toBeInTheDocument();

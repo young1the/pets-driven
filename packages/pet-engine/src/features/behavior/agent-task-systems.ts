@@ -94,7 +94,7 @@ export function runAgentTaskEventSystem(
             id,
             "working",
             event,
-            event.summary ?? resolveSpeechVariant(speechProfile.taskStarted, random),
+            resolveSpeechVariant(speechProfile.taskStarted, random),
             now,
           );
           applyTaskMovementHold(components, id, "working", event.at);
@@ -134,7 +134,7 @@ export function runAgentTaskEventSystem(
             id,
             "waiting",
             event,
-            event.summary ?? resolveSpeechVariant(speechProfile.attentionNeeded, random),
+            resolveSpeechVariant(speechProfile.attentionNeeded, random),
             now,
           );
           applyTaskMovementHold(components, id, "waiting", event.at);
@@ -143,7 +143,14 @@ export function runAgentTaskEventSystem(
         }
 
         if (event.type === "task.failed") {
-          setAgentTaskState(components, id, "failed", event, event.summary ?? "Task failed", now);
+          setAgentTaskState(
+            components,
+            id,
+            "failed",
+            event,
+            resolveSpeechVariant(speechProfile.taskFailed, random),
+            now,
+          );
           applyTaskMovementHold(components, id, "failed", event.at);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.failed");
@@ -156,7 +163,7 @@ export function runAgentTaskEventSystem(
             id,
             "completed",
             event,
-            event.summary ?? resolveSpeechVariant(speechProfile.taskCompleted, random),
+            resolveSpeechVariant(speechProfile.taskCompleted, random),
             now,
           );
           applyTaskMovementHold(components, id, "completed", event.at);

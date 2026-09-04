@@ -51,18 +51,32 @@ describe("agent event adapters", () => {
   });
 
   it.each([
-    ["UserPromptSubmit", "task.started", "New prompt received"],
-    ["PermissionRequest", "task.waiting", "Permission required"],
-    ["Notification", "task.waiting", "Needs attention"],
-    ["StopFailure", "task.failed", "Task failed"],
-    ["Stop", "task.completed", "Task completed"],
-  ] as const)("maps Claude %s through its adapter", (hookEventName, type, summary) => {
+    ["UserPromptSubmit", "task.started"],
+    ["PermissionRequest", "task.waiting"],
+    ["Notification", "task.waiting"],
+    ["StopFailure", "task.failed"],
+    ["Stop", "task.completed"],
+  ] as const)("maps Claude %s through its adapter", (hookEventName, type) => {
     expect(
       createAgentEventFromClaudeHook(
         { hook_event_name: hookEventName },
         { defaultSourceId: "agent-a", now: 10 },
       ),
-    ).toEqual({ type, sourceId: "agent-a", at: 10, summary });
+    ).toEqual({ type, sourceId: "agent-a", at: 10, summary: undefined });
+  });
+
+  it("preserves a provider summary as non-dialogue task detail", () => {
+    expect(
+      createAgentEventFromClaudeHook(
+        { hook_event_name: "Stop", summary: "Fixed the flaky test" },
+        { defaultSourceId: "agent-a", now: 10 },
+      ),
+    ).toEqual({
+      type: "task.completed",
+      sourceId: "agent-a",
+      at: 10,
+      summary: "Fixed the flaky test",
+    });
   });
 
   it("keeps Claude and Codex payload contracts behind separate adapters", () => {
@@ -103,7 +117,7 @@ describe("agent event adapters", () => {
       type: "task.waiting",
       sourceId: "thread-1",
       at: 10,
-      summary: "Permission required",
+      summary: undefined,
     });
   });
 

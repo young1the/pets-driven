@@ -598,6 +598,7 @@ describe("demo scenario", () => {
       attentionNeeded: "petSpeech.playful.attention",
       taskStarted: "petSpeech.playful.started",
       taskCompleted: "petSpeech.playful.completed",
+      taskFailed: "petSpeech.playful.ackFailed",
     });
     expect(scenario.world.getComponent("pet-a", "IdleConversation")).toEqual({
       type: "IdleConversation",
@@ -1287,7 +1288,7 @@ describe("demo scenario", () => {
     expect(scenario.world.getComponent("pet-a", "AgentChannelState")).toMatchObject({
       type: "AgentChannelState",
       status: "completed",
-      message: "Done",
+      message: expect.stringMatching(/^petSpeech\.playful\.completed\.[0-7]$/),
       expiresAt: null,
     });
     expect(scenario.world.getComponent("pet-a", "MotionTarget")).toEqual({
@@ -1340,7 +1341,9 @@ describe("demo scenario", () => {
     });
     scenario.world.step(16);
 
-    expect(scenario.world.getComponent("pet-a", "AgentChannelState")?.message).toBe("Running");
+    expect(scenario.world.getComponent("pet-a", "AgentChannelState")?.message).toMatch(
+      /^petSpeech\.playful\.started\.[0-7]$/,
+    );
 
     scenario.clock.advanceBy(3_001);
     scenario.world.step(16);
@@ -1658,6 +1661,7 @@ describe("adopted pets scenario", () => {
       attentionNeeded: "petSpeech.reserved.attention",
       taskStarted: "petSpeech.reserved.started",
       taskCompleted: "petSpeech.reserved.completed",
+      taskFailed: "petSpeech.reserved.ackFailed",
     });
   });
 

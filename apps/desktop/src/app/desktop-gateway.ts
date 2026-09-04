@@ -143,6 +143,10 @@ export type DesktopGateway = {
     scale?: number;
     /** Trade the pet's two directional running rows for one another. */
     swapRunningDirections?: boolean;
+    /** Stable base pitch for this pet's Animalese voice. */
+    voicePitch?: number;
+    /** Silence this pet without changing the app-wide voice switch. */
+    voiceMuted?: boolean;
     /** The agent this pet's session opens; null unsets it. */
     agentProvider?: PetAgentProvider | null;
     /** A path re-binds the pet to that folder, null detaches it. */
@@ -190,6 +194,8 @@ export type DesktopGateway = {
     gameSpawn?: "auto" | "tool-use",
     /** The agent currently pinned to this pet. Absent means the app default. */
     agentProvider?: PetAgentProvider,
+    /** Whether this pet's durable voice switch is currently off. */
+    voiceMuted?: boolean,
   ): Promise<void>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
@@ -459,7 +465,7 @@ export const desktopGateway: DesktopGateway = {
     await invoke("close_adopted_pet_window", { petId });
   },
 
-  async openPetContextMenu(petId, petName, note, x, y, gameSpawn, agentProvider) {
+  async openPetContextMenu(petId, petName, note, x, y, gameSpawn, agentProvider, voiceMuted) {
     if (!isTauri()) {
       return;
     }
@@ -470,7 +476,8 @@ export const desktopGateway: DesktopGateway = {
     // it there is no way to tell from the menu that anything is running.
     const game = gameSpawn ? `&game=${gameSpawn}` : "";
     const agent = agentProvider ? `&agent=${agentProvider}` : "";
-    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}${game}${agent}`;
+    const muted = voiceMuted ? "&voiceMuted=1" : "";
+    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}${game}${agent}${muted}`;
     await invoke("open_pet_context_menu", { petId, url, localX: x, localY: y });
   },
 

@@ -178,6 +178,7 @@ export type PetWindowInputKind =
   | "menu.pick-folder"
   | "menu.note-save"
   | "menu.settings-save"
+  | "menu.voice-toggle"
   | "menu.start-session"
   | "menu.find-terminal"
   | "menu.unbind"

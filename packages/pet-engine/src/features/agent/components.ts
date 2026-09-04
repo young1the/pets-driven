@@ -115,6 +115,7 @@ export type SpeechProfileComponent = {
   attentionNeeded: string;
   taskStarted: string | null;
   taskCompleted: string | null;
+  taskFailed: string | null;
 };
 
 /** Runtime capability that triggers speech after the entity has been idle. */

@@ -61,6 +61,8 @@ function setupProps(overrides = {}) {
     onSetOverlayMode: vi.fn(),
     quietMode: "off" as const,
     onSetQuietMode: vi.fn(),
+    voicePreferences: { muted: false, volume: 0.7 },
+    onSetVoicePreferences: vi.fn(),
     ...overrides,
   };
 }
@@ -284,6 +286,19 @@ describe("SettingsSection pets", () => {
 
     fireEvent.click(screen.getByText("Still"));
     expect(onSetQuietMode).toHaveBeenCalledWith("still");
+  });
+
+  it("controls every pet voice from the Pets settings", () => {
+    const onSetVoicePreferences = vi.fn();
+    setup("pets", { onSetVoicePreferences });
+
+    fireEvent.click(screen.getByLabelText("Mute all pet voices"));
+    fireEvent.change(screen.getByLabelText("Master volume"), {
+      target: { value: "0.35" },
+    });
+
+    expect(onSetVoicePreferences).toHaveBeenCalledWith({ muted: true });
+    expect(onSetVoicePreferences).toHaveBeenCalledWith({ volume: 0.35 });
   });
 
   it("explains the level the pets are actually on", () => {

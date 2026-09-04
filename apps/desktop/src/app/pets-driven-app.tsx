@@ -17,6 +17,8 @@ import { useQuietMode } from "@/app/quiet-mode";
 import { pushSearchParams } from "@/app/spa-navigation";
 import { useAgentPlugin } from "@/app/use-agent-plugin";
 import { useTrayLabels } from "@/app/use-tray-labels";
+import { usePetVoicePreferences } from "@/app/voice/pet-voice-preferences";
+import { usePetVoiceCoordinator } from "@/app/voice/use-pet-voice-coordinator";
 import {
   carryOverPetVisibility,
   createEmptyPetsDrivenState,
@@ -90,6 +92,12 @@ function PetsDrivenHostApp() {
   // The tray outlives this window being visible, so it is labelled from the one
   // window that always exists rather than from a surface that can be closed.
   useTrayLabels();
+  const petVoicePreferences = usePetVoicePreferences();
+  const petVoice = usePetVoiceCoordinator({
+    stateRef: petsDrivenStateRef,
+    translate: (key) => t(key),
+    preferences: petVoicePreferences.preferences,
+  });
 
   function applyPetsDrivenState(next: PetsDrivenState) {
     petsDrivenStateRef.current = next;
@@ -173,6 +181,8 @@ function PetsDrivenHostApp() {
     pickFolderForPet,
     overlayMode,
     quietMode,
+    onWorldSnapshot: petVoice.onWorldSnapshot,
+    onStopPetVoice: petVoice.stopPet,
   });
 
   // The backend owns the hatch write; when it signals a state change, reload
@@ -312,12 +322,17 @@ function PetsDrivenHostApp() {
       onResetAllSettings={() => {
         resetOverlayMode();
         resetQuietMode();
+        petVoicePreferences.reset();
         void resetAllSettings();
       }}
       onSetOverlayMode={setOverlayMode}
       overlayMode={overlayMode}
       onSetQuietMode={setQuietMode}
       quietMode={quietMode}
+      voicePreferences={petVoicePreferences.preferences}
+      onSetVoicePreferences={petVoicePreferences.update}
+      onPreviewPetVoice={petVoice.previewPet}
+      onStopPetVoice={petVoice.stopPet}
       onResetPetFolder={() => applyPetSourceFolder(null)}
       onRevealFolder={(path: string | null) => void revealFolder(path)}
       onResetPets={() => void resetPets()}

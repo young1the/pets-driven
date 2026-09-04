@@ -1,5 +1,6 @@
 import type { PetPersonality } from "@pets-driven/pet-engine/pets/personalities/factories";
 import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/personalities/registry";
+import type { PetVoiceSettings } from "@pets-driven/pet-engine/pets/profiles/pet-voice";
 
 export type { PetPersonalityId };
 
@@ -9,6 +10,8 @@ export type PetProfile = {
   /** Which preset the personality came from; lets management re-pick later. */
   personalityId?: PetPersonalityId;
   personality: PetPersonality;
+  /** Stable audible identity and the pet-level voice kill switch. */
+  voice?: PetVoiceSettings;
 };
 
 export function isPetProfile(value: unknown): value is PetProfile {

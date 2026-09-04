@@ -173,6 +173,10 @@ export function personalitySpeechProfile(
     attentionNeeded: baseSpeechKey(catalogId, "attention"),
     taskStarted: baseSpeechKey(catalogId, "started"),
     taskCompleted: baseSpeechKey(catalogId, "completed"),
+    // The existing failure acknowledgement pool is already personality-shaped
+    // and recovery-oriented. It is shared for the initial failure beat until a
+    // dedicated failure slot is added to every locale.
+    taskFailed: baseSpeechKey(catalogId, "ackFailed"),
   };
 }
 

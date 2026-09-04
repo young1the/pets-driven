@@ -30,6 +30,9 @@ export const PET_OVERLAY_MODE_STORAGE_KEY = "pd-overlay-mode";
 /** How much the pets may intrude: off, quiet, or still. */
 export const QUIET_MODE_STORAGE_KEY = "pd-quiet-mode";
 
+/** Device-local master switch and gain for audible pet voices. */
+export const PET_VOICE_STORAGE_KEY = "pd-pet-voice";
+
 const SETTINGS_STORAGE_KEYS = [
   LOCALE_STORAGE_KEY,
   THEME_MODE_STORAGE_KEY,
@@ -37,6 +40,7 @@ const SETTINGS_STORAGE_KEYS = [
   TERMINAL_ONBOARDING_DISMISSED_STORAGE_KEY,
   PET_OVERLAY_MODE_STORAGE_KEY,
   QUIET_MODE_STORAGE_KEY,
+  PET_VOICE_STORAGE_KEY,
 ] as const;
 
 /**

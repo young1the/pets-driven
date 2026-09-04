@@ -19,6 +19,7 @@ type PetContextMenuViewProps = {
    * the top menu, and picking a kind is not.
    */
   gameSpawn?: "auto" | "tool-use" | null;
+  voiceMuted?: boolean;
 };
 
 type MenuView = "menu" | "note" | "settings" | "game";
@@ -29,7 +30,7 @@ type MenuView = "menu" | "note" | "settings" | "game";
  * the content stopped fitting — a fifth item simply went missing off the
  * bottom. Bump these with the lists of buttons below.
  */
-const MENU_ITEM_COUNT = 6;
+const MENU_ITEM_COUNT = 7;
 /** One row: 8px padding, a 15px line box, 8px padding. */
 const MENU_ITEM_HEIGHT = 31;
 /** Margin, border, padding, the header (name, or the way back) and its divider. */
@@ -65,6 +66,7 @@ export function PetContextMenuView({
   note,
   agentProvider = null,
   gameSpawn = null,
+  voiceMuted = false,
 }: PetContextMenuViewProps) {
   const { t } = useTranslation("desktop");
   const [view, setView] = useState<MenuView>("menu");
@@ -500,6 +502,31 @@ export function PetContextMenuView({
               ›
             </span>
           )}
+        </button>
+        <button
+          className="pet-context-menu-card__item pet-context-menu-card__item--voice"
+          role="menuitem"
+          type="button"
+          onClick={() => {
+            emitSignal("menu.voice-toggle");
+            closeWindow();
+          }}
+        >
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="15"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="15"
+          >
+            <path d="M11 5 6 9H2v6h4l5 4Z" />
+            {voiceMuted ? <path d="m22 9-6 6m0-6 6 6" /> : <path d="M15 9a5 5 0 0 1 0 6" />}
+          </svg>
+          {voiceMuted ? t("contextMenu.unmuteVoice") : t("contextMenu.muteVoice")}
         </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--close"

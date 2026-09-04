@@ -75,6 +75,7 @@ describe("idle chatter under Quiet Mode", () => {
         attentionNeeded: "attention",
         taskStarted: "started",
         taskCompleted: "completed",
+        taskFailed: "failed",
       },
       { type: "ActivityState", lastActiveAt: 0 },
     ];

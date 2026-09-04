@@ -34,6 +34,7 @@ describe("Personality Catalog voice profiles", () => {
       attentionNeeded: "petSpeech.mischievous.attention",
       taskStarted: "petSpeech.mischievous.started",
       taskCompleted: "petSpeech.mischievous.completed",
+      taskFailed: "petSpeech.mischievous.ackFailed",
     });
   });
 

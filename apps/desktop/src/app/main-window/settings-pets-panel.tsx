@@ -1,4 +1,4 @@
-import { ExternalLinkIcon, FolderIcon } from "@pets-driven/design-system";
+import { Checkbox, ExternalLinkIcon, FolderIcon } from "@pets-driven/design-system";
 import { useTranslation } from "@pets-driven/i18n";
 import {
   connectionCard,
@@ -12,6 +12,7 @@ import {
 } from "@/app/main-window/settings-section.styles";
 import type { PetOverlayMode } from "@/app/pet-overlay-mode";
 import type { QuietMode } from "@/app/quiet-mode";
+import type { PetVoicePreferences } from "@/app/voice/pet-voice-preferences";
 
 export interface SettingsPetsPanelProps {
   /** The single folder scanned for pet packs; null = no folder designated. */
@@ -30,6 +31,8 @@ export interface SettingsPetsPanelProps {
   /** How much the pets may intrude: off, quiet (no chatter), still (no moving). */
   quietMode: QuietMode;
   onSetQuietMode: (mode: QuietMode) => void;
+  voicePreferences: PetVoicePreferences;
+  onSetVoicePreferences: (patch: Partial<PetVoicePreferences>) => void;
 }
 
 /** The level's own explanation, in the same shape the window-mode rows use. */
@@ -55,6 +58,8 @@ export function SettingsPetsPanel({
   onSetOverlayMode,
   quietMode,
   onSetQuietMode,
+  voicePreferences,
+  onSetVoicePreferences,
 }: SettingsPetsPanelProps) {
   const { t } = useTranslation("desktop");
 
@@ -144,7 +149,7 @@ export function SettingsPetsPanel({
           first what they say, then where they go — so the user can settle a
           busy desktop without hiding the pets and losing the work they
           report. */}
-      <div style={rowStyle(true)}>
+      <div style={rowStyle()}>
         <span style={label}>{t("settings.quietMode")}</span>
         <p style={hint}>{t(`settings.quietMode${QUIET_MODE_DESC_KEY[quietMode]}Desc`)}</p>
         <div style={segWrap}>
@@ -170,6 +175,40 @@ export function SettingsPetsPanel({
             {t("settings.quietModeStill")}
           </button>
         </div>
+      </div>
+
+      <div style={rowStyle(true)}>
+        <span style={label}>{t("settings.petVoice")}</span>
+        <p style={hint}>{t("settings.petVoiceDesc")}</p>
+        <Checkbox
+          checked={voicePreferences.muted}
+          label={t("settings.petVoiceMuted")}
+          onChange={(event) => onSetVoicePreferences({ muted: event.target.checked })}
+        />
+        <label style={{ display: "block", marginTop: "12px" }}>
+          <span
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              color: "var(--text-muted)",
+              fontSize: "12.5px",
+              marginBottom: "6px",
+            }}
+          >
+            <span>{t("settings.petVoiceVolume")}</span>
+            <span>{Math.round(voicePreferences.volume * 100)}%</span>
+          </span>
+          <input
+            aria-label={t("settings.petVoiceVolume")}
+            max="1"
+            min="0"
+            onChange={(event) => onSetVoicePreferences({ volume: Number(event.target.value) })}
+            step="0.01"
+            style={{ width: "100%" }}
+            type="range"
+            value={voicePreferences.volume}
+          />
+        </label>
       </div>
     </>
   );
