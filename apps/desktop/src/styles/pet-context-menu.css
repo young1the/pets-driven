@@ -41,14 +41,64 @@ html.pet-context-menu-fixture-preview body {
 }
 
 .pet-context-menu-card__header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding: 6px 8px 7px;
 }
 
 .pet-context-menu-card__name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 13px;
   color: var(--text-strong);
+}
+
+.pet-context-menu-card__header-actions {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.pet-context-menu-card__header-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.pet-context-menu-card__header-action--settings:hover,
+.pet-context-menu-card__header-action--settings:focus-visible {
+  outline: none;
+  background: var(--blossom-50, #fff1fb);
+  color: var(--blossom-700, #9d2f7e);
+}
+
+.pet-context-menu-card__header-action--voice:hover,
+.pet-context-menu-card__header-action--voice:focus-visible {
+  outline: none;
+  background: var(--sky-50, #f0f8ff);
+  color: var(--sky-700, #1d6fae);
+}
+
+.pet-context-menu-card__header-action--muted {
+  background: var(--coral-50, #fff5f5);
+  color: var(--coral-600, #dc3f3f);
 }
 
 /* The way back out of a sub-view, wearing the header's slot so a step down
@@ -129,7 +179,7 @@ html.pet-context-menu-fixture-preview body {
 
 .pet-context-menu-settings__body {
   flex: 1;
-  padding: 5px 8px 2px;
+  padding: 3px 8px 1px;
 }
 
 .pet-context-menu-settings__field {
@@ -168,18 +218,18 @@ html.pet-context-menu-fixture-preview body {
 
 .pet-context-menu-settings__agents {
   padding: 0;
-  margin: 11px 0 0;
+  margin: 8px 0 0;
   border: 0;
 }
 
 .pet-context-menu-settings__agent-options {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .pet-context-menu-settings__agent {
   width: 100%;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border: 1px solid var(--border-default);
   border-radius: 8px;
   background: transparent;
@@ -208,17 +258,21 @@ html.pet-context-menu-fixture-preview body {
   background: var(--color-primary);
 }
 
-.pet-context-menu-settings__folder {
+.pet-context-menu-settings__folder-field {
   margin-top: 7px;
+}
+
+.pet-context-menu-card__item.pet-context-menu-settings__folder {
   padding: 4px 8px;
   border: 1px solid var(--border-default);
+  color: var(--text-strong);
 }
 
 .pet-context-menu-settings__actions {
   display: flex;
   justify-content: flex-end;
   gap: 4px;
-  padding: 3px 7px 7px;
+  padding: 2px 7px 5px;
 }
 
 /* A choice, not a command: two lines, and it shares what is left of the card
@@ -250,16 +304,6 @@ html.pet-context-menu-fixture-preview body {
 
 .pet-context-menu-card__item--note {
   color: var(--lavender-700, #5b4ecb);
-}
-
-.pet-context-menu-card__item--settings {
-  color: var(--blossom-700, #9d2f7e);
-}
-
-.pet-context-menu-card__item--settings:hover,
-.pet-context-menu-card__item--settings:focus-visible {
-  outline: none;
-  background: var(--blossom-50, #fff1fb);
 }
 
 .pet-context-menu-card__item--note:hover,

@@ -49,10 +49,10 @@ describe("the pet context menu", () => {
     sendInput = vi.spyOn(petWindowTransport, "sendInput").mockResolvedValue(undefined);
   });
 
-  it("opens the pet-only settings behind one top-level row", () => {
+  it("opens the pet-only settings from the header action", () => {
     renderMenu();
 
-    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Pet settings" }));
 
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Scout");
     expect(screen.getByRole("radio", { name: "Default" })).toHaveAttribute("aria-checked", "true");
@@ -61,7 +61,7 @@ describe("the pet context menu", () => {
 
   it("saves a changed name and agent together", () => {
     renderMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Pet settings" }));
 
     fireEvent.change(screen.getByRole("textbox", { name: "Name" }), {
       target: { value: "  Nova  " },
@@ -80,8 +80,11 @@ describe("the pet context menu", () => {
 
   it("offers folder selection inside pet settings", () => {
     renderMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+    expect(screen.queryByRole("menuitem", { name: "Choose folder" })).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "Pet settings" }));
+
+    expect(screen.getByText("Working folder")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Choose folder" }));
 
     expect(emittedKinds(sendInput)).toEqual(["menu.pick-folder"]);
@@ -89,7 +92,7 @@ describe("the pet context menu", () => {
 
   it("can return a pinned agent to the app default", () => {
     renderMenu(null, "claude");
-    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Pet settings" }));
 
     expect(screen.getByRole("radio", { name: "Claude Code" })).toHaveAttribute(
       "aria-checked",
@@ -108,7 +111,7 @@ describe("the pet context menu", () => {
 
   it("does not save a blank pet name", () => {
     renderMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Pet settings" }));
 
     fireEvent.change(screen.getByRole("textbox", { name: "Name" }), {
       target: { value: "   " },
@@ -117,16 +120,17 @@ describe("the pet context menu", () => {
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
-  it("mutes and unmutes this pet without opening a submenu", () => {
+  it("mutes and unmutes this pet from the header action", () => {
     const { unmount } = renderMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: "Mute voice" }));
+    expect(screen.queryByRole("menuitem", { name: "Mute voice" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mute voice" }));
     expect(emittedKinds(sendInput)).toEqual(["menu.voice-toggle"]);
 
     unmount();
     render(
       <PetContextMenuView gameSpawn={null} note="" petId="pet-a" petName="Scout" voiceMuted />,
     );
-    expect(screen.getByRole("menuitem", { name: "Unmute voice" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unmute voice" })).toBeInTheDocument();
   });
 
   it("spends one row on the whole game feature, not two", () => {
@@ -181,7 +185,7 @@ describe("the pet context menu", () => {
     renderMenu();
     const onOpen = setWindowSize.mock.calls.at(-1);
 
-    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Pet settings" }));
 
     expect(setWindowSize.mock.calls.at(-1)).toEqual(onOpen);
   });
@@ -210,7 +214,7 @@ describe("the pet context menu", () => {
 
     // The menu is the only off switch there is, and one a step down is one the
     // user has to go looking for.
-    fireEvent.click(screen.getByRole("menuitem", { name: /Stop the round/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /End game mode/ }));
 
     expect(emittedKinds(sendInput)).toEqual(["menu.game-stop"]);
   });
@@ -218,7 +222,7 @@ describe("the pet context menu", () => {
   it("stops a round whichever kind it is", () => {
     renderMenu("tool-use");
 
-    fireEvent.click(screen.getByRole("menuitem", { name: /Stop the round/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /End game mode/ }));
 
     // One signal for both kinds: a stop that had to name the kind it was
     // stopping would switch the course instead of ending it.

@@ -549,7 +549,7 @@
     "gameWatchNote": "툴 호출 하나가 장애물 하나",
     "gamePractice": "연습 달리기",
     "gamePracticeNote": "일정한 리듬으로 직접 하는 판",
-    "gameStop": "라운드 끝내기"
+    "gameStop": "게임 모드 종료"
   },
   "petWindow": {
     "connectPrompt": "연결할 터미널 창을 클릭하세요",

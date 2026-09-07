@@ -549,7 +549,7 @@
     "gameWatchNote": "Its tool calls are the obstacles",
     "gamePractice": "Practice run",
     "gamePracticeNote": "A steady course you play yourself",
-    "gameStop": "Stop the round"
+    "gameStop": "End game mode"
   },
   "petWindow": {
     "connectPrompt": "Click the terminal window to connect",

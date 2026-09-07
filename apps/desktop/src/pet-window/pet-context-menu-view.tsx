@@ -25,12 +25,12 @@ type PetContextMenuViewProps = {
 type MenuView = "menu" | "note" | "settings" | "game";
 
 /**
- * The menu window is sized from its own row count rather than a measured
- * number, because the window is not resizable and nothing on screen says when
- * the content stopped fitting — a fifth item simply went missing off the
- * bottom. Bump these with the lists of buttons below.
+ * The menu window is sized from the tallest fixed menu view rather than a
+ * measured number, because the window is not resizable and nothing on screen
+ * says when content stopped fitting. Pet settings currently needs seven
+ * row-equivalents even though the top-level menu has fewer rows.
  */
-const MENU_ITEM_COUNT = 7;
+const MENU_ROW_CAPACITY = 7;
 /** One row: 8px padding, a 15px line box, 8px padding. */
 const MENU_ITEM_HEIGHT = 31;
 /** Margin, border, padding, the header (name, or the way back) and its divider. */
@@ -53,7 +53,7 @@ const MENU_CHROME_HEIGHT = 82;
  */
 export const MENU_WINDOW_SIZE = {
   width: 192,
-  height: MENU_CHROME_HEIGHT + MENU_ITEM_COUNT * MENU_ITEM_HEIGHT,
+  height: MENU_CHROME_HEIGHT + MENU_ROW_CAPACITY * MENU_ITEM_HEIGHT,
 };
 /** The card's own margin and border, top and bottom (see pet-context-menu.css). */
 const MENU_CARD_OUTSET = 14;
@@ -255,17 +255,20 @@ export function PetContextMenuView({
                 })}
               </div>
             </fieldset>
-            <button
-              className="pet-context-menu-card__item pet-context-menu-card__item--folder pet-context-menu-settings__folder"
-              type="button"
-              onClick={() => {
-                emitSignal("menu.pick-folder");
-                closeWindow();
-              }}
-            >
-              <FolderIcon />
-              {t("contextMenu.chooseFolder")}
-            </button>
+            <div className="pet-context-menu-settings__folder-field">
+              <span className="pet-context-menu-settings__label">{t("edit.workingFolder")}</span>
+              <button
+                className="pet-context-menu-card__item pet-context-menu-card__item--folder pet-context-menu-settings__folder"
+                type="button"
+                onClick={() => {
+                  emitSignal("menu.pick-folder");
+                  closeWindow();
+                }}
+              >
+                <FolderIcon />
+                {t("contextMenu.chooseFolder")}
+              </button>
+            </div>
           </div>
           <div className="pet-context-menu-settings__actions">
             <button
@@ -388,35 +391,35 @@ export function PetContextMenuView({
         role="menu"
       >
         <div className="pet-context-menu-card__header">
-          <span className="pet-context-menu-card__name">{petName}</span>
+          <span className="pet-context-menu-card__name" title={petName}>
+            {petName}
+          </span>
+          <div className="pet-context-menu-card__header-actions">
+            <button
+              aria-label={voiceMuted ? t("contextMenu.unmuteVoice") : t("contextMenu.muteVoice")}
+              className={`pet-context-menu-card__header-action pet-context-menu-card__header-action--voice${voiceMuted ? " pet-context-menu-card__header-action--muted" : ""}`}
+              onClick={() => {
+                emitSignal("menu.voice-toggle");
+                closeWindow();
+              }}
+              title={voiceMuted ? t("contextMenu.unmuteVoice") : t("contextMenu.muteVoice")}
+              type="button"
+            >
+              <VoiceIcon muted={voiceMuted} />
+            </button>
+            <button
+              aria-haspopup="dialog"
+              aria-label={t("contextMenu.petSettings")}
+              className="pet-context-menu-card__header-action pet-context-menu-card__header-action--settings"
+              onClick={() => setView("settings")}
+              title={t("contextMenu.petSettings")}
+              type="button"
+            >
+              <SettingsIcon />
+            </button>
+          </div>
         </div>
         <div className="pet-context-menu-card__divider" />
-        <button
-          aria-haspopup="dialog"
-          className="pet-context-menu-card__item pet-context-menu-card__item--settings"
-          role="menuitem"
-          type="button"
-          onClick={() => setView("settings")}
-        >
-          <svg
-            aria-hidden="true"
-            fill="none"
-            height="15"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            width="15"
-          >
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21a8 8 0 0 1 16 0" />
-          </svg>
-          {t("contextMenu.petSettings")}
-          <span aria-hidden="true" className="pet-context-menu-card__chevron">
-            ›
-          </span>
-        </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--note"
           role="menuitem"
@@ -438,18 +441,6 @@ export function PetContextMenuView({
             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
           {t("contextMenu.writeNote")}
-        </button>
-        <button
-          className="pet-context-menu-card__item pet-context-menu-card__item--folder"
-          role="menuitem"
-          type="button"
-          onClick={() => {
-            emitSignal("menu.pick-folder");
-            closeWindow();
-          }}
-        >
-          <FolderIcon />
-          {t("contextMenu.chooseFolder")}
         </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--terminal"
@@ -503,31 +494,6 @@ export function PetContextMenuView({
           )}
         </button>
         <button
-          className="pet-context-menu-card__item pet-context-menu-card__item--voice"
-          role="menuitem"
-          type="button"
-          onClick={() => {
-            emitSignal("menu.voice-toggle");
-            closeWindow();
-          }}
-        >
-          <svg
-            aria-hidden="true"
-            fill="none"
-            height="15"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            width="15"
-          >
-            <path d="M11 5 6 9H2v6h4l5 4Z" />
-            {voiceMuted ? <path d="m22 9-6 6m0-6 6 6" /> : <path d="M15 9a5 5 0 0 1 0 6" />}
-          </svg>
-          {voiceMuted ? t("contextMenu.unmuteVoice") : t("contextMenu.muteVoice")}
-        </button>
-        <button
           className="pet-context-menu-card__item pet-context-menu-card__item--close"
           role="menuitem"
           type="button"
@@ -571,6 +537,44 @@ function BackIcon() {
       width="14"
     >
       <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="15"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="15"
+    >
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function VoiceIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="15"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="15"
+    >
+      <path d="M11 5 6 9H2v6h4l5 4Z" />
+      {muted ? <path d="m22 9-6 6m0-6 6 6" /> : <path d="M15 9a5 5 0 0 1 0 6" />}
     </svg>
   );
 }

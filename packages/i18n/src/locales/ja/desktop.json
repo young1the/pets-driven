@@ -549,7 +549,7 @@
     "gameWatchNote": "ツール呼び出しが障害物になります",
     "gamePractice": "練習ラン",
     "gamePracticeNote": "一定のリズムを自分で走ります",
-    "gameStop": "ラウンドを終える"
+    "gameStop": "ゲームモードを終了"
   },
   "petWindow": {
     "connectPrompt": "つなぎたいターミナルの窓をクリックしてください",
