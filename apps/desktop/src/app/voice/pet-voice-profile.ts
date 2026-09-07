@@ -48,10 +48,10 @@ export function voiceProfileForPersonality(
     pitch: clamp(pitch, PET_VOICE_PITCH_MIN, PET_VOICE_PITCH_MAX),
     // animalese-tts uses a higher multiplier for faster speech. Calm, inward
     // pets therefore stay near the low end rather than receiving a high value.
-    speed: lerp(3, 4.6, energy),
-    randomness: lerp(0.16, 0.03, confidence) * lerp(0.85, 1.15, impulsiveness),
+    speed: lerp(2.6, 3.7, energy),
+    randomness: lerp(0.06, 0.015, confidence) * lerp(0.9, 1.1, impulsiveness),
     melodyRate: lerp(0.03, 0.08, energy),
-    melodyAmplitude: lerp(0.04, 0.14, playfulness),
+    melodyAmplitude: lerp(0.025, 0.075, playfulness),
     spaceDelay: lerp(0.08, 0.02, energy),
     punctuationDelay: lerp(0.42, 0.18, energy),
   };

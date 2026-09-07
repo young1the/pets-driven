@@ -28,4 +28,13 @@ describe("voiceProfileForPersonality", () => {
     expect(voiceProfileForPersonality(createSteadyPersonality(), 20).pitch).toBe(1.9);
     expect(voiceProfileForPersonality(createSteadyPersonality(), -20).pitch).toBe(0.9);
   });
+
+  it("keeps speed and pitch movement inside the smoother delivery range", () => {
+    const playful = voiceProfileForPersonality(createPlayfulPersonality(), 1.4);
+    const skittish = voiceProfileForPersonality(createSkittishPersonality(), 1.4);
+
+    expect(playful.speed).toBeLessThanOrEqual(3.7);
+    expect(skittish.randomness).toBeLessThanOrEqual(0.07);
+    expect(playful.melodyAmplitude).toBeLessThanOrEqual(0.08);
+  });
 });

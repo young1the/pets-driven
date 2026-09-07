@@ -84,6 +84,47 @@ function createAnalyzer(
   return createFallbackAnalyzer();
 }
 
+function createSmoothPitchEffect(
+  module: AnimaleseModule,
+  profile: PetVoiceSynthesisProfile,
+): import("animalese-tts").AudioEffect {
+  const effect = new module.PitchManager({
+    pitch: profile.pitch,
+    speed: profile.speed,
+    // Independent per-phoneme noise sounds stepped. Apply a correlated drift
+    // below while the library continues to own melody and resampling.
+    randomness: 0,
+    melodyRate: profile.melodyRate,
+    melodyAmplitude: profile.melodyAmplitude,
+  });
+  let drift = 0;
+
+  return {
+    pitch: profile.pitch,
+    speed: profile.speed,
+    randomness: profile.randomness,
+    calculatePitch(characterIndex) {
+      const target = (Math.random() - 0.5) * profile.randomness;
+      drift += (target - drift) * 0.28;
+      return effect.calculatePitch(characterIndex) + drift;
+    },
+    apply(buffer, pitchRatio) {
+      return effect.apply(buffer, pitchRatio);
+    },
+  };
+}
+
+function concatenateChunks(chunks: Float32Array[]): Float32Array {
+  const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  const utterance = new Float32Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    utterance.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return utterance;
+}
+
 async function loadSampler(
   module: AnimaleseModule,
   language: AnimaleseVoiceLanguage,
@@ -146,18 +187,13 @@ export class AnimaleseVoicePlayer {
     const engine = new module.AnimaleseEngine({
       analyzer: createAnalyzer(module, language, text),
       sampler,
-      effect: new module.PitchManager({
-        pitch: profile.pitch,
-        speed: profile.speed,
-        randomness: profile.randomness,
-        melodyRate: profile.melodyRate,
-        melodyAmplitude: profile.melodyAmplitude,
-      }),
+      effect: createSmoothPitchEffect(module, profile),
       spaceDelay: profile.spaceDelay,
       punctuationDelay: profile.punctuationDelay,
       punctuations: PUNCTUATIONS,
     });
 
+    const chunks: Float32Array[] = [];
     for await (const output of engine.synthesize(text).speak()) {
       if (generation !== this.generation) return;
       const buffer =
@@ -165,9 +201,16 @@ export class AnimaleseVoicePlayer {
           ? output.buffer
           : module.AudioConverter.int16ToFloat32(output.buffer);
       if (buffer.length > 0) {
-        await this.playChunk(buffer, sampler.sampleRate ?? DEFAULT_SAMPLE_RATE, generation);
+        chunks.push(buffer);
       }
     }
+
+    if (generation !== this.generation || chunks.length === 0) return;
+    await this.playChunk(
+      concatenateChunks(chunks),
+      sampler.sampleRate ?? DEFAULT_SAMPLE_RATE,
+      generation,
+    );
   }
 
   private async playChunk(
