@@ -6,26 +6,72 @@ describe("pet voice preferences", () => {
   beforeEach(() => window.localStorage.removeItem(PET_VOICE_STORAGE_KEY));
 
   it("defaults to audible speech at a comfortable volume", () => {
-    expect(readPetVoicePreferences()).toEqual({ muted: false, volume: 0.7 });
+    expect(readPetVoicePreferences()).toEqual({
+      muted: false,
+      volume: 0.7,
+      speakTaskStarted: false,
+      speakIdle: false,
+      speakSocial: false,
+    });
   });
 
   it("loads and clamps a versioned device-local preference", () => {
     window.localStorage.setItem(
       PET_VOICE_STORAGE_KEY,
-      JSON.stringify({ version: 1, muted: true, volume: 4 }),
+      JSON.stringify({
+        version: 2,
+        muted: true,
+        volume: 4,
+        speakTaskStarted: true,
+        speakIdle: true,
+        speakSocial: true,
+      }),
     );
 
-    expect(readPetVoicePreferences()).toEqual({ muted: true, volume: 1 });
+    expect(readPetVoicePreferences()).toEqual({
+      muted: true,
+      volume: 1,
+      speakTaskStarted: true,
+      speakIdle: true,
+      speakSocial: true,
+    });
+  });
+
+  it("migrates the first schema with optional speech categories disabled", () => {
+    window.localStorage.setItem(
+      PET_VOICE_STORAGE_KEY,
+      JSON.stringify({ version: 1, muted: true, volume: 0.4 }),
+    );
+
+    expect(readPetVoicePreferences()).toEqual({
+      muted: true,
+      volume: 0.4,
+      speakTaskStarted: false,
+      speakIdle: false,
+      speakSocial: false,
+    });
   });
 
   it("ignores malformed and unknown-version data", () => {
     window.localStorage.setItem(PET_VOICE_STORAGE_KEY, "not-json");
-    expect(readPetVoicePreferences()).toEqual({ muted: false, volume: 0.7 });
+    expect(readPetVoicePreferences()).toEqual({
+      muted: false,
+      volume: 0.7,
+      speakTaskStarted: false,
+      speakIdle: false,
+      speakSocial: false,
+    });
 
     window.localStorage.setItem(
       PET_VOICE_STORAGE_KEY,
-      JSON.stringify({ version: 2, muted: true, volume: 0 }),
+      JSON.stringify({ version: 3, muted: true, volume: 0 }),
     );
-    expect(readPetVoicePreferences()).toEqual({ muted: false, volume: 0.7 });
+    expect(readPetVoicePreferences()).toEqual({
+      muted: false,
+      volume: 0.7,
+      speakTaskStarted: false,
+      speakIdle: false,
+      speakSocial: false,
+    });
   });
 });

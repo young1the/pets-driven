@@ -200,15 +200,32 @@ export function SettingsPetsPanel({
           </span>
           <input
             aria-label={t("settings.petVoiceVolume")}
+            className="pd-themed-range"
             max="1"
             min="0"
             onChange={(event) => onSetVoicePreferences({ volume: Number(event.target.value) })}
             step="0.01"
-            style={{ width: "100%" }}
             type="range"
             value={voicePreferences.volume}
           />
         </label>
+        <div style={{ display: "grid", gap: "8px", marginTop: "14px" }}>
+          <Checkbox
+            checked={voicePreferences.speakTaskStarted}
+            label={t("settings.petVoiceTaskStarted")}
+            onChange={(event) => onSetVoicePreferences({ speakTaskStarted: event.target.checked })}
+          />
+          <Checkbox
+            checked={voicePreferences.speakIdle}
+            label={t("settings.petVoiceIdle")}
+            onChange={(event) => onSetVoicePreferences({ speakIdle: event.target.checked })}
+          />
+          <Checkbox
+            checked={voicePreferences.speakSocial}
+            label={t("settings.petVoiceSocial")}
+            onChange={(event) => onSetVoicePreferences({ speakSocial: event.target.checked })}
+          />
+        </div>
       </div>
     </>
   );

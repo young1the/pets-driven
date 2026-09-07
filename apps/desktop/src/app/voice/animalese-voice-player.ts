@@ -1,15 +1,32 @@
 import type { PetVoiceSynthesisProfile } from "@/app/voice/pet-voice-profile";
+import englishSprites from "@/assets/animalese/english-sprite.json";
+import englishSpriteUrl from "@/assets/animalese/english-sprite.wav?url";
+import japaneseSprites from "@/assets/animalese/japanese-sprite.json";
+import japaneseSpriteUrl from "@/assets/animalese/japanese-sprite.wav?url";
+import koreanSprites from "@/assets/animalese/korean-sprite.json";
+import koreanSpriteUrl from "@/assets/animalese/korean-sprite.wav?url";
 
-const SAMPLE_RATE = 22_050;
-const SAMPLE_DURATION_MS = 120;
-const PHONEMES = ["a", "e", "i", "o", "u", "ba", "da", "ga", "ka", "ma", "na", "pa"];
+const DEFAULT_SAMPLE_RATE = 22_050;
+const ENGLISH_PHONEMES = "abcdefghijklmnopqrstuvwxyz";
 const PUNCTUATIONS = [".", ",", "!", "?", "'", '"', "(", ")", "~", "。", "、", "！", "？"];
 
 type AnimaleseModule = typeof import("animalese-tts");
-type MemorySamplerInstance = InstanceType<AnimaleseModule["MemorySampler"]>;
+type WebSamplerInstance = InstanceType<AnimaleseModule["WebSampler"]>;
+export type AnimaleseVoiceLanguage = "english" | "japanese" | "korean";
+
+interface VoiceAssets {
+  url: string;
+  sprites: Record<string, { startMs: number; durationMs: number }>;
+}
+
+const VOICE_ASSETS: Record<AnimaleseVoiceLanguage, VoiceAssets> = {
+  english: { url: englishSpriteUrl, sprites: englishSprites },
+  japanese: { url: japaneseSpriteUrl, sprites: japaneseSprites },
+  korean: { url: koreanSpriteUrl, sprites: koreanSprites },
+};
 
 let animaleseModulePromise: Promise<AnimaleseModule> | null = null;
-let samplerPromise: Promise<MemorySamplerInstance> | null = null;
+const samplerPromises = new Map<AnimaleseVoiceLanguage, Promise<WebSamplerInstance>>();
 
 function loadAnimaleseModule(): Promise<AnimaleseModule> {
   // Voice is optional and most routes never use it. Keep the synthesis library
@@ -18,102 +35,79 @@ function loadAnimaleseModule(): Promise<AnimaleseModule> {
   return animaleseModulePromise;
 }
 
-function writeAscii(view: DataView, offset: number, text: string): void {
-  for (let index = 0; index < text.length; index += 1) {
-    view.setUint8(offset + index, text.charCodeAt(index));
-  }
+export function detectAnimaleseVoiceLanguage(text: string): AnimaleseVoiceLanguage {
+  if (/[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/u.test(text)) return "korean";
+  if (/[\u3040-\u30ff]/u.test(text)) return "japanese";
+  return "english";
 }
 
-/**
- * Build an original, deterministic voice sprite instead of shipping samples
- * whose provenance may be tied to another game. Each phoneme is a short,
- * softly enveloped harmonic chirp with a slightly different formant.
- */
-function createProceduralVoiceSprite(): {
-  wav: ArrayBuffer;
-  sprites: Record<string, { startMs: number; durationMs: number }>;
-} {
-  const samplesPerPhoneme = Math.round((SAMPLE_RATE * SAMPLE_DURATION_MS) / 1000);
-  const totalSamples = samplesPerPhoneme * PHONEMES.length;
-  const wav = new ArrayBuffer(44 + totalSamples * 2);
-  const view = new DataView(wav);
-
-  writeAscii(view, 0, "RIFF");
-  view.setUint32(4, 36 + totalSamples * 2, true);
-  writeAscii(view, 8, "WAVE");
-  writeAscii(view, 12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, SAMPLE_RATE, true);
-  view.setUint32(28, SAMPLE_RATE * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeAscii(view, 36, "data");
-  view.setUint32(40, totalSamples * 2, true);
-
-  const sprites: Record<string, { startMs: number; durationMs: number }> = {};
-  for (let phonemeIndex = 0; phonemeIndex < PHONEMES.length; phonemeIndex += 1) {
-    const phoneme = PHONEMES[phonemeIndex];
-    sprites[phoneme] = {
-      startMs: phonemeIndex * SAMPLE_DURATION_MS,
-      durationMs: SAMPLE_DURATION_MS,
-    };
-
-    const fundamental = 185 + phonemeIndex * 11;
-    const formant = 520 + (phonemeIndex % 5) * 115;
-    for (let localIndex = 0; localIndex < samplesPerPhoneme; localIndex += 1) {
-      const time = localIndex / SAMPLE_RATE;
-      const progress = localIndex / Math.max(1, samplesPerPhoneme - 1);
-      const envelope = Math.sin(Math.PI * progress) ** 1.35;
-      const chirp = fundamental * (1 + progress * 0.08);
-      const sample =
-        Math.sin(2 * Math.PI * chirp * time) * 0.56 +
-        Math.sin(2 * Math.PI * formant * time) * 0.24 +
-        Math.sin(2 * Math.PI * (formant * 1.7) * time) * 0.1;
-      const pcm = Math.round(Math.max(-1, Math.min(1, sample * envelope * 0.72)) * 32767);
-      const sampleIndex = phonemeIndex * samplesPerPhoneme + localIndex;
-      view.setInt16(44 + sampleIndex * 2, pcm, true);
-    }
-  }
-
-  return { wav, sprites };
-}
-
-function phonemeIndexForCharacter(character: string): number {
+function phonemeForUnsupportedCharacter(character: string): string {
   let hash = 0;
   for (let index = 0; index < character.length; index += 1) {
     hash = (hash * 31 + character.charCodeAt(index)) >>> 0;
   }
-  return hash % PHONEMES.length;
+  return ENGLISH_PHONEMES[hash % ENGLISH_PHONEMES.length];
 }
 
-function createUniversalAnalyzer(): import("animalese-tts").TextAnalyzer {
+function createFallbackAnalyzer(): import("animalese-tts").TextAnalyzer {
   return {
     analyze(text) {
-      return text.split("").map((character) => {
+      return Array.from(text).map((character) => {
         if (/\s/u.test(character)) {
           return [{ phoneme: " ", mergeWithNext: false }];
         }
         if (PUNCTUATIONS.includes(character)) {
           return [{ phoneme: character, mergeWithNext: false }];
         }
-        return [{ phoneme: PHONEMES[phonemeIndexForCharacter(character)], mergeWithNext: false }];
+        const normalized = character.toLowerCase();
+        return [
+          {
+            phoneme: /[a-z]/u.test(normalized)
+              ? normalized
+              : phonemeForUnsupportedCharacter(character),
+            mergeWithNext: false,
+          },
+        ];
       });
     },
   };
 }
 
-async function loadSampler(module: AnimaleseModule): Promise<MemorySamplerInstance> {
-  if (!samplerPromise) {
-    samplerPromise = (async () => {
-      const { wav, sprites } = createProceduralVoiceSprite();
-      const sampler = new module.MemorySampler(wav, sprites, { silenceThreshold: 0.001 });
-      await sampler.load();
-      return sampler;
-    })();
+function createAnalyzer(
+  module: AnimaleseModule,
+  language: AnimaleseVoiceLanguage,
+  text: string,
+): import("animalese-tts").TextAnalyzer {
+  if (language === "korean") return new module.KoreanAnalyzer();
+  if (language === "japanese") return new module.JapaneseAnalyzer();
+  if (/[A-Za-z]/u.test(text)) return new module.EnglishAnalyzer();
+  return createFallbackAnalyzer();
+}
+
+async function loadSampler(
+  module: AnimaleseModule,
+  language: AnimaleseVoiceLanguage,
+): Promise<WebSamplerInstance> {
+  const existing = samplerPromises.get(language);
+  if (existing) return existing;
+
+  const pending = (async () => {
+    const assets = VOICE_ASSETS[language];
+    const sampler = new module.WebSampler(assets.url, assets.sprites, {
+      maxRetries: 3,
+      minSilenceDurationMs: 50,
+    });
+    await sampler.load();
+    return sampler;
+  })();
+  samplerPromises.set(language, pending);
+
+  try {
+    return await pending;
+  } catch (error) {
+    samplerPromises.delete(language);
+    throw error;
   }
-  return samplerPromise;
 }
 
 /** One cancellable player and gain stage for every pet in the main WebView. */
@@ -145,11 +139,12 @@ export class AnimaleseVoicePlayer {
     const module = await loadAnimaleseModule();
     if (generation !== this.generation) return;
 
-    const sampler = await loadSampler(module);
+    const language = detectAnimaleseVoiceLanguage(text);
+    const sampler = await loadSampler(module, language);
     if (generation !== this.generation) return;
 
     const engine = new module.AnimaleseEngine({
-      analyzer: createUniversalAnalyzer(),
+      analyzer: createAnalyzer(module, language, text),
       sampler,
       effect: new module.PitchManager({
         pitch: profile.pitch,
@@ -170,7 +165,7 @@ export class AnimaleseVoicePlayer {
           ? output.buffer
           : module.AudioConverter.int16ToFloat32(output.buffer);
       if (buffer.length > 0) {
-        await this.playChunk(buffer, sampler.sampleRate ?? SAMPLE_RATE, generation);
+        await this.playChunk(buffer, sampler.sampleRate ?? DEFAULT_SAMPLE_RATE, generation);
       }
     }
   }

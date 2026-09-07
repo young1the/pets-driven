@@ -1117,3 +1117,8 @@ button.pd-onb__empty-card:disabled {
     grid-template-columns: 1fr;
   }
 }
+.pd-themed-range {
+  width: 100%;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}

@@ -475,11 +475,11 @@ export function PetEditSection({
                 </span>
                 <input
                   aria-label={t("edit.voicePitch")}
+                  className="pd-themed-range"
                   max={PET_VOICE_PITCH_MAX}
                   min={PET_VOICE_PITCH_MIN}
                   onChange={(event) => onVoicePitch(Number(event.target.value))}
                   step="0.01"
-                  style={{ width: "100%" }}
                   type="range"
                   value={pet.voicePitch}
                 />

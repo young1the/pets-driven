@@ -255,6 +255,17 @@ export function PetContextMenuView({
                 })}
               </div>
             </fieldset>
+            <button
+              className="pet-context-menu-card__item pet-context-menu-card__item--folder pet-context-menu-settings__folder"
+              type="button"
+              onClick={() => {
+                emitSignal("menu.pick-folder");
+                closeWindow();
+              }}
+            >
+              <FolderIcon />
+              {t("contextMenu.chooseFolder")}
+            </button>
           </div>
           <div className="pet-context-menu-settings__actions">
             <button
@@ -437,19 +448,7 @@ export function PetContextMenuView({
             closeWindow();
           }}
         >
-          <svg
-            aria-hidden="true"
-            fill="none"
-            height="15"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            width="15"
-          >
-            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
-          </svg>
+          <FolderIcon />
           {t("contextMenu.chooseFolder")}
         </button>
         <button
@@ -572,6 +571,24 @@ function BackIcon() {
       width="14"
     >
       <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function FolderIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="15"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="15"
+    >
+      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
     </svg>
   );
 }

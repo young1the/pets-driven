@@ -78,6 +78,15 @@ describe("the pet context menu", () => {
     );
   });
 
+  it("offers folder selection inside pet settings", () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose folder" }));
+
+    expect(emittedKinds(sendInput)).toEqual(["menu.pick-folder"]);
+  });
+
   it("can return a pinned agent to the app default", () => {
     renderMenu(null, "claude");
     fireEvent.click(screen.getByRole("menuitem", { name: /Pet settings/ }));

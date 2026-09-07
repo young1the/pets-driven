@@ -37,7 +37,7 @@ Audible speech is enabled by default for:
 - task completion and failure;
 - direct user interaction and acknowledgement.
 
-Task-started and autonomous ambient dialogue, including idle and social chatter, are silent by default. Users may enable those categories later. Text bubbles are unaffected by the audible-speech policy.
+Task-started and autonomous ambient dialogue, including idle and social chatter, are silent by default. Users can enable each of those three categories independently in Pets settings. Text bubbles are unaffected by the audible-speech policy.
 
 ### Voice identity and personality mapping
 
@@ -76,7 +76,7 @@ Only one pet speaks at a time in the initial release. The queue prioritizes prev
 - The desktop needs an application-owned playback adapter instead of using `animalese-tts`'s `WebPlayer` directly.
 - Persisted Rust and TypeScript state must evolve together for per-pet voice settings.
 - Every audible utterance needs a stable identity so repeated snapshot projection cannot replay it.
-- Audio sample provenance must be verified independently of the synthesis library's code license. Pets-Driven will not ship samples derived from proprietary game audio.
+- The prototype temporarily vendors the library demo's default English, Japanese, and Korean samples, pinned to an upstream commit. Audio provenance must be verified independently of the synthesis library's code license before release, and the samples must be replaced if that verification is not conclusive.
 - Korean, English, and Japanese can use the library's analyzers. Chinese needs an explicit custom analyzer or an application-owned neutral Animalese fallback before voice ships as fully multilingual.
 
 ## Rollout

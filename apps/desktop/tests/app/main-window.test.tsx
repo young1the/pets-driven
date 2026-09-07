@@ -87,7 +87,13 @@ const settings = {
   onSetOverlayMode: vi.fn(),
   quietMode: "off" as const,
   onSetQuietMode: vi.fn(),
-  voicePreferences: { muted: false, volume: 0.7 },
+  voicePreferences: {
+    muted: false,
+    volume: 0.7,
+    speakTaskStarted: false,
+    speakIdle: false,
+    speakSocial: false,
+  },
   onSetVoicePreferences: vi.fn(),
 };
 const place = {

@@ -129,7 +129,7 @@ html.pet-context-menu-fixture-preview body {
 
 .pet-context-menu-settings__body {
   flex: 1;
-  padding: 7px 8px 4px;
+  padding: 5px 8px 2px;
 }
 
 .pet-context-menu-settings__field {
@@ -179,7 +179,7 @@ html.pet-context-menu-fixture-preview body {
 
 .pet-context-menu-settings__agent {
   width: 100%;
-  padding: 5px 8px;
+  padding: 4px 8px;
   border: 1px solid var(--border-default);
   border-radius: 8px;
   background: transparent;
@@ -206,6 +206,12 @@ html.pet-context-menu-fixture-preview body {
 .pet-context-menu-settings__agent--active:hover,
 .pet-context-menu-settings__agent--active:focus-visible {
   background: var(--color-primary);
+}
+
+.pet-context-menu-settings__folder {
+  margin-top: 7px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-default);
 }
 
 .pet-context-menu-settings__actions {

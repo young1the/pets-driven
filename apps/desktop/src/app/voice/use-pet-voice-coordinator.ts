@@ -10,9 +10,17 @@ import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 
 type Translate = (key: string) => string;
 
-function speaksByDefault(source: string, status: string | null): boolean {
+function shouldSpeak(
+  source: string,
+  status: string | null,
+  preferences: PetVoicePreferences,
+): boolean {
   if (source === "interaction") return true;
-  return status === "waiting" || status === "completed" || status === "failed";
+  if (status === "waiting" || status === "completed" || status === "failed") return true;
+  if (status === "working") return preferences.speakTaskStarted;
+  if (source === "idle") return preferences.speakIdle;
+  if (source === "social") return preferences.speakSocial;
+  return false;
 }
 
 function priorityFor(source: string, status: string | null): PetVoicePriority {
@@ -85,7 +93,7 @@ export function usePetVoiceCoordinator(params: {
         // Muting is not pausing: remember the current line while silent so
         // unmuting a settled pet does not unexpectedly play stale speech.
         if (voice.muted) continue;
-        if (!speaksByDefault(channel.source, channel.status)) continue;
+        if (!shouldSpeak(channel.source, channel.status, preferencesRef.current)) continue;
         if (preferencesRef.current.muted) continue;
 
         const text = channel.message.startsWith(`${PET_SPEECH_KEY_PREFIX}.`)

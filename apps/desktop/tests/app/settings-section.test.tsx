@@ -61,7 +61,13 @@ function setupProps(overrides = {}) {
     onSetOverlayMode: vi.fn(),
     quietMode: "off" as const,
     onSetQuietMode: vi.fn(),
-    voicePreferences: { muted: false, volume: 0.7 },
+    voicePreferences: {
+      muted: false,
+      volume: 0.7,
+      speakTaskStarted: false,
+      speakIdle: false,
+      speakSocial: false,
+    },
     onSetVoicePreferences: vi.fn(),
     ...overrides,
   };
@@ -293,12 +299,20 @@ describe("SettingsSection pets", () => {
     setup("pets", { onSetVoicePreferences });
 
     fireEvent.click(screen.getByLabelText("Mute all pet voices"));
-    fireEvent.change(screen.getByLabelText("Master volume"), {
+    const volume = screen.getByLabelText("Master volume");
+    expect(volume).toHaveClass("pd-themed-range");
+    fireEvent.change(volume, {
       target: { value: "0.35" },
     });
+    fireEvent.click(screen.getByLabelText("Speak when work starts"));
+    fireEvent.click(screen.getByLabelText("Speak idle thoughts"));
+    fireEvent.click(screen.getByLabelText("Speak pet conversations"));
 
     expect(onSetVoicePreferences).toHaveBeenCalledWith({ muted: true });
     expect(onSetVoicePreferences).toHaveBeenCalledWith({ volume: 0.35 });
+    expect(onSetVoicePreferences).toHaveBeenCalledWith({ speakTaskStarted: true });
+    expect(onSetVoicePreferences).toHaveBeenCalledWith({ speakIdle: true });
+    expect(onSetVoicePreferences).toHaveBeenCalledWith({ speakSocial: true });
   });
 
   it("explains the level the pets are actually on", () => {

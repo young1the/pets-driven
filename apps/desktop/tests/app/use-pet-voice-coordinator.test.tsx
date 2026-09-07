@@ -52,7 +52,7 @@ function state(options: { muted?: boolean; personalityId?: "playful" } = {}): Pe
 
 function snapshot(options: {
   message: string;
-  source?: "agent-task" | "idle" | "interaction";
+  source?: "agent-task" | "idle" | "social" | "interaction";
   status?: "working" | "waiting" | "completed" | "failed" | null;
   updatedAt?: number;
 }): WorldSnapshot {
@@ -100,7 +100,13 @@ describe("pet voice coordinator", () => {
       usePetVoiceCoordinator({
         stateRef,
         translate: (key) => `translated:${key}`,
-        preferences: { muted: false, volume: 0.6 },
+        preferences: {
+          muted: false,
+          volume: 0.6,
+          speakTaskStarted: false,
+          speakIdle: false,
+          speakSocial: false,
+        },
       }),
     );
     const completed = snapshot({ message: "petSpeech.playful.completed.3" });
@@ -125,7 +131,13 @@ describe("pet voice coordinator", () => {
       usePetVoiceCoordinator({
         stateRef,
         translate: (key) => key,
-        preferences: { muted: false, volume: 0.7 },
+        preferences: {
+          muted: false,
+          volume: 0.7,
+          speakTaskStarted: false,
+          speakIdle: false,
+          speakSocial: false,
+        },
       }),
     );
 
@@ -146,13 +158,48 @@ describe("pet voice coordinator", () => {
     expect(output.speak).toHaveBeenCalledWith("Hello", expect.any(Object));
   });
 
+  it.each([
+    ["task-started", { message: "Starting", status: "working" as const }, "speakTaskStarted"],
+    ["idle", { message: "Just wandering", source: "idle" as const, status: null }, "speakIdle"],
+    ["social", { message: "Nice weather", source: "social" as const, status: null }, "speakSocial"],
+  ] as const)("speaks %s dialogue when its optional category is enabled", async (_, line, key) => {
+    const stateRef = { current: state({ personalityId: "playful" }) };
+    const { result } = renderHook(() =>
+      usePetVoiceCoordinator({
+        stateRef,
+        translate: (translationKey) => translationKey,
+        preferences: {
+          muted: false,
+          volume: 0.7,
+          speakTaskStarted: false,
+          speakIdle: false,
+          speakSocial: false,
+          [key]: true,
+        },
+      }),
+    );
+
+    await act(async () => {
+      result.current.onWorldSnapshot(snapshot(line));
+      await Promise.resolve();
+    });
+
+    expect(output.speak).toHaveBeenCalledWith(line.message, expect.any(Object));
+  });
+
   it("does not replay a settled line that arrived while the pet was muted", async () => {
     const stateRef = { current: state({ muted: true, personalityId: "playful" }) };
     const { result } = renderHook(() =>
       usePetVoiceCoordinator({
         stateRef,
         translate: (key) => key,
-        preferences: { muted: false, volume: 0.7 },
+        preferences: {
+          muted: false,
+          volume: 0.7,
+          speakTaskStarted: false,
+          speakIdle: false,
+          speakSocial: false,
+        },
       }),
     );
     const completed = snapshot({ message: "Done", updatedAt: 1 });
@@ -179,7 +226,13 @@ describe("pet voice coordinator", () => {
       usePetVoiceCoordinator({
         stateRef,
         translate: (key) => `translated:${key}`,
-        preferences: { muted: true, volume: 0.25 },
+        preferences: {
+          muted: true,
+          volume: 0.25,
+          speakTaskStarted: false,
+          speakIdle: false,
+          speakSocial: false,
+        },
       }),
     );
 

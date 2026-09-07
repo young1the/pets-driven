@@ -72,7 +72,9 @@ describe("PetEditSection", () => {
     const onPreviewVoice = vi.fn();
     setup({ onVoicePitch, onVoiceMuted, onPreviewVoice });
 
-    fireEvent.change(screen.getByLabelText("Pitch"), { target: { value: "1.6" } });
+    const pitch = screen.getByLabelText("Pitch");
+    expect(pitch).toHaveClass("pd-themed-range");
+    fireEvent.change(pitch, { target: { value: "1.6" } });
     fireEvent.click(screen.getByLabelText("Mute this pet"));
     fireEvent.click(screen.getByRole("button", { name: "Preview voice" }));
 
