@@ -416,7 +416,7 @@ export function useDesktopSimulationHost({
         void focusOrStartSessionForPet(input.petId);
         return;
       }
-      if (input.kind === "menu.close") {
+      if (input.kind === "menu.send-home") {
         hidePet(input.petId);
         return;
       }

@@ -568,6 +568,36 @@ describe("pet window product route", () => {
     });
   });
 
+  it("sends a pet home when the context menu asks for it", async () => {
+    render(<PetsDrivenApp />);
+
+    await waitFor(() => {
+      expect(tauriEventMocks.listeners.has(PET_WINDOW_INPUT_EVENT)).toBe(true);
+    });
+
+    act(() => {
+      tauriEventMocks.listeners.get(PET_WINDOW_INPUT_EVENT)?.({
+        payload: {
+          sequence: 1,
+          petId: "pet-a",
+          windowLabel: "pet-context-menu-pet-a",
+          pointerId: 0,
+          kind: "menu.send-home",
+          localPoint: { x: 0, y: 0 },
+          screenPoint: { x: 0, y: 0 },
+          at: Date.now(),
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invokeMock).toHaveBeenCalledWith("close_adopted_pet_window", { petId: "pet-a" });
+      expect(
+        invokeMock.mock.calls.filter(([command]) => command === "write_pets_driven_state"),
+      ).toHaveLength(0);
+    });
+  });
+
   it("acknowledges a settled Attention Hold when the pet context menu opens", async () => {
     render(<PetsDrivenApp />);
 

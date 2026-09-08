@@ -35,9 +35,10 @@ html.pet-context-menu-fixture-preview body {
   width: 176px;
   padding: 6px;
   margin: 6px;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--color-primary-soft);
   border-radius: 14px;
   background: var(--surface-card);
+  box-shadow: var(--shadow-md);
 }
 
 .pet-context-menu-card__header {
@@ -83,22 +84,17 @@ html.pet-context-menu-fixture-preview body {
 }
 
 .pet-context-menu-card__header-action--settings:hover,
-.pet-context-menu-card__header-action--settings:focus-visible {
-  outline: none;
-  background: var(--blossom-50, #fff1fb);
-  color: var(--blossom-700, #9d2f7e);
-}
-
+.pet-context-menu-card__header-action--settings:focus-visible,
 .pet-context-menu-card__header-action--voice:hover,
 .pet-context-menu-card__header-action--voice:focus-visible {
   outline: none;
-  background: var(--sky-50, #f0f8ff);
-  color: var(--sky-700, #1d6fae);
+  background: var(--blossom-50);
+  color: var(--color-primary-hover);
 }
 
 .pet-context-menu-card__header-action--muted {
-  background: var(--coral-50, #fff5f5);
-  color: var(--coral-600, #dc3f3f);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
 }
 
 /* The way back out of a sub-view, wearing the header's slot so a step down
@@ -122,7 +118,8 @@ html.pet-context-menu-fixture-preview body {
 .pet-context-menu-card__back:hover,
 .pet-context-menu-card__back:focus-visible {
   outline: none;
-  background: var(--surface-subtle, #f1f5f9);
+  background: var(--blossom-50);
+  color: var(--color-primary-hover);
 }
 
 /* Says the row opens something rather than doing something. Pushed to the far
@@ -136,8 +133,12 @@ html.pet-context-menu-fixture-preview body {
 
 .pet-context-menu-card__divider {
   height: 1px;
-  background: var(--border-soft);
+  background: var(--color-primary-soft);
   margin: 2px 4px 4px;
+}
+
+.pet-context-menu-card__divider--actions {
+  margin-top: 4px;
 }
 
 .pet-context-menu-card__item {
@@ -149,7 +150,7 @@ html.pet-context-menu-fixture-preview body {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: var(--text-strong);
+  color: var(--text-body);
   font-family: var(--font-body);
   font-size: 12.5px;
   font-weight: 600;
@@ -159,6 +160,18 @@ html.pet-context-menu-fixture-preview body {
   transition:
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
+}
+
+.pet-context-menu-card__item > svg {
+  flex: none;
+  color: var(--color-primary-hover);
+}
+
+.pet-context-menu-card__item:hover,
+.pet-context-menu-card__item:focus-visible {
+  outline: none;
+  background: var(--blossom-50);
+  color: var(--text-strong);
 }
 
 /* The sub-view holding the two kinds of round. Its height comes from the top
@@ -244,7 +257,7 @@ html.pet-context-menu-fixture-preview body {
 .pet-context-menu-settings__agent:hover,
 .pet-context-menu-settings__agent:focus-visible {
   outline: none;
-  background: var(--surface-subtle, #f1f5f9);
+  background: var(--blossom-50);
 }
 
 .pet-context-menu-settings__agent--active {
@@ -302,63 +315,26 @@ html.pet-context-menu-fixture-preview body {
   line-height: 1.35;
 }
 
-.pet-context-menu-card__item--note {
-  color: var(--lavender-700, #5b4ecb);
-}
-
-.pet-context-menu-card__item--note:hover,
-.pet-context-menu-card__item--note:focus-visible {
-  outline: none;
-  background: var(--lavender-50, #f5f3ff);
-}
-
-.pet-context-menu-card__item--folder {
-  color: var(--aqua-700, #177b92);
-}
-
-.pet-context-menu-card__item--folder:hover,
-.pet-context-menu-card__item--folder:focus-visible {
-  outline: none;
-  background: var(--aqua-50, #eefcff);
-}
-
-.pet-context-menu-card__item--terminal {
-  color: var(--sky-700, #1d6fae);
-}
-
-.pet-context-menu-card__item--terminal:hover,
-.pet-context-menu-card__item--terminal:focus-visible {
-  outline: none;
-  background: var(--sky-50, #f0f8ff);
-}
-
-.pet-context-menu-card__item--game {
-  color: var(--teal-700, #0b6e63);
-}
-
-.pet-context-menu-card__item--game:hover,
-.pet-context-menu-card__item--game:focus-visible {
-  outline: none;
-  background: var(--teal-50, #e7faf7);
+.pet-context-menu-card__item--send-home {
+  color: var(--color-primary-hover);
 }
 
 .pet-context-menu-card__item--close {
-  color: var(--coral-600, #dc3f3f);
+  color: var(--text-muted);
 }
 
-.pet-context-menu-card__item--close:hover,
-.pet-context-menu-card__item--close:focus-visible {
-  outline: none;
-  background: var(--coral-50, #fff5f5);
+.pet-context-menu-card__item--close > svg {
+  color: var(--text-subtle);
 }
 
 .pet-context-menu-note {
   width: 212px;
   padding: 12px;
   margin: 6px;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--color-primary-soft);
   border-radius: 16px;
   background: var(--surface-card);
+  box-shadow: var(--shadow-md);
 }
 
 .pet-context-menu-note__header {

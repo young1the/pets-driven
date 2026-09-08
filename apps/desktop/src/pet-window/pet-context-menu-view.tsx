@@ -493,30 +493,27 @@ export function PetContextMenuView({
             </span>
           )}
         </button>
+        <div className="pet-context-menu-card__divider pet-context-menu-card__divider--actions" />
+        <button
+          className="pet-context-menu-card__item pet-context-menu-card__item--send-home"
+          role="menuitem"
+          type="button"
+          onClick={() => {
+            emitSignal("menu.send-home");
+            closeWindow();
+          }}
+        >
+          <HomeIcon />
+          {t("contextMenu.sendHome")}
+        </button>
         <button
           className="pet-context-menu-card__item pet-context-menu-card__item--close"
           role="menuitem"
           type="button"
-          onClick={() => {
-            emitSignal("menu.close");
-            closeWindow();
-          }}
+          onClick={closeWindow}
         >
-          <svg
-            aria-hidden="true"
-            fill="none"
-            height="15"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            width="15"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-          {t("contextMenu.close")}
+          <CloseIcon />
+          {t("contextMenu.closeMenu")}
         </button>
       </div>
     </main>
@@ -593,6 +590,45 @@ function FolderIcon() {
       width="15"
     >
       <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+    </svg>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="15"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="15"
+    >
+      <path d="m3 11 9-8 9 8" />
+      <path d="M5 10v10h14V10" />
+      <path d="M9 20v-6h6v6" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="15"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="15"
+    >
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
     </svg>
   );
 }

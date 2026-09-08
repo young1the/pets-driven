@@ -174,7 +174,7 @@ export type PetWindowInputKind =
   // now never arrive, and hands back the pet it was holding.
   | "body.key.blur"
   | "body.focus"
-  | "menu.close"
+  | "menu.send-home"
   | "menu.pick-folder"
   | "menu.note-save"
   | "menu.settings-save"

@@ -133,6 +133,24 @@ describe("the pet context menu", () => {
     expect(screen.getByRole("button", { name: "Unmute voice" })).toBeInTheDocument();
   });
 
+  it("closes only the popup from the close-menu row", () => {
+    const hideWindow = vi.spyOn(petWindowTransport, "hideWindow").mockResolvedValue();
+    renderMenu();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Close menu" }));
+
+    expect(hideWindow).toHaveBeenCalledOnce();
+    expect(sendInput).not.toHaveBeenCalled();
+  });
+
+  it("sends the pet home from its own row", () => {
+    renderMenu();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Send home" }));
+
+    expect(emittedKinds(sendInput)).toEqual(["menu.send-home"]);
+  });
+
   it("spends one row on the whole game feature, not two", () => {
     renderMenu();
 
