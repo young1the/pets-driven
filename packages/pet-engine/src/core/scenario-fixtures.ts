@@ -95,7 +95,12 @@ function clamp(value: number, min: number, max: number): number {
 
 export function createFixturePet(input: {
   id: string;
-  sourceId: string;
+  /**
+   * The agent source this pet answers to, or null when it answers to none.
+   * Null attaches no AgentBinding at all: an unbound pet must not be
+   * addressable by an agent event, and a placeholder id would make it so.
+   */
+  sourceId: string | null;
   name: string;
   x: number;
   y: number;
@@ -113,7 +118,9 @@ export function createFixturePet(input: {
 
   const allComponents: Component[] = [
     { type: "PetIdentity" as const, name: input.name },
-    { type: "AgentBinding" as const, sourceId: input.sourceId },
+    ...(input.sourceId === null
+      ? []
+      : [{ type: "AgentBinding" as const, sourceId: input.sourceId }]),
     // MovementProfile is NOT hardcoded here — derived from Personality below.
     { type: "Steering" as const, mode: "stand" as const },
     {
@@ -787,7 +794,8 @@ export function createDesktopClimbableSurfaces(
 export type AdoptedPetScenarioInput = {
   id: string;
   name: string;
-  sourceId: string;
+  /** Null for a pet bound to no folder — see `createFixturePet`. */
+  sourceId: string | null;
   personality?: PersonalityComponent;
 };
 

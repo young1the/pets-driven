@@ -65,7 +65,12 @@ export type BodySnapshot = {
 
 export type PetSnapshot = {
   id: string;
-  sourceId: string;
+  /**
+   * The agent source this pet answers to, or null when it is bound to no
+   * folder. Null is the normal resting state for an unbound pet — it is not a
+   * missing value to paper over with the pet's own id.
+   */
+  sourceId: string | null;
   name: string;
   steering: string;
   locomotion: string;

@@ -6,7 +6,8 @@ import type { PetsDrivenState } from "@/app-state/pets-driven-state";
 export type AdoptedPetSimInput = {
   id: string;
   name: string;
-  sourceId: string;
+  /** Null when the pet is bound to no folder, so it has no agent to answer to. */
+  sourceId: string | null;
   personality: PersonalityComponent;
 };
 
@@ -53,7 +54,10 @@ export function selectAdoptedPetSimInputs(state: PetsDrivenState): AdoptedPetSim
       return {
         id: pet.id,
         name: pet.name,
-        sourceId: directory?.agentSourceId ?? pet.id,
+        // No folder means no agent source. Falling back to `pet.id` here handed
+        // the pet a real, matchable address, which is how an unbound pet ended
+        // up showing an agent "Working" capsule.
+        sourceId: directory?.agentSourceId ?? null,
         personality: personalityComponent(profile?.personalityId),
       };
     });

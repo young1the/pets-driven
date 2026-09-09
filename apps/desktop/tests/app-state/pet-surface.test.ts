@@ -76,10 +76,15 @@ describe("selectAdoptedPetSimInputs", () => {
     ]);
   });
 
-  it("falls back to the pet id when no directory is linked yet", () => {
+  // A folderless pet must have NO agent source, not a stand-in one. Falling
+  // back to the pet's own id gave it a real, matchable address, so a stray
+  // agent event could drive an unbound pet into a "Working" capsule. Null keeps
+  // it unaddressable: `createFixturePet` then attaches no AgentBinding at all,
+  // and the agent task system's query skips it outright.
+  it("leaves the source id null when no directory is linked", () => {
     const state = stateWithPet({ id: "pet-1" });
 
-    expect(selectAdoptedPetSimInputs(state)[0].sourceId).toBe("pet-1");
+    expect(selectAdoptedPetSimInputs(state)[0].sourceId).toBeNull();
   });
 
   it("maps the curious personality preset to its OCEAN component", () => {

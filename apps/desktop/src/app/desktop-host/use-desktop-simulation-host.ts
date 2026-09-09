@@ -102,8 +102,12 @@ function routeAgentHookToRegisteredWorkingDirectory(
 
   const cwd = (payload as { cwd?: unknown }).cwd;
 
+  // An event with no cwd names no folder, so there is no pet it can belong to.
+  // Passing it through left it carrying whatever sourceId the caller supplied,
+  // which is strictly more permissive than the unresolved-cwd case below —
+  // backwards. Drop it, the same as a cwd that resolves to nothing.
   if (typeof cwd !== "string" || cwd.trim().length === 0) {
-    return event;
+    return null;
   }
 
   const workingDirectory = resolveRegisteredWorkingDirectoryForCwd(state, cwd);

@@ -131,3 +131,50 @@ describe("runAgentTaskEventSystem → AgentTaskState", () => {
     expect(store.getComponent("pet", "AgentChannelState")?.message).toBe("working");
   });
 });
+
+describe("an unbound pet is unreachable by agent events", () => {
+  // The pet a user hatched but never bound to a folder has no AgentBinding at
+  // all (see `createFixturePet`), so the system's query skips it. Before this,
+  // such a pet was given its own id as a stand-in sourceId purely so it would
+  // survive the snapshot query — which made it a live address, and a stray
+  // event could push it into a "Working" capsule with no session behind it.
+  function makeUnboundStore() {
+    return createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Steering", mode: "stand" as const },
+          {
+            type: "SpeechProfile",
+            idleCompanion: "hi",
+            attentionNeeded: "look",
+            taskStarted: "working",
+            taskCompleted: "done",
+            taskFailed: "failed",
+          },
+          { type: "ActivityState", lastActiveAt: 0 },
+          { type: "CompletionBehavior", intentAfterCompletion: "arrive" as const },
+        ],
+      },
+    ]);
+  }
+
+  it("task.started leaves an unbound pet with no task state or channel", () => {
+    const store = makeUnboundStore();
+    const clock = createManualClock(100);
+
+    runAgentTaskEventSystem(store, [agentEvent("task.started")], clock);
+
+    expect(store.getComponent("pet", "AgentTaskState")).toBeUndefined();
+    expect(store.getComponent("pet", "AgentChannelState")).toBeUndefined();
+  });
+
+  it("ignores an event whose sourceId equals the unbound pet's own entity id", () => {
+    const store = makeUnboundStore();
+    const clock = createManualClock(100);
+
+    runAgentTaskEventSystem(store, [{ ...agentEvent("task.started"), sourceId: "pet" }], clock);
+
+    expect(store.getComponent("pet", "AgentTaskState")).toBeUndefined();
+  });
+});

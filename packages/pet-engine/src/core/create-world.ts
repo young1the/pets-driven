@@ -124,106 +124,111 @@ export function createWorld(input: WorldDefinition) {
   }
 
   function getPetSnapshots(componentStore: ComponentStore) {
-    return componentStore
-      .query("PetIdentity", "AgentBinding", "Steering", "Transform")
-      .map((entity) => {
-        const [identity, agent, steering, transform] = entity.components;
-        const contactState = componentStore.getComponent(entity.id, "ContactState");
-        const decisionState = componentStore.getComponent(entity.id, "BehaviorDecisionState");
-        const agentTask = componentStore.getComponent(entity.id, "AgentTaskState");
-        const agentChannel = componentStore.getComponent(entity.id, "AgentChannelState");
-        const expression = componentStore.getComponent(entity.id, "PetExpressionState");
-        return {
-          id: entity.id,
-          sourceId: agent.sourceId,
-          name: identity.name,
-          steering: steering.mode,
-          locomotion: getLocomotionLabel(componentStore, entity.id),
-          action: getActionLabel(componentStore, entity.id),
-          speech: agentChannel?.message ?? null,
-          position: transform.position,
-          contact: {
-            grounded: contactState?.grounded ?? false,
-            climbableSurfaceId: contactState?.climbableSurfaceId ?? null,
-          },
-          motionTarget:
-            componentStore.getComponent(entity.id, "MotionTarget")?.targetPosition ?? null,
-          activity: derivePetActivity(componentStore, entity.id, input.clock.now()),
-          drives: (() => {
-            const drives = componentStore.getComponent(entity.id, "Drives");
-            return drives
-              ? {
-                  social: drives.social,
-                  energy: drives.energy,
-                  curiosity: drives.curiosity,
-                }
-              : null;
-          })(),
-          mood: (() => {
-            const mood = componentStore.getComponent(entity.id, "MoodState");
-            if (!mood) return null;
-            const memory = componentStore.getComponent(entity.id, "RecentExperienceMemory");
-            return {
-              valence: mood.valence,
-              arousal: mood.arousal,
-              confidence: mood.confidence,
-              recentExperienceCount: memory?.entries.length ?? 0,
-            };
-          })(),
-          decision: decisionState
+    // AgentBinding is deliberately NOT part of this query. It means "this pet
+    // answers to agent source X", not "this is a pet" — requiring it here made
+    // a folderless pet vanish from every snapshot, which forced callers to
+    // invent a placeholder sourceId just to keep it rendering. That invented id
+    // was then a live address an agent event could match, so an unbound pet
+    // could be driven into a "Working" capsule. Read it optionally instead.
+    return componentStore.query("PetIdentity", "Steering", "Transform").map((entity) => {
+      const [identity, steering, transform] = entity.components;
+      const agent = componentStore.getComponent(entity.id, "AgentBinding");
+      const contactState = componentStore.getComponent(entity.id, "ContactState");
+      const decisionState = componentStore.getComponent(entity.id, "BehaviorDecisionState");
+      const agentTask = componentStore.getComponent(entity.id, "AgentTaskState");
+      const agentChannel = componentStore.getComponent(entity.id, "AgentChannelState");
+      const expression = componentStore.getComponent(entity.id, "PetExpressionState");
+      return {
+        id: entity.id,
+        sourceId: agent?.sourceId ?? null,
+        name: identity.name,
+        steering: steering.mode,
+        locomotion: getLocomotionLabel(componentStore, entity.id),
+        action: getActionLabel(componentStore, entity.id),
+        speech: agentChannel?.message ?? null,
+        position: transform.position,
+        contact: {
+          grounded: contactState?.grounded ?? false,
+          climbableSurfaceId: contactState?.climbableSurfaceId ?? null,
+        },
+        motionTarget:
+          componentStore.getComponent(entity.id, "MotionTarget")?.targetPosition ?? null,
+        activity: derivePetActivity(componentStore, entity.id, input.clock.now()),
+        drives: (() => {
+          const drives = componentStore.getComponent(entity.id, "Drives");
+          return drives
             ? {
-                source: decisionState.source,
-                reason: decisionState.reason,
-                decidedAt: decisionState.decidedAt,
+                social: drives.social,
+                energy: drives.energy,
+                curiosity: drives.curiosity,
               }
-            : null,
-          pendingReaction: (() => {
-            const pr = componentStore.getComponent(entity.id, "PendingReaction");
-            return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
-          })(),
-          agentTask: agentTask
+            : null;
+        })(),
+        mood: (() => {
+          const mood = componentStore.getComponent(entity.id, "MoodState");
+          if (!mood) return null;
+          const memory = componentStore.getComponent(entity.id, "RecentExperienceMemory");
+          return {
+            valence: mood.valence,
+            arousal: mood.arousal,
+            confidence: mood.confidence,
+            recentExperienceCount: memory?.entries.length ?? 0,
+          };
+        })(),
+        decision: decisionState
+          ? {
+              source: decisionState.source,
+              reason: decisionState.reason,
+              decidedAt: decisionState.decidedAt,
+            }
+          : null,
+        pendingReaction: (() => {
+          const pr = componentStore.getComponent(entity.id, "PendingReaction");
+          return pr ? { source: pr.source, reactsAt: pr.reactsAt } : null;
+        })(),
+        agentTask: agentTask
+          ? {
+              status: agentTask.status,
+              label: agentTaskBadgeLabel(agentTask.status),
+              summary: agentTask.summary,
+            }
+          : null,
+        agentChannel: agentChannel
+          ? {
+              source: agentChannel.source,
+              status: agentChannel.status,
+              label: agentChannel.label,
+              message: agentChannel.message,
+              updatedAt: agentChannel.updatedAt,
+              expiresAt: agentChannel.expiresAt,
+            }
+          : null,
+        visualCue: getPetVisualCue(componentStore, entity.id),
+        expression: expression
+          ? {
+              source: expression.source,
+              mood: expression.mood,
+              emote: expression.emote,
+              label: expression.label,
+              startedAt: expression.startedAt,
+              expiresAt: expression.expiresAt,
+            }
+          : null,
+        interaction: getInteractionSnapshot(componentStore, entity.id),
+        game: getPetGameSnapshot(componentStore, entity.id),
+        social: getSocialSnapshot(componentStore, entity.id),
+        carrying: (() => {
+          const carried = componentStore.getComponent(entity.id, "CarriedItem");
+          return carried
             ? {
-                status: agentTask.status,
-                label: agentTaskBadgeLabel(agentTask.status),
-                summary: agentTask.summary,
+                kind: carried.kind,
+                pickedUpAt: carried.pickedUpAt,
+                expiresAt: carried.expiresAt,
               }
-            : null,
-          agentChannel: agentChannel
-            ? {
-                source: agentChannel.source,
-                status: agentChannel.status,
-                label: agentChannel.label,
-                message: agentChannel.message,
-                updatedAt: agentChannel.updatedAt,
-                expiresAt: agentChannel.expiresAt,
-              }
-            : null,
-          visualCue: getPetVisualCue(componentStore, entity.id),
-          expression: expression
-            ? {
-                source: expression.source,
-                mood: expression.mood,
-                emote: expression.emote,
-                label: expression.label,
-                startedAt: expression.startedAt,
-                expiresAt: expression.expiresAt,
-              }
-            : null,
-          interaction: getInteractionSnapshot(componentStore, entity.id),
-          game: getPetGameSnapshot(componentStore, entity.id),
-          social: getSocialSnapshot(componentStore, entity.id),
-          carrying: (() => {
-            const carried = componentStore.getComponent(entity.id, "CarriedItem");
-            return carried
-              ? {
-                  kind: carried.kind,
-                  pickedUpAt: carried.pickedUpAt,
-                  expiresAt: carried.expiresAt,
-                }
-              : null;
-          })(),
-        };
-      });
+            : null;
+        })(),
+      };
+    });
   }
 
   function getSocialSnapshot(componentStore: ComponentStore, id: string) {
