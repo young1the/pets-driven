@@ -23,6 +23,7 @@ pdd presets                                    # personality ids hatch accepts
 pdd hatch                                      # name from the folder, random asset + personality
 pdd hatch "<name>"                             # random asset + personality, current folder
 pdd hatch "<name>" --asset <id> --personality <id> --cwd "<folder>"
+pdd hatch "<name>" --no-cwd                    # adopt with no folder bound; bind it later
 pdd bind "<petId>"                             # bind a pet to this folder (--cwd for another)
 pdd unbind "<petId>"                           # release it (cwd -> null)
 pdd update --name "<name>"                     # edit this folder's pet in place
@@ -34,7 +35,8 @@ pdd note "<text>"                              # write it (--clear erases, - rea
 Nothing is required to hatch: the name defaults to the bound folder's own name,
 the asset (look) and personality to a random pick, and the folder to the current
 directory. Pass a name, `--asset`, `--personality`, or `--cwd` to choose any of
-them.
+them. `--no-cwd` hatches a pet with no folder bound at all (an unnamed one is
+named after its asset); it contradicts `--cwd`, so never pass both.
 
 A pet's `cwd` may be `null` — that pet exists with no folder bound and receives
 no agent events. Offer to `bind` such a pet rather than hatching a new one when

@@ -15,7 +15,7 @@ The desktop installer ships `pdd` and adds it to your PATH.
 | `pdd status` | State file path and pet count | no |
 | `pdd list` | Every pet in state | no |
 | `pdd presets` | Personality ids `hatch` accepts | no |
-| `pdd hatch [NAME] [--asset <ID>] [--personality <ID>] [--agent <AGENT>] [--cwd <DIR>]` | Adopt a pet bound to a folder (name defaults to the bound folder's own name; asset, personality, and folder default to a random asset, a random personality, and the cwd) | no (also pings the app to show it) |
+| `pdd hatch [NAME] [--asset <ID>] [--personality <ID>] [--agent <AGENT>] [--cwd <DIR> \| --no-cwd]` | Adopt a pet bound to a folder (name defaults to the bound folder's own name; asset, personality, and folder default to a random asset, a random personality, and the cwd) | no (also pings the app to show it) |
 | `pdd bind <PET_ID> [--cwd <DIR>]` | Bind a pet to a folder | no |
 | `pdd unbind <PET_ID>` | Detach a pet from its folder | no |
 | `pdd update [PET_ID] [--cwd <DIR>] <FIELD…>` | Edit a living pet in place: rename, re-skin, change personality, note, or size | no |
@@ -29,6 +29,23 @@ When `hatch` picks a random asset (no `--asset`), it prefers the pets you
 installed in your designated pet source folder (`petSourceDirectory` in state,
 otherwise `~/.petdex/pets`), and only falls back to the six built-ins when that
 folder holds no pet. So once you add your own pets, new worktrees get *those*.
+
+## Hatching without a folder
+
+A pet does not need a folder to exist. `--no-cwd` adopts one with none bound: it
+lives in state, receives no agent events, and waits for a `bind` to give it a
+folder. It also lifts the one-pet-per-folder rule for the pets you have not
+placed yet — any number of folderless pets can coexist.
+
+```bash
+pdd hatch --no-cwd                       # a random look, named after that asset
+pdd hatch "Atlas" --no-cwd --asset otto  # your own name and look
+pdd bind "<petId>"                       # later: give it the current folder
+```
+
+With no folder to borrow a name from, an unnamed `--no-cwd` pet takes its
+asset's id (`pdd hatch --no-cwd --asset cato` adopts "cato"). `--no-cwd` and
+`--cwd` contradict each other, so passing both is a usage error.
 
 ## Updating a pet
 

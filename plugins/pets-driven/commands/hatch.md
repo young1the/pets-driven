@@ -60,7 +60,12 @@ not installed, say so and stop.)
    pdd hatch "<name>" --personality <id>                 # choose the personality
    pdd hatch "<name>" --agent codex                      # pin which agent its session opens
    pdd hatch "<name>" --asset <id> --personality <id> --cwd "<folder>"
+   pdd hatch "<name>" --no-cwd                           # no folder at all; bind it later
    ```
+
+   `--no-cwd` adopts a pet with no folder bound — use it when the user wants a
+   pet now and a folder later. Such a pet is not limited by the one-pet-per-
+   folder rule, and an unnamed one takes its asset's id as its name.
 
 4. **Report the result** from the command output:
    - `{"ok":true,"pet":{…}}` → the pet was created. If the desktop app is running

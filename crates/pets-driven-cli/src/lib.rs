@@ -69,7 +69,8 @@ enum Command {
     /// the folder's own name, and the asset, personality, and folder default to
     /// a random asset, a random personality, and the current directory. The
     /// random asset is drawn from the pets you installed in your pet source
-    /// folder, falling back to the built-ins.
+    /// folder, falling back to the built-ins. `--no-cwd` adopts a pet with no
+    /// folder at all, waiting for a later `bind`.
     Hatch {
         /// Display name for the new pet (default: the bound folder's name)
         name: Option<String>,
@@ -84,8 +85,12 @@ enum Command {
         #[arg(long, value_parser = parse_agent_provider)]
         agent: Option<Patch<String>>,
         /// Folder to bind (default: the current directory)
-        #[arg(short, long)]
+        #[arg(short, long, conflicts_with = "no_cwd")]
         cwd: Option<String>,
+        /// Adopt the pet with no folder bound — it lives on, receiving no agent
+        /// events, until `bind` gives it one (default name: its asset id)
+        #[arg(long)]
+        no_cwd: bool,
     },
     /// Bind a pet to a folder
     Bind {
@@ -499,6 +504,13 @@ fn choose_random_asset(core: &PetsDrivenCore) -> String {
 }
 
 /// The display name for a `hatch` that gave none: the bound folder's own name,
+/// or — for a `--no-cwd` pet, which has no folder to borrow one from — the asset
+/// it wears, so `pdd hatch --no-cwd --asset cato` adopts a pet called "cato".
+fn default_hatch_name(working_directory: Option<&WorkingDirectoryPath>, asset_id: &str) -> String {
+    working_directory.map_or_else(|| asset_id.to_string(), |folder| folder_name(folder.as_str()))
+}
+
+/// The folder's own name, as [`default_hatch_name`] borrows it for a bound pet,
 /// so `pdd hatch` in `D:/work/atlas` adopts a pet called "atlas". Both
 /// separators are split on because a folder reaches us as a plain string —
 /// `--cwd` may be typed either way on Windows — and trailing ones are ignored.
@@ -612,16 +624,21 @@ pub fn run_with<O: Write, E: Write>(
             match cli.command {
                 Command::Status => run_status(&core, out),
                 Command::List => run_list(&core, out),
-                Command::Hatch { name, asset, personality, agent, cwd: folder } => {
+                Command::Hatch { name, asset, personality, agent, cwd: folder, no_cwd } => {
                     let asset_id = asset.unwrap_or_else(|| choose_random_asset(&core));
                     let personality_id =
                         personality.unwrap_or_else(|| random_personality().to_string());
-                    let folder = folder.unwrap_or_else(|| cwd.to_string());
-                    let name = name.unwrap_or_else(|| folder_name(&folder));
+                    // `--no-cwd` adopts a folderless pet; otherwise the folder
+                    // named, and the current directory when none was.
+                    let working_directory = (!no_cwd).then(|| {
+                        WorkingDirectoryPath::new(folder.unwrap_or_else(|| cwd.to_string()))
+                    });
+                    let name = name
+                        .unwrap_or_else(|| default_hatch_name(working_directory.as_ref(), &asset_id));
                     run_hatch(
                         &core,
                         HatchPet {
-                            working_directory: Some(WorkingDirectoryPath::new(folder)),
+                            working_directory,
                             asset_id,
                             name,
                             personality_id,
@@ -864,6 +881,66 @@ mod tests {
         let mut list_out = Vec::new();
         assert_eq!(run_list(&core, &mut list_out), 0);
         assert_eq!(parse_out(&list_out)["pets"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn hatch_without_a_folder_adopts_an_unbound_pet() {
+        let core = core_with_empty_state();
+
+        let mut out = Vec::new();
+        let code = run_hatch(
+            &core,
+            HatchPet {
+                working_directory: None,
+                ..hatch_input("cato", "cato", "playful", "D:/proj")
+            },
+            REFUSED,
+            &mut out,
+        );
+
+        assert_eq!(code, 0);
+        assert_eq!(parse_out(&out)["pet"]["cwd"], serde_json::Value::Null);
+        // Two folderless pets are no conflict: there is no folder to occupy.
+        let mut second = Vec::new();
+        assert_eq!(
+            run_hatch(
+                &core,
+                HatchPet {
+                    working_directory: None,
+                    ..hatch_input("otto", "otto", "zen", "D:/proj")
+                },
+                REFUSED,
+                &mut second,
+            ),
+            0
+        );
+    }
+
+    #[test]
+    fn a_folderless_hatch_names_the_pet_after_its_asset() {
+        assert_eq!(default_hatch_name(None, "cato"), "cato");
+        assert_eq!(
+            default_hatch_name(Some(&WorkingDirectoryPath::new("D:/work/atlas")), "cato"),
+            "atlas"
+        );
+    }
+
+    #[test]
+    fn hatch_rejects_a_folder_and_no_cwd_together() {
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        // Contradictory flags: clap rejects them before any state is opened.
+        let code = run_with(
+            &args(&["hatch", "--cwd", "D:/proj", "--no-cwd"]),
+            REFUSED,
+            "D:/proj",
+            Vec::new,
+            &mut out,
+            &mut err,
+        );
+
+        assert_eq!(code, 2);
+        assert!(!err.is_empty());
     }
 
     #[test]
