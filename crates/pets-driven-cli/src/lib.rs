@@ -12,6 +12,7 @@
 //! over the loopback ingress and silently does nothing when the app is down.
 
 mod transport;
+mod worktree;
 
 use std::io::{Read, Write};
 use std::sync::Arc;
@@ -46,7 +47,8 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
         the pet to react.",
     after_help = "ENVIRONMENT:\n    \
         PETS_DRIVEN_STATE_PATH        Override the state file path (must match the desktop's)\n    \
-        PETS_DRIVEN_INGRESS_ORIGIN    Override the ingress origin for `forward`\n\n\
+        PETS_DRIVEN_INGRESS_ORIGIN    Override the ingress origin for `forward`\n    \
+        PETS_DRIVEN_WORKTREE_ROOT     Where `worktree add` puts new worktrees\n\n\
         Run `pdd presets` to list personality ids."
 )]
 struct Cli {
@@ -197,6 +199,72 @@ enum Command {
         /// Lifecycle event to synthesize when stdin is empty
         event: Option<String>,
     },
+    /// Work with git worktrees and the pet that lives in each one
+    #[command(subcommand)]
+    Worktree(WorktreeCommand),
+}
+
+/// The `worktree` family. Git stays the registry — these commands only pair a
+/// worktree folder with the pet bound to it, so a worktree made with plain git
+/// still lists here, and one removed with plain git leaves an ordinary pet
+/// behind to delete.
+#[derive(Subcommand)]
+enum WorktreeCommand {
+    /// Add a worktree for a branch and adopt a pet bound to its folder. The
+    /// branch is created when it does not exist yet and checked out as it
+    /// stands when it does; the folder defaults to a `<repo>-worktrees` folder
+    /// beside the repository (or under PETS_DRIVEN_WORKTREE_ROOT).
+    Add {
+        /// Branch the worktree checks out
+        branch: String,
+        /// Repository to branch from — any of its worktrees will do
+        /// (default: the current directory)
+        #[arg(short, long)]
+        repo: Option<String>,
+        /// Folder for the new worktree, instead of the derived one
+        // Long-only: `-p` is `--personality` on every command that takes one.
+        #[arg(long)]
+        path: Option<String>,
+        /// Commit or ref a newly created branch starts at (default: the
+        /// repository's HEAD)
+        #[arg(long)]
+        base: Option<String>,
+        /// Display name for the pet (default: the worktree folder's name)
+        #[arg(short, long)]
+        name: Option<String>,
+        /// Pet asset id (default: a random installed pet, else a built-in)
+        #[arg(short, long)]
+        asset: Option<String>,
+        /// Personality id (default: a random personality)
+        #[arg(short, long)]
+        personality: Option<String>,
+        /// Agent this pet's session opens: claude, codex, or none
+        #[arg(long, value_parser = parse_agent_provider)]
+        agent: Option<Patch<String>>,
+        /// Create the worktree without adopting a pet for it
+        #[arg(long, conflicts_with_all = ["name", "asset", "personality", "agent"])]
+        no_pet: bool,
+    },
+    /// List a repository's worktrees and the pet bound to each
+    #[command(alias = "list")]
+    Ls {
+        /// Repository to list (default: the current directory)
+        #[arg(short, long)]
+        repo: Option<String>,
+    },
+    /// Remove a worktree and the pet bound to it
+    #[command(alias = "remove")]
+    Rm {
+        /// Worktree folder to remove (default: the current directory)
+        #[arg(short, long)]
+        cwd: Option<String>,
+        /// Remove it even though it holds uncommitted work
+        #[arg(short, long)]
+        force: bool,
+        /// Leave the pet in state instead of deleting it with its folder
+        #[arg(long)]
+        keep_pet: bool,
+    },
 }
 
 // ---- Direct state commands -------------------------------------------------
@@ -208,11 +276,11 @@ fn open_core() -> Result<PetsDrivenCore, String> {
 }
 
 /// The `{ "ok": false, "error": ... }` envelope for a failed command.
-fn error_json(message: impl Into<String>) -> serde_json::Value {
+pub(crate) fn error_json(message: impl Into<String>) -> serde_json::Value {
     serde_json::json!({ "ok": false, "error": message.into() })
 }
 
-fn print_json<O: Write>(out: &mut O, value: &serde_json::Value) {
+pub(crate) fn print_json<O: Write>(out: &mut O, value: &serde_json::Value) {
     let _ = writeln!(out, "{value}");
 }
 
@@ -272,21 +340,95 @@ fn run_presets<O: Write>(out: &mut O) -> i32 {
     0
 }
 
+/// The optional pet fields a command that adopts one accepts, so `hatch` and
+/// `worktree add` take — and default — exactly the same set.
+pub(crate) struct PetOptions {
+    pub(crate) name: Option<String>,
+    pub(crate) asset: Option<String>,
+    pub(crate) personality: Option<String>,
+    pub(crate) agent: Option<Patch<String>>,
+}
+
+/// Fill in every field a Pet Birth needs but was not given: a random installed
+/// asset (falling back to a built-in), a random personality, and a name
+/// borrowed from the bound folder.
+pub(crate) fn hatch_request(
+    core: &PetsDrivenCore,
+    working_directory: Option<WorkingDirectoryPath>,
+    pet: PetOptions,
+) -> HatchPet {
+    let asset_id = pet.asset.unwrap_or_else(|| choose_random_asset(core));
+    let personality_id = pet.personality.unwrap_or_else(|| random_personality().to_string());
+    let name = pet
+        .name
+        .unwrap_or_else(|| default_hatch_name(working_directory.as_ref(), &asset_id));
+
+    HatchPet {
+        working_directory,
+        asset_id,
+        name,
+        personality_id,
+        // A pet is born with no agent unless one is named; `--agent none` says
+        // the same thing explicitly.
+        agent_provider: match pet.agent {
+            Some(Patch::Set(provider)) => Some(provider),
+            _ => None,
+        },
+    }
+}
+
+/// Adopt a pet and ask the running app to show it, handing back the pet view.
+/// `run_hatch` prints it as the whole answer; `worktree add` folds it into an
+/// answer about the folder.
+pub(crate) fn hatch_pet(
+    core: &PetsDrivenCore,
+    input: HatchPet,
+    origin: &str,
+) -> Result<serde_json::Value, CoreError> {
+    let commit = core.hatch(input)?;
+
+    // Ask the running app to show the new pet's overlay window. The app reloads
+    // state (picking up the pet we just wrote) before showing, so this is safe
+    // right after the write. Fire-and-forget: a stopped app just means the pet
+    // appears on next launch.
+    if let Some(cwd) = commit.value.working_directory() {
+        show_pet(origin, cwd);
+    }
+
+    Ok(commit.value.into_value())
+}
+
 fn run_hatch<O: Write>(core: &PetsDrivenCore, input: HatchPet, origin: &str, out: &mut O) -> i32 {
-    match core.hatch(input) {
-        Ok(commit) => {
-            // Ask the running app to show the new pet's overlay window. The app
-            // reloads state (picking up the pet we just wrote) before showing,
-            // so this is safe right after the write. Fire-and-forget: a stopped
-            // app just means the pet appears on next launch.
-            if let Some(cwd) = commit.value.working_directory() {
-                show_pet(origin, cwd);
-            }
-            print_json(out, &serde_json::json!({ "ok": true, "pet": commit.value }));
+    match hatch_pet(core, input, origin) {
+        Ok(pet) => {
+            print_json(out, &serde_json::json!({ "ok": true, "pet": pet }));
             0
         }
         Err(error) => report_core_error(out, &error),
     }
+}
+
+/// Delete the pet bound to `folder`, if one is. Answers with the removed pet's
+/// id, or `None` when the folder had no pet — a folder without one is a normal
+/// state for `worktree rm`, not a failure.
+pub(crate) fn remove_pet_bound_to(
+    core: &PetsDrivenCore,
+    origin: &str,
+    folder: &str,
+) -> Result<Option<String>, CoreError> {
+    let Some(view) = core.pet_by_working_directory(folder)? else {
+        return Ok(None);
+    };
+    let Some(pet_id) = view.id().map(PetId::new) else {
+        return Ok(None);
+    };
+
+    // Close the overlay window while the pet is still in state: the hide route
+    // resolves the pet by folder.
+    hide_pet(origin, folder);
+    core.remove_pet(&pet_id)?;
+
+    Ok(Some(pet_id.to_string()))
 }
 
 /// Best-effort request to the running app to show the pet registered to `cwd`.
@@ -294,6 +436,14 @@ fn run_hatch<O: Write>(core: &PetsDrivenCore, input: HatchPet, origin: &str, out
 fn show_pet(origin: &str, cwd: &str) {
     let body = serde_json::json!({ "cwd": cwd }).to_string();
     let _ = transport::post_json(origin, protocol::paths::SHOW, body.as_bytes(), FIRE_AND_FORGET_TIMEOUT);
+}
+
+/// Best-effort request to the running app to hide the pet registered to `cwd`,
+/// sent before the pet leaves state (the hide route resolves it by folder).
+/// Fire-and-forget, the same way `show_pet` is.
+fn hide_pet(origin: &str, cwd: &str) {
+    let body = serde_json::json!({ "cwd": cwd }).to_string();
+    let _ = transport::post_json(origin, protocol::paths::HIDE, body.as_bytes(), FIRE_AND_FORGET_TIMEOUT);
 }
 
 /// Show or hide the running app's pet window for `cwd`, printing the app's
@@ -426,8 +576,7 @@ fn run_delete<O: Write>(
     // Close the overlay window while the pet is still in state (the hide route
     // resolves the pet by folder). Best-effort: a stopped app is fine.
     if let Some(cwd) = &cwd {
-        let body = serde_json::json!({ "cwd": cwd }).to_string();
-        let _ = transport::post_json(origin, protocol::paths::HIDE, body.as_bytes(), FIRE_AND_FORGET_TIMEOUT);
+        hide_pet(origin, cwd);
     }
 
     match core.remove_pet(&pet_id) {
@@ -516,7 +665,7 @@ fn default_hatch_name(working_directory: Option<&WorkingDirectoryPath>, asset_id
 /// `--cwd` may be typed either way on Windows — and trailing ones are ignored.
 /// A path with no named segment (a bare drive or filesystem root) falls back to
 /// the folder itself.
-fn folder_name(folder: &str) -> String {
+pub(crate) fn folder_name(folder: &str) -> String {
     folder
         .rsplit(['/', '\\'])
         .find(|segment| !segment.is_empty())
@@ -612,7 +761,8 @@ pub fn run_with<O: Write, E: Write>(
         | Command::Unbind { .. }
         | Command::Update { .. }
         | Command::Note { .. }
-        | Command::Delete { .. } => {
+        | Command::Delete { .. }
+        | Command::Worktree(_) => {
             let core = match open_core() {
                 Ok(core) => core,
                 Err(message) => {
@@ -625,33 +775,17 @@ pub fn run_with<O: Write, E: Write>(
                 Command::Status => run_status(&core, out),
                 Command::List => run_list(&core, out),
                 Command::Hatch { name, asset, personality, agent, cwd: folder, no_cwd } => {
-                    let asset_id = asset.unwrap_or_else(|| choose_random_asset(&core));
-                    let personality_id =
-                        personality.unwrap_or_else(|| random_personality().to_string());
                     // `--no-cwd` adopts a folderless pet; otherwise the folder
                     // named, and the current directory when none was.
                     let working_directory = (!no_cwd).then(|| {
                         WorkingDirectoryPath::new(folder.unwrap_or_else(|| cwd.to_string()))
                     });
-                    let name = name
-                        .unwrap_or_else(|| default_hatch_name(working_directory.as_ref(), &asset_id));
-                    run_hatch(
+                    let request = hatch_request(
                         &core,
-                        HatchPet {
-                            working_directory,
-                            asset_id,
-                            name,
-                            personality_id,
-                            // A pet is born with no agent unless one is named;
-                            // `--agent none` says the same thing explicitly.
-                            agent_provider: match agent {
-                                Some(Patch::Set(provider)) => Some(provider),
-                                _ => None,
-                            },
-                        },
-                        origin,
-                        out,
-                    )
+                        working_directory,
+                        PetOptions { name, asset, personality, agent },
+                    );
+                    run_hatch(&core, request, origin, out)
                 }
                 Command::Bind { pet, cwd: folder } => {
                     let folder = folder.unwrap_or_else(|| cwd.to_string());
@@ -733,6 +867,50 @@ pub fn run_with<O: Write, E: Write>(
                 Command::Delete { pet, cwd: folder } => {
                     let folder = folder.unwrap_or_else(|| cwd.to_string());
                     run_delete(&core, origin, pet, folder, out)
+                }
+                Command::Worktree(command) => {
+                    let git = worktree::SystemGit;
+                    match command {
+                        WorktreeCommand::Add {
+                            branch,
+                            repo,
+                            path,
+                            base,
+                            name,
+                            asset,
+                            personality,
+                            agent,
+                            no_pet,
+                        } => worktree::run_add(
+                            &core,
+                            &git,
+                            origin,
+                            worktree::AddOptions {
+                                repo: repo.unwrap_or_else(|| cwd.to_string()),
+                                branch,
+                                path,
+                                base,
+                                no_pet,
+                                pet: PetOptions { name, asset, personality, agent },
+                            },
+                            out,
+                        ),
+                        WorktreeCommand::Ls { repo } => {
+                            worktree::run_ls(&core, &git, &repo.unwrap_or_else(|| cwd.to_string()), out)
+                        }
+                        WorktreeCommand::Rm { cwd: folder, force, keep_pet } => worktree::run_rm(
+                            &core,
+                            &git,
+                            origin,
+                            worktree::RemoveOptions {
+                                path: folder.unwrap_or_else(|| cwd.to_string()),
+                                force,
+                                keep_pet,
+                                process_cwd: cwd.to_string(),
+                            },
+                            out,
+                        ),
+                    }
                 }
                 // The outer match already excluded the other variants.
                 Command::Forward { .. }

@@ -21,6 +21,9 @@ The desktop installer ships `pdd` and adds it to your PATH.
 | `pdd update [PET_ID] [--cwd <DIR>] <FIELD…>` | Edit a living pet in place: rename, re-skin, change personality, note, or size | no |
 | `pdd note [TEXT] [--cwd <DIR>] [--pet <ID>] [--clear]` | Read, write, or erase the note on a pet's card | no |
 | `pdd delete [PET_ID] [--cwd <DIR>]` | Remove a pet (and hide its window) | no (hides best-effort) |
+| `pdd worktree add <BRANCH> [--repo <DIR>] [--path <DIR>] [--base <REF>] [--no-pet] [pet flags]` | Add a git worktree for a branch and adopt a pet bound to its folder | no (also pings the app to show it) |
+| `pdd worktree ls [--repo <DIR>]` | Every worktree of a repository, with the pet bound to each | no |
+| `pdd worktree rm [--cwd <DIR>] [--force] [--keep-pet]` | Remove a worktree and the pet bound to it | no (hides best-effort) |
 | `pdd show [CWD]` | Show the pet window for a folder | yes |
 | `pdd hide [CWD]` | Hide the pet window for a folder | yes |
 | `pdd forward [EVENT]` | Forward an agent hook event to the app | yes |
@@ -80,6 +83,46 @@ At least one field is required — an `update` that would change nothing is a
 usage error, not a silent no-op. The answer is the same `{"ok":true,"pet":{…}}`
 envelope the other state commands print. A running desktop picks the change up
 from its state watcher within a second; no restart needed.
+
+## Worktrees
+
+`pdd worktree add` is the two steps you would otherwise type by hand — `git
+worktree add` and then `pdd hatch` in the new folder — in one command:
+
+```bash
+pdd worktree add feat/login              # branch off the repo in the cwd
+pdd worktree add feat/login --agent codex --asset otto
+pdd worktree add hotfix --base origin/main
+pdd worktree add review/pr-12 --path D:/scratch/pr-12
+pdd worktree ls                          # worktrees + the pet on each
+pdd worktree rm --cwd D:/…/feat-login    # folder and pet together
+```
+
+The branch is created when it does not exist yet and checked out as it stands
+when it does (`createdBranch` in the answer says which happened); `--base` only
+applies to a branch being created. Everything `hatch` takes — `--name`,
+`--asset`, `--personality`, `--agent` — is accepted here and defaults the same
+way, so `pdd worktree add feat/login --agent codex` is the shape a per-worktree
+agent setup wants. `--no-pet` makes the folder and stops there.
+
+Without `--path`, the worktree lands in a `<repo>-worktrees` folder beside the
+repository (`D:/work/proj` → `D:/work/proj-worktrees/feat-login`; the branch's
+slashes become dashes). Set `PETS_DRIVEN_WORKTREE_ROOT` to collect them
+somewhere else instead — one folder per repository under it, so two projects
+that each branch `main` never collide.
+
+**Nothing about the worktree is persisted.** Git already knows which folders are
+worktrees of which repository, so `ls` asks `git worktree list` rather than a
+second registry: a worktree made with plain `git` still lists (with `"pet":
+null` until one is hatched there), and the pet on a worktree is an ordinary pet
+with an ordinary folder.
+
+`rm` refuses before touching anything when the target is the repository itself,
+when it holds uncommitted work (`--force` overrides, and is passed to git), or
+when the shell running the command sits inside the folder — Windows keeps a
+handle on a shell's current directory, so git would delete half the folder and
+leave it registered. `--keep-pet` removes the folder and leaves the pet in
+state for a later `bind`.
 
 ## Notes on a pet
 
