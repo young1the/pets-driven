@@ -8,9 +8,14 @@ import type { AppView } from "@/app/app-navigation";
 import { useAppUpdate } from "@/app/app-updates/use-app-update";
 import { desktopGateway } from "@/app/desktop-gateway";
 import type { DesktopObjectCounts } from "@/app/desktop-host/use-desktop-simulation-host";
+import { WORKTREE_REPO_STORAGE_KEY } from "@/app/local-settings-storage";
 import type { HomePetView } from "@/app/main-window/home-section";
 import { describeHookLastSignal } from "@/app/main-window/hook-last-signal";
-import { MainWindow, type MainWindowTab } from "@/app/main-window/main-window";
+import {
+  MainWindow,
+  type MainWindowTab,
+  type MainWindowWorktreeProps,
+} from "@/app/main-window/main-window";
 import { cardNote, petGradient, shortWorkingDir } from "@/app/main-window/pet-card-view";
 import type { PetEditView } from "@/app/main-window/pet-edit-section";
 import { usePetAssetOptions } from "@/app/pet-assets/use-pet-asset-options";
@@ -26,6 +31,32 @@ import type { PetPatch, PetRecord, PetsDrivenState } from "@/app-state/pets-driv
 
 /** How many pets the debug seed button adopts in one press. */
 const SEED_WATCHED_FOLDER_COUNT = 13;
+
+/** The repository the new-worktree dialog opens on, from the last time. */
+function readStoredWorktreeRepo(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return window.localStorage.getItem(WORKTREE_REPO_STORAGE_KEY) ?? "";
+  } catch {
+    // A browser with storage denied is no reason to withhold the dialog.
+    return "";
+  }
+}
+
+function storeWorktreeRepo(repo: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(WORKTREE_REPO_STORAGE_KEY, repo);
+  } catch {
+    // Convenience only: forgetting the folder costs one trip to the picker.
+  }
+}
 
 export interface MainWindowSurfaceProps {
   state: PetsDrivenState;
@@ -53,6 +84,11 @@ export interface MainWindowSurfaceProps {
   onPatchPet: (petId: string, patch: PetPatch) => void;
   onSetPetPersonality: (petId: string, personalityId: PetPersonalityId) => void;
   onSetPetAsset: (petId: string, assetId: string) => void;
+  /**
+   * Make a git worktree and adopt a pet for it. Rejects with git's own message
+   * when the folder could not be made.
+   */
+  onCreateWorktree: MainWindowWorktreeProps["onCreate"];
   onPickFolderForPet: (petId: string) => void;
   onClearFolderForPet: (petId: string) => void;
   onDeletePet: (petId: string) => void;
@@ -84,7 +120,9 @@ export interface MainWindowSurfaceProps {
  * host recreates its handlers every render; this keeps the wrapper stable while
  * always calling the latest one.
  */
-function useStableCallback<A extends unknown[]>(fn: (...args: A) => void): (...args: A) => void {
+// Generic in its return as well as its arguments: the worktree dialog awaits
+// what its callback answers, and a `void` here would throw that away.
+function useStableCallback<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
   const ref = useRef(fn);
   ref.current = fn;
   return useCallback((...args: A) => ref.current(...args), []);
@@ -121,6 +159,7 @@ export function MainWindowSurface({
   onPatchPet,
   onSetPetPersonality,
   onSetPetAsset,
+  onCreateWorktree,
   onPickFolderForPet,
   onClearFolderForPet,
   onDeletePet,
@@ -153,6 +192,7 @@ export function MainWindowSurface({
   const placeBall = useStableCallback(onPlaceBall);
   const clearProps = useStableCallback(onClearProps);
   const editPet = useStableCallback(setEditPetId);
+  const createWorktree = useStableCallback(onCreateWorktree);
   const addPet = useStableCallback(() => navigate("adopt"));
 
   const managedPets = useMemo(() => state.pets.filter((pet) => !pet.archived), [state]);
@@ -217,6 +257,19 @@ export function MainWindowSurface({
   const place = useMemo(
     () => ({ counts: desktopObjectCounts, onPlaceBall: placeBall, onClearProps: clearProps }),
     [desktopObjectCounts, placeBall, clearProps],
+  );
+
+  const worktree = useMemo(
+    () => ({
+      gateway: desktopGateway,
+      onCreate: createWorktree,
+      // The repository the last worktree came from: the dialog is nearly always
+      // opened for the same project twice running, and the folder picker is a
+      // modal trip to the OS to say so.
+      initialRepo: readStoredWorktreeRepo(),
+      onRepoUsed: storeWorktreeRepo,
+    }),
+    [createWorktree],
   );
 
   // Unmemoized derivations for the edit/settings sections (only rendered on
@@ -311,6 +364,7 @@ export function MainWindowSurface({
       editPet={editPetView}
       home={home}
       place={place}
+      worktree={worktree}
       onTab={(next) => {
         setEditPetId(null);
         setMainTab(next);

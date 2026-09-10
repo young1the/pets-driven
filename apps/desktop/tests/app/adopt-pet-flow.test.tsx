@@ -27,6 +27,10 @@ function createGateway(
     openAdoptedPetWindows: vi.fn().mockResolvedValue(undefined),
     closeAdoptedPetWindow: vi.fn(),
     openPetContextMenu: vi.fn(),
+    // Worktrees need a real git; this flow never asks for one.
+    listRepoWorktrees: vi.fn().mockRejectedValue(new Error("no git here")),
+    planRepoWorktree: vi.fn().mockRejectedValue(new Error("no git here")),
+    addRepoWorktree: vi.fn().mockRejectedValue(new Error("no git here")),
     pickDirectory: vi.fn(),
     revealPath: vi.fn(),
     setTrayLabels: vi.fn(),

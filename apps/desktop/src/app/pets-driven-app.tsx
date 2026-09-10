@@ -123,6 +123,7 @@ function PetsDrivenHostApp() {
     resetPets,
     resetAllSettings,
     seedWatchedFolders,
+    createWorktree,
     updateTerminalShell,
     patchPet,
     setPetPersonality,
@@ -310,6 +311,7 @@ function PetsDrivenHostApp() {
       navigate={navigate}
       onChangePetSourceFolder={() => void changePetSourceFolder()}
       onClearFolderForPet={clearFolderForPet}
+      onCreateWorktree={createWorktree}
       onDeletePet={deletePet}
       desktopObjectCounts={desktopObjectCounts}
       onClearProps={clearProps}

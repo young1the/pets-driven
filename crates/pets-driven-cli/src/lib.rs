@@ -869,7 +869,7 @@ pub fn run_with<O: Write, E: Write>(
                     run_delete(&core, origin, pet, folder, out)
                 }
                 Command::Worktree(command) => {
-                    let git = worktree::SystemGit;
+                    let git = pets_driven_git::SystemGit;
                     match command {
                         WorktreeCommand::Add {
                             branch,

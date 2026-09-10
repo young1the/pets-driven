@@ -16,7 +16,9 @@
     "showAll": "Show all",
     "hideAll": "Hide all",
     "place": "Place",
-    "placeHint": "Put something on the desktop for the pets"
+    "placeHint": "Put something on the desktop for the pets",
+    "worktree": "Worktree",
+    "worktreeHint": "Branch a repository into its own folder, with a pet in it"
   },
   "place": {
     "title": "Place on the desktop",
@@ -33,6 +35,30 @@
       "name": "Ball",
       "note": "Stays until you clear it. Pets kick it and chase it, and you can throw it around yourself."
     }
+  },
+  "worktree": {
+    "title": "New worktree",
+    "lead": "A branch of a repository, checked out in a folder of its own — with a pet standing in it to show what the agent is doing there.",
+    "repo": "Repository",
+    "repoPlaceholder": "The project to branch from",
+    "browse": "Browse",
+    "branch": "Branch",
+    "base": "Start the branch at",
+    "baseHint": "Leave empty to start at the repository's current HEAD.",
+    "willLandIn": "The worktree will be created in",
+    "previewHint": "Name a repository and a branch to see where the folder goes.",
+    "newBranch": "A new branch, created for this worktree.",
+    "existingBranch": "This branch already exists and will be checked out as it stands.",
+    "occupied": "That folder already holds files. Pick another branch name, or clear the folder.",
+    "existing": "Worktrees already in this repository ({{n}})",
+    "detached": "detached",
+    "cancel": "Cancel",
+    "create": "Create",
+    "creating": "Creating…",
+    "created": "The worktree is ready and its pet has moved in.",
+    "petFailed": "The folder was created, but no pet could be adopted for it: {{reason}}",
+    "another": "Make another",
+    "done": "Done"
   },
   "terminal": {
     "defaultFolder": "Default folder",
@@ -644,7 +670,8 @@
     "diagnosticsReady": "Pet diagnostics ready",
     "folderOccupied": "That folder already belongs to another pet",
     "folderMissing": "That folder is no longer on disk",
-    "settingsReset": "Settings are back to their defaults"
+    "settingsReset": "Settings are back to their defaults",
+    "worktreeCreated": "A pet moved into {{branch}}"
   },
   "confirm": {
     "deletePet": "Send {{name}} home for good? This removes the pet."

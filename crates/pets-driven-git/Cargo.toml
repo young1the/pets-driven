@@ -1,0 +1,16 @@
+[package]
+name = "pets-driven-git"
+version = "1.3.0"
+description = "Git worktree operations shared by the pets-driven desktop app and the pdd CLI"
+authors = ["pets-driven"]
+license = "MIT"
+edition = "2021"
+
+# The worktree behavior both surfaces run: where a worktree goes, what git is
+# asked, and which requests are refused before git is asked at all. It knows
+# nothing about pets — the caller binds one to the folder afterwards — and
+# depends on core only for the one Working Directory path normalization every
+# folder comparison in the workspace shares.
+[dependencies]
+pets-driven-core = { path = "../pets-driven-core" }
+serde = { version = "1", features = ["derive"] }

@@ -1,0 +1,118 @@
+.pd-worktree__lead {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-subtle);
+}
+
+/* The field and its Browse button share a row, with the button pinned to the
+   bottom so it lines up with the input rather than the label above it. */
+.pd-worktree__repo {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.pd-worktree__repo .pd-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pd-worktree__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.pd-worktree__previewLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+/* A path is the one thing here the user may want to read character by
+   character, so it wraps anywhere rather than overflowing the panel. */
+.pd-worktree__path {
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.pd-worktree__note {
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.pd-worktree__warn {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--warning-strong, #b8791f);
+  overflow-wrap: anywhere;
+}
+
+/* Git's own words, which name paths and refs and can run long. */
+.pd-worktree__error {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--danger-strong, #c0453f);
+  overflow-wrap: anywhere;
+}
+
+.pd-worktree__existing {
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.pd-worktree__existing summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.pd-worktree__existing ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pd-worktree__existing li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.pd-worktree__existing code {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  opacity: 0.85;
+}
+
+.pd-worktree__branch {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.pd-worktree__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pd-worktree__done {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

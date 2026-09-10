@@ -101,6 +101,14 @@ const place = {
   onPlaceBall: vi.fn(),
   onClearProps: vi.fn(),
 };
+const worktree = {
+  gateway: {
+    pickDirectory: vi.fn().mockResolvedValue(null),
+    listRepoWorktrees: vi.fn().mockResolvedValue([]),
+    planRepoWorktree: vi.fn(),
+  },
+  onCreate: vi.fn(),
+};
 const debug = { groups: [], error: null };
 const terminal = {
   available: false,
@@ -115,6 +123,7 @@ function setup(overrides = {}) {
     editPet: null,
     home,
     place,
+    worktree,
     edit,
     settings,
     terminal,

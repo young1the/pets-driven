@@ -4,6 +4,7 @@ members = [
     "apps/desktop/src-tauri",
     "crates/pets-driven-core",
     "crates/pets-driven-fs",
+    "crates/pets-driven-git",
     "crates/pets-driven-protocol",
     "crates/pets-driven-cli",
 ]

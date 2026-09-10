@@ -21,6 +21,7 @@ import {
 } from "@/app/main-window/place-object-dialog";
 import { SettingsSection, type SettingsSectionProps } from "@/app/main-window/settings-section";
 import { TerminalSection, type TerminalSectionProps } from "@/app/main-window/terminal-section";
+import { WorktreeDialog, type WorktreeDialogProps } from "@/app/main-window/worktree-dialog";
 import "@/app/main-window/main-window.css";
 
 export type MainWindowTab = "home" | "terminal" | "settings" | "debug";
@@ -34,12 +35,19 @@ export type MainWindowPlaceProps = Pick<
   "counts" | "onPlaceBall" | "onClearProps"
 >;
 
+/**
+ * The new-worktree dialog, minus the open/close the header owns — the same
+ * shape as the place dialog beside it.
+ */
+export type MainWindowWorktreeProps = Omit<WorktreeDialogProps, "open" | "onClose">;
+
 export interface MainWindowProps {
   tab: MainWindowTab;
   onTab: (tab: MainWindowTab) => void;
   editPet: PetEditView | null;
   home: HomeSectionProps;
   place: MainWindowPlaceProps;
+  worktree: MainWindowWorktreeProps;
   edit: Omit<PetEditSectionProps, "pet">;
   settings: SettingsSectionProps;
   /** The coach is the terminal tab's own affair, so it is not wired from here. */
@@ -54,6 +62,7 @@ export function MainWindow({
   editPet,
   home,
   place,
+  worktree,
   edit,
   settings,
   terminal,
@@ -69,6 +78,7 @@ export function MainWindow({
   // on only hide it.
   const [terminalMounted, setTerminalMounted] = useState(terminalVisible);
   const [placeOpen, setPlaceOpen] = useState(false);
+  const [worktreeOpen, setWorktreeOpen] = useState(false);
   useEffect(() => {
     if (terminalVisible) {
       setTerminalMounted(true);
@@ -114,6 +124,15 @@ export function MainWindow({
             </Button>
             <Button onClick={home.onHideAll} size="sm" variant="neutral">
               {t("nav.hideAll")}
+            </Button>
+            <Button
+              iconLeft={<span aria-hidden="true">🌱</span>}
+              onClick={() => setWorktreeOpen(true)}
+              size="sm"
+              title={t("nav.worktreeHint")}
+              variant="neutral"
+            >
+              {t("nav.worktree")}
             </Button>
             <Button
               iconLeft={<span aria-hidden="true">📦</span>}
@@ -168,6 +187,8 @@ export function MainWindow({
         onPlaceTreat={home.onDropItem}
         open={placeOpen}
       />
+
+      <WorktreeDialog onClose={() => setWorktreeOpen(false)} open={worktreeOpen} {...worktree} />
 
       {toast ? (
         <div className="pd-app-toast">

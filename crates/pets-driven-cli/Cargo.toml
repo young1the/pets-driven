@@ -25,6 +25,7 @@ path = "src/lib.rs"
 [dependencies]
 pets-driven-core = { path = "../pets-driven-core" }
 pets-driven-fs = { path = "../pets-driven-fs" }
+pets-driven-git = { path = "../pets-driven-git" }
 pets-driven-protocol = { path = "../pets-driven-protocol" }
 clap = { version = "4", features = ["derive"] }
 serde_json = "1"

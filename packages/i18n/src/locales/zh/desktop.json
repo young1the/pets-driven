@@ -16,7 +16,9 @@
     "showAll": "全部显示",
     "hideAll": "全部隐藏",
     "place": "放置",
-    "placeHint": "在桌面上放点东西给宠物玩"
+    "placeHint": "在桌面上放点东西给宠物玩",
+    "worktree": "工作树",
+    "worktreeHint": "把仓库按分支拆到独立文件夹，并放一只宠物进去"
   },
   "place": {
     "title": "放到桌面上",
@@ -33,6 +35,30 @@
       "name": "球",
       "note": "在你收起前一直留着。宠物会踢它、追它，你也可以自己扔着玩。"
     }
+  },
+  "worktree": {
+    "title": "新建工作树",
+    "lead": "把仓库的一个分支检出到独立文件夹，并放一只宠物在里面，显示智能体在那儿做什么。",
+    "repo": "仓库",
+    "repoPlaceholder": "要开分支的项目",
+    "browse": "浏览",
+    "branch": "分支",
+    "base": "分支起点",
+    "baseHint": "留空则从仓库当前的 HEAD 开始。",
+    "willLandIn": "工作树将创建在",
+    "previewHint": "填写仓库和分支后，这里会显示文件夹位置。",
+    "newBranch": "为这个工作树新建的分支。",
+    "existingBranch": "该分支已存在，将按原样检出。",
+    "occupied": "该文件夹里已经有文件。请换个分支名，或先清空文件夹。",
+    "existing": "该仓库已有的工作树 ({{n}})",
+    "detached": "detached",
+    "cancel": "取消",
+    "create": "创建",
+    "creating": "创建中…",
+    "created": "工作树已就绪，宠物已经住进去了。",
+    "petFailed": "文件夹已创建，但没能为它领养宠物：{{reason}}",
+    "another": "再建一个",
+    "done": "完成"
   },
   "terminal": {
     "defaultFolder": "默认文件夹",
@@ -620,7 +646,8 @@
     "diagnosticsReady": "宠物诊断信息已就绪",
     "folderOccupied": "那个文件夹已经属于另一只宠物了",
     "folderMissing": "那个文件夹在磁盘上已经不存在了",
-    "settingsReset": "设置已恢复为默认值"
+    "settingsReset": "设置已恢复为默认值",
+    "worktreeCreated": "一只宠物住进了 {{branch}}"
   },
   "confirm": {
     "deletePet": "要让 {{name}} 永远回家吗？这会删除这只宠物。"

@@ -3,7 +3,7 @@ import type { PetPersonalityId } from "@pets-driven/pet-engine/pets/profiles/pet
 import { sanitizePetVoiceSettings } from "@pets-driven/pet-engine/pets/profiles/pet-voice";
 import type { MutableRefObject } from "react";
 import type { AppView } from "@/app/app-navigation";
-import { desktopGateway } from "@/app/desktop-gateway";
+import { type AddedWorktree, desktopGateway } from "@/app/desktop-gateway";
 import { formatCommandError } from "@/app/desktop-host/format-command-error";
 import { clearStoredSettings } from "@/app/local-settings-storage";
 import { PERSONALITY_OPTIONS } from "@/app/onboarding/personality-options";
@@ -32,6 +32,17 @@ let activeFolderPickerPetId: string | null = null;
 
 /** Built-in Pet Assets cycled through when seeding a debug roster. */
 const SEED_ASSET_IDS = ["cato", "otto", "mochi", "fenn", "bloop", "pip"];
+
+/**
+ * The name a worktree's pet takes: the folder's own, the way `pdd hatch` names
+ * a pet after the directory it is bound to. Both separators are split on
+ * because the path arrives as a plain string.
+ */
+function worktreeFolderName(path: string): string {
+  const segments = path.split(/[\\/]/).filter((segment) => segment.length > 0);
+
+  return segments[segments.length - 1] ?? path;
+}
 
 type UsePetRosterActionsParams = {
   stateRef: MutableRefObject<PetsDrivenState>;
@@ -100,6 +111,49 @@ export function usePetRosterActions({
       flashToast(t("toast.settingsReset"));
     } catch (error) {
       setPetWindowError(formatCommandError(error));
+    }
+  }
+
+  /**
+   * Make a git worktree and give it a pet.
+   *
+   * Two steps that stay two steps: the backend creates the *folder* and this
+   * adopts a pet for it through the ordinary `hatchPet`, so a worktree pet is
+   * born exactly like a hand-adopted one — a random installed asset, a random
+   * personality, and the folder's own name. A failed adoption is reported
+   * beside the worktree rather than as the whole thing failing: the folder is
+   * on disk by then and is not rolled back, and the pet can be adopted by hand
+   * afterwards.
+   */
+  async function createWorktree(input: {
+    repo: string;
+    branch: string;
+    path?: string | null;
+    base?: string | null;
+  }): Promise<{ worktree: AddedWorktree; petError: string | null }> {
+    // Git speaks for itself here — the dialog shows what it said.
+    const worktree = await desktopGateway.addRepoWorktree(input);
+
+    try {
+      const packages = await desktopGateway.listPetPackages();
+      const asset = packages[Math.floor(Math.random() * packages.length)];
+      const option = PERSONALITY_OPTIONS[Math.floor(Math.random() * PERSONALITY_OPTIONS.length)];
+      const persisted = await desktopGateway.hatchPet({
+        assetId: asset?.id ?? SEED_ASSET_IDS[0],
+        name: worktreeFolderName(worktree.path),
+        personalityId: option.id,
+        cwd: worktree.path,
+      });
+
+      if (persisted) {
+        applyState(carryOverPetVisibility(stateRef.current, persisted));
+      }
+
+      flashToast(t("toast.worktreeCreated", { branch: worktree.branch }));
+
+      return { worktree, petError: null };
+    } catch (error) {
+      return { worktree, petError: formatCommandError(error) };
     }
   }
 
@@ -429,6 +483,7 @@ export function usePetRosterActions({
   return {
     resetPets,
     resetAllSettings,
+    createWorktree,
     seedWatchedFolders,
     updateSessionCommand,
     updateTerminalShell,

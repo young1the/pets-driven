@@ -16,7 +16,9 @@
     "showAll": "모두 보이기",
     "hideAll": "모두 숨기기",
     "place": "놓기",
-    "placeHint": "펫들이 쓸 물건을 데스크탑에 놓습니다"
+    "placeHint": "펫들이 쓸 물건을 데스크탑에 놓습니다",
+    "worktree": "워크트리",
+    "worktreeHint": "저장소를 브랜치별 폴더로 갈라내고 펫을 붙입니다"
   },
   "place": {
     "title": "데스크탑에 놓기",
@@ -33,6 +35,30 @@
       "name": "공",
       "note": "치울 때까지 남아 있습니다. 펫이 차고 쫓아다니며, 직접 집어 던질 수도 있습니다."
     }
+  },
+  "worktree": {
+    "title": "새 워크트리",
+    "lead": "저장소의 한 브랜치를 전용 폴더에 체크아웃하고, 그 폴더에서 에이전트가 무슨 일을 하는지 보여줄 펫을 함께 둡니다.",
+    "repo": "저장소",
+    "repoPlaceholder": "브랜치를 딸 프로젝트 폴더",
+    "browse": "찾아보기",
+    "branch": "브랜치",
+    "base": "브랜치 시작 지점",
+    "baseHint": "비워 두면 저장소의 현재 HEAD에서 시작합니다.",
+    "willLandIn": "워크트리가 만들어질 위치",
+    "previewHint": "저장소와 브랜치를 입력하면 폴더 위치를 보여드려요.",
+    "newBranch": "이 워크트리를 위해 새로 만드는 브랜치예요.",
+    "existingBranch": "이미 있는 브랜치라 그대로 체크아웃해요.",
+    "occupied": "그 폴더에 이미 파일이 있어요. 다른 브랜치 이름을 쓰거나 폴더를 비워 주세요.",
+    "existing": "이 저장소의 기존 워크트리 ({{n}})",
+    "detached": "분리된 HEAD",
+    "cancel": "취소",
+    "create": "만들기",
+    "creating": "만드는 중…",
+    "created": "워크트리가 준비됐고 펫이 들어갔어요.",
+    "petFailed": "폴더는 만들어졌지만 펫을 들이지 못했어요: {{reason}}",
+    "another": "하나 더",
+    "done": "완료"
   },
   "terminal": {
     "defaultFolder": "기본 폴더",
@@ -644,7 +670,8 @@
     "diagnosticsReady": "펫 진단이 준비되었어요",
     "folderOccupied": "이 폴더는 이미 다른 펫의 것이에요",
     "folderMissing": "그 폴더를 더 이상 찾을 수 없어요",
-    "settingsReset": "설정이 기본값으로 돌아왔어요"
+    "settingsReset": "설정이 기본값으로 돌아왔어요",
+    "worktreeCreated": "{{branch}}에 펫이 들어갔어요"
   },
   "confirm": {
     "deletePet": "{{name}}을(를) 완전히 집으로 보낼까요? 펫이 삭제돼요."

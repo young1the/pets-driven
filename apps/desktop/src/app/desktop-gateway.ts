@@ -62,6 +62,43 @@ export type TerminalShellOption = { label: string; path: string };
  */
 export type PetSourceDirectoryOption = { kind: "petdex" | "codex"; path: string };
 
+/**
+ * One worktree of a repository. Mirrors the Rust `WorktreeEntry`; `path` is git's
+ * own spelling of the folder, which is what a pet is looked up by.
+ */
+export type RepoWorktree = {
+  path: string;
+  head: string | null;
+  branch: string | null;
+  bare: boolean;
+  detached: boolean;
+  locked: boolean;
+  /** The repository's own worktree, which is not one that can be removed. */
+  main: boolean;
+};
+
+/** What making a worktree for a branch would do. Mirrors the Rust `WorktreePlan`. */
+export type WorktreePlan = {
+  repo: string;
+  path: string;
+  branch: string;
+  /** The branch exists, so it is checked out as it stands rather than created. */
+  branchExists: boolean;
+  /** Something is already in `path`, which creating refuses. */
+  pathOccupied: boolean;
+};
+
+/** A worktree that now exists on disk. Mirrors the Rust `AddedWorktree`. */
+export type AddedWorktree = {
+  path: string;
+  branch: string;
+  repo: string;
+  createdBranch: boolean;
+};
+
+/** What a worktree call reports outside Tauri, where there is no git to run. */
+const WORKTREE_NEEDS_DESKTOP = "Worktrees need the desktop app.";
+
 export type AgentPluginProvider = "claude" | "codex";
 export type AgentPluginState = "cli-missing" | "not-installed" | "installed" | "error";
 
@@ -197,6 +234,34 @@ export type DesktopGateway = {
     /** Whether this pet's durable voice switch is currently off. */
     voiceMuted?: boolean,
   ): Promise<void>;
+  /**
+   * Every worktree of the repository `repo` belongs to, the repository's own
+   * first. Rejects when the folder is in no git repository at all — the
+   * ordinary state of a pet's folder — with a message naming that folder.
+   */
+  listRepoWorktrees(repo: string): Promise<RepoWorktree[]>;
+  /**
+   * Where a worktree for `branch` would go, without creating anything. Called
+   * while the user types, so the folder is on screen before the button is
+   * pressed.
+   */
+  planRepoWorktree(input: {
+    repo: string;
+    branch: string;
+    /** An explicit folder, overriding the derived one. */
+    path?: string | null;
+  }): Promise<WorktreePlan>;
+  /**
+   * Create the worktree. The pet for the new folder is adopted separately,
+   * through `hatchPet`, so a worktree pet is born exactly like any other.
+   */
+  addRepoWorktree(input: {
+    repo: string;
+    branch: string;
+    path?: string | null;
+    /** What a newly created branch starts at; an existing branch has none. */
+    base?: string | null;
+  }): Promise<AddedWorktree>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
   /**
@@ -479,6 +544,38 @@ export const desktopGateway: DesktopGateway = {
     const muted = voiceMuted ? "&voiceMuted=1" : "";
     const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}${game}${agent}${muted}`;
     await invoke("open_pet_context_menu", { petId, url, localX: x, localY: y });
+  },
+
+  // The three worktree calls reject rather than degrade quietly: an empty list
+  // would read as "this repository has no worktrees", and a no-op create would
+  // leave the dialog claiming a folder that was never made.
+  async listRepoWorktrees(repo) {
+    if (!isTauri()) {
+      throw new Error(WORKTREE_NEEDS_DESKTOP);
+    }
+
+    return await invoke<RepoWorktree[]>("list_repo_worktrees", { repo });
+  },
+
+  async planRepoWorktree({ repo, branch, path }) {
+    if (!isTauri()) {
+      throw new Error(WORKTREE_NEEDS_DESKTOP);
+    }
+
+    return await invoke<WorktreePlan>("plan_repo_worktree", { repo, branch, path: path ?? null });
+  },
+
+  async addRepoWorktree({ repo, branch, path, base }) {
+    if (!isTauri()) {
+      throw new Error(WORKTREE_NEEDS_DESKTOP);
+    }
+
+    return await invoke<AddedWorktree>("add_repo_worktree", {
+      repo,
+      branch,
+      path: path ?? null,
+      base: base ?? null,
+    });
   },
 
   async pickDirectory() {

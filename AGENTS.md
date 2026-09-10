@@ -33,6 +33,7 @@ pnpm release:bump <major|minor|patch|X.Y.Z>  # one version across every manifest
 | `crates/pets-driven-core` | Authoritative Pet + Registered Working Directory state behind a repository seam | `crates/AGENTS.md` |
 | `crates/pets-driven-fs` | Shared on-disk `state.v1.json` repository with a cross-process file lock | `crates/AGENTS.md` |
 | `crates/pets-driven-protocol` | Hook-forwarding wire contract (routes, synthesized event) | `crates/AGENTS.md` |
+| `crates/pets-driven-git` | Git worktree behavior the app and the CLI share (where a worktree goes, what git is asked) | `crates/AGENTS.md` |
 | `crates/pets-driven-cli` | The `pdd` CLI: direct state ops + live hook forwarding | `crates/AGENTS.md` |
 | `apps/web` | Landing site + Remotion demo video | `apps/web/AGENTS.md` |
 | `packages/pet-engine` | ECS simulation, personalities, sprite state | `packages/pet-engine/AGENTS.md` |
@@ -49,8 +50,11 @@ graph TD
   desktop --> i18n[packages/i18n]
   desktop --> core[crates/pets-driven-core]
   desktop --> fs[crates/pets-driven-fs]
+  desktop --> git[crates/pets-driven-git]
   cli[crates/pets-driven-cli] --> core
   cli --> fs
+  cli --> git
+  git --> core
   web[apps/web] --> engine
   web --> ds
   web --> i18n
@@ -59,7 +63,7 @@ graph TD
 
 `pet-engine` depends on nothing in the workspace and must stay that way. Full graph, runtime event flow, and a ripple table: `ARCHITECTURE.md`.
 
-The Rust side is a Cargo workspace (root `Cargo.toml`): the desktop Tauri crate plus `crates/pets-driven-core` (persisted Pet + Registered Working Directory behavior behind a `StateRepository` seam; depends only on `serde`, `serde_json`, `thiserror`), `crates/pets-driven-fs` (the shared `FileStateRepository` — the on-disk `state.v1.json` plus an `fslock` cross-process lock), `crates/pets-driven-protocol` (the hook-forwarding wire contract), and `crates/pets-driven-cli` (the `pdd` binary).
+The Rust side is a Cargo workspace (root `Cargo.toml`): the desktop Tauri crate plus `crates/pets-driven-core` (persisted Pet + Registered Working Directory behavior behind a `StateRepository` seam; depends only on `serde`, `serde_json`, `thiserror`), `crates/pets-driven-fs` (the shared `FileStateRepository` — the on-disk `state.v1.json` plus an `fslock` cross-process lock), `crates/pets-driven-protocol` (the hook-forwarding wire contract), `crates/pets-driven-git` (the git worktree behavior the desktop and the CLI share), and `crates/pets-driven-cli` (the `pdd` binary).
 
 **The desktop and the `pdd` CLI both write state directly** through the core over the *same* `pets-driven-fs` repository — the same file, resolved identically (`dirs::data_dir()/com.petsdriven.desktop/state.v1.json`, overridable with `PETS_DRIVEN_STATE_PATH`), and serialised by the same cross-process lock. So `pdd` works whether or not the desktop is running and cannot race it. A write is a durable state change; a *hook event* is not — it is a transient signal a running pet reacts to, so `pdd forward` goes to the live app over the loopback ingress and no-ops when the app is down. The desktop watches the state file and reloads the webview when the CLI writes it.
 
