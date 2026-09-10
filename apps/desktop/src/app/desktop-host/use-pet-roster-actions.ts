@@ -12,6 +12,7 @@ import { buildLaunchLine, parseLaunchLine } from "@/app/session-launch-line";
 import {
   adoptPet,
   clearWorkingDirectoryForPet,
+  getWorkingDirectoryForPet,
   registerWorkingDirectory,
   removePet,
   setPetAsset,
@@ -24,6 +25,7 @@ import {
   type PetsDrivenState,
   resetSettings,
   setPetSourceDirectory,
+  setWorktreeDirectory,
 } from "@/app-state/pets-driven-state";
 
 // Native folder dialogs are app-modal side effects. Keep the guard outside the
@@ -154,6 +156,32 @@ export function usePetRosterActions({
       return { worktree, petError: null };
     } catch (error) {
       return { worktree, petError: formatCommandError(error) };
+    }
+  }
+
+  /**
+   * The pet-menu version of `createWorktree`: it names a pet rather than a
+   * folder, and it has nowhere of its own to show an answer — the popup closes
+   * as the signal is sent, and git takes seconds — so every outcome arrives as
+   * a toast in the main window.
+   */
+  async function createWorktreeForPet(petId: string, branch: string) {
+    const folder = getWorkingDirectoryForPet(stateRef.current, petId)?.path;
+
+    if (!folder) {
+      flashToast(t("toast.worktreeNoFolder"));
+      return;
+    }
+
+    try {
+      const { petError } = await createWorktree({ repo: folder, branch });
+      if (petError) {
+        flashToast(petError);
+      }
+    } catch (error) {
+      // Git's own refusal: it names the branch or the checkout in the way, and
+      // is the only thing that could tell the user what to do differently.
+      flashToast(formatCommandError(error));
     }
   }
 
@@ -459,6 +487,32 @@ export function usePetRosterActions({
   }
 
   /**
+   * Where new worktrees are made. Persisted rather than kept on this device,
+   * because `pdd worktree` reads the same field — the app and the command line
+   * would otherwise have to be told separately.
+   */
+  function applyWorktreeFolder(path: string | null) {
+    const next = setWorktreeDirectory(stateRef.current, path);
+    if (next === stateRef.current) {
+      return;
+    }
+    applyState(next);
+    void desktopGateway.updateSettings({ worktreeDirectory: next.worktreeDirectory });
+  }
+
+  async function changeWorktreeFolder() {
+    const path = await desktopGateway.pickDirectory();
+    if (path) {
+      applyWorktreeFolder(path);
+    }
+  }
+
+  /** Back to a worktree beside each repository it branches from. */
+  function resetWorktreeFolder() {
+    applyWorktreeFolder(null);
+  }
+
+  /**
    * Open a configured folder in the OS file manager. Shared by the pet-source
    * setting and a pet's working folder, so the caller passes the already
    * resolved path (the effective default, or the pet's bound directory). A
@@ -484,6 +538,7 @@ export function usePetRosterActions({
     resetPets,
     resetAllSettings,
     createWorktree,
+    createWorktreeForPet,
     seedWatchedFolders,
     updateSessionCommand,
     updateTerminalShell,
@@ -499,6 +554,8 @@ export function usePetRosterActions({
     clearFolderForPet,
     applyPetSourceFolder,
     changePetSourceFolder,
+    changeWorktreeFolder,
+    resetWorktreeFolder,
     revealFolder,
     setLaunchCommand,
   };

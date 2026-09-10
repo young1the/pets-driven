@@ -24,10 +24,12 @@ vi.mock("@tauri-apps/api/window", () => ({
 function renderMenu(
   gameSpawn: "auto" | "tool-use" | null = null,
   agentProvider: "claude" | "codex" | null = null,
+  cwd: string | null = null,
 ) {
   return render(
     <PetContextMenuView
       agentProvider={agentProvider}
+      cwd={cwd}
       gameSpawn={gameSpawn}
       note=""
       petId="pet-a"
@@ -47,6 +49,71 @@ describe("the pet context menu", () => {
 
   beforeEach(() => {
     sendInput = vi.spyOn(petWindowTransport, "sendInput").mockResolvedValue(undefined);
+  });
+
+  /**
+   * A worktree branches from the folder the pet is watching, so the row is
+   * only there when the pet has one — and the menu asks for the branch alone,
+   * because everything else about the folder is already decided (the app's
+   * worktree setting, or a folder beside the repository).
+   */
+  it("offers a worktree only to a pet that has a folder", () => {
+    renderMenu();
+    expect(screen.queryByRole("menuitem", { name: /New worktree/ })).not.toBeInTheDocument();
+
+    renderMenu(null, null, "D:/work/proj");
+    expect(screen.getByRole("menuitem", { name: /New worktree/ })).toBeInTheDocument();
+  });
+
+  it("sends the branch it was given and nothing else", () => {
+    renderMenu(null, null, "D:/work/proj");
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /New worktree/ }));
+    fireEvent.change(screen.getByPlaceholderText("feat/login"), {
+      target: { value: "  feat/login  " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    expect(emittedKinds(sendInput)).toEqual(["menu.new-worktree"]);
+    expect(sendInput.mock.calls[0][0]).toMatchObject({
+      petId: "pet-a",
+      // Trimmed here rather than in the host: what the user typed around the
+      // name is never part of a branch.
+      branch: "feat/login",
+    });
+  });
+
+  it("will not create a worktree with no branch named", () => {
+    renderMenu(null, null, "D:/work/proj");
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /New worktree/ }));
+
+    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+    fireEvent.keyDown(screen.getByPlaceholderText("feat/login"), { key: "Enter" });
+    expect(sendInput).not.toHaveBeenCalled();
+  });
+
+  it("takes Enter in the branch field as the create it is", () => {
+    renderMenu(null, null, "D:/work/proj");
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /New worktree/ }));
+    fireEvent.change(screen.getByPlaceholderText("feat/login"), { target: { value: "hotfix" } });
+    fireEvent.keyDown(screen.getByPlaceholderText("feat/login"), { key: "Enter" });
+
+    expect(sendInput.mock.calls[0][0]).toMatchObject({
+      kind: "menu.new-worktree",
+      branch: "hotfix",
+    });
+  });
+
+  it("steps back to the menu from the branch field, sending nothing", () => {
+    renderMenu(null, null, "D:/work/proj");
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /New worktree/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.getByRole("menuitem", { name: /New worktree/ })).toBeInTheDocument();
+    expect(sendInput).not.toHaveBeenCalled();
   });
 
   it("opens the pet-only settings from the header action", () => {

@@ -16,9 +16,7 @@
     "showAll": "すべて表示",
     "hideAll": "すべて隠す",
     "place": "置く",
-    "placeHint": "ペットのためにデスクトップに何か置きます",
-    "worktree": "ワークツリー",
-    "worktreeHint": "リポジトリをブランチごとのフォルダーに分け、ペットを住まわせます"
+    "placeHint": "ペットのためにデスクトップに何か置きます"
   },
   "place": {
     "title": "デスクトップに置く",
@@ -38,7 +36,7 @@
   },
   "worktree": {
     "title": "新しいワークツリー",
-    "lead": "リポジトリのブランチを専用フォルダーにチェックアウトし、そこでエージェントが何をしているかを見せるペットを一緒に置きます。",
+    "lead": "{{name}} のフォルダーのブランチを専用フォルダーにチェックアウトし、そこでエージェントが何をしているかを見せるペットを一緒に置きます。",
     "repo": "リポジトリ",
     "repoPlaceholder": "ブランチを切るプロジェクト",
     "browse": "参照",
@@ -232,7 +230,14 @@
     "updateFailed": "アップデートを完了できませんでした。",
     "updateRetry": "もう一度試す",
     "sectionReset": "リセット",
-    "sectionResetDesc": "設定もペットも、最初からやり直せます。"
+    "sectionResetDesc": "設定もペットも、最初からやり直せます。",
+    "worktreeFolderTitle": "ワークツリーのフォルダー",
+    "worktreeFolderDesc": "新しいワークツリーを作る場所です。未設定なら、分岐元のリポジトリの隣に作られます。`pdd worktree` も同じ設定を使います。",
+    "noWorktreeFolder": "各リポジトリの隣",
+    "noWorktreeFolderHint": "D:\\work\\proj のワークツリーは D:\\work\\proj-worktrees に作られます",
+    "clearWorktreeFolder": "リポジトリの隣に戻す",
+    "changeWorktreeFolder": "フォルダーを選ぶ",
+    "openWorktreeFolder": "フォルダーを開く"
   },
   "hook": {
     "summary": {
@@ -345,7 +350,8 @@
     "note": "ノート",
     "notePlaceholder": "このペットについてのノートを書いてみましょう…",
     "deletePet": "ペットを削除",
-    "done": "完了"
+    "done": "完了",
+    "newWorktree": "このフォルダーから新しいワークツリー"
   },
   "debug": {
     "title": "開発者ツール",
@@ -576,7 +582,12 @@
     "gameWatchNote": "ツール呼び出しが障害物になります",
     "gamePractice": "練習ラン",
     "gamePracticeNote": "一定のリズムを自分で走ります",
-    "gameStop": "ゲームモードを終了"
+    "gameStop": "ゲームモードを終了",
+    "newWorktree": "新しいワークツリー",
+    "worktreeAria": "{{name}} のフォルダーから新しいワークツリー",
+    "worktreeHeader": "このフォルダーから分岐",
+    "worktreePlaceholder": "feat/login",
+    "worktreeCreate": "作成"
   },
   "petWindow": {
     "connectPrompt": "つなぎたいターミナルの窓をクリックしてください",
@@ -671,7 +682,8 @@
     "folderOccupied": "そのフォルダはすでに別のペットのものです",
     "folderMissing": "そのフォルダはもう見つかりません",
     "settingsReset": "設定が既定値に戻りました",
-    "worktreeCreated": "{{branch}} にペットが引っ越しました"
+    "worktreeCreated": "{{branch}} にペットが引っ越しました",
+    "worktreeNoFolder": "先にこのペットにフォルダーを設定してください — ワークツリーはペットが見ているフォルダーから分かれます。"
   },
   "confirm": {
     "deletePet": "{{name}}をずっとおうちに帰しますか？ このペットは削除されます。"

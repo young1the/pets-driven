@@ -128,6 +128,22 @@ impl PetsDrivenCore {
             .map(PetView::from_value))
     }
 
+    /// The folder new worktrees are made in, or `None` when none is set — in
+    /// which case each worktree lands beside the repository it branches from.
+    ///
+    /// A setting rather than an environment variable so the app and `pdd` agree
+    /// on it without either being told twice; a blank value is read as unset.
+    pub fn worktree_directory(&self) -> Result<Option<String>, CoreError> {
+        let state = self.load_document()?;
+
+        Ok(state
+            .get("worktreeDirectory")
+            .and_then(|value| value.as_str())
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string))
+    }
+
     // ---- Mutations -------------------------------------------------------
 
     /// Run one read-modify-atomic-replace transaction: take the lock, load and

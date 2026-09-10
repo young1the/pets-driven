@@ -23,6 +23,16 @@ export interface SettingsPetsPanelProps {
   /** Clear the designated folder, dropping back to the bundled pets alone. */
   onResetPetFolder: () => void;
   /**
+   * Where a new worktree is made; null puts each one beside the repository it
+   * branches from. Persisted, not device-local, because `pdd worktree` reads
+   * the same setting.
+   */
+  worktreeDirectory: string | null;
+  onChangeWorktreeFolder: () => void;
+  onOpenWorktreeFolder: () => void;
+  /** Back to a worktree beside each repository. Only shown when one is set. */
+  onResetWorktreeFolder: () => void;
+  /**
    * Whether each pet gets its own always-on-top window or they all share one
    * transparent, click-through window over the whole desktop.
    */
@@ -54,6 +64,10 @@ export function SettingsPetsPanel({
   onChangePetFolder,
   onOpenPetFolder,
   onResetPetFolder,
+  worktreeDirectory,
+  onChangeWorktreeFolder,
+  onOpenWorktreeFolder,
+  onResetWorktreeFolder,
   overlayMode,
   onSetOverlayMode,
   quietMode,
@@ -112,6 +126,57 @@ export function SettingsPetsPanel({
           {petSourceDirectory && (
             <button onClick={onResetPetFolder} style={smallAction} type="button">
               {t("settings.clearPetFolder")}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Where a new worktree lands. The same card shape as the row above it:
+          the folder reads on the left, its actions sit alongside. */}
+      <div style={rowStyle()}>
+        <span style={label}>{t("settings.worktreeFolderTitle")}</span>
+        <p style={hint}>{t("settings.worktreeFolderDesc")}</p>
+        <div style={connectionCard}>
+          <span style={{ color: "var(--text-muted)", display: "flex" }}>
+            <FolderIcon />
+          </span>
+          <span style={connectionText}>
+            <b style={{ color: "var(--text-strong)", fontSize: "13.5px" }}>
+              {worktreeDirectory ? folderName(worktreeDirectory) : t("settings.noWorktreeFolder")}
+            </b>
+            <small
+              style={{
+                color: "var(--text-muted)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {worktreeDirectory ?? t("settings.noWorktreeFolderHint")}
+            </small>
+          </span>
+          {worktreeDirectory && (
+            <button
+              onClick={onOpenWorktreeFolder}
+              style={{
+                ...smallAction,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+              title={t("settings.openWorktreeFolder")}
+              type="button"
+            >
+              <ExternalLinkIcon size={14} />
+              {t("settings.openWorktreeFolder")}
+            </button>
+          )}
+          <button onClick={onChangeWorktreeFolder} style={smallAction} type="button">
+            {t("settings.changeWorktreeFolder")}
+          </button>
+          {worktreeDirectory && (
+            <button onClick={onResetWorktreeFolder} style={smallAction} type="button">
+              {t("settings.clearWorktreeFolder")}
             </button>
           )}
         </div>

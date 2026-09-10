@@ -21,6 +21,15 @@ use pets_driven_git::{
     WorktreePlan,
 };
 
+use crate::state_commands;
+
+/// Where new worktrees go: the environment override first (a per-shell escape
+/// hatch the CLI honours too), then the folder set in Settings, and otherwise
+/// none — which puts each worktree beside the repository it branches from.
+fn worktree_root(app: &tauri::AppHandle) -> Option<String> {
+    worktree_root_from_env().or_else(|| state_commands::worktree_directory(app))
+}
+
 /// Every worktree of the repository `repo` belongs to, the repository's own
 /// worktree first. Fails when the folder is not in a git repository at all,
 /// which is the ordinary state of a pet's folder — the message names the
@@ -37,42 +46,34 @@ pub(crate) async fn list_repo_worktrees(repo: String) -> Result<Vec<WorktreeEntr
 /// something is already in the way.
 #[tauri::command]
 pub(crate) async fn plan_repo_worktree(
+    app: tauri::AppHandle,
     repo: String,
     branch: String,
     path: Option<String>,
 ) -> Result<WorktreePlan, String> {
-    blocking(move || {
-        plan_worktree(
-            &SystemGit,
-            &repo,
-            &branch,
-            path.as_deref(),
-            worktree_root_from_env().as_deref(),
-        )
-    })
-    .await
+    let root = worktree_root(&app);
+
+    blocking(move || plan_worktree(&SystemGit, &repo, &branch, path.as_deref(), root.as_deref()))
+        .await
 }
 
 /// Create the worktree. The caller adopts the pet for the returned folder
 /// afterwards; nothing here writes state.
 #[tauri::command]
 pub(crate) async fn add_repo_worktree(
+    app: tauri::AppHandle,
     repo: String,
     branch: String,
     path: Option<String>,
     base: Option<String>,
 ) -> Result<AddedWorktree, String> {
+    let root = worktree_root(&app);
+
     blocking(move || {
         // Re-planned inside the same blocking hop rather than taking the plan
         // from the webview: the folder is created from what git says now, not
         // from what a preview said while the user was still typing.
-        let plan = plan_worktree(
-            &SystemGit,
-            &repo,
-            &branch,
-            path.as_deref(),
-            worktree_root_from_env().as_deref(),
-        )?;
+        let plan = plan_worktree(&SystemGit, &repo, &branch, path.as_deref(), root.as_deref())?;
 
         add_worktree(&SystemGit, &plan, base.as_deref())
     })

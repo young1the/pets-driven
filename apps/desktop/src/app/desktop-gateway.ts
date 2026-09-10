@@ -195,6 +195,8 @@ export type DesktopGateway = {
     sessionCommand?: string;
     terminalShell?: string | null;
     petSourceDirectory?: string | null;
+    /** Where new worktrees are made; null puts each beside its repository. */
+    worktreeDirectory?: string | null;
   }): Promise<PetsDrivenState | null>;
   /**
    * Put every persisted setting back to its default. The backend decides what
@@ -233,6 +235,12 @@ export type DesktopGateway = {
     agentProvider?: PetAgentProvider,
     /** Whether this pet's durable voice switch is currently off. */
     voiceMuted?: boolean,
+    /**
+     * The folder this pet is bound to. The menu offers a worktree only when
+     * there is one, since the repository a worktree branches from is this
+     * pet's own folder.
+     */
+    cwd?: string | null,
   ): Promise<void>;
   /**
    * Every worktree of the repository `repo` belongs to, the repository's own
@@ -530,7 +538,7 @@ export const desktopGateway: DesktopGateway = {
     await invoke("close_adopted_pet_window", { petId });
   },
 
-  async openPetContextMenu(petId, petName, note, x, y, gameSpawn, agentProvider, voiceMuted) {
+  async openPetContextMenu(petId, petName, note, x, y, gameSpawn, agentProvider, voiceMuted, cwd) {
     if (!isTauri()) {
       return;
     }
@@ -542,7 +550,8 @@ export const desktopGateway: DesktopGateway = {
     const game = gameSpawn ? `&game=${gameSpawn}` : "";
     const agent = agentProvider ? `&agent=${agentProvider}` : "";
     const muted = voiceMuted ? "&voiceMuted=1" : "";
-    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}${game}${agent}${muted}`;
+    const folder = cwd ? `&cwd=${encodeURIComponent(cwd)}` : "";
+    const url = `pet-window.html?surface=pet-context-menu&petId=${encodeURIComponent(petId)}&petName=${encodeURIComponent(petName)}&note=${encodeURIComponent(note)}${game}${agent}${muted}${folder}`;
     await invoke("open_pet_context_menu", { petId, url, localX: x, localY: y });
   },
 

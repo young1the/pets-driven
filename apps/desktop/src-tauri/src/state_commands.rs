@@ -47,6 +47,14 @@ pub(crate) fn read_state(app: &tauri::AppHandle) -> Result<Value, String> {
         .map_err(|error| error.to_string())
 }
 
+/// The folder new worktrees are made in, as the user set it in Settings, or
+/// `None` when they have not — each worktree then lands beside its repository.
+/// A read that fails is the same answer as an unset one: the folder is a
+/// preference, and refusing to make a worktree over it would be worse.
+pub(crate) fn worktree_directory(app: &tauri::AppHandle) -> Option<String> {
+    core(app).worktree_directory().ok().flatten()
+}
+
 /// Map a [`CoreError`] to the HTTP status line the ingress should reply with.
 /// This replaces the old string-prefix matching: variants, not message text,
 /// decide the status.

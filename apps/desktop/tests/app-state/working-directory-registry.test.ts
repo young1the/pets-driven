@@ -15,6 +15,7 @@ describe("working directory registry", () => {
       sessionCommand: "cmd /k claude",
       terminalShell: null,
       petSourceDirectory: null,
+      worktreeDirectory: null,
     });
   });
 
@@ -44,6 +45,7 @@ describe("working directory registry", () => {
       sessionCommand: "cmd /k claude",
       terminalShell: null,
       petSourceDirectory: null,
+      worktreeDirectory: null,
     };
 
     expect(

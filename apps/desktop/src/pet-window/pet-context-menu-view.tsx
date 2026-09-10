@@ -20,9 +20,18 @@ type PetContextMenuViewProps = {
    */
   gameSpawn?: "auto" | "tool-use" | null;
   voiceMuted?: boolean;
+  /**
+   * The folder this pet is bound to, or null when it has none.
+   *
+   * The menu offers a worktree only when there is a folder to branch: the
+   * repository a new worktree comes from is this pet's own folder, which is
+   * the whole reason the action lives on a pet. Whether that folder is a git
+   * repository at all is git's question, answered when the branch is made.
+   */
+  cwd?: string | null;
 };
 
-type MenuView = "menu" | "note" | "settings" | "game";
+type MenuView = "menu" | "note" | "settings" | "game" | "worktree";
 
 /**
  * The menu window is sized from the tallest fixed menu view rather than a
@@ -67,11 +76,13 @@ export function PetContextMenuView({
   agentProvider = null,
   gameSpawn = null,
   voiceMuted = false,
+  cwd = null,
 }: PetContextMenuViewProps) {
   const { t } = useTranslation("desktop");
   const [view, setView] = useState<MenuView>("menu");
   const [noteText, setNoteText] = useState(note);
   const [nameText, setNameText] = useState(petName);
+  const [branchText, setBranchText] = useState("");
   const [selectedAgentProvider, setSelectedAgentProvider] = useState<PetAgentProvider | null>(
     agentProvider,
   );
@@ -145,6 +156,7 @@ export function PetContextMenuView({
       note?: string;
       name?: string;
       agentProvider?: PetAgentProvider | null;
+      branch?: string;
     } = {},
   ) {
     sequenceRef.current += 1;
@@ -196,6 +208,57 @@ export function PetContextMenuView({
               }}
             >
               {t("contextMenu.save")}
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (view === "worktree") {
+    const trimmedBranch = branchText.trim();
+
+    return (
+      <main className="pet-context-menu-surface">
+        <section
+          aria-label={t("contextMenu.worktreeAria", { name: petName })}
+          className="pet-context-menu-note"
+        >
+          <div className="pet-context-menu-note__header">{t("contextMenu.worktreeHeader")}</div>
+          <input
+            className="pet-context-menu-note__input pet-context-menu-note__input--line"
+            onChange={(event) => setBranchText(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter is the whole gesture here: one field, one button.
+              if (event.key === "Enter" && trimmedBranch) {
+                emitSignal("menu.new-worktree", { branch: trimmedBranch });
+                closeWindow();
+              }
+            }}
+            placeholder={t("contextMenu.worktreePlaceholder")}
+            value={branchText}
+          />
+          <div className="pet-context-menu-note__actions">
+            <button
+              className="pet-context-menu-note__cancel"
+              type="button"
+              onClick={() => setView("menu")}
+            >
+              {t("contextMenu.cancel")}
+            </button>
+            <button
+              className="pet-context-menu-note__save"
+              disabled={!trimmedBranch}
+              type="button"
+              onClick={() => {
+                // The menu closes on the way out: making the worktree is git's
+                // work and takes seconds, and the result arrives as a toast in
+                // the main window with the new pet beside its folder.
+                emitSignal("menu.new-worktree", { branch: trimmedBranch });
+                closeWindow();
+              }}
+            >
+              {t("contextMenu.worktreeCreate")}
             </button>
           </div>
         </section>
@@ -467,6 +530,23 @@ export function PetContextMenuView({
           </svg>
           {t("contextMenu.findTerminal")}
         </button>
+        {cwd ? (
+          <button
+            aria-haspopup="dialog"
+            className="pet-context-menu-card__item pet-context-menu-card__item--worktree"
+            role="menuitem"
+            type="button"
+            onClick={() => setView("worktree")}
+          >
+            <span aria-hidden="true" className="pet-context-menu-card__glyph">
+              🌱
+            </span>
+            {t("contextMenu.newWorktree")}
+            <span aria-hidden="true" className="pet-context-menu-card__chevron">
+              ›
+            </span>
+          </button>
+        ) : null}
         {/* One row for the whole feature. While a round is on it stops it
             outright rather than opening the two kinds again: the menu is the
             only off switch there is, and an off switch a step down is one the

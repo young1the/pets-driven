@@ -26,7 +26,6 @@ const ADDED: AddedWorktree = {
 
 function setup(overrides: { plan?: Partial<WorktreePlan>; onCreate?: unknown } = {}) {
   const gateway = {
-    pickDirectory: vi.fn().mockResolvedValue("D:/picked"),
     listRepoWorktrees: vi.fn().mockResolvedValue([]),
     planRepoWorktree: vi.fn().mockResolvedValue({ ...PLAN, ...overrides.plan }),
   };
@@ -38,8 +37,8 @@ function setup(overrides: { plan?: Partial<WorktreePlan>; onCreate?: unknown } =
     onClose: vi.fn(),
     gateway,
     onCreate,
-    initialRepo: "D:/work/proj",
-    onRepoUsed: vi.fn(),
+    repo: "D:/work/proj",
+    petName: "Rex",
   };
 
   render(<WorktreeDialog {...props} />);
@@ -86,7 +85,7 @@ describe("WorktreeDialog", () => {
 
   it("creates the worktree with the branch and base it was given", async () => {
     const onCreate = vi.fn().mockResolvedValue({ worktree: ADDED, petError: null });
-    const props = setup({ onCreate });
+    setup({ onCreate });
     typeBranch();
     await screen.findByText(PLAN.path);
 
@@ -102,8 +101,6 @@ describe("WorktreeDialog", () => {
         base: "origin/main",
       }),
     );
-    // The repository is remembered so the next worktree skips the picker.
-    expect(props.onRepoUsed).toHaveBeenCalledWith("D:/work/proj");
     expect(await screen.findByText(/its pet has moved in/)).toBeInTheDocument();
   });
 

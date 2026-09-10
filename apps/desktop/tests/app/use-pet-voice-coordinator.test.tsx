@@ -47,6 +47,7 @@ function state(options: { muted?: boolean; personalityId?: "playful" } = {}): Pe
     sessionCommand: "cmd /k claude",
     terminalShell: null,
     petSourceDirectory: null,
+    worktreeDirectory: null,
   };
 }
 

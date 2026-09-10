@@ -105,11 +105,15 @@ applies to a branch being created. Everything `hatch` takes — `--name`,
 way, so `pdd worktree add feat/login --agent codex` is the shape a per-worktree
 agent setup wants. `--no-pet` makes the folder and stops there.
 
-Without `--path`, the worktree lands in a `<repo>-worktrees` folder beside the
-repository (`D:/work/proj` → `D:/work/proj-worktrees/feat-login`; the branch's
-slashes become dashes). Set `PETS_DRIVEN_WORKTREE_ROOT` to collect them
-somewhere else instead — one folder per repository under it, so two projects
-that each branch `main` never collide.
+Without `--path`, the worktree lands where the app's **worktree folder** setting
+says (Settings → Pets), one folder per repository under it, so two projects that
+each branch `main` never collide. With no setting, it lands in a
+`<repo>-worktrees` folder beside the repository (`D:/work/proj` →
+`D:/work/proj-worktrees/feat-login`; the branch's slashes become dashes).
+`PETS_DRIVEN_WORKTREE_ROOT` overrides both for one shell.
+
+The setting lives in the shared state file, so the app and `pdd` put worktrees
+in the same place without being configured twice.
 
 **Nothing about the worktree is persisted.** Git already knows which folders are
 worktrees of which repository, so `ls` asks `git worktree list` rather than a

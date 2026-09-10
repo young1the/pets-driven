@@ -26,6 +26,7 @@ import {
 import { shortWorkingDir } from "@/app/main-window/pet-card-view";
 import type { PetOverlayMode } from "@/app/pet-overlay-mode";
 import type { QuietMode } from "@/app/quiet-mode";
+import { getWorkingDirectoryForPet } from "@/app-state/pet-adoption";
 import {
   createPetCardStatusTracker,
   type PetCardStatus,
@@ -147,6 +148,12 @@ type UseDesktopSimulationHostParams = {
   emitBindingState: (petId: string, isLoading?: boolean, isConnecting?: boolean) => void;
   hidePet: (petId: string) => void;
   pickFolderForPet: (petId: string) => void;
+  /**
+   * Branch a pet's folder into a worktree of its own. The menu asks for the
+   * branch; the folder is the pet's own, so only the repository and the branch
+   * cross this seam.
+   */
+  createWorktreeForPet: (petId: string, branch: string) => void;
   /** Whether the pets get one OS window each or share one desktop-wide overlay. */
   overlayMode: PetOverlayMode;
   /** How much the pets may intrude: off, quiet (no chatter), still (no moving). */
@@ -175,6 +182,7 @@ export function useDesktopSimulationHost({
   emitBindingState,
   hidePet,
   pickFolderForPet,
+  createWorktreeForPet,
   overlayMode,
   quietMode,
   onWorldSnapshot,
@@ -481,6 +489,13 @@ export function useDesktopSimulationHost({
         void pickFolderForPet(input.petId);
         return;
       }
+      if (input.kind === "menu.new-worktree") {
+        const branch = input.branch?.trim();
+        if (branch) {
+          createWorktreeForPet(input.petId, branch);
+        }
+        return;
+      }
       if (input.kind === "body.contextmenu" || input.kind === "overlay.contextmenu") {
         const pet = stateRef.current.pets.find((p) => p.id === input.petId);
         const world = adoptedScenarioRef.current?.world;
@@ -503,6 +518,7 @@ export function useDesktopSimulationHost({
             running?.petId === input.petId ? running.spawn : undefined,
             pet?.agentProvider,
             pet ? sanitizePetVoiceSettings(pet.id, profile?.voice).muted : false,
+            pet ? (getWorkingDirectoryForPet(stateRef.current, pet.id)?.path ?? null) : null,
           )
           .catch(() => {});
         return;

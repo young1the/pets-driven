@@ -53,6 +53,7 @@ function OverlayRoot() {
       <Suspense fallback={null}>
         <PetContextMenuView
           agentProvider={agent === "claude" || agent === "codex" ? agent : null}
+          cwd={decodeURIComponent(params.get("cwd") ?? "") || null}
           gameSpawn={game === "auto" || game === "tool-use" ? game : null}
           note={decodeURIComponent(params.get("note") ?? "")}
           petId={petId}

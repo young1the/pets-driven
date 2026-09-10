@@ -16,9 +16,7 @@
     "showAll": "모두 보이기",
     "hideAll": "모두 숨기기",
     "place": "놓기",
-    "placeHint": "펫들이 쓸 물건을 데스크탑에 놓습니다",
-    "worktree": "워크트리",
-    "worktreeHint": "저장소를 브랜치별 폴더로 갈라내고 펫을 붙입니다"
+    "placeHint": "펫들이 쓸 물건을 데스크탑에 놓습니다"
   },
   "place": {
     "title": "데스크탑에 놓기",
@@ -38,7 +36,7 @@
   },
   "worktree": {
     "title": "새 워크트리",
-    "lead": "저장소의 한 브랜치를 전용 폴더에 체크아웃하고, 그 폴더에서 에이전트가 무슨 일을 하는지 보여줄 펫을 함께 둡니다.",
+    "lead": "{{name}}의 폴더에서 브랜치 하나를 전용 폴더에 체크아웃하고, 그 폴더에서 에이전트가 무슨 일을 하는지 보여줄 펫을 함께 둡니다.",
     "repo": "저장소",
     "repoPlaceholder": "브랜치를 딸 프로젝트 폴더",
     "browse": "찾아보기",
@@ -232,7 +230,14 @@
     "updateFailed": "업데이트를 완료하지 못했어요.",
     "updateRetry": "다시 시도",
     "sectionReset": "초기화",
-    "sectionResetDesc": "설정이든 펫이든, 처음부터 다시 시작해요."
+    "sectionResetDesc": "설정이든 펫이든, 처음부터 다시 시작해요.",
+    "worktreeFolderTitle": "워크트리 폴더",
+    "worktreeFolderDesc": "새 워크트리가 만들어질 위치입니다. 비워 두면 각 워크트리가 갈라져 나온 저장소 옆에 만들어집니다. `pdd worktree` 도 이 설정을 씁니다.",
+    "noWorktreeFolder": "저장소 옆에",
+    "noWorktreeFolderHint": "D:\\work\\proj 의 워크트리는 D:\\work\\proj-worktrees 에 만들어집니다",
+    "clearWorktreeFolder": "저장소 옆으로",
+    "changeWorktreeFolder": "폴더 선택",
+    "openWorktreeFolder": "폴더 열기"
   },
   "hook": {
     "summary": {
@@ -345,7 +350,8 @@
     "note": "노트",
     "notePlaceholder": "이 펫에 대한 노트를 남겨 보세요…",
     "deletePet": "펫 삭제",
-    "done": "완료"
+    "done": "완료",
+    "newWorktree": "이 폴더에서 새 워크트리"
   },
   "debug": {
     "title": "개발자 도구",
@@ -576,7 +582,12 @@
     "gameWatchNote": "툴 호출 하나가 장애물 하나",
     "gamePractice": "연습 달리기",
     "gamePracticeNote": "일정한 리듬으로 직접 하는 판",
-    "gameStop": "게임 모드 종료"
+    "gameStop": "게임 모드 종료",
+    "newWorktree": "새 워크트리",
+    "worktreeAria": "{{name}}의 폴더에서 새 워크트리 만들기",
+    "worktreeHeader": "이 폴더에서 브랜치",
+    "worktreePlaceholder": "feat/login",
+    "worktreeCreate": "만들기"
   },
   "petWindow": {
     "connectPrompt": "연결할 터미널 창을 클릭하세요",
@@ -671,7 +682,8 @@
     "folderOccupied": "이 폴더는 이미 다른 펫의 것이에요",
     "folderMissing": "그 폴더를 더 이상 찾을 수 없어요",
     "settingsReset": "설정이 기본값으로 돌아왔어요",
-    "worktreeCreated": "{{branch}}에 펫이 들어갔어요"
+    "worktreeCreated": "{{branch}}에 펫이 들어갔어요",
+    "worktreeNoFolder": "이 펫에게 먼저 폴더를 지정해 주세요 — 워크트리는 펫이 보고 있는 폴더에서 갈라져 나옵니다."
   },
   "confirm": {
     "deletePet": "{{name}}을(를) 완전히 집으로 보낼까요? 펫이 삭제돼요."

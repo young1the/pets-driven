@@ -16,6 +16,7 @@ describe("parsePetsDrivenState", () => {
       sessionCommand: "cmd /k claude",
       terminalShell: null,
       petSourceDirectory: null,
+      worktreeDirectory: null,
     });
   });
 

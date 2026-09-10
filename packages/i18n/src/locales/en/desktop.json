@@ -16,9 +16,7 @@
     "showAll": "Show all",
     "hideAll": "Hide all",
     "place": "Place",
-    "placeHint": "Put something on the desktop for the pets",
-    "worktree": "Worktree",
-    "worktreeHint": "Branch a repository into its own folder, with a pet in it"
+    "placeHint": "Put something on the desktop for the pets"
   },
   "place": {
     "title": "Place on the desktop",
@@ -38,7 +36,7 @@
   },
   "worktree": {
     "title": "New worktree",
-    "lead": "A branch of a repository, checked out in a folder of its own — with a pet standing in it to show what the agent is doing there.",
+    "lead": "A branch of {{name}}'s folder, checked out in a folder of its own — with a pet of its own in it to show what the agent is doing there.",
     "repo": "Repository",
     "repoPlaceholder": "The project to branch from",
     "browse": "Browse",
@@ -232,7 +230,14 @@
     "updateFailed": "The update could not be completed.",
     "updateRetry": "Try again",
     "sectionReset": "Reset",
-    "sectionResetDesc": "Start over — settings, pets, or both."
+    "sectionResetDesc": "Start over — settings, pets, or both.",
+    "worktreeFolderTitle": "Worktree folder",
+    "worktreeFolderDesc": "Where a new worktree is made. Leave it unset and each one lands beside the repository it branches from. `pdd worktree` uses this too.",
+    "noWorktreeFolder": "Beside each repository",
+    "noWorktreeFolderHint": "A worktree of D:\\work\\proj lands in D:\\work\\proj-worktrees",
+    "clearWorktreeFolder": "Use each repository",
+    "changeWorktreeFolder": "Choose a folder",
+    "openWorktreeFolder": "Open folder"
   },
   "hook": {
     "summary": {
@@ -345,7 +350,8 @@
     "note": "Note",
     "notePlaceholder": "Add a note about this pet…",
     "deletePet": "Delete pet",
-    "done": "Done"
+    "done": "Done",
+    "newWorktree": "New worktree from this folder"
   },
   "debug": {
     "title": "Developer tools",
@@ -576,7 +582,12 @@
     "gameWatchNote": "Its tool calls are the obstacles",
     "gamePractice": "Practice run",
     "gamePracticeNote": "A steady course you play yourself",
-    "gameStop": "End game mode"
+    "gameStop": "End game mode",
+    "newWorktree": "New worktree",
+    "worktreeAria": "New worktree from {{name}}'s folder",
+    "worktreeHeader": "Branch this folder",
+    "worktreePlaceholder": "feat/login",
+    "worktreeCreate": "Create"
   },
   "petWindow": {
     "connectPrompt": "Click the terminal window to connect",
@@ -671,7 +682,8 @@
     "folderOccupied": "That folder already belongs to another pet",
     "folderMissing": "That folder is no longer on disk",
     "settingsReset": "Settings are back to their defaults",
-    "worktreeCreated": "A pet moved into {{branch}}"
+    "worktreeCreated": "A pet moved into {{branch}}",
+    "worktreeNoFolder": "Give this pet a folder first — a worktree branches from the folder it watches."
   },
   "confirm": {
     "deletePet": "Send {{name}} home for good? This removes the pet."

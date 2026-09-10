@@ -24,6 +24,7 @@ function RootSurface({ navigateSearchParams }: { navigateSearchParams: NavigateS
     return (
       <PetContextMenuView
         agentProvider={agent === "claude" || agent === "codex" ? agent : null}
+        cwd={decodeURIComponent(params.get("cwd") ?? "") || null}
         gameSpawn={game === "auto" || game === "tool-use" ? game : null}
         note={note}
         petId={petId}

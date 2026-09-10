@@ -16,9 +16,7 @@
     "showAll": "全部显示",
     "hideAll": "全部隐藏",
     "place": "放置",
-    "placeHint": "在桌面上放点东西给宠物玩",
-    "worktree": "工作树",
-    "worktreeHint": "把仓库按分支拆到独立文件夹，并放一只宠物进去"
+    "placeHint": "在桌面上放点东西给宠物玩"
   },
   "place": {
     "title": "放到桌面上",
@@ -38,7 +36,7 @@
   },
   "worktree": {
     "title": "新建工作树",
-    "lead": "把仓库的一个分支检出到独立文件夹，并放一只宠物在里面，显示智能体在那儿做什么。",
+    "lead": "把 {{name}} 的文件夹的一个分支检出到独立文件夹，并放一只宠物在里面，显示智能体在那儿做什么。",
     "repo": "仓库",
     "repoPlaceholder": "要开分支的项目",
     "browse": "浏览",
@@ -208,7 +206,14 @@
     "updateFailed": "更新未能完成。",
     "updateRetry": "重试",
     "sectionReset": "重置",
-    "sectionResetDesc": "重新开始——设置、宠物，或者两者都要。"
+    "sectionResetDesc": "重新开始——设置、宠物，或者两者都要。",
+    "worktreeFolderTitle": "工作树文件夹",
+    "worktreeFolderDesc": "新工作树的创建位置。留空则每个工作树都建在它所分出的仓库旁边。`pdd worktree` 也使用这个设置。",
+    "noWorktreeFolder": "各仓库旁边",
+    "noWorktreeFolderHint": "D:\\work\\proj 的工作树会建在 D:\\work\\proj-worktrees",
+    "clearWorktreeFolder": "改回仓库旁边",
+    "changeWorktreeFolder": "选择文件夹",
+    "openWorktreeFolder": "打开文件夹"
   },
   "hook": {
     "summary": {
@@ -321,7 +326,8 @@
     "note": "便条",
     "notePlaceholder": "给这只宠物写点什么…",
     "deletePet": "删除宠物",
-    "done": "完成"
+    "done": "完成",
+    "newWorktree": "从这个文件夹新建工作树"
   },
   "debug": {
     "title": "开发者工具",
@@ -552,7 +558,12 @@
     "gameWatchNote": "每次工具调用变成一个障碍",
     "gamePractice": "练习跑",
     "gamePracticeNote": "节奏固定，自己上手玩",
-    "gameStop": "结束游戏模式"
+    "gameStop": "结束游戏模式",
+    "newWorktree": "新建工作树",
+    "worktreeAria": "从 {{name}} 的文件夹新建工作树",
+    "worktreeHeader": "从这个文件夹开分支",
+    "worktreePlaceholder": "feat/login",
+    "worktreeCreate": "创建"
   },
   "petWindow": {
     "connectPrompt": "点击终端窗口来连接",
@@ -647,7 +658,8 @@
     "folderOccupied": "那个文件夹已经属于另一只宠物了",
     "folderMissing": "那个文件夹在磁盘上已经不存在了",
     "settingsReset": "设置已恢复为默认值",
-    "worktreeCreated": "一只宠物住进了 {{branch}}"
+    "worktreeCreated": "一只宠物住进了 {{branch}}",
+    "worktreeNoFolder": "请先给这只宠物指定文件夹 — 工作树是从它看守的文件夹分出来的。"
   },
   "confirm": {
     "deletePet": "要让 {{name}} 永远回家吗？这会删除这只宠物。"

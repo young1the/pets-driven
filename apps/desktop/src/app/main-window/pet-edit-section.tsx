@@ -77,6 +77,13 @@ export interface PetEditSectionProps {
   onVoiceMuted: (value: boolean) => void;
   onPreviewVoice: () => void;
   onPickFolder: () => void;
+  /**
+   * Branch this pet's folder into a worktree of its own, with a pet of its
+   * own. Only offered once a folder is bound — there is nothing to branch
+   * otherwise — and the dialog it opens decides whether the folder is a git
+   * repository at all.
+   */
+  onNewWorktree: () => void;
   /** Reveal the pet's bound working folder in the OS file manager. */
   onOpenFolder: () => void;
   onClearFolder: () => void;
@@ -119,6 +126,7 @@ export function PetEditSection({
   onVoiceMuted,
   onPreviewVoice,
   onPickFolder,
+  onNewWorktree,
   onOpenFolder,
   onClearFolder,
   onDelete,
@@ -292,6 +300,26 @@ export function PetEditSection({
                 </button>
                 {pet.folder && (
                   <>
+                    <button
+                      onClick={onNewWorktree}
+                      aria-label={t("edit.newWorktree")}
+                      title={t("edit.newWorktree")}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flex: "none",
+                        border: "none",
+                        background: "transparent",
+                        fontSize: "15px",
+                        lineHeight: 1,
+                        padding: "2px",
+                        cursor: "pointer",
+                      }}
+                      type="button"
+                    >
+                      <span aria-hidden="true">🌱</span>
+                    </button>
                     <button
                       onClick={onOpenFolder}
                       aria-label={t("edit.openFolder")}

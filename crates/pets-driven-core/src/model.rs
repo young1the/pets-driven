@@ -195,13 +195,16 @@ impl PetPatch {
 }
 
 /// The app-wide settings a caller can patch. `session_command` is set-or-keep;
-/// the two nullable ones clear the stored value on [`Patch::Clear`] (no shell
-/// picked / the default pet source folder).
+/// the nullable ones clear the stored value on [`Patch::Clear`] (no shell
+/// picked / the default pet source folder / worktrees beside their repository).
 #[derive(Debug, Clone, PartialEq)]
 pub struct SettingsPatch {
     pub session_command: Option<String>,
     pub terminal_shell: Patch<String>,
     pub pet_source_directory: Patch<String>,
+    /// Where new worktrees are made. Cleared means each one lands beside the
+    /// repository it branches from.
+    pub worktree_directory: Patch<String>,
 }
 
 impl SettingsPatch {
@@ -213,6 +216,7 @@ impl SettingsPatch {
                 .map(str::to_string),
             terminal_shell: parse_string_patch(payload, "terminalShell")?,
             pet_source_directory: parse_string_patch(payload, "petSourceDirectory")?,
+            worktree_directory: parse_string_patch(payload, "worktreeDirectory")?,
         })
     }
 }

@@ -126,6 +126,10 @@ export function SettingsSection(props: SettingsSectionProps) {
               onChangePetFolder={props.onChangePetFolder}
               onOpenPetFolder={props.onOpenPetFolder}
               onResetPetFolder={props.onResetPetFolder}
+              onChangeWorktreeFolder={props.onChangeWorktreeFolder}
+              onOpenWorktreeFolder={props.onOpenWorktreeFolder}
+              onResetWorktreeFolder={props.onResetWorktreeFolder}
+              worktreeDirectory={props.worktreeDirectory}
               onSetOverlayMode={props.onSetOverlayMode}
               onSetQuietMode={props.onSetQuietMode}
               overlayMode={props.overlayMode}

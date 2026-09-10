@@ -165,6 +165,7 @@ function createFixtureState(inputs: FixturePetInput[]): PetsDrivenState {
     sessionCommand: "cmd /k codex",
     terminalShell: null,
     petSourceDirectory: "C:\\Users\\fixture\\.petdex\\pets",
+    worktreeDirectory: null,
   };
 }
 

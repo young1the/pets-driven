@@ -5,16 +5,18 @@ import type { AddedWorktree, RepoWorktree, WorktreePlan } from "@/app/desktop-ga
 import "@/app/main-window/worktree-dialog.css";
 
 /**
- * "New worktree": a branch of a repository, in a folder of its own, with a pet
- * standing in it.
+ * "New worktree": a branch of the repository *this pet is standing in*, checked
+ * out in a folder of its own, with a pet of its own in it.
  *
- * The dialog is deliberately two fields. Where the folder goes is derived, not
- * asked — the preview line under the inputs is the answer, refreshed from the
- * backend as the branch is typed, so the folder about to be made is on screen
- * before the button is pressed rather than explained in a hint. The same
- * preview is where "that branch already exists" and "something is already in
- * that folder" surface, because both change what the button will do and neither
- * is worth a second round of typing to discover.
+ * The repository is not asked for — it is the pet's own folder, which is the
+ * whole reason the action lives on a pet rather than in the app's header. That
+ * leaves one field: the branch. Where the folder goes is derived, and the
+ * preview under the input is the answer, refreshed from the backend as the
+ * branch is typed, so the folder about to be made is on screen before the
+ * button is pressed rather than explained in a hint. The same preview is where
+ * "that branch already exists" and "something is already in that folder"
+ * surface, because both change what the button will do and neither is worth a
+ * second round of typing to discover.
  *
  * Git's own refusals are shown verbatim. They name paths, branches and
  * checkouts the user recognises, and a translated paraphrase of "fatal: 'x' is
@@ -23,7 +25,6 @@ import "@/app/main-window/worktree-dialog.css";
 
 /** What the dialog needs of the gateway, so a test can hand it a small fake. */
 export type WorktreeDialogGateway = {
-  pickDirectory(): Promise<string | null>;
   listRepoWorktrees(repo: string): Promise<RepoWorktree[]>;
   planRepoWorktree(input: { repo: string; branch: string }): Promise<WorktreePlan>;
 };
@@ -32,6 +33,10 @@ export interface WorktreeDialogProps {
   open: boolean;
   onClose: () => void;
   gateway: WorktreeDialogGateway;
+  /** The folder the pet is bound to, which the new worktree branches from. */
+  repo: string;
+  /** The pet whose folder this is, so the dialog can say whose branch it is. */
+  petName: string;
   /**
    * Create the worktree and adopt its pet. Rejects with git's own message when
    * the folder could not be made; resolves with `petError` set when the folder
@@ -43,10 +48,6 @@ export interface WorktreeDialogProps {
     branch: string;
     base?: string | null;
   }) => Promise<{ worktree: AddedWorktree; petError: string | null }>;
-  /** The repository to start on — the last one used, when there is one. */
-  initialRepo?: string;
-  /** Remember the repository for next time. */
-  onRepoUsed?: (repo: string) => void;
 }
 
 /** How long to wait after a keystroke before asking git where the folder goes. */
@@ -56,12 +57,11 @@ export function WorktreeDialog({
   open,
   onClose,
   gateway,
+  repo,
+  petName,
   onCreate,
-  initialRepo = "",
-  onRepoUsed,
 }: WorktreeDialogProps) {
   const { t } = useTranslation("desktop");
-  const [repo, setRepo] = useState(initialRepo);
   const [branch, setBranch] = useState("");
   const [base, setBase] = useState("");
   const [plan, setPlan] = useState<WorktreePlan | null>(null);
@@ -77,20 +77,18 @@ export function WorktreeDialog({
 
   useEffect(() => {
     if (open) {
-      setRepo(initialRepo);
       setBranch("");
       setBase("");
       setPlan(null);
       setPlanError(null);
-      setWorktrees([]);
       setError(null);
       setCreated(null);
     }
-  }, [open, initialRepo]);
+  }, [open]);
 
   // The repository's existing worktrees: context for the folder about to join
-  // them, and the first thing that says whether this folder is a repository at
-  // all.
+  // them, and the first thing that says whether this pet's folder is in a git
+  // repository at all.
   useEffect(() => {
     if (!open || repo.trim().length === 0) {
       setWorktrees([]);
@@ -102,7 +100,7 @@ export function WorktreeDialog({
     let cancelled = false;
 
     gateway
-      .listRepoWorktrees(repo.trim())
+      .listRepoWorktrees(repo)
       .then((list) => {
         if (!cancelled && request === requestRef.current) {
           setWorktrees(list);
@@ -135,7 +133,7 @@ export function WorktreeDialog({
       const request = requestRef.current;
 
       gateway
-        .planRepoWorktree({ repo: repo.trim(), branch: branch.trim() })
+        .planRepoWorktree({ repo, branch: branch.trim() })
         .then((next) => {
           if (!cancelled && request === requestRef.current) {
             setPlan(next);
@@ -156,27 +154,19 @@ export function WorktreeDialog({
     };
   }, [open, repo, branch, gateway]);
 
-  async function pickRepo() {
-    const picked = await gateway.pickDirectory();
-    if (picked) {
-      setRepo(picked);
-    }
-  }
-
   async function create() {
     setBusy(true);
     setError(null);
 
     try {
       const result = await onCreate({
-        repo: repo.trim(),
+        repo,
         branch: branch.trim(),
         // A base only means anything for a branch being created; the backend
         // refuses it for one that already exists, so it is not sent.
         base: plan?.branchExists ? null : base.trim() || null,
       });
 
-      onRepoUsed?.(repo.trim());
       setCreated({ path: result.worktree.path, petError: result.petError });
     } catch (reason) {
       setError(messageOf(reason));
@@ -185,7 +175,7 @@ export function WorktreeDialog({
     }
   }
 
-  const ready = repo.trim().length > 0 && branch.trim().length > 0 && !plan?.pathOccupied && !busy;
+  const ready = branch.trim().length > 0 && !plan?.pathOccupied && !busy;
 
   return (
     <Dialog onClose={onClose} open={open} title={t("worktree.title")}>
@@ -209,19 +199,11 @@ export function WorktreeDialog({
         </div>
       ) : (
         <>
-          <p className="pd-worktree__lead">{t("worktree.lead")}</p>
+          <p className="pd-worktree__lead">{t("worktree.lead", { name: petName })}</p>
 
           <div className="pd-worktree__repo">
-            <Input
-              label={t("worktree.repo")}
-              onChange={(event) => setRepo(event.target.value)}
-              placeholder={t("worktree.repoPlaceholder")}
-              size="sm"
-              value={repo}
-            />
-            <Button onClick={() => void pickRepo()} size="sm" variant="neutral">
-              {t("worktree.browse")}
-            </Button>
+            <span className="pd-worktree__previewLabel">{t("worktree.repo")}</span>
+            <code className="pd-worktree__path">{repo}</code>
           </div>
 
           <Input

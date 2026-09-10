@@ -19,6 +19,15 @@ use serde_json::Value;
 
 use crate::{error_json, hatch_pet, hatch_request, print_json, PetOptions};
 
+/// Where new worktrees go: the environment override first (a per-shell escape
+/// hatch), then the folder set in the app, and otherwise none — which puts each
+/// worktree beside the repository it branches from. The setting is shared
+/// state, so `pdd` and the app land worktrees in the same place without being
+/// configured twice.
+fn worktree_root(core: &PetsDrivenCore) -> Option<String> {
+    worktree_root_from_env().or_else(|| core.worktree_directory().ok().flatten())
+}
+
 // ---- add -------------------------------------------------------------------
 
 /// What `pdd worktree add` was asked for.
@@ -63,7 +72,7 @@ fn add(
         &repository,
         &options.branch,
         options.path.as_deref(),
-        worktree_root_from_env().as_deref(),
+        worktree_root(core).as_deref(),
     )?;
     let added = add_worktree(git, &plan, options.base.as_deref())?;
 

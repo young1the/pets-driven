@@ -439,6 +439,7 @@ pub(crate) fn apply_settings_update(state: &Value, input: &SettingsPatch) -> Val
     }
     apply_string_patch(object, "terminalShell", &input.terminal_shell);
     apply_string_patch(object, "petSourceDirectory", &input.pet_source_directory);
+    apply_string_patch(object, "worktreeDirectory", &input.worktree_directory);
 
     next
 }
@@ -1118,12 +1119,14 @@ mod tests {
                 session_command: Some("cmd /k codex".to_string()),
                 terminal_shell: Patch::Keep,
                 pet_source_directory: Patch::Clear,
+                worktree_directory: Patch::Set("D:/trees".to_string()),
             },
         );
 
         assert_eq!(next["sessionCommand"], "cmd /k codex");
         assert_eq!(next["terminalShell"], "C:/Windows/System32/cmd.exe");
         assert_eq!(next["petSourceDirectory"], Value::Null);
+        assert_eq!(next["worktreeDirectory"], "D:/trees");
     }
 
     #[test]
@@ -1135,6 +1138,7 @@ mod tests {
                 session_command: Some("cmd /k codex".to_string()),
                 terminal_shell: Patch::Set("C:/Windows/System32/cmd.exe".to_string()),
                 pet_source_directory: Patch::Set("D:/pets".to_string()),
+                worktree_directory: Patch::Set("D:/trees".to_string()),
             },
         );
 
@@ -1143,6 +1147,7 @@ mod tests {
         assert_eq!(next.get("sessionCommand"), None);
         assert_eq!(next.get("terminalShell"), None);
         assert_eq!(next.get("petSourceDirectory"), None);
+        assert_eq!(next.get("worktreeDirectory"), None);
         assert_eq!(next["schemaVersion"], 1);
 
         assert_eq!(next["pets"], state["pets"]);

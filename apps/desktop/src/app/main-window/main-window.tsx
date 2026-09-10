@@ -36,10 +36,14 @@ export type MainWindowPlaceProps = Pick<
 >;
 
 /**
- * The new-worktree dialog, minus the open/close the header owns — the same
- * shape as the place dialog beside it.
+ * The new-worktree dialog, minus what the window itself supplies: it is opened
+ * from a pet (the edit screen's folder row), so the pet and its folder come
+ * from whichever pet is being edited, not from a prop.
  */
-export type MainWindowWorktreeProps = Omit<WorktreeDialogProps, "open" | "onClose">;
+export type MainWindowWorktreeProps = Omit<
+  WorktreeDialogProps,
+  "open" | "onClose" | "repo" | "petName"
+>;
 
 export interface MainWindowProps {
   tab: MainWindowTab;
@@ -48,7 +52,7 @@ export interface MainWindowProps {
   home: HomeSectionProps;
   place: MainWindowPlaceProps;
   worktree: MainWindowWorktreeProps;
-  edit: Omit<PetEditSectionProps, "pet">;
+  edit: Omit<PetEditSectionProps, "pet" | "onNewWorktree">;
   settings: SettingsSectionProps;
   /** The coach is the terminal tab's own affair, so it is not wired from here. */
   terminal: Omit<TerminalSectionProps, "showOnboarding">;
@@ -78,7 +82,9 @@ export function MainWindow({
   // on only hide it.
   const [terminalMounted, setTerminalMounted] = useState(terminalVisible);
   const [placeOpen, setPlaceOpen] = useState(false);
-  const [worktreeOpen, setWorktreeOpen] = useState(false);
+  // The worktree dialog belongs to a pet: the folder it branches from is that
+  // pet's own, so it opens from the edit screen and remembers which pet asked.
+  const [worktreePet, setWorktreePet] = useState<{ repo: string; name: string } | null>(null);
   useEffect(() => {
     if (terminalVisible) {
       setTerminalMounted(true);
@@ -126,15 +132,6 @@ export function MainWindow({
               {t("nav.hideAll")}
             </Button>
             <Button
-              iconLeft={<span aria-hidden="true">🌱</span>}
-              onClick={() => setWorktreeOpen(true)}
-              size="sm"
-              title={t("nav.worktreeHint")}
-              variant="neutral"
-            >
-              {t("nav.worktree")}
-            </Button>
-            <Button
               iconLeft={<span aria-hidden="true">📦</span>}
               onClick={() => setPlaceOpen(true)}
               size="sm"
@@ -149,7 +146,13 @@ export function MainWindow({
 
       {editPet ? (
         <div className="pd-main__body">
-          <PetEditSection pet={editPet} {...edit} />
+          <PetEditSection
+            onNewWorktree={() =>
+              editPet.folder && setWorktreePet({ repo: editPet.folder, name: editPet.name })
+            }
+            pet={editPet}
+            {...edit}
+          />
         </div>
       ) : tab === "home" ? (
         <HomeSection {...home} />
@@ -188,7 +191,15 @@ export function MainWindow({
         open={placeOpen}
       />
 
-      <WorktreeDialog onClose={() => setWorktreeOpen(false)} open={worktreeOpen} {...worktree} />
+      {worktreePet ? (
+        <WorktreeDialog
+          onClose={() => setWorktreePet(null)}
+          open
+          petName={worktreePet.name}
+          repo={worktreePet.repo}
+          {...worktree}
+        />
+      ) : null}
 
       {toast ? (
         <div className="pd-app-toast">

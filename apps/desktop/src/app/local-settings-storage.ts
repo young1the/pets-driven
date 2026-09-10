@@ -33,13 +33,6 @@ export const QUIET_MODE_STORAGE_KEY = "pd-quiet-mode";
 /** Device-local master switch and gain for audible pet voices. */
 export const PET_VOICE_STORAGE_KEY = "pd-pet-voice";
 
-/**
- * The repository the new-worktree dialog opens on: the last one a worktree was
- * made from. A convenience rather than a setting the user ever sets, but it is
- * a frontend-owned key like the rest and belongs to the same reset.
- */
-export const WORKTREE_REPO_STORAGE_KEY = "pd-worktree-repo";
-
 const SETTINGS_STORAGE_KEYS = [
   LOCALE_STORAGE_KEY,
   THEME_MODE_STORAGE_KEY,
@@ -48,7 +41,6 @@ const SETTINGS_STORAGE_KEYS = [
   PET_OVERLAY_MODE_STORAGE_KEY,
   QUIET_MODE_STORAGE_KEY,
   PET_VOICE_STORAGE_KEY,
-  WORKTREE_REPO_STORAGE_KEY,
 ] as const;
 
 /**

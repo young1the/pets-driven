@@ -197,6 +197,7 @@ const testPetsDrivenState: PetsDrivenState = {
   sessionCommand: "claude",
   terminalShell: null,
   petSourceDirectory: null,
+  worktreeDirectory: null,
 };
 
 describe("pet window product route", () => {
@@ -561,7 +562,7 @@ describe("pet window product route", () => {
     await waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
         petId: "pet-a",
-        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=",
+        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=&cwd=D%3A%5Ccms",
         localX: 400,
         localY: 300,
       });
@@ -752,7 +753,7 @@ describe("pet window product route", () => {
     await waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
         petId: "pet-a",
-        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Nova&note=&agent=codex",
+        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Nova&note=&agent=codex&cwd=D%3A%5Ccms",
         localX: 400,
         localY: 300,
       });
@@ -806,7 +807,7 @@ describe("pet window product route", () => {
     await waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith("open_pet_context_menu", {
         petId: "pet-a",
-        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=&voiceMuted=1",
+        url: "pet-window.html?surface=pet-context-menu&petId=pet-a&petName=Otto&note=&voiceMuted=1&cwd=D%3A%5Ccms",
         localX: 400,
         localY: 300,
       });

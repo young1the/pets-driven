@@ -124,6 +124,17 @@ html.pet-context-menu-fixture-preview body {
 
 /* Says the row opens something rather than doing something. Pushed to the far
    edge so it reads as an affordance and not as part of the label. */
+/* An emoji stands in for the drawn icons the other rows carry, sized to the
+   same 15px box so the labels stay on one baseline. */
+.pet-context-menu-card__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  font-size: 13px;
+  line-height: 1;
+}
+
 .pet-context-menu-card__chevron {
   margin-left: auto;
   color: var(--text-muted);
@@ -360,6 +371,13 @@ html.pet-context-menu-fixture-preview body {
   color: var(--text-strong);
   resize: none;
   box-sizing: border-box;
+}
+
+/* The branch field is one line, not a note: an <input> in the same shape, with
+   the textarea's minimum height dropped so it does not sit as a tall empty box
+   above its buttons. */
+.pet-context-menu-note__input--line {
+  min-height: 0;
 }
 
 .pet-context-menu-note__input:focus {

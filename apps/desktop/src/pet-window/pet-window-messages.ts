@@ -176,6 +176,9 @@ export type PetWindowInputKind =
   | "body.focus"
   | "menu.send-home"
   | "menu.pick-folder"
+  // Branch this pet's folder into a worktree of its own, with a pet of its
+  // own. Carries the branch the menu asked for; the host knows the folder.
+  | "menu.new-worktree"
   | "menu.note-save"
   | "menu.settings-save"
   | "menu.voice-toggle"
@@ -234,6 +237,8 @@ export type PetWindowInputEvent = {
   note?: string;
   /** Updated pet name, carried only by menu.settings-save. */
   name?: string;
+  /** The branch to check out, carried only by menu.new-worktree. */
+  branch?: string;
   /** Updated per-pet agent choice; null means follow the app default. */
   agentProvider?: "claude" | "codex" | null;
   at: number;

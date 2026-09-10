@@ -124,6 +124,9 @@ function PetsDrivenHostApp() {
     resetAllSettings,
     seedWatchedFolders,
     createWorktree,
+    createWorktreeForPet,
+    changeWorktreeFolder,
+    resetWorktreeFolder,
     updateTerminalShell,
     patchPet,
     setPetPersonality,
@@ -180,6 +183,7 @@ function PetsDrivenHostApp() {
     emitBindingState,
     hidePet,
     pickFolderForPet,
+    createWorktreeForPet,
     overlayMode,
     quietMode,
     onWorldSnapshot: petVoice.onWorldSnapshot,
@@ -310,6 +314,8 @@ function PetsDrivenHostApp() {
       mainTab={mainTab}
       navigate={navigate}
       onChangePetSourceFolder={() => void changePetSourceFolder()}
+      onChangeWorktreeFolder={() => void changeWorktreeFolder()}
+      onResetWorktreeFolder={resetWorktreeFolder}
       onClearFolderForPet={clearFolderForPet}
       onCreateWorktree={createWorktree}
       onDeletePet={deletePet}

@@ -31,6 +31,7 @@ function setup(overrides = {}) {
     onVoiceMuted: vi.fn(),
     onPreviewVoice: vi.fn(),
     onPickFolder: vi.fn(),
+    onNewWorktree: vi.fn(),
     onOpenFolder: vi.fn(),
     onClearFolder: vi.fn(),
     onDelete: vi.fn(),

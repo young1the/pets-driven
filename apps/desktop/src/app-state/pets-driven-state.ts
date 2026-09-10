@@ -87,6 +87,12 @@ export type PetsDrivenState = {
    * file, so listing and sprite loading stay folder-aware.
    */
   petSourceDirectory: string | null;
+  /**
+   * Where a new worktree is made. Null puts each one beside the repository it
+   * branches from. The `pdd` CLI reads the same field, so the app and the
+   * command line land worktrees in the same place without being told twice.
+   */
+  worktreeDirectory: string | null;
 };
 
 export function createEmptyPetsDrivenState(): PetsDrivenState {
@@ -98,6 +104,7 @@ export function createEmptyPetsDrivenState(): PetsDrivenState {
     sessionCommand: DEFAULT_SESSION_COMMAND,
     terminalShell: null,
     petSourceDirectory: null,
+    worktreeDirectory: null,
   };
 }
 
@@ -138,8 +145,11 @@ function sanitizeTerminalShell(value: unknown): string | null {
   return value.trim();
 }
 
-/** Normalizes a persisted `petSourceDirectory`, discarding anything malformed. */
-function sanitizePetSourceDirectory(value: unknown): string | null {
+/**
+ * Normalizes a persisted folder setting (`petSourceDirectory`,
+ * `worktreeDirectory`), discarding anything malformed.
+ */
+function sanitizeFolderSetting(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) {
     return null;
   }
@@ -202,7 +212,8 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
         ? candidate.sessionCommand
         : DEFAULT_SESSION_COMMAND,
     terminalShell: sanitizeTerminalShell(candidate.terminalShell),
-    petSourceDirectory: sanitizePetSourceDirectory(candidate.petSourceDirectory),
+    petSourceDirectory: sanitizeFolderSetting(candidate.petSourceDirectory),
+    worktreeDirectory: sanitizeFolderSetting(candidate.worktreeDirectory),
   });
 }
 
@@ -273,23 +284,47 @@ export function setPetSourceDirectory(
   state: PetsDrivenState,
   path: string | null,
 ): PetsDrivenState {
-  const normalized = path === null ? null : normalizeWorkingDirectoryPath(path);
-
-  if (normalized !== null && !normalized) {
-    return state;
-  }
-
-  const currentComparable =
-    state.petSourceDirectory === null
-      ? null
-      : comparableWorkingDirectoryPath(state.petSourceDirectory);
-  const nextComparable = normalized === null ? null : comparableWorkingDirectoryPath(normalized);
-
-  if (currentComparable === nextComparable) {
+  const normalized = normalizedFolderSetting(path);
+  if (normalized === undefined || sameFolder(state.petSourceDirectory, normalized)) {
     return state;
   }
 
   return { ...state, petSourceDirectory: normalized };
+}
+
+/**
+ * Point new worktrees at a folder. `null` puts each one beside the repository
+ * it branches from, which is also where they go when this was never set.
+ */
+export function setWorktreeDirectory(state: PetsDrivenState, path: string | null): PetsDrivenState {
+  const normalized = normalizedFolderSetting(path);
+  if (normalized === undefined || sameFolder(state.worktreeDirectory, normalized)) {
+    return state;
+  }
+
+  return { ...state, worktreeDirectory: normalized };
+}
+
+/**
+ * A folder setting as it should be stored, or `undefined` when the path is not
+ * one that can be stored at all (a string that normalises to nothing).
+ */
+function normalizedFolderSetting(path: string | null): string | null | undefined {
+  if (path === null) {
+    return null;
+  }
+
+  const normalized = normalizeWorkingDirectoryPath(path);
+
+  return normalized || undefined;
+}
+
+/** Whether two folder settings name the same folder, nulls included. */
+function sameFolder(current: string | null, next: string | null): boolean {
+  const left = current === null ? null : comparableWorkingDirectoryPath(current);
+  const right = next === null ? null : comparableWorkingDirectoryPath(next);
+
+  return left === right;
 }
 
 function isSameOrAncestorPath(ancestorPath: string, childPath: string): boolean {

@@ -8,7 +8,6 @@ import type { AppView } from "@/app/app-navigation";
 import { useAppUpdate } from "@/app/app-updates/use-app-update";
 import { desktopGateway } from "@/app/desktop-gateway";
 import type { DesktopObjectCounts } from "@/app/desktop-host/use-desktop-simulation-host";
-import { WORKTREE_REPO_STORAGE_KEY } from "@/app/local-settings-storage";
 import type { HomePetView } from "@/app/main-window/home-section";
 import { describeHookLastSignal } from "@/app/main-window/hook-last-signal";
 import {
@@ -31,32 +30,6 @@ import type { PetPatch, PetRecord, PetsDrivenState } from "@/app-state/pets-driv
 
 /** How many pets the debug seed button adopts in one press. */
 const SEED_WATCHED_FOLDER_COUNT = 13;
-
-/** The repository the new-worktree dialog opens on, from the last time. */
-function readStoredWorktreeRepo(): string {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  try {
-    return window.localStorage.getItem(WORKTREE_REPO_STORAGE_KEY) ?? "";
-  } catch {
-    // A browser with storage denied is no reason to withhold the dialog.
-    return "";
-  }
-}
-
-function storeWorktreeRepo(repo: string): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(WORKTREE_REPO_STORAGE_KEY, repo);
-  } catch {
-    // Convenience only: forgetting the folder costs one trip to the picker.
-  }
-}
 
 export interface MainWindowSurfaceProps {
   state: PetsDrivenState;
@@ -97,6 +70,9 @@ export interface MainWindowSurfaceProps {
   onUpdateTerminalShell: (shell: string) => void;
   onSetLaunchCommand: (command: string) => void;
   onChangePetSourceFolder: () => void;
+  /** Settings: where new worktrees are made, and back to none. */
+  onChangeWorktreeFolder: () => void;
+  onResetWorktreeFolder: () => void;
   onResetPetFolder: () => void;
   /** Open a configured folder in the OS file manager; null path is a no-op. */
   onRevealFolder: (path: string | null) => void;
@@ -168,6 +144,8 @@ export function MainWindowSurface({
   onUpdateTerminalShell,
   onSetLaunchCommand,
   onChangePetSourceFolder,
+  onChangeWorktreeFolder,
+  onResetWorktreeFolder,
   onResetPetFolder,
   onRevealFolder,
   onResetAllSettings,
@@ -260,15 +238,7 @@ export function MainWindowSurface({
   );
 
   const worktree = useMemo(
-    () => ({
-      gateway: desktopGateway,
-      onCreate: createWorktree,
-      // The repository the last worktree came from: the dialog is nearly always
-      // opened for the same project twice running, and the folder picker is a
-      // modal trip to the OS to say so.
-      initialRepo: readStoredWorktreeRepo(),
-      onRepoUsed: storeWorktreeRepo,
-    }),
+    () => ({ gateway: desktopGateway, onCreate: createWorktree }),
     [createWorktree],
   );
 
@@ -422,6 +392,10 @@ export function MainWindowSurface({
         onChangePetFolder: () => onChangePetSourceFolder(),
         onOpenPetFolder: () => onRevealFolder(state.petSourceDirectory),
         onResetPetFolder: () => onResetPetFolder(),
+        worktreeDirectory: state.worktreeDirectory,
+        onChangeWorktreeFolder: () => onChangeWorktreeFolder(),
+        onOpenWorktreeFolder: () => onRevealFolder(state.worktreeDirectory),
+        onResetWorktreeFolder: () => onResetWorktreeFolder(),
         onResetAllSettings: () => onResetAllSettings(),
         onResetPets: () => onResetPets(),
         overlayMode,

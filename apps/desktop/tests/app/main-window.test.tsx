@@ -81,6 +81,10 @@ const settings = {
   onChangePetFolder: vi.fn(),
   onOpenPetFolder: vi.fn(),
   onResetPetFolder: vi.fn(),
+  worktreeDirectory: null,
+  onChangeWorktreeFolder: vi.fn(),
+  onOpenWorktreeFolder: vi.fn(),
+  onResetWorktreeFolder: vi.fn(),
   onResetAllSettings: vi.fn(),
   onResetPets: vi.fn(),
   overlayMode: "window-per-pet" as const,
@@ -103,7 +107,6 @@ const place = {
 };
 const worktree = {
   gateway: {
-    pickDirectory: vi.fn().mockResolvedValue(null),
     listRepoWorktrees: vi.fn().mockResolvedValue([]),
     planRepoWorktree: vi.fn(),
   },

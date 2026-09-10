@@ -276,6 +276,7 @@ fn settings_reset_keeps_pet_data_and_drops_settings() {
         session_command: Some("cmd /k codex".to_string()),
         terminal_shell: Patch::Set("C:/Windows/System32/cmd.exe".to_string()),
         pet_source_directory: Patch::Set("D:/pets".to_string()),
+        worktree_directory: Patch::Keep,
     })
     .expect("settings update should commit");
 
