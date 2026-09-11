@@ -32,6 +32,8 @@ function createGateway(
     listRepoWorktrees: vi.fn().mockRejectedValue(new Error("no git here")),
     planRepoWorktree: vi.fn().mockRejectedValue(new Error("no git here")),
     addRepoWorktree: vi.fn().mockRejectedValue(new Error("no git here")),
+    planRepoWorktreeRemoval: vi.fn().mockRejectedValue(new Error("no git here")),
+    removeRepoWorktree: vi.fn().mockRejectedValue(new Error("no git here")),
     pickDirectory: vi.fn(),
     revealPath: vi.fn(),
     setTrayLabels: vi.fn(),

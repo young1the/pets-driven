@@ -685,6 +685,7 @@
     "onDesktop": "{{name}}이(가) 데스크탑에 나왔어요",
     "cameHome": "{{name}}이(가) 집으로 돌아왔어요",
     "removed": "{{name}}이(가) 삭제되었어요",
+    "removedWithWorktree": "{{name}}이(가) 워크트리와 함께 삭제되었어요",
     "diagnosticsCopied": "펫 진단이 복사되었어요",
     "diagnosticsReady": "펫 진단이 준비되었어요",
     "folderOccupied": "이 폴더는 이미 다른 펫의 것이에요",
@@ -693,8 +694,17 @@
     "worktreeCreated": "{{branch}}에 펫이 들어갔어요",
     "worktreeNoFolder": "이 펫에게 먼저 폴더를 지정해 주세요 — 워크트리는 펫이 보고 있는 폴더에서 갈라져 나옵니다."
   },
-  "confirm": {
-    "deletePet": "{{name}}을(를) 완전히 집으로 보낼까요? 펫이 삭제돼요."
+  "deletePet": {
+    "title": "{{name}}을(를) 집으로 보낼까요?",
+    "lead": "{{name}}은(는) 이 데스크톱에서 완전히 삭제돼요.",
+    "alsoRemove": "워크트리 폴더도 같이 삭제",
+    "onBranch": "{{branch}} 브랜치예요.",
+    "detached": "브랜치에 올라가 있지 않아요.",
+    "dirty": "이 워크트리에 커밋하지 않은 변경이 있어요. 삭제하면 함께 사라져요.",
+    "discard": "커밋하지 않은 변경 버리기",
+    "cancel": "그대로 두기",
+    "confirm": "펫 삭제",
+    "confirmBoth": "펫과 폴더 삭제"
   },
   "errors": {
     "noPetToPoke": "찌를 폴더가 있는 부화한 펫이 없어요."

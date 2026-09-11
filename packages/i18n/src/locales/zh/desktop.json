@@ -661,6 +661,7 @@
     "onDesktop": "{{name}} 已经上桌面了",
     "cameHome": "{{name}} 回家了",
     "removed": "{{name}} 已被删除",
+    "removedWithWorktree": "{{name}} 和它的工作树一起被删除了",
     "diagnosticsCopied": "宠物诊断信息已复制",
     "diagnosticsReady": "宠物诊断信息已就绪",
     "folderOccupied": "那个文件夹已经属于另一只宠物了",
@@ -669,8 +670,17 @@
     "worktreeCreated": "一只宠物住进了 {{branch}}",
     "worktreeNoFolder": "请先给这只宠物指定文件夹 — 工作树是从它看守的文件夹分出来的。"
   },
-  "confirm": {
-    "deletePet": "要让 {{name}} 永远回家吗？这会删除这只宠物。"
+  "deletePet": {
+    "title": "让 {{name}} 回家吗？",
+    "lead": "{{name}} 将从这个桌面上被彻底删除。",
+    "alsoRemove": "同时删除工作树文件夹",
+    "onBranch": "位于分支 {{branch}}。",
+    "detached": "没有位于任何分支。",
+    "dirty": "该工作树中有未提交的更改，删除后会一并丢失。",
+    "discard": "丢弃未提交的更改",
+    "cancel": "保留宠物",
+    "confirm": "删除宠物",
+    "confirmBoth": "删除宠物和文件夹"
   },
   "errors": {
     "noPetToPoke": "没有绑定了文件夹的已孵化宠物可以戳。"

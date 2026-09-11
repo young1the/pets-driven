@@ -25,7 +25,6 @@ const edit = {
   onPickFolder: vi.fn(),
   onOpenFolder: vi.fn(),
   onClearFolder: vi.fn(),
-  onDelete: vi.fn(),
   onDone: vi.fn(),
 };
 const settings = {
@@ -114,6 +113,10 @@ const worktree = {
   },
   onCreate: vi.fn(),
 };
+const deletePet = {
+  gateway: { planRepoWorktreeRemoval: vi.fn().mockRejectedValue(new Error("no git here")) },
+  onDelete: vi.fn().mockResolvedValue(undefined),
+};
 const debug = { groups: [], error: null };
 const terminal = {
   available: false,
@@ -129,6 +132,7 @@ function setup(overrides = {}) {
     home,
     place,
     worktree,
+    deletePet,
     edit,
     settings,
     terminal,

@@ -126,6 +126,11 @@ export function usePetRosterActions({
    * beside the worktree rather than as the whole thing failing: the folder is
    * on disk by then and is not rolled back, and the pet can be adopted by hand
    * afterwards.
+   *
+   * The one thing it does *not* share with a hand-adopted pet is being born at
+   * home: this pet is deployed on the spot. The dialog was opened to start work
+   * in a new folder, and a pet that has to be found in the roster and sent out
+   * by hand is an errand between asking and seeing it happen.
    */
   async function createWorktree(input: {
     repo: string;
@@ -135,6 +140,9 @@ export function usePetRosterActions({
   }): Promise<{ worktree: AddedWorktree; petError: string | null }> {
     // Git speaks for itself here — the dialog shows what it said.
     const worktree = await desktopGateway.addRepoWorktree(input);
+    // Taken before the adoption: the backend mints the new pet's id, so the way
+    // to know which pet is the new one is that the roster did not have it.
+    const knownPetIds = new Set(stateRef.current.pets.map((pet) => pet.id));
 
     try {
       const packages = await desktopGateway.listPetPackages();
@@ -151,6 +159,18 @@ export function usePetRosterActions({
         applyState(carryOverPetVisibility(stateRef.current, persisted));
       }
 
+      // Onto the desktop, through the same path the roster's own deploy takes,
+      // so the pet gets its overlay window in window-per-pet mode instead of
+      // only being marked visible. Persisted state always comes back with every
+      // pet at home (`visible` is runtime-only), so without this the new pet
+      // sits in the roster having apparently done nothing.
+      const born = stateRef.current.pets.find((pet) => !knownPetIds.has(pet.id));
+      if (born) {
+        showPet(born.id);
+      }
+
+      // Replaces the "on the desktop" toast `showPet` just flashed, in the same
+      // tick: the branch is what was asked for and is the more useful line.
       flashToast(t("toast.worktreeCreated", { branch: worktree.branch }));
 
       return { worktree, petError: null };
@@ -422,16 +442,44 @@ export function usePetRosterActions({
     void desktopGateway.closeAllPetWindows().catch(() => {});
   }
 
-  function deletePet(petId: string) {
+  /**
+   * Send a pet home, and — when the caller says so — take the worktree it was
+   * standing in with it.
+   *
+   * The confirming is the delete dialog's: "is this folder a worktree, and
+   * should it go too?" is a question with a folder and a branch in it, which is
+   * more than a browser confirm can hold. By the time this runs the answer is
+   * given, and both halves are carried out in the order that fails safely —
+   * the *folder* first, because a removal git refuses (uncommitted work, a
+   * folder something is sitting in) then leaves the pet standing in it to try
+   * again from, where deleting the pet first would leave a folder no screen
+   * mentions again.
+   */
+  async function deletePet(
+    petId: string,
+    options: { removeWorktree?: boolean; force?: boolean } = {},
+  ) {
     const pet = stateRef.current.pets.find((p) => p.id === petId);
-    if (!pet || !window.confirm(t("confirm.deletePet", { name: pet.name }))) {
+    if (!pet) {
       return;
     }
+
+    const folder = getWorkingDirectoryForPet(stateRef.current, petId)?.path;
+    if (options.removeWorktree && folder) {
+      // Git's own refusal travels to the dialog, which shows it unedited: it
+      // names the folder and what is in the way, and nothing here knows better.
+      await desktopGateway.removeRepoWorktree({ path: folder, force: options.force });
+    }
+
     applyState(removePet(stateRef.current, petId));
     void desktopGateway.deletePet(petId);
     void desktopGateway.closeAdoptedPetWindow(petId).catch(() => {});
     setEditPetId(null);
-    flashToast(t("toast.removed", { name: pet.name }));
+    flashToast(
+      options.removeWorktree && folder
+        ? t("toast.removedWithWorktree", { name: pet.name })
+        : t("toast.removed", { name: pet.name }),
+    );
   }
 
   async function pickFolderForPet(petId: string) {

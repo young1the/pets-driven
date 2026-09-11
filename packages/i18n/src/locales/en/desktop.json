@@ -685,6 +685,7 @@
     "onDesktop": "{{name}} is on the desktop",
     "cameHome": "{{name}} came home",
     "removed": "{{name}} was removed",
+    "removedWithWorktree": "{{name}} was removed, and their worktree with them",
     "diagnosticsCopied": "Pet diagnostics copied",
     "diagnosticsReady": "Pet diagnostics ready",
     "folderOccupied": "That folder already belongs to another pet",
@@ -693,8 +694,17 @@
     "worktreeCreated": "A pet moved into {{branch}}",
     "worktreeNoFolder": "Give this pet a folder first — a worktree branches from the folder it watches."
   },
-  "confirm": {
-    "deletePet": "Send {{name}} home for good? This removes the pet."
+  "deletePet": {
+    "title": "Send {{name}} home?",
+    "lead": "{{name}} goes home for good — the pet is deleted from this desktop.",
+    "alsoRemove": "Delete the worktree folder too",
+    "onBranch": "On branch {{branch}}.",
+    "detached": "Not on a branch.",
+    "dirty": "That worktree holds uncommitted changes. Removing it throws them away.",
+    "discard": "Throw the uncommitted changes away",
+    "cancel": "Keep the pet",
+    "confirm": "Delete pet",
+    "confirmBoth": "Delete pet and folder"
   },
   "errors": {
     "noPetToPoke": "No hatched pet with a folder to poke."

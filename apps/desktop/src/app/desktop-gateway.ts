@@ -103,6 +103,28 @@ export type AddedWorktree = {
   createdBranch: boolean;
 };
 
+/**
+ * What removing the worktree a folder sits in would take away. Mirrors the Rust
+ * `WorktreeRemoval`. Every reason the removal would be refused is a field here
+ * rather than an error, because this is asked in order to put the choice to
+ * someone: `main` is the repository itself, which is never removable, and
+ * `dirty` is work that only a forced removal throws away.
+ */
+export type WorktreeRemoval = {
+  path: string;
+  repo: string;
+  branch: string | null;
+  main: boolean;
+  dirty: boolean;
+  locked: boolean;
+};
+
+/** A worktree that is no longer on disk. Mirrors the Rust `RemovedWorktree`. */
+export type RemovedWorktree = {
+  path: string;
+  repo: string;
+};
+
 /** What a worktree call reports outside Tauri, where there is no git to run. */
 const WORKTREE_NEEDS_DESKTOP = "Worktrees need the desktop app.";
 
@@ -285,6 +307,18 @@ export type DesktopGateway = {
     /** What a newly created branch starts at; an existing branch has none. */
     base?: string | null;
   }): Promise<AddedWorktree>;
+  /**
+   * What removing the worktree `path` sits in would take away, removing
+   * nothing. Rejects when the folder is in no git repository, which the caller
+   * reads as "there is no worktree to ask about" rather than as a failure.
+   */
+  planRepoWorktreeRemoval(path: string): Promise<WorktreeRemoval>;
+  /**
+   * Remove the worktree at `path`. `force` throws away uncommitted work in it,
+   * which the removal otherwise refuses. The pet standing in the folder is
+   * deleted separately, through `deletePet`, once the folder is gone.
+   */
+  removeRepoWorktree(input: { path: string; force?: boolean }): Promise<RemovedWorktree>;
   /** Open the OS folder picker; null when cancelled or outside Tauri. */
   pickDirectory(): Promise<string | null>;
   /**
@@ -583,7 +617,7 @@ export const desktopGateway: DesktopGateway = {
     await invoke("open_pet_context_menu", { petId, url, localX: x, localY: y });
   },
 
-  // The three worktree calls reject rather than degrade quietly: an empty list
+  // The worktree calls reject rather than degrade quietly: an empty list
   // would read as "this repository has no worktrees", and a no-op create would
   // leave the dialog claiming a folder that was never made.
   async listRepoWorktrees(repo) {
@@ -613,6 +647,22 @@ export const desktopGateway: DesktopGateway = {
       path: path ?? null,
       base: base ?? null,
     });
+  },
+
+  async planRepoWorktreeRemoval(path) {
+    if (!isTauri()) {
+      throw new Error(WORKTREE_NEEDS_DESKTOP);
+    }
+
+    return await invoke<WorktreeRemoval>("plan_repo_worktree_removal", { path });
+  },
+
+  async removeRepoWorktree({ path, force }) {
+    if (!isTauri()) {
+      throw new Error(WORKTREE_NEEDS_DESKTOP);
+    }
+
+    return await invoke<RemovedWorktree>("remove_repo_worktree", { path, force: force ?? false });
   },
 
   async pickDirectory() {

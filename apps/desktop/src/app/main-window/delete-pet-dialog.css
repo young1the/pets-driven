@@ -1,0 +1,79 @@
+.pd-delete-pet__lead {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-subtle);
+}
+
+/* The folder offer is a panel of its own: it is a second, heavier question
+   inside the first, and reads as an aside rather than as part of the prompt. */
+.pd-delete-pet__worktree {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+/* A path is the one thing here the user may want to read character by
+   character, so it wraps anywhere rather than overflowing the panel. */
+.pd-delete-pet__path {
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.pd-delete-pet__note {
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.pd-delete-pet__dirty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pd-delete-pet__warn {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--warning-strong, #b8791f);
+  overflow-wrap: anywhere;
+}
+
+/* Git's own words, which name paths and refs and can run long. */
+.pd-delete-pet__error {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--danger-strong, #c0453f);
+  overflow-wrap: anywhere;
+}
+
+.pd-delete-pet__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* The one destructive button in the app that is not the edit screen's outlined
+   one: it is the confirming press, so it is filled, in the same coral. The lip
+   goes with it — a coral face over a blossom lip is the default showing
+   through. */
+.pd-delete-pet__danger.pd-btn {
+  background: var(--coral-500);
+  --lip: 0 4px 0 var(--coral-600);
+}
+
+.pd-delete-pet__danger.pd-btn:active {
+  background: var(--coral-600);
+  box-shadow: 0 0 0 var(--coral-600);
+}

@@ -97,6 +97,8 @@ pub fn run() {
             worktree::list_repo_worktrees,
             worktree::plan_repo_worktree,
             worktree::add_repo_worktree,
+            worktree::plan_repo_worktree_removal,
+            worktree::remove_repo_worktree,
             terminal_channel::focus_window,
             terminal_channel::start_session,
             terminal_channel::list_terminal_presets,

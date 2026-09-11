@@ -685,6 +685,7 @@
     "onDesktop": "{{name}}がデスクトップに出てきました",
     "cameHome": "{{name}}がおうちに帰りました",
     "removed": "{{name}}を削除しました",
+    "removedWithWorktree": "{{name}}をワークツリーごと削除しました",
     "diagnosticsCopied": "ペットの診断情報をコピーしました",
     "diagnosticsReady": "ペットの診断情報の準備ができました",
     "folderOccupied": "そのフォルダはすでに別のペットのものです",
@@ -693,8 +694,17 @@
     "worktreeCreated": "{{branch}} にペットが引っ越しました",
     "worktreeNoFolder": "先にこのペットにフォルダーを設定してください — ワークツリーはペットが見ているフォルダーから分かれます。"
   },
-  "confirm": {
-    "deletePet": "{{name}}をずっとおうちに帰しますか？ このペットは削除されます。"
+  "deletePet": {
+    "title": "{{name}}をおうちに帰しますか？",
+    "lead": "{{name}}はこのデスクトップから完全に削除されます。",
+    "alsoRemove": "ワークツリーのフォルダーも削除する",
+    "onBranch": "ブランチは {{branch}} です。",
+    "detached": "ブランチには乗っていません。",
+    "dirty": "このワークツリーにはコミットしていない変更があります。削除すると失われます。",
+    "discard": "コミットしていない変更を破棄する",
+    "cancel": "このままにする",
+    "confirm": "ペットを削除",
+    "confirmBoth": "ペットとフォルダーを削除"
   },
   "errors": {
     "noPetToPoke": "つつけるフォルダを持った、孵ったペットがいません。"

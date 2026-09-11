@@ -12,6 +12,7 @@ import type { HomePetView } from "@/app/main-window/home-section";
 import { describeHookLastSignal } from "@/app/main-window/hook-last-signal";
 import {
   MainWindow,
+  type MainWindowDeleteProps,
   type MainWindowTab,
   type MainWindowWorktreeProps,
 } from "@/app/main-window/main-window";
@@ -64,7 +65,15 @@ export interface MainWindowSurfaceProps {
   onCreateWorktree: MainWindowWorktreeProps["onCreate"];
   onPickFolderForPet: (petId: string) => void;
   onClearFolderForPet: (petId: string) => void;
-  onDeletePet: (petId: string) => void;
+  /**
+   * Delete a pet, and its worktree folder when the dialog was told to. Rejects
+   * with git's own message when the folder could not be removed — the pet is
+   * then still there.
+   */
+  onDeletePet: (
+    petId: string,
+    options?: { removeWorktree?: boolean; force?: boolean },
+  ) => Promise<void> | void;
   onResetPets: () => void;
   onSeedWatchedFolders: (count: number) => void;
   onUpdateTerminalShell: (shell: string) => void;
@@ -174,6 +183,16 @@ export function MainWindowSurface({
   const clearProps = useStableCallback(onClearProps);
   const editPet = useStableCallback(setEditPetId);
   const createWorktree = useStableCallback(onCreateWorktree);
+  // The dialog awaits this: a removal git refuses must reach it as a rejection,
+  // so it can show what git said instead of closing over a pet that is still
+  // there.
+  const deletePet = useStableCallback(
+    async (options: { removeWorktree: boolean; force: boolean }) => {
+      if (editPetId) {
+        await onDeletePet(editPetId, options);
+      }
+    },
+  );
   const addPet = useStableCallback(() => navigate("adopt"));
 
   const managedPets = useMemo(() => state.pets.filter((pet) => !pet.archived), [state]);
@@ -243,6 +262,10 @@ export function MainWindowSurface({
   const worktree = useMemo(
     () => ({ gateway: desktopGateway, onCreate: createWorktree }),
     [createWorktree],
+  );
+  const deletePetProps = useMemo<MainWindowDeleteProps>(
+    () => ({ gateway: desktopGateway, onDelete: deletePet }),
+    [deletePet],
   );
 
   // Unmemoized derivations for the edit/settings sections (only rendered on
@@ -331,9 +354,9 @@ export function MainWindowSurface({
         onPickFolder: () => editPetId && onPickFolderForPet(editPetId),
         onOpenFolder: () => onRevealFolder(editDirPath),
         onClearFolder: () => editPetId && onClearFolderForPet(editPetId),
-        onDelete: () => editPetId && onDeletePet(editPetId),
         onDone: () => setEditPetId(null),
       }}
+      deletePet={deletePetProps}
       editPet={editPetView}
       home={home}
       place={place}

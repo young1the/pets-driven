@@ -446,6 +446,63 @@ pub struct RemovedWorktree {
     pub repo: String,
 }
 
+/// What removing the worktree a folder sits in would take away, worked out
+/// without removing anything.
+///
+/// The question this answers is asked *of a folder someone is about to lose* —
+/// the app asks it before deleting the pet standing in that folder — so every
+/// reason the removal would be refused is a field here rather than an error:
+/// the repository itself is not removable, and uncommitted work is only thrown
+/// away on purpose. A folder that is in no git repository at all is still an
+/// error, because then there is no worktree to ask about.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorktreeRemoval {
+    /// The worktree's root, as git spells it — the path to pass to
+    /// [`remove_worktree`], and the one a pet is looked up by.
+    pub path: String,
+    pub repo: String,
+    /// The short branch name; `None` when the worktree is detached or bare.
+    pub branch: Option<String>,
+    /// Whether `path` is the repository's own worktree, which cannot be
+    /// removed as a worktree — nothing else here matters when it is true.
+    pub main: bool,
+    /// Whether the folder holds uncommitted work, which removing throws away
+    /// and so takes a forced removal.
+    pub dirty: bool,
+    pub locked: bool,
+}
+
+/// Describe removing the worktree `dir` sits in, running no removal.
+///
+/// Deliberately separate from [`remove_worktree`]'s own checks rather than
+/// shared with them: this one always looks (a caller showing the answer wants
+/// to know about uncommitted work even when it would force past it), and the
+/// removal re-checks for itself, because what a preview said and what is true
+/// at the moment of removal are not the same thing.
+pub fn plan_removal(git: &dyn Git, dir: &str) -> Result<WorktreeRemoval, String> {
+    let entries = list_worktrees(git, dir)?;
+    let repo = entries[0].path.clone();
+    let path = worktree_toplevel(git, dir)?;
+
+    // The same test the removal itself makes, so both call the same folder the
+    // repository: git prints the main worktree first, and a folder inside it
+    // that is not a worktree of its own resolves to it.
+    let main = is_inside(&path, &repo);
+    let entry = entries
+        .iter()
+        .find(|entry| is_inside(&entry.path, &path) && is_inside(&path, &entry.path));
+
+    Ok(WorktreeRemoval {
+        branch: entry.and_then(|entry| entry.branch.clone()),
+        locked: entry.is_some_and(|entry| entry.locked),
+        dirty: is_dirty(git, &path)?,
+        path,
+        repo,
+        main,
+    })
+}
+
 /// Remove the worktree at `dir`. Refuses before touching anything when the
 /// target is the repository itself, or when it holds uncommitted work and
 /// `force` was not given (which is also passed on to git).
@@ -658,6 +715,54 @@ mod tests {
         let refusal = add_worktree(&git, &planned, None);
 
         assert!(refusal.unwrap_err().contains("already checked out"));
+    }
+
+    #[test]
+    fn a_removal_plan_names_the_branch_that_would_go_with_the_folder() {
+        let git = ScriptedGit::new(vec![
+            ("worktree list", succeeded(LISTING)),
+            ("rev-parse --show-toplevel", succeeded("D:/work/proj-worktrees/feat-login")),
+            ("status --porcelain", succeeded("")),
+        ]);
+        let removal = plan_removal(&git, "D:/work/proj-worktrees/feat-login/src")
+            .expect("the worktree resolves");
+
+        assert_eq!(removal.path, "D:/work/proj-worktrees/feat-login");
+        assert_eq!(removal.repo, "D:/work/proj");
+        assert_eq!(removal.branch, Some("feat/login".to_string()));
+        assert!(!removal.main);
+        assert!(!removal.dirty);
+        // Nothing is removed by asking.
+        assert!(!git.ran("worktree remove"));
+    }
+
+    #[test]
+    fn a_removal_plan_reports_uncommitted_work_instead_of_refusing_it() {
+        let git = ScriptedGit::new(vec![
+            ("worktree list", succeeded(LISTING)),
+            ("rev-parse --show-toplevel", succeeded("D:/work/proj-worktrees/feat-login")),
+            ("status --porcelain", succeeded(" M src/lib.rs
+")),
+        ]);
+        let removal = plan_removal(&git, "D:/work/proj-worktrees/feat-login")
+            .expect("the worktree resolves");
+
+        // The refusal is the caller's to make: it is asking so it can offer the
+        // choice, not so it can be stopped.
+        assert!(removal.dirty);
+    }
+
+    #[test]
+    fn a_removal_plan_calls_the_repository_itself_what_it_is() {
+        let git = ScriptedGit::new(vec![
+            ("worktree list", succeeded(LISTING)),
+            ("rev-parse --show-toplevel", succeeded("D:/work/proj")),
+            ("status --porcelain", succeeded("")),
+        ]);
+        let removal = plan_removal(&git, "D:/work/proj").expect("the repository resolves");
+
+        assert!(removal.main);
+        assert_eq!(removal.branch, Some("main".to_string()));
     }
 
     #[test]

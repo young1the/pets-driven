@@ -9,6 +9,7 @@ import {
 import { useTranslation } from "@pets-driven/i18n";
 import { useEffect, useState } from "react";
 import { DebugSection, type DebugSectionProps } from "@/app/main-window/debug-section";
+import { DeletePetDialog, type DeletePetDialogProps } from "@/app/main-window/delete-pet-dialog";
 import { HomeSection, type HomeSectionProps } from "@/app/main-window/home-section";
 import {
   PetEditSection,
@@ -45,6 +46,17 @@ export type MainWindowWorktreeProps = Omit<
   "open" | "onClose" | "repo" | "petName"
 >;
 
+/**
+ * The delete-pet dialog, minus what the window itself supplies. Like the
+ * worktree dialog it is opened from a pet — the edit screen's delete button —
+ * so the pet and the folder it stands in come from whichever pet is being
+ * edited.
+ */
+export type MainWindowDeleteProps = Omit<
+  DeletePetDialogProps,
+  "open" | "onClose" | "petName" | "folder"
+>;
+
 export interface MainWindowProps {
   tab: MainWindowTab;
   onTab: (tab: MainWindowTab) => void;
@@ -52,7 +64,13 @@ export interface MainWindowProps {
   home: HomeSectionProps;
   place: MainWindowPlaceProps;
   worktree: MainWindowWorktreeProps;
-  edit: Omit<PetEditSectionProps, "pet" | "onNewWorktree">;
+  /**
+   * Deleting the pet being edited. The edit screen's button opens the dialog
+   * rather than deleting, so the confirming — and the question about the pet's
+   * worktree — happens in one place.
+   */
+  deletePet: MainWindowDeleteProps;
+  edit: Omit<PetEditSectionProps, "pet" | "onNewWorktree" | "onDelete">;
   settings: SettingsSectionProps;
   /** The coach is the terminal tab's own affair, so it is not wired from here. */
   terminal: Omit<TerminalSectionProps, "showOnboarding">;
@@ -67,6 +85,7 @@ export function MainWindow({
   home,
   place,
   worktree,
+  deletePet,
   edit,
   settings,
   terminal,
@@ -85,6 +104,12 @@ export function MainWindow({
   // The worktree dialog belongs to a pet: the folder it branches from is that
   // pet's own, so it opens from the edit screen and remembers which pet asked.
   const [worktreePet, setWorktreePet] = useState<{ repo: string; name: string } | null>(null);
+  // The pet the delete dialog is asking about, remembered the same way: the
+  // dialog outlives the edit screen it was opened from, since deleting the pet
+  // is what closes that screen.
+  const [deletingPet, setDeletingPet] = useState<{ name: string; folder: string | null } | null>(
+    null,
+  );
   useEffect(() => {
     if (terminalVisible) {
       setTerminalMounted(true);
@@ -147,6 +172,7 @@ export function MainWindow({
       {editPet ? (
         <div className="pd-main__body">
           <PetEditSection
+            onDelete={() => setDeletingPet({ name: editPet.name, folder: editPet.folder ?? null })}
             onNewWorktree={() =>
               editPet.folder && setWorktreePet({ repo: editPet.folder, name: editPet.name })
             }
@@ -198,6 +224,16 @@ export function MainWindow({
           petName={worktreePet.name}
           repo={worktreePet.repo}
           {...worktree}
+        />
+      ) : null}
+
+      {deletingPet ? (
+        <DeletePetDialog
+          folder={deletingPet.folder}
+          onClose={() => setDeletingPet(null)}
+          open
+          petName={deletingPet.name}
+          {...deletePet}
         />
       ) : null}
 

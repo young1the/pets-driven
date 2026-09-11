@@ -17,8 +17,8 @@
 //! rather than holding the webview's main thread.
 
 use pets_driven_git::{
-    add_worktree, plan_worktree, worktree_root_from_env, AddedWorktree, SystemGit, WorktreeEntry,
-    WorktreePlan,
+    add_worktree, plan_removal, plan_worktree, remove_worktree, worktree_root_from_env,
+    AddedWorktree, RemovedWorktree, SystemGit, WorktreeEntry, WorktreePlan, WorktreeRemoval,
 };
 
 use crate::state_commands;
@@ -80,11 +80,30 @@ pub(crate) async fn add_repo_worktree(
     .await
 }
 
-// Removing a worktree is deliberately not here yet: `pets_driven_git`'s
-// `remove_worktree` is what `pdd worktree rm` runs, and the app has no surface
-// that offers to take a folder away with the pet standing in it. Adding one
-// means deciding what deleting a pet should do to its folder, which is a
-// question about the pet card, not about git.
+/// What removing the worktree `path` sits in would take away, worked out
+/// without removing anything. Asked when a pet is about to be deleted, so the
+/// question "should its folder go too?" is only put when there is a worktree to
+/// take away — and so the answer can say what would be lost with it.
+///
+/// Fails when the folder is in no git repository, which is the ordinary state
+/// of a pet's folder: the caller reads that as "nothing to ask about" rather
+/// than as something to report.
+#[tauri::command]
+pub(crate) async fn plan_repo_worktree_removal(path: String) -> Result<WorktreeRemoval, String> {
+    blocking(move || plan_removal(&SystemGit, &path)).await
+}
+
+/// Remove the worktree at `path`. `force` throws away uncommitted work in it,
+/// which the removal otherwise refuses; nothing here touches the pet standing
+/// in the folder, which the caller deletes through the state commands after
+/// the folder is gone.
+#[tauri::command]
+pub(crate) async fn remove_repo_worktree(
+    path: String,
+    force: bool,
+) -> Result<RemovedWorktree, String> {
+    blocking(move || remove_worktree(&SystemGit, &path, force)).await
+}
 
 /// Run one git-backed operation off the main thread. A panic in the blocking
 /// task surfaces as an ordinary command failure rather than taking the app with
