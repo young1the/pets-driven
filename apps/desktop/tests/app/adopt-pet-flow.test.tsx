@@ -23,6 +23,7 @@ function createGateway(
     listPetPackages: vi.fn().mockResolvedValue(packages),
     listDesignatedPetPackages: vi.fn().mockResolvedValue([]),
     listTerminalShells: vi.fn().mockResolvedValue([]),
+    listTerminalPresets: vi.fn().mockResolvedValue([]),
     openAdoptedPetWindow: vi.fn(),
     openAdoptedPetWindows: vi.fn().mockResolvedValue(undefined),
     closeAdoptedPetWindow: vi.fn(),

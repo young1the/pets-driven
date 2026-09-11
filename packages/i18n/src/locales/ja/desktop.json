@@ -141,11 +141,10 @@
   },
   "settings": {
     "title": "設定",
-    "terminal": "ターミナル",
-    "terminalDesc": "アプリ内ターミナルが開くシェルで、ペットの起動コマンドもこのシェルで動きます。",
+    "terminal": "シェル",
+    "terminalDesc": "アプリ内ターミナルが起動するプログラムであり、エージェント終了後もウィンドウを残すためにコマンドを包むシェルです。自前のターミナルにはすでにシェルが設定されているので、変える必要はほとんどありません。",
     "command": "コマンド",
     "commandPlaceholder": "claude --resume",
-    "commandPreview": "コマンドのプレビュー",
     "petSourcesTitle": "ペットフォルダ",
     "petSourcesDesc": "ペットパックを探すフォルダです。フォルダを指定しない場合は組み込みのペットのみ表示されます。",
     "noPetFolder": "フォルダ未設定",
@@ -237,7 +236,16 @@
     "noWorktreeFolderHint": "D:\\work\\proj のワークツリーは D:\\work\\proj-worktrees に作られます",
     "clearWorktreeFolder": "リポジトリの隣に戻す",
     "changeWorktreeFolder": "フォルダーを選ぶ",
-    "openWorktreeFolder": "フォルダーを開く"
+    "openWorktreeFolder": "フォルダーを開く",
+    "terminalApp": "ターミナル",
+    "terminalAppDesc": "ペットのセッションを開くターミナルです。インストール済みのものを選ぶか、それ以外はコマンドラインを直接書きます。",
+    "defaultTerminalApp": "システム既定 (Windows Terminal、なければ通常のコンソール)",
+    "customTerminalApp": "自分で書いたコマンドライン",
+    "terminalLaunchLine": "ターミナルのコマンドライン",
+    "terminalLaunchPlaceholder": "wezterm start --cwd {cwd} -- {command}",
+    "terminalLaunchHint": "{cwd} はペットのフォルダー、{command} は下のコマンドです。それ以外はそのままターミナルに渡されます。",
+    "advanced": "詳細",
+    "launchPreview": "実際に起動されるもの"
   },
   "hook": {
     "summary": {

@@ -99,6 +99,7 @@ pub fn run() {
             worktree::add_repo_worktree,
             terminal_channel::focus_window,
             terminal_channel::start_session,
+            terminal_channel::list_terminal_presets,
             terminal_channel::connect_window,
             embedded_terminal::terminal_open,
             embedded_terminal::terminal_write,

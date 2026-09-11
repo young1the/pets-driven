@@ -17,6 +17,7 @@ describe("parsePetsDrivenState", () => {
       terminalShell: null,
       petSourceDirectory: null,
       worktreeDirectory: null,
+      terminalLaunch: null,
     });
   });
 

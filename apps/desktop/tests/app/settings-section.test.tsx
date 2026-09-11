@@ -34,6 +34,8 @@ function setupProps(overrides = {}) {
     onCommand: vi.fn(),
     terminalShell: "",
     onTerminalShell: vi.fn(),
+    terminalLaunch: "",
+    onTerminalLaunch: vi.fn(),
     preview: {
       cwd: "C:\\pets\\core",
       prompt: "C:\\>",
@@ -150,9 +152,47 @@ describe("SettingsSection terminal", () => {
     const onTerminalShell = vi.fn();
     setup("terminal", { onTerminalShell, terminalShell: "C:\\Windows\\System32\\cmd.exe" });
 
-    fireEvent.change(screen.getByLabelText("Terminal"), { target: { value: "" } });
+    // The shell is the folded-away question now: the visible one is which
+    // terminal opens.
+    fireEvent.change(screen.getByLabelText("Shell"), { target: { value: "" } });
 
     expect(onTerminalShell).toHaveBeenCalledWith("");
+  });
+
+  /**
+   * The terminal is a command line, not a mode: whatever is typed is what gets
+   * spawned, so a terminal this app has never heard of works without a code
+   * change.
+   */
+  it("takes a terminal command line of the user's own", () => {
+    const onTerminalLaunch = vi.fn();
+    setup("terminal", { onTerminalLaunch });
+
+    fireEvent.change(screen.getByLabelText("Terminal command line"), {
+      target: { value: "alacritty --working-directory {cwd} -e {command}" },
+    });
+
+    expect(onTerminalLaunch).toHaveBeenCalledWith(
+      "alacritty --working-directory {cwd} -e {command}",
+    );
+  });
+
+  it("shows what will actually be launched, placeholders filled in", () => {
+    setup("terminal", {
+      terminalLaunch: "wezterm start --cwd {cwd} -- {command}",
+      preview: { prompt: "C:\\>", command: "cmd /k claude --resume" },
+    });
+
+    expect(
+      screen.getByText("wezterm start --cwd D:\\work\\proj -- cmd /k claude --resume"),
+    ).toBeInTheDocument();
+  });
+
+  it("says a line of the user's own is not one of the offered terminals", () => {
+    setup("terminal", { terminalLaunch: "kitty --directory {cwd} {command}" });
+
+    expect(screen.getByLabelText("Terminal")).toHaveValue("kitty --directory {cwd} {command}");
+    expect(screen.getByRole("option", { name: "Custom command line" })).toBeInTheDocument();
   });
 });
 

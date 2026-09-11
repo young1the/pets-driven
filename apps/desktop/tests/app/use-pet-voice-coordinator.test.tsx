@@ -48,6 +48,7 @@ function state(options: { muted?: boolean; personalityId?: "playful" } = {}): Pe
     terminalShell: null,
     petSourceDirectory: null,
     worktreeDirectory: null,
+    terminalLaunch: null,
   };
 }
 

@@ -68,6 +68,8 @@ export interface MainWindowSurfaceProps {
   onResetPets: () => void;
   onSeedWatchedFolders: (count: number) => void;
   onUpdateTerminalShell: (shell: string) => void;
+  /** The command line that opens a terminal; empty is the system default. */
+  onUpdateTerminalLaunch: (launch: string) => void;
   onSetLaunchCommand: (command: string) => void;
   onChangePetSourceFolder: () => void;
   /** Settings: where new worktrees are made, and back to none. */
@@ -142,6 +144,7 @@ export function MainWindowSurface({
   onResetPets,
   onSeedWatchedFolders,
   onUpdateTerminalShell,
+  onUpdateTerminalLaunch,
   onSetLaunchCommand,
   onChangePetSourceFolder,
   onChangeWorktreeFolder,
@@ -345,6 +348,8 @@ export function MainWindowSurface({
         onCommand: onSetLaunchCommand,
         terminalShell: state.terminalShell ?? "",
         onTerminalShell: onUpdateTerminalShell,
+        terminalLaunch: state.terminalLaunch ?? "",
+        onTerminalLaunch: onUpdateTerminalLaunch,
         preview: {
           prompt: promptForShell(state.terminalShell ?? launchSettings.shell),
           command: state.sessionCommand,

@@ -117,11 +117,10 @@
   },
   "settings": {
     "title": "设置",
-    "terminal": "终端",
-    "terminalDesc": "内置终端打开的 shell，也是宠物启动命令运行的地方。",
+    "terminal": "Shell",
+    "terminalDesc": "应用内终端启动的程序，也是包住命令、让智能体退出后窗口仍留着的 shell。你自己的终端里已经配好了 shell，所以基本不用改。",
     "command": "命令",
     "commandPlaceholder": "claude --resume",
-    "commandPreview": "命令预览",
     "petSourcesTitle": "宠物文件夹",
     "petSourcesDesc": "扫描宠物包的文件夹。没有设置文件夹时，只会显示内置宠物。",
     "noPetFolder": "未设置文件夹",
@@ -213,7 +212,16 @@
     "noWorktreeFolderHint": "D:\\work\\proj 的工作树会建在 D:\\work\\proj-worktrees",
     "clearWorktreeFolder": "改回仓库旁边",
     "changeWorktreeFolder": "选择文件夹",
-    "openWorktreeFolder": "打开文件夹"
+    "openWorktreeFolder": "打开文件夹",
+    "terminalApp": "终端",
+    "terminalAppDesc": "宠物会话打开的终端。可以选已安装的，其他终端直接写命令行即可。",
+    "defaultTerminalApp": "系统默认（有 Windows Terminal 就用它，否则普通控制台）",
+    "customTerminalApp": "自定义命令行",
+    "terminalLaunchLine": "终端命令行",
+    "terminalLaunchPlaceholder": "wezterm start --cwd {cwd} -- {command}",
+    "terminalLaunchHint": "{cwd} 是宠物的文件夹，{command} 是下面那条命令，其余原样传给终端。",
+    "advanced": "高级",
+    "launchPreview": "实际启动的命令"
   },
   "hook": {
     "summary": {

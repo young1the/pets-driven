@@ -16,6 +16,7 @@ describe("working directory registry", () => {
       terminalShell: null,
       petSourceDirectory: null,
       worktreeDirectory: null,
+      terminalLaunch: null,
     });
   });
 
@@ -46,6 +47,7 @@ describe("working directory registry", () => {
       terminalShell: null,
       petSourceDirectory: null,
       worktreeDirectory: null,
+      terminalLaunch: null,
     };
 
     expect(

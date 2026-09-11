@@ -167,3 +167,21 @@ export function promptForShell(shellPath: string): string {
       return ">";
   }
 }
+
+/**
+ * The command line a launch template resolves to, for the settings preview.
+ *
+ * Mirrors `resolve_launch_template` in `terminal_channel.rs` — the same two
+ * placeholders, substituted the same way — so what the preview shows is what
+ * the shell will run. It is a display string, not an argv: the backend does the
+ * real splitting.
+ */
+export function previewSessionLaunch(launch: string, line: string, folder: string): string {
+  const trimmed = launch.trim();
+
+  if (!trimmed) {
+    return line;
+  }
+
+  return trimmed.replaceAll("{cwd}", folder).replaceAll("{command}", line);
+}

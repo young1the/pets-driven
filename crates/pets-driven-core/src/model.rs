@@ -205,6 +205,11 @@ pub struct SettingsPatch {
     /// Where new worktrees are made. Cleared means each one lands beside the
     /// repository it branches from.
     pub worktree_directory: Patch<String>,
+    /// The command line that opens a terminal for a pet's session, with `{cwd}`
+    /// and `{command}` standing for the folder and the agent line. Cleared means
+    /// the system default (Windows Terminal when it is there, otherwise the
+    /// shell in a console of its own).
+    pub terminal_launch: Patch<String>,
 }
 
 impl SettingsPatch {
@@ -217,6 +222,7 @@ impl SettingsPatch {
             terminal_shell: parse_string_patch(payload, "terminalShell")?,
             pet_source_directory: parse_string_patch(payload, "petSourceDirectory")?,
             worktree_directory: parse_string_patch(payload, "worktreeDirectory")?,
+            terminal_launch: parse_string_patch(payload, "terminalLaunch")?,
         })
     }
 }

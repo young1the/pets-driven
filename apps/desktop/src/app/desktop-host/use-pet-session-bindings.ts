@@ -104,6 +104,7 @@ export function usePetSessionBindings({
       const launched = await desktopGateway.startSession(
         cwd,
         sessionCommandForPet(stateRef.current, petId),
+        stateRef.current.terminalLaunch,
       );
       if (launched) {
         setBinding(petId, launched);

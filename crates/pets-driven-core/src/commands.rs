@@ -440,6 +440,7 @@ pub(crate) fn apply_settings_update(state: &Value, input: &SettingsPatch) -> Val
     apply_string_patch(object, "terminalShell", &input.terminal_shell);
     apply_string_patch(object, "petSourceDirectory", &input.pet_source_directory);
     apply_string_patch(object, "worktreeDirectory", &input.worktree_directory);
+    apply_string_patch(object, "terminalLaunch", &input.terminal_launch);
 
     next
 }
@@ -1120,6 +1121,7 @@ mod tests {
                 terminal_shell: Patch::Keep,
                 pet_source_directory: Patch::Clear,
                 worktree_directory: Patch::Set("D:/trees".to_string()),
+                terminal_launch: Patch::Keep,
             },
         );
 
@@ -1139,6 +1141,7 @@ mod tests {
                 terminal_shell: Patch::Set("C:/Windows/System32/cmd.exe".to_string()),
                 pet_source_directory: Patch::Set("D:/pets".to_string()),
                 worktree_directory: Patch::Set("D:/trees".to_string()),
+                terminal_launch: Patch::Keep,
             },
         );
 

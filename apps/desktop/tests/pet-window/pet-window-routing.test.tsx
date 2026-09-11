@@ -198,6 +198,7 @@ const testPetsDrivenState: PetsDrivenState = {
   terminalShell: null,
   petSourceDirectory: null,
   worktreeDirectory: null,
+  terminalLaunch: null,
 };
 
 describe("pet window product route", () => {
@@ -924,6 +925,8 @@ describe("pet window product route", () => {
       expect(invokeMock).toHaveBeenCalledWith("start_session", {
         cwd: "D:\\cms",
         command: "claude",
+        // No terminal configured: the backend opens the system default.
+        launch: null,
       });
     });
     expect(invokeMock).not.toHaveBeenCalledWith("focus_window", expect.anything());
@@ -979,6 +982,8 @@ describe("pet window product route", () => {
       expect(invokeMock).toHaveBeenCalledWith("start_session", {
         cwd: "D:\\cms",
         command: "claude",
+        // No terminal configured: the backend opens the system default.
+        launch: null,
       });
     });
 
@@ -2328,7 +2333,12 @@ describe("pet window product route", () => {
     render(<PetsDrivenApp />);
 
     fireEvent.click(await screen.findByRole("tab", { name: "Settings" }));
-    fireEvent.change(await screen.findByLabelText("Terminal"), {
+    // "Terminal" is now the terminal that opens; the shell is the advanced
+    // question underneath it, and it is still the one both surfaces share.
+    // The shells are probed from the system, so wait for the one being picked
+    // to be in the list — a select cannot take a value it has no option for.
+    await screen.findByRole("option", { name: `Git Bash (${GIT_BASH_PATH})` });
+    fireEvent.change(screen.getByLabelText("Shell"), {
       target: { value: GIT_BASH_PATH },
     });
 

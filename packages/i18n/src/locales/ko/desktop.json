@@ -141,11 +141,10 @@
   },
   "settings": {
     "title": "설정",
-    "terminal": "터미널",
-    "terminalDesc": "인앱 터미널이 여는 셸이자, 펫 실행 명령이 돌아가는 셸이에요.",
+    "terminal": "셸",
+    "terminalDesc": "인앱 터미널이 띄우는 프로그램이자, 에이전트가 끝난 뒤에도 창이 남도록 명령을 감싸는 셸입니다. 터미널을 따로 쓴다면 거기에 이미 셸이 설정돼 있으니 건드릴 일이 거의 없습니다.",
     "command": "명령어",
     "commandPlaceholder": "claude --resume",
-    "commandPreview": "명령어 미리보기",
     "petSourcesTitle": "펫 폴더",
     "petSourcesDesc": "펫 팩을 검색하는 폴더입니다. 폴더를 지정하지 않으면 기본 펫만 표시됩니다.",
     "noPetFolder": "폴더 미설정",
@@ -237,7 +236,16 @@
     "noWorktreeFolderHint": "D:\\work\\proj 의 워크트리는 D:\\work\\proj-worktrees 에 만들어집니다",
     "clearWorktreeFolder": "저장소 옆으로",
     "changeWorktreeFolder": "폴더 선택",
-    "openWorktreeFolder": "폴더 열기"
+    "openWorktreeFolder": "폴더 열기",
+    "terminalApp": "터미널",
+    "terminalAppDesc": "펫의 세션이 열릴 터미널입니다. 설치된 것을 고르거나, 다른 터미널은 실행 줄을 직접 쓰면 됩니다.",
+    "defaultTerminalApp": "시스템 기본 (Windows Terminal, 없으면 기본 콘솔)",
+    "customTerminalApp": "직접 쓴 실행 줄",
+    "terminalLaunchLine": "터미널 실행 줄",
+    "terminalLaunchPlaceholder": "wezterm start --cwd {cwd} -- {command}",
+    "terminalLaunchHint": "{cwd} 는 펫의 폴더, {command} 는 아래의 명령입니다. 나머지는 터미널에 그대로 전달됩니다.",
+    "advanced": "고급",
+    "launchPreview": "실제로 실행되는 것"
   },
   "hook": {
     "summary": {

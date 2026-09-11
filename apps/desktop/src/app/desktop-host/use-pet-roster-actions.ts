@@ -265,6 +265,19 @@ export function usePetRosterActions({
     void desktopGateway.updateSettings({ terminalShell, sessionCommand });
   }
 
+  /**
+   * The command line that opens a terminal. Unlike the shell it changes nothing
+   * about the agent line — the same `cmd /k claude` is substituted into
+   * whichever template is set — so there is no launch line to rebuild here.
+   */
+  function updateTerminalLaunch(launch: string) {
+    const trimmed = launch.trim();
+    const terminalLaunch = trimmed ? trimmed : null;
+
+    applyState({ ...stateRef.current, terminalLaunch });
+    void desktopGateway.updateSettings({ terminalLaunch });
+  }
+
   // Every mutation below applies to local state first so the UI stays instant,
   // then sends the change itself to the backend, which applies it to whatever is
   // on disk. Nothing here persists the whole state document.
@@ -542,6 +555,7 @@ export function usePetRosterActions({
     seedWatchedFolders,
     updateSessionCommand,
     updateTerminalShell,
+    updateTerminalLaunch,
     patchPet,
     setPetPersonality,
     setPetAssetId,

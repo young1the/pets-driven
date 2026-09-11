@@ -141,11 +141,10 @@
   },
   "settings": {
     "title": "Settings",
-    "terminal": "Terminal",
-    "terminalDesc": "The shell the in-app terminal opens, and the one a pet's launch line runs in.",
+    "terminal": "Shell",
+    "terminalDesc": "What the in-app terminal spawns, and what wraps the command so the window stays open after the agent exits. A terminal of your own already has a shell configured, so this is rarely worth changing.",
     "command": "Command",
     "commandPlaceholder": "claude --resume",
-    "commandPreview": "Command preview",
     "petSourcesTitle": "Pets folder",
     "petSourcesDesc": "The folder scanned for pet packs. With no folder set, only the built-in pets show.",
     "noPetFolder": "No folder set",
@@ -237,7 +236,16 @@
     "noWorktreeFolderHint": "A worktree of D:\\work\\proj lands in D:\\work\\proj-worktrees",
     "clearWorktreeFolder": "Use each repository",
     "changeWorktreeFolder": "Choose a folder",
-    "openWorktreeFolder": "Open folder"
+    "openWorktreeFolder": "Open folder",
+    "terminalApp": "Terminal",
+    "terminalAppDesc": "The terminal a pet's session opens in. Pick one that is installed, or write the command line for any other.",
+    "defaultTerminalApp": "System default (Windows Terminal, else a plain console)",
+    "customTerminalApp": "Custom command line",
+    "terminalLaunchLine": "Terminal command line",
+    "terminalLaunchPlaceholder": "wezterm start --cwd {cwd} -- {command}",
+    "terminalLaunchHint": "{cwd} is the pet's folder, {command} the line below. Anything else is passed to the terminal as typed.",
+    "advanced": "Advanced",
+    "launchPreview": "What gets launched"
   },
   "hook": {
     "summary": {

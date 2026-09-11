@@ -80,6 +80,17 @@ export type PetsDrivenState = {
    */
   terminalShell: string | null;
   /**
+   * The command line that opens a terminal for a session, with `{cwd}` and
+   * `{command}` standing for the pet's folder and the agent line — so a
+   * terminal the app has never heard of works by being typed in. Null is the
+   * system default: Windows Terminal when it is installed, otherwise the shell
+   * in a console of its own.
+   *
+   * The shell above is what runs *inside* it, which most people never need to
+   * touch: a terminal already has a shell of its own configured.
+   */
+  terminalLaunch: string | null;
+  /**
    * The single folder scanned for user-installed pet packs. `null` means the
    * Petdex default (`~/.petdex/pets`, resolved on the Rust side). The bundled
    * pets always load regardless. The Rust `list_codex_pet_packages` /
@@ -103,6 +114,7 @@ export function createEmptyPetsDrivenState(): PetsDrivenState {
     petProfiles: [],
     sessionCommand: DEFAULT_SESSION_COMMAND,
     terminalShell: null,
+    terminalLaunch: null,
     petSourceDirectory: null,
     worktreeDirectory: null,
   };
@@ -136,8 +148,11 @@ function sanitizeAgentProvider(value: unknown): PetAgentProvider | undefined {
   return PET_AGENT_PROVIDERS.find((provider) => provider === value);
 }
 
-/** Normalizes a persisted `terminalShell`, treating blank strings as "unset". */
-function sanitizeTerminalShell(value: unknown): string | null {
+/**
+ * Normalizes a persisted command or program path (`terminalShell`,
+ * `terminalLaunch`), treating blank strings as "unset".
+ */
+function sanitizeProgramPath(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) {
     return null;
   }
@@ -211,7 +226,8 @@ export function parsePetsDrivenState(value: unknown): PetsDrivenState {
       typeof candidate.sessionCommand === "string" && candidate.sessionCommand.trim()
         ? candidate.sessionCommand
         : DEFAULT_SESSION_COMMAND,
-    terminalShell: sanitizeTerminalShell(candidate.terminalShell),
+    terminalShell: sanitizeProgramPath(candidate.terminalShell),
+    terminalLaunch: sanitizeProgramPath(candidate.terminalLaunch),
     petSourceDirectory: sanitizeFolderSetting(candidate.petSourceDirectory),
     worktreeDirectory: sanitizeFolderSetting(candidate.worktreeDirectory),
   });

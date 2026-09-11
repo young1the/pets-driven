@@ -113,6 +113,8 @@ export function SettingsSection(props: SettingsSectionProps) {
               onCommand={props.onCommand}
               onTerminalShell={props.onTerminalShell}
               preview={props.preview}
+              terminalLaunch={props.terminalLaunch}
+              onTerminalLaunch={props.onTerminalLaunch}
               terminalShell={props.terminalShell}
             />
           ) : category === "agent" ? (

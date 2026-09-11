@@ -128,6 +128,7 @@ function PetsDrivenHostApp() {
     changeWorktreeFolder,
     resetWorktreeFolder,
     updateTerminalShell,
+    updateTerminalLaunch,
     patchPet,
     setPetPersonality,
     setPetAssetId,
@@ -351,6 +352,7 @@ function PetsDrivenHostApp() {
       onShowAllPets={showAllPets}
       onShowPet={showPet}
       onUpdateTerminalShell={updateTerminalShell}
+      onUpdateTerminalLaunch={updateTerminalLaunch}
       petStatusById={petStatusById}
       petWindowError={petWindowError}
       setEditPetId={setEditPetId}

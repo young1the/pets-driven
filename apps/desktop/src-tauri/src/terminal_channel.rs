@@ -14,6 +14,57 @@ pub(crate) struct ForeignWindow {
 #[cfg(any(target_os = "windows", test))]
 const DEFAULT_SESSION_COMMAND: &str = "cmd /k claude";
 
+/// A terminal this machine has, offered as a starting point for the launch
+/// template. `launch` is that template with the detected path already in it, so
+/// picking one from the dropdown fills the field rather than selecting a mode.
+#[derive(Clone, serde::Serialize)]
+pub(crate) struct TerminalPreset {
+    label: String,
+    launch: String,
+}
+
+/// The placeholder a launch template puts the pet's folder in.
+#[cfg(any(target_os = "windows", test))]
+const CWD_PLACEHOLDER: &str = "{cwd}";
+
+/// The placeholder a launch template puts the shell-and-agent line in. It
+/// stands for several arguments (`cmd /k claude`), not one.
+#[cfg(any(target_os = "windows", test))]
+const COMMAND_PLACEHOLDER: &str = "{command}";
+
+/// Resolve a launch template into the program to spawn and its arguments.
+///
+/// The template is the user's, not ours: this knows only the two placeholders,
+/// so a terminal nobody here has heard of works by being typed into the
+/// settings field. `{cwd}` becomes the folder, `{command}` expands to the
+/// launch line's own tokens in place.
+///
+/// Returns `None` for a template that names no program, which is how "no
+/// terminal configured" arrives.
+#[cfg(any(target_os = "windows", test))]
+fn resolve_launch_template(
+    template: &str,
+    cwd: &str,
+    command: &[String],
+) -> Option<(String, Vec<String>)> {
+    let mut resolved: Vec<String> = Vec::new();
+
+    for token in split_command_line(template) {
+        if token == COMMAND_PLACEHOLDER {
+            resolved.extend(command.iter().cloned());
+            continue;
+        }
+
+        // Inside a larger token (`--cwd={cwd}`) the folder is substituted in
+        // place; a bare `{cwd}` is the same substitution on the whole token.
+        resolved.push(token.replace(CWD_PLACEHOLDER, cwd));
+    }
+
+    let (program, rest) = resolved.split_first()?;
+
+    Some((program.clone(), rest.to_vec()))
+}
+
 /// Split a launch line into program + args, keeping double-quoted segments
 /// (e.g. a shell path with spaces, or an inner `-lc "a b"`) together and
 /// stripping the surrounding quotes. Backslashes are kept verbatim so Windows
@@ -227,18 +278,20 @@ pub(crate) fn focus_window(hwnd: i64) -> Result<bool, String> {
     Ok(true)
 }
 
-/// Start a fresh Claude session in `cwd` and auto-bind to the window it opens.
-/// Opens Windows Terminal when present, otherwise a plain console. Returns the
-/// launched window so the caller can bind it (None if it did not surface in time
-/// - the terminal still opened, it just is not bound).
+/// Start a fresh agent session in `cwd` and auto-bind to the window it opens.
+///
+/// `launch` is the terminal launch template from settings, or empty for the
+/// default: Windows Terminal when it is installed, otherwise the shell in a
+/// console of its own — the behavior this app had before terminals were a
+/// choice. Returns the launched window so the caller can bind it (None if it
+/// did not surface in time — the terminal still opened, it just is not bound).
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub(crate) fn start_session(cwd: String, command: String) -> Result<Option<ForeignWindow>, String> {
-    use std::process::Command;
-    use windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
-
-    let baseline = unsafe { GetForegroundWindow() } as isize;
-
+pub(crate) fn start_session(
+    cwd: String,
+    command: String,
+    launch: Option<String>,
+) -> Result<Option<ForeignWindow>, String> {
     let line = match command.trim() {
         "" => DEFAULT_SESSION_COMMAND,
         trimmed => trimmed,
@@ -247,31 +300,139 @@ pub(crate) fn start_session(cwd: String, command: String) -> Result<Option<Forei
     if tokens.is_empty() {
         tokens = split_command_line(DEFAULT_SESSION_COMMAND);
     }
-    let (program, rest) = tokens.split_first().expect("default line has a program");
 
-    // Prefer Windows Terminal's tab UI; fall back to spawning the shell directly
-    // in the pet folder.
-    let wt_tokens: Vec<String> = tokens
-        .iter()
-        .map(|token| escape_wt_semicolons(token))
-        .collect();
-    let spawned = Command::new("wt")
-        .arg("-d")
-        .arg(&cwd)
-        .args(&wt_tokens)
-        .spawn()
-        .is_ok()
-        || Command::new(program)
-            .args(rest)
-            .current_dir(&cwd)
-            .spawn()
-            .is_ok();
+    let template = launch.as_deref().map(str::trim).unwrap_or_default();
 
-    if !spawned {
-        return Err("Could not open a terminal".to_string());
+    if template.is_empty() {
+        return start_session_by_default(&cwd, &tokens);
     }
 
-    Ok(poll_new_foreground_window(baseline, 3000))
+    // A template the user chose is not second-guessed: if it will not start,
+    // that is the answer, because silently opening a bare console instead is a
+    // session in the wrong terminal that looks like success.
+    let (program, args) = resolve_launch_template(template, &cwd, &tokens)
+        .ok_or_else(|| format!("The terminal command is empty: {template}"))?;
+
+    spawn_and_bind(&program, &args, &cwd)
+        .ok_or_else(|| format!("Could not start the terminal: {program}"))
+}
+
+/// With no terminal configured: Windows Terminal if it answers, otherwise the
+/// shell itself in a console of its own.
+#[cfg(target_os = "windows")]
+fn start_session_by_default(cwd: &str, tokens: &[String]) -> Result<Option<ForeignWindow>, String> {
+    let windows_terminal = format!("wt -d {CWD_PLACEHOLDER} {COMMAND_PLACEHOLDER}");
+
+    if let Some((program, args)) = resolve_launch_template(&windows_terminal, cwd, tokens) {
+        // wt splits on `;` even inside a quoted argument, so a launch line like
+        // `bash -lc "claude; exec bash"` would open a second tab running
+        // ` exec bash`. Escaping is wt's own quirk and stays with wt.
+        let escaped: Vec<String> = args.iter().map(|arg| escape_wt_semicolons(arg)).collect();
+        if let Some(window) = spawn_and_bind(&program, &escaped, cwd) {
+            return Ok(window);
+        }
+    }
+
+    let (program, args) = tokens.split_first().expect("a launch line has a program");
+
+    spawn_and_bind(program, args, cwd).ok_or_else(|| "Could not open a terminal".to_string())
+}
+
+/// Spawn one launch line in `cwd`, then watch for the window it brings up.
+/// `None` means the program never started; `Some(None)` that it started and no
+/// new window surfaced in time.
+#[cfg(target_os = "windows")]
+fn spawn_and_bind(program: &str, args: &[String], cwd: &str) -> Option<Option<ForeignWindow>> {
+    use std::process::Command;
+    use windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+
+    let baseline = unsafe { GetForegroundWindow() } as isize;
+
+    Command::new(program)
+        // A terminal takes the folder as an argument, but a bare shell is
+        // spawned into it — and setting it costs nothing for the ones that
+        // take it as an argument too.
+        .current_dir(cwd)
+        .args(args)
+        .spawn()
+        .ok()?;
+
+    Some(poll_new_foreground_window(baseline, 3000))
+}
+
+/// The terminals this machine has, as starting points for the launch template.
+///
+/// This is a convenience, not the feature: the template is an ordinary settings
+/// field, so a terminal that is not listed here works by being typed in. That is
+/// why each entry carries a whole command line rather than a mode this file
+/// would have to understand.
+#[tauri::command]
+pub(crate) fn list_terminal_presets() -> Vec<TerminalPreset> {
+    let mut presets: Vec<TerminalPreset> = Vec::new();
+
+    #[cfg(target_os = "windows")]
+    {
+        let local = std::env::var("LOCALAPPDATA").unwrap_or_default();
+        let candidates: [(&str, &str, &str, Vec<String>); 2] = [
+            (
+                "Windows Terminal",
+                "wt.exe",
+                "{program} -d {cwd} {command}",
+                // Installed as an app-execution alias rather than onto PATH for
+                // every shell, so the alias folder is checked by name first.
+                vec![format!(r"{local}\Microsoft\WindowsApps\wt.exe")],
+            ),
+            (
+                "WezTerm",
+                "wezterm.exe",
+                "{program} start --cwd {cwd} -- {command}",
+                vec![
+                    r"C:\Program Files\WezTerm\wezterm.exe".to_string(),
+                    format!(r"{local}\Programs\WezTerm\wezterm.exe"),
+                ],
+            ),
+        ];
+
+        for (label, program, template, paths) in candidates {
+            let found = paths
+                .into_iter()
+                .find(|path| std::path::Path::new(path).exists())
+                // Not where it usually installs: take it off PATH, which is
+                // where a scoop/winget/portable copy shows up.
+                .or_else(|| find_on_path(program));
+
+            if let Some(path) = found {
+                presets.push(TerminalPreset {
+                    label: label.to_string(),
+                    launch: template.replace("{program}", &quote_if_spaced(&path)),
+                });
+            }
+        }
+    }
+
+    presets
+}
+
+/// A path with spaces has to reach the template quoted, because the template is
+/// split on whitespace like any other command line.
+#[cfg(target_os = "windows")]
+fn quote_if_spaced(path: &str) -> String {
+    if path.contains(' ') {
+        format!("\"{path}\"")
+    } else {
+        path.to_string()
+    }
+}
+
+/// The first entry of `PATH` that holds `program`, if any.
+#[cfg(target_os = "windows")]
+fn find_on_path(program: &str) -> Option<String> {
+    let path = std::env::var_os("PATH")?;
+
+    std::env::split_paths(&path)
+        .map(|dir| dir.join(program))
+        .find(|candidate| candidate.exists())
+        .map(|candidate| candidate.display().to_string())
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -285,6 +446,7 @@ pub(crate) fn focus_window(_hwnd: i64) -> Result<bool, String> {
 pub(crate) fn start_session(
     _cwd: String,
     _command: String,
+    _launch: Option<String>,
 ) -> Result<Option<ForeignWindow>, String> {
     Err("start_session is only implemented on Windows".to_string())
 }
@@ -299,7 +461,7 @@ pub(crate) fn connect_window(
 
 #[cfg(test)]
 mod tests {
-    use super::{escape_wt_semicolons, split_command_line};
+    use super::{escape_wt_semicolons, resolve_launch_template, split_command_line};
 
     #[test]
     fn splits_bare_tokens() {
@@ -328,5 +490,79 @@ mod tests {
     fn ignores_surrounding_whitespace() {
         assert_eq!(split_command_line("   claude   "), ["claude"]);
         assert!(split_command_line("   ").is_empty());
+    }
+
+    fn tokens(line: &str) -> Vec<String> {
+        split_command_line(line)
+    }
+
+    /// The whole point of a template: a terminal this file has never heard of
+    /// works because the user typed its command line, not because a match arm
+    /// was added for it.
+    #[test]
+    fn resolves_a_template_for_any_terminal() {
+        let line = tokens("cmd /k claude");
+
+        assert_eq!(
+            resolve_launch_template("wt -d {cwd} {command}", "D:/proj", &line),
+            Some(("wt".to_string(), vec_of(["-d", "D:/proj", "cmd", "/k", "claude"])))
+        );
+        assert_eq!(
+            resolve_launch_template("wezterm start --cwd {cwd} -- {command}", "D:/proj", &line),
+            Some((
+                "wezterm".to_string(),
+                vec_of(["start", "--cwd", "D:/proj", "--", "cmd", "/k", "claude"])
+            ))
+        );
+        assert_eq!(
+            resolve_launch_template(
+                "alacritty --working-directory {cwd} -e {command}",
+                "D:/proj",
+                &line
+            ),
+            Some((
+                "alacritty".to_string(),
+                vec_of(["--working-directory", "D:/proj", "-e", "cmd", "/k", "claude"])
+            ))
+        );
+    }
+
+    #[test]
+    fn substitutes_the_folder_inside_a_longer_argument() {
+        let resolved = resolve_launch_template("term --cwd={cwd} -e {command}", "D:/proj", &tokens("claude"));
+
+        assert_eq!(
+            resolved,
+            Some(("term".to_string(), vec_of(["--cwd=D:/proj", "-e", "claude"])))
+        );
+    }
+
+    #[test]
+    fn keeps_a_quoted_program_path_whole() {
+        let resolved = resolve_launch_template(
+            r#""C:\Program Files\WezTerm\wezterm.exe" start --cwd {cwd} -- {command}"#,
+            "D:/proj",
+            &tokens("claude"),
+        );
+        let (program, args) = resolved.expect("the template names a program");
+
+        assert_eq!(program, r"C:\Program Files\WezTerm\wezterm.exe");
+        assert_eq!(args, ["start", "--cwd", "D:/proj", "--", "claude"]);
+    }
+
+    /// A template with no `{command}` still opens the terminal — some people
+    /// want a plain shell in the folder — and one with no program at all is not
+    /// a launch line.
+    #[test]
+    fn a_template_need_not_name_the_command_but_must_name_a_program() {
+        assert_eq!(
+            resolve_launch_template("wt -d {cwd}", "D:/proj", &tokens("claude")),
+            Some(("wt".to_string(), vec_of(["-d", "D:/proj"])))
+        );
+        assert_eq!(resolve_launch_template("   ", "D:/proj", &tokens("claude")), None);
+    }
+
+    fn vec_of<const N: usize>(items: [&str; N]) -> Vec<String> {
+        items.iter().map(|item| item.to_string()).collect()
     }
 }

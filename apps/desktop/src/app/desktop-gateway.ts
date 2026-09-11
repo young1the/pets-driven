@@ -56,6 +56,13 @@ export type CodexPetPackage = {
 export type TerminalShellOption = { label: string; path: string };
 
 /**
+ * A terminal found on this machine, offered as a starting point for the launch
+ * template: `launch` is a whole command line with the detected path already in
+ * it. Mirrors the Rust `TerminalPreset`.
+ */
+export type TerminalPreset = { label: string; launch: string };
+
+/**
  * A well-known pet folder the onboarding dropdown offers. `kind` is a stable
  * identifier the frontend maps to a translated label; `path` is the resolved
  * absolute directory. Mirrors the Rust `PetSourceDirectoryOption`.
@@ -194,6 +201,8 @@ export type DesktopGateway = {
   updateSettings(input: {
     sessionCommand?: string;
     terminalShell?: string | null;
+    /** The command line that opens a terminal; null is the system default. */
+    terminalLaunch?: string | null;
     petSourceDirectory?: string | null;
     /** Where new worktrees are made; null puts each beside its repository. */
     worktreeDirectory?: string | null;
@@ -214,6 +223,12 @@ export type DesktopGateway = {
   listDesignatedPetPackages(): Promise<CodexPetPackage[]>;
   /** Shells the in-app terminal can spawn, detected from the system. Empty outside Tauri. */
   listTerminalShells(): Promise<TerminalShellOption[]>;
+  /**
+   * Terminals installed on this machine, as ready-made launch templates. A
+   * convenience for the settings field, not the set of terminals that work —
+   * anything can be typed in. Empty outside Tauri.
+   */
+  listTerminalPresets(): Promise<TerminalPreset[]>;
   openAdoptedPetWindow(petId: string, assetId: string): Promise<void>;
   /**
    * Open several adopted pets' overlay windows in one shell call. "Show all"
@@ -371,7 +386,12 @@ export type DesktopGateway = {
   /** Focus the bound foreign window; false when it no longer exists. */
   focusForeignWindow(hwnd: number): Promise<boolean>;
   /** Launch a new terminal session in `cwd` and return its window, if any. */
-  startSession(cwd: string, command: string): Promise<ForeignWindow | null>;
+  startSession(
+    cwd: string,
+    command: string,
+    /** The launch template to open with; null or omitted takes the default. */
+    launch?: string | null,
+  ): Promise<ForeignWindow | null>;
   /** Let the user pick an existing window to bind; null when cancelled. */
   connectForeignWindow(): Promise<ForeignWindow | null>;
 
@@ -512,6 +532,14 @@ export const desktopGateway: DesktopGateway = {
     }
 
     return await invoke<TerminalShellOption[]>("list_terminal_shells");
+  },
+
+  async listTerminalPresets() {
+    if (!isTauri()) {
+      return [];
+    }
+
+    return await invoke<TerminalPreset[]>("list_terminal_presets");
   },
 
   async openAdoptedPetWindow(petId, assetId) {
@@ -811,12 +839,16 @@ export const desktopGateway: DesktopGateway = {
     return await invoke<boolean>("focus_window", { hwnd });
   },
 
-  async startSession(cwd, command) {
+  async startSession(cwd, command, launch) {
     if (!isTauri()) {
       return null;
     }
 
-    return await invoke<ForeignWindow | null>("start_session", { cwd, command });
+    return await invoke<ForeignWindow | null>("start_session", {
+      cwd,
+      command,
+      launch: launch ?? null,
+    });
   },
 
   async connectForeignWindow() {

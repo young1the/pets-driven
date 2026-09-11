@@ -166,6 +166,7 @@ function createFixtureState(inputs: FixturePetInput[]): PetsDrivenState {
     terminalShell: null,
     petSourceDirectory: "C:\\Users\\fixture\\.petdex\\pets",
     worktreeDirectory: null,
+    terminalLaunch: null,
   };
 }
 
