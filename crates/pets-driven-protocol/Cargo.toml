@@ -1,6 +1,6 @@
 [package]
 name = "pets-driven-protocol"
-version = "1.3.0"
+version = "1.4.0"
 description = "Typed loopback command and query messages for the pets-driven ingress"
 authors = ["pets-driven"]
 license = "MIT"
