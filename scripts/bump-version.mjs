@@ -26,6 +26,7 @@ export const BUMPED_MANIFESTS = [
   { file: "crates/pets-driven-core/Cargo.toml", kind: "cargo" },
   { file: "crates/pets-driven-fs/Cargo.toml", kind: "cargo" },
   { file: "crates/pets-driven-protocol/Cargo.toml", kind: "cargo" },
+  { file: "crates/pets-driven-git/Cargo.toml", kind: "cargo" },
   { file: "crates/pets-driven-cli/Cargo.toml", kind: "cargo" },
 
   // The workspace packages. Private, but they are what the app is assembled
