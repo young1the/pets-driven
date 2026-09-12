@@ -13,16 +13,76 @@
      past the viewport. On a page that clips horizontal overflow (the landing
      site sets `overflow-x: clip` on <body> to stop mobile side-panning) the
      strip is centered, so it loses the first *and* last tab with no way to
-     reach either. Scrolling inside the pill keeps every tab reachable and
-     leaves a partly-visible one at the edge as the affordance. The focus ring
-     is a 4px spread against 5px of padding, so it still clears the clip. */
+     reach either. Scrolling inside the pill keeps every tab reachable, and the
+     edge fade below is what says so. The focus ring is a 4px spread against 5px
+     of padding, so it still clears the clip. */
   max-width: 100%;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
+  scroll-behavior: smooth;
+  /* Leaves a sliver of the neighbouring tab visible when one is scrolled into
+     view, so the strip never looks like it ends at the selection. */
+  scroll-padding-inline: 12px;
 }
 .pd-tabs::-webkit-scrollbar {
   display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pd-tabs {
+    scroll-behavior: auto;
+  }
+}
+
+/* Drag affordance. A strip that scrolls says so by fading the end that still
+   has tabs behind it — on a phone the scrollbar is hidden and a tab can sit
+   exactly at the edge, so without this the strip reads as complete and nobody
+   drags it.
+
+   It is painted by a sticky zero-width flex item at each end rather than by a
+   mask on the strip: the strip is also the pill, so masking it would dissolve
+   its own background and border at the ends. The sticky sliver rides the
+   scrollport instead and its ::after paints inward over the tabs, leaving the
+   pill's chrome intact.
+
+   The fade must not spill outside the content box either. `overflow-x: auto`
+   computes `overflow-y` to `auto` as well, so anything reaching past the
+   padding would be clipped — hence `align-self: stretch` and insets of 0
+   rather than negative offsets over the pill's 5px padding. */
+.pd-tabs__edge {
+  position: sticky;
+  flex: 0 0 0;
+  width: 0;
+  align-self: stretch;
+  pointer-events: none;
+  z-index: 1;
+}
+.pd-tabs__edge::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  opacity: 0;
+  transition: opacity var(--dur-fast, 140ms) ease;
+}
+.pd-tabs__edge--start {
+  left: 0;
+}
+.pd-tabs__edge--start::after {
+  left: 0;
+  background: linear-gradient(to right, var(--surface-sunken), transparent);
+}
+.pd-tabs__edge--end {
+  right: 0;
+}
+.pd-tabs__edge--end::after {
+  right: 0;
+  background: linear-gradient(to left, var(--surface-sunken), transparent);
+}
+.pd-tabs[data-scrollable~="start"] .pd-tabs__edge--start::after,
+.pd-tabs[data-scrollable~="end"] .pd-tabs__edge--end::after {
+  opacity: 1;
 }
 .pd-tabs--block {
   display: flex;
