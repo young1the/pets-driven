@@ -1,6 +1,6 @@
 [package]
 name = "pets-driven"
-version = "1.4.0"
+version = "1.5.0"
 description = "Codex pet playground"
 authors = ["pets-driven"]
 license = "MIT"
