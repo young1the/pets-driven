@@ -348,21 +348,48 @@ fn handle_hatch_request(
     }
 }
 
+/// Read the non-empty string at `field`, or `None` when it is absent or blank.
+fn optional_string_field<'a>(payload: &'a serde_json::Value, field: &str) -> Option<&'a str> {
+    payload
+        .get(field)
+        .and_then(|value| value.as_str())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+}
+
+/// Show or hide one pet's overlay window. The pet is addressed by `petId` or by
+/// the folder it is bound to, `petId` first: a pet bound to no folder has no
+/// `cwd` to name, so an id is the only way to reach it.
 fn handle_show_hide_request(
     app: &tauri::AppHandle,
     payload: &serde_json::Value,
     stream: &mut TcpStream,
     action: &str,
 ) {
-    let cwd = match pets_driven_core::required_string_field(payload, "cwd") {
-        Ok(cwd) => cwd,
-        Err(error) => {
-            write_core_error(stream, &error);
-            return;
+    let (found, missing) = match optional_string_field(payload, "petId") {
+        Some(pet_id) => (
+            core(app).pet(&pets_driven_core::PetId::new(pet_id)),
+            r#"{"ok":false,"error":"No pet found with that id"}"#,
+        ),
+        None => {
+            // No id: fall back to the folder, which stays required so a payload
+            // carrying neither gets the message this endpoint has always given.
+            let cwd = match pets_driven_core::required_string_field(payload, "cwd") {
+                Ok(cwd) => cwd,
+                Err(error) => {
+                    write_core_error(stream, &error);
+                    return;
+                }
+            };
+
+            (
+                core(app).pet_by_working_directory(&cwd),
+                r#"{"ok":false,"error":"No pet found for that working directory"}"#,
+            )
         }
     };
 
-    match core(app).pet_by_working_directory(&cwd) {
+    match found {
         Ok(Some(pet)) => {
             if let Some(pet_id) = pet.id() {
                 let _ = app.emit_to(
@@ -374,11 +401,7 @@ fn handle_show_hide_request(
             let _ = write_http_response(stream, "200 OK", r#"{"ok":true}"#);
         }
         Ok(None) => {
-            let _ = write_http_response(
-                stream,
-                "404 Not Found",
-                r#"{"ok":false,"error":"No pet found for that working directory"}"#,
-            );
+            let _ = write_http_response(stream, "404 Not Found", missing);
         }
         Err(error) => write_core_error(stream, &error),
     }
@@ -457,14 +480,20 @@ fn api_endpoint_descriptors() -> serde_json::Value {
         {
             "path": PETS_DRIVEN_SHOW_PATH,
             "method": "POST",
-            "body": { "cwd": "string" },
-            "description": "Shows the desktop window for the pet registered to cwd. 404 if no pet is registered there."
+            "body": {
+                "petId": "string, optional — the pet to address; the only way to reach a pet bound to no folder",
+                "cwd": "string, required when petId is omitted — the folder whose pet to address"
+            },
+            "description": "Shows the desktop window for one pet, addressed by petId or by the folder it is bound to (petId wins when both are given). 404 if no pet matches."
         },
         {
             "path": PETS_DRIVEN_HIDE_PATH,
             "method": "POST",
-            "body": { "cwd": "string" },
-            "description": "Hides the desktop window for the pet registered to cwd. 404 if no pet is registered there."
+            "body": {
+                "petId": "string, optional — the pet to address; the only way to reach a pet bound to no folder",
+                "cwd": "string, required when petId is omitted — the folder whose pet to address"
+            },
+            "description": "Hides the desktop window for one pet, addressed by petId or by the folder it is bound to (petId wins when both are given). 404 if no pet matches."
         },
         {
             "path": CLAUDE_HOOK_INGRESS_PATH,
@@ -1041,6 +1070,22 @@ mod tests {
             pets_driven_core::required_string_field(&parsed, "cwd").unwrap(),
             "D:/my-project"
         );
+    }
+
+    /// The show/hide body addresses a pet two ways; these are the precedence
+    /// rules `handle_show_hide_request` resolves it by.
+    #[test]
+    fn show_hide_ingress_prefers_a_pet_id_over_a_folder() {
+        let both = serde_json::json!({ "petId": "pet-7", "cwd": "D:/my-project" });
+        assert_eq!(optional_string_field(&both, "petId"), Some("pet-7"));
+
+        // A blank or absent id reads as no id, so the folder still decides —
+        // otherwise an empty string would resolve to no pet and 404.
+        let blank = serde_json::json!({ "petId": "   ", "cwd": "D:/my-project" });
+        assert_eq!(optional_string_field(&blank, "petId"), None);
+
+        let folder_only = serde_json::json!({ "cwd": "D:/my-project" });
+        assert_eq!(optional_string_field(&folder_only, "petId"), None);
     }
 
     #[test]

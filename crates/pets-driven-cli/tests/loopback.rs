@@ -156,13 +156,36 @@ fn show_posts_the_folder_and_prints_the_reply() {
 
     let mut out = Vec::new();
     let mut err = Vec::new();
-    let code = run_with(&args(&["show", "/work/x"]), &origin, "D:/proj", Vec::new, &mut out, &mut err);
+    let code = run_with(
+        &args(&["show", "--cwd", "/work/x"]),
+        &origin,
+        "D:/proj",
+        Vec::new,
+        &mut out,
+        &mut err,
+    );
 
     let captured = server.join().expect("server thread");
     assert_eq!(code, 0);
     assert_eq!(captured.request_line, "POST /pets-driven/show HTTP/1.1");
     assert_eq!(captured.body, r#"{"cwd":"/work/x"}"#);
     assert_eq!(String::from_utf8(out).unwrap().trim_end(), r#"{"ok":true}"#);
+}
+
+#[test]
+fn show_posts_a_pet_id_when_the_pet_is_named_positionally() {
+    let (origin, server) = mock_ingress(r#"{"ok":true}"#);
+
+    let mut out = Vec::new();
+    let mut err = Vec::new();
+    // The only way to reach a pet bound to no folder: there is no cwd that
+    // resolves to it, so the id travels instead.
+    let code = run_with(&args(&["show", "pet-7"]), &origin, "D:/proj", Vec::new, &mut out, &mut err);
+
+    let captured = server.join().expect("server thread");
+    assert_eq!(code, 0);
+    assert_eq!(captured.request_line, "POST /pets-driven/show HTTP/1.1");
+    assert_eq!(captured.body, r#"{"petId":"pet-7"}"#);
 }
 
 #[test]
@@ -184,7 +207,14 @@ fn show_reports_app_not_running_when_unreachable() {
     // Port 1 refuses instantly, standing in for a stopped app.
     let mut out = Vec::new();
     let mut err = Vec::new();
-    let code = run_with(&args(&["show", "/work/x"]), "127.0.0.1:1", "D:/proj", Vec::new, &mut out, &mut err);
+    let code = run_with(
+        &args(&["show", "--cwd", "/work/x"]),
+        "127.0.0.1:1",
+        "D:/proj",
+        Vec::new,
+        &mut out,
+        &mut err,
+    );
     assert_eq!(code, 0);
     assert!(String::from_utf8(out).unwrap().contains("app-not-running"));
 }

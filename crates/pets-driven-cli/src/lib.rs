@@ -184,14 +184,24 @@ enum Command {
         #[arg(short, long)]
         cwd: Option<String>,
     },
-    /// Show the running app's pet window for a folder (defaults to the cwd)
+    /// Show the running app's pet window, by pet id or by folder (defaults to
+    /// the cwd). A pet bound to no folder can only be reached by id
     Show {
-        /// Folder whose pet to show (default: the current directory)
+        /// Pet id to show (from `pdd list`). Omit to show the pet bound to
+        /// --cwd (or the current directory).
+        pet: Option<String>,
+        /// Show the pet bound to this folder instead of by id
+        #[arg(short, long)]
         cwd: Option<String>,
     },
-    /// Hide the running app's pet window for a folder (defaults to the cwd)
+    /// Hide the running app's pet window, by pet id or by folder (defaults to
+    /// the cwd). A pet bound to no folder can only be reached by id
     Hide {
-        /// Folder whose pet to hide (default: the current directory)
+        /// Pet id to hide (from `pdd list`). Omit to hide the pet bound to
+        /// --cwd (or the current directory).
+        pet: Option<String>,
+        /// Hide the pet bound to this folder instead of by id
+        #[arg(short, long)]
         cwd: Option<String>,
     },
     /// Forward a hook event to the running app
@@ -446,11 +456,41 @@ fn hide_pet(origin: &str, cwd: &str) {
     let _ = transport::post_json(origin, protocol::paths::HIDE, body.as_bytes(), FIRE_AND_FORGET_TIMEOUT);
 }
 
-/// Show or hide the running app's pet window for `cwd`, printing the app's
+/// Which pet a live show/hide signal is aimed at. A folderless pet has no `cwd`
+/// to name, so an id is the only way to address one — which is why `show` and
+/// `hide` take a pet id the way `delete` does.
+enum PetAddress {
+    Id(String),
+    WorkingDirectory(String),
+}
+
+impl PetAddress {
+    /// The pet id when one was named, else the folder — the same precedence the
+    /// ingress applies when it resolves the body.
+    fn from_args(pet: Option<String>, folder: Option<String>, cwd: &str) -> Self {
+        match pet {
+            Some(id) => Self::Id(id),
+            None => Self::WorkingDirectory(folder.unwrap_or_else(|| cwd.to_string())),
+        }
+    }
+
+    fn to_body(&self) -> String {
+        match self {
+            Self::Id(id) => serde_json::json!({ "petId": id }).to_string(),
+            Self::WorkingDirectory(cwd) => serde_json::json!({ "cwd": cwd }).to_string(),
+        }
+    }
+}
+
+/// Show or hide the running app's pet window for `address`, printing the app's
 /// reply. A show/hide needs the app, so an unreachable app is reported as
 /// `app-not-running` (still exit 0 — a stopped app is a normal answer).
-fn run_show_hide<O: Write>(origin: &str, path: &str, cwd: &str, out: &mut O) -> i32 {
-    let body = serde_json::json!({ "cwd": cwd }).to_string();
+///
+/// The pet is resolved by the app, not here: a live signal reads no state, so
+/// an id that matches nothing comes back as the ingress's own 404 rather than a
+/// local lookup.
+fn run_show_hide<O: Write>(origin: &str, path: &str, address: &PetAddress, out: &mut O) -> i32 {
+    let body = address.to_body();
     match transport::post_json(origin, path, body.as_bytes(), REQUEST_TIMEOUT) {
         Ok(reply) => {
             let _ = out.write_all(&reply);
@@ -741,16 +781,16 @@ pub fn run_with<O: Write, E: Write>(
         Command::Presets => run_presets(out),
 
         // Live presentation signals for the running app; no state change.
-        Command::Show { cwd: folder } => run_show_hide(
+        Command::Show { pet, cwd: folder } => run_show_hide(
             origin,
             protocol::paths::SHOW,
-            &folder.unwrap_or_else(|| cwd.to_string()),
+            &PetAddress::from_args(pet, folder, cwd),
             out,
         ),
-        Command::Hide { cwd: folder } => run_show_hide(
+        Command::Hide { pet, cwd: folder } => run_show_hide(
             origin,
             protocol::paths::HIDE,
-            &folder.unwrap_or_else(|| cwd.to_string()),
+            &PetAddress::from_args(pet, folder, cwd),
             out,
         ),
 
@@ -1406,6 +1446,59 @@ mod tests {
         assert_eq!(folder_name("/home/kanye/atlas"), "atlas");
         // A bare root has no named segment; keep the folder itself.
         assert_eq!(folder_name("/"), "/");
+    }
+
+    #[test]
+    fn show_addresses_the_pet_by_id_when_one_is_named() {
+        let address = PetAddress::from_args(Some("pet-7".to_string()), None, "D:/proj");
+        let body: serde_json::Value = serde_json::from_str(&address.to_body()).unwrap();
+        assert_eq!(body["petId"], "pet-7");
+        // A pet bound to no folder has no cwd to fall back to: sending one
+        // anyway would resolve the wrong pet (or none).
+        assert!(body.get("cwd").is_none());
+    }
+
+    #[test]
+    fn show_falls_back_to_a_folder_then_to_the_current_directory() {
+        let named = PetAddress::from_args(None, Some("D:/other".to_string()), "D:/proj");
+        assert_eq!(parse_out(named.to_body().as_bytes())["cwd"], "D:/other");
+
+        let implied = PetAddress::from_args(None, None, "D:/proj");
+        assert_eq!(parse_out(implied.to_body().as_bytes())["cwd"], "D:/proj");
+    }
+
+    #[test]
+    fn a_pet_id_outranks_a_folder_given_alongside_it() {
+        let address =
+            PetAddress::from_args(Some("pet-7".to_string()), Some("D:/other".to_string()), "D:/proj");
+        assert_eq!(parse_out(address.to_body().as_bytes())["petId"], "pet-7");
+    }
+
+    #[test]
+    fn show_and_hide_report_a_stopped_app_without_failing() {
+        for (command, id) in [("show", "pet-7"), ("hide", "pet-7")] {
+            let mut out = Vec::new();
+            let mut err = Vec::new();
+            let code = run_with(&args(&[command, id]), REFUSED, "D:/proj", Vec::new, &mut out, &mut err);
+            assert_eq!(code, 0);
+            assert_eq!(parse_out(&out)["error"], "app-not-running");
+        }
+    }
+
+    #[test]
+    fn show_accepts_the_cwd_flag_the_worktree_hook_documents() {
+        let mut out = Vec::new();
+        let mut err = Vec::new();
+        let code = run_with(
+            &args(&["show", "--cwd", "D:/other"]),
+            REFUSED,
+            "D:/proj",
+            Vec::new,
+            &mut out,
+            &mut err,
+        );
+        assert_eq!(code, 0);
+        assert!(err.is_empty(), "--cwd should parse, not be a usage error");
     }
 
     #[test]

@@ -24,8 +24,8 @@ The desktop installer ships `pdd` and adds it to your PATH.
 | `pdd worktree add <BRANCH> [--repo <DIR>] [--path <DIR>] [--base <REF>] [--no-pet] [pet flags]` | Add a git worktree for a branch and adopt a pet bound to its folder | no (also pings the app to show it) |
 | `pdd worktree ls [--repo <DIR>]` | Every worktree of a repository, with the pet bound to each | no |
 | `pdd worktree rm [--cwd <DIR>] [--force] [--keep-pet]` | Remove a worktree and the pet bound to it | no (hides best-effort) |
-| `pdd show [CWD]` | Show the pet window for a folder | yes |
-| `pdd hide [CWD]` | Hide the pet window for a folder | yes |
+| `pdd show [PET_ID] [--cwd <DIR>]` | Show a pet's window, by id or by the folder it is bound to | yes |
+| `pdd hide [PET_ID] [--cwd <DIR>]` | Hide a pet's window, by id or by the folder it is bound to | yes |
 | `pdd forward [EVENT]` | Forward an agent hook event to the app | yes |
 
 When `hatch` picks a random asset (no `--asset`), it prefers the pets you
@@ -49,6 +49,20 @@ pdd bind "<petId>"                       # later: give it the current folder
 With no folder to borrow a name from, an unnamed `--no-cwd` pet takes its
 asset's id (`pdd hatch --no-cwd --asset cato` adopts "cato"). `--no-cwd` and
 `--cwd` contradict each other, so passing both is a usage error.
+
+Reach a folderless pet by id. `show` and `hide` address a pet the way `delete`
+does — an id, or the folder it is bound to — and a pet with no folder has no
+`cwd` that resolves to it, so the id is the only handle it has:
+
+```bash
+pdd show "<petId>"            # the pet itself, folder or not
+pdd show                      # the pet bound to the current folder
+pdd show --cwd "D:/work/atlas"  # the pet bound to that folder
+```
+
+Hatching does not put a pet on screen by itself: `visible` is runtime state the
+app resets on every load, so a pet is deployed by a `show` (which `hatch` sends
+for you when it binds a folder, and cannot when there is none to send).
 
 ## Updating a pet
 

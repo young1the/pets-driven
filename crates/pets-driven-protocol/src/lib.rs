@@ -28,11 +28,13 @@ pub mod paths {
     pub const CLAUDE_HOOK: &str = "/claude-hook";
     /// The same routing as [`CLAUDE_HOOK`], for Codex.
     pub const CODEX_HOOK: &str = "/codex-hook";
-    /// Shows the running app's overlay window for the pet registered to a
-    /// folder. Body: `{"cwd": "<folder>"}`. A no-op (404) if no pet is there.
+    /// Shows the running app's overlay window for one pet. Body:
+    /// `{"petId": "<id>"}` or `{"cwd": "<folder>"}` — `petId` wins when both are
+    /// given, and it is the only way to reach a pet bound to no folder. A no-op
+    /// (404) if no pet matches.
     pub const SHOW: &str = "/pets-driven/show";
-    /// Hides the running app's overlay window for the pet registered to a
-    /// folder. Body: `{"cwd": "<folder>"}`. A no-op (404) if no pet is there.
+    /// Hides the running app's overlay window for one pet. Addressed the same
+    /// way as [`SHOW`]. A no-op (404) if no pet matches.
     pub const HIDE: &str = "/pets-driven/hide";
 }
 
