@@ -189,6 +189,39 @@ export function PaletteIcon({ size, className }: IconProps) {
   );
 }
 
+export function BallIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3a9 9 0 0 0 0 18" />
+      <path d="M12 3a9 9 0 0 1 0 18" />
+    </Icon>
+  );
+}
+
+export function WindowIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <rect height="16" rx="2" width="18" x="3" y="4" />
+      <path d="M3 9h18" />
+      <circle cx="6.5" cy="6.5" r=".6" />
+      <circle cx="9" cy="6.5" r=".6" />
+    </Icon>
+  );
+}
+
+export function BranchIcon({ size, className }: IconProps) {
+  return (
+    <Icon className={className} size={size}>
+      <path d="M6 4v16" />
+      <circle cx="6" cy="4" r="2" />
+      <circle cx="18" cy="7" r="2" />
+      <circle cx="6" cy="20" r="2" />
+      <path d="M18 9v1a4 4 0 0 1-4 4H6" />
+    </Icon>
+  );
+}
+
 export function RefreshIcon({ size, className }: IconProps) {
   return (
     <Icon className={className} size={size} strokeWidth={2.2}>

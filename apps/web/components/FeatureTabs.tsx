@@ -1,14 +1,15 @@
 "use client";
 
 import {
+  BallIcon,
+  BranchIcon,
   Card,
-  CheckIcon,
   PaletteIcon,
   PawIcon,
   PlugIcon,
-  SparkleIcon,
   Tabs,
   TerminalIcon,
+  WindowIcon,
 } from "@pets-driven/design-system";
 import { type ReactNode, useState } from "react";
 import { DemoVideo } from "@/components/DemoVideo";
@@ -27,10 +28,11 @@ export type FeaturePoint = {
 
 const TAB_ICONS: Record<FeaturePointKey, ReactNode> = {
   agents: <PlugIcon />,
-  status: <CheckIcon />,
+  bind: <WindowIcon />,
+  play: <BallIcon />,
+  worktree: <BranchIcon />,
   cli: <TerminalIcon />,
   petdex: <PaletteIcon />,
-  skills: <SparkleIcon />,
   alive: <PawIcon />,
 };
 
@@ -50,9 +52,11 @@ const TAB_ICONS: Record<FeaturePointKey, ReactNode> = {
  *     comes back to remounts its clip and refetches from the HTTP cache, which
  *     is the cheaper side of that trade.
  *
- * Every point needs an entry in `TAB_ICONS`, and the strip has to stay inside
- * the 1080px container on a desktop window — an icon costs about 23px, so a
- * point added past these six is worth re-measuring rather than assuming.
+ * Every point needs an entry in `TAB_ICONS`. The strip no longer has to fit:
+ * `Tabs` scrolls inside its own pill, so a point added past these seven costs
+ * reachability at the edges rather than a strip that runs past the container —
+ * still worth looking at on a narrow window, since a tab the visitor has to
+ * scroll to is one they may never see.
  *
  * `Tabs` renders the tablist and owns no panels, so the `role="tabpanel"`
  * wrappers and their accessible names are set here. It also emits no

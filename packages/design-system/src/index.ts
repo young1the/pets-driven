@@ -30,6 +30,8 @@ export {
 export { Switch, type SwitchProps } from "./components/forms/switch";
 export {
   BackIcon,
+  BallIcon,
+  BranchIcon,
   CheckIcon,
   CloseIcon,
   ExternalLinkIcon,
@@ -46,6 +48,7 @@ export {
   SparkleIcon,
   TerminalIcon,
   TrashIcon,
+  WindowIcon,
   WrenchIcon,
 } from "./components/icons/icons";
 export {

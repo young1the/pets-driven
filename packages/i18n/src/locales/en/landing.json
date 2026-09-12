@@ -19,40 +19,46 @@
     "lede": "A Windows desktop pet for people who run AI coding agents. One pet per project directory, so several agents running at once stay readable at a glance.",
     "points": {
       "agents": {
-        "tab": "Agent hooks",
-        "title": "Claude Code and Codex CLI",
-        "body": "Install the plugin once. Every agent event is forwarded to the pet bound to that project directory.",
-        "alt": "A pet running alongside the Codex CLI"
+        "tab": "Agent status",
+        "title": "Claude Code and Codex, readable across the room",
+        "body": "Install the plugin once and every agent event is forwarded to the pet bound to that project directory — each pet opening the agent you picked for its folder. Working, waiting on your input, finished, failed: each state is its own pose and color, and when a run ends or stalls the pet stops and flags you.",
+        "alt": "A pet's status card moving through idle, working, waiting, and finished"
       },
-      "status": {
-        "tab": "Live status",
-        "title": "Status you can read across the room",
-        "body": "Working, waiting on your input, finished, failed — each state is its own pose and color. When a run ends or stalls, the pet stops and flags you.",
-        "alt": "A pet reacting to a finished task"
+      "worktree": {
+        "tab": "Worktrees",
+        "title": "A branch, a folder, and a pet in one step",
+        "body": "Run pdd worktree add feat/login, or type a branch into the pet's own menu: the checkout and the pet standing in it are made together. Delete that pet later and it offers to take the worktree with it.",
+        "alt": "Branching a pet's folder from its context menu, and a second pet moving into the new worktree"
       },
       "cli": {
-        "tab": "pdd CLI",
-        "title": "A pdd CLI in the box",
-        "body": "Hatch, bind, rename, re-skin, and delete pets from the terminal — with the app closed, and with JSON output that pipes straight into a script.",
-        "alt": "A pet reacting to an agent running in the terminal"
+        "tab": "CLI & skills",
+        "title": "A pdd CLI in the box — and agents that use it",
+        "body": "Hatch, bind, rename, re-skin, note, and delete pets from the terminal — with the app closed, and with JSON output that pipes straight into a script. The bundled hatch, bring, and carry skills let Claude Code and Codex run it themselves, so every Orca worktree gets a pet without a single click.",
+        "alt": "Claude Code running the hatch skill, then six pets summoned onto the desktop"
+      },
+      "alive": {
+        "tab": "They're alive",
+        "title": "Alive whether or not you're watching",
+        "body": "With nothing to do, pets greet each other, chat, give chase, and dance — each in its own personality's voice. Take one out and toss it around, hand it a treat, pet it and get an answer back. Quiet mode settles them when you need to focus.",
+        "alt": "Pets playing together on their own"
+      },
+      "play": {
+        "tab": "Play",
+        "title": "Give them something to play with",
+        "body": "Drop a ball on the desktop and your pets chase it, kick it, and send it rolling. Or turn a run into a hurdle race: every tool call your agent makes drops an obstacle in the pet's lane — watch it clear them on its own, or take the controls mid-round.",
+        "alt": "A pet with a ball, running a course of obstacles"
+      },
+      "bind": {
+        "tab": "Window binding",
+        "title": "Point a pet at whatever you work in",
+        "body": "Double-click a pet and it starts a session in a terminal for its folder. Or bind it to a window you already have open — click the one you mean and the pet sticks to it, your browser and your editor included. Click the pet to bring that window back to the front.",
+        "alt": "A pet bound to a terminal window, following it and showing the run's status"
       },
       "petdex": {
         "tab": "Petdex",
         "title": "Thousands of pets to choose from",
         "body": "Run npx petdex install and the app finds it. Anything in your pet folder shows up during onboarding and pet selection, ready to bind.",
-        "alt": "Choosing a pet and sending it out to the desktop"
-      },
-      "skills": {
-        "tab": "Auto-hatching",
-        "title": "Agents hatch their own pets",
-        "body": "The bundled hatch, bring, and carry skills let Claude Code and Codex do it themselves — every Orca worktree gets a pet without a single click.",
-        "alt": "A pet hatching for each Orca worktree, with nothing clicked"
-      },
-      "alive": {
-        "tab": "They're alive",
-        "title": "Alive whether or not you're watching",
-        "body": "With nothing to do, pets greet each other, chat, give chase, and dance. Take one out and toss it around, hand it a treat, pet it and get an answer back.",
-        "alt": "Pets playing together on their own"
+        "alt": "Installing a pet from Petdex and picking it during onboarding"
       }
     }
   },

@@ -75,10 +75,10 @@ export const viewport: Viewport = {
  * app-style result — price, platform, and category — so it is emitted per
  * locale with that locale's description.
  *
- * `featureList` restates the feature section's four points. Those points are
- * all present in the served HTML, but three of the four sit behind an inactive tab,
- * and this hands a crawler the whole set as an enumerated list rather than as
- * prose it has to infer a shape from. It has to keep restating what the page
+ * `featureList` restates the feature section's points. Those points are all
+ * present in the served HTML, but all except the first sit behind an inactive
+ * tab, and this hands a crawler the whole set as an enumerated list rather than
+ * as prose it has to infer a shape from. It has to keep restating what the page
  * actually says: structured data that claims more than the page shows is what
  * costs a site its rich results.
  */
