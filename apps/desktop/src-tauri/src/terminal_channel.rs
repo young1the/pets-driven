@@ -384,11 +384,16 @@ pub(crate) fn list_terminal_presets() -> Vec<TerminalPreset> {
             ),
             (
                 "WezTerm",
-                "wezterm.exe",
+                // Not `wezterm.exe`: that one is a console-subsystem CLI, so
+                // spawning it from this GUI app opens a console window of its
+                // own, which waits on the terminal and takes it down when
+                // closed. `wezterm-gui.exe` takes the same `start` arguments
+                // with no console.
+                "wezterm-gui.exe",
                 "{program} start --cwd {cwd} -- {command}",
                 vec![
-                    r"C:\Program Files\WezTerm\wezterm.exe".to_string(),
-                    format!(r"{local}\Programs\WezTerm\wezterm.exe"),
+                    r"C:\Program Files\WezTerm\wezterm-gui.exe".to_string(),
+                    format!(r"{local}\Programs\WezTerm\wezterm-gui.exe"),
                 ],
             ),
         ];
@@ -508,9 +513,9 @@ mod tests {
             Some(("wt".to_string(), vec_of(["-d", "D:/proj", "cmd", "/k", "claude"])))
         );
         assert_eq!(
-            resolve_launch_template("wezterm start --cwd {cwd} -- {command}", "D:/proj", &line),
+            resolve_launch_template("wezterm-gui start --cwd {cwd} -- {command}", "D:/proj", &line),
             Some((
-                "wezterm".to_string(),
+                "wezterm-gui".to_string(),
                 vec_of(["start", "--cwd", "D:/proj", "--", "cmd", "/k", "claude"])
             ))
         );
@@ -540,13 +545,13 @@ mod tests {
     #[test]
     fn keeps_a_quoted_program_path_whole() {
         let resolved = resolve_launch_template(
-            r#""C:\Program Files\WezTerm\wezterm.exe" start --cwd {cwd} -- {command}"#,
+            r#""C:\Program Files\WezTerm\wezterm-gui.exe" start --cwd {cwd} -- {command}"#,
             "D:/proj",
             &tokens("claude"),
         );
         let (program, args) = resolved.expect("the template names a program");
 
-        assert_eq!(program, r"C:\Program Files\WezTerm\wezterm.exe");
+        assert_eq!(program, r"C:\Program Files\WezTerm\wezterm-gui.exe");
         assert_eq!(args, ["start", "--cwd", "D:/proj", "--", "claude"]);
     }
 

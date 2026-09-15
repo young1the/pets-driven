@@ -179,12 +179,12 @@ describe("SettingsSection terminal", () => {
 
   it("shows what will actually be launched, placeholders filled in", () => {
     setup("terminal", {
-      terminalLaunch: "wezterm start --cwd {cwd} -- {command}",
+      terminalLaunch: "wezterm-gui start --cwd {cwd} -- {command}",
       preview: { prompt: "C:\\>", command: "cmd /k claude --resume" },
     });
 
     expect(
-      screen.getByText("wezterm start --cwd D:\\work\\proj -- cmd /k claude --resume"),
+      screen.getByText("wezterm-gui start --cwd D:\\work\\proj -- cmd /k claude --resume"),
     ).toBeInTheDocument();
   });
 

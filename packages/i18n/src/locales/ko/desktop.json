@@ -242,7 +242,7 @@
     "defaultTerminalApp": "시스템 기본 (Windows Terminal, 없으면 기본 콘솔)",
     "customTerminalApp": "직접 쓴 실행 줄",
     "terminalLaunchLine": "터미널 실행 줄",
-    "terminalLaunchPlaceholder": "wezterm start --cwd {cwd} -- {command}",
+    "terminalLaunchPlaceholder": "wezterm-gui start --cwd {cwd} -- {command}",
     "terminalLaunchHint": "{cwd} 는 펫의 폴더, {command} 는 아래의 명령입니다. 나머지는 터미널에 그대로 전달됩니다.",
     "advanced": "고급",
     "launchPreview": "실제로 실행되는 것"

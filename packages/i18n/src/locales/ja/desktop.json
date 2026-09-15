@@ -242,7 +242,7 @@
     "defaultTerminalApp": "システム既定 (Windows Terminal、なければ通常のコンソール)",
     "customTerminalApp": "自分で書いたコマンドライン",
     "terminalLaunchLine": "ターミナルのコマンドライン",
-    "terminalLaunchPlaceholder": "wezterm start --cwd {cwd} -- {command}",
+    "terminalLaunchPlaceholder": "wezterm-gui start --cwd {cwd} -- {command}",
     "terminalLaunchHint": "{cwd} はペットのフォルダー、{command} は下のコマンドです。それ以外はそのままターミナルに渡されます。",
     "advanced": "詳細",
     "launchPreview": "実際に起動されるもの"

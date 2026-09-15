@@ -218,7 +218,7 @@
     "defaultTerminalApp": "系统默认（有 Windows Terminal 就用它，否则普通控制台）",
     "customTerminalApp": "自定义命令行",
     "terminalLaunchLine": "终端命令行",
-    "terminalLaunchPlaceholder": "wezterm start --cwd {cwd} -- {command}",
+    "terminalLaunchPlaceholder": "wezterm-gui start --cwd {cwd} -- {command}",
     "terminalLaunchHint": "{cwd} 是宠物的文件夹，{command} 是下面那条命令，其余原样传给终端。",
     "advanced": "高级",
     "launchPreview": "实际启动的命令"

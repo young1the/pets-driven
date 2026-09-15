@@ -242,7 +242,7 @@
     "defaultTerminalApp": "System default (Windows Terminal, else a plain console)",
     "customTerminalApp": "Custom command line",
     "terminalLaunchLine": "Terminal command line",
-    "terminalLaunchPlaceholder": "wezterm start --cwd {cwd} -- {command}",
+    "terminalLaunchPlaceholder": "wezterm-gui start --cwd {cwd} -- {command}",
     "terminalLaunchHint": "{cwd} is the pet's folder, {command} the line below. Anything else is passed to the terminal as typed.",
     "advanced": "Advanced",
     "launchPreview": "What gets launched"
