@@ -11,6 +11,7 @@
 //! pet to react to, not a persisted change, so it is delivered to the live app
 //! over the loopback ingress and silently does nothing when the app is down.
 
+mod approvals_reviewer;
 mod transport;
 mod worktree;
 
@@ -1017,6 +1018,8 @@ fn strip_bom(bytes: &[u8]) -> &[u8] {
 /// Resolve the body to forward: the real stdin payload when present, otherwise a
 /// synthesized event for `event_name`. Claude hooks always deliver a payload, so
 /// synthesis is only reached by an agent (Codex) whose hook fires with no stdin.
+/// A Codex permission request also carries who reviews it, read from the session
+/// transcript (see [`approvals_reviewer`]).
 /// Returns `None` when there is nothing to send — an empty payload for a
 /// lifecycle event the app does not express.
 fn forward_body(stdin: &[u8], event_name: &str, cwd: &str) -> Option<Vec<u8>> {
@@ -1031,7 +1034,9 @@ fn forward_body(stdin: &[u8], event_name: &str, cwd: &str) -> Option<Vec<u8>> {
     };
 
     if !is_blank {
-        return Some(payload.to_vec());
+        return Some(
+            approvals_reviewer::with_approvals_reviewer(payload).unwrap_or_else(|| payload.to_vec()),
+        );
     }
 
     protocol::CodexHookEvent::synthesize(event_name, cwd)

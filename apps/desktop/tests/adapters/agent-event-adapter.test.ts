@@ -104,6 +104,30 @@ describe("agent event adapters", () => {
     });
   });
 
+  it.each([
+    "auto_review",
+    "guardian_subagent",
+  ])("reads a Codex permission request settled by %s as a tool pulse, not a wait", (reviewer) => {
+    expect(
+      createAgentEventFromCodexHook(
+        { hook_event_name: "PermissionRequest", tool_name: "Bash", approvals_reviewer: reviewer },
+        { defaultSourceId: "codex", now: 10 },
+      ),
+    ).toEqual({ type: "tool.used", sourceId: "codex", at: 10, activity: "run" });
+  });
+
+  it.each([
+    ["the user reviews it", { approvals_reviewer: "user" }],
+    ["its reviewer is unknown", {}],
+  ])("keeps a Codex permission request a wait when %s", (_case, reviewer) => {
+    expect(
+      createAgentEventFromCodexHook(
+        { hook_event_name: "PermissionRequest", ...reviewer },
+        { defaultSourceId: "codex", now: 10 },
+      ),
+    ).toEqual({ type: "task.waiting", sourceId: "codex", at: 10, summary: undefined });
+  });
+
   it("dispatches a provider envelope through the matching adapter", () => {
     expect(
       createAgentEventFromHook(

@@ -26,7 +26,7 @@ The desktop installer ships `pdd` and adds it to your PATH.
 | `pdd worktree rm [--cwd <DIR>] [--force] [--keep-pet]` | Remove a worktree and the pet bound to it | no (hides best-effort) |
 | `pdd show [PET_ID] [--cwd <DIR>]` | Show a pet's window, by id or by the folder it is bound to | yes |
 | `pdd hide [PET_ID] [--cwd <DIR>]` | Hide a pet's window, by id or by the folder it is bound to | yes |
-| `pdd forward [EVENT]` | Forward an agent hook event to the app | yes |
+| `pdd forward [EVENT]` | Forward an agent hook event to the app (a Codex permission request also carries its `approvals_reviewer`, read from the session transcript) | yes |
 
 When `hatch` picks a random asset (no `--asset`), it prefers the pets you
 installed in your designated pet source folder (`petSourceDirectory` in state,

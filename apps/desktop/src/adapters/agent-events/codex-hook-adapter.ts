@@ -25,6 +25,11 @@ export type CodexHookPayload = {
   message?: string;
   summary?: string;
   tool_name?: string;
+  /**
+   * Who settles a PermissionRequest. Codex's hook input does not carry it;
+   * `pdd forward` attaches it from the session transcript when it can.
+   */
+  approvals_reviewer?: string;
 };
 
 const CODEX_HOOK_EVENT_NAMES = new Set<CodexHookEventName>([
@@ -34,6 +39,12 @@ const CODEX_HOOK_EVENT_NAMES = new Set<CodexHookEventName>([
   "PermissionRequest",
   "Stop",
 ]);
+
+/**
+ * Reviewers under which Codex, not the user, decides a permission request.
+ * `guardian_subagent` is the older name Codex still accepts.
+ */
+const AUTO_APPROVALS_REVIEWERS = new Set(["auto_review", "guardian_subagent"]);
 
 export function createAgentEventFromCodexHook(
   payload: unknown,
@@ -48,7 +59,7 @@ export function createAgentEventFromCodexHook(
     options.defaultSourceId,
     "agent-a",
   );
-  const type = toAgentEventType(hook.hook_event_name);
+  const type = toAgentEventType(hook);
 
   return createAgentEvent({
     type,
@@ -78,9 +89,18 @@ function parseCodexHookPayload(payload: unknown): CodexHookPayload {
   return payload as CodexHookPayload;
 }
 
-function toAgentEventType(hookEventName: CodexHookEventName): AgentEvent["type"] {
+function toAgentEventType(hook: CodexHookPayload): AgentEvent["type"] {
+  const hookEventName = hook.hook_event_name;
   if (hookEventName === "PreToolUse" || hookEventName === "PostToolUse") return "tool.used";
-  if (hookEventName === "PermissionRequest") return "task.waiting";
+  if (hookEventName === "PermissionRequest") {
+    // Codex fires this hook before auto-review settles the request on its own.
+    // Only a request the user must answer is a wait; an auto-reviewed one is a
+    // pulse of the task already running, so the pet is not pulled into an
+    // attention hold it drops a moment later.
+    return AUTO_APPROVALS_REVIEWERS.has(hook.approvals_reviewer ?? "")
+      ? "tool.used"
+      : "task.waiting";
+  }
   if (hookEventName === "Stop") return "task.completed";
   return "task.started";
 }
