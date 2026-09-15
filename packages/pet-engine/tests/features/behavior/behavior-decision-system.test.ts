@@ -430,6 +430,35 @@ describe("BehaviorDecisionSystem", () => {
 });
 
 describe("BehaviorPlanningSystem", () => {
+  it.each([
+    ["a task movement hold", "hold"],
+    ["Quiet Mode stillness", "quiet"],
+  ] as const)("drops an unconsumed movement token during %s", (_label, mode) => {
+    const store = createComponentStore([
+      {
+        id: "pet",
+        components: [
+          { type: "Steering", mode: "stand" as const },
+          { type: "MotionTarget", targetEntityId: null, targetPosition: null },
+          {
+            type: "BehaviorDecisionToken" as const,
+            kind: "wander-near" as const,
+            decidedAt: 0,
+            consumed: false,
+            targetPosition: { x: 400, y: 200 },
+          },
+          ...(mode === "hold" ? [{ type: "TaskMovementHold" as const, since: 0 }] : []),
+        ],
+      },
+    ]);
+
+    runBehaviorPlanningSystem(store, createManualClock(0), mode === "quiet" ? "still" : "off");
+
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
+    expect(store.getComponent("pet", "Steering")?.mode).toBe("stand");
+    expect(store.getComponent("pet", "BehaviorDecisionToken")?.consumed).toBe(true);
+  });
+
   it("materializes a seek-user token into intent=seek without writing MotionTarget", () => {
     // seek-user tokens carry no position: MotionTargetSystem (UPDATE phase) reads
     // Perception.userAnchor directly and is the sole owner of seek positioning.

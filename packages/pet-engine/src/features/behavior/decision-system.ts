@@ -30,9 +30,8 @@ export function runBehaviorDecisionSystem(
 ): void {
   // A stilled pet picks nothing new. Stopping here rather than in the planning
   // layer is what keeps the pet from *deciding* to go somewhere: every pool
-  // below sets a motion target, and QuietStillnessSystem would then be clearing
-  // a fresh errand every tick while the pet's activity label narrated a walk it
-  // never took.
+  // below can lead to locomotion, so movement producers should have nothing
+  // new to suppress while the pet's activity label remains still.
   if (isMovementStilled(quietMode)) return;
 
   const now = clock.now();

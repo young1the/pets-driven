@@ -1,4 +1,5 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import type { QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
 import {
   FEINT_RETREAT_BODY_WIDTHS,
   ROMP_END_CUE_MS,
@@ -27,6 +28,7 @@ import {
   fallbackHorizontalDirection,
   petWidth,
 } from "@pets-driven/pet-engine/features/behavior/geometry";
+import { isPetMovementHeld } from "@pets-driven/pet-engine/features/behavior/movement-hold";
 import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
 import type { RandomSource } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
@@ -67,12 +69,14 @@ export function runPersonalSpaceSystem(
   components: ComponentStore,
   clock: Clock,
   bounds: { x?: number; y?: number; width: number; height: number },
+  quietMode: QuietMode = "off",
 ): void {
   const now = clock.now();
 
   components.forEach(
     ["PetCollision", "Steering", "MotionTarget", "Transform", "PetIdentity"],
     (id, [collision, intent, motion, transform]) => {
+      if (isPetMovementHeld(components, id, quietMode)) return;
       if (intent.mode !== "stand") return;
       if (motion.targetPosition !== null || motion.targetEntityId !== null) {
         return;
@@ -143,10 +147,12 @@ export function runRompProgressSystem(
   clock: Clock,
   random: RandomSource,
   bounds: { x?: number; y?: number; width: number; height: number },
+  quietMode: QuietMode = "off",
 ): void {
   const now = clock.now();
 
   components.forEach(["RompState", "Transform"], (id, [romp, transform]) => {
+    if (isPetMovementHeld(components, id, quietMode)) return;
     const decision = components.getComponent(id, "BehaviorDecisionState");
     // Ownership is by source+reason, not expiry: the romp claim expires at the
     // same instant the romp ends, so an expiry check here would make the
@@ -231,10 +237,12 @@ export function runFeintProgressSystem(
   components: ComponentStore,
   clock: Clock,
   bounds: { x?: number; y?: number; width: number; height: number },
+  quietMode: QuietMode = "off",
 ): void {
   const now = clock.now();
 
   components.forEach(["FeintState", "Transform"], (id, [feint, transform]) => {
+    if (isPetMovementHeld(components, id, quietMode)) return;
     const decision = components.getComponent(id, "BehaviorDecisionState");
     if (decision?.source !== "autonomous" || decision.reason !== "play-feint") {
       components.removeComponent(id, "FeintState");

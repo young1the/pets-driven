@@ -1,4 +1,5 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import type { QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
 import {
   CHASE_PROP_SPEED_FACTOR,
   EXPRESSIVE_POSE_CUES,
@@ -17,6 +18,7 @@ import {
   clearMotionTarget,
   setPetSteering,
 } from "@pets-driven/pet-engine/features/behavior/claim";
+import { isPetMovementHeld } from "@pets-driven/pet-engine/features/behavior/movement-hold";
 import { recordPetExperience } from "@pets-driven/pet-engine/features/mood/systems";
 import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
@@ -48,9 +50,20 @@ const CHASE_PROP_CURIOSITY_RELIEF = 0.12;
 // concrete state components (MotionTarget, Steering, JumpActionState,
 // ClimbIntentState). Marks the token consumed when done.
 
-export function runBehaviorPlanningSystem(components: ComponentStore, _clock: Clock): void {
+export function runBehaviorPlanningSystem(
+  components: ComponentStore,
+  _clock: Clock,
+  quietMode: QuietMode = "off",
+): void {
   components.forEach(["BehaviorDecisionToken"], (id, [token]) => {
     if (token.consumed) return;
+    // The token may have been emitted on the previous tick, or earlier in this
+    // tick before an agent event installed the hold. Drop it instead of leaving
+    // a stale autonomous action to materialize after the hold is released.
+    if (isPetMovementHeld(components, id, quietMode)) {
+      token.consumed = true;
+      return;
+    }
     switch (token.kind) {
       case "wander-near":
       case "work-pace":

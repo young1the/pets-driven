@@ -55,4 +55,23 @@ describe("walk system", () => {
     runWalkSystem(store, forceGroups);
     expect(forceGroups).toHaveLength(0);
   });
+
+  it("produces no force while a task movement hold is present", () => {
+    const store = makeWalker(100, 300, true);
+    store.setComponent("pet-a", { type: "TaskMovementHold", since: 0 });
+    const forceGroups: Force[][] = [];
+
+    runWalkSystem(store, forceGroups);
+
+    expect(forceGroups).toHaveLength(0);
+  });
+
+  it("produces no force while Quiet Mode stills movement", () => {
+    const store = makeWalker(100, 300, true);
+    const forceGroups: Force[][] = [];
+
+    runWalkSystem(store, forceGroups, "still");
+
+    expect(forceGroups).toHaveLength(0);
+  });
 });

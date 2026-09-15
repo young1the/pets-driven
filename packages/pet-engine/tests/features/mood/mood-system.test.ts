@@ -148,6 +148,7 @@ describe("Mood and Recent Experience Memory", () => {
         },
       ],
       createManualClock(100),
+      { setVelocity: () => {} },
     );
 
     const mood = store.getComponent("pet", "MoodState")!;

@@ -1,6 +1,8 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
+import type { QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
 import type { SimulationSystem } from "@pets-driven/pet-engine/core/simulation-system";
 import type { WorldStepContext } from "@pets-driven/pet-engine/core/world-step-context";
+import { isPetMovementHeld } from "@pets-driven/pet-engine/features/behavior/movement-hold";
 import type { Vector } from "@pets-driven/pet-engine/features/physics/components";
 import type { MatterPhysicsWorld } from "@pets-driven/pet-engine/features/physics/matter-physics-world";
 import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
@@ -187,6 +189,7 @@ export function runClimbDismountSystem(
   deltaMs: number,
   forceGroups: Force[][],
   random: RandomSource,
+  quietMode: QuietMode = "off",
 ): void {
   const forces: Force[] = [];
 
@@ -211,6 +214,8 @@ export function runClimbDismountSystem(
 
     const climbing = components.getComponent(id, "ClimbingTag");
     const climbIntent = components.getComponent(id, "ClimbIntentState");
+
+    if (isPetMovementHeld(components, id, quietMode)) return;
 
     if (
       !climbing ||
@@ -279,8 +284,11 @@ export function runMotionTargetSystem(
   components: ComponentStore,
   random: RandomSource,
   bounds: { x?: number; y?: number; width: number; height: number },
+  quietMode: QuietMode = "off",
 ): void {
   components.forEach(["Steering", "MotionTarget"], (_id, [intent, motion]) => {
+    if (isPetMovementHeld(components, _id, quietMode)) return;
+
     if (intent.mode === "pursue" && motion.targetEntityId) {
       const perception = components.getComponent(_id, "Perception");
       const targetPet = perception?.nearbyPets.find((pet) => pet.id === motion.targetEntityId);
@@ -351,12 +359,17 @@ export function runMotionTargetSystem(
   });
 }
 
-export function runWalkSystem(components: ComponentStore, forceGroups: Force[][]): void {
+export function runWalkSystem(
+  components: ComponentStore,
+  forceGroups: Force[][],
+  quietMode: QuietMode = "off",
+): void {
   const forces: Force[] = [];
 
   components.forEach(
     ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget"],
     (id, [transform, , contact, canWalk, motion]) => {
+      if (isPetMovementHeld(components, id, quietMode)) return;
       if (!contact.grounded) return;
 
       const target = motion.targetPosition;
@@ -378,6 +391,7 @@ export function runJumpSystem(
   deltaMs: number,
   forceGroups: Force[][],
   random: RandomSource,
+  quietMode: QuietMode = "off",
 ): void {
   const forces: Force[] = [];
 
@@ -405,6 +419,11 @@ export function runJumpSystem(
 
       if (jumpAction.phase !== "requested") return;
 
+      if (isPetMovementHeld(components, id, quietMode)) {
+        components.removeComponent(id, "JumpActionState");
+        return;
+      }
+
       if (!contact.grounded) {
         jumpAction.phase = "falling";
         return;
@@ -431,10 +450,15 @@ export function runJumpSystem(
   if (forces.length > 0) forceGroups.push(forces);
 }
 
-export function runWallClimbSystem(components: ComponentStore, physics: MatterPhysicsWorld): void {
+export function runWallClimbSystem(
+  components: ComponentStore,
+  physics: MatterPhysicsWorld,
+  quietMode: QuietMode = "off",
+): void {
   components.forEach(
     ["Transform", "ClimbingTag", "CanWallClimb", "MotionTarget", "ContactState"],
     (id, [transform, , canWallClimb, motion, contact]) => {
+      if (isPetMovementHeld(components, id, quietMode)) return;
       if (!contact.climbableSurfaceId || !motion.targetPosition) return;
 
       const deltaY = motion.targetPosition.y - transform.position.y;
@@ -447,12 +471,17 @@ export function runWallClimbSystem(components: ComponentStore, physics: MatterPh
   );
 }
 
-export function runSteeringForceSystem(components: ComponentStore, forceGroups: Force[][]): void {
+export function runSteeringForceSystem(
+  components: ComponentStore,
+  forceGroups: Force[][],
+  quietMode: QuietMode = "off",
+): void {
   const forces: Force[] = [];
 
   components.forEach(
     ["Transform", "FlyingTag", "MovementProfile", "Steering", "MotionTarget"],
     (id, [transform, , movement, intent, motion]) => {
+      if (isPetMovementHeld(components, id, quietMode)) return;
       const target = motion.targetPosition;
       if (!target) {
         forces.push({ id, x: 0, y: 0 });
@@ -662,10 +691,12 @@ export const ClimbDismountSystem: SimulationSystem<WorldStepContext> = {
     "JumpActionState",
     "ClimbDismountState",
     "ClimbIntentState",
+    "TaskMovementHold",
+    "QuietMode",
   ],
   writes: ["WalkingTag", "ClimbingTag", "JumpActionState", "ClimbDismountState", "PhysicsForce"],
   update(ctx) {
-    runClimbDismountSystem(ctx.components, ctx.deltaMs, ctx.forceGroups, ctx.random);
+    runClimbDismountSystem(ctx.components, ctx.deltaMs, ctx.forceGroups, ctx.random, ctx.quietMode);
   },
 };
 
@@ -705,50 +736,85 @@ export const MotionTargetSystem: SimulationSystem<WorldStepContext> = {
     "ContactState",
     "CanJump",
     "JumpActionState",
+    "TaskMovementHold",
+    "QuietMode",
   ],
   writes: ["MotionTarget", "JumpActionState"],
   update(ctx) {
-    runMotionTargetSystem(ctx.components, ctx.random, ctx.bounds);
+    runMotionTargetSystem(ctx.components, ctx.random, ctx.bounds, ctx.quietMode);
   },
 };
 
 export const WalkSystem: SimulationSystem<WorldStepContext> = {
   name: "WalkSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget"],
+  reads: [
+    "Transform",
+    "WalkingTag",
+    "ContactState",
+    "CanWalk",
+    "MotionTarget",
+    "TaskMovementHold",
+    "QuietMode",
+  ],
   writes: ["PhysicsForce"],
   update(ctx) {
-    runWalkSystem(ctx.components, ctx.forceGroups);
+    runWalkSystem(ctx.components, ctx.forceGroups, ctx.quietMode);
   },
 };
 
 export const JumpSystem: SimulationSystem<WorldStepContext> = {
   name: "JumpSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["WalkingTag", "Transform", "MotionTarget", "ContactState", "CanJump", "JumpActionState"],
+  reads: [
+    "WalkingTag",
+    "Transform",
+    "MotionTarget",
+    "ContactState",
+    "CanJump",
+    "JumpActionState",
+    "TaskMovementHold",
+    "QuietMode",
+  ],
   writes: ["PhysicsForce", "JumpActionState"],
   update(ctx) {
-    runJumpSystem(ctx.components, ctx.deltaMs, ctx.forceGroups, ctx.random);
+    runJumpSystem(ctx.components, ctx.deltaMs, ctx.forceGroups, ctx.random, ctx.quietMode);
   },
 };
 
 export const WallClimbSystem: SimulationSystem<WorldStepContext> = {
   name: "WallClimbSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "ClimbingTag", "CanWallClimb", "MotionTarget", "ContactState"],
+  reads: [
+    "Transform",
+    "ClimbingTag",
+    "CanWallClimb",
+    "MotionTarget",
+    "ContactState",
+    "TaskMovementHold",
+    "QuietMode",
+  ],
   writes: ["PhysicsVelocity"],
   update(ctx) {
-    runWallClimbSystem(ctx.components, ctx.physics);
+    runWallClimbSystem(ctx.components, ctx.physics, ctx.quietMode);
   },
 };
 
 export const SteeringForceSystem: SimulationSystem<WorldStepContext> = {
   name: "SteeringForceSystem",
   dependsOn: ["MotionTargetSystem"],
-  reads: ["Transform", "FlyingTag", "MovementProfile", "Steering", "MotionTarget"],
+  reads: [
+    "Transform",
+    "FlyingTag",
+    "MovementProfile",
+    "Steering",
+    "MotionTarget",
+    "TaskMovementHold",
+    "QuietMode",
+  ],
   writes: ["PhysicsForce"],
   update(ctx) {
-    runSteeringForceSystem(ctx.components, ctx.forceGroups);
+    runSteeringForceSystem(ctx.components, ctx.forceGroups, ctx.quietMode);
   },
 };
 

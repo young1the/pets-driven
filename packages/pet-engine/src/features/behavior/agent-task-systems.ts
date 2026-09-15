@@ -5,8 +5,8 @@ import {
 } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import {
   claim,
+  clearMotionTarget,
   SPEECH_BUBBLE_DURATION_MS,
-  stopPetMovement,
   type VelocityWriter,
 } from "@pets-driven/pet-engine/features/behavior/claim";
 import type {
@@ -21,7 +21,7 @@ import type { Clock } from "@pets-driven/pet-engine/shared/time/manual-clock";
 
 /**
  * Priority-2 agent ingress: external agent events become task state, speech,
- * and a movement hold, plus the system that enforces that hold each tick.
+ * and a movement hold.
  */
 
 function setAgentTaskState(
@@ -75,6 +75,7 @@ export function runAgentTaskEventSystem(
   components: ComponentStore,
   events: WorldEvent[],
   clock: Clock,
+  physics: VelocityWriter,
   random: RandomSource = createSeededRandom(1),
 ): void {
   if (events.length === 0) return;
@@ -97,7 +98,7 @@ export function runAgentTaskEventSystem(
             resolveSpeechVariant(speechProfile.taskStarted, random),
             now,
           );
-          applyTaskMovementHold(components, id, "working", event.at);
+          applyTaskMovementHold(components, physics, id, "working", event.at);
           activity.lastActiveAt = event.at;
           releaseAgentEventClaim(components, id, now);
           recordPetExperience(components, id, "task-started", now);
@@ -123,7 +124,7 @@ export function runAgentTaskEventSystem(
           // Waiting is resumable after the user resolves attention. Terminal
           // states above stay terminal even when an async tool hook arrives late.
           setAgentTaskState(components, id, "working", event, null, now);
-          applyTaskMovementHold(components, id, "working", event.at);
+          applyTaskMovementHold(components, physics, id, "working", event.at);
           activity.lastActiveAt = event.at;
           releaseAgentEventClaim(components, id, now);
         }
@@ -137,7 +138,7 @@ export function runAgentTaskEventSystem(
             resolveSpeechVariant(speechProfile.attentionNeeded, random),
             now,
           );
-          applyTaskMovementHold(components, id, "waiting", event.at);
+          applyTaskMovementHold(components, physics, id, "waiting", event.at);
           claim(components, id, "agent-event", now, event.type);
           recordPetExperience(components, id, "task-waiting", now);
         }
@@ -151,7 +152,7 @@ export function runAgentTaskEventSystem(
             resolveSpeechVariant(speechProfile.taskFailed, random),
             now,
           );
-          applyTaskMovementHold(components, id, "failed", event.at);
+          applyTaskMovementHold(components, physics, id, "failed", event.at);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.failed");
           recordPetExperience(components, id, "task-failed", now);
@@ -166,7 +167,7 @@ export function runAgentTaskEventSystem(
             resolveSpeechVariant(speechProfile.taskCompleted, random),
             now,
           );
-          applyTaskMovementHold(components, id, "completed", event.at);
+          applyTaskMovementHold(components, physics, id, "completed", event.at);
           activity.lastActiveAt = event.at;
           claim(components, id, "agent-event", now, "task.completed");
           recordPetExperience(components, id, "task-completed", now);
@@ -210,24 +211,18 @@ function releaseAgentEventClaim(components: ComponentStore, id: string, now: num
  */
 function applyTaskMovementHold(
   components: ComponentStore,
+  physics: VelocityWriter,
   id: string,
   status: AgentTaskStatus,
   at: number,
 ): void {
   if (statusFreezesMovement(status)) {
     components.setComponent(id, { type: "TaskMovementHold", since: at });
+    clearMotionTarget(components, id);
+    if (components.getComponent(id, "ContactState")?.grounded) {
+      physics.setVelocity(id, { x: 0 });
+    }
   } else {
     components.removeComponent(id, "TaskMovementHold");
   }
-}
-
-// Hold pets still while a TaskMovementHold is present — a freezing task the
-// user has not released yet.
-export function runTaskMovementHoldSystem(
-  components: ComponentStore,
-  physics: VelocityWriter,
-): void {
-  components.forEach(["TaskMovementHold"], (id) => {
-    stopPetMovement(components, physics, id);
-  });
 }

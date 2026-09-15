@@ -25,10 +25,8 @@ import {
   PetExpressionExpirationSystem,
   PettingDetectionSystem,
   QuietChatterSystem,
-  QuietStillnessSystem,
   RompProgressSystem,
   SpeechExpirationSystem,
-  TaskMovementHoldSystem,
 } from "@pets-driven/pet-engine/features/behavior/behavior-systems";
 import { ContactSystem } from "@pets-driven/pet-engine/features/contact/systems";
 import { CursorInputSystem } from "@pets-driven/pet-engine/features/cursor/systems";
@@ -146,12 +144,6 @@ export const SYSTEM_PHASES: Record<PhaseName, Array<SimulationSystem<WorldStepCo
   ],
 
   POST_UPDATE: [
-    // Runs before the force systems so a held pet's motion target is cleared
-    // before WalkSystem/SteeringForceSystem can turn it into movement.
-    TaskMovementHoldSystem,
-    // Same slot, same reason: park the pets Quiet Mode is holding still before
-    // the force systems can act on the errand they were already on.
-    QuietStillnessSystem,
     WalkSystem,
     JumpSystem,
     WallClimbSystem,

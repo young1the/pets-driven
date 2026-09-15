@@ -4,8 +4,8 @@ import { createAdoptedPetsScenario } from "@pets-driven/pet-engine/core/scenario
 import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/autonomous-speech-system";
 import { runBehaviorDecisionSystem } from "@pets-driven/pet-engine/features/behavior/decision-system";
 import {
+  applyQuietStillness,
   runQuietChatterSystem,
-  runQuietStillnessSystem,
 } from "@pets-driven/pet-engine/features/behavior/quiet-mode-systems";
 import { createSeededRandom } from "@pets-driven/pet-engine/shared/random/seeded-random";
 import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-clock";
@@ -99,12 +99,13 @@ describe("idle chatter under Quiet Mode", () => {
   });
 });
 
-describe("QuietStillnessSystem", () => {
+describe("Quiet Mode movement settlement", () => {
   function walkingPet(extra: Component[] = []) {
     return createComponentStore([
       {
         id: "pet",
         components: [
+          { type: "PetIdentity", name: "Pet" },
           { type: "Transform", position: { x: 200, y: 200 } },
           { type: "Steering", mode: "pursue" as const },
           { type: "MotionTarget", targetEntityId: null, targetPosition: { x: 800, y: 200 } },
@@ -116,6 +117,12 @@ describe("QuietStillnessSystem", () => {
             agreeableness: 0.5,
             neuroticism: 0.2,
           },
+          {
+            type: "ContactState",
+            grounded: true,
+            climbableSurfaceId: null,
+            climbableSurfacePosition: null,
+          },
           ...extra,
         ],
       },
@@ -124,10 +131,13 @@ describe("QuietStillnessSystem", () => {
 
   function velocityWriter() {
     const stopped: string[] = [];
+    const velocities: Array<{ x?: number; y?: number }> = [];
     return {
       stopped,
-      setVelocity(id: string) {
+      velocities,
+      setVelocity(id: string, velocity: { x?: number; y?: number }) {
         stopped.push(id);
+        velocities.push(velocity);
       },
     };
   }
@@ -135,26 +145,27 @@ describe("QuietStillnessSystem", () => {
   it("clears the errand a pet was already on", () => {
     const store = walkingPet();
     const physics = velocityWriter();
-    runQuietStillnessSystem(store, physics, "still");
+    applyQuietStillness(store, physics);
 
     expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
     expect(physics.stopped).toEqual(["pet"]);
-  });
-
-  it("holds nothing at the quiet level — a chattering pet may still wander", () => {
-    const store = walkingPet();
-    const physics = velocityWriter();
-    runQuietStillnessSystem(store, physics, "quiet");
-
-    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({ x: 800, y: 200 });
-    expect(physics.stopped).toEqual([]);
+    expect(physics.velocities).toEqual([{ x: 0 }]);
   });
 
   it("keeps its hands off a pet in the air, so a throw still lands", () => {
-    const store = walkingPet([{ type: "AirborneTag" }]);
+    const store = walkingPet([
+      { type: "AirborneTag" },
+      {
+        type: "ContactState",
+        grounded: false,
+        climbableSurfaceId: null,
+        climbableSurfacePosition: null,
+      },
+    ]);
     const physics = velocityWriter();
-    runQuietStillnessSystem(store, physics, "still");
+    applyQuietStillness(store, physics);
 
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
     expect(physics.stopped).toEqual([]);
   });
 
@@ -173,8 +184,9 @@ describe("QuietStillnessSystem", () => {
       },
     ]);
     const physics = velocityWriter();
-    runQuietStillnessSystem(store, physics, "still");
+    applyQuietStillness(store, physics);
 
+    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
     expect(physics.stopped).toEqual([]);
   });
 });

@@ -7,6 +7,7 @@ import { createManualClock } from "@pets-driven/pet-engine/shared/time/manual-cl
 import { describe, expect, it } from "vitest";
 
 const BOUNDS = { x: 0, y: 0, width: 1920, height: 1080 };
+const noOpPhysics = { setVelocity: () => {} };
 
 function makeStore(status?: "working" | "waiting" | "completed" | "failed") {
   return createComponentStore([
@@ -57,7 +58,7 @@ describe("agent tool pulse", () => {
   it("starts idle work silently and records provider-neutral activity", () => {
     const store = makeStore();
 
-    runAgentTaskEventSystem(store, [toolPulse(100, "study")], createManualClock(100));
+    runAgentTaskEventSystem(store, [toolPulse(100, "study")], createManualClock(100), noOpPhysics);
 
     expect(store.getComponent("pet", "AgentTaskState")).toEqual({
       type: "AgentTaskState",
@@ -78,7 +79,12 @@ describe("agent tool pulse", () => {
       const store = makeStore(terminal);
       store.setComponent("pet", { type: "TaskMovementHold", since: 0 });
 
-      runAgentTaskEventSystem(store, [toolPulse(9_000, "edit")], createManualClock(9_000));
+      runAgentTaskEventSystem(
+        store,
+        [toolPulse(9_000, "edit")],
+        createManualClock(9_000),
+        noOpPhysics,
+      );
 
       expect(store.getComponent("pet", "AgentTaskState")?.status).toBe(terminal);
       expect(store.getComponent("pet", "TaskMovementHold")).toBeDefined();
@@ -90,7 +96,12 @@ describe("agent tool pulse", () => {
     const store = makeStore("waiting");
     store.setComponent("pet", { type: "TaskMovementHold", since: 0 });
 
-    runAgentTaskEventSystem(store, [toolPulse(9_000, "run")], createManualClock(9_000));
+    runAgentTaskEventSystem(
+      store,
+      [toolPulse(9_000, "run")],
+      createManualClock(9_000),
+      noOpPhysics,
+    );
 
     expect(store.getComponent("pet", "AgentTaskState")?.status).toBe("working");
     expect(store.getComponent("pet", "TaskMovementHold")).toBeUndefined();
@@ -99,7 +110,12 @@ describe("agent tool pulse", () => {
 
   it("does not restart a selected behavior under a burst of hook pulses", () => {
     const store = makeStore();
-    runAgentTaskEventSystem(store, [taskEvent("task.started", 0)], createManualClock(0));
+    runAgentTaskEventSystem(
+      store,
+      [taskEvent("task.started", 0)],
+      createManualClock(0),
+      noOpPhysics,
+    );
     runBehaviorDecisionSystem(store, createManualClock(0), { next: () => 0.5 }, BOUNDS);
     runBehaviorPlanningSystem(store, createManualClock(0));
 
@@ -110,7 +126,7 @@ describe("agent tool pulse", () => {
     const pulses = Array.from({ length: 100 }, (_, index) =>
       toolPulse(100 + index, (["study", "edit", "run"] as const)[index % 3]),
     );
-    runAgentTaskEventSystem(store, pulses, createManualClock(200));
+    runAgentTaskEventSystem(store, pulses, createManualClock(200), noOpPhysics);
     runBehaviorDecisionSystem(store, createManualClock(200), { next: () => 0.9 }, BOUNDS);
 
     const afterBurst = store.getComponent("pet", "BehaviorDecisionState");

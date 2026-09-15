@@ -59,4 +59,23 @@ describe("wall climb system", () => {
     runWallClimbSystem(store, physics);
     expect(physics.setVelocity).not.toHaveBeenCalled();
   });
+
+  it("does not drive a held climber", () => {
+    const store = makeClimber(500, 100);
+    store.setComponent("pet-a", { type: "TaskMovementHold", since: 0 });
+    const physics = makePhysicsMock();
+
+    runWallClimbSystem(store, physics);
+
+    expect(physics.setVelocity).not.toHaveBeenCalled();
+  });
+
+  it("does not drive a climber while Quiet Mode stills movement", () => {
+    const store = makeClimber(500, 100);
+    const physics = makePhysicsMock();
+
+    runWallClimbSystem(store, physics, "still");
+
+    expect(physics.setVelocity).not.toHaveBeenCalled();
+  });
 });

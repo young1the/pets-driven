@@ -1,5 +1,6 @@
 import { createComponentStore } from "@pets-driven/pet-engine/core/component-store";
-import { runTaskMovementHoldSystem } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
+import { runWalkSystem } from "@pets-driven/pet-engine/features/movement/systems";
+import type { Force } from "@pets-driven/pet-engine/features/physics/systems";
 import { describe, expect, it } from "vitest";
 
 function makeStore(held: boolean) {
@@ -9,32 +10,39 @@ function makeStore(held: boolean) {
       components: [
         { type: "AgentTaskState", status: "waiting" as const, since: 0 },
         ...(held ? [{ type: "TaskMovementHold" as const, since: 0 }] : []),
+        { type: "Transform", position: { x: 100, y: 100 } },
+        { type: "WalkingTag" },
+        {
+          type: "ContactState",
+          grounded: true,
+          climbableSurfaceId: null,
+          climbableSurfacePosition: null,
+        },
+        { type: "CanWalk", force: 0.001 },
         {
           type: "MotionTarget",
           targetEntityId: null,
-          targetPosition: { x: 9, y: 9 },
+          targetPosition: { x: 300, y: 100 },
         },
       ],
     },
   ]);
 }
 
-describe("runTaskMovementHoldSystem freezes by hold component", () => {
-  it("freezes a held pet (clears motion target)", () => {
-    const store = makeStore(true);
-    const velocities: Array<{ x: number; y: number }> = [];
-    runTaskMovementHoldSystem(store, {
-      setVelocity: (_id, v) => velocities.push({ x: v.x ?? 0, y: v.y ?? 0 }),
-    });
-    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toBeNull();
+describe("task movement hold", () => {
+  it("blocks locomotion while the hold component is present", () => {
+    const forceGroups: Force[][] = [];
+
+    runWalkSystem(makeStore(true), forceGroups);
+
+    expect(forceGroups).toHaveLength(0);
   });
 
-  it("does not freeze a released pet whose status still reads waiting", () => {
-    const store = makeStore(false);
-    runTaskMovementHoldSystem(store, { setVelocity: () => {} });
-    expect(store.getComponent("pet", "MotionTarget")?.targetPosition).toEqual({
-      x: 9,
-      y: 9,
-    });
+  it("does not infer a hold from the reported task status", () => {
+    const forceGroups: Force[][] = [];
+
+    runWalkSystem(makeStore(false), forceGroups);
+
+    expect(forceGroups.flat()).toContainEqual({ id: "pet", x: 0.001, y: 0 });
   });
 });

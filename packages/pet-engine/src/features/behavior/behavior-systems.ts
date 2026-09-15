@@ -5,10 +5,7 @@ import {
   runPersonalSpaceSystem,
   runRompProgressSystem,
 } from "@pets-driven/pet-engine/features/behavior/activity-progress-systems";
-import {
-  runAgentTaskEventSystem,
-  runTaskMovementHoldSystem,
-} from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
+import { runAgentTaskEventSystem } from "@pets-driven/pet-engine/features/behavior/agent-task-systems";
 import { runArrivalBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/arrival-system";
 import { runAutonomousBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/autonomous-speech-system";
 import { runCollisionBehaviorSystem } from "@pets-driven/pet-engine/features/behavior/collision-systems";
@@ -22,10 +19,7 @@ import {
   runPetExpressionExpirationSystem,
 } from "@pets-driven/pet-engine/features/behavior/expiration-systems";
 import { runBehaviorPlanningSystem } from "@pets-driven/pet-engine/features/behavior/planning-system";
-import {
-  runQuietChatterSystem,
-  runQuietStillnessSystem,
-} from "@pets-driven/pet-engine/features/behavior/quiet-mode-systems";
+import { runQuietChatterSystem } from "@pets-driven/pet-engine/features/behavior/quiet-mode-systems";
 
 // ── System descriptors ─────────────────────────────────────────────────────
 // Thin SimulationSystem wrappers over the run* behavior functions in
@@ -118,7 +112,14 @@ export const HoverReactionSystem: SimulationSystem<WorldStepContext> = {
 export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
   name: "AgentTaskEventSystem",
   dependsOn: ["PetExpressionExpirationSystem"],
-  reads: ["AgentBinding", "SpeechProfile", "ActivityState", "MoodState", "RecentExperienceMemory"],
+  reads: [
+    "AgentBinding",
+    "SpeechProfile",
+    "ActivityState",
+    "ContactState",
+    "MoodState",
+    "RecentExperienceMemory",
+  ],
   writes: [
     "AgentTaskState",
     "AgentActivitySignal",
@@ -126,6 +127,8 @@ export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
     "ActivityState",
     "BehaviorDecisionState",
     "TaskMovementHold",
+    "MotionTarget",
+    "PhysicsVelocity",
     "MoodState",
     "RecentExperienceMemory",
   ],
@@ -134,18 +137,9 @@ export const AgentTaskEventSystem: SimulationSystem<WorldStepContext> = {
       ctx.components,
       ctx.events.drainWhere((event) => event.kind === "agent"),
       ctx.clock,
+      ctx.physics,
       ctx.random,
     );
-  },
-};
-
-export const TaskMovementHoldSystem: SimulationSystem<WorldStepContext> = {
-  name: "TaskMovementHoldSystem",
-  dependsOn: ["MotionTargetSystem"],
-  reads: ["TaskMovementHold"],
-  writes: ["MotionTarget", "PhysicsVelocity"],
-  update(ctx) {
-    runTaskMovementHoldSystem(ctx.components, ctx.physics);
   },
 };
 
@@ -224,7 +218,14 @@ export const BehaviorDecisionSystem: SimulationSystem<WorldStepContext> = {
 export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
   name: "BehaviorPlanningSystem",
   dependsOn: ["AutonomousBehaviorSystem"],
-  reads: ["BehaviorDecisionToken", "JumpActionState", "MoodState", "RecentExperienceMemory"],
+  reads: [
+    "BehaviorDecisionToken",
+    "JumpActionState",
+    "MoodState",
+    "RecentExperienceMemory",
+    "TaskMovementHold",
+    "QuietMode",
+  ],
   writes: [
     "Steering",
     "MotionTarget",
@@ -238,7 +239,7 @@ export const BehaviorPlanningSystem: SimulationSystem<WorldStepContext> = {
     "RecentExperienceMemory",
   ],
   update(ctx) {
-    runBehaviorPlanningSystem(ctx.components, ctx.clock);
+    runBehaviorPlanningSystem(ctx.components, ctx.clock, ctx.quietMode);
   },
 };
 
@@ -288,10 +289,12 @@ export const PersonalSpaceSystem: SimulationSystem<WorldStepContext> = {
     "PendingReaction",
     "BehaviorDecisionState",
     "PhysicsBody",
+    "TaskMovementHold",
+    "QuietMode",
   ],
   writes: ["MotionTarget", "Steering", "BehaviorDecisionState"],
   update(ctx) {
-    runPersonalSpaceSystem(ctx.components, ctx.clock, ctx.bounds);
+    runPersonalSpaceSystem(ctx.components, ctx.clock, ctx.bounds, ctx.quietMode);
   },
 };
 
@@ -306,6 +309,8 @@ export const RompProgressSystem: SimulationSystem<WorldStepContext> = {
     "JumpActionState",
     "PhysicsBody",
     "Drives",
+    "TaskMovementHold",
+    "QuietMode",
   ],
   writes: [
     "RompState",
@@ -317,7 +322,7 @@ export const RompProgressSystem: SimulationSystem<WorldStepContext> = {
     "Drives",
   ],
   update(ctx) {
-    runRompProgressSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds);
+    runRompProgressSystem(ctx.components, ctx.clock, ctx.random, ctx.bounds, ctx.quietMode);
   },
 };
 
@@ -331,6 +336,8 @@ export const FeintProgressSystem: SimulationSystem<WorldStepContext> = {
     "BehaviorDecisionState",
     "MoodState",
     "RecentExperienceMemory",
+    "TaskMovementHold",
+    "QuietMode",
   ],
   writes: [
     "FeintState",
@@ -342,7 +349,7 @@ export const FeintProgressSystem: SimulationSystem<WorldStepContext> = {
     "RecentExperienceMemory",
   ],
   update(ctx) {
-    runFeintProgressSystem(ctx.components, ctx.clock, ctx.bounds);
+    runFeintProgressSystem(ctx.components, ctx.clock, ctx.bounds, ctx.quietMode);
   },
 };
 
@@ -355,17 +362,5 @@ export const QuietChatterSystem: SimulationSystem<WorldStepContext> = {
   writes: ["AgentChannelState"],
   update(ctx) {
     runQuietChatterSystem(ctx.components, ctx.quietMode);
-  },
-};
-
-export const QuietStillnessSystem: SimulationSystem<WorldStepContext> = {
-  name: "QuietStillnessSystem",
-  // Beside TaskMovementHoldSystem and for the same reason: a held pet's motion
-  // target has to be gone before WalkSystem reads it.
-  dependsOn: ["TaskMovementHoldSystem"],
-  reads: ["QuietMode", "Personality", "MotionTarget", "AirborneTag", "DragInteraction"],
-  writes: ["MotionTarget", "PhysicsVelocity"],
-  update(ctx) {
-    runQuietStillnessSystem(ctx.components, ctx.physics, ctx.quietMode);
   },
 };

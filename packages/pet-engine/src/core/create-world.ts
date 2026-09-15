@@ -7,7 +7,11 @@ import type { Component, ComponentType } from "@pets-driven/pet-engine/core/comp
 import type { MonitorWorkArea, WorldViewport } from "@pets-driven/pet-engine/core/monitor-geometry";
 import { derivePetActivity } from "@pets-driven/pet-engine/core/pet-activity";
 import { STEP_SYSTEMS } from "@pets-driven/pet-engine/core/phases";
-import { DEFAULT_QUIET_MODE, type QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
+import {
+  DEFAULT_QUIET_MODE,
+  isMovementStilled,
+  type QuietMode,
+} from "@pets-driven/pet-engine/core/quiet-mode";
 import {
   describeSimulationSystems,
   runSimulationSystems,
@@ -15,6 +19,7 @@ import {
 import type { PetVisualCue } from "@pets-driven/pet-engine/core/world-snapshot";
 import { agentTaskBadgeLabel } from "@pets-driven/pet-engine/features/agent/agent-task-state";
 import { getPetAnimationState } from "@pets-driven/pet-engine/features/behavior/pet-animation-state";
+import { applyQuietStillness } from "@pets-driven/pet-engine/features/behavior/quiet-mode-systems";
 import type { WorldEvent } from "@pets-driven/pet-engine/features/events/world-event";
 import { createWorldEventQueue } from "@pets-driven/pet-engine/features/events/world-event-queue";
 import {
@@ -81,6 +86,9 @@ export function createWorld(input: WorldDefinition) {
   let quietMode: QuietMode = input.quietMode ?? DEFAULT_QUIET_MODE;
 
   registerPhysicsBodies();
+  if (isMovementStilled(quietMode)) {
+    applyQuietStillness(components, physics);
+  }
 
   function registerPhysicsBodies() {
     for (const entity of components.query("Transform", "PhysicsBody")) {
@@ -488,6 +496,9 @@ export function createWorld(input: WorldDefinition) {
     addEntity(declaration: EntityDeclaration) {
       components.spawn(declaration.id, declaration.components);
       registerPhysicsBody(declaration.id);
+      if (isMovementStilled(quietMode)) {
+        applyQuietStillness(components, physics, declaration.id);
+      }
     },
     // Tear a single entity out of the live world: drop its physics body first,
     // then every component it owns. Idempotent — unknown ids no-op. Systems that
@@ -725,6 +736,9 @@ export function createWorld(input: WorldDefinition) {
      * price for a setting the user flips to be left alone for a minute.
      */
     setQuietMode(next: QuietMode) {
+      if (!isMovementStilled(quietMode) && isMovementStilled(next)) {
+        applyQuietStillness(components, physics);
+      }
       quietMode = next;
     },
     quietMode() {

@@ -59,4 +59,23 @@ describe("steering force system", () => {
     runSteeringForceSystem(store, forceGroups);
     expect(forceGroups.flat()[0]?.x).toBeCloseTo(0.001);
   });
+
+  it("produces no force while a task movement hold is present", () => {
+    const store = makeFlyer("pursue", 1100, 100);
+    store.setComponent("pet-a", { type: "TaskMovementHold", since: 0 });
+    const forceGroups: Force[][] = [];
+
+    runSteeringForceSystem(store, forceGroups);
+
+    expect(forceGroups).toHaveLength(0);
+  });
+
+  it("produces no force while Quiet Mode stills movement", () => {
+    const store = makeFlyer("pursue", 1100, 100);
+    const forceGroups: Force[][] = [];
+
+    runSteeringForceSystem(store, forceGroups, "still");
+
+    expect(forceGroups).toHaveLength(0);
+  });
 });

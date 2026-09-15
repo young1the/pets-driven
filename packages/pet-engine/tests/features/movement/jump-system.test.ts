@@ -141,4 +141,25 @@ describe("jump system", () => {
 
     expect(store.getComponent("pet-a", "JumpActionState")).toBeUndefined();
   });
+
+  it("drops a pending autonomous jump while a task movement hold is present", () => {
+    const store = makeJumper("requested", true);
+    store.setComponent("pet-a", { type: "TaskMovementHold", since: 0 });
+    const forces: Force[][] = [];
+
+    runJumpSystem(store, 16, forces, midRandom);
+
+    expect(store.getComponent("pet-a", "JumpActionState")).toBeUndefined();
+    expect(forces).toHaveLength(0);
+  });
+
+  it("drops a pending autonomous jump while Quiet Mode stills movement", () => {
+    const store = makeJumper("requested", true);
+    const forces: Force[][] = [];
+
+    runJumpSystem(store, 16, forces, midRandom, "still");
+
+    expect(store.getComponent("pet-a", "JumpActionState")).toBeUndefined();
+    expect(forces).toHaveLength(0);
+  });
 });

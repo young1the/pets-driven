@@ -1,15 +1,15 @@
 import type { ComponentStore } from "@pets-driven/pet-engine/core/component-store";
 import type { QuietMode } from "@pets-driven/pet-engine/core/quiet-mode";
-import { isChatterSilenced, isMovementStilled } from "@pets-driven/pet-engine/core/quiet-mode";
+import { isChatterSilenced } from "@pets-driven/pet-engine/core/quiet-mode";
 import { isChatterChannelSource } from "@pets-driven/pet-engine/features/agent/components";
 import {
-  stopPetMovement,
+  clearMotionTarget,
   type VelocityWriter,
 } from "@pets-driven/pet-engine/features/behavior/claim";
 
 /**
- * What Quiet Mode takes away, as two sweeps at the end of the phases that could
- * have put it there.
+ * What Quiet Mode takes away: a chatter sweep at the end of BEHAVIOR and an
+ * edge-triggered movement settlement when the world enters the still level.
  */
 
 /**
@@ -36,33 +36,30 @@ export function runQuietChatterSystem(components: ComponentStore, mode: QuietMod
 }
 
 /**
- * Hold every pet where it stands (level `still`).
+ * Settle each pet once when the world enters Quiet Mode's still level.
  *
- * The same two writes `TaskMovementHold` makes, for the same reason and in the
- * same phase slot: clear the motion target and zero the velocity before the
- * force systems can turn either into a step. `BehaviorDecisionSystem` has
- * already declined to pick anything new this tick, so this is what settles the
- * errands a pet was already on — a walk toward a trinket, a social session's
- * approach — without those systems needing to know the mode exists.
+ * Existing errands are discarded immediately. A grounded pet also loses its
+ * horizontal drift, but vertical velocity is never overwritten: gravity,
+ * throws, and collision impulses remain physics concerns. Movement producers
+ * keep the pet still after this edge by reading the world-level mode.
  *
- * Two pets are deliberately left alone: one the user is dragging, and one in
- * the air. Stillness is about the pet's own errands, not about the user's
- * hands — parking a thrown pet mid-flight would read as the app eating the
- * throw, and a pet that cannot fall is one standing on nothing.
+ * Direct manipulation wins over the one-time horizontal settlement. Its
+ * autonomous target is still discarded so it cannot resume a stale errand when
+ * Quiet Mode is later disabled.
  */
-export function runQuietStillnessSystem(
+export function applyQuietStillness(
   components: ComponentStore,
   physics: VelocityWriter,
-  mode: QuietMode,
+  onlyEntityId?: string,
 ): void {
-  if (!isMovementStilled(mode)) return;
-
   const dragged = draggedEntityId(components);
 
-  components.forEach(["Personality", "MotionTarget"], (id) => {
+  components.forEach(["PetIdentity"], (id) => {
+    if (onlyEntityId && id !== onlyEntityId) return;
+    clearMotionTarget(components, id);
     if (id === dragged) return;
-    if (components.getComponent(id, "AirborneTag")) return;
-    stopPetMovement(components, physics, id);
+    if (!components.getComponent(id, "ContactState")?.grounded) return;
+    physics.setVelocity(id, { x: 0 });
   });
 }
 

@@ -243,8 +243,6 @@ describe("demo scenario", () => {
       "DriveDecaySystem",
       "MoodRecoverySystem",
       // POST_UPDATE
-      "TaskMovementHoldSystem",
-      "QuietStillnessSystem",
       "WalkSystem",
       "JumpSystem",
       "WallClimbSystem",
@@ -354,6 +352,8 @@ describe("demo scenario", () => {
         "JumpActionState",
         "ClimbDismountState",
         "ClimbIntentState",
+        "TaskMovementHold",
+        "QuietMode",
       ],
       writes: [
         "WalkingTag",
@@ -382,6 +382,7 @@ describe("demo scenario", () => {
         "AgentBinding",
         "SpeechProfile",
         "ActivityState",
+        "ContactState",
         "MoodState",
         "RecentExperienceMemory",
       ],
@@ -392,6 +393,8 @@ describe("demo scenario", () => {
         "ActivityState",
         "BehaviorDecisionState",
         "TaskMovementHold",
+        "MotionTarget",
+        "PhysicsVelocity",
         "MoodState",
         "RecentExperienceMemory",
       ],
@@ -462,7 +465,14 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "BehaviorPlanningSystem",
       dependsOn: ["AutonomousBehaviorSystem"],
-      reads: ["BehaviorDecisionToken", "JumpActionState", "MoodState", "RecentExperienceMemory"],
+      reads: [
+        "BehaviorDecisionToken",
+        "JumpActionState",
+        "MoodState",
+        "RecentExperienceMemory",
+        "TaskMovementHold",
+        "QuietMode",
+      ],
       writes: [
         "Steering",
         "MotionTarget",
@@ -486,6 +496,8 @@ describe("demo scenario", () => {
         "BehaviorDecisionState",
         "MoodState",
         "RecentExperienceMemory",
+        "TaskMovementHold",
+        "QuietMode",
       ],
       writes: [
         "FeintState",
@@ -500,7 +512,15 @@ describe("demo scenario", () => {
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WalkSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "WalkingTag", "ContactState", "CanWalk", "MotionTarget"],
+      reads: [
+        "Transform",
+        "WalkingTag",
+        "ContactState",
+        "CanWalk",
+        "MotionTarget",
+        "TaskMovementHold",
+        "QuietMode",
+      ],
       writes: ["PhysicsForce"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -513,13 +533,23 @@ describe("demo scenario", () => {
         "ContactState",
         "CanJump",
         "JumpActionState",
+        "TaskMovementHold",
+        "QuietMode",
       ],
       writes: ["PhysicsForce", "JumpActionState"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
       name: "WallClimbSystem",
       dependsOn: ["MotionTargetSystem"],
-      reads: ["Transform", "ClimbingTag", "CanWallClimb", "MotionTarget", "ContactState"],
+      reads: [
+        "Transform",
+        "ClimbingTag",
+        "CanWallClimb",
+        "MotionTarget",
+        "ContactState",
+        "TaskMovementHold",
+        "QuietMode",
+      ],
       writes: ["PhysicsVelocity"],
     });
     expect(scenario.world.systemPlan()).toContainEqual({
@@ -527,12 +557,6 @@ describe("demo scenario", () => {
       dependsOn: ["SteeringForceSystem"],
       reads: ["PhysicsBody", "FlyingTag", "CanFly"],
       writes: ["PhysicsGravityScale"],
-    });
-    expect(scenario.world.systemPlan()).toContainEqual({
-      name: "TaskMovementHoldSystem",
-      dependsOn: ["MotionTargetSystem"],
-      reads: ["TaskMovementHold"],
-      writes: ["MotionTarget", "PhysicsVelocity"],
     });
   });
 
@@ -1153,7 +1177,6 @@ describe("demo scenario", () => {
     });
     expect(scenario.world.snapshot().bodies.find((body) => body.id === "pet-a")).toMatchObject({
       vx: expect.closeTo(0, 0),
-      vy: expect.closeTo(0, 0),
       animationState: "waiting",
     });
   });
@@ -1296,6 +1319,29 @@ describe("demo scenario", () => {
       targetEntityId: null,
       targetPosition: null,
     });
+  });
+
+  it("lets an airborne pet keep falling when a completed task applies a hold", () => {
+    const scenario = createDemoScenario();
+    scenario.world.setPhysicsPosition("pet-a", { x: 400, y: 400 });
+    scenario.world.setPhysicsVelocity("pet-a", { x: 3, y: 2 });
+    const beforeY = scenario.world.getComponent("pet-a", "Transform")?.position.y ?? 0;
+
+    scenario.world.pushEvent({
+      kind: "agent",
+      type: "task.completed",
+      sourceId: "agent-a",
+      at: 20,
+      summary: "Done in mid-air",
+    });
+    scenario.world.step(16);
+
+    const body = scenario.world.snapshot().bodies.find((candidate) => candidate.id === "pet-a");
+    expect(scenario.world.getComponent("pet-a", "TaskMovementHold")).toBeDefined();
+    expect(scenario.world.getComponent("pet-a", "MotionTarget")?.targetPosition).toBeNull();
+    expect(body?.y).toBeGreaterThan(beforeY);
+    expect(body?.vx).toBeGreaterThan(0);
+    expect(body?.vy).toBeGreaterThan(0);
   });
 
   it("clears movement and shows failed state for failed task lifecycle", () => {
