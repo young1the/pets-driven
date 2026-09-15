@@ -73,10 +73,20 @@ pub struct SystemGit;
 
 impl Git for SystemGit {
     fn run(&self, dir: &str, args: &[&str]) -> Result<GitOutput, String> {
-        let output = Command::new("git")
-            .arg("-C")
-            .arg(dir)
-            .args(args)
+        let mut command = Command::new("git");
+        command.arg("-C").arg(dir).args(args);
+
+        // CREATE_NO_WINDOW: the desktop app is a GUI process, so every git call
+        // would otherwise flash a console window open. Output is captured and
+        // stdin is null, so the CLI loses nothing by it either.
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            command.creation_flags(CREATE_NO_WINDOW);
+        }
+
+        let output = command
             .output()
             .map_err(|error| match error.kind() {
                 std::io::ErrorKind::NotFound => {
